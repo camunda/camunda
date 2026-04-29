@@ -21,6 +21,8 @@ import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.micrometer.core.instrument.distribution.ValueAtPercentile;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -98,6 +100,35 @@ class MetricsExporterTest {
                 .anyMatch(bucket -> bucket.bucket(TimeUnit.SECONDS) == 2.5 && bucket.count() == 1))
         .isTrue()
         .describedAs("Expected the correct job_life_time bucket to have counted the event");
+  }
+
+  @Test
+  void shouldObserveProcessInstanceExecutionTimeWithPercentiles() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var metrics = new ExecutionLatencyMetrics(registry);
+
+    // when
+    metrics.observeProcessInstanceExecutionTime(0L, 2500L);
+
+    // then
+    final var executionTimer = registry.timer("zeebe.process.instance.execution.time");
+
+    assertThat(executionTimer.count()).isOne();
+
+    assertThat(
+            Arrays.stream(executionTimer.takeSnapshot().percentileValues())
+                .map(ValueAtPercentile::percentile)
+                .toList())
+        .describedAs("Expected p50, p90, and p99 percentiles to be published")
+        .containsExactlyInAnyOrder(0.5, 0.9, 0.99);
+
+    assertThat(
+            Arrays.stream(executionTimer.takeSnapshot().histogramCounts())
+                .anyMatch(bucket -> bucket.bucket(TimeUnit.SECONDS) == 2.5 && bucket.count() == 1))
+        .isTrue()
+        .describedAs(
+            "Expected SLO histogram buckets to be published (required for zeebe_process_instance_execution_time_seconds_bucket in Prometheus)");
   }
 
   @Test
