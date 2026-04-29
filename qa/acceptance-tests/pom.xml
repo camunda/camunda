@@ -638,7 +638,7 @@
     <repository>
       <id>maven_central</id>
       <name>Maven Central</name>
-      <url>https://repo.maven.apache.org/maven2/</url>
+      <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
     </repository>
   </repositories>
 
