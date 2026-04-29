@@ -40,6 +40,7 @@ if (USE_CONTAINERIZED_BROWSER) {
 
 export default defineConfig({
 	testDir: './playwright',
+	tsconfig: './tsconfig.node.json',
 	fullyParallel: true,
 	forbidOnly: IS_CI,
 	retries: IS_CI ? 2 : 0,

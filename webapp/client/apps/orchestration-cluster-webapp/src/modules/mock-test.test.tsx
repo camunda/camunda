@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {it} from '#/testing-modules/test-extend';
-import {createEndpointMock} from '#/testing-modules/mock-endpoint';
+import {it} from '#/vitest-modules/test-extend';
+import {createEndpointMock} from '#/shared-test-modules/mock-endpoint';
 import {Button} from '@carbon/react';
 import {useEffect, useState} from 'react';
 import {render} from 'vitest-browser-react';

@@ -8,7 +8,7 @@
 
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
-import {createEndpointMock} from './mock-endpoint';
+import {createEndpointMock} from '#/shared-test-modules/mock-endpoint';
 import {it} from './test-extend';
 
 const mockDataEndpoint = createEndpointMock({

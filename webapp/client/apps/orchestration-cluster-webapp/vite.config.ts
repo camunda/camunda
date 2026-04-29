@@ -65,6 +65,7 @@ const config = defineConfig(({mode}) => ({
 	},
 	test: {
 		globals: true,
+		include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
 		browser: {
 			enabled: true,
 			screenshotFailures: false,
@@ -73,7 +74,7 @@ const config = defineConfig(({mode}) => ({
 			instances: [
 				{
 					browser: 'chromium',
-					setupFiles: ['./src/testing-modules/vitest.setup.ts'],
+					setupFiles: ['./src/vitest-modules/vitest.setup.ts'],
 				},
 			],
 		},

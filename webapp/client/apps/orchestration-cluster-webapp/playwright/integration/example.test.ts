@@ -6,21 +6,45 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '@playwright/test';
+import {test, expect} from '#/pw-modules/test-extend';
+import {createEndpointMock} from '#/shared-test-modules/mock-endpoint';
+import {HttpResponse} from 'msw';
+import {z} from 'zod';
 
-test('has title', async ({page}) => {
-	await page.goto('https://playwright.dev/');
-
-	// Expect a title "to contain" a substring.
-	await expect(page).toHaveTitle(/Playwright/);
+const mockDataEndpoint = createEndpointMock({
+	endpoint: '/api/data',
+	method: 'POST',
 });
 
-test('get started link', async ({page}) => {
-	await page.goto('https://playwright.dev/');
+const requestSchema = z.object({
+	key: z.string(),
+});
 
-	// Click the get started link.
-	await page.getByRole('link', {name: 'Get started'}).click();
+test('should mock network requests with MSW', async ({network, page}) => {
+	network.use(
+		mockDataEndpoint({
+			schema: requestSchema,
+			failureResponse: HttpResponse.json({error: 'bad request'}, {status: 400}),
+			successResponse: HttpResponse.json({data: 'value'}),
+		}),
+	);
 
-	// Expects page to have a heading with the name of Installation.
-	await expect(page.getByRole('heading', {name: 'Installation'})).toBeVisible();
+	await page.goto('/');
+
+	const response = await page.evaluate(async () => {
+		const response = await fetch('/api/data', {
+			method: 'POST',
+			body: JSON.stringify({key: 'value'}),
+		});
+
+		return {
+			ok: response.ok,
+			body: await response.json(),
+		};
+	});
+
+	expect(response).toEqual({
+		ok: true,
+		body: {data: 'value'},
+	});
 });
