@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-bom</artifactId>
-    <version>8.9.2-SNAPSHOT</version>
+    <version>8.9.3-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -66,7 +66,7 @@
     <version.httpclient5>5.5.2</version.httpclient5>
     <version.httpcore5>5.4.2</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.9.1</version.identity>
+    <version.identity>8.9.2</version.identity>
     <version.instancio>5.5.1</version.instancio>
     <version.jackson>2.21.2</version.jackson>
     <version.jackson3>3.1.2</version.jackson3>
@@ -250,7 +250,7 @@
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.9.0</backwards.compat.version>
+    <backwards.compat.version>8.9.2</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--

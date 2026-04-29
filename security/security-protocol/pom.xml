@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-security</artifactId>
-    <version>8.9.2-SNAPSHOT</version>
+    <version>8.9.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>camunda-security-protocol</artifactId>
