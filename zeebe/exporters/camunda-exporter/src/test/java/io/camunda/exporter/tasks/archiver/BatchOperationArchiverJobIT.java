@@ -15,6 +15,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class BatchOperationArchiverJobIT extends ArchiverJobIT<BatchOperationArchiverJob> {
+
   @Override
   BatchOperationArchiverJob createArchiveJob(
       final ExporterConfiguration config,

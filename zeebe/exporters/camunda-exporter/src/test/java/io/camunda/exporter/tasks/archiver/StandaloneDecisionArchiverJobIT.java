@@ -17,14 +17,12 @@ import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDecisionArchiverJob> {
-  private static final AtomicLong ID_GENERATOR = new AtomicLong(1);
 
   @Override
   StandaloneDecisionArchiverJob createArchiveJob(
@@ -121,8 +119,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
   }
 
   private DecisionInstanceEntity decisionInstance(final String evaluationDate) {
-    final var entity = new DecisionInstanceEntity();
-    entity.setId(String.valueOf(ID_GENERATOR.incrementAndGet()));
+    final var entity = create(DecisionInstanceEntity::new);
     entity.setKey(Long.parseLong(entity.getId()));
     entity.setPartitionId(PARTITION_ID);
     entity.setEvaluationDate(OffsetDateTime.parse(evaluationDate));
