@@ -1,5 +1,12 @@
 #!/bin/sh -xeu
 
+# Load AppCDS archive if present (generated at image build time).
+CDS_ARCHIVE="${ZB_HOME:-/usr/local/zeebe}/camunda.jsa"
+if [ -f "${CDS_ARCHIVE}" ]; then
+  JAVA_OPTS="${JAVA_OPTS:-} -XX:SharedArchiveFile=${CDS_ARCHIVE}"
+  export JAVA_OPTS
+fi
+
 if [ "$ZEEBE_STANDALONE_GATEWAY" = "true" ]; then
     exec /usr/local/zeebe/bin/gateway
 elif [ "$ZEEBE_RESTORE" = "true" ]; then

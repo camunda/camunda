@@ -82,6 +82,27 @@ RUN mkdir camunda-zeebe && \
 # hadolint ignore=DL3006
 FROM ${DIST} AS dist
 
+### AppCDS archive generation ###
+# hadolint ignore=DL3006
+FROM base-${BASE} AS cds-gen
+
+# hadolint ignore=DL3002
+USER root
+WORKDIR /zeebe
+
+COPY --from=dist --chown=root:root /zeebe/camunda-zeebe ./camunda-zeebe
+
+# Run a training boot: classes are recorded into camunda.jsa on JVM exit.
+# spring.context.exit=onRefresh causes a clean exit right after context refresh.
+# camunda.data.secondary-storage.type=NONE disables all DB/ES connections.
+# || true: any remaining failures are acceptable;
+#          the archive is still written because -XX:ArchiveClassesAtExit fires on any exit.
+RUN JAVA_OPTS="-XX:ArchiveClassesAtExit=/zeebe/camunda.jsa" \
+    ./camunda-zeebe/bin/camunda \
+      --spring.context.exit=onRefresh \
+      "--camunda.data.secondary-storage.type=NONE" \
+    || true
+
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
@@ -151,6 +172,7 @@ VOLUME /driver-lib
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
+COPY --from=cds-gen --chown=1001:0 /zeebe/camunda.jsa ${ZB_HOME}/camunda.jsa
 
 RUN ln -s /driver-lib ${ZB_HOME}/driver-lib
 
