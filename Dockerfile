@@ -88,19 +88,22 @@ FROM base-${BASE} AS cds-gen
 
 # hadolint ignore=DL3002
 USER root
-WORKDIR /zeebe
 
-COPY --from=dist --chown=root:root /zeebe/camunda-zeebe ./camunda-zeebe
+# Copy to /usr/local/zeebe so classpath entries match the runtime image exactly.
+# CDS archives are path-sensitive: if the classpath differs at load time the archive is ignored.
+COPY --from=dist --chown=root:root /zeebe/camunda-zeebe /usr/local/zeebe
 
 # Run a training boot: classes are recorded into camunda.jsa on JVM exit.
 # spring.context.exit=onRefresh causes a clean exit right after context refresh.
 # camunda.data.secondary-storage.type=NONE disables all DB/ES connections.
+# config/ is on the classpath but CDS rejects non-empty directories; empty it first.
 # || true: any remaining failures are acceptable;
 #          the archive is still written because -XX:ArchiveClassesAtExit fires on any exit.
-RUN JAVA_OPTS="-XX:ArchiveClassesAtExit=/zeebe/camunda.jsa" \
-    ./camunda-zeebe/bin/camunda \
-      --spring.context.exit=onRefresh \
-      "--camunda.data.secondary-storage.type=NONE" \
+RUN find /usr/local/zeebe/config -mindepth 1 -delete \
+    && JAVA_OPTS="-XX:ArchiveClassesAtExit=/usr/local/zeebe/camunda.jsa" \
+       /usr/local/zeebe/bin/camunda \
+         --spring.context.exit=onRefresh \
+         "--camunda.data.secondary-storage.type=NONE" \
     || true
 
 ### Application Image ###
@@ -153,15 +156,15 @@ EXPOSE 8080 26500 26501 26502
 # Switch to root to allow setting up our own user
 USER root
 RUN addgroup --gid 1001 camunda && \
-    adduser -S -G camunda -u 1001 -h ${ZB_HOME} camunda && \
-    chmod g=u /etc/passwd && \
-    # These directories are to be mounted by users, eagerly creating them and setting ownership
-    # helps to avoid potential permission issues due to default volume ownership.
-    mkdir ${ZB_HOME}/data && \
-    mkdir ${ZB_HOME}/logs && \
-    mkdir ${ZB_HOME}/documents && \
-    chown -R 1001:0 ${ZB_HOME} && \
-    chmod -R 0775 ${ZB_HOME}
+  adduser -S -G camunda -u 1001 -h ${ZB_HOME} camunda && \
+  chmod g=u /etc/passwd && \
+  # These directories are to be mounted by users, eagerly creating them and setting ownership
+  # helps to avoid potential permission issues due to default volume ownership.
+  mkdir ${ZB_HOME}/data && \
+  mkdir ${ZB_HOME}/logs && \
+  mkdir ${ZB_HOME}/documents && \
+  chown -R 1001:0 ${ZB_HOME} && \
+  chmod -R 0775 ${ZB_HOME}
 
 VOLUME /tmp
 VOLUME ${ZB_HOME}/data
@@ -172,7 +175,7 @@ VOLUME /driver-lib
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
-COPY --from=cds-gen --chown=1001:0 /zeebe/camunda.jsa ${ZB_HOME}/camunda.jsa
+COPY --from=cds-gen --chown=1001:0 /usr/local/zeebe/camunda.jsa ${ZB_HOME}/camunda.jsa
 
 RUN ln -s /driver-lib ${ZB_HOME}/driver-lib
 
