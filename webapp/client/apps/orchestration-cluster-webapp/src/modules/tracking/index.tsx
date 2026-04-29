@@ -89,11 +89,7 @@ type Events =
 	  }
 	| {
 			eventName: 'tasklist:process-tasks-polling-ended';
-			outcome:
-				| 'single-task-found'
-				| 'multiple-tasks-found'
-				| 'no-tasks-found'
-				| 'navigated-away';
+			outcome: 'single-task-found' | 'multiple-tasks-found' | 'no-tasks-found' | 'navigated-away';
 	  }
 	| {
 			eventName: 'tasklist:app-loaded';
@@ -130,18 +126,17 @@ class Tracking {
 	#appCues: null | NonNullable<typeof window.Appcues> = null;
 
 	#baseProperties = {
-	    // TODO: add organizationId and clusterId once available:
+		// TODO: add organizationId and clusterId once available:
 		// organizationId: getClientConfig().organizationId,
-    	// clusterId: getClientConfig().clusterId,
+		// clusterId: getClientConfig().clusterId,
 		stage: STAGE_ENV,
 		version: import.meta.env.VITE_VERSION,
 	} as const;
 
 	#isTrackingSupported = () => {
 		return (
-			
 			!import.meta.env.DEV && ['prod', 'int', 'dev'].includes(STAGE_ENV)
-			// TODO: add organizationId check once available 
+			// TODO: add organizationId check once available
 			// && getClientConfig().organizationId
 		);
 	};
@@ -152,9 +147,7 @@ class Tracking {
 		}
 
 		if (this.#mixpanel === null) {
-			console.warn(
-				'Could not track event because mixpanel was not properly loaded.',
-			);
+			console.warn('Could not track event because mixpanel was not properly loaded.');
 		}
 
 		const {eventName, ...properties} = events;
@@ -168,7 +161,7 @@ class Tracking {
 		} catch (error) {
 			console.error(`Can't track event: ${eventName}`, error);
 		}
-	}
+	};
 
 	identifyUser = (user: CurrentUser) => {
 		this.#mixpanel?.identify(user.username);
@@ -176,12 +169,16 @@ class Tracking {
 		// this.#appCues?.identify(user.username, {
 		// 	salesPlanType: user.salesPlanType ?? '',
 		// 	roles: user.roles.join('|'),
-		// 	orgId: this.#baseProperties.organizationId,     
-      	// 	clusters: this.#baseProperties.clusterId,
+		// 	orgId: this.#baseProperties.organizationId,
+		// 	clusters: this.#baseProperties.clusterId,
 		// });
 	};
 
 	trackPagination = () => {
+		if (!this.#isTrackingSupported() || !this.#isTrackingAllowed()) {
+			return;
+		}
+
 		this.#appCues?.page();
 	};
 
@@ -214,21 +211,15 @@ class Tracking {
 	#loadOsano = async (): Promise<void> => {
 		return new Promise((resolve) => {
 			if (STAGE_ENV === 'dev') {
-				return injectScript(import.meta.env.VITE_OSANO_DEV_ENV_URL).then(
-					resolve,
-				);
+				return injectScript(import.meta.env.VITE_OSANO_DEV_ENV_URL).then(resolve);
 			}
 
 			if (STAGE_ENV === 'int') {
-				return injectScript(import.meta.env.VITE_OSANO_INT_ENV_URL).then(
-					resolve,
-				);
+				return injectScript(import.meta.env.VITE_OSANO_INT_ENV_URL).then(resolve);
 			}
 
 			if (STAGE_ENV === 'prod') {
-				return injectScript(import.meta.env.VITE_OSANO_PROD_ENV_URL).then(
-					resolve,
-				);
+				return injectScript(import.meta.env.VITE_OSANO_PROD_ENV_URL).then(resolve);
 			}
 
 			return resolve();
@@ -236,36 +227,42 @@ class Tracking {
 	};
 
 	#loadAppCues = async (): Promise<void> => {
-		return new Promise(async (resolve) => {
-			return injectScript(import.meta.env.VITE_CUES_HOST).then(() => {
-				if (window.Appcues) {
-					this.#appCues = window.Appcues;
-				}
+		await injectScript(import.meta.env.VITE_CUES_HOST);
 
-				resolve();
-			});
-		});
+		if (window.Appcues) {
+			this.#appCues = window.Appcues;
+		}
 	};
 
-	loadAnalyticsToWillingUsers = async (): Promise<void[] | void> => {
+	loadAnalyticsToWillingUsers = async (): Promise<void> => {
 		if (!this.#isTrackingSupported()) {
 			console.warn('Tracking is not supported for this environment');
-			return Promise.resolve();
+			return;
 		}
 
 		await this.#loadOsano();
-		await Promise.all([this.#loadMixpanel(), this.#loadAppCues()]);
-		window.Osano?.cm?.addEventListener(
-			'osano-cm-consent-saved',
-			({ ANALYTICS }) => {
-				if (ANALYTICS === 'ACCEPT') {
-					this.#mixpanel?.opt_in_tracking();
+
+		const analyticsConsented = window.Osano?.cm?.analytics === true;
+
+		await this.#loadMixpanel();
+
+		if (analyticsConsented) {
+			this.#mixpanel?.opt_in_tracking();
+			await this.#loadAppCues();
+		}
+
+		window.Osano?.cm?.addEventListener('osano-cm-consent-saved', ({ANALYTICS}) => {
+			if (ANALYTICS === 'ACCEPT') {
+				this.#mixpanel?.opt_in_tracking();
+				if (this.#appCues === null) {
+					void this.#loadAppCues();
 				}
-				if (ANALYTICS === 'DENY') {
-					this.#mixpanel?.opt_out_tracking();
-				}
-			});
-	}
+			}
+			if (ANALYTICS === 'DENY') {
+				this.#mixpanel?.opt_out_tracking();
+			}
+		});
+	};
 }
 
 const tracking = new Tracking();
