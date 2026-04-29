@@ -287,9 +287,11 @@ public class GatewayRestConfiguration {
     private static final int DEFAULT_PAGE_SIZE = 1_000;
 
     /**
-     * Hard cap on the number of rows a single export request will stream. Beyond this the response
-     * is truncated and the {@code X-Camunda-Export-Truncated} header is set so clients can warn the
-     * user. Default: {@link #DEFAULT_MAX_ROWS}.
+     * Cap on the number of rows a single export request will stream. Beyond this the response is
+     * truncated and the {@code X-Camunda-Export-Truncated} header is set so clients can warn the
+     * user. Default: {@link #DEFAULT_MAX_ROWS}. Operators who need larger exports can override at
+     * their own discretion — at some point the bottleneck moves from this cap to streaming timeouts
+     * / BI-tool memory and a real reporting pipeline becomes the right answer.
      */
     private int maxRows = DEFAULT_MAX_ROWS;
 

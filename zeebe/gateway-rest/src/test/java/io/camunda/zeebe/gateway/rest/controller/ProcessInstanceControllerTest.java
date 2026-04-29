@@ -32,13 +32,13 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.service.VariableServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
+import io.camunda.service.VariableServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -3606,8 +3606,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
         .thenReturn(probeResult(1, false));
     when(variableServices.search(any(VariableQuery.class), any()))
-        .thenReturn(
-            SearchQueryResult.<VariableEntity>of(b -> b.items(List.of(orderId, amount))));
+        .thenReturn(SearchQueryResult.<VariableEntity>of(b -> b.items(List.of(orderId, amount))));
     stubStreamSearchToEmit(false, sampleEntity(1L));
 
     // when

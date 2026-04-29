@@ -363,8 +363,7 @@ public class ProcessInstanceController {
       final ProcessInstanceCsvWriter writer,
       final List<ProcessInstanceEntity> page,
       final CamundaAuthentication auth) {
-    final List<Long> keys =
-        page.stream().map(ProcessInstanceEntity::processInstanceKey).toList();
+    final List<Long> keys = page.stream().map(ProcessInstanceEntity::processInstanceKey).toList();
     final Map<Long, String> incidentMessages = fetchActiveIncidentMessages(keys, auth);
     final Map<Long, String> variablesJson = fetchVariablesAsJson(keys, auth);
     for (final var entity : page) {
