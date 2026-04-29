@@ -55,16 +55,33 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
 
   /** Starts the periodic checking for process instance availability. */
   public void start() {
-    piCheckExecutorService.scheduleAtFixedRate(
+    scheduleCheck(availabilityCheckInterval.toMillis());
+  }
+
+  private void scheduleCheck(final long delay) {
+    final var scheduleTime = System.nanoTime();
+    piCheckExecutorService.schedule(
         () -> {
           try {
             checkForProcessInstances();
           } catch (final Exception e) {
             LOG.error("Failed to check process instances. Will retry...", e);
+          } finally {
+            // We only schedule another check AFTER the previous is done
+            // This is to avoid multiple queries running at the same time, with quering the same
+            // data. Especially if the response takes longer than our schedule interval there is no
+            // point in running again in between.
+            // If responses are slow - we will time out the active instances eventually
+            final var elapsedTime = scheduleTime - System.nanoTime();
+            final var nextDelay =
+                TimeUnit.NANOSECONDS.toMillis(elapsedTime) > availabilityCheckInterval.toMillis()
+                    ? 0
+                    : availabilityCheckInterval.toMillis()
+                        - TimeUnit.NANOSECONDS.toMillis(elapsedTime);
+            scheduleCheck(nextDelay);
           }
         },
-        availabilityCheckInterval.toMillis(),
-        availabilityCheckInterval.toMillis(),
+        delay,
         TimeUnit.MILLISECONDS);
   }
 
