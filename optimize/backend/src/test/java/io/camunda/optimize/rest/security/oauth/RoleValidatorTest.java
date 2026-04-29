@@ -81,6 +81,23 @@ class RoleValidatorTest {
   }
 
   @Test
+  void shouldSucceedWhenUserIsSupportAgentInCorrectOrg() {
+    // given - user has "supportagent" in org1 (the configured org) and only disallowed roles in
+    // org2
+    final Map<String, Object> claims = new HashMap<>();
+    final Map<String, Object> org1 = createOrg(ORGANIZATION_ID_1, List.of("supportagent"));
+    final Map<String, Object> org2 = createOrg(ORGANIZATION_ID_2, List.of("developer"));
+    claims.put(ORGANIZATION_CLAIM_KEY, Arrays.asList(org1, org2));
+    when(token.getClaims()).thenReturn(claims);
+
+    // when
+    final OAuth2TokenValidatorResult result = validator.validate(token);
+
+    // then
+    assertThat(result.hasErrors()).isFalse();
+  }
+
+  @Test
   void shouldFailWhenUserHasAllowedRoleInDifferentOrgOnly() {
     // given - user2 has "analyst" in org2 but the cluster belongs to org1 (the bug scenario)
     final Map<String, Object> claims = new HashMap<>();
