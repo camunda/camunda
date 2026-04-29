@@ -201,6 +201,16 @@ public abstract class AbstractActivityBuilder<
   }
 
   @Override
+  public B zeebeCancelExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeCancelExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeCancelExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeCancelExecutionListener(type);
+  }
+
+  @Override
   public B zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
     return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
