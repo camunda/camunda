@@ -23,6 +23,7 @@ public class ListenerEventTypeTest {
         // Known Execution Listener event types
         arguments("START", ListenerEventType.START),
         arguments("END", ListenerEventType.END),
+        arguments("CANCEL", ListenerEventType.CANCEL),
 
         // Known User Task Listener event types
         arguments("CREATING", ListenerEventType.CREATING),

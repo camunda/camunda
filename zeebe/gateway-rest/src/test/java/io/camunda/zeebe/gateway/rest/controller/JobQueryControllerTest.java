@@ -231,6 +231,113 @@ public class JobQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSearchExecutionListenerJobWithCancelEventType() {
+    // given
+    final var cancelElResult =
+        new SearchQueryResult.Builder<JobEntity>()
+            .total(1L)
+            .items(
+                List.of(
+                    new JobEntity.Builder()
+                        .jobKey(10L)
+                        .type("cancelCleanup")
+                        .worker("elWorker")
+                        .state(JobState.CREATED)
+                        .kind(JobKind.EXECUTION_LISTENER)
+                        .listenerEventType(ListenerEventType.CANCEL)
+                        .retries(3)
+                        .isDenied(false)
+                        .hasFailedWithRetriesLeft(false)
+                        .customHeaders(Map.of())
+                        .processDefinitionId("myProcess")
+                        .processDefinitionKey(5L)
+                        .processInstanceKey(6L)
+                        .rootProcessInstanceKey(6L)
+                        .elementId("myProcess")
+                        .elementInstanceKey(7L)
+                        .tenantId("<default>")
+                        .creationTime(OffsetDateTime.parse("2025-06-05T09:00:00.000Z"))
+                        .lastUpdateTime(OffsetDateTime.parse("2025-06-05T10:04:00.000Z"))
+                        .build()))
+            .startCursor("abc")
+            .endCursor("def")
+            .build();
+    when(jobServices.search(any(JobQuery.class), any())).thenReturn(cancelElResult);
+
+    final var request =
+        """
+      {
+        "filter": {
+          "kind": "EXECUTION_LISTENER",
+          "listenerEventType": "CANCEL"
+        }
+      }
+      """;
+
+    final var expectedResponse =
+        """
+      {
+        "items": [
+          {
+            "jobKey": "10",
+            "type": "cancelCleanup",
+            "worker": "elWorker",
+            "state": "CREATED",
+            "kind": "EXECUTION_LISTENER",
+            "listenerEventType": "CANCEL",
+            "retries": 3,
+            "isDenied": false,
+            "hasFailedWithRetriesLeft": false,
+            "customHeaders": {},
+            "processDefinitionId": "myProcess",
+            "processDefinitionKey": "5",
+            "processInstanceKey": "6",
+            "rootProcessInstanceKey": "6",
+            "elementId": "myProcess",
+            "elementInstanceKey": "7",
+            "tenantId": "<default>",
+            "creationTime": "2025-06-05T09:00:00.000Z",
+            "lastUpdateTime": "2025-06-05T10:04:00.000Z"
+          }
+        ],
+        "page": {
+          "totalItems": 1,
+          "startCursor": "abc",
+          "endCursor": "def",
+          "hasMoreTotalItems": false
+        }
+      }
+      """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(JOB_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.LENIENT);
+
+    verify(jobServices)
+        .search(
+            eq(
+                new JobQuery.Builder()
+                    .filter(
+                        new JobFilter.Builder()
+                            .kinds(JobKind.EXECUTION_LISTENER.name())
+                            .listenerEventTypes(ListenerEventType.CANCEL.name())
+                            .build())
+                    .build()),
+            any());
+  }
+
+  @Test
   void shouldSearchJobWithFullSorting() {
     // given
     when(jobServices.search(any(JobQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
