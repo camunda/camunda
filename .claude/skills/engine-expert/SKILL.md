@@ -20,6 +20,7 @@ These are summaries. The reference files (linked below) are authoritative — th
 - Inter-partition command receivers must be idempotent. Prefer reject-redundant-command over re-emitting events.
 - Hot paths log at trace level only. INFO/DEBUG on a hot path is a performance regression at engine throughput.
 - Values returned from `ColumnFamily.get(...)` / state reads are backed by a shared, mutable buffer reused on the next read of the same column family. Never cache them or hold them across another read — `copyFrom(...)` if you need to keep the value, or use `get(key, valueSupplier)` to allocate a fresh instance.
+- Non-transactional side effects (metrics, post-commit hooks) run only after all state and follow-up command writes that could throw. Exceptions roll back state, but already-executed side effects don't roll back — counters drift.
 
 ## Where to read next
 
