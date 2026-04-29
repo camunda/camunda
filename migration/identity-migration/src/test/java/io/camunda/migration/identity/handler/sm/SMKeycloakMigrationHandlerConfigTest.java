@@ -12,33 +12,67 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.migration.identity.config.sm.SMKeycloakMigrationHandlerConfig;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import java.util.List;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@SpringJUnitConfig(
-    classes = {
-      SMKeycloakMigrationHandlerConfig.class,
-      MigrationHandlerTestDependenciesConfig.class
-    })
-@TestPropertySource(properties = {"camunda.migration.identity.mode=KEYCLOAK"})
 public class SMKeycloakMigrationHandlerConfigTest {
 
-  @Autowired List<MigrationHandler> migrationHandlers;
+  @Nested
+  @SpringJUnitConfig(
+      classes = {
+        SMKeycloakMigrationHandlerConfig.class,
+        MigrationHandlerTestDependenciesConfig.class
+      })
+  @TestPropertySource(properties = {"camunda.migration.identity.mode=KEYCLOAK"})
+  class WhenAllHandlersEnabled {
 
-  @Test
-  public void shouldContainHandlersInCorrectOrder() {
-    final List<String> expectedOrder =
-        List.of(
-            "RoleMigrationHandler",
-            "GroupMigrationHandler",
-            "UserRoleMigrationHandler",
-            "ClientMigrationHandler",
-            "AuthorizationMigrationHandler",
-            "TenantMigrationHandler");
-    assertThat(migrationHandlers)
-        .extracting(handler -> handler.getClass().getSimpleName())
-        .containsExactlyElementsOf(expectedOrder);
+    @Autowired List<MigrationHandler> migrationHandlers;
+
+    @Test
+    public void shouldContainHandlersInCorrectOrder() {
+      final List<String> expectedOrder =
+          List.of(
+              "RoleMigrationHandler",
+              "GroupMigrationHandler",
+              "UserRoleMigrationHandler",
+              "ClientMigrationHandler",
+              "AuthorizationMigrationHandler",
+              "TenantMigrationHandler");
+      assertThat(migrationHandlers)
+          .extracting(handler -> handler.getClass().getSimpleName())
+          .containsExactlyElementsOf(expectedOrder);
+    }
+  }
+
+  @Nested
+  @SpringJUnitConfig(
+      classes = {
+        SMKeycloakMigrationHandlerConfig.class,
+        MigrationHandlerTestDependenciesConfig.class
+      })
+  @TestPropertySource(
+      properties = {
+        "camunda.migration.identity.mode=KEYCLOAK",
+        "camunda.migration.identity.handler.keycloak.user-role.enabled=false"
+      })
+  class WhenUserRoleHandlerDisabled {
+
+    @Autowired List<MigrationHandler> migrationHandlers;
+
+    @Test
+    public void shouldNotContainUserRoleMigrationHandler() {
+      assertThat(migrationHandlers)
+          .extracting(handler -> handler.getClass().getSimpleName())
+          .doesNotContain("UserRoleMigrationHandler")
+          .containsExactly(
+              "RoleMigrationHandler",
+              "GroupMigrationHandler",
+              "ClientMigrationHandler",
+              "AuthorizationMigrationHandler",
+              "TenantMigrationHandler");
+    }
   }
 }

@@ -12,24 +12,50 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.migration.identity.config.sm.SMOidcMigrationHandlerConfig;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import java.util.List;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@SpringJUnitConfig(
-    classes = {SMOidcMigrationHandlerConfig.class, MigrationHandlerTestDependenciesConfig.class})
-@TestPropertySource(properties = {"camunda.migration.identity.mode=OIDC"})
 public class SMOidcMigrationHandlerConfigTest {
 
-  @Autowired List<MigrationHandler> migrationHandlers;
+  @Nested
+  @SpringJUnitConfig(
+      classes = {SMOidcMigrationHandlerConfig.class, MigrationHandlerTestDependenciesConfig.class})
+  @TestPropertySource(properties = {"camunda.migration.identity.mode=OIDC"})
+  class WhenAllHandlersEnabled {
 
-  @Test
-  public void shouldContainHandlersInCorrectOrder() {
-    final List<String> expectedOrder =
-        List.of("RoleMigrationHandler", "TenantMigrationHandler", "MappingRuleMigrationHandler");
-    assertThat(migrationHandlers)
-        .extracting(handler -> handler.getClass().getSimpleName())
-        .containsExactlyElementsOf(expectedOrder);
+    @Autowired List<MigrationHandler> migrationHandlers;
+
+    @Test
+    public void shouldContainHandlersInCorrectOrder() {
+      final List<String> expectedOrder =
+          List.of("RoleMigrationHandler", "TenantMigrationHandler", "MappingRuleMigrationHandler");
+      assertThat(migrationHandlers)
+          .extracting(handler -> handler.getClass().getSimpleName())
+          .containsExactlyElementsOf(expectedOrder);
+    }
+  }
+
+  @Nested
+  @SpringJUnitConfig(
+      classes = {SMOidcMigrationHandlerConfig.class, MigrationHandlerTestDependenciesConfig.class})
+  @TestPropertySource(
+      properties = {
+        "camunda.migration.identity.mode=OIDC",
+        "camunda.migration.identity.handler.oidc.mapping-rule.enabled=false"
+      })
+  class WhenMappingRuleHandlerDisabled {
+
+    @Autowired List<MigrationHandler> migrationHandlers;
+
+    @Test
+    public void shouldNotContainMappingRuleMigrationHandler() {
+      assertThat(migrationHandlers)
+          .extracting(handler -> handler.getClass().getSimpleName())
+          .doesNotContain("MappingRuleMigrationHandler")
+          .containsExactly("RoleMigrationHandler", "TenantMigrationHandler");
+    }
   }
 }

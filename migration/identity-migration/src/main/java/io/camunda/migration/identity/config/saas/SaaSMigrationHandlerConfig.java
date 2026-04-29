@@ -19,6 +19,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,6 +27,9 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnCloud
 public class SaaSMigrationHandlerConfig {
   @Bean
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.cloud.group.enabled",
+      matchIfMissing = true)
   public GroupMigrationHandler groupMigrationHandler(
       final CamundaAuthentication authentication,
       final ConsoleClient consoleClient,
@@ -41,6 +45,9 @@ public class SaaSMigrationHandlerConfig {
   }
 
   @Bean
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.cloud.console-role.enabled",
+      matchIfMissing = true)
   public StaticConsoleRoleMigrationHandler roleMigrationHandler(
       final CamundaAuthentication authentication,
       final RoleServices roleServices,
@@ -51,6 +58,9 @@ public class SaaSMigrationHandlerConfig {
   }
 
   @Bean
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.cloud.console-role-authorization.enabled",
+      matchIfMissing = true)
   public StaticConsoleRoleAuthorizationMigrationHandler
       staticConsoleRoleAuthorizationMigrationHandler(
           final AuthorizationServices authorizationService,
@@ -61,6 +71,9 @@ public class SaaSMigrationHandlerConfig {
   }
 
   @Bean
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.cloud.authorization.enabled",
+      matchIfMissing = true)
   public AuthorizationMigrationHandler authorizationMigrationHandler(
       final CamundaAuthentication authentication,
       final AuthorizationServices authorizationService,
@@ -76,6 +89,9 @@ public class SaaSMigrationHandlerConfig {
   }
 
   @Bean
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.cloud.client.enabled",
+      matchIfMissing = true)
   public ClientMigrationHandler clientMigrationHandler(
       final ConsoleClient consoleClient,
       final AuthorizationServices authorizationServices,
