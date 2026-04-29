@@ -23,9 +23,11 @@ import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import java.util.Objects;
 import java.util.Properties;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /** Represents a node as a member in a cluster. */
+@NullMarked
 public class Member extends Node {
 
   private static final int UNKNOWN_TIMESTAMP = 0;
@@ -69,7 +71,7 @@ public class Member extends Node {
     this.id = checkNotNull(id, "id cannot be null");
     this.nodeVersion = nodeVersion;
     this.zone = zone;
-    if (id != null && !id.isInZone(zone)) {
+    if (!id.isInZone(zone)) {
       throw new IllegalArgumentException(String.format(ZONE_ID_MISMATCH, zone, id));
     }
     this.rack = rack;
@@ -173,12 +175,12 @@ public class Member extends Node {
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(final @Nullable Object o) {
     if (this == o) {
       return true;
     }
 
-    if (!(o instanceof Member)) {
+    if (!(o instanceof final Member member)) {
       return false;
     }
 
@@ -186,7 +188,6 @@ public class Member extends Node {
       return false;
     }
 
-    final Member member = (Member) o;
     return Objects.equals(id, member.id)
         && Objects.equals(nodeVersion, member.nodeVersion)
         && Objects.equals(zone, member.zone)
@@ -282,7 +283,7 @@ public class Member extends Node {
    *
    * @return the node version
    */
-  public Version version() {
+  public @Nullable Version version() {
     return null;
   }
 

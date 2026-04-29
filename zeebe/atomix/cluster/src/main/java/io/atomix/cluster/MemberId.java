@@ -18,14 +18,16 @@ package io.atomix.cluster;
 
 import java.util.Objects;
 import java.util.UUID;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /** Controller cluster identity. */
+@NullMarked
 public class MemberId extends NodeId {
   private final @Nullable Integer nodeIdx;
   private final @Nullable String zone;
 
-  private MemberId(final @Nullable String zone, final Integer nodeIdx, final String id) {
+  private MemberId(final @Nullable String zone, final @Nullable Integer nodeIdx, final String id) {
     super(id);
     this.nodeIdx = validateNodeIdx(nodeIdx);
     this.zone = validateZone(zone);
@@ -91,7 +93,7 @@ public class MemberId extends NodeId {
     return Objects.equals(this.zone, zone);
   }
 
-  private Integer validateNodeIdx(final Integer nodeIdx) {
+  private @Nullable Integer validateNodeIdx(final @Nullable Integer nodeIdx) {
     if (nodeIdx != null && nodeIdx < 0) {
       throw new IllegalArgumentException("Expected nodeIdx to be >= 0, but got " + nodeIdx);
     }
