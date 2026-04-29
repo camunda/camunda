@@ -11,7 +11,7 @@
 # and enables detailed reporting of test results.
 # description: Reuseable workflow for building Tasklist and a docker image
 # test location: /tasklist
-# called by: tasklist-ci.yml, preview-env-build-and-deploy.yml
+# called by: preview-env-build-and-deploy.yml
 # type: CI
 # owner: @camunda/core-features
 
