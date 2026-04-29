@@ -419,6 +419,40 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilderImpl withConfiguration(
+      final CamundaClientConfiguration configuration) {
+    final Properties properties = toProperties(configuration);
+    withProperties(properties);
+
+    // Properties not representable as string key-value pairs
+    if (configuration.getCredentialsProvider() != null) {
+      credentialsProvider(configuration.getCredentialsProvider());
+    }
+    if (configuration.getJsonMapper() != null) {
+      withJsonMapper(configuration.getJsonMapper());
+    }
+    if (configuration.getInterceptors() != null) {
+      configuration.getInterceptors().forEach(this::withInterceptors);
+    }
+    if (configuration.getChainHandlers() != null) {
+      configuration.getChainHandlers().forEach(this::withChainHandlers);
+    }
+    if (configuration.jobWorkerSchedulingExecutor() != null) {
+      jobWorkerSchedulingExecutor(
+          configuration.jobWorkerSchedulingExecutor(),
+          configuration.ownsJobWorkerSchedulingExecutor());
+    }
+    if (configuration.jobHandlingExecutor() != null) {
+      jobHandlingExecutor(
+          configuration.jobHandlingExecutor(), configuration.ownsJobHandlingExecutor());
+    }
+    if (configuration.getDefaultJobWorkerExceptionHandler() != null) {
+      defaultJobWorkerExceptionHandler(configuration.getDefaultJobWorkerExceptionHandler());
+    }
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder applyEnvironmentVariableOverrides(
       final boolean applyEnvironmentVariableOverrides) {
     this.applyEnvironmentVariableOverrides = applyEnvironmentVariableOverrides;
@@ -720,39 +754,6 @@ public final class CamundaClientBuilderImpl
     final BasicAuthCredentialsProviderBuilder builder =
         CredentialsProvider.newBasicAuthCredentialsProviderBuilder();
     return builder.build();
-  }
-
-  public CamundaClientBuilderImpl withConfiguration(
-      final CamundaClientConfiguration configuration) {
-    final Properties properties = toProperties(configuration);
-    withProperties(properties);
-
-    // Properties not representable as string key-value pairs
-    if (configuration.getCredentialsProvider() != null) {
-      credentialsProvider(configuration.getCredentialsProvider());
-    }
-    if (configuration.getJsonMapper() != null) {
-      withJsonMapper(configuration.getJsonMapper());
-    }
-    if (configuration.getInterceptors() != null) {
-      configuration.getInterceptors().forEach(this::withInterceptors);
-    }
-    if (configuration.getChainHandlers() != null) {
-      configuration.getChainHandlers().forEach(this::withChainHandlers);
-    }
-    if (configuration.jobWorkerSchedulingExecutor() != null) {
-      jobWorkerSchedulingExecutor(
-          configuration.jobWorkerSchedulingExecutor(),
-          configuration.ownsJobWorkerSchedulingExecutor());
-    }
-    if (configuration.jobHandlingExecutor() != null) {
-      jobHandlingExecutor(
-          configuration.jobHandlingExecutor(), configuration.ownsJobHandlingExecutor());
-    }
-    if (configuration.getDefaultJobWorkerExceptionHandler() != null) {
-      defaultJobWorkerExceptionHandler(configuration.getDefaultJobWorkerExceptionHandler());
-    }
-    return this;
   }
 
   private static Properties toProperties(final CamundaClientConfiguration configuration) {
