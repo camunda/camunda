@@ -79,6 +79,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceReexportRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
@@ -4628,6 +4629,30 @@ final class JsonSerializableToJsonTest {
       "configKey": -1
     }
     """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// ResourceReexportRecord /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ResourceReexportRecord",
+        (Supplier<ResourceReexportRecord>)
+            () -> new ResourceReexportRecord().setResourceKey(123L).setTenantId("tenant-1"),
+        """
+        {
+          "resourceKey": 123,
+          "tenantId": "tenant-1"
+        }
+        """
+      },
+      {
+        "Empty ResourceReexportRecord",
+        (Supplier<ResourceReexportRecord>) ResourceReexportRecord::new,
+        """
+        {
+          "resourceKey": -1,
+          "tenantId": ""
+        }
+        """
       }
     };
   }

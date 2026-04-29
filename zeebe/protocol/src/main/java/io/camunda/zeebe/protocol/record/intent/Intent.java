@@ -86,6 +86,7 @@ public interface Intent {
     map.put(ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionIntent.class);
     map.put(ValueType.RESOURCE, ResourceIntent.class);
     map.put(ValueType.RESOURCE_DELETION, ResourceDeletionIntent.class);
+    map.put(ValueType.RESOURCE_REEXPORT, ResourceReexportIntent.class);
     map.put(ValueType.ROLE, RoleIntent.class);
     map.put(ValueType.RUNTIME_INSTRUCTION, RuntimeInstructionIntent.class);
     map.put(ValueType.SCALE, ScaleIntent.class);
