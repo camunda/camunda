@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.impl.statistics.response.ProcessElementStatisticsImpl;
@@ -199,10 +200,112 @@ public class ProcessInstanceStatisticsTest {
         camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
 
     // then
-    assertThat(actual).hasSize(2);
     assertThat(actual)
+        .hasSize(2)
         .containsExactlyInAnyOrder(
             new ProcessElementStatisticsImpl("UserTaskMultiInstance", 3L, 0L, 0L, 0L),
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+  }
+
+  @Test
+  void shouldNotDoubleCountMultiInstanceBodyWhenElementInstancesHaveIncidents() {
+    // given
+    final var processModel =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("StartEvent")
+            .scriptTask(
+                "ScriptTaskMultiInstance",
+                b -> b.zeebeExpression("assert(x, x != null)").zeebeResultVariable("res"))
+            .multiInstance()
+            .parallel()
+            .zeebeInputCollectionExpression("[1,2,3]")
+            .multiInstanceDone()
+            .endEvent("EndEvent")
+            .done();
+    final var processDefinitionKey =
+        deployResource(processModel, "multi-instance-failing-script.bpmn")
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    final var processInstanceKey = createInstance(processDefinitionKey).getProcessInstanceKey();
+    waitForProcessInstances(1, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true));
+
+    Awaitility.await("should return element statistics with 3 incidents on iterations only")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceSearchRequest()
+                            .filter(
+                                f ->
+                                    f.processInstanceKey(processInstanceKey)
+                                        .type(ElementInstanceType.SCRIPT_TASK)
+                                        .hasIncident(true))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(3));
+    // when - then
+    assertThat(
+            camundaClient
+                .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+                .send()
+                .join())
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("ScriptTaskMultiInstance", 0L, 0L, 3L, 0L),
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+  }
+
+  @Test
+  void shouldGetIncidentStatisticsForMultiInstanceBodyWithInvalidInputCollection() {
+    // given
+    final var processModel =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("StartEvent")
+            .userTask("UserTaskMultiInstance")
+            .zeebeUserTask()
+            .multiInstance()
+            .parallel()
+            .zeebeInputCollectionExpression("null")
+            .multiInstanceDone()
+            .endEvent("EndEvent")
+            .done();
+    final var processDefinitionKey =
+        deployResource(processModel, "multi-instance-invalid-input.bpmn")
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    final var processInstanceKey = createInstance(processDefinitionKey).getProcessInstanceKey();
+    waitForProcessInstances(1, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true));
+
+    Awaitility.await("should return element statistics with incident on multi-instance body")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newProcessInstanceSearchRequest()
+                            .filter(f -> f.processInstanceKey(processInstanceKey).hasIncident(true))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1));
+
+    // when - then
+    assertThat(
+            camundaClient
+                .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+                .send()
+                .join())
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("UserTaskMultiInstance", 0L, 0L, 1L, 0L),
             new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
   }
 

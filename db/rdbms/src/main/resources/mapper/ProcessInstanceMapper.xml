@@ -306,7 +306,8 @@
     FROM ${prefix}PROCESS_INSTANCE pi
       JOIN ${prefix}FLOW_NODE_INSTANCE fni ON (pi.PROCESS_INSTANCE_KEY = fni.PROCESS_INSTANCE_KEY)
     WHERE pi.PROCESS_INSTANCE_KEY = #{processInstanceKey}
-      AND fni.TYPE != 'MULTI_INSTANCE_BODY'
+        <!-- exclude multi-instance bodies UNLESS they have a direct incident -->
+        AND (fni.TYPE != 'MULTI_INSTANCE_BODY' OR fni.INCIDENT_KEY IS NOT NULL)
     GROUP BY fni.FLOW_NODE_ID
   </select>
 
