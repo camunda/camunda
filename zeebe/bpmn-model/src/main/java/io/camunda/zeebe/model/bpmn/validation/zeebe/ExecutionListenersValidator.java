@@ -89,6 +89,21 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
       return;
     }
 
+    // Validate that 'cancel' event type is only used on process-level elements
+    if (!BpmnModelConstants.BPMN_ELEMENT_PROCESS.equals(parentElementTypeName)) {
+      final boolean hasCancelListener =
+          executionListeners.stream()
+              .anyMatch(
+                  listener -> ZeebeExecutionListenerEventType.cancel == listener.getEventType());
+      if (hasCancelListener) {
+        validationResultCollector.addError(
+            0,
+            "The 'cancel' execution listener event type is not supported for the '"
+                + parentElementTypeName
+                + "' element. The 'cancel' event type is only supported on the 'process' element.");
+      }
+    }
+
     validateBeforeAllListeners(executionListeners, bpmnElement, validationResultCollector);
 
     final Function<ZeebeExecutionListener, String> eventTypeAndTypeClassifier =

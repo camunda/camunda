@@ -40,6 +40,7 @@ public class ZeebeExecutionListenersValidationTest {
   private static final String BEFORE_ALL_EL_TYPE = "before_all_execution_listener_job";
   private static final String START_EL_TYPE = "start_execution_listener_job";
   private static final String END_EL_TYPE = "end_execution_listener_job";
+  private static final String CANCEL_EL_TYPE = "cancel_execution_listener_job";
 
   @Test
   @DisplayName("element with ExecutionListeners defined without job `type`")
@@ -311,5 +312,146 @@ public class ZeebeExecutionListenersValidationTest {
             ZeebeExecutionListeners.class,
             "Execution listeners with event type 'beforeAll' are only supported on multi-instance "
                 + "activities and are not valid on 'process'"));
+  }
+
+  @Test
+  @DisplayName("cancel execution listener on process element should pass validation")
+  void testCancelExecutionListenerOnProcessElement() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeCancelExecutionListener(CANCEL_EL_TYPE)
+            .startEvent()
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("cancel execution listener on service task should fail validation")
+  void testCancelExecutionListenerOnServiceTaskElement() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .zeebeCancelExecutionListener(CANCEL_EL_TYPE))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "The 'cancel' execution listener event type is not supported for the 'serviceTask'"
+                + " element. The 'cancel' event type is only supported on the 'process' element."));
+  }
+
+  private static Stream<Arguments> nonProcessElementsForCancelListener() {
+    return Stream.of(
+        Arguments.of(
+            "userTask",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .userTask("task", t -> t.zeebeCancelExecutionListener(CANCEL_EL_TYPE))
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            "subProcess",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .subProcess(
+                            "sub",
+                            s ->
+                                s.zeebeCancelExecutionListener(CANCEL_EL_TYPE)
+                                    .embeddedSubProcess()
+                                    .startEvent()
+                                    .endEvent())
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            "callActivity",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .callActivity(
+                            "call",
+                            c ->
+                                c.zeebeProcessId("child")
+                                    .zeebeCancelExecutionListener(CANCEL_EL_TYPE))
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            "intermediateCatchEvent",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .intermediateCatchEvent(
+                            "catch",
+                            i ->
+                                i.timerWithDuration("PT1S")
+                                    .zeebeCancelExecutionListener(CANCEL_EL_TYPE))
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            "boundaryEvent",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .serviceTask("task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
+                        .boundaryEvent(
+                            "boundary",
+                            b ->
+                                b.timerWithDuration("PT1S")
+                                    .zeebeCancelExecutionListener(CANCEL_EL_TYPE))
+                        .endEvent()
+                        .moveToActivity("task")
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            "startEvent",
+            (Function<Void, BpmnModelInstance>)
+                v ->
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .eventSubProcess(
+                            "esp",
+                            sub ->
+                                sub.startEvent("esp-start")
+                                    .timerWithDuration("PT1S")
+                                    .zeebeCancelExecutionListener(CANCEL_EL_TYPE)
+                                    .endEvent())
+                        .startEvent()
+                        .endEvent()
+                        .done()));
+  }
+
+  @ParameterizedTest(name = "cancel execution listener on {0} should fail validation")
+  @MethodSource("nonProcessElementsForCancelListener")
+  void testCancelExecutionListenerOnNonProcessElement(
+      final String elementTypeName, final Function<Void, BpmnModelInstance> builder) {
+    // given
+    final BpmnModelInstance process = builder.apply(null);
+
+    // when/then: validator must reject the cancel listener on the non-process element
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "The 'cancel' execution listener event type is not supported for the '"
+                + elementTypeName
+                + "' element. The 'cancel' event type is only supported on the 'process' element."));
   }
 }
