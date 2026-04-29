@@ -26,7 +26,6 @@
       <artifactId>camunda-spring-utils</artifactId>
     </dependency>
 
-    <!-- Static resources (FE webjar). Only used at runtime; not referenced at compile time. -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>webapp-webjar</artifactId>
@@ -157,8 +156,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <!-- webapp-webjar ships static resources (META-INF/resources/webapp/*) consumed at
-                 runtime by Spring Boot's resource handler; no compile-time class references. -->
             <dependency>io.camunda:webapp-webjar</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>

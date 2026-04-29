@@ -22,6 +22,7 @@ const basePlugins: PluginOption[] = [
 ];
 
 const config = defineConfig(({mode}) => ({
+	base: mode === 'production' ? './' : undefined,
 	resolve: {tsconfigPaths: true},
 	plugins: mode === 'sbom' ? [...basePlugins, sbom()] : basePlugins,
 	server: {
@@ -47,6 +48,10 @@ const config = defineConfig(({mode}) => ({
 		rolldownOptions: {
 			output: {
 				postBanner: '/*! licenses: /assets/vendor.LICENSE.txt */',
+			},
+			input: {
+				index:
+					mode === 'visual-regression' ? './index.html' : './index.prod.html',
 			},
 		},
 	},
