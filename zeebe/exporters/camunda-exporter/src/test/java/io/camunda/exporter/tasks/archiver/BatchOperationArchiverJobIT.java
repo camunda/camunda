@@ -21,15 +21,12 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class BatchOperationArchiverJobIT extends ArchiverJobIT<BatchOperationArchiverJob> {
-
-  private static final AtomicLong ID_GENERATOR = new AtomicLong(1);
 
   @Override
   BatchOperationArchiverJob createArchiveJob(
@@ -155,8 +152,7 @@ public class BatchOperationArchiverJobIT extends ArchiverJobIT<BatchOperationArc
   }
 
   private AuditLogEntity auditLogEntity(final Long batchOperationKey) {
-    final var entity = new AuditLogEntity();
-    entity.setId(String.valueOf(ID_GENERATOR.incrementAndGet()));
+    final var entity = create(AuditLogEntity::new);
     entity.setBatchOperationKey(batchOperationKey);
     entity.setEntityType(AuditLogEntityType.BATCH);
     return entity;
