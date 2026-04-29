@@ -63,5 +63,12 @@ public interface ResourceState {
    */
   int getNextResourceVersion(String resourceId, String tenantId);
 
+  /**
+   * Returns if the RPA reexport migration has already ran. If it did we don't need to run it again.
+   *
+   * @return a boolean indicating if the migration ran.
+   */
+  boolean hasRanRpaReexportMigration();
+
   void clearCache();
 }

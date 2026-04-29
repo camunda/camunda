@@ -56,6 +56,7 @@ import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
+import io.camunda.zeebe.engine.processing.resource.RpaReexportMigrator;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -354,7 +355,8 @@ public final class EngineProcessors {
     IdentitySetupProcessors.addIdentitySetupProcessors(
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
 
-    addResourceFetchProcessors(typedRecordProcessors, writers, processingState, authCheckBehavior);
+    addResourceFetchProcessors(
+        typedRecordProcessors, writers, processingState, authCheckBehavior, config);
 
     BatchOperationSetupProcessors.addBatchOperationProcessors(
         keyGenerator,
@@ -645,11 +647,16 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final EngineConfiguration config) {
     final var resourceFetchProcessor =
         new ResourceFetchProcessor(writers, processingState, authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE, ResourceIntent.FETCH, resourceFetchProcessor);
+    // Migration to reexport resources to secondary storage
+    typedRecordProcessors.withListener(
+        new RpaReexportMigrator(
+            config.isEnableRpaReexportMigration(), processingState.getResourceState()));
   }
 
   private static void addSignalBroadcastProcessors(
