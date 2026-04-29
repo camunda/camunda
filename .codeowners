@@ -269,12 +269,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/actions/run-maven/ @camunda/core-features
 /.github/optimize/scripts/ @camunda/core-features
 /.github/workflows/assign-urgency-to-issue* @camunda/core-features
-/.github/workflows/operate-ci-build-reusable.yml @camunda/core-features
-/.github/workflows/operate-ci.yml @camunda/core-features
-/.github/workflows/operate-ci-test-reusable.yml @camunda/core-features
-/.github/workflows/operate-e2e-tests.yml @camunda/core-features
 /.github/workflows/operate-playwright.yml @camunda/core-features
-/.github/workflows/operate-docker-tests.yml @camunda/core-features
 /.github/workflows/operate-release-*.yml @camunda/core-features
 /.github/workflows/ci-operate.yml @camunda/core-features
 /.github/workflows/ci-tasklist.yml @camunda/core-features
