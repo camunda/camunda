@@ -15,6 +15,7 @@ import EntityList, {
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import { isTenantsApiEnabled } from "src/configuration";
 import { useMcpProcessTools, type McpProcessTool } from "./useMcpProcessTools";
+import { ExpandedToolDetails } from "./components/ExpandedToolDetails";
 
 const List: FC = () => {
   const { t } = useTranslate("mcpProcesses");
@@ -43,7 +44,7 @@ const List: FC = () => {
       <PageHeader
         title={tComponents("mcpProcesses")}
         linkText={tComponents("mcpProcesses").toLowerCase()}
-        shouldShowDocumentationLink={false}
+        docsLinkPath="/components/admin/mcp-processes/"
       />
       <EntityList
         data={processTools}
@@ -51,6 +52,7 @@ const List: FC = () => {
         loading={loading}
         searchKey="toolName"
         searchPlaceholder={t("searchByToolName")}
+        renderExpandedRow={(entity) => <ExpandedToolDetails tool={entity} />}
         {...paginationProps}
       />
       {!loading && !success && (

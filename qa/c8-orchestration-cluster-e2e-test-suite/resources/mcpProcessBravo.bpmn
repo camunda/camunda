@@ -6,6 +6,7 @@
         <zeebe:properties>
           <zeebe:property name="io.camunda.tool:name" value="bravo-tool-name" />
           <zeebe:property name="io.camunda.tool:purpose" value="Tool for executing a bravo process triggered by MCP." />
+          <zeebe:property name="io.camunda.tool:results" value="Bravo tool returns the result of the bravo process execution." />
         </zeebe:properties>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1</bpmn:outgoing>

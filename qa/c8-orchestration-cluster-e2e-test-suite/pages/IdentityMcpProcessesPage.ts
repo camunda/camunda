@@ -33,4 +33,24 @@ export class IdentityMcpProcessesPage {
   getRowByToolName(toolName: string): Locator {
     return this.mcpProcessesTable.getByRole('row').filter({hasText: toolName});
   }
+
+  async expandRowByToolName(toolName: string): Promise<void> {
+    await this.getRowByToolName(toolName)
+      .getByRole('button', {name: 'Expand current row'})
+      .click();
+  }
+
+  getRowToolDetails(toolName: string) {
+    const container = this.mcpProcessesTable.locator(
+      `tr[data-parent-row]:has-text("${toolName}") + tr[data-child-row]`,
+    );
+
+    return {
+      container,
+      purpose: container.locator('h3:has-text("Purpose") + p'),
+      results: container.locator('h3:has-text("Results") + p'),
+      whenToUse: container.locator('h3:has-text("When to use") + p'),
+      whenNotToUse: container.locator('h3:has-text("When not to use") + p'),
+    };
+  }
 }
