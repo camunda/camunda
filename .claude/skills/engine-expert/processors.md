@@ -17,10 +17,18 @@ Processors are where the engine's logic lives. They consume commands and produce
 - **Inter-partition command receivers must be idempotent.** Prefer reject-redundant-command (write a rejection, no state change) over re-emitting the same events.
 - **Take small steps.** Append follow-up commands rather than doing everything in one processing cycle. The single thread is shared with every other command on this partition.
 
+## Error and rejection messages
+
+- **Follow the format** `Expected [X], but got [Y] [in CONTEXT]`. Include execution context (partition ID, entity key, etc.) when it helps the user act on the failure.
+- **Rejection reasons use the same pattern** — they surface to the user, so write them as remediation guidance, not as debug output.
+- Full guidance: https://github.com/camunda/camunda/wiki/Error-Guidelines
+
 ## Logging
 
 - **Hot paths log at trace level only.** The engine processes thousands of commands per second; INFO/DEBUG on a hot path is a measurable performance regression.
-- General logging guidance: https://github.com/camunda/camunda/wiki/Logging
+- **Use SLF4J's parameterized formatting** (`log.info("X {}", arg)`), never `String.format`. SLF4J skips formatting when the level is disabled; `String.format` allocates regardless.
+- Levels: `TRACE` = component execution detail (granular loggers only); `DEBUG` = developer diagnostics; `INFO` = operator-facing events (leader changes, membership updates); `WARN` = expected, self-resolving errors that need monitoring (timeouts, transient unavailability); `ERROR` = critical failures requiring immediate attention.
+- Full guidance: https://github.com/camunda/camunda/wiki/Logging
 
 ## Templates
 

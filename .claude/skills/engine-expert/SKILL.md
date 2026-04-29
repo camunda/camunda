@@ -63,4 +63,5 @@ Re-run any new or modified test at least 3× to catch flakiness. Push and let CI
 - `docs/zeebe/developer_handbook.md` — step-by-step for new records, REST endpoints, authorization.
 - `docs/zeebe/engine_questions.md` — FAQ on tokens, joining gateways, variable scoping.
 - https://github.com/camunda/camunda/wiki/Logging — logging guidance.
+- https://github.com/camunda/camunda/wiki/Error-Guidelines — error message format and rejection vs. exception.
 
