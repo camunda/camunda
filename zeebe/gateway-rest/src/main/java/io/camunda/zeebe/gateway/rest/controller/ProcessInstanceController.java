@@ -27,6 +27,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperati
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -41,31 +42,45 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @CamundaRestController
 @RequestMapping("/v2/process-instances")
 public class ProcessInstanceController {
 
+  static final String EXPORT_TRUNCATED_HEADER = "X-Camunda-Export-Truncated";
+  private static final String CSV_CONTENT_TYPE = "text/csv; charset=UTF-8";
+  private static final DateTimeFormatter FILENAME_TIMESTAMP =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss'Z'").withZone(ZoneOffset.UTC);
+
   private final ProcessInstanceServices processInstanceServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final GatewayRestConfiguration gatewayRestConfiguration;
 
   public ProcessInstanceController(
       final ProcessInstanceServices processInstanceServices,
       final MultiTenancyConfiguration multiTenancyCfg,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     this.processInstanceServices = processInstanceServices;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
+    this.gatewayRestConfiguration = gatewayRestConfiguration;
   }
 
   @CamundaPostMapping
@@ -117,6 +132,23 @@ public class ProcessInstanceController {
       @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toProcessInstanceQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  /**
+   * Streams the process-instance set matching {@code query} as a UTF-8 CSV file. Designed for
+   * business reporting (Excel, Power BI, BO) — the request body is identical to {@code /search} so
+   * clients reuse their existing filter/sort code. Pagination is server-driven; the {@code
+   * page.limit} field on the request body is ignored. The hard row cap is configurable via {@code
+   * camunda.rest.process-instance-export.max-rows}; when reached, the response body still contains
+   * a complete CSV but the {@code X-Camunda-Export-Truncated: true} header is set so clients can
+   * surface a refine-your-filter hint.
+   */
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/search.csv", produces = "text/csv")
+  public ResponseEntity<StreamingResponseBody> exportProcessInstancesCsv(
+      @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
+    return SearchQueryRequestMapper.toProcessInstanceQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::exportCsv);
   }
 
   @RequiresSecondaryStorage
@@ -255,6 +287,50 @@ public class ProcessInstanceController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
+  private ResponseEntity<StreamingResponseBody> exportCsv(final ProcessInstanceQuery query) {
+    final var auth = authenticationProvider.getCamundaAuthentication();
+    final var exportCfg = gatewayRestConfiguration.getProcessInstanceExport();
+    final int maxRows = exportCfg.getMaxRows();
+    final int pageSize = exportCfg.getPageSize();
+    final boolean tenantColumn = multiTenancyCfg.isChecksEnabled();
+
+    // Probe total upfront so the truncation header can be set before the response body starts
+    // streaming. HTTP headers cannot be added once StreamingResponseBody has begun writing.
+    final boolean truncated;
+    try {
+      final var probe =
+          processInstanceServices.search(
+              new ProcessInstanceQuery(
+                  query.filter(),
+                  query.sort(),
+                  SearchQueryPage.NO_ENTITIES_QUERY,
+                  query.resultConfig()),
+              auth);
+      truncated = probe.hasMoreTotalItems() || probe.total() > maxRows;
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+
+    final String filename =
+        "process-instances-" + FILENAME_TIMESTAMP.format(Instant.now()) + ".csv";
+    final StreamingResponseBody body =
+        out -> {
+          try (var writer = ProcessInstanceCsvWriter.open(out, tenantColumn)) {
+            writer.writeHeader();
+            processInstanceServices.streamSearch(query, auth, writer::writeRow, maxRows, pageSize);
+          }
+        };
+
+    final var builder =
+        ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_TYPE, CSV_CONTENT_TYPE)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"");
+    if (truncated) {
+      builder.header(EXPORT_TRUNCATED_HEADER, "true");
+    }
+    return builder.body(body);
   }
 
   private ResponseEntity<IncidentSearchQueryResult> searchIncidents(

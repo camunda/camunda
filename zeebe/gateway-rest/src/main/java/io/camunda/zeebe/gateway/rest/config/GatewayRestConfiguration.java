@@ -16,6 +16,8 @@ public class GatewayRestConfiguration {
   private final ProcessCacheConfiguration processCache = new ProcessCacheConfiguration();
   private final ApiExecutorConfiguration apiExecutor = new ApiExecutorConfiguration();
   private final JobMetricsConfiguration jobMetrics = new JobMetricsConfiguration();
+  private final ProcessInstanceExportConfiguration processInstanceExport =
+      new ProcessInstanceExportConfiguration();
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
 
   public ProcessCacheConfiguration getProcessCache() {
@@ -28,6 +30,10 @@ public class GatewayRestConfiguration {
 
   public JobMetricsConfiguration getJobMetrics() {
     return jobMetrics;
+  }
+
+  public ProcessInstanceExportConfiguration getProcessInstanceExport() {
+    return processInstanceExport;
   }
 
   /**
@@ -266,6 +272,54 @@ public class GatewayRestConfiguration {
 
     public void setEnabled(final boolean enabled) {
       this.enabled = enabled;
+    }
+  }
+
+  /**
+   * Configuration for the {@code POST /v2/process-instances/search.csv} endpoint that streams the
+   * filtered process-instance grid as CSV for offline analysis.
+   *
+   * <p>Bound under {@code camunda.rest.process-instance-export.*}.
+   */
+  public static class ProcessInstanceExportConfiguration {
+
+    private static final int DEFAULT_MAX_ROWS = 50_000;
+    private static final int DEFAULT_PAGE_SIZE = 1_000;
+
+    /**
+     * Hard cap on the number of rows a single export request will stream. Beyond this the response
+     * is truncated and the {@code X-Camunda-Export-Truncated} header is set so clients can warn the
+     * user. Default: {@link #DEFAULT_MAX_ROWS}.
+     */
+    private int maxRows = DEFAULT_MAX_ROWS;
+
+    /**
+     * Internal page size used to walk the matching set via cursor pagination. Larger values reduce
+     * round-trips to secondary storage; smaller values keep memory pressure lower. Default: {@link
+     * #DEFAULT_PAGE_SIZE}.
+     */
+    private int pageSize = DEFAULT_PAGE_SIZE;
+
+    public int getMaxRows() {
+      return maxRows;
+    }
+
+    public void setMaxRows(final int maxRows) {
+      if (maxRows <= 0) {
+        throw new IllegalArgumentException("maxRows must be > 0 (was " + maxRows + ")");
+      }
+      this.maxRows = maxRows;
+    }
+
+    public int getPageSize() {
+      return pageSize;
+    }
+
+    public void setPageSize(final int pageSize) {
+      if (pageSize <= 0) {
+        throw new IllegalArgumentException("pageSize must be > 0 (was " + pageSize + ")");
+      }
+      this.pageSize = pageSize;
     }
   }
 }

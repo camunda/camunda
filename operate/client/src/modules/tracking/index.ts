@@ -61,6 +61,11 @@ type Events =
       operationType: BatchOperationType;
     }
   | {
+      eventName: 'process-instances-export';
+      format: 'csv';
+      truncated: boolean;
+    }
+  | {
       eventName: 'single-operation';
       operationType: BatchOperationType;
       source: 'instances-list' | 'incident-table' | 'instance-header';

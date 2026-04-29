@@ -14,13 +14,17 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.opencsv.CSVReader;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -34,6 +38,8 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.ProcessInstanceExportConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
@@ -49,11 +55,15 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,6 +73,7 @@ import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -98,11 +109,14 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @MockitoBean ProcessInstanceServices processInstanceServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
 
   @BeforeEach
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(gatewayRestConfiguration.getProcessInstanceExport())
+        .thenReturn(new ProcessInstanceExportConfiguration());
   }
 
   @Test
@@ -3378,5 +3392,193 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  // ---------------------------------------------------------------------------
+  // POST /v2/process-instances/search.csv
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldExportProcessInstancesAsCsv() {
+    // given
+    final var entity = sampleEntity(1L);
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
+        .thenReturn(probeResult(/* total= */ 1, /* hasMoreTotalItems= */ false));
+    stubStreamSearchToEmit(false, entity);
+
+    // when
+    final byte[] responseBytes =
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL + "/search.csv")
+            .accept(MediaType.parseMediaType("text/csv"))
+            .contentType(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectHeader()
+            .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+            .expectHeader()
+            .doesNotExist("X-Camunda-Export-Truncated")
+            .expectHeader()
+            .value(
+                HttpHeaders.CONTENT_DISPOSITION,
+                value -> assertThat(value).startsWith("attachment; filename=\"process-instances-"))
+            .expectBody(byte[].class)
+            .returnResult()
+            .getResponseBody();
+
+    // then
+    assertThat(responseBytes).isNotNull();
+    // body starts with the UTF-8 BOM
+    assertThat(responseBytes[0] & 0xff).isEqualTo(0xEF);
+    assertThat(responseBytes[1] & 0xff).isEqualTo(0xBB);
+    assertThat(responseBytes[2] & 0xff).isEqualTo(0xBF);
+
+    final java.util.List<String[]> rows = parseCsv(responseBytes);
+    assertThat(rows).hasSize(2);
+    assertThat(rows.get(0))
+        .containsExactly(
+            "Process Name",
+            "Process Instance Key",
+            "Version",
+            "Version Tag",
+            "State",
+            "Start Date",
+            "End Date",
+            "Parent Process Instance Key");
+    assertThat(rows.get(1))
+        .containsExactly("Order Process", "1", "2", "v1.0", "ACTIVE", "", "", "");
+  }
+
+  @Test
+  void shouldSetTruncatedHeaderWhenProbeIndicatesMoreItemsThanCap() {
+    // given — probe says total exceeds the configured cap
+    final var lowCapCfg = new ProcessInstanceExportConfiguration();
+    lowCapCfg.setMaxRows(1);
+    when(gatewayRestConfiguration.getProcessInstanceExport()).thenReturn(lowCapCfg);
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
+        .thenReturn(probeResult(/* total= */ 5, /* hasMoreTotalItems= */ false));
+    stubStreamSearchToEmit(true, sampleEntity(1L));
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL + "/search.csv")
+        .accept(MediaType.parseMediaType("text/csv"))
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals("X-Camunda-Export-Truncated", "true");
+  }
+
+  @Test
+  void shouldSetTruncatedHeaderWhenProbeReportsHasMoreTotalItems() {
+    // given — probe reports an approximate total that may not be the full set
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
+        .thenReturn(probeResult(/* total= */ 10, /* hasMoreTotalItems= */ true));
+    stubStreamSearchToEmit(true, sampleEntity(1L));
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL + "/search.csv")
+        .accept(MediaType.parseMediaType("text/csv"))
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .valueEquals("X-Camunda-Export-Truncated", "true");
+  }
+
+  @Test
+  void shouldIncludeTenantColumnWhenMultiTenancyChecksEnabled() {
+    // given
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
+        .thenReturn(probeResult(1, false));
+    stubStreamSearchToEmit(false, sampleEntity(1L));
+
+    // when
+    final byte[] bytes =
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL + "/search.csv")
+            .contentType(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody(byte[].class)
+            .returnResult()
+            .getResponseBody();
+
+    // then — tenant column is present in both header and body row
+    final java.util.List<String[]> rows = parseCsv(bytes);
+    assertThat(rows.get(0)).contains("Tenant");
+    assertThat(rows.get(1)).contains("<default>");
+  }
+
+  private static ProcessInstanceEntity sampleEntity(final long key) {
+    return new ProcessInstanceEntity(
+        key,
+        null,
+        "orderProcess",
+        "Order Process",
+        2,
+        "v1.0",
+        100L,
+        null,
+        null,
+        null,
+        null,
+        ProcessInstanceState.ACTIVE,
+        false,
+        "<default>",
+        null,
+        null);
+  }
+
+  private static SearchQueryResult<ProcessInstanceEntity> probeResult(
+      final long total, final boolean hasMoreTotalItems) {
+    return SearchQueryResult.<ProcessInstanceEntity>of(
+        b -> b.total(total, hasMoreTotalItems).items(List.of()));
+  }
+
+  @SuppressWarnings("unchecked")
+  private void stubStreamSearchToEmit(
+      final boolean truncated, final ProcessInstanceEntity... entities) {
+    when(processInstanceServices.streamSearch(
+            any(ProcessInstanceQuery.class), any(), any(), Mockito.anyInt(), Mockito.anyInt()))
+        .thenAnswer(
+            invocation -> {
+              final Consumer<ProcessInstanceEntity> sink = invocation.getArgument(2);
+              for (final var e : entities) {
+                sink.accept(e);
+              }
+              return truncated;
+            });
+  }
+
+  private static java.util.List<String[]> parseCsv(final byte[] bytes) {
+    // Skip the leading 3-byte UTF-8 BOM so OpenCSV does not parse it as part of the first cell.
+    final int offset =
+        bytes.length >= 3
+                && (bytes[0] & 0xff) == 0xEF
+                && (bytes[1] & 0xff) == 0xBB
+                && (bytes[2] & 0xff) == 0xBF
+            ? 3
+            : 0;
+    try (var reader =
+        new CSVReader(
+            new InputStreamReader(
+                new ByteArrayInputStream(bytes, offset, bytes.length - offset),
+                StandardCharsets.UTF_8))) {
+      return reader.readAll();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 }
