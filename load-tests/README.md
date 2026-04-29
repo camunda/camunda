@@ -2,7 +2,7 @@
 
 Load tests validate the reliability and performance of Camunda 8 across releases and development branches. They can be created via automated GitHub Actions workflows or manually (via Makefiles) on a GKE cluster (`camunda-benchmark-prod`), deploying the [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm) and a custom [load test Helm chart](https://github.com/camunda/camunda-load-tests-helm).
 
-For background on goals, test variants, and observability, see the [reliability testing documentation](../docs/testing/reliability-testing.md).
+For background on goals and test variants, see the [reliability testing documentation](../docs/testing/reliability-testing.md).
 
 ## Directory Layout
 
@@ -97,7 +97,7 @@ For detailed inputs, triggers, and job definitions, see each workflow's header c
 
 ## Setup
 
-![setup-load-test](../docs/testing/assets/setup-load-test.jpg)
+![setup-load-test](docs/assets/setup-load-test.jpg)
 
 The setup for all of our load tests is equal for better comparability, and consists of two main ingredients.
 
@@ -116,7 +116,7 @@ All of this is deployed in an Infra-team-maintained Google Kubernetes Engine (GK
 
 For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm Chart will now deploy a single Camunda application (replicated), whereas previously, the Zeebe Brokers and Zeebe Gateways were deployed standalone.
 
-![setup](../docs/testing/assets/setup.png)
+![setup](docs/assets/setup.png)
 
 ### Secondary Storage Options
 
@@ -133,9 +133,19 @@ Load tests can be configured with different secondary storage backends to valida
 
 The secondary storage type can be specified when creating a load test via the `newLoadTest.sh` script or the GitHub workflow inputs.
 
+## Observability
+
+Observability plays a vital role in running load tests. Since the beginning of our load testing practices, the Zeebe team has spent significant efforts adding metrics into the system and building Grafana dashboards to support them.
+
+The metrics exported by our applications are stored in a [Prometheus instance](https://monitor.benchmark.camunda.cloud/) and can be observed with the [Grafana instance](https://dashboard.benchmark.camunda.cloud/?orgId=1). These applications sit behind a vouch-enabled proxy, so only Okta login is required to access them.
+
+A general Grafana dashboard covering all sorts of metrics is the [Zeebe Dashboard](https://github.com/camunda/camunda/blob/main/monitor/grafana/zeebe.json). There are more tailored dashboards in the corresponding monitoring folder.
+
+More details about observability can be read [here](../docs/observability.md).
+
 ## Test Scenarios
 
-We have different scenarios targeting different use cases and versions. All use the same [setup](#setup) and [endurance test variants](../docs/testing/reliability-testing.md#endurance-test-variants) described above.
+We have different scenarios targeting different use cases and versions. All use the same [setup](#setup) and [endurance test variants](../docs/testing/reliability-testing.md#endurance-test-variants) defined in the reliability testing documentation.
 
 ### Release load tests
 
@@ -191,7 +201,7 @@ This decoupling provides several benefits:
 
 The release load tests are created as part of the [release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn#L7-L18) via a "Setup benchmark" sub-process.
 
-![setup-benchmark](../docs/testing/assets/setup_benchmark.png)
+![setup-benchmark](docs/assets/setup_benchmark.png)
 
 The REST-Connector calls the GitHub API (`https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-release-load-test.yaml/dispatches`) to trigger the [Camunda release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-release-load-test.yaml) on a specific git reference.
 
@@ -299,31 +309,31 @@ It allows high customization:
 * Specification of an existing Docker image to use — making it possible to reuse existing images.
 * Specification of arbitrary Helm arguments — making it possible to customize the load test set up.
 
-![load-test-gha](../docs/testing/assets/load-test-gha.png)
+![load-test-gha](docs/assets/load-test-gha.png)
 
 ##### Creating load test for old versions
 
 With the Camunda load test GitHub workflow, it is also possible to create load tests for older versions (until 8.6).
 
-![1-main](../docs/testing/assets/1-main.png)
+![1-main](docs/assets/1-main.png)
 
 As part of the workflow dispatch form (UI), select the respective workflow revision for the desired version.
 
-![2-choosing](../docs/testing/assets/2-choosing.png)
+![2-choosing](docs/assets/2-choosing.png)
 
 This will make sure that the right Camunda Platform Helm Chart version and values file are used for the load test set up. Respective values files can be found in the stable branches and will be picked up by the GitHub Workflow on the different stable branches.
 
 We can reference tags, branches or commit SHAs as ref. It must not necessarily correspond to the stable branch, but should be compatible with the version. This will be used to build the Docker image for the respective cluster under test and load test applications.
 
-![3-branch](../docs/testing/assets/3-branch.png)
+![3-branch](docs/assets/3-branch.png)
 
 One not optional parameter is the name of the load test. Please make sure to use an identifiable prefix (for example your initials), to make sure we can identify who created the load test, in case we need to reach out.
 
-![4-name](../docs/testing/assets/4-name.png)
+![4-name](docs/assets/4-name.png)
 
 After submitting the form you can observe the progress of the load test creation in the Actions tab of the mono repository.
 
-![5-build](../docs/testing/assets/5-build.png)
+![5-build](docs/assets/5-build.png)
 
 #### Creating manually
 

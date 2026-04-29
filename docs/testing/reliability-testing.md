@@ -135,21 +135,7 @@ Similar to the stress test from above, we ran the artificial (normal) process mo
 
 *As of now, there is no clear SLO/SLA defined for such.*
 
-### Observability
-
-Observability plays a vital role in running such kind of tests. Since the beginning of our load testing practices, the Zeebe team, spent significant efforts in adding metrics into the system and building Grafana dashboards to support them.
-
-The metrics exported by our applications are stored in a [Prometheus instance](https://monitor.benchmark.camunda.cloud/) and can be observed with the [Grafana instance](https://dashboard.benchmark.camunda.cloud/?orgId=1). These applications sit behind a vouch-enabled proxy, so only Okta login is required to access them.
-
-A general Grafana dashboard, covering all sorts of metrics, is the [Zeebe Dashboard](https://github.com/camunda/camunda/blob/main/monitor/grafana/zeebe.json). There are more tailored dashboards that exist in the corresponding monitoring folder.
-
-With the help of such dashboards, we can observe the running load tests and validate certain criteria and assumptions.
-
-More details about observability can also be read [here](../observability.md).
-
-### Test Scenarios
-
-We run load tests in several scenarios: release, weekly, daily, and ad-hoc. For how to trigger or configure each, see [test scenarios in the load-tests README](../../load-tests/README.md#test-scenarios).
+For how to run load tests and monitor them, see the [load-tests README](../../load-tests/README.md).
 
 ## Chaos engineering
 
