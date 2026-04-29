@@ -2257,12 +2257,78 @@
           <configuration>
             <parameters>true</parameters>
             <release>${version.java}</release>
+            <fork>true</fork>
             <compilerArgs>
               <!-- ensure we generate a class file for package-info.java files to avoid recompiling every time -->
               <arg>-Xpkginfo:always</arg>
             </compilerArgs>
             <useIncrementalCompilation>false</useIncrementalCompilation>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.codehaus.plexus</groupId>
+              <artifactId>plexus-compiler-javac-errorprone</artifactId>
+              <version>2.15.0</version>
+            </dependency>
+            <dependency>
+              <groupId>com.google.errorprone</groupId>
+              <artifactId>error_prone_core</artifactId>
+              <version>${version.error-prone}</version>
+            </dependency>
+            <dependency>
+              <groupId>com.uber.nullaway</groupId>
+              <artifactId>nullaway</artifactId>
+              <version>${version.nullaway}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <!-- Only run NullAway on main sources; tests can exercise nullable boundaries freely. -->
+              <id>default-compile</id>
+              <configuration>
+                <annotationProcessorPaths combine.children="append">
+                  <path>
+                    <groupId>com.google.errorprone</groupId>
+                    <artifactId>error_prone_core</artifactId>
+                    <version>${version.error-prone}</version>
+                  </path>
+                  <path>
+                    <groupId>com.uber.nullaway</groupId>
+                    <artifactId>nullaway</artifactId>
+                    <version>${version.nullaway}</version>
+                  </path>
+                </annotationProcessorPaths>
+                <compilerArgs combine.children="append">
+                  <arg>-XDcompilePolicy=simple</arg>
+                  <arg>--should-stop=ifError=FLOW</arg>
+                  <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
+                  <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepExcludedPaths:.*/target/generated-sources/.* -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:AcknowledgeRestrictiveAnnotations=true</arg>
+                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
+                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
+                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
+                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
+                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
+                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
+                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
+                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
+                  <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
+                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
+                </compilerArgs>
+              </configuration>
+            </execution>
+            <execution>
+              <!-- NullAway/ErrorProne are focused on production code; tests should be able
+                   to exercise nullable boundaries freely without per-call-site null guards. -->
+              <id>default-testCompile</id>
+              <goals>
+                <goal>testCompile</goal>
+              </goals>
+              <configuration>
+                <compilerArgs combine.self="override"/>
+                <annotationProcessorPaths combine.self="override"/>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
 
         <!-- compatibility checks/guard -->
@@ -3206,60 +3272,6 @@
                   <goal>extract-flaky-tests</goal>
                 </goals>
                 <phase>post-integration-test</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <!--
-      Runs NullAway (backed by Error Prone) at compile time for all modules.
-      Only checks code within @NullMarked scopes (OnlyNullMarked=true), so it is
-      safe to enable globally — unannotated modules are unaffected. Modules opt
-      into enforcement by adding @NullMarked to their packages or classes.
-    -->
-    <profile>
-      <id>nullaway</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <executions>
-              <execution>
-                <!-- Only run NullAway on main sources; test sources are excluded -->
-                <id>default-compile</id>
-                <configuration>
-                  <fork>true</fork>
-                  <annotationProcessorPaths combine.children="append">
-                    <path>
-                      <groupId>com.google.errorprone</groupId>
-                      <artifactId>error_prone_core</artifactId>
-                      <version>${version.error-prone}</version>
-                    </path>
-                    <path>
-                      <groupId>com.uber.nullaway</groupId>
-                      <artifactId>nullaway</artifactId>
-                      <version>${version.nullaway}</version>
-                    </path>
-                  </annotationProcessorPaths>
-                  <compilerArgs combine.children="append">
-                    <arg>-XDcompilePolicy=simple</arg>
-                    <arg>--should-stop=ifError=FLOW</arg>
-                    <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
-                    <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:AcknowledgeRestrictiveAnnotations=true</arg>
-                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
-                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
-                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
-                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
-                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
-                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
-                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
-                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
-                    <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
-                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
-                  </compilerArgs>
-                </configuration>
               </execution>
             </executions>
           </plugin>
