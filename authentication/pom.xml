@@ -175,6 +175,16 @@
       <artifactId>camunda-security-protocol</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-core</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-resource-server</artifactId>
     </dependency>
@@ -275,8 +285,12 @@
         <configuration>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
+            <dep>io.camunda:camunda-security-library-core</dep>
+            <dep>io.camunda:camunda-security-library-spring-boot-starter</dep>
             <dep>org.springframework:spring-webmvc</dep>
+            <dep>org.springframework.boot:spring-boot-actuator</dep>
             <dep>org.springframework.boot:spring-boot-actuator-autoconfigure</dep>
+            <dep>org.springframework.boot:spring-boot-security</dep>
             <dep>org.eclipse.parsson:parsson</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>

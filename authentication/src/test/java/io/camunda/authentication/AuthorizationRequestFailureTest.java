@@ -9,16 +9,16 @@ package io.camunda.authentication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.handler.OAuth2AuthenticationExceptionHandler;
+import io.camunda.security.autoconfigure.spring.handler.OAuth2AuthenticationExceptionHandler;
 import java.lang.reflect.Field;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter;
 
 /**
  * This test ensures that the error code defined in our {@link
- * io.camunda.authentication.handler.OAuth2AuthenticationExceptionHandler} matches the one used
- * internally by Spring Security's OAuth2LoginAuthenticationFilter. This is important because if
- * they diverge, our custom error handling logic may not work as intended.
+ * io.camunda.security.autoconfigure.spring.handler.OAuth2AuthenticationExceptionHandler} matches
+ * the one used internally by Spring Security's OAuth2LoginAuthenticationFilter. This is important
+ * because if they diverge, our custom error handling logic may not work as intended.
  */
 class AuthorizationRequestFailureTest {
 

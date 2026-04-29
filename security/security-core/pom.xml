@@ -24,6 +24,11 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
     <dependency>
@@ -99,4 +104,21 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredUnusedDeclaredDependencies>
+            <dep>io.camunda:camunda-security-library-spring-boot-starter</dep>
+            <dep>net.jcip:jcip-annotations</dep>
+          </ignoredUnusedDeclaredDependencies>
+          <ignoredUsedUndeclaredDependencies>
+            <dep>com.github.stephenc.jcip:jcip-annotations</dep>
+          </ignoredUsedUndeclaredDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

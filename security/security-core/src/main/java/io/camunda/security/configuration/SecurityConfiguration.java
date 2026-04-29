@@ -7,10 +7,9 @@
  */
 package io.camunda.security.configuration;
 
-import io.camunda.security.configuration.headers.HeaderConfiguration;
 import java.util.regex.Pattern;
 
-/** Will be populated with the configuration properties of 'camunda.security' */
+/** Will be populated with the configuration properties of 'camunda.security'. */
 public class SecurityConfiguration {
 
   /** 1 or more alphanumeric characters, '_', '@', '.', '+', '-' or '~'. */
@@ -22,8 +21,6 @@ public class SecurityConfiguration {
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
   private InitializationConfiguration initialization = new InitializationConfiguration();
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
-  private CsrfConfiguration csrf = new CsrfConfiguration();
-  private HeaderConfiguration httpHeaders = new HeaderConfiguration();
   private SaasConfiguration saas = new SaasConfiguration();
 
   /**
@@ -82,22 +79,6 @@ public class SecurityConfiguration {
     this.saas = saas;
   }
 
-  public HeaderConfiguration getHttpHeaders() {
-    return httpHeaders;
-  }
-
-  public void setHttpHeaders(final HeaderConfiguration httpHeaders) {
-    this.httpHeaders = httpHeaders;
-  }
-
-  public CsrfConfiguration getCsrf() {
-    return csrf;
-  }
-
-  public void setCsrf(final CsrfConfiguration csrf) {
-    this.csrf = csrf;
-  }
-
   public String getIdValidationPattern() {
     return idValidationPattern;
   }
@@ -114,6 +95,9 @@ public class SecurityConfiguration {
   }
 
   public Pattern getCompiledGroupIdValidationPattern() {
+    if (getAuthentication().getOidc() == null) {
+      return getCompiledIdValidationPattern();
+    }
     final var groupsClaim = getAuthentication().getOidc().getGroupsClaim();
     if (groupsClaim != null && !groupsClaim.isEmpty()) {
       return DEFAULT_EXTERNAL_ID_REGEX;

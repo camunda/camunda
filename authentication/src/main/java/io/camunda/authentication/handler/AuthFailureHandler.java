@@ -20,14 +20,17 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 
+/**
+ * Camunda's authentication/authorization failure handler. Implements the library's {@link
+ * io.camunda.security.autoconfigure.spring.handler.AuthFailureHandler} so the central filter chains
+ * pick this bean up by type — overriding the library default (which emits RFC 7807 directly) with a
+ * {@link CamundaProblemDetail}-shaped body via {@code camunda-gateway-model}.
+ */
 @Component
 public final class AuthFailureHandler
-    implements AuthenticationFailureHandler, AccessDeniedHandler, AuthenticationEntryPoint {
+    implements io.camunda.security.autoconfigure.spring.handler.AuthFailureHandler {
 
   private final ObjectMapper objectMapper;
 

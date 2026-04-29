@@ -24,8 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
-import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
+import io.camunda.security.autoconfigure.spring.config.headers.ContentSecurityPolicyConfig;
+import io.camunda.security.autoconfigure.spring.config.headers.PermissionsPolicyConfig;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;

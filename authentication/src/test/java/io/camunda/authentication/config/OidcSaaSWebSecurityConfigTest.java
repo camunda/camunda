@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.authentication.config.controllers.OidcMockMvcTestHelper;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
-import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
+import io.camunda.security.autoconfigure.spring.config.headers.ContentSecurityPolicyConfig;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;

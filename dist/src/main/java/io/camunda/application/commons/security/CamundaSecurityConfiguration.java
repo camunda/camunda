@@ -8,6 +8,8 @@
 package io.camunda.application.commons.security;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.security.autoconfigure.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.autoconfigure.spring.config.headers.ContentSecurityPolicyConfig;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -35,10 +37,14 @@ public class CamundaSecurityConfiguration {
       "CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED";
 
   private final CamundaSecurityProperties camundaSecurityProperties;
+  private final CamundaSecurityLibraryProperties cslProperties;
 
   @Autowired
-  public CamundaSecurityConfiguration(final CamundaSecurityProperties camundaSecurityProperties) {
+  public CamundaSecurityConfiguration(
+      final CamundaSecurityProperties camundaSecurityProperties,
+      final CamundaSecurityLibraryProperties cslProperties) {
     this.camundaSecurityProperties = camundaSecurityProperties;
+    this.cslProperties = cslProperties;
   }
 
   @Bean
@@ -58,6 +64,23 @@ public class CamundaSecurityConfiguration {
     return new IdentifierValidator(
         camundaSecurityProperties.getCompiledIdValidationPattern(),
         camundaSecurityProperties.getCompiledGroupIdValidationPattern());
+  }
+
+  @PostConstruct
+  public void applyHostSecurityDefaults() {
+    // Switch the central library's CSP mode to SAAS when the host is configured for SaaS — the
+    // library otherwise ships the SELF_MANAGED policy. An explicit policyDirectives setting wins
+    // either way (resolvePolicy short-circuits on it), so customer overrides are preserved.
+    if (camundaSecurityProperties.getSaas().isConfigured()) {
+      cslProperties
+          .getHttpHeaders()
+          .getContentSecurityPolicy()
+          .setMode(ContentSecurityPolicyConfig.Mode.SAAS);
+    }
+    // Preserve the camunda actuator-loggers CSRF exemption that previously came from
+    // `EndpointRequest.to(LoggersEndpoint.class)`. Operators with a non-default actuator base path
+    // can override `camunda.security.csrf.ignored-path-patterns`.
+    cslProperties.getCsrf().getIgnoredPathPatterns().add("/actuator/loggers/**");
   }
 
   @PostConstruct

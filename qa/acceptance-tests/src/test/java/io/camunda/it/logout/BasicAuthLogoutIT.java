@@ -15,7 +15,7 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestWebappClient.TestLoggedInWebappClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.configuration.CsrfConfiguration;
+import io.camunda.security.autoconfigure.spring.config.CsrfConfiguration;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
