@@ -27,6 +27,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   private final int nodeId;
   private final String zone;
+  private final String memberId;
   private final String host;
   private final int port;
   private final String version;
@@ -36,6 +37,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
     nodeId = grpcBrokerInfo.getNodeId();
     // TODO: use grpcBrokerInfo.getZone() once the gRPC protocol carries the zone (see #51586)
     zone = null;
+    memberId = null;
     host = grpcBrokerInfo.getHost();
     port = grpcBrokerInfo.getPort();
     version = grpcBrokerInfo.getVersion();
@@ -50,6 +52,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
     nodeId = httpBrokerInfo.getNodeId();
     // TODO: use httpBrokerInfo.getZone() once the REST protocol carries the zone (see #51998)
     zone = null;
+    memberId = null;
     host = httpBrokerInfo.getHost();
     port = httpBrokerInfo.getPort();
     version = httpBrokerInfo.getVersion();
@@ -68,6 +71,15 @@ public final class BrokerInfoImpl implements BrokerInfo {
   @Override
   public String getZone() {
     return zone;
+  }
+
+  @Override
+  public String getMemberId() {
+    if (memberId == null) {
+      return String.valueOf(nodeId);
+    } else {
+      return memberId;
+    }
   }
 
   @Override

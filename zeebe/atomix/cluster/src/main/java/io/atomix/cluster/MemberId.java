@@ -16,14 +16,36 @@
  */
 package io.atomix.cluster;
 
+import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /** Controller cluster identity. */
 public class MemberId extends NodeId {
+  private final @Nullable Integer nodeIdx;
+  private final @Nullable String zone;
+
+  private MemberId(final @Nullable String zone, final Integer nodeIdx, final String id) {
+    super(id);
+    this.nodeIdx = validateNodeIdx(nodeIdx);
+    this.zone = validateZone(zone);
+  }
 
   public MemberId(final String id) {
     super(id);
+    final var parts = id.split("/");
+    if (parts.length > 2) {
+      throw new IllegalArgumentException("Expected id to be of the form $zone/$id, but got " + id);
+    } else if (parts.length == 2) {
+      zone = parts[0];
+      nodeIdx = Integer.parseInt(parts[1]);
+    } else if (parts.length == 1) {
+      zone = null;
+      nodeIdx = Integer.parseInt(parts[0]);
+    } else {
+      throw new IllegalArgumentException(
+          "Expected id to be of the form $zone/$id or $id, but got " + id);
+    }
   }
 
   /**
@@ -32,7 +54,7 @@ public class MemberId extends NodeId {
    * @return node id
    */
   public static MemberId anonymous() {
-    return new MemberId(UUID.randomUUID().toString());
+    return new MemberId(null, null, UUID.randomUUID().toString());
   }
 
   /**
@@ -52,35 +74,42 @@ public class MemberId extends NodeId {
    * otherwise it is {@code "$zone/$nodeId"}.
    */
   public static MemberId from(final @Nullable String zone, final int nodeId) {
-    final var normalizedZone = zone == null ? null : zone.strip();
-    if (normalizedZone == null || normalizedZone.isEmpty()) {
-      return new MemberId(Integer.toString(nodeId));
+    return new MemberId(zone, nodeId, buildMemberIdString(zone, nodeId));
+  }
+
+  public int nodeIdx() {
+    if (nodeIdx == null) {
+      throw new IllegalStateException("No nodeIdx in this memberId: " + this);
     }
-    return new MemberId(normalizedZone + "/" + nodeId);
+    return nodeIdx;
   }
 
   /**
-   * Extracts the numeric node id from a {@link MemberId}.
-   *
-   * <p>Accepts both the bare form ({@code "0"}) and the zone-prefixed form ({@code "us-east/0"}).
-   * The numeric portion is always the trailing path segment.
-   *
-   * @throws NumberFormatException if the trailing segment is not a parseable int
-   */
-  public static int extractNodeId(final MemberId memberId) {
-    final var id = memberId.id();
-    final var slash = id.lastIndexOf('/');
-    return Integer.parseInt(slash >= 0 ? id.substring(slash + 1) : id);
-  }
-
-  /**
-   * Returns {@code true} if this member id belongs to the given zone, i.e. the id starts with
-   * {@code "$zone/"}. Always returns {@code true} when {@code zone} is {@code null}.
+   * @return {@code true} if this member id belongs to the given zone.
    */
   public boolean isInZone(final @Nullable String zone) {
-    if (zone == null) {
-      return !id().contains("/");
+    return Objects.equals(this.zone, zone);
+  }
+
+  private Integer validateNodeIdx(final Integer nodeIdx) {
+    if (nodeIdx != null && nodeIdx < 0) {
+      throw new IllegalArgumentException("Expected nodeIdx to be >= 0, but got " + nodeIdx);
     }
-    return id().startsWith(zone + "/");
+    return nodeIdx;
+  }
+
+  private @Nullable String validateZone(final @Nullable String zone) {
+    if (zone != null && zone.isBlank()) {
+      throw new IllegalArgumentException("Expected zone to be non-empty, but got " + zone);
+    }
+    return zone != null ? zone.strip() : null;
+  }
+
+  private static String buildMemberIdString(final @Nullable String zone, final int nodeIdx) {
+    if (zone == null) {
+      return Integer.toString(nodeIdx);
+    } else {
+      return zone + "/" + nodeIdx;
+    }
   }
 }
