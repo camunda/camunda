@@ -11,7 +11,7 @@ import styled from 'styled-components';
 const FieldWithLabel = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--cds-spacing-02);
+  gap: var(--cds-spacing-03);
 `;
 
 const FilterRow = styled.div`
