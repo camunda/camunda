@@ -41,11 +41,20 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>This boots a real embedded Tomcat with Spring Security enabled — NOT a MockMvc test, because
  * MockMvc bypasses Tomcat's {@code EncodedSolidusHandling} check.
+ *
+ * <p>The Tomcat layer is configured via a {@link TomcatConnectorCustomizer} bean (mirroring
+ * production wiring in {@link TomcatEncodedSlashConfig}), not via the {@code
+ * server.tomcat.encoded-solidus-handling} property.
+ *
+ * <p><b>Scope:</b> this fix targets the {@code consolidated-auth} profile's {@code
+ * WebSecurityConfig}. Optimize defines independent Spring Security configurations ({@code
+ * CCSaaSSecurityConfigurerAdapter}, {@code CCSMSecurityConfigurerAdapter}) running in their own
+ * application contexts; an equivalent customizer would be needed there if Optimize ever exposes
+ * path-variable entity IDs sourced from OIDC.
  */
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
-    classes = EncodedSlashIntegrationIT.TestConfig.class,
-    properties = "server.tomcat.encoded-solidus-handling=passthrough")
+    classes = EncodedSlashIntegrationIT.TestConfig.class)
 class EncodedSlashIntegrationIT {
 
   @LocalServerPort private int port;
