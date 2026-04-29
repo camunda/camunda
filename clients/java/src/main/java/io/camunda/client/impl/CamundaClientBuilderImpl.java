@@ -340,7 +340,11 @@ public final class CamundaClientBuilderImpl
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
-        value -> defaultJobWorkerTenantIds(Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
+        value ->
+            defaultJobWorkerTenantIds(
+                value.isEmpty()
+                    ? Collections.emptyList()
+                    : Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
         io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS);
 
     BuilderUtils.applyPropertyValueIfNotNull(
@@ -761,8 +765,7 @@ public final class CamundaClientBuilderImpl
     setIfNotNull(properties, GRPC_ADDRESS, configuration.getGrpcAddress());
     setIfNotNull(properties, REST_ADDRESS, configuration.getRestAddress());
     setIfNotNull(properties, DEFAULT_TENANT_ID, configuration.getDefaultTenantId());
-    if (configuration.getDefaultJobWorkerTenantIds() != null
-        && !configuration.getDefaultJobWorkerTenantIds().isEmpty()) {
+    if (configuration.getDefaultJobWorkerTenantIds() != null) {
       properties.setProperty(
           ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS,
           String.join(TENANT_ID_LIST_SEPARATOR, configuration.getDefaultJobWorkerTenantIds()));
