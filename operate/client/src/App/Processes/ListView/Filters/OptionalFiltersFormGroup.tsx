@@ -37,6 +37,9 @@ import {
   FieldContainer,
 } from 'modules/components/FiltersPanel/styled';
 import {Variable} from './VariableField';
+import {VariableFilter} from './VariablesFilter';
+import {variableFilterStore} from 'modules/stores/variableFilter';
+import {MULTI_VARIABLE_FILTER} from 'modules/feature-flags';
 
 type OptionalFilter =
   | 'variable'
@@ -70,8 +73,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
   }
 > = {
   variable: {
-    keys: ['variableName', 'variableValues'],
-    label: 'Variable',
+    keys: MULTI_VARIABLE_FILTER ? [] : ['variableName', 'variableValues'],
+    label: MULTI_VARIABLE_FILTER ? 'Variables' : 'Variable',
   },
   processInstanceKey: {
     keys: ['processInstanceKey'],
@@ -196,6 +199,9 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               {(() => {
                 switch (filter) {
                   case 'variable':
+                    if (MULTI_VARIABLE_FILTER) {
+                      return <VariableFilter />;
+                    }
                     return <Variable />;
                   case 'startDateRange':
                     return (
@@ -296,6 +302,10 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                         (visibleFilter) => visibleFilter !== filter,
                       ),
                     );
+
+                    if (filter === 'variable' && MULTI_VARIABLE_FILTER) {
+                      variableFilterStore.setConditions([]);
+                    }
 
                     OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
                       form.change(key, undefined);
