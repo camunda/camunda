@@ -19,7 +19,7 @@ import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQuery;
 import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
 import io.camunda.search.query.DecisionDefinitionQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;

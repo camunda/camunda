@@ -15,7 +15,7 @@ import io.camunda.authentication.config.AbstractWebSecurityConfigTest;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

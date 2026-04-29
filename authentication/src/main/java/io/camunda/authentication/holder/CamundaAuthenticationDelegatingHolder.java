@@ -7,8 +7,8 @@
  */
 package io.camunda.authentication.holder;
 
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationHolder;
+import io.camunda.security.api.context.CamundaAuthenticationHolder;
+import io.camunda.security.api.model.CamundaAuthentication;
 import java.util.List;
 import java.util.Optional;
 

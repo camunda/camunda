@@ -14,7 +14,7 @@ import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.CamundaSyncStatelessMcpToolProvider;
 import io.camunda.gateway.mcp.processes.ProcessesToolRepository;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;

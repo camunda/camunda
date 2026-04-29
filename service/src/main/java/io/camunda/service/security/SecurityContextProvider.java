@@ -7,8 +7,8 @@
  */
 package io.camunda.service.security;
 
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.auth.SecurityContext.Builder;
 import io.camunda.security.auth.condition.AuthorizationCondition;

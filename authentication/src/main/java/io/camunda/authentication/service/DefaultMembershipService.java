@@ -14,7 +14,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
@@ -130,7 +130,7 @@ public class DefaultMembershipService implements MembershipService {
           }
           return a.roleIds(roles.stream().toList())
               .groupIds(groups.stream().toList())
-              .mappingRule(mappingRules.stream().toList())
+              .mappingRules(mappingRules.stream().toList())
               .tenants(tenants)
               .claims(tokenClaims);
         });
