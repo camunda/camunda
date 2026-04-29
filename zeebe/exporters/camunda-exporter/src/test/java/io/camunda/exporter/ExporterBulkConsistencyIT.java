@@ -19,12 +19,18 @@ import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -95,10 +101,16 @@ final class ExporterBulkConsistencyIT {
     final var recordGroups = new ArrayList<List<Record<?>>>();
     final var flowNodeIds = new ArrayList<String>();
     final var processInstanceIds = new ArrayList<String>();
+    final var jobIds = new ArrayList<String>();
+    final var incidentIds = new ArrayList<String>();
+    final var postImporterQueueIds = new ArrayList<String>();
     for (int i = 0; i < INSTANCE_COUNT; i++) {
       recordGroups.add(buildRecordsForInstance(i));
       flowNodeIds.add(String.valueOf(flowNodeKey(i)));
       processInstanceIds.add(String.valueOf(processInstanceKey(i)));
+      jobIds.add(String.valueOf(jobKey(i)));
+      incidentIds.add(String.valueOf(incidentKey(i)));
+      postImporterQueueIds.add(String.format("%d-CREATED", incidentKey(i)));
     }
     Collections.shuffle(recordGroups);
 
@@ -125,7 +137,14 @@ final class ExporterBulkConsistencyIT {
     runExporter(allRecords, bulkOneConfig);
     clientAdapter.refresh();
     final var bulkOneSnapshot =
-        captureSnapshot(clientAdapter, bulkOneConfig, flowNodeIds, processInstanceIds);
+        captureSnapshot(
+            clientAdapter,
+            bulkOneConfig,
+            flowNodeIds,
+            processInstanceIds,
+            jobIds,
+            incidentIds,
+            postImporterQueueIds);
 
     // when — export at reference bulk size (single flush)
     final var referenceConfig = configWithBulkSize(baseConfig, referenceBulkSize, "bs-ref");
@@ -133,7 +152,14 @@ final class ExporterBulkConsistencyIT {
     runExporter(allRecords, referenceConfig);
     clientAdapter.refresh();
     final var referenceSnapshot =
-        captureSnapshot(clientAdapter, referenceConfig, flowNodeIds, processInstanceIds);
+        captureSnapshot(
+            clientAdapter,
+            referenceConfig,
+            flowNodeIds,
+            processInstanceIds,
+            jobIds,
+            incidentIds,
+            postImporterQueueIds);
 
     // then — confirm all handlers contributed their fields to the reference documents
     assertThat(referenceSnapshot.listViewFlowNodes())
@@ -166,6 +192,28 @@ final class ExporterBulkConsistencyIT {
         .as("state set by ListViewProcessInstanceFromProcessInstanceHandler (COMPLETED intent)")
         .allMatch(e -> ProcessInstanceState.COMPLETED.equals(e.getState()));
 
+    // single-handler entities — confirm each handler wrote the document
+    assertThat(referenceSnapshot.jobs())
+        .as("one JobEntity per instance (JobHandler)")
+        .hasSize(INSTANCE_COUNT);
+    assertThat(referenceSnapshot.jobs())
+        .as("processInstanceKey set by JobHandler")
+        .allMatch(e -> e.getProcessInstanceKey() != null);
+
+    assertThat(referenceSnapshot.incidents())
+        .as("one IncidentEntity per instance (IncidentHandler)")
+        .hasSize(INSTANCE_COUNT);
+    assertThat(referenceSnapshot.incidents())
+        .as("errorMessage set by IncidentHandler")
+        .allMatch(e -> ERROR_MESSAGE.equals(e.getErrorMessage()));
+
+    assertThat(referenceSnapshot.postImporterQueue())
+        .as("one PostImporterQueueEntity per instance (PostImporterQueueFromIncidentHandler)")
+        .hasSize(INSTANCE_COUNT);
+    assertThat(referenceSnapshot.postImporterQueue())
+        .as("processInstanceKey set by PostImporterQueueFromIncidentHandler")
+        .allMatch(e -> e.getProcessInstanceKey() != null);
+
     // then — all bulk-size-1 documents must be identical to the reference documents
     assertThat(
             sortById(bulkOneSnapshot.listViewFlowNodes(), FlowNodeInstanceForListViewEntity::getId))
@@ -190,6 +238,21 @@ final class ExporterBulkConsistencyIT {
             sortById(
                 referenceSnapshot.listViewProcessInstances(),
                 ProcessInstanceForListViewEntity::getId));
+
+    assertThat(sortById(bulkOneSnapshot.jobs(), e -> String.valueOf(e.getKey())))
+        .as("JobEntity: bulk size 1 should match reference")
+        .usingRecursiveFieldByFieldElementComparator()
+        .isEqualTo(sortById(referenceSnapshot.jobs(), e -> String.valueOf(e.getKey())));
+
+    assertThat(sortById(bulkOneSnapshot.incidents(), e -> String.valueOf(e.getKey())))
+        .as("IncidentEntity: bulk size 1 should match reference")
+        .usingRecursiveFieldByFieldElementComparator()
+        .isEqualTo(sortById(referenceSnapshot.incidents(), e -> String.valueOf(e.getKey())));
+
+    assertThat(sortById(bulkOneSnapshot.postImporterQueue(), PostImporterQueueEntity::getId))
+        .as("PostImporterQueueEntity: bulk size 1 should match reference")
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("creationTime")
+        .isEqualTo(sortById(referenceSnapshot.postImporterQueue(), PostImporterQueueEntity::getId));
   }
 
   private static long processInstanceKey(final int i) {
@@ -198,6 +261,14 @@ final class ExporterBulkConsistencyIT {
 
   private static long flowNodeKey(final int i) {
     return processInstanceKey(i) + 1;
+  }
+
+  private static long jobKey(final int i) {
+    return processInstanceKey(i) + 2;
+  }
+
+  private static long incidentKey(final int i) {
+    return processInstanceKey(i) + 3;
   }
 
   private List<Record<?>> buildRecordsForInstance(final int i) {
@@ -265,7 +336,8 @@ final class ExporterBulkConsistencyIT {
   }
 
   // JOB FAILED with retries remaining.
-  // Handled by: ListViewFlowNodeFromJobHandler → FlowNodeInstanceForListViewEntity
+  // Handled by: ListViewFlowNodeFromJobHandler → FlowNodeInstanceForListViewEntity (multi-handler)
+  //             JobHandler                     → JobEntity (single-handler)
   private Record<?> buildJobFailedRecord(
       final long jobKey, final long flowNodeKey, final long processInstanceKey) {
     return factory.generateRecord(
@@ -290,8 +362,11 @@ final class ExporterBulkConsistencyIT {
   }
 
   // INCIDENT CREATED on the service task flow node.
-  // Handled by: ListViewFlowNodeFromIncidentHandler → FlowNodeInstanceForListViewEntity
-  //             FlowNodeInstanceFromIncidentHandler → FlowNodeInstanceEntity
+  // Handled by: ListViewFlowNodeFromIncidentHandler    → FlowNodeInstanceForListViewEntity
+  // (multi-handler)
+  //             FlowNodeInstanceFromIncidentHandler    → FlowNodeInstanceEntity (multi-handler)
+  //             IncidentHandler                       → IncidentEntity (single-handler)
+  //             PostImporterQueueFromIncidentHandler  → PostImporterQueueEntity (single-handler)
   private Record<?> buildIncidentCreatedRecord(
       final long incidentKey, final long flowNodeKey, final long processInstanceKey) {
     return factory.generateRecord(
@@ -375,7 +450,10 @@ final class ExporterBulkConsistencyIT {
       final SearchClientAdapter clientAdapter,
       final ExporterConfiguration config,
       final List<String> flowNodeIds,
-      final List<String> processInstanceIds)
+      final List<String> processInstanceIds,
+      final List<String> jobIds,
+      final List<String> incidentIds,
+      final List<String> postImporterQueueIds)
       throws IOException {
     final boolean isElasticsearch = ConnectionTypes.isElasticSearch(config.getConnect().getType());
     final String prefix = config.getConnect().getIndexPrefix();
@@ -383,6 +461,10 @@ final class ExporterBulkConsistencyIT {
     final var listViewIndex = new ListViewTemplate(prefix, isElasticsearch).getFullQualifiedName();
     final var flowNodeInstanceIndex =
         new FlowNodeInstanceTemplate(prefix, isElasticsearch).getFullQualifiedName();
+    final var jobIndex = new JobTemplate(prefix, isElasticsearch).getFullQualifiedName();
+    final var incidentIndex = new IncidentTemplate(prefix, isElasticsearch).getFullQualifiedName();
+    final var postImporterQueueIndex =
+        new PostImporterQueueTemplate(prefix, isElasticsearch).getFullQualifiedName();
 
     // list-view hosts both FlowNodeInstanceForListViewEntity and ProcessInstanceForListViewEntity,
     // so we filter by expected IDs to avoid deserializing the wrong entity type
@@ -394,8 +476,20 @@ final class ExporterBulkConsistencyIT {
     final var listViewProcessInstances =
         clientAdapter.searchByIds(
             listViewIndex, processInstanceIds, ProcessInstanceForListViewEntity.class);
+    final var jobs = clientAdapter.searchByIds(jobIndex, jobIds, JobEntity.class);
+    final var incidents =
+        clientAdapter.searchByIds(incidentIndex, incidentIds, IncidentEntity.class);
+    final var postImporterQueue =
+        clientAdapter.searchByIds(
+            postImporterQueueIndex, postImporterQueueIds, PostImporterQueueEntity.class);
 
-    return new IndexSnapshot(listViewFlowNodes, flowNodeInstances, listViewProcessInstances);
+    return new IndexSnapshot(
+        listViewFlowNodes,
+        flowNodeInstances,
+        listViewProcessInstances,
+        jobs,
+        incidents,
+        postImporterQueue);
   }
 
   private ExporterConfiguration configWithBulkSize(
@@ -425,5 +519,8 @@ final class ExporterBulkConsistencyIT {
   private record IndexSnapshot(
       List<FlowNodeInstanceForListViewEntity> listViewFlowNodes,
       List<FlowNodeInstanceEntity> flowNodeInstances,
-      List<ProcessInstanceForListViewEntity> listViewProcessInstances) {}
+      List<ProcessInstanceForListViewEntity> listViewProcessInstances,
+      List<JobEntity> jobs,
+      List<IncidentEntity> incidents,
+      List<PostImporterQueueEntity> postImporterQueue) {}
 }
