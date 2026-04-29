@@ -19,6 +19,7 @@ These are summaries. The reference files (linked below) are authoritative — th
 - Generated keys must be used as the record key of at least one appended record. Otherwise the key generator can't be rehydrated on replay and may hand out a duplicate.
 - Inter-partition command receivers must be idempotent. Prefer reject-redundant-command over re-emitting events.
 - Hot paths log at trace level only. INFO/DEBUG on a hot path is a performance regression at engine throughput.
+- Values returned from `ColumnFamily.get(...)` / state reads are backed by a shared, mutable buffer reused on the next read of the same column family. Never cache them or hold them across another read — `copyFrom(...)` if you need to keep the value, or use `get(key, valueSupplier)` to allocate a fresh instance.
 
 ## Where to read next
 
