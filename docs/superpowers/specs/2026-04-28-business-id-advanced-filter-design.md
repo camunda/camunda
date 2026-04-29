@@ -188,3 +188,15 @@ No filter side effects:
 - **Real API integration**. Today the filter values feed into the existing mocked filter pipeline and `// TODO: Replace with API call ...` comments. The `buildBusinessIdFilterValue` helper produces the API-shaped object so the integration is a one-line swap when the backend is ready.
 - **Shared operator constants**. Operate has `BusinessIdFilter/constants.ts`; tasklist has `common/tasks/filters/businessIdOperators.ts`. If Business ID and variables filtering converge across apps, lift to a shared module (likely under `webapps-common/`) at that point — not now.
 - **Decisions filter parity**. Implemented in this work, but verify with the Decisions team that the same operator set is meaningful for decision-instance lookups (Business ID semantics may differ subtly between process instances and decision instances).
+
+## 7. Open question — operator scope across all filterable fields
+
+The epics describing this work talk about logical operators (`$eq`, `$neq`, `$exists`, `$like`, etc.) for filtering. This prototype scopes them to **Business ID only**, but if the API supports operators for all filterable fields, the same UX likely belongs on **every** optional filter — Process Instance Key, Operation ID, Parent Process Instance Key, Error Message, etc. — not just Business ID.
+
+Outstanding question for the product / API discussion:
+
+- Does the v2 search API expose advanced-string-filter / advanced-date-filter operators uniformly across filterable fields? (`AdvancedStringFilter` from `@camunda/camunda-api-zod-schemas` suggests yes for string fields.)
+- If yes, what is the expected rollout — do we promote the per-field operator UX (the `[Dropdown] [TextInput]` row pattern from `BusinessIdFilter`) to a shared component used by every text-typed optional filter, and at what point in the roadmap?
+- Are there fields that *shouldn't* expose operators (e.g. boolean filters like `hasRetriesLeft`, single-select state filters like `active/incidents/completed/canceled`)? Almost certainly yes — but the line should be drawn explicitly rather than per ad-hoc PR.
+
+Resolving this informs whether the `BusinessIdFilter` component should be lifted into a generic `OperatorAwareTextFilter` (reusable) before any second filter adopts the pattern, or whether Business ID stays a one-off until the API contract is broader.
