@@ -193,6 +193,7 @@ public class WebSecurityConfig {
           "/admin/**",
           "/operate/**",
           "/tasklist/**",
+          "/webapp/**",
           "/",
           "/sso-callback/**",
           "/oauth2/authorization/**",
@@ -1119,7 +1120,8 @@ public class WebSecurityConfig {
                               "/tasklist/assets/**",
                               "/tasklist/client-config.js",
                               "/tasklist/custom.css",
-                              "/tasklist/favicon.ico")
+                              "/tasklist/favicon.ico",
+                              "/webapp/assets/**")
                           .permitAll()
                           .anyRequest()
                           .authenticated())
