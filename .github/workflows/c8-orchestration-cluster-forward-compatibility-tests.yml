@@ -241,7 +241,7 @@ jobs:
           echo "Running forward compatibility API tests"
           echo "Server built from: ${{ matrix.server_branch }}"
           echo "Tests checked out from: ${{ matrix.test_branch }}"
-          npm run test -- --project=api-tests --retries=2 --ignore='tests/api/v1/**'
+          npm run test -- --project=api-tests --retries=2 tests/api/v2/
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Sanitize branch names for artifact names
