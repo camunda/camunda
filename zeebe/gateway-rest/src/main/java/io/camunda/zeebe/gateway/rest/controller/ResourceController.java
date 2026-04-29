@@ -14,6 +14,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import io.camunda.gateway.protocol.model.ResourceSearchQuery;
 import io.camunda.gateway.protocol.model.ResourceSearchQueryResult;
+import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
@@ -100,8 +101,7 @@ public class ResourceController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<ResourceSearchQueryResult> search(
-      final io.camunda.search.query.DeployedResourceQuery query) {
+  private ResponseEntity<ResourceSearchQueryResult> search(final DeployedResourceQuery query) {
     try {
       final var result =
           resourceServices.search(query, authenticationProvider.getCamundaAuthentication());

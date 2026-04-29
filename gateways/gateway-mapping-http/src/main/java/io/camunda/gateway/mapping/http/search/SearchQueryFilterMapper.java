@@ -35,6 +35,7 @@ import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
+import io.camunda.gateway.protocol.model.ResourceFilter;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
 import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
@@ -51,6 +52,7 @@ import io.camunda.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
+import io.camunda.search.filter.DeployedResourceFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.GlobalJobStatisticsFilter;
@@ -1417,8 +1419,8 @@ public class SearchQueryFilterMapper {
         : Either.left(validationErrors);
   }
 
-  static Either<List<String>, io.camunda.search.filter.DeployedResourceFilter>
-      toDeployedResourceFilter(final io.camunda.gateway.protocol.model.ResourceFilter filter) {
+  static Either<List<String>, DeployedResourceFilter> toDeployedResourceFilter(
+      final @Nullable ResourceFilter filter) {
     final var builder = FilterBuilders.deployedResource();
     final List<String> validationErrors = new ArrayList<>();
 

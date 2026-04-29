@@ -73,6 +73,7 @@ import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
@@ -571,7 +572,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<DeployedResourceEntity> searchDeployedResources(
-      final io.camunda.search.query.DeployedResourceQuery query) {
+      final DeployedResourceQuery query) {
     return doSearchWithReader(readers.deployedResourceReader(), query);
   }
 

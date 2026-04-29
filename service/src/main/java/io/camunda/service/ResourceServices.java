@@ -17,6 +17,8 @@ import io.camunda.search.clients.DeployedResourceSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.query.DeployedResourceQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ErrorMapper;
@@ -138,9 +140,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     return fetchDeployedResource(resourceKey, authentication, true);
   }
 
-  public io.camunda.search.query.SearchQueryResult<DeployedResourceEntity> search(
-      final io.camunda.search.query.DeployedResourceQuery query,
-      final CamundaAuthentication authentication) {
+  public SearchQueryResult<DeployedResourceEntity> search(
+      final DeployedResourceQuery query, final CamundaAuthentication authentication) {
     try {
       return deployedResourceSearchClient
           .withSecurityContext(

@@ -53,7 +53,9 @@ paths:
       description: |
         Returns a deployed resource.
         :::info
-        Currently, this endpoint only supports RPA resources.
+        This endpoint does not return BPMN process definitions, DMN decision definitions, or form
+        resources. To query BPMN process definitions or DMN decision definitions, use their
+        respective APIs.
         :::
       parameters:
         - name: resourceKey
@@ -126,9 +128,9 @@ paths:
       description: |
         Search for deployed resources based on given criteria.
         :::info
-        This endpoint only returns generic and RPA resources. To query BPMN process definitions,
-        DMN decision definitions, or forms, use their respective search APIs:
-        `/process-definitions/search`, `/decision-definitions/search`, and `/forms/search`.
+        This endpoint does not return BPMN process definitions, DMN decision definitions, or form
+        resources. To query BPMN process definitions or DMN decision definitions, use their
+        respective search APIs.
         :::
       requestBody:
         required: false
