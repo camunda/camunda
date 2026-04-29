@@ -87,11 +87,50 @@ paths:
       tags:
         - Resource
       operationId: getResourceContent
-      summary: Get resource content
+      summary: Get RPA resource content
       description: |
-        Returns the content of a deployed resource.
+        Returns the content of a deployed RPA resource as JSON.
         :::info
-        Currently, this endpoint only supports RPA resources.
+        This endpoint only supports RPA resources. For generic resource content in binary format,
+        use the `/resources/{resourceKey}/content/binary` endpoint.
+        :::
+      parameters:
+        - name: resourceKey
+          in: path
+          required: true
+          description: The unique key identifying the RPA resource.
+          schema:
+            $ref: '#/components/schemas/ResourceKey'
+      responses:
+        "200":
+          description: The resource content is successfully returned.
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: An RPA resource with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.7"
+
+  /resources/{resourceKey}/content/binary:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - Resource
+      operationId: getResourceContentBinary
+      summary: Get resource content as binary
+      description: |
+        Returns the content of a deployed resource in binary format (octet-stream).
+        :::info
+        This endpoint does not return BPMN process definitions, DMN decision definitions, or form
+        resources. To query BPMN process definitions or DMN decision definitions, use their
+        respective APIs.
         :::
       parameters:
         - name: resourceKey
@@ -116,7 +155,7 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-added-in-version: "8.7"
+      x-added-in-version: "8.11"
 
   /resources/search:
     post:

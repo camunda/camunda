@@ -132,12 +132,19 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
 
   public CompletableFuture<DeployedResourceEntity> getByKey(
       final long resourceKey, final CamundaAuthentication authentication) {
-    return fetchDeployedResource(resourceKey, authentication, false);
+    return fetchDeployedResource(resourceKey, authentication, false, null);
   }
 
   public CompletableFuture<DeployedResourceEntity> getContentByKey(
       final long resourceKey, final CamundaAuthentication authentication) {
-    return fetchDeployedResource(resourceKey, authentication, true);
+    return fetchDeployedResource(resourceKey, authentication, true, null);
+  }
+
+  public CompletableFuture<DeployedResourceEntity> getContentByKeyFilteredByType(
+      final long resourceKey,
+      final String resourceType,
+      final CamundaAuthentication authentication) {
+    return fetchDeployedResource(resourceKey, authentication, true, resourceType);
   }
 
   public SearchQueryResult<DeployedResourceEntity> search(
@@ -156,7 +163,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   private CompletableFuture<DeployedResourceEntity> fetchDeployedResource(
       final long resourceKey,
       final CamundaAuthentication authentication,
-      final boolean includeContent) {
+      final boolean includeContent,
+      final String resourceTypeFilter) {
     if (secondaryStorageEnabled) {
       final var securityContext =
           securityContextProvider.provideSecurityContext(
@@ -166,9 +174,22 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
           () -> {
             try {
               final var client = deployedResourceSearchClient.withSecurityContext(securityContext);
-              return includeContent
-                  ? client.getDeployedResource(resourceKey)
-                  : client.getDeployedResourceMetadata(resourceKey);
+              final DeployedResourceEntity entity =
+                  includeContent
+                      ? client.getDeployedResource(resourceKey)
+                      : client.getDeployedResourceMetadata(resourceKey);
+
+              // Filter by resource type if specified
+              if (resourceTypeFilter != null
+                  && !resourceTypeFilter.equalsIgnoreCase(entity.resourceType())) {
+                throw new ServiceException(
+                    String.format(
+                        "Resource with key '%d' is not of type '%s'",
+                        resourceKey, resourceTypeFilter),
+                    ServiceException.Status.NOT_FOUND);
+              }
+
+              return entity;
             } catch (final CamundaSearchException cse) {
               throw ErrorMapper.mapSearchError(cse);
             }
@@ -183,16 +204,34 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
                   // Normalize error message to match secondary storage format
                   throw mapResourceNotFoundError(error, resourceKey);
                 }
-                return new DeployedResourceEntity(
-                    record.getResourceKey(),
-                    record.getResourceId(),
-                    record.getResourceName(),
-                    null,
-                    record.getVersion(),
-                    record.getVersionTag(),
-                    record.getDeploymentKey(),
-                    record.getTenantId(),
-                    includeContent ? record.getResourceProp() : null);
+
+                final DeployedResourceEntity entity =
+                    new DeployedResourceEntity(
+                        record.getResourceKey(),
+                        record.getResourceId(),
+                        record.getResourceName(),
+                        null,
+                        record.getVersion(),
+                        record.getVersionTag(),
+                        record.getDeploymentKey(),
+                        record.getTenantId(),
+                        includeContent ? record.getResourceProp() : null);
+
+                // Filter by resource type if specified
+                // Note: primary storage doesn't have resourceType, so we cannot filter
+                // This means the old /content endpoint will work for all resources when using
+                // primary storage
+                if (resourceTypeFilter != null
+                    && entity.resourceType() != null
+                    && !resourceTypeFilter.equalsIgnoreCase(entity.resourceType())) {
+                  throw new ServiceException(
+                      String.format(
+                          "Resource with key '%d' is not of type '%s'",
+                          resourceKey, resourceTypeFilter),
+                      ServiceException.Status.NOT_FOUND);
+                }
+
+                return entity;
               });
     }
   }

@@ -86,6 +86,18 @@ public class ResourceController {
       @PathVariable final long resourceKey) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
+        () -> resourceServices.getContentByKeyFilteredByType(resourceKey, "rpa", authentication),
+        entity ->
+            ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ResponseMapper.toGetResourceContentResponse(entity)));
+  }
+
+  @CamundaGetMapping(path = "/resources/{resourceKey}/content/binary")
+  public CompletableFuture<ResponseEntity<Object>> getResourceContentBinary(
+      @PathVariable final long resourceKey) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethod(
         () -> resourceServices.getContentByKey(resourceKey, authentication),
         entity ->
             ResponseEntity.ok()
