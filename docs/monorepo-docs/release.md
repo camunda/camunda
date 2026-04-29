@@ -58,7 +58,7 @@ Components that depend on the C8 monorepo releases:
 
 ### Artifacts
 
-* [Maven Central](https://mvnrepository.com/artifact/io.camunda)
+* [Maven Central](https://central.sonatype.com/search?q=camunda&sort=published)
 * DockerHub:
   * [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
   * [Operate](https://hub.docker.com/r/camunda/operate/)
@@ -256,8 +256,6 @@ For visibility and prioritization there is the (internal) [Monorepo Release proj
 For CI-related issues in the release process, also see our [CI & Automation documentation](./ci.md#issue-tracking).
 
 ## DRIs
-
-_This section is subject to change in_ [_#28528_](https://github.com/camunda/camunda/issues/28528)_._
 
 ### Release Manager
 
