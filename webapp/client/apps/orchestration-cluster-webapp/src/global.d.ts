@@ -1,0 +1,52 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {Mixpanel} from 'mixpanel-browser';
+
+type Appcues = {
+	debug: () => void;
+	page: () => void;
+	identify: (
+		username: string,
+		properties?: {[property: string]: unknown},
+	) => void;
+	track: (
+		eventName: string,
+		properties?: {[eventProperty: string]: unknown},
+	) => void;
+};
+
+export declare global {
+	interface Window {
+		Osano?: {
+			cm?: {
+				analytics: boolean;
+				showDrawer: (arg: string) => void;
+				addEventListener: (
+					eventType: string,
+					callback: (arg: {ANALYTICS: 'ACCEPT' | 'DENY'}) => void,
+				) => void;
+			};
+		};
+		Appcues?: Appcues;
+		mixpanel?: Mixpanel;
+	}
+
+	interface ImportMetaEnv {
+		readonly VITE_VERSION: string;
+		readonly VITE_DEV_ENV_URL: string;
+		readonly VITE_INT_ENV_URL: string;
+		readonly VITE_PROD_ENV_URL: string;
+		readonly VITE_OSANO_DEV_ENV_URL: string;
+		readonly VITE_OSANO_INT_ENV_URL: string;
+		readonly VITE_OSANO_PROD_ENV_URL: string;
+		readonly VITE_MIXPANEL_TOKEN: string;
+		readonly VITE_MIXPANEL_HOST: string;
+		readonly VITE_CUES_HOST: string;
+	}
+}
