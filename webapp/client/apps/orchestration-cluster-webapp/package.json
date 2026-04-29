@@ -4,7 +4,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev --port 3000",
-		"build": "vite build",
+		"build": "vite build && node ./renameProdIndex.mjs",
 		"typecheck": "tsc -p tsconfig.browser.json",
 		"extract-sbom": "vite build --mode sbom"
 	},
