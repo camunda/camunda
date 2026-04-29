@@ -31,6 +31,19 @@ Two escape hatches:
 
 Rule of thumb: if the value escapes the immediate read (passed to a helper that may itself read state, stored anywhere, or returned across another `get` on the same CF), copy it.
 
+## Non-transactional side effects
+
+State writes (`stateWriter.appendFollowUpEvent`, follow-up commands, response writes) are transactional — they roll back together if processing throws. **Inline side effects are not.** Direct calls to metrics (`metric.increment()`), post-commit hooks, or other external mutations execute immediately and are *not* undone when the transaction rolls back.
+
+Two asymmetries to remember:
+
+- **Forward** (already in `zeebe/engine/README.md` § *Side-effects are not guaranteed to be executed*): a side effect may not run — failover or commit failure can drop it. Don't put critical work in one.
+- **Inverse** (not in the README): a side effect that *did* run is not rolled back. If it executes before a later state write that throws, the state rolls back but the side effect stays — counters drift, sometimes negative.
+
+**Fix:** order matters. Inside a processor, do all state writes, follow-up commands, and response writes — and any helper calls that could throw — first. Run inline non-transactional side effects only after every potentially-throwing step has succeeded.
+
+Production example: `IncidentResolveProcessor.processRecord` called `incidentMetrics.incidentResolved()` before `publishIncidentRelatedJob(...)` and `attemptToContinueProcessProcessing(...)`, both of which can throw. On the throw path, the resolved-incident counter incremented while the state rolled back.
+
 ## Error and rejection messages
 
 - **Follow the format** `Expected [X], but got [Y] [in CONTEXT]`. Include execution context (partition ID, entity key, etc.) when it helps the user act on the failure.
