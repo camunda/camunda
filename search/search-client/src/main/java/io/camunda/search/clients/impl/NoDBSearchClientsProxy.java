@@ -391,8 +391,7 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
-    throw new UnsupportedOperationException(
-        "Physical tenants are not supported by " + getClass().getSimpleName());
+    return this;
   }
 
   @Override

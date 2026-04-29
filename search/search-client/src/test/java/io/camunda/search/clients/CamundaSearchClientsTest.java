@@ -7,7 +7,6 @@
  */
 package io.camunda.search.clients;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -253,6 +252,8 @@ class CamundaSearchClientsTest {
     @Test
     void shouldPreserveSecurityContextAndResourceAccessControllerOnTheReturnedInstance() {
       // given
+      when(tenantAReaders.processInstanceReader()).thenReturn(tenantAProcessInstanceReader);
+      when(readers.processInstanceReader()).thenReturn(processInstanceReader);
       final var securityContext = SecurityContext.of(b -> b);
       final var clients =
           new CamundaSearchClients(
@@ -261,10 +262,14 @@ class CamundaSearchClientsTest {
               securityContext);
 
       // when
-      final var tenantScoped = clients.withPhysicalTenant(TENANT_A);
+      clients
+          .withPhysicalTenant(TENANT_A)
+          .withSecurityContext(securityContext)
+          .searchProcessInstances(ProcessInstanceQuery.of(b -> b));
 
-      // then
-      assertThat(tenantScoped.withSecurityContext(securityContext)).isNotNull();
+      // then — switching the security context must not reset the physical tenant scoping
+      verify(tenantAProcessInstanceReader).search(any(), any());
+      verifyNoInteractions(processInstanceReader);
     }
   }
 }

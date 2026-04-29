@@ -29,6 +29,12 @@ public record SearchClients(
 
   private static final Logger LOG = LoggerFactory.getLogger(SearchClients.class);
 
+  public SearchClients {
+    esClients = Map.copyOf(esClients);
+    osClients = Map.copyOf(osClients);
+    osAsyncClients = Map.copyOf(osAsyncClients);
+  }
+
   public static SearchClients from(final Map<String, ConnectConfiguration> tenantConfigs) {
     final var esClients = new LinkedHashMap<String, ElasticsearchClient>();
     final var osClients = new LinkedHashMap<String, OpenSearchClient>();

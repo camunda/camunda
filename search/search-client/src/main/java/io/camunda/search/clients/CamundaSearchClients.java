@@ -129,6 +129,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   private final SearchClientReaders readers;
   private final Map<String, SearchClientReaders> tenantReaders;
+  private final String currentPhysicalTenantId;
   private final ResourceAccessController resourceAccessController;
   private final SecurityContext securityContext;
 
@@ -151,6 +152,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
           "Missing readers for tenant '%s'. Known tenants: %s"
               .formatted(currentTenantId, this.tenantReaders.keySet()));
     }
+    currentPhysicalTenantId = currentTenantId;
     this.resourceAccessController = resourceAccessController;
     this.securityContext = securityContext;
   }
@@ -240,7 +242,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   @Override
   public CamundaSearchClients withSecurityContext(final SecurityContext securityContext) {
-    return new CamundaSearchClients(tenantReaders, resourceAccessController, securityContext);
+    return new CamundaSearchClients(
+        tenantReaders, currentPhysicalTenantId, resourceAccessController, securityContext);
   }
 
   @Override
