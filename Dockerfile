@@ -19,6 +19,8 @@ ARG BASE="hardened"
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
 
+ARG ZB_HOME=/usr/local/zeebe
+
 ### Base Application Image ###
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
@@ -85,21 +87,22 @@ FROM ${DIST} AS dist
 ### AppCDS archive generation ###
 # hadolint ignore=DL3006
 FROM base-${BASE} AS cds-gen
+ARG ZB_HOME
 
 # hadolint ignore=DL3002
 USER root
 
-# Copy to /usr/local/zeebe so classpath entries match the runtime image exactly.
+# Copy to ${ZB_HOME} so classpath entries match the runtime image exactly.
 # CDS archives are path-sensitive: if the classpath differs at load time the archive is ignored.
-COPY --from=dist --chown=root:root /zeebe/camunda-zeebe /usr/local/zeebe
+COPY --from=dist --chown=root:root /zeebe/camunda-zeebe ${ZB_HOME}
 
 # Run a training boot: classes are recorded into camunda.jsa on JVM exit.
 # spring.context.exit=onRefresh causes a clean exit right after context refresh.
 # camunda.data.secondary-storage.type=NONE disables all DB/ES connections.
 # || true: any remaining failures are acceptable;
 #          the archive is still written because -XX:ArchiveClassesAtExit fires on any exit.
-RUN JAVA_OPTS="-XX:ArchiveClassesAtExit=/usr/local/zeebe/camunda.jsa" \
-       /usr/local/zeebe/bin/camunda \
+RUN JAVA_OPTS="-XX:ArchiveClassesAtExit=${ZB_HOME}/camunda.jsa" \
+       ${ZB_HOME}/bin/camunda \
          --spring.context.exit=onRefresh \
          "--camunda.data.secondary-storage.type=NONE" \
     || true
@@ -140,9 +143,10 @@ LABEL io.openshift.non-scalable="false"
 LABEL io.openshift.min-memory="512Mi"
 LABEL io.openshift.min-cpu="1"
 
-ENV ZB_HOME=/usr/local/zeebe \
-    ZEEBE_STANDALONE_GATEWAY=false \
-    ZEEBE_RESTORE=false
+ARG ZB_HOME
+ENV ZB_HOME=${ZB_HOME} \
+  ZEEBE_STANDALONE_GATEWAY=false \
+  ZEEBE_RESTORE=false
 ENV PATH="${ZB_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
 # We know there's no need to check for musl on this image
@@ -173,7 +177,7 @@ VOLUME /driver-lib
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
-COPY --from=cds-gen --chown=1001:0 /usr/local/zeebe/camunda.jsa ${ZB_HOME}/camunda.jsa
+COPY --from=cds-gen --chown=1001:0 ${ZB_HOME}/camunda.jsa ${ZB_HOME}/camunda.jsa
 
 RUN ln -s /driver-lib ${ZB_HOME}/driver-lib
 
