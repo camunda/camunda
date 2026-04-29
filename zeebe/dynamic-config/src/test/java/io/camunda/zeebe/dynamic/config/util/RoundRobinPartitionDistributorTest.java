@@ -120,7 +120,7 @@ final class RoundRobinPartitionDistributorTest {
               .members()
               .forEach(
                   member -> {
-                    final int nodeId = MemberId.extractNodeId(member);
+                    final int nodeId = member.nodeIdx();
                     assertThat(metadata.getPriority(member))
                         .describedAs(
                             "Priority should be set for nodeId %d in partition %d",

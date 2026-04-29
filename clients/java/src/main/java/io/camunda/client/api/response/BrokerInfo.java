@@ -32,10 +32,7 @@ public interface BrokerInfo {
    * @return the member ID of the broker: {@code "$zone/$nodeId"} when the cluster is zone-aware
    *     (e.g. {@code "us-east/0"}), or the bare node ID otherwise (e.g. {@code "0"})
    */
-  default String getMemberId() {
-    final String zone = getZone();
-    return zone == null ? String.valueOf(getNodeId()) : zone + "/" + getNodeId();
-  }
+  String getMemberId();
 
   /**
    * @return the address host of the broker

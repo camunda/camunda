@@ -98,7 +98,7 @@ public final class ClusterConfigurationManagerService
             config,
             clusterConfigurationManager::onGossipReceived,
             topologyMetrics);
-    isCoordinator = MemberId.extractNodeId(localMemberId) == COORDINATOR_NODE_ID;
+    isCoordinator = localMemberId.nodeIdx() == COORDINATOR_NODE_ID;
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
             clusterConfigurationManager, localMemberId, managerActor);

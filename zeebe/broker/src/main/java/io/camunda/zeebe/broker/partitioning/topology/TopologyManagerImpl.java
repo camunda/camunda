@@ -232,7 +232,7 @@ public final class TopologyManagerImpl extends Actor
                       LOG,
                       () ->
                           listener.onPartitionLeaderUpdated(
-                              partitionId, resolveMemberId(leader.getNodeId()))));
+                              partitionId, resolveMemberIdInZone(leader.getNodeId()))));
         });
   }
 
@@ -261,20 +261,20 @@ public final class TopologyManagerImpl extends Actor
   }
 
   private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
-    final var leaderId = resolveMemberId(member.getNodeId());
+    final var leaderId = resolveMemberIdInZone(member.getNodeId());
     for (final TopologyPartitionListener listener : topologyPartitionListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, leaderId));
     }
   }
 
-  private MemberId resolveMemberId(final int nodeId) {
+  private MemberId resolveMemberIdInZone(final int nodeId) {
     return membershipService.getMembers().stream()
         .map(Member::id)
         .filter(
             id -> {
               try {
-                return MemberId.extractNodeId(id) == nodeId;
-              } catch (final NumberFormatException e) {
+                return id.isInZone(localBroker.zone()) && id.nodeIdx() == nodeId;
+              } catch (final Exception e) {
                 return false;
               }
             })

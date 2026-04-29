@@ -78,7 +78,7 @@ final class MemberIdTest {
     final var memberId = MemberId.from("3");
 
     // when
-    final var nodeId = MemberId.extractNodeId(memberId);
+    final var nodeId = memberId.nodeIdx();
 
     // then
     assertThat(nodeId).isEqualTo(3);
@@ -90,7 +90,7 @@ final class MemberIdTest {
     final var memberId = MemberId.from("us-east/12");
 
     // when
-    final var nodeId = MemberId.extractNodeId(memberId);
+    final var nodeId = memberId.nodeIdx();
 
     // then
     assertThat(nodeId).isEqualTo(12);
@@ -102,8 +102,7 @@ final class MemberIdTest {
     final var memberId = MemberId.from("anonymous");
 
     // then
-    assertThatThrownBy(() -> MemberId.extractNodeId(memberId))
-        .isInstanceOf(NumberFormatException.class);
+    assertThatThrownBy(memberId::nodeIdx).isInstanceOf(NumberFormatException.class);
   }
 
   static Stream<Arguments> isInZoneCases() {

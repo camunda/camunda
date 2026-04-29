@@ -20,10 +20,22 @@ import java.util.List;
  * and its protocol.
  */
 record TestTopology(
-    int clusterSize, int partitionsCount, int replicationFactor, List<BrokerInfo> brokers)
+    int clusterSize,
+    int partitionsCount,
+    int replicationFactor,
+    List<BrokerInfo> brokers,
+    String zone)
     implements Topology {
 
   private static final String HARDCODED_VERSION = VersionUtil.getVersion();
+
+  TestTopology(
+      final int clusterSize,
+      final int partitionsCount,
+      final int replicationFactor,
+      final List<BrokerInfo> brokers) {
+    this(clusterSize, partitionsCount, replicationFactor, brokers, null);
+  }
 
   @Override
   public List<BrokerInfo> getBrokers() {
@@ -79,11 +91,25 @@ record TestTopology(
     }
   }
 
-  record TestBroker(int nodeId, List<PartitionInfo> partitions) implements BrokerInfo {
+  record TestBroker(int nodeId, String zone, List<PartitionInfo> partitions) implements BrokerInfo {
+
+    public TestBroker(final int nodeId, final List<PartitionInfo> partitions) {
+      this(nodeId, null, partitions);
+    }
 
     @Override
     public int getNodeId() {
       return nodeId;
+    }
+
+    @Override
+    public String getZone() {
+      return "";
+    }
+
+    @Override
+    public String getMemberId() {
+      return zone + "/" + nodeId;
     }
 
     @Override
