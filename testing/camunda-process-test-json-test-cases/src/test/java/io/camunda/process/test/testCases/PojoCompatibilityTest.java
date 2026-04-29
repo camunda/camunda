@@ -46,6 +46,7 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableAssertElement
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertUserTaskInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableBroadcastSignalInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobAdHocSubProcessInstruction;
@@ -63,6 +64,7 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorker
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableResolveIncidentInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableSatisfiesJudge;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSetTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableUpdateVariablesInstruction;
@@ -254,7 +256,7 @@ public class PojoCompatibilityTest {
                             .build())
                     .state(UserTaskState.IS_CREATED)
                     .assignee("me")
-                    .candidateGroups(Arrays.asList("manager"))
+                    .candidateGroups(Collections.singletonList("manager"))
                     .priority(100)
                     .elementId("task1")
                     .name("Review")
@@ -518,6 +520,39 @@ public class PojoCompatibilityTest {
                     .addVariableNames("var1", "var2")
                     .putVariables("x", 3)
                     .putVariables("y", "okay")
+                    .build())),
+        // ===== ASSERT_VARIABLE =====
+        Arguments.of(
+            "assert variable: satisfies judge with expectation",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("ai-agent-process")
+                            .build())
+                    .variableName("agentResponse")
+                    .satisfiesJudge(
+                        ImmutableSatisfiesJudge.builder()
+                            .expectation("should contain a valid summary of the data report")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert variable: satisfies judge with expectation, threshold, prompt",
+            singleTestCase(
+                ImmutableAssertVariableInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("ai-agent-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("ai-subprocess").build())
+                    .variableName("localResult")
+                    .satisfiesJudge(
+                        ImmutableSatisfiesJudge.builder()
+                            .expectation("should be a properly formatted JSON response")
+                            .threshold(0.8)
+                            .customPrompt("You are evaluating data accuracy")
+                            .build())
                     .build())),
         // ===== ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION =====
         Arguments.of(
