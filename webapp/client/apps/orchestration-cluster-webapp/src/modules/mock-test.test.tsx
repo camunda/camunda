@@ -7,10 +7,21 @@
  */
 
 import {it} from '#/testing-modules/test-extend';
+import {createEndpointMock} from '#/testing-modules/mock-endpoint';
 import {Button} from '@carbon/react';
 import {useEffect, useState} from 'react';
 import {render} from 'vitest-browser-react';
-import {http, HttpResponse} from 'msw';
+import {HttpResponse} from 'msw';
+import {z} from 'zod';
+
+const mockDataEndpoint = createEndpointMock({
+	endpoint: '/api/data',
+	method: 'POST',
+});
+
+const requestSchema = z.object({
+	key: z.string(),
+});
 
 function MockComponent() {
 	const [response, setResponse] = useState<'network-error' | 'response-error' | 'success' | null>(null);
@@ -48,11 +59,13 @@ function MockComponent() {
 	);
 }
 
-describe('foobar', () => {
-	it('shoud make request', async ({worker}) => {
+describe('endpoint mocks', () => {
+	it('should make request', async ({worker}) => {
 		worker.use(
-			http.post('/api/data', () => {
-				return HttpResponse.json({data: 'value'});
+			mockDataEndpoint({
+				schema: requestSchema,
+				failureResponse: HttpResponse.json({error: 'bad request'}, {status: 400}),
+				successResponse: HttpResponse.json({data: 'value'}),
 			}),
 		);
 		const screen = await render(<MockComponent />);
@@ -63,10 +76,14 @@ describe('foobar', () => {
 		await expect.element(screen.getByText(/Response:/)).toHaveTextContent('Response: "success"');
 	});
 
-	it('shoud handle response error', async ({worker}) => {
+	it('should handle response error', async ({worker}) => {
 		worker.use(
-			http.post('/api/data', () => {
-				return HttpResponse.json({error: 'bad request'}, {status: 400});
+			mockDataEndpoint({
+				schema: z.object({
+					key: z.number(),
+				}),
+				failureResponse: HttpResponse.json({error: 'bad request'}, {status: 400}),
+				successResponse: HttpResponse.json({data: 'value'}),
 			}),
 		);
 		const screen = await render(<MockComponent />);
@@ -74,10 +91,10 @@ describe('foobar', () => {
 		await expect.element(screen.getByText(/Response:/)).toHaveTextContent('Response: "response-error"');
 	});
 
-	it('shoud handle network error', async ({worker}) => {
+	it('should handle network error', async ({worker}) => {
 		worker.use(
-			http.post('/api/data', () => {
-				return HttpResponse.error();
+			mockDataEndpoint({
+				successResponse: HttpResponse.error(),
 			}),
 		);
 		const screen = await render(<MockComponent />);
