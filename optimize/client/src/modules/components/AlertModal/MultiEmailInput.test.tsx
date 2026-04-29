@@ -8,7 +8,7 @@
 
 import {ChangeEvent, KeyboardEvent} from 'react';
 import {shallow} from 'enzyme';
-import {MultiValueInput} from '@camunda/camunda-optimize-composite-components';
+import {MultiValueInput} from 'components';
 
 import MultiEmailInput from './MultiEmailInput';
 

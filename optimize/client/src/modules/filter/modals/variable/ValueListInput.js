@@ -9,9 +9,9 @@
 import React, {useState} from 'react';
 import update from 'immutability-helper';
 import classnames from 'classnames';
-import {MultiValueInput} from '@camunda/camunda-optimize-composite-components';
 import {Checkbox, Stack, TextInput} from '@carbon/react';
 
+import {MultiValueInput} from 'components';
 import {t} from 'translation';
 
 import './ValueListInput.scss';
