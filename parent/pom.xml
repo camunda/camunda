@@ -2257,7 +2257,6 @@
           <configuration>
             <parameters>true</parameters>
             <release>${version.java}</release>
-            <fork>true</fork>
             <compilerArgs>
               <!-- ensure we generate a class file for package-info.java files to avoid recompiling every time -->
               <arg>-Xpkginfo:always</arg>
@@ -2265,11 +2264,6 @@
             <useIncrementalCompilation>false</useIncrementalCompilation>
           </configuration>
           <dependencies>
-            <dependency>
-              <groupId>org.codehaus.plexus</groupId>
-              <artifactId>plexus-compiler-javac-errorprone</artifactId>
-              <version>2.15.0</version>
-            </dependency>
             <dependency>
               <groupId>com.google.errorprone</groupId>
               <artifactId>error_prone_core</artifactId>
@@ -2303,16 +2297,6 @@
                   <arg>--should-stop=ifError=FLOW</arg>
                   <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
                   <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepExcludedPaths:.*/target/generated-sources/.* -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:AcknowledgeRestrictiveAnnotations=true</arg>
-                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
-                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
-                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
-                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
-                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
-                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
-                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
-                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
-                  <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
-                  <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
                 </compilerArgs>
               </configuration>
             </execution>
