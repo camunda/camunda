@@ -327,6 +327,25 @@ class ApiEntityConsumerTest {
     assertThat(problemDetail.getInstance()).isEqualTo("/v1/entity/123");
   }
 
+  @Test
+  void shouldReturnRawStringWhenExpectedTypeIsStringAndContentTypeIsJson() throws IOException {
+    // given - an RPA resource whose content is itself a JSON document
+    final String rpaContent =
+        "{\n  \"type\": \"default\",\n  \"id\": \"RPA_auditlog_test\",\n  \"schemaVersion\": 7\n}\n";
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(rpaContent.getBytes(StandardCharsets.UTF_8));
+    final ApiEntityConsumer<String> consumer =
+        new ApiEntityConsumer<>(JSON_MAPPER, String.class, 2048);
+
+    // when
+    consumer.streamStart(ContentType.APPLICATION_JSON);
+    consumer.data(byteBuffer, true);
+    final ApiEntity<String> entity = consumer.generateContent();
+
+    // then - the raw content is returned as-is, not Jackson-deserialized
+    assertThat(entity).isInstanceOf(Response.class);
+    assertThat(entity.response()).isEqualTo(rpaContent);
+  }
+
   // Test entity class used for JSON serialization/deserialization
   static class TestEntity {
     private String name;
