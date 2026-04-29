@@ -20,10 +20,18 @@
  * test suite against a newer server that returns additional fields not yet
  * declared in `responses.json`.
  *
- * All other error categories (`[MISSING]`, `[TYPE]`, `[ENUM]`) still fail.
+ * When `AJB_ALLOW_NULL_VALUES=true` is set, `[TYPE]` errors where the
+ * received value is `null` are also filtered out. A newer server may make
+ * previously-required fields nullable (e.g. new entity types with optional
+ * relations), and this tolerance avoids false positives in forward-compat
+ * test runs.
  *
- * Usage: set `AJB_ALLOW_EXTRA_FIELDS: "true"` in the CI workflow `env` block
- * for forward-compatibility test runs.
+ * All other error categories (`[MISSING]`, `[ENUM]`, non-null `[TYPE]`) still
+ * fail.
+ *
+ * Usage: set `AJB_ALLOW_EXTRA_FIELDS: "true"` and optionally
+ * `AJB_ALLOW_NULL_VALUES: "true"` in the CI workflow `env` block for
+ * forward-compatibility test runs.
  */
 
 import {
@@ -37,21 +45,29 @@ export type {TypedRouteSpec} from './_generated/index.js';
 export {RESPONSE_INDEX} from './_generated/index.js';
 
 // ---------------------------------------------------------------------------
-// Forward-compatibility: filter [EXTRA] errors
+// Forward-compatibility: filter known benign validation errors
 // ---------------------------------------------------------------------------
 
 const _allowExtraFields = process.env.AJB_ALLOW_EXTRA_FIELDS === 'true';
+const _allowNullValues = process.env.AJB_ALLOW_NULL_VALUES === 'true';
 
 // Derive types from the generated functions so they stay in sync with
 // assert-json-body upgrades without manual maintenance.
 type ValidateOptions = Parameters<typeof _generatedValidateResponseShape>[2];
 type ValidationResult = ReturnType<typeof _generatedValidateResponseShape>;
 
-function _filterExtraFieldErrors(result: ValidationResult): ValidationResult {
-  if (!_allowExtraFields || result.ok || !result.errors) return result;
+function _filterForwardCompatErrors(
+  result: ValidationResult,
+): ValidationResult {
+  if (result.ok || !result.errors) return result;
+  if (!_allowExtraFields && !_allowNullValues) return result;
 
   const remaining = result.errors.filter(
-    (e: string) => !e.startsWith('[EXTRA]'),
+    (e: string) =>
+      !(_allowExtraFields && e.startsWith('[EXTRA]')) &&
+      !(_allowNullValues &&
+        e.startsWith('[TYPE]') &&
+        /: expected .*, got null/.test(e)),
   );
   if (remaining.length === 0) {
     return {...result, ok: true, errors: undefined};
@@ -76,17 +92,17 @@ export function validateResponseShape<
   body: unknown,
   options?: ValidateOptions,
 ) {
-  if (!_allowExtraFields) {
+  if (!_allowExtraFields && !_allowNullValues) {
     return _generatedValidateResponseShape(spec, body, options);
   }
 
-  // Call without throwing so we can filter [EXTRA] errors first.
+  // Call without throwing so we can filter forward-compat errors first.
   const result = _generatedValidateResponseShape(spec, body, {
     ...options,
     throw: false,
   }) as ValidationResult;
 
-  const filtered = _filterExtraFieldErrors(result);
+  const filtered = _filterForwardCompatErrors(result);
   if (!filtered.ok) {
     const shouldThrow = options?.throw !== undefined ? options.throw : true;
     if (shouldThrow) {
@@ -112,19 +128,19 @@ export async function validateResponse<
   response: PlaywrightAPIResponse,
   options?: ValidateOptions,
 ) {
-  if (!_allowExtraFields) {
+  if (!_allowExtraFields && !_allowNullValues) {
     return _generatedValidateResponse(spec, response, options);
   }
 
   // Delegate body parsing and status checks to the base implementation
   // (handles empty bodies, non-JSON responses, etc.) but suppress throws
-  // so we can filter [EXTRA] errors before deciding whether to throw.
+  // so we can filter forward-compat errors before deciding whether to throw.
   const result = (await _generatedValidateResponse(spec, response, {
     ...options,
     throw: false,
   })) as ValidationResult;
 
-  const filtered = _filterExtraFieldErrors(result);
+  const filtered = _filterForwardCompatErrors(result);
   if (!filtered.ok) {
     const shouldThrow = options?.throw !== undefined ? options.throw : true;
     if (shouldThrow) {
