@@ -146,6 +146,9 @@
 # AI Assistant Instructions
 /CLAUDE.md  @camunda/orchestration-cluster
 
+# Engine-expert skill
+/.claude/skills/engine-expert/  @korthout @camunda/core-features
+
 # MCP gateway
 /gateways/gateway-mcp @camunda/connectors-agentic-ai
 
