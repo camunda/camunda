@@ -2284,6 +2284,11 @@
                   <arg>-XDcompilePolicy=simple</arg>
                   <arg>--should-stop=ifError=FLOW</arg>
                   <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
+                  <!--
+                    - exclude generated-sources (e.g. openapi) from nullaway checks
+                    - exclude all other checks from error prone except for nullaway
+                    - enable nullaway only on classes/packages marked as @NullMarked
+                  -->
                   <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepExcludedPaths:.*/target/generated-sources/.* -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:AcknowledgeRestrictiveAnnotations=true</arg>
                 </compilerArgs>
               </configuration>
