@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.micrometer.core.instrument.distribution.ValueAtPercentile;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -102,39 +103,18 @@ class MetricsExporterTest {
   }
 
   @Test
-  void shouldObserveProcessInstanceExecutionTimeWithPercentiles() throws Exception {
+  void shouldObserveProcessInstanceExecutionTimeWithPercentiles() {
     // given
-    final var exporter = new MetricsExporter();
-    exporter.configure(context);
-    exporter.open(new ExporterTestController());
+    final var registry = new SimpleMeterRegistry();
+    final var metrics = new ExecutionLatencyMetrics(registry);
 
     // when
-    exporter.export(
-        ImmutableRecord.<ProcessInstanceRecord>builder()
-            .withRecordType(RecordType.EVENT)
-            .withValueType(ValueType.PROCESS_INSTANCE)
-            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-            .withTimestamp(1651505728460L)
-            .withKey(Protocol.encodePartitionId(1, 1))
-            .withValue(new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS))
-            .build());
-    exporter.export(
-        ImmutableRecord.<ProcessInstanceRecord>builder()
-            .withRecordType(RecordType.EVENT)
-            .withValueType(ValueType.PROCESS_INSTANCE)
-            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .withTimestamp(1651505730960L)
-            .withKey(Protocol.encodePartitionId(1, 1))
-            .withValue(new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS))
-            .build());
+    metrics.observeProcessInstanceExecutionTime(0L, 2500L);
 
     // then
-    final var executionTimer =
-        context.getMeterRegistry().timer("zeebe.process.instance.execution.time");
+    final var executionTimer = registry.timer("zeebe.process.instance.execution.time");
 
-    assertThat(executionTimer.count())
-        .isOne()
-        .describedAs("Expected exactly 1 observed process instance execution time sample counted");
+    assertThat(executionTimer.count()).isOne();
 
     assertThat(
             Arrays.stream(executionTimer.takeSnapshot().percentileValues())
