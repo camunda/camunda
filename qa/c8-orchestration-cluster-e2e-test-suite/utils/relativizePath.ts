@@ -37,6 +37,9 @@ export const Paths = {
   globalTaskListeners() {
     return '/admin/global-task-listeners';
   },
+  mcpProcesses() {
+    return '/admin/mcp-processes';
+  },
   operateDashboard() {
     return '/operate';
   },
