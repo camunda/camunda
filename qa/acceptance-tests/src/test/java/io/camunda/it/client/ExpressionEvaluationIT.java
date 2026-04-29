@@ -15,15 +15,20 @@ import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.api.response.EvaluationWarning;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -890,4 +895,244 @@ public class ExpressionEvaluationIT {
         .extracting(ClientHttpException::code)
         .isEqualTo(500);
   }
+
+  // ============ PROCESS / ELEMENT INSTANCE CONTEXT TESTS ============
+
+  @Test
+  void shouldEvaluateExpressionInProcessInstanceContext() {
+    // given
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10, "y", 20));
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x + y")
+            .processInstanceKey(instance.processInstanceKey)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getResult()).isEqualTo(30);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldEvaluateExpressionInElementInstanceContext() {
+    // given
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10, "y", 20));
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x + y")
+            .elementInstanceKey(instance.elementInstanceKey)
+            .send()
+            .join();
+
+    // then - element instance inherits from the process instance scope
+    assertThat(response.getResult()).isEqualTo(30);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldRejectWhenBothProcessInstanceKeyAndElementInstanceKeyAreSet() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newEvaluateExpressionCommand()
+                    .expression("=1")
+                    .processInstanceKey(1L)
+                    .elementInstanceKey(2L)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("processInstanceKey")
+        .hasMessageContaining("elementInstanceKey")
+        .hasMessageContaining("mutually exclusive");
+  }
+
+  @Test
+  void shouldReturnNullWhenProcessVariableNotInScope() {
+    // given - process started without any variables, so x is not in scope
+    final ProcessAndElement instance = deployAndStart(Map.of());
+
+    // when
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .processInstanceKey(instance.processInstanceKey)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getResult()).isNull();
+    assertThat(response.getWarnings())
+        .extracting(EvaluationWarning::getMessage)
+        .anySatisfy(message -> assertThat(message).contains("No variable found with name 'x'"));
+  }
+
+  // ---- precedence: same variable name at process and element scope ----
+
+  @Test
+  void shouldReadProcessLevelVariableWhenUsingProcessInstanceKey() {
+    // given - process-level x=10, element-local x=99 (shadows only the element scope)
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+    setLocalVariable(instance.elementInstanceKey, "x", 99);
+
+    // when - asking with processInstanceKey resolves at the process root scope
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .processInstanceKey(instance.processInstanceKey)
+            .send()
+            .join();
+
+    // then - process-level value wins because the element-local var is not visible at root
+    assertThat(response.getResult()).isEqualTo(10);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldReadElementLevelVariableWhenUsingElementInstanceKey() {
+    // given - same setup as above: process-level x=10, element-local x=99
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+    setLocalVariable(instance.elementInstanceKey, "x", 99);
+
+    // when - asking with elementInstanceKey resolves starting at the element scope
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .elementInstanceKey(instance.elementInstanceKey)
+            .send()
+            .join();
+
+    // then - element-local value shadows the process-level value
+    assertThat(response.getResult()).isEqualTo(99);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  // ---- precedence: request-body variables override engine variables ----
+
+  @Test
+  void shouldOverrideProcessVariableWithRequestVariableInProcessContext() {
+    // given - process-level x=10
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+
+    // when - request-body variable x=999 is supplied alongside processInstanceKey
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .processInstanceKey(instance.processInstanceKey)
+            .variable("x", 999)
+            .send()
+            .join();
+
+    // then - request-body value takes precedence over the engine variable
+    assertThat(response.getResult()).isEqualTo(999);
+  }
+
+  @Test
+  void shouldOverrideElementVariableWithRequestVariableInElementContext() {
+    // given - process-level x=10, element-local x=99
+    final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
+    setLocalVariable(instance.elementInstanceKey, "x", 99);
+
+    // when - request-body variable x=999 is supplied alongside elementInstanceKey
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression("=x")
+            .elementInstanceKey(instance.elementInstanceKey)
+            .variable("x", 999)
+            .send()
+            .join();
+
+    // then - request-body value takes precedence over both engine scopes
+    assertThat(response.getResult()).isEqualTo(999);
+  }
+
+  // ============ HELPERS ============
+
+  private ProcessAndElement deployAndStart(final Map<String, Object> processVariables) {
+    final String processId = "expr_proc_" + UUID.randomUUID().toString().replace("-", "");
+    final String taskId = "wait_task";
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask(taskId, t -> t.zeebeJobType("expr-eval-it-noop"))
+            .endEvent()
+            .done();
+
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(model, processId + ".bpmn")
+        .send()
+        .join();
+
+    final long processInstanceKey =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .variables(processVariables)
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    final long elementInstanceKey = waitForActiveElementInstance(processInstanceKey, taskId);
+    return new ProcessAndElement(processInstanceKey, elementInstanceKey);
+  }
+
+  private long waitForActiveElementInstance(final long processInstanceKey, final String elementId) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newElementInstanceSearchRequest()
+                            .filter(
+                                f ->
+                                    f.processInstanceKey(processInstanceKey)
+                                        .elementId(elementId)
+                                        .state(ElementInstanceState.ACTIVE))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1));
+
+    final ElementInstance element =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.processInstanceKey(processInstanceKey)
+                        .elementId(elementId)
+                        .state(ElementInstanceState.ACTIVE))
+            .send()
+            .join()
+            .items()
+            .getFirst();
+    return element.getElementInstanceKey();
+  }
+
+  private void setLocalVariable(
+      final long elementInstanceKey, final String key, final Object value) {
+    camundaClient
+        .newSetVariablesCommand(elementInstanceKey)
+        .variables(Map.of(key, value))
+        .local(true)
+        .send()
+        .join();
+  }
+
+  private record ProcessAndElement(long processInstanceKey, long elementInstanceKey) {}
 }
