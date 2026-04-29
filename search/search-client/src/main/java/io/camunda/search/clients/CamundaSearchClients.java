@@ -126,16 +126,33 @@ import org.slf4j.LoggerFactory;
 public class CamundaSearchClients implements SearchClientsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaSearchClients.class);
+  private static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
 
   private final SearchClientReaders readers;
+  private final Map<String, SearchClientReaders> tenantReaders;
+  private final String currentPhysicalTenantId;
   private final ResourceAccessController resourceAccessController;
   private final SecurityContext securityContext;
 
   public CamundaSearchClients(
-      final SearchClientReaders readers,
+      final Map<String, SearchClientReaders> tenantReaders,
+      final ResourceAccessController resourceAccessController) {
+    this(tenantReaders, DEFAULT_PHYSICAL_TENANT_ID, resourceAccessController, null);
+  }
+
+  private CamundaSearchClients(
+      final Map<String, SearchClientReaders> tenantReaders,
+      final String currentPhysicalTenantId,
       final ResourceAccessController resourceAccessController,
       final SecurityContext securityContext) {
-    this.readers = readers;
+    this.tenantReaders = Map.copyOf(tenantReaders);
+    readers = this.tenantReaders.get(currentPhysicalTenantId);
+    if (readers == null) {
+      throw new IllegalArgumentException(
+          "Missing readers for physical tenant '%s'. Known physical tenants: %s"
+              .formatted(currentPhysicalTenantId, this.tenantReaders.keySet()));
+    }
+    this.currentPhysicalTenantId = currentPhysicalTenantId;
     this.resourceAccessController = resourceAccessController;
     this.securityContext = securityContext;
   }
@@ -213,8 +230,20 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
+    if (!tenantReaders.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException(
+          "Unknown physical tenant: '%s'. Known tenants: %s"
+              .formatted(physicalTenantId, tenantReaders.keySet()));
+    }
+    return new CamundaSearchClients(
+        tenantReaders, physicalTenantId, resourceAccessController, securityContext);
+  }
+
+  @Override
   public CamundaSearchClients withSecurityContext(final SecurityContext securityContext) {
-    return new CamundaSearchClients(readers, resourceAccessController, securityContext);
+    return new CamundaSearchClients(
+        tenantReaders, currentPhysicalTenantId, resourceAccessController, securityContext);
   }
 
   @Override
