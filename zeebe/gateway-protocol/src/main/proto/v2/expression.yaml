@@ -42,6 +42,13 @@ components:
       type: object
       required:
         - expression
+      # processInstanceKey and elementInstanceKey are mutually exclusive: zero or one of them
+      # may be set, but never both. Setting neither evaluates the expression unscoped (only
+      # tenant-scoped cluster variables and request-body variables are visible).
+      not:
+        required:
+          - processInstanceKey
+          - elementInstanceKey
       properties:
         expression:
           type: string
