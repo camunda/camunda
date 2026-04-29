@@ -60,4 +60,30 @@ class DeployResourceIT {
               assertThat(content).isEqualTo(expectedContent);
             });
   }
+
+  @Test
+  void shouldDeployRpaResourceAndFetchBinaryContent() throws IOException {
+    // given
+    final var deployment =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("rpa/test-rpa.rpa")
+            .execute();
+    final long resourceKey = deployment.getResource().getFirst().getResourceKey();
+
+    final var expectedContent =
+        IOUtils.toString(
+            getClass().getResourceAsStream("/rpa/test-rpa.rpa"), StandardCharsets.UTF_8);
+
+    // when / then - wait for the exporter to sync the record to secondary storage
+    await("resource binary content should be available in secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var content =
+                  camundaClient.newResourceContentBinaryGetRequest(resourceKey).execute();
+              assertThat(content).isEqualTo(expectedContent);
+            });
+  }
 }
