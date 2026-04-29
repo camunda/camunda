@@ -10,6 +10,7 @@ server:
 logging:
   level:
     root: ${LOG_LEVEL:WARN}
+    io.camunda.client.job.poller: ERROR
     # Apache HC5 (used by CamundaClient's REST transport) logs every 503 retry
     # at INFO, flooding starter/worker pod logs under benchmark load when
     # LOG_LEVEL=INFO. Pin this package to WARN; override with
