@@ -173,7 +173,7 @@ VOLUME /driver-lib
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
-COPY --from=cds-gen --chown=1001:0 /usr/local/zeebe/camunda.jsa ${ZB_HOME}/camunda.jsa
+COPY --from=cds-gen --chown=1001:0 /usr/local/camunda/camunda.jsa ${ZB_HOME}/camunda.jsa
 
 RUN ln -s /driver-lib ${ZB_HOME}/driver-lib
 
