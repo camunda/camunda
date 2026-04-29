@@ -2,7 +2,8 @@
 
 name: engine-expert
 description: Use when implementing new capabilities or fixing bugs in the Zeebe workflow engine in zeebe/engine/ — BPMN process execution, DMN decision evaluation, job lifecycle, user/identity management, batch operations, process variables, deployments, signals, messages, timers, multi-tenancy, or authorization. Use when adding or modifying processors, event appliers, state classes, record value types, intents, or engine tests.
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---
 
 # Engine Expert
 
@@ -34,7 +35,7 @@ Run only the tests relevant to your change — running the full engine test suit
 
 ```bash
 # 1. Format (mandatory before commit when touching Java/markdown/pom.xml).
-./mvnw license:format spotless:apply -pl zeebe/engine -T1C
+./mvnw license:format spotless:apply -T1C
 
 # 2. Tests scoped to your change (single class or small pattern). Use
 #    -Dtest=YourTest, comma-separated classes, or a glob like '*UserTest*'.
