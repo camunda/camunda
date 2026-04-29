@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.micrometer.core.instrument.distribution.ValueAtPercentile;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -98,6 +99,56 @@ class MetricsExporterTest {
                 .anyMatch(bucket -> bucket.bucket(TimeUnit.SECONDS) == 2.5 && bucket.count() == 1))
         .isTrue()
         .describedAs("Expected the correct job_life_time bucket to have counted the event");
+  }
+
+  @Test
+  void shouldObserveProcessInstanceExecutionTimeWithPercentiles() throws Exception {
+    // given
+    final var exporter = new MetricsExporter();
+    exporter.configure(context);
+    exporter.open(new ExporterTestController());
+
+    // when
+    exporter.export(
+        ImmutableRecord.<ProcessInstanceRecord>builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.PROCESS_INSTANCE)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withTimestamp(1651505728460L)
+            .withKey(Protocol.encodePartitionId(1, 1))
+            .withValue(new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS))
+            .build());
+    exporter.export(
+        ImmutableRecord.<ProcessInstanceRecord>builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.PROCESS_INSTANCE)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withTimestamp(1651505730960L)
+            .withKey(Protocol.encodePartitionId(1, 1))
+            .withValue(new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS))
+            .build());
+
+    // then
+    final var executionTimer =
+        context.getMeterRegistry().timer("zeebe.process.instance.execution.time");
+
+    assertThat(executionTimer.count())
+        .isOne()
+        .describedAs("Expected exactly 1 observed process instance execution time sample counted");
+
+    assertThat(
+            Arrays.stream(executionTimer.takeSnapshot().percentileValues())
+                .map(ValueAtPercentile::percentile)
+                .toList())
+        .describedAs("Expected p50, p90, and p99 percentiles to be published")
+        .containsExactlyInAnyOrder(0.5, 0.9, 0.99);
+
+    assertThat(
+            Arrays.stream(executionTimer.takeSnapshot().histogramCounts())
+                .anyMatch(bucket -> bucket.bucket(TimeUnit.SECONDS) == 2.5 && bucket.count() == 1))
+        .isTrue()
+        .describedAs(
+            "Expected SLO histogram buckets to be published (required for zeebe_process_instance_execution_time_seconds_bucket in Prometheus)");
   }
 
   @Test
