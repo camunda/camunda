@@ -740,6 +740,18 @@ public final class CamundaClientBuilderImpl
     if (configuration.getChainHandlers() != null) {
       configuration.getChainHandlers().forEach(this::withChainHandlers);
     }
+    if (configuration.jobWorkerSchedulingExecutor() != null) {
+      jobWorkerSchedulingExecutor(
+          configuration.jobWorkerSchedulingExecutor(),
+          configuration.ownsJobWorkerSchedulingExecutor());
+    }
+    if (configuration.jobHandlingExecutor() != null) {
+      jobHandlingExecutor(
+          configuration.jobHandlingExecutor(), configuration.ownsJobHandlingExecutor());
+    }
+    if (configuration.getDefaultJobWorkerExceptionHandler() != null) {
+      defaultJobWorkerExceptionHandler(configuration.getDefaultJobWorkerExceptionHandler());
+    }
     return this;
   }
 
