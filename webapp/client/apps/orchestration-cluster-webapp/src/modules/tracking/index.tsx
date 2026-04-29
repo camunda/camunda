@@ -123,7 +123,6 @@ function injectScript(src: string): Promise<void> {
 
 class Tracking {
 	#mixpanel: null | Mixpanel = null;
-	#appCues: null | NonNullable<typeof window.Appcues> = null;
 
 	#baseProperties = {
 		// TODO: add organizationId and clusterId once available:
@@ -154,10 +153,6 @@ class Tracking {
 
 		try {
 			this.#mixpanel?.track(eventName, properties);
-			this.#appCues?.track(eventName, {
-				...this.#baseProperties,
-				...properties,
-			});
 		} catch (error) {
 			console.error(`Can't track event: ${eventName}`, error);
 		}
@@ -165,21 +160,6 @@ class Tracking {
 
 	identifyUser = (user: CurrentUser) => {
 		this.#mixpanel?.identify(user.username);
-		// TODO: add orgId and clusters once available
-		// this.#appCues?.identify(user.username, {
-		// 	salesPlanType: user.salesPlanType ?? '',
-		// 	roles: user.roles.join('|'),
-		// 	orgId: this.#baseProperties.organizationId,
-		// 	clusters: this.#baseProperties.clusterId,
-		// });
-	};
-
-	trackPagination = () => {
-		if (!this.#isTrackingSupported() || !this.#isTrackingAllowed()) {
-			return;
-		}
-
-		this.#appCues?.page();
 	};
 
 	#isTrackingAllowed = () => {
@@ -226,14 +206,6 @@ class Tracking {
 		});
 	};
 
-	#loadAppCues = async (): Promise<void> => {
-		await injectScript(import.meta.env.VITE_CUES_HOST);
-
-		if (window.Appcues) {
-			this.#appCues = window.Appcues;
-		}
-	};
-
 	loadAnalyticsToWillingUsers = async (): Promise<void> => {
 		if (!this.#isTrackingSupported()) {
 			console.warn('Tracking is not supported for this environment');
@@ -248,15 +220,11 @@ class Tracking {
 
 		if (analyticsConsented) {
 			this.#mixpanel?.opt_in_tracking();
-			await this.#loadAppCues();
 		}
 
 		window.Osano?.cm?.addEventListener('osano-cm-consent-saved', ({ANALYTICS}) => {
 			if (ANALYTICS === 'ACCEPT') {
 				this.#mixpanel?.opt_in_tracking();
-				if (this.#appCues === null) {
-					void this.#loadAppCues();
-				}
 			}
 			if (ANALYTICS === 'DENY') {
 				this.#mixpanel?.opt_out_tracking();
