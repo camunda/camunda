@@ -9,13 +9,19 @@
 import {expect, test as base} from '@playwright/test';
 import {defineNetworkFixture, type NetworkFixture} from '@msw/playwright';
 import type {AnyHandler} from 'msw';
+import AxeBuilder from '@axe-core/playwright';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
 	network: NetworkFixture;
+	makeAxeBuilder: () => AxeBuilder;
 };
 
 const test = base.extend<Fixtures>({
+	makeAxeBuilder: async ({page}, use) => {
+		const makeAxeBuilder = () => new AxeBuilder({page});
+		await use(makeAxeBuilder);
+	},
 	handlers: [[], {option: true}],
 	network: [
 		async ({context, handlers, baseURL}, use) => {
