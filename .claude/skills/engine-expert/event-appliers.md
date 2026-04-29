@@ -28,6 +28,17 @@ Before editing any applier file or any method reachable from an applier, run the
 
 The script name says "applier" but the rule applies equally to anything an applier transitively calls — most commonly methods on the state class implementation behind a `Mutable*State` interface. There is no golden file for state classes, so this manual check is the only guard.
 
+## State-class internals: shared-buffer pitfall
+
+State classes commonly read from a `ColumnFamily` and return the value to a caller — or worse, cache it. The returned value is backed by a **shared, mutable buffer** owned by the column family and is overwritten on the next `get(...)` of the same CF. Caching such a value (e.g. into a `Map` keyed by id) silently corrupts data: production incident INC-981 / #16311, where `DbFormState` cached the `persistedForm` returned from RocksDB without copying, and form ids ended up pointing to the wrong form objects.
+
+Two escape hatches:
+
+- `value.copyFrom(stateRead)` into an instance the state class owns (most common pattern).
+- `cf.get(key, valueSupplier)` allocates a fresh instance per call instead of returning the shared reference.
+
+Full explanation and rule of thumb: `processors.md` § *Reading state safely*.
+
 ## Workflow when behavior must change
 
 1. **Don't edit the existing class.** Create the next version, e.g. `XxxV2Applier.java`.
