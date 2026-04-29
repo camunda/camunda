@@ -86,6 +86,14 @@ public final class BpmnStateTransitionBehavior {
     this.incidentBehavior = incidentBehavior;
   }
 
+  public void continueTerminating(final BpmnElementContext context) {
+    resetTreePathProperties(context);
+    commandWriter.appendFollowUpCommand(
+        context.getElementInstanceKey(),
+        ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT,
+        context.getRecordValue());
+  }
+
   /**
    * @return context with updated intent
    */

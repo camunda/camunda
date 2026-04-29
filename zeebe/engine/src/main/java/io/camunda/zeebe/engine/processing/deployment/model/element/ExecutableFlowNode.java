@@ -78,6 +78,17 @@ public class ExecutableFlowNode extends AbstractFlowElement {
         .toList();
   }
 
+  public List<ExecutionListener> getCancelExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.cancel)
+        .toList();
+  }
+
+  public boolean hasCancelExecutionListeners() {
+    return executionListeners.stream()
+        .anyMatch(el -> el.getEventType() == ZeebeExecutionListenerEventType.cancel);
+  }
+
   public boolean hasExecutionListeners() {
     return !executionListeners.isEmpty();
   }

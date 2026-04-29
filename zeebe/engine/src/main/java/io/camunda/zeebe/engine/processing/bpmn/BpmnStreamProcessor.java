@@ -184,7 +184,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
         final var transitionOutcome = processor.onTerminate(element, terminatingContext);
         if (transitionOutcome == TransitionOutcome.CONTINUE) {
-          processor.finalizeTermination(element, terminatingContext);
+          afterTerminating(element, processor, terminatingContext)
+              .ifLeft(failure -> incidentBehavior.createIncident(failure, terminatingContext));
         }
         break;
       case COMPLETE_EXECUTION_LISTENER:
@@ -200,13 +201,17 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
           case ELEMENT_COMPLETING ->
               onEndExecutionListenerComplete((ExecutableFlowNode) element, processor, context)
                   .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+          case ELEMENT_TERMINATING ->
+              onCancelExecutionListenerComplete((ExecutableFlowNode) element, processor, context)
+                  .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
           default ->
               throw new BpmnProcessingException(
                   context, String.format("Unexpected element state: '%s'", elementState));
         }
         break;
       case CONTINUE_TERMINATING_ELEMENT:
-        processor.finalizeTermination(element, context);
+        afterTerminating(element, processor, context)
+            .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
         break;
       default:
         throw new BpmnProcessingException(
@@ -268,6 +273,17 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         context,
         ExecutableFlowNode::getEndExecutionListeners,
         processor::finalizeCompletion);
+  }
+
+  private Either<Failure, ?> afterTerminating(
+      final ExecutableFlowElement element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+    return processElementWithListeners(
+        element,
+        context,
+        ExecutableFlowNode::getCancelExecutionListeners,
+        (e, c) -> doFinalizeTermination(processor, e, c));
   }
 
   private Either<Failure, ?> processElementWithListeners(
@@ -342,6 +358,18 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         processor::finalizeCompletion);
   }
 
+  public Either<Failure, ?> onCancelExecutionListenerComplete(
+      final ExecutableFlowNode element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+    mergeVariablesOfExecutionListener(context, false);
+    return onExecutionListenerComplete(
+        element,
+        context,
+        ExecutableFlowNode::getCancelExecutionListeners,
+        (e, c) -> doFinalizeTermination(processor, e, c));
+  }
+
   private Either<Failure, ?> onExecutionListenerComplete(
       final ExecutableFlowNode element,
       final BpmnElementContext context,
@@ -403,5 +431,13 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         recordValue.getTenantId(),
         recordValue.getElementIdBuffer(),
         processor.getType());
+  }
+
+  private Either<Failure, ?> doFinalizeTermination(
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final ExecutableFlowElement element,
+      final BpmnElementContext context) {
+    processor.finalizeTermination(element, context);
+    return BpmnElementProcessor.SUCCESS;
   }
 }

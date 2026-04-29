@@ -391,6 +391,7 @@ public final class BpmnJobBehavior {
       case beforeAll -> JobListenerEventType.BEFORE_ALL;
       case start -> JobListenerEventType.START;
       case end -> JobListenerEventType.END;
+      case cancel -> JobListenerEventType.CANCEL;
     };
   }
 
