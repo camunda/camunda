@@ -11,10 +11,13 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
+import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
+import io.camunda.application.commons.search.SearchClientReaderConfiguration;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
@@ -41,10 +44,13 @@ public class TestStandaloneBackupManager
         SearchEngineIndexPropertiesOverride.class,
         SearchEngineRetentionPropertiesOverride.class,
         SearchEngineSchemaManagerPropertiesOverride.class,
+        GatewayRestPropertiesOverride.class,
         // ---
         BackupManagerConfiguration.class,
         StandaloneBackupManager.class,
-        NativeSearchClientsConfiguration.class);
+        NativeSearchClientsConfiguration.class,
+        PhysicalTenantSearchClientReadersConfiguration.class,
+        SearchClientReaderConfiguration.class);
 
     unifiedConfig = new Camunda();
     //noinspection resource
