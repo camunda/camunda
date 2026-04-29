@@ -65,9 +65,11 @@ function _filterForwardCompatErrors(
   const remaining = result.errors.filter(
     (e: string) =>
       !(_allowExtraFields && e.startsWith('[EXTRA]')) &&
-      !(_allowNullValues &&
+      !(
+        _allowNullValues &&
         e.startsWith('[TYPE]') &&
-        /: expected .*, got null/.test(e)),
+        /: expected .*, got null/.test(e)
+      ),
   );
   if (remaining.length === 0) {
     return {...result, ok: true, errors: undefined};
