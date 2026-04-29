@@ -19,6 +19,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -28,6 +29,9 @@ import org.springframework.core.annotation.Order;
 public class SMKeycloakMigrationHandlerConfig {
   @Bean
   @Order(1)
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.keycloak.role.enabled",
+      matchIfMissing = true)
   public RoleMigrationHandler roleMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -44,6 +48,9 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(2)
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.keycloak.group.enabled",
+      matchIfMissing = true)
   public GroupMigrationHandler groupMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final AuthorizationServices authorizationServices,
@@ -60,6 +67,9 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(3)
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.keycloak.user-role.enabled",
+      matchIfMissing = true)
   public UserRoleMigrationHandler userRoleMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -71,6 +81,9 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(4)
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.keycloak.client.enabled",
+      matchIfMissing = true)
   public ClientMigrationHandler clientMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -82,6 +95,9 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(5)
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.keycloak.authorization.enabled",
+      matchIfMissing = true)
   public AuthorizationMigrationHandler authorizationMigrationHandler(
       final CamundaAuthentication authentication,
       final AuthorizationServices authorizationService,
@@ -93,6 +109,9 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(6)
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.keycloak.tenant.enabled",
+      matchIfMissing = true)
   public TenantMigrationHandler tenantMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final TenantServices tenantService,

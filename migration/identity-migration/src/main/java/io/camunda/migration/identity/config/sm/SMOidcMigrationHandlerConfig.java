@@ -17,6 +17,7 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -27,6 +28,9 @@ public class SMOidcMigrationHandlerConfig {
 
   @Bean
   @Order(1)
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.oidc.role.enabled",
+      matchIfMissing = true)
   public RoleMigrationHandler roleMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -43,6 +47,9 @@ public class SMOidcMigrationHandlerConfig {
 
   @Bean
   @Order(2)
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.oidc.tenant.enabled",
+      matchIfMissing = true)
   public TenantMigrationHandler tenantMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final TenantServices tenantService,
@@ -54,6 +61,9 @@ public class SMOidcMigrationHandlerConfig {
 
   @Bean
   @Order(3)
+  @ConditionalOnProperty(
+      name = "camunda.migration.identity.handler.oidc.mapping-rule.enabled",
+      matchIfMissing = true)
   public MappingRuleMigrationHandler mappingRuleMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final MappingRuleServices mappingRuleServices,
