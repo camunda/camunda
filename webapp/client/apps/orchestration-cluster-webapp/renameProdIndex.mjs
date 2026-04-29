@@ -21,10 +21,5 @@ const newPath = path.join(
 	'index.html',
 );
 
-fs.rename(oldPath, newPath, (err) => {
-	if (err) {
-		throw err;
-	}
-
-	console.log('Rename complete!');
-});
+await fs.rename(oldPath, newPath);
+console.log('Rename complete!');

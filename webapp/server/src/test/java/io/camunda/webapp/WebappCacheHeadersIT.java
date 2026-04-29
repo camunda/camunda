@@ -22,7 +22,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Verifies that static assets under {@code /webapp/assets/**} are served with forever-caching
- * headers, while non-asset paths under {@code /webapp/} are not handled by the resource handler.
+ * headers and that requests for non-existent assets return 404 rather than being silently resolved
+ * by the resource handler.
  */
 @SpringBootTest(classes = TestWebappApplication.class, webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
