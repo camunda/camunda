@@ -396,8 +396,8 @@ public class RdbmsConfiguration {
 
   @Bean
   public DeployedResourceDbReader resourceRdbmsReader(
-      final DeployedResourceMapper deployedResourceMapper) {
-    return new DeployedResourceDbReader(deployedResourceMapper);
+      final DeployedResourceMapper deployedResourceMapper, final RdbmsReaderConfig readerConfig) {
+    return new DeployedResourceDbReader(deployedResourceMapper, readerConfig);
   }
 
   @Bean

@@ -9,7 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.DeleteResourceRequest;
+import io.camunda.gateway.protocol.model.ResourceSearchQuery;
+import io.camunda.gateway.protocol.model.ResourceSearchQueryResult;
+import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
@@ -17,6 +22,7 @@ import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.List;
@@ -85,6 +91,24 @@ public class ResourceController {
             ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(ResponseMapper.toGetResourceContentResponse(entity)));
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/resources/search")
+  public ResponseEntity<ResourceSearchQueryResult> searchResources(
+      @RequestBody(required = false) final ResourceSearchQuery query) {
+    return SearchQueryRequestMapper.toDeployedResourceQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  private ResponseEntity<ResourceSearchQueryResult> search(final DeployedResourceQuery query) {
+    try {
+      final var result =
+          resourceServices.search(query, authenticationProvider.getCamundaAuthentication());
+      return ResponseEntity.ok(SearchQueryResponseMapper.toResourceSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return RestErrorMapper.mapErrorToResponse(e);
+    }
   }
 
   private CompletableFuture<ResponseEntity<Object>> deployResources(

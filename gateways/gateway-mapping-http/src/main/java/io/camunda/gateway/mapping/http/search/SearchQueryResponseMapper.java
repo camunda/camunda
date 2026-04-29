@@ -18,6 +18,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
 import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
@@ -115,6 +116,8 @@ import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
+import io.camunda.gateway.protocol.model.ResourceResult;
+import io.camunda.gateway.protocol.model.ResourceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
 import io.camunda.gateway.protocol.model.RoleClientResult;
 import io.camunda.gateway.protocol.model.RoleClientSearchResult;
@@ -158,6 +161,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEn
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
@@ -1738,6 +1742,31 @@ public final class SearchQueryResponseMapper {
 
   private static @Nullable String emptyToNull(final @Nullable String value) {
     return value == null || value.isEmpty() ? null : value;
+  }
+
+  public static ResourceSearchQueryResult toResourceSearchQueryResponse(
+      final SearchQueryResult<DeployedResourceEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new ResourceSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toResources)
+                .orElseGet(Collections::emptyList));
+  }
+
+  private static List<ResourceResult> toResources(final List<DeployedResourceEntity> resources) {
+    return resources.stream().map(SearchQueryResponseMapper::toResource).toList();
+  }
+
+  public static ResourceResult toResource(final DeployedResourceEntity entity) {
+    return new ResourceResult()
+        .resourceKey(KeyUtil.keyToString(entity.resourceKey()))
+        .resourceName(entity.resourceName())
+        .resourceId(entity.resourceId())
+        .version(entity.version())
+        .versionTag(entity.versionTag())
+        .tenantId(entity.tenantId());
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

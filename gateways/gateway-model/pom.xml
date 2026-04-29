@@ -229,6 +229,7 @@
                 <typeMapping>MessageSubscriptionSearchQuerySortRequest=io.camunda.gateway.protocol.model.MessageSubscriptionSearchQuerySortRequest</typeMapping>
                 <typeMapping>ProcessDefinitionSearchQuerySortRequest=io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest</typeMapping>
                 <typeMapping>ProcessInstanceSearchQuerySortRequest=io.camunda.gateway.protocol.model.ProcessInstanceSearchQuerySortRequest</typeMapping>
+                <typeMapping>ResourceSearchQuerySortRequest=io.camunda.gateway.protocol.model.ResourceSearchQuerySortRequest</typeMapping>
                 <typeMapping>RoleClientSearchQuerySortRequest=io.camunda.gateway.protocol.model.RoleClientSearchQuerySortRequest</typeMapping>
                 <typeMapping>RoleGroupSearchQuerySortRequest=io.camunda.gateway.protocol.model.RoleGroupSearchQuerySortRequest</typeMapping>
                 <typeMapping>RoleSearchQuerySortRequest=io.camunda.gateway.protocol.model.RoleSearchQuerySortRequest</typeMapping>

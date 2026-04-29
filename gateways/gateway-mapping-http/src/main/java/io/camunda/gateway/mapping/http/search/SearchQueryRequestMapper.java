@@ -33,6 +33,7 @@ import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.GroupMemberQuery;
@@ -1107,5 +1108,23 @@ public final class SearchQueryRequestMapper {
                 .filter(filter.get())
                 .sort(sorting.get())
                 .build());
+  }
+
+  public static Either<ProblemDetail, DeployedResourceQuery> toDeployedResourceQuery(
+      final ResourceSearchQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.deployedResourceSearchQuery().build());
+    }
+
+    final var filterResult = SearchQueryFilterMapper.toDeployedResourceFilter(request.getFilter());
+    final var sortResult =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromResourceSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::deployedResource,
+            SearchQuerySortRequestMapper::applyResourceSortField);
+    final var pageResult = toSearchQueryPage(request.getPage());
+
+    return buildSearchQuery(
+        filterResult, sortResult, pageResult, SearchQueryBuilders::deployedResourceSearchQuery);
   }
 }
