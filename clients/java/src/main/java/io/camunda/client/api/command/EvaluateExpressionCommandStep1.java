@@ -19,7 +19,20 @@ import io.camunda.client.api.response.EvaluateExpressionResponse;
 import java.io.InputStream;
 import java.util.Map;
 
-/** Command to evaluate an expression. */
+/**
+ * Command to evaluate a FEEL expression.
+ *
+ * <p>The expression can optionally be evaluated in the variable scope of a process instance (via
+ * {@link EvaluateExpressionCommandStep2#processInstanceKey(long)}) or an element instance (via
+ * {@link EvaluateExpressionCommandStep2#elementInstanceKey(long)}). These two options are mutually
+ * exclusive: setting both on the same builder causes {@link EvaluateExpressionCommandStep2#send()}
+ * to fail with an {@link IllegalStateException}. If neither is set, the expression is evaluated
+ * against tenant-scoped cluster variables and the request-body variables only.
+ *
+ * <p>When variables passed via {@link EvaluateExpressionCommandStep2#variables(Map)} share a key
+ * with engine variables resolved from the process or element context, the value from {@code
+ * variables} takes precedence for the current evaluation.
+ */
 public interface EvaluateExpressionCommandStep1 {
 
   /**
@@ -85,5 +98,42 @@ public interface EvaluateExpressionCommandStep1 {
      */
     @Override
     EvaluateExpressionCommandStep2 variable(String key, Object value);
+
+    /**
+     * Evaluate the expression in the variable scope of the given process instance. Engine variables
+     * visible at the process-instance scope are exposed to the expression in addition to the
+     * request-body variables and tenant-scoped cluster variables.
+     *
+     * <p>When a key is present both in the request-body {@code variables} and in the engine
+     * variable scope, the value from {@code variables} takes precedence for this evaluation only.
+     *
+     * <p>Mutually exclusive with {@link #elementInstanceKey(long)}: setting both on the same
+     * builder causes {@link #send()} to fail with an {@link IllegalStateException}.
+     *
+     * @param processInstanceKey the key of the process instance whose variable scope is exposed to
+     *     the expression
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    EvaluateExpressionCommandStep2 processInstanceKey(long processInstanceKey);
+
+    /**
+     * Evaluate the expression in the variable scope of the given element instance. Engine variables
+     * visible at the element-instance scope (including parent scopes up to the process instance)
+     * are exposed to the expression in addition to the request-body variables and tenant-scoped
+     * cluster variables.
+     *
+     * <p>When a key is present both in the request-body {@code variables} and in the engine
+     * variable scope, the value from {@code variables} takes precedence for this evaluation only.
+     *
+     * <p>Mutually exclusive with {@link #processInstanceKey(long)}: setting both on the same
+     * builder causes {@link #send()} to fail with an {@link IllegalStateException}.
+     *
+     * @param elementInstanceKey the key of the element instance whose variable scope is exposed to
+     *     the expression
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    EvaluateExpressionCommandStep2 elementInstanceKey(long elementInstanceKey);
   }
 }

@@ -240,4 +240,161 @@ public final class EvaluateExpressionTest extends ClientRestTest {
         .extracting(EvaluationWarning::getMessage)
         .containsExactly("Warning 1", "Warning 2");
   }
+
+  @Test
+  void shouldEvaluateExpressionWithProcessInstanceKey() {
+    // given
+    final String expression = "=x + y";
+    final long processInstanceKey = 1234567890L;
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult().expression(expression).result(30));
+
+    // when
+    client
+        .newEvaluateExpressionCommand()
+        .expression(expression)
+        .processInstanceKey(processInstanceKey)
+        .send()
+        .join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
+        .extractingBody(ExpressionEvaluationRequest.class)
+        .isEqualTo(
+            new ExpressionEvaluationRequest()
+                .expression(expression)
+                .tenantId("<default>")
+                .processInstanceKey(String.valueOf(processInstanceKey)));
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithElementInstanceKey() {
+    // given
+    final String expression = "=x + y";
+    final long elementInstanceKey = 9876543210L;
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult().expression(expression).result(30));
+
+    // when
+    client
+        .newEvaluateExpressionCommand()
+        .expression(expression)
+        .elementInstanceKey(elementInstanceKey)
+        .send()
+        .join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
+        .extractingBody(ExpressionEvaluationRequest.class)
+        .isEqualTo(
+            new ExpressionEvaluationRequest()
+                .expression(expression)
+                .tenantId("<default>")
+                .elementInstanceKey(String.valueOf(elementInstanceKey)));
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithProcessInstanceKeyAndVariables() {
+    // given
+    final String expression = "=x + y";
+    final long processInstanceKey = 1234567890L;
+    final Map<String, Object> variables = variablesMap("x", 10, "y", 20);
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult().expression(expression).result(30));
+
+    // when
+    client
+        .newEvaluateExpressionCommand()
+        .expression(expression)
+        .processInstanceKey(processInstanceKey)
+        .variables(variables)
+        .send()
+        .join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
+        .extractingBody(ExpressionEvaluationRequest.class)
+        .isEqualTo(
+            new ExpressionEvaluationRequest()
+                .expression(expression)
+                .tenantId("<default>")
+                .processInstanceKey(String.valueOf(processInstanceKey))
+                .variables(variables));
+  }
+
+  @Test
+  void shouldRejectBothProcessInstanceKeyAndElementInstanceKey() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newEvaluateExpressionCommand()
+                    .expression("=x + y")
+                    .processInstanceKey(1L)
+                    .elementInstanceKey(2L)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("processInstanceKey")
+        .hasMessageContaining("elementInstanceKey")
+        .hasMessageContaining("mutually exclusive");
+  }
+
+  @Test
+  void shouldReceiveExpressionEvaluationResultWithProcessInstanceKey() {
+    // given
+    final String expression = "=x + y";
+    final Object resultValue = 30;
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult()
+            .expression(expression)
+            .result(resultValue)
+            .warnings(Collections.emptyList()));
+
+    // when
+    final EvaluateExpressionResponse response =
+        client
+            .newEvaluateExpressionCommand()
+            .expression(expression)
+            .processInstanceKey(1234567890L)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getExpression()).isEqualTo(expression);
+    assertThat(response.getResult()).isEqualTo(resultValue);
+    assertThat(response.getWarnings()).isEmpty();
+  }
+
+  @Test
+  void shouldReceiveExpressionEvaluationResultWithElementInstanceKey() {
+    // given
+    final String expression = "=x + y";
+    final Object resultValue = 30;
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult()
+            .expression(expression)
+            .result(resultValue)
+            .warnings(Collections.emptyList()));
+
+    // when
+    final EvaluateExpressionResponse response =
+        client
+            .newEvaluateExpressionCommand()
+            .expression(expression)
+            .elementInstanceKey(9876543210L)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getExpression()).isEqualTo(expression);
+    assertThat(response.getResult()).isEqualTo(resultValue);
+    assertThat(response.getWarnings()).isEmpty();
+  }
 }
