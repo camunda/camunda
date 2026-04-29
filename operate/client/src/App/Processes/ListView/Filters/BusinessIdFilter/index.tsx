@@ -7,7 +7,7 @@
  */
 
 import {Field, useForm} from 'react-final-form';
-import {Dropdown} from '@carbon/react';
+import {Dropdown, FormLabel} from '@carbon/react';
 import {TextInputField} from 'modules/components/TextInputField';
 import {
   BUSINESS_ID_FILTER_OPERATORS,
@@ -52,50 +52,55 @@ const BusinessIdFilter: React.FC = () => {
           : Styled.OperatorOnlyRow;
 
         return (
-          <RowComponent>
-            <Dropdown<(typeof BUSINESS_ID_FILTER_OPERATORS)[number]>
-              id="businessIdOperator"
-              titleText="Business ID condition"
-              hideLabel
-              label="Select condition"
-              size="sm"
-              items={BUSINESS_ID_FILTER_OPERATORS}
-              itemToString={(item) => item?.label ?? ''}
-              selectedItem={operatorConfig}
-              onChange={({selectedItem}) => {
-                const nextId = selectedItem?.id ?? DEFAULT_BUSINESS_ID_OPERATOR;
-                // For the default operator, omit the param so legacy
-                // `?businessId=foo` URLs round-trip cleanly.
-                operatorInput.onChange(
-                  nextId === DEFAULT_BUSINESS_ID_OPERATOR ? undefined : nextId,
-                );
-                // The typed `businessId` value is intentionally NOT cleared
-                // when switching to `exists` / `doesNotExist`: it stays in
-                // the URL and form state so that switching back to a
-                // value-required operator restores what the user typed. The
-                // value is hidden visually (the input does not render) and
-                // ignored by buildBusinessIdFilterValue.
-                form.submit();
-              }}
-              data-testid="business-id-operator"
-            />
-            {isValueRequired ? (
-              <Field name="businessId">
-                {({input: valueInput}) => (
-                  <TextInputField
-                    {...valueInput}
-                    id="businessId"
-                    size="sm"
-                    labelText="Business ID"
-                    hideLabel
-                    placeholder="Business ID"
-                    autoFocus
-                    data-testid="business-id-value"
-                  />
-                )}
-              </Field>
-            ) : null}
-          </RowComponent>
+          <Styled.FieldWithLabel>
+            <FormLabel>Business ID</FormLabel>
+            <RowComponent>
+              <Dropdown<(typeof BUSINESS_ID_FILTER_OPERATORS)[number]>
+                id="businessIdOperator"
+                titleText="Business ID condition"
+                hideLabel
+                label="Select condition"
+                size="sm"
+                items={BUSINESS_ID_FILTER_OPERATORS}
+                itemToString={(item) => item?.label ?? ''}
+                selectedItem={operatorConfig}
+                onChange={({selectedItem}) => {
+                  const nextId =
+                    selectedItem?.id ?? DEFAULT_BUSINESS_ID_OPERATOR;
+                  // For the default operator, omit the param so legacy
+                  // `?businessId=foo` URLs round-trip cleanly.
+                  operatorInput.onChange(
+                    nextId === DEFAULT_BUSINESS_ID_OPERATOR
+                      ? undefined
+                      : nextId,
+                  );
+                  // The typed `businessId` value is intentionally NOT cleared
+                  // when switching to `exists` / `doesNotExist`: it stays in
+                  // the URL and form state so that switching back to a
+                  // value-required operator restores what the user typed. The
+                  // value is hidden visually (the input does not render) and
+                  // ignored by buildBusinessIdFilterValue.
+                  form.submit();
+                }}
+                data-testid="business-id-operator"
+              />
+              {isValueRequired ? (
+                <Field name="businessId">
+                  {({input: valueInput}) => (
+                    <TextInputField
+                      {...valueInput}
+                      id="businessId"
+                      size="sm"
+                      labelText="Business ID"
+                      hideLabel
+                      autoFocus
+                      data-testid="business-id-value"
+                    />
+                  )}
+                </Field>
+              ) : null}
+            </RowComponent>
+          </Styled.FieldWithLabel>
         );
       }}
     </Field>

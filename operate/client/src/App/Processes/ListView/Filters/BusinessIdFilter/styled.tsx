@@ -8,6 +8,12 @@
 
 import styled from 'styled-components';
 
+const FieldWithLabel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-02);
+`;
+
 const FilterRow = styled.div`
   display: grid;
   grid-template-columns: 140px 1fr;
@@ -20,4 +26,4 @@ const OperatorOnlyRow = styled.div`
   grid-template-columns: 140px;
 `;
 
-export {FilterRow, OperatorOnlyRow};
+export {FieldWithLabel, FilterRow, OperatorOnlyRow};
