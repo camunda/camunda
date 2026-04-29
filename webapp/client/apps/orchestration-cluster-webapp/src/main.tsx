@@ -12,7 +12,7 @@ import {routeTree} from './routeTree.gen';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import './index.scss';
 import {ThemeProvider} from './modules/theme/ThemeProvider';
-import {tracking} from './modules/tracking';
+import {tracking} from '#/modules/tracking';
 
 const queryClient = new QueryClient();
 
