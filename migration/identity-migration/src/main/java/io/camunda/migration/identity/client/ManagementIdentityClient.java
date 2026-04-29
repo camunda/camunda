@@ -26,7 +26,8 @@ public class ManagementIdentityClient {
   private static final String MIGRATION_USER_TENANTS_ENDPOINT = "/api/tenants/{0}/users";
   private static final String MIGRATION_GROUP_TENANTS_ENDPOINT = "/api/tenants/{0}/groups";
   private static final String MIGRATION_CLIENT_TENANTS_ENDPOINT = "/api/tenants/{0}/applications";
-  private static final String MIGRATION_GROUPS_ENDPOINT = "/api/groups?page={0}&organizationId={1}";
+  private static final String MIGRATION_GROUPS_ENDPOINT =
+      "/api/groups?page={0}&organizationId={1}&resultSize={2}";
   private static final String MIGRATION_GROUPS_AUTHORISATIONS_ENDPOINT =
       "/api/groups/{0}/authorizations";
   private static final String MIGRATION_GROUPS_ROLES_ENDPOINT = "/api/groups/{0}/roles";
@@ -36,7 +37,7 @@ public class ManagementIdentityClient {
       "/api/authorizations?organizationId={0}";
   private static final String MIGRATION_ROLES_ENDPOINT = "/api/roles";
   private static final String MIGRATION_ROLES_PERMISSIONS_ENDPOINT = "/api/roles/{0}/permissions";
-  private static final String MIGRATION_USERS_ENDPOINT = "/api/users?page={0}";
+  private static final String MIGRATION_USERS_ENDPOINT = "/api/users?page={0}&resultSize={1}";
   private static final String MIGRATION_USERS_ROLES_ENDPOINT = "/api/users/{0}/roles";
   private static final String MIGRATION_USERS_AUTHORIZATIONS_ENDPOINT =
       "/api/users/{0}/authorizations";
@@ -47,10 +48,18 @@ public class ManagementIdentityClient {
 
   private final String organizationId;
   private final RestTemplate restTemplate;
+  private final int usersPageSize;
+  private final int groupsPageSize;
 
-  public ManagementIdentityClient(final RestTemplate restTemplate, final String organizationId) {
+  public ManagementIdentityClient(
+      final RestTemplate restTemplate,
+      final String organizationId,
+      final int usersPageSize,
+      final int groupsPageSize) {
     this.restTemplate = restTemplate;
     this.organizationId = organizationId;
+    this.usersPageSize = usersPageSize;
+    this.groupsPageSize = groupsPageSize;
   }
 
   public List<Tenant> fetchTenants() {
@@ -87,7 +96,11 @@ public class ManagementIdentityClient {
     return Arrays.stream(
             Objects.requireNonNull(
                 restTemplate.getForObject(
-                    MIGRATION_GROUPS_ENDPOINT, Group[].class, page, organizationId)))
+                    MIGRATION_GROUPS_ENDPOINT,
+                    Group[].class,
+                    page,
+                    organizationId,
+                    groupsPageSize)))
         .toList();
   }
 
@@ -140,7 +153,8 @@ public class ManagementIdentityClient {
   public List<User> fetchUsers(final int page) {
     return Arrays.stream(
             Objects.requireNonNull(
-                restTemplate.getForObject(MIGRATION_USERS_ENDPOINT, User[].class, page)))
+                restTemplate.getForObject(
+                    MIGRATION_USERS_ENDPOINT, User[].class, page, usersPageSize)))
         .toList();
   }
 

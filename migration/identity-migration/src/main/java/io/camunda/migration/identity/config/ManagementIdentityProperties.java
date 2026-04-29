@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.identity.config;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 public class ManagementIdentityProperties {
@@ -37,6 +38,8 @@ public class ManagementIdentityProperties {
   private String audience;
 
   private String issuerType;
+
+  @Valid private PageSizeProperties pageSize = new PageSizeProperties();
 
   public String getBaseUrl() {
     return baseUrl;
@@ -84,5 +87,13 @@ public class ManagementIdentityProperties {
 
   public void setIssuerType(final String issuerType) {
     this.issuerType = issuerType;
+  }
+
+  public PageSizeProperties getPageSize() {
+    return pageSize;
+  }
+
+  public void setPageSize(final PageSizeProperties pageSize) {
+    this.pageSize = pageSize;
   }
 }
