@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import java.time.LocalDateTime;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +28,11 @@ public class ExporterPositionIT {
   public static final int PARTITION_ID = 1000;
   public static final int OTHER_PARTITION_ID = 1001;
   private static final LocalDateTime NOW = LocalDateTime.now();
+
+  @AfterEach
+  void tearDown(final CamundaRdbmsTestApplication testApplication) {
+    testApplication.getRdbmsService().createWriter(PARTITION_ID).getRdbmsPurger().purgeRdbms();
+  }
 
   @TestTemplate
   public void shouldFindExporterPositionByPartitionId(
