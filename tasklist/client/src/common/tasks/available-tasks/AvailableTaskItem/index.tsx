@@ -130,10 +130,7 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
               <span className={styles.name}>{displayName}</span>
               <span className={styles.label}>{processDisplayName}</span>
               {businessId ? (
-                <span
-                  className={cn(styles.label, styles.labelPrimary)}
-                  data-testid="business-id"
-                >
+                <span className={styles.label} data-testid="business-id">
                   {businessId}
                 </span>
               ) : null}
