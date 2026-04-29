@@ -49,14 +49,11 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.TestTemplate;
 
 public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInstanceArchiverJob>
     extends ArchiverJobIT<T> {
-  private static final AtomicLong ID_GENERATOR = new AtomicLong(1);
 
   @TestTemplate
   void shouldArchiveLoneProcessInstance(
@@ -642,13 +639,6 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
     final TaskEntity entity = create(TaskEntity::new);
     entity.setProcessInstanceId(String.valueOf(processInstance.getKey()));
     entity.setRootProcessInstanceKey(processInstance.getKey());
-    return entity;
-  }
-
-  private <T extends ExporterEntity<T>> T create(final Supplier<T> constructor) {
-    final long id = ID_GENERATOR.incrementAndGet();
-    final var entity = constructor.get();
-    entity.setId(String.valueOf(id));
     return entity;
   }
 
