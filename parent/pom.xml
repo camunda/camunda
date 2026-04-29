@@ -2263,18 +2263,6 @@
             </compilerArgs>
             <useIncrementalCompilation>false</useIncrementalCompilation>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>com.google.errorprone</groupId>
-              <artifactId>error_prone_core</artifactId>
-              <version>${version.error-prone}</version>
-            </dependency>
-            <dependency>
-              <groupId>com.uber.nullaway</groupId>
-              <artifactId>nullaway</artifactId>
-              <version>${version.nullaway}</version>
-            </dependency>
-          </dependencies>
           <executions>
             <execution>
               <!-- Only run NullAway on main sources; tests can exercise nullable boundaries freely. -->
