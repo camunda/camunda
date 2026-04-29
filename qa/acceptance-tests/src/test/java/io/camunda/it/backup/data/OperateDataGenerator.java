@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.backup;
+package io.camunda.it.backup.data;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,7 +28,7 @@ import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class OperateDataGenerator implements AutoCloseable {
+public final class OperateDataGenerator implements AutoCloseable {
 
   static final String PROCESS_BPMN_PROCESS_ID = "basicProcess";
   static final int PROCESS_INSTANCE_COUNT = 51;
@@ -49,28 +49,29 @@ final class OperateDataGenerator implements AutoCloseable {
   private static final Duration DATA_TIMEOUT = Duration.ofSeconds(90);
   private static final int SEARCH_LIMIT = 200;
   private static final int SEQUENCE_FLOW_COUNT_PER_PROCESS_INSTANCE = 2;
+  private static final int MAX_RETRY_ATTEMPTS = 100;
 
   private final Random random = new Random();
 
   private CamundaClient camundaClient;
   private List<Long> processInstanceKeys = new ArrayList<>();
 
-  OperateDataGenerator(final CamundaClient camundaClient) {
+  public OperateDataGenerator(final CamundaClient camundaClient) {
     this.camundaClient = camundaClient;
   }
 
-  void setCamundaClient(final CamundaClient camundaClient) {
+  public void setCamundaClient(final CamundaClient camundaClient) {
     this.camundaClient = camundaClient;
   }
 
-  void createData() {
+  public void createData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
     LOGGER.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
 
     deployProcess(PROCESS_BPMN_PROCESS_ID);
     processInstanceKeys = startProcessInstances(PROCESS_BPMN_PROCESS_ID, PROCESS_INSTANCE_COUNT);
-    completeTasks("task1", PROCESS_INSTANCE_COUNT);
-    createIncidents("task2", INCIDENT_COUNT);
+    completeTasks("task1");
+    createIncidents("task2");
 
     waitUntilAllDataAreImported();
 
@@ -89,14 +90,14 @@ final class OperateDataGenerator implements AutoCloseable {
         ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
   }
 
-  void assertData() {
+  public void assertData() {
     Awaitility.await("should expose the original backup data")
         .atMost(DATA_TIMEOUT)
         .ignoreExceptions()
         .untilAsserted(this::assertDataOneAttempt);
   }
 
-  void changeData() {
+  public void changeData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
     LOGGER.info("Starting changing the data...");
 
@@ -104,12 +105,11 @@ final class OperateDataGenerator implements AutoCloseable {
     startProcessInstances(NEW_BPMN_PROCESS_ID, NEW_PROCESS_INSTANCES_COUNT);
 
     for (int i = 0; i < 10; i++) {
-      createOperationFromIncidentProcessInstances(100, this::resolveIncidents, "RESOLVE_INCIDENT");
+      createOperationFromIncidentProcessInstances(this::resolveIncidents, "RESOLVE_INCIDENT");
     }
 
     for (int i = 0; i < CANCELLED_PROCESS_INSTANCES; i++) {
-      createOperationFromIncidentProcessInstances(
-          100, this::cancelInstance, "CANCEL_PROCESS_INSTANCE");
+      createOperationFromIncidentProcessInstances(this::cancelInstance, "CANCEL_PROCESS_INSTANCE");
     }
 
     LOGGER.info(
@@ -117,7 +117,7 @@ final class OperateDataGenerator implements AutoCloseable {
         ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
   }
 
-  void assertDataAfterChange() {
+  public void assertDataAfterChange() {
     Awaitility.await("should expose the changed data")
         .atMost(DATA_TIMEOUT)
         .ignoreExceptions()
@@ -190,15 +190,15 @@ final class OperateDataGenerator implements AutoCloseable {
   }
 
   private void createOperationFromIncidentProcessInstances(
-      final int maxAttempts, final LongConsumer operation, final String operationName) {
+      final LongConsumer operation, final String operationName) {
     LOGGER.debug(
         "Try to create change operation {} against incident instances ({} attempts)",
         operationName,
-        maxAttempts);
+        MAX_RETRY_ATTEMPTS);
 
     boolean operationStarted = false;
     int attempts = 0;
-    while (!operationStarted && attempts < maxAttempts) {
+    while (!operationStarted && attempts < MAX_RETRY_ATTEMPTS) {
       final List<ProcessInstance> incidentProcessInstances = searchIncidentProcessInstances();
       if (incidentProcessInstances.isEmpty()) {
         LOGGER.debug(
@@ -218,7 +218,7 @@ final class OperateDataGenerator implements AutoCloseable {
     }
 
     assertThat(operationStarted)
-        .as("change operation %s should be started within %s attempts", operationName, maxAttempts)
+        .as("change operation %s should be started within %s attempts", operationName, 100)
         .isTrue();
   }
 
@@ -242,7 +242,7 @@ final class OperateDataGenerator implements AutoCloseable {
         .isTrue();
   }
 
-  private void createIncidents(final String jobType, final int numberOfIncidents) {
+  private void createIncidents(final String jobType) {
     final Set<Long> failedJobKeys = ConcurrentHashMap.newKeySet();
 
     Awaitility.await("should create incidents")
@@ -250,9 +250,9 @@ final class OperateDataGenerator implements AutoCloseable {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final int remaining = numberOfIncidents - failedJobKeys.size();
+              final int remaining = INCIDENT_COUNT - failedJobKeys.size();
               if (remaining <= 0) {
-                assertThat(failedJobKeys).hasSize(numberOfIncidents);
+                assertThat(failedJobKeys).hasSize(INCIDENT_COUNT);
                 return;
               }
 
@@ -277,13 +277,13 @@ final class OperateDataGenerator implements AutoCloseable {
                     }
                   });
 
-              assertThat(failedJobKeys).hasSize(numberOfIncidents);
+              assertThat(failedJobKeys).hasSize(INCIDENT_COUNT);
             });
 
-    LOGGER.info("{} incidents in {} created", numberOfIncidents, jobType);
+    LOGGER.info("{} incidents in {} created", INCIDENT_COUNT, jobType);
   }
 
-  private void completeTasks(final String jobType, final int count) {
+  private void completeTasks(final String jobType) {
     final Set<Long> completedJobKeys = ConcurrentHashMap.newKeySet();
 
     Awaitility.await("should complete tasks")
@@ -291,9 +291,9 @@ final class OperateDataGenerator implements AutoCloseable {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final int remaining = count - completedJobKeys.size();
+              final int remaining = PROCESS_INSTANCE_COUNT - completedJobKeys.size();
               if (remaining <= 0) {
-                assertThat(completedJobKeys).hasSize(count);
+                assertThat(completedJobKeys).hasSize(PROCESS_INSTANCE_COUNT);
                 return;
               }
 
@@ -317,10 +317,10 @@ final class OperateDataGenerator implements AutoCloseable {
                     }
                   });
 
-              assertThat(completedJobKeys).hasSize(count);
+              assertThat(completedJobKeys).hasSize(PROCESS_INSTANCE_COUNT);
             });
 
-    LOGGER.info("{} tasks {} completed", count, jobType);
+    LOGGER.info("{} tasks {} completed", PROCESS_INSTANCE_COUNT, jobType);
   }
 
   private List<Long> startProcessInstances(

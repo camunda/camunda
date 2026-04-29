@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.backup;
+package io.camunda.it.backup.data;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,7 +24,7 @@ import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class TasklistDataGenerator implements AutoCloseable {
+public final class TasklistDataGenerator implements AutoCloseable {
 
   static final String PROCESS_BPMN_PROCESS_ID = "tasklist-backup-process";
   static final String PROCESS_BPMN_PROCESS_ID_2 = "tasklist-backup-process-2";
@@ -38,15 +38,15 @@ final class TasklistDataGenerator implements AutoCloseable {
 
   private CamundaClient camundaClient;
 
-  TasklistDataGenerator(final CamundaClient camundaClient) {
+  public TasklistDataGenerator(final CamundaClient camundaClient) {
     this.camundaClient = camundaClient;
   }
 
-  void setCamundaClient(final CamundaClient camundaClient) {
+  public void setCamundaClient(final CamundaClient camundaClient) {
     this.camundaClient = camundaClient;
   }
 
-  void createData() {
+  public void createData() {
     LOGGER.info("Starting Tasklist backup test data generation");
 
     deployProcess(createModel1(), PROCESS_BPMN_PROCESS_ID);
@@ -56,14 +56,14 @@ final class TasklistDataGenerator implements AutoCloseable {
     assignAllTasks();
   }
 
-  void assertData() {
+  public void assertData() {
     Awaitility.await("should expose the backed up Tasklist data")
         .atMost(DATA_TIMEOUT)
         .ignoreExceptions()
         .untilAsserted(this::assertDataOneAttempt);
   }
 
-  void changeData() {
+  public void changeData() {
     LOGGER.info("Changing Tasklist backup test data");
 
     completeTasks();
@@ -71,7 +71,7 @@ final class TasklistDataGenerator implements AutoCloseable {
     startProcessInstances(PROCESS_BPMN_PROCESS_ID_2);
   }
 
-  void assertDataAfterChange() {
+  public void assertDataAfterChange() {
     Awaitility.await("should expose the changed Tasklist data")
         .atMost(DATA_TIMEOUT)
         .ignoreExceptions()
