@@ -8,7 +8,8 @@
 package io.camunda.application.commons.rest;
 
 import org.apache.tomcat.util.buf.EncodedSolidusHandling;
-import org.springframework.boot.tomcat.TomcatConnectorCustomizer;
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,8 +32,10 @@ import org.springframework.context.annotation.Configuration;
 public class TomcatEncodedSlashConfig {
 
   @Bean
-  public TomcatConnectorCustomizer encodedSlashConnectorCustomizer() {
-    return connector ->
-        connector.setEncodedSolidusHandling(EncodedSolidusHandling.DECODE.getValue());
+  public WebServerFactoryCustomizer<TomcatServletWebServerFactory> encodedSlashCustomizer() {
+    return factory ->
+        factory.addConnectorCustomizers(
+            connector ->
+                connector.setEncodedSolidusHandling(EncodedSolidusHandling.DECODE.getValue()));
   }
 }
