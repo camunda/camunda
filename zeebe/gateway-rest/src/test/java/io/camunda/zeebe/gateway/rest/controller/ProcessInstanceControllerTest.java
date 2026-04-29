@@ -22,13 +22,17 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.service.IncidentServices;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.VariableServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
@@ -107,6 +111,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Captor ArgumentCaptor<ProcessInstanceMigrateRequest> migrateRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceModifyRequest> modifyRequestCaptor;
   @MockitoBean ProcessInstanceServices processInstanceServices;
+  @MockitoBean IncidentServices incidentServices;
+  @MockitoBean VariableServices variableServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
@@ -117,6 +123,11 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(gatewayRestConfiguration.getProcessInstanceExport())
         .thenReturn(new ProcessInstanceExportConfiguration());
+    // Default: enrichment fetches return empty results — individual tests override.
+    when(incidentServices.search(any(IncidentQuery.class), any()))
+        .thenReturn(SearchQueryResult.<IncidentEntity>of(b -> b.items(List.of())));
+    when(variableServices.search(any(VariableQuery.class), any()))
+        .thenReturn(SearchQueryResult.<VariableEntity>of(b -> b.items(List.of())));
   }
 
   @Test
@@ -3441,14 +3452,18 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .containsExactly(
             "Process Name",
             "Process Instance Key",
+            "Business Key",
             "Version",
             "Version Tag",
             "State",
+            "Incident Message",
             "Start Date",
             "End Date",
-            "Parent Process Instance Key");
+            "Parent Process Instance Key",
+            "Variables");
     assertThat(rows.get(1))
-        .containsExactly("Order Process", "1", "2", "v1.0", "ACTIVE", "", "", "");
+        .containsExactly(
+            "Order Process", "1", "ORDER-42", "2", "v1.0", "ACTIVE", "", "", "", "", "");
   }
 
   @Test
@@ -3521,6 +3536,129 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     assertThat(rows.get(1)).contains("<default>");
   }
 
+  @Test
+  void shouldEnrichExportWithLatestActiveIncidentMessage() {
+    // given — two incidents on the same instance; the most recent one wins
+    final var older =
+        new IncidentEntity(
+            10L,
+            100L,
+            "orderProcess",
+            1L,
+            null,
+            ErrorType.JOB_NO_RETRIES,
+            "Older boom",
+            "task1",
+            5L,
+            OffsetDateTime.parse("2026-04-29T10:00:00Z"),
+            IncidentState.ACTIVE,
+            null,
+            "<default>");
+    final var newer =
+        new IncidentEntity(
+            11L,
+            100L,
+            "orderProcess",
+            1L,
+            null,
+            ErrorType.IO_MAPPING_ERROR,
+            "Newer boom",
+            "task2",
+            6L,
+            OffsetDateTime.parse("2026-04-29T11:00:00Z"),
+            IncidentState.ACTIVE,
+            null,
+            "<default>");
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
+        .thenReturn(probeResult(1, false));
+    when(incidentServices.search(any(IncidentQuery.class), any()))
+        .thenReturn(SearchQueryResult.<IncidentEntity>of(b -> b.items(List.of(older, newer))));
+    stubStreamSearchToEmit(false, sampleEntity(1L));
+
+    // when
+    final byte[] bytes =
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL + "/search.csv")
+            .contentType(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody(byte[].class)
+            .returnResult()
+            .getResponseBody();
+
+    // then
+    final var rows = parseCsv(bytes);
+    final int incidentColumnIdx = java.util.Arrays.asList(rows.get(0)).indexOf("Incident Message");
+    assertThat(rows.get(1)[incidentColumnIdx]).isEqualTo("Newer boom");
+  }
+
+  @Test
+  void shouldEnrichExportWithVariablesAsJson() {
+    // given — two variables on the instance: one JSON-typed, one string-typed
+    final var orderId =
+        new VariableEntity(
+            901L, "orderId", "\"ABC-1\"", null, false, 1L, 1L, null, "orderProcess", "<default>");
+    final var amount =
+        new VariableEntity(
+            902L, "amount", "99.95", null, false, 1L, 1L, null, "orderProcess", "<default>");
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
+        .thenReturn(probeResult(1, false));
+    when(variableServices.search(any(VariableQuery.class), any()))
+        .thenReturn(
+            SearchQueryResult.<VariableEntity>of(b -> b.items(List.of(orderId, amount))));
+    stubStreamSearchToEmit(false, sampleEntity(1L));
+
+    // when
+    final byte[] bytes =
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL + "/search.csv")
+            .contentType(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody(byte[].class)
+            .returnResult()
+            .getResponseBody();
+
+    // then
+    final var rows = parseCsv(bytes);
+    final int variablesIdx = java.util.Arrays.asList(rows.get(0)).indexOf("Variables");
+    assertThat(rows.get(1)[variablesIdx])
+        .contains("\"orderId\":\"ABC-1\"")
+        .contains("\"amount\":99.95");
+  }
+
+  @Test
+  void shouldFallBackToEmptyEnrichmentWhenIncidentLookupFails() {
+    // given — incident search blows up (e.g. user lacks INCIDENT_READ); the export should
+    // still complete with a blank Incident Message column.
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
+        .thenReturn(probeResult(1, false));
+    when(incidentServices.search(any(IncidentQuery.class), any()))
+        .thenThrow(new RuntimeException("forbidden"));
+    stubStreamSearchToEmit(false, sampleEntity(1L));
+
+    // when / then
+    final byte[] bytes =
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL + "/search.csv")
+            .contentType(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody(byte[].class)
+            .returnResult()
+            .getResponseBody();
+
+    final var rows = parseCsv(bytes);
+    final int incidentColumnIdx = java.util.Arrays.asList(rows.get(0)).indexOf("Incident Message");
+    assertThat(rows.get(1)[incidentColumnIdx]).isEmpty();
+  }
+
   private static ProcessInstanceEntity sampleEntity(final long key) {
     return new ProcessInstanceEntity(
         key,
@@ -3538,7 +3676,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         false,
         "<default>",
         null,
-        null);
+        "ORDER-42");
   }
 
   private static SearchQueryResult<ProcessInstanceEntity> probeResult(
@@ -3554,10 +3692,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             any(ProcessInstanceQuery.class), any(), any(), Mockito.anyInt(), Mockito.anyInt()))
         .thenAnswer(
             invocation -> {
-              final Consumer<ProcessInstanceEntity> sink = invocation.getArgument(2);
-              for (final var e : entities) {
-                sink.accept(e);
-              }
+              final Consumer<List<ProcessInstanceEntity>> sink = invocation.getArgument(2);
+              sink.accept(List.of(entities));
               return truncated;
             });
   }

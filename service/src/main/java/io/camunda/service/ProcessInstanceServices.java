@@ -196,10 +196,11 @@ public final class ProcessInstanceServices
   }
 
   /**
-   * Streams process-instance results matching {@code query} into {@code rowSink}, paging through
+   * Streams pages of process-instance results matching {@code query} into {@code pageSink}, paging
    * via the result's end-cursor. Stops when the matching set is exhausted or {@code maxRows} have
    * been emitted (whichever comes first). The query's own page parameters are ignored — pagination
-   * is driven by this method.
+   * is driven by this method. The page consumer receives each batch as a list so callers can run
+   * batch-level enrichment (e.g. fetch incidents/variables in bulk per page).
    *
    * @return {@code true} if the cap was reached with results still pending (truncated), {@code
    *     false} if the matching set was fully streamed.
@@ -207,7 +208,7 @@ public final class ProcessInstanceServices
   public boolean streamSearch(
       final ProcessInstanceQuery query,
       final CamundaAuthentication authentication,
-      final Consumer<ProcessInstanceEntity> rowSink,
+      final Consumer<List<ProcessInstanceEntity>> pageSink,
       final int maxRows,
       final int pageSize) {
     String afterCursor = null;
@@ -227,10 +228,8 @@ public final class ProcessInstanceServices
       if (items.isEmpty()) {
         return false;
       }
-      for (final var item : items) {
-        rowSink.accept(item);
-        emitted++;
-      }
+      pageSink.accept(items);
+      emitted += items.size();
       if (items.size() < batchSize || result.endCursor() == null) {
         return false;
       }

@@ -45,8 +45,11 @@ final class ProcessInstanceCsvWriter implements AutoCloseable {
     csv.writeNext(headerRow(multiTenancyEnabled));
   }
 
-  void writeRow(final ProcessInstanceEntity entity) {
-    csv.writeNext(rowFor(entity, multiTenancyEnabled));
+  void writeRow(
+      final ProcessInstanceEntity entity,
+      final String incidentMessage,
+      final String variablesJson) {
+    csv.writeNext(rowFor(entity, multiTenancyEnabled, incidentMessage, variablesJson));
   }
 
   void flush() throws IOException {
@@ -63,52 +66,68 @@ final class ProcessInstanceCsvWriter implements AutoCloseable {
       return new String[] {
         "Process Name",
         "Process Instance Key",
+        "Business Key",
         "Version",
         "Version Tag",
         "Tenant",
         "State",
+        "Incident Message",
         "Start Date",
         "End Date",
-        "Parent Process Instance Key"
+        "Parent Process Instance Key",
+        "Variables"
       };
     }
     return new String[] {
       "Process Name",
       "Process Instance Key",
+      "Business Key",
       "Version",
       "Version Tag",
       "State",
+      "Incident Message",
       "Start Date",
       "End Date",
-      "Parent Process Instance Key"
+      "Parent Process Instance Key",
+      "Variables"
     };
   }
 
-  static String[] rowFor(final ProcessInstanceEntity e, final boolean multiTenancyEnabled) {
+  static String[] rowFor(
+      final ProcessInstanceEntity e,
+      final boolean multiTenancyEnabled,
+      final String incidentMessage,
+      final String variablesJson) {
     final String name =
         e.processDefinitionName() != null ? e.processDefinitionName() : e.processDefinitionId();
     if (multiTenancyEnabled) {
       return new String[] {
         nullToEmpty(name),
         toStr(e.processInstanceKey()),
+        nullToEmpty(e.businessId()),
         toStr(e.processDefinitionVersion()),
         nullToEmpty(e.processDefinitionVersionTag()),
         nullToEmpty(e.tenantId()),
         stateLabel(e),
+        nullToEmpty(incidentMessage),
         formatDate(e.startDate()),
         formatDate(e.endDate()),
-        toStr(e.parentProcessInstanceKey())
+        toStr(e.parentProcessInstanceKey()),
+        nullToEmpty(variablesJson)
       };
     }
     return new String[] {
       nullToEmpty(name),
       toStr(e.processInstanceKey()),
+      nullToEmpty(e.businessId()),
       toStr(e.processDefinitionVersion()),
       nullToEmpty(e.processDefinitionVersionTag()),
       stateLabel(e),
+      nullToEmpty(incidentMessage),
       formatDate(e.startDate()),
       formatDate(e.endDate()),
-      toStr(e.parentProcessInstanceKey())
+      toStr(e.parentProcessInstanceKey()),
+      nullToEmpty(variablesJson)
     };
   }
 

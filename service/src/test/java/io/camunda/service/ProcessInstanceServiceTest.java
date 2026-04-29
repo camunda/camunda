@@ -163,7 +163,8 @@ public final class ProcessInstanceServiceTest {
 
     // when
     final boolean truncated =
-        services.streamSearch(query, authentication, emitted::add, /* maxRows= */ 1000, /* pageSize= */ 100);
+        services.streamSearch(
+            query, authentication, emitted::addAll, /* maxRows= */ 1000, /* pageSize= */ 100);
 
     // then
     assertThat(truncated).isFalse();
@@ -189,7 +190,8 @@ public final class ProcessInstanceServiceTest {
 
     // when — cap is 4, page size is 2 → exactly two iterations before the cap is reached
     final boolean truncated =
-        services.streamSearch(query, authentication, emitted::add, /* maxRows= */ 4, /* pageSize= */ 2);
+        services.streamSearch(
+            query, authentication, emitted::addAll, /* maxRows= */ 4, /* pageSize= */ 2);
 
     // then
     assertThat(truncated).isTrue();
