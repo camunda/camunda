@@ -400,7 +400,10 @@ public class ProcessInstanceController {
     } catch (final Exception e) {
       // Don't fail the whole export if the user lacks INCIDENT_READ or the search hiccups —
       // the row just gets a blank Incident Message column.
-      LOG.warn("Could not enrich CSV export with incident messages: {}", e.getMessage());
+      LOG.warn(
+          "Could not enrich CSV export with incident messages for {} process instance(s); leaving the column blank.",
+          keys.size(),
+          e);
       return Map.of();
     }
   }
@@ -442,7 +445,10 @@ public class ProcessInstanceController {
       }
       return out;
     } catch (final Exception e) {
-      LOG.warn("Could not enrich CSV export with variables: {}", e.getMessage());
+      LOG.warn(
+          "Could not enrich CSV export with variables for {} process instance(s); leaving the column blank.",
+          keys.size(),
+          e);
       return Map.of();
     }
   }

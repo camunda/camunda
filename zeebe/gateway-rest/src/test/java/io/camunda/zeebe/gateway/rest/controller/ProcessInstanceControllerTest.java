@@ -3658,6 +3658,72 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     assertThat(rows.get(1)[incidentColumnIdx]).isEmpty();
   }
 
+  @Test
+  void shouldNeutraliseFormulaInjectionAttempts() {
+    // given — a process whose name + business key + incident message + variable names start with
+    // characters that Excel/LibreOffice/Sheets would interpret as a formula. The exported CSV must
+    // prefix them with a single quote so the cell is rendered as text.
+    final var entity =
+        new ProcessInstanceEntity(
+            1L,
+            null,
+            "=cmd|x",
+            "=cmd|x",
+            1,
+            null,
+            100L,
+            null,
+            null,
+            null,
+            null,
+            ProcessInstanceState.ACTIVE,
+            false,
+            "<default>",
+            null,
+            "+1234567890");
+    final var hostileIncident =
+        new IncidentEntity(
+            10L,
+            100L,
+            "p",
+            1L,
+            null,
+            ErrorType.JOB_NO_RETRIES,
+            "@SUM(A1:A100)",
+            "task",
+            5L,
+            OffsetDateTime.parse("2026-04-29T11:00:00Z"),
+            IncidentState.ACTIVE,
+            null,
+            "<default>");
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
+        .thenReturn(probeResult(1, false));
+    when(incidentServices.search(any(IncidentQuery.class), any()))
+        .thenReturn(SearchQueryResult.<IncidentEntity>of(b -> b.items(List.of(hostileIncident))));
+    stubStreamSearchToEmit(false, entity);
+
+    // when
+    final byte[] bytes =
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL + "/search.csv")
+            .contentType(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody(byte[].class)
+            .returnResult()
+            .getResponseBody();
+
+    // then — every cell that started with a formula trigger now has a leading single quote
+    final var rows = parseCsv(bytes);
+    final var headers = java.util.Arrays.asList(rows.get(0));
+    final var row = rows.get(1);
+    assertThat(row[headers.indexOf("Process Name")]).startsWith("'=");
+    assertThat(row[headers.indexOf("Business Key")]).startsWith("'+");
+    assertThat(row[headers.indexOf("Incident Message")]).startsWith("'@");
+  }
+
   private static ProcessInstanceEntity sampleEntity(final long key) {
     return new ProcessInstanceEntity(
         key,

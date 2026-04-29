@@ -25,7 +25,10 @@ const triggerBrowserDownload = (blob: Blob) => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  // Defer revocation so Safari/Firefox have time to actually start the download
+  // before the blob URL is invalidated. Synchronous revoke is observed to cancel
+  // the download in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 1_000);
 };
 
 const formatStamp = (date: Date) =>

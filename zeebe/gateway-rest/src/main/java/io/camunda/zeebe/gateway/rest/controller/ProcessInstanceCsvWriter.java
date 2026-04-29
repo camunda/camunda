@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import com.opencsv.CSVWriter;
+import com.opencsv.ICSVWriter;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.io.BufferedWriter;
@@ -24,6 +25,9 @@ final class ProcessInstanceCsvWriter implements AutoCloseable {
   private static final byte[] UTF8_BOM = new byte[] {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
   private static final DateTimeFormatter ISO_UTC = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
   private static final String INCIDENT_STATE = "INCIDENT";
+  // CRLF matches Excel-on-Windows expectations and the existing Optimize CSV writer; OpenCSV
+  // defaults to LF only.
+  private static final String LINE_END = "\r\n";
 
   private final CSVWriter csv;
   private final boolean multiTenancyEnabled;
@@ -37,7 +41,12 @@ final class ProcessInstanceCsvWriter implements AutoCloseable {
       throws IOException {
     out.write(UTF8_BOM);
     final var writer =
-        new CSVWriter(new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8)));
+        new CSVWriter(
+            new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8)),
+            ICSVWriter.DEFAULT_SEPARATOR,
+            ICSVWriter.DEFAULT_QUOTE_CHARACTER,
+            ICSVWriter.DEFAULT_ESCAPE_CHARACTER,
+            LINE_END);
     return new ProcessInstanceCsvWriter(writer, multiTenancyEnabled);
   }
 
@@ -49,7 +58,11 @@ final class ProcessInstanceCsvWriter implements AutoCloseable {
       final ProcessInstanceEntity entity,
       final String incidentMessage,
       final String variablesJson) {
-    csv.writeNext(rowFor(entity, multiTenancyEnabled, incidentMessage, variablesJson));
+    final String[] row = rowFor(entity, multiTenancyEnabled, incidentMessage, variablesJson);
+    for (int i = 0; i < row.length; i++) {
+      row[i] = sanitizeForCsv(row[i]);
+    }
+    csv.writeNext(row);
   }
 
   void flush() throws IOException {
@@ -149,5 +162,28 @@ final class ProcessInstanceCsvWriter implements AutoCloseable {
 
   private static String nullToEmpty(final String value) {
     return value == null ? "" : value;
+  }
+
+  /**
+   * Defeats CSV-formula-injection attacks. Spreadsheet apps interpret a leading {@code =}, {@code
+   * +}, {@code -}, {@code @}, tab, or carriage-return as the start of a formula, which can leak
+   * data or fire HTTP requests when the export is opened. Prepending a single quote forces the cell
+   * to be treated as text (the quote is not displayed by Excel/LibreOffice/Sheets). See OWASP "CSV
+   * Injection" for background.
+   */
+  static String sanitizeForCsv(final String value) {
+    if (value == null || value.isEmpty()) {
+      return value;
+    }
+    final char first = value.charAt(0);
+    if (first == '='
+        || first == '+'
+        || first == '-'
+        || first == '@'
+        || first == '\t'
+        || first == '\r') {
+      return "'" + value;
+    }
+    return value;
   }
 }
