@@ -66,7 +66,7 @@
           "$ref": "#/definitions/AssertUserTaskInstruction"
         },
         {
-          "$ref": "#/definitions/AssertVariableSatisfiesJudgeInstruction"
+          "$ref": "#/definitions/AssertVariableInstruction"
         },
         {
           "$ref": "#/definitions/AssertVariablesInstruction"
@@ -1056,47 +1056,57 @@
       ],
       "additionalProperties": false
     },
-    "AssertVariableSatisfiesJudgeInstruction": {
-      "description": "An instruction to assert a process variable using an LLM judge evaluation.",
+    "AssertVariableInstruction": {
+      "description": "An instruction to assert a process variable.",
       "type": "object",
       "properties": {
         "type": {
           "description": "The type of the instruction.",
           "type": "string",
-          "const": "ASSERT_VARIABLE_SATISFIES_JUDGE"
+          "const": "ASSERT_VARIABLE"
         },
         "processInstanceSelector": {
           "description": "The selector to identify the process instance.",
           "$ref": "#/definitions/ProcessInstanceSelector"
         },
-        "variableName": {
-          "description": "The name of the variable to evaluate.",
-          "type": "string"
-        },
-        "expectation": {
-          "description": "The semantic expectation for the variable value.",
-          "type": "string"
-        },
         "elementSelector": {
           "description": "The selector to identify the element for local variables. Optional.",
           "$ref": "#/definitions/ElementSelector"
         },
-        "threshold": {
-          "description": "The score threshold at or above which the judge assertion passes. Must be between 0.0 and 1.0; higher values are stricter. Overrides the preconfigured threshold. Optional; defaults to the preconfigured JudgeConfig threshold (0.5 unless otherwise configured) when omitted.",
-          "type": "number",
-          "minimum": 0.0,
-          "maximum": 1.0
-        },
-        "customPrompt": {
-          "description": "A custom prompt for the judge evaluation. Overrides the preconfigured custom prompt. Optional.",
+        "variableName": {
+          "description": "The name of the variable to evaluate.",
           "type": "string"
+        },
+        "satisfiesJudge": {
+          "description": "A judge-based assertion that evaluates the variable against a semantic expectation.",
+          "type": "object",
+          "properties": {
+            "expectation": {
+              "description": "The semantic expectation for the variable value.",
+              "type": "string"
+            },
+            "threshold": {
+              "description": "The score threshold at or above which the judge assertion passes. Must be between 0.0 and 1.0; higher values are stricter. Overrides the preconfigured threshold. Optional; defaults to the preconfigured JudgeConfig threshold (0.5 unless otherwise configured) when omitted.",
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0
+            },
+            "customPrompt": {
+              "description": "A custom prompt for the judge evaluation. Overrides the preconfigured custom prompt. Optional.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "expectation"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
         "type",
         "processInstanceSelector",
         "variableName",
-        "expectation"
+        "satisfiesJudge"
       ],
       "additionalProperties": false
     },
