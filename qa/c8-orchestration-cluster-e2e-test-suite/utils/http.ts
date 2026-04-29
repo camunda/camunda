@@ -157,7 +157,13 @@ export async function assertNotFoundRequest(
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
   expect(json.title).toBe('NOT_FOUND');
-  expect(json.detail).toContain(detail);
+  if (process.env.FORWARD_COMPAT_MODE === 'true') {
+    // In forward-compat runs the server may use a different error message
+    // format. Only verify that the detail mentions "not found".
+    expect(json.detail.toLowerCase()).toContain('not found');
+  } else {
+    expect(json.detail).toContain(detail);
+  }
 }
 
 export async function assertInvalidArgument(

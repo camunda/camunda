@@ -236,6 +236,7 @@ jobs:
           DATABASE: "Elasticsearch"
           AJB_ALLOW_EXTRA_FIELDS: "true"
           AJB_ALLOW_NULL_VALUES: "true"
+          FORWARD_COMPAT_MODE: "true"
         run: |
           echo "Running forward compatibility API tests"
           echo "Server built from: ${{ matrix.server_branch }}"
