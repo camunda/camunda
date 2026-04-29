@@ -78,7 +78,7 @@ optimize:
   extraConfiguration:
     application.yml: |
       historyCleanup:
-        cronTrigger: '0 1 * * *'
+        cronTrigger: '*/30 * * * *'
         ttl: 'P1D'
         processDataCleanup:
           enabled: true
