@@ -234,6 +234,7 @@ func configureJavaRuntimeEnvironment(javaHome, javaBinary string) error {
 	if err := os.Setenv("JAVA_HOME", javaHome); err != nil {
 		return fmt.Errorf("failed to set JAVA_HOME: %w", err)
 	}
+	// Camunda's launch scripts read JAVACMD; camunda.bat needs quotes for paths with spaces.
 	javaCmd := javaBinary
 	if runtime.GOOS == "windows" {
 		javaCmd = `"` + javaBinary + `"`
