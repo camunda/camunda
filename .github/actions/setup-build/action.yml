@@ -196,6 +196,15 @@ runs:
           "username": "${{ steps.secrets.outputs.ci-account-username }}",
           "password": "${{ steps.secrets.outputs.ci-account-password }}"
         }]
+      # Avoid rate limiting on repo.maven.apache.org by mirroring central via Google's
+      # public Maven Central mirror. Applies to all artifacts (deps, plugins, extensions, BOM).
+      CENTRAL_MAVEN_MIRROR: >-
+        [{
+          "id": "google-maven-central",
+          "name": "Google Maven Central Mirror",
+          "url": "https://maven-central.storage-download.googleapis.com/maven2",
+          "mirrorOf": "central"
+        }]
       EXTRA_MAVEN_MIRRORS: ${{ inputs.maven-mirrors }}
       EXTRA_MAVEN_SERVERS: ${{ inputs.maven-servers }}
     run: |
@@ -209,8 +218,9 @@ runs:
       mirrors=$(\
         jq -n \
         --argjson nexus_mirror "${CAMUNDA_NEXUS_MAVEN_MIRROR}" \
+        --argjson central_mirror "${CENTRAL_MAVEN_MIRROR}" \
         --argjson maven_mirrors "${EXTRA_MAVEN_MIRRORS}" \
-        '[ $nexus_mirror + $maven_mirrors | group_by(.id)[] | add ]'
+        '[ $nexus_mirror + $central_mirror + $maven_mirrors | group_by(.id)[] | add ]'
       )
       servers=$(\
         jq -n \
