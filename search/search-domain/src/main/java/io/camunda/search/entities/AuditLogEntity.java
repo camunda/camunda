@@ -66,39 +66,39 @@ public record AuditLogEntity(
   }
 
   public static class Builder implements ObjectBuilder<AuditLogEntity> {
-    private String auditLogKey;
-    private String entityKey;
-    private AuditLogEntityType entityType;
-    private AuditLogOperationType operationType;
-    private Long batchOperationKey;
-    private BatchOperationType batchOperationType;
-    private OffsetDateTime timestamp;
-    private String actorId;
-    private AuditLogActorType actorType;
-    private String agentElementId;
-    private String tenantId;
-    private AuditLogTenantScope tenantScope;
-    private AuditLogOperationResult result;
-    private AuditLogOperationCategory category;
-    private String processDefinitionId;
-    private Long processDefinitionKey;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private Long elementInstanceKey;
-    private Long jobKey;
-    private Long userTaskKey;
-    private String decisionRequirementsId;
-    private Long decisionRequirementsKey;
-    private String decisionDefinitionId;
-    private Long decisionDefinitionKey;
-    private Long decisionEvaluationKey;
-    private Long deploymentKey;
-    private Long formKey;
-    private Long resourceKey;
-    private AuditLogEntityType relatedEntityType;
-    private String relatedEntityKey;
-    private String entityDescription;
-    private OffsetDateTime historyCleanupDate;
+    private @Nullable String auditLogKey;
+    private @Nullable String entityKey;
+    private @Nullable AuditLogEntityType entityType;
+    private @Nullable AuditLogOperationType operationType;
+    private @Nullable Long batchOperationKey;
+    private @Nullable BatchOperationType batchOperationType;
+    private @Nullable OffsetDateTime timestamp;
+    private @Nullable String actorId;
+    private @Nullable AuditLogActorType actorType;
+    private @Nullable String agentElementId;
+    private @Nullable String tenantId;
+    private @Nullable AuditLogTenantScope tenantScope;
+    private @Nullable AuditLogOperationResult result;
+    private @Nullable AuditLogOperationCategory category;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable Long elementInstanceKey;
+    private @Nullable Long jobKey;
+    private @Nullable Long userTaskKey;
+    private @Nullable String decisionRequirementsId;
+    private @Nullable Long decisionRequirementsKey;
+    private @Nullable String decisionDefinitionId;
+    private @Nullable Long decisionDefinitionKey;
+    private @Nullable Long decisionEvaluationKey;
+    private @Nullable Long deploymentKey;
+    private @Nullable Long formKey;
+    private @Nullable Long resourceKey;
+    private @Nullable AuditLogEntityType relatedEntityType;
+    private @Nullable String relatedEntityKey;
+    private @Nullable String entityDescription;
+    private @Nullable OffsetDateTime historyCleanupDate;
 
     public Builder auditLogKey(final String auditLogKey) {
       this.auditLogKey = auditLogKey;
@@ -265,6 +265,7 @@ public record AuditLogEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public AuditLogEntity build() {
       return new AuditLogEntity(

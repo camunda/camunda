@@ -32,12 +32,12 @@ public record IncidentProcessInstanceStatisticsByDefinitionEntity(
 
   public static final class Builder
       implements ObjectBuilder<IncidentProcessInstanceStatisticsByDefinitionEntity> {
-    private String processDefinitionId;
-    private Long processDefinitionKey;
-    private String processDefinitionName;
-    private Integer processDefinitionVersion;
-    private String tenantId;
-    private Long activeInstancesWithErrorCount;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable String processDefinitionName;
+    private @Nullable Integer processDefinitionVersion;
+    private @Nullable String tenantId;
+    private @Nullable Long activeInstancesWithErrorCount;
 
     public Builder processDefinitionId(final String value) {
       processDefinitionId = value;
@@ -69,6 +69,7 @@ public record IncidentProcessInstanceStatisticsByDefinitionEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public IncidentProcessInstanceStatisticsByDefinitionEntity build() {
       return new IncidentProcessInstanceStatisticsByDefinitionEntity(
