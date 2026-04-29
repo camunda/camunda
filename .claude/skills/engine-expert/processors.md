@@ -17,6 +17,20 @@ Processors are where the engine's logic lives. They consume commands and produce
 - **Inter-partition command receivers must be idempotent.** Prefer reject-redundant-command (write a rejection, no state change) over re-emitting the same events.
 - **Take small steps.** Append follow-up commands rather than doing everything in one processing cycle. The single thread is shared with every other command on this partition.
 
+## Reading state safely
+
+Values returned from `ColumnFamily.get(...)` — and from `*State` reads built on top of it — are backed by a **shared, mutable buffer owned by the column family**. Each column family holds a single `valueInstance` that gets re-wrapped on every read. There are two failure modes:
+
+- **Holding a value across another read of the same CF.** `final var a = cf.get(keyA); final var b = cf.get(keyB);` returns the same reference both times — `a` now also reads as B's data. Iteration (`forEach`, `whileTrue`) re-wraps the same instance on every step, so storing the value across iterations has the same effect.
+- **Caching a value past the immediate read** (e.g. into a `Map`, `List`, or field). Production incident: `DbFormState` cached the `persistedForm` returned from RocksDB, and form ids ended up pointing to the wrong form objects (INC-981, #16311).
+
+Two escape hatches:
+
+- `value.copyFrom(stateRead)` into an instance you own. See `ProcessInstanceMigrationCatchEventBehavior` for examples (`copy.copyFrom(timerInstance)`, `copySubscription.copyFrom(subscription)`).
+- `cf.get(key, valueSupplier)` allocates a fresh instance per call instead of returning the shared reference — useful when you'd otherwise immediately copy.
+
+Rule of thumb: if the value escapes the immediate read (passed to a helper that may itself read state, stored anywhere, or returned across another `get` on the same CF), copy it.
+
 ## Error and rejection messages
 
 - **Follow the format** `Expected [X], but got [Y] [in CONTEXT]`. Include execution context (partition ID, entity key, etc.) when it helps the user act on the failure.
