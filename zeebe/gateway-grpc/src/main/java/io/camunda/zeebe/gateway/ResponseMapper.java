@@ -93,7 +93,8 @@ public final class ResponseMapper {
                     .setVersion(process.getVersion())
                     .setProcessDefinitionKey(process.getKey())
                     .setTenantId(process.getTenantId())
-                    .setResourceName(bufferAsString(process.getResourceNameBuffer())));
+                    .setResourceName(bufferAsString(process.getResourceNameBuffer()))
+                    .setName(process.getName()));
 
     return responseBuilder.build();
   }
@@ -112,6 +113,7 @@ public final class ResponseMapper {
                     .setProcessDefinitionKey(process.getKey())
                     .setResourceName(process.getResourceName())
                     .setTenantId(process.getTenantId())
+                    .setName(process.getName())
                     .build())
         .forEach(process -> responseBuilder.addDeploymentsBuilder().setProcess(process));
 

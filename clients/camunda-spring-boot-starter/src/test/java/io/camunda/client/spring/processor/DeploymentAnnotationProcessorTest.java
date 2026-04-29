@@ -313,6 +313,11 @@ public class DeploymentAnnotationProcessorTest {
       public String getTenantId() {
         return "TestTenantId";
       }
+
+      @Override
+      public String getName() {
+        return "TestProcessName";
+      }
     };
   }
 

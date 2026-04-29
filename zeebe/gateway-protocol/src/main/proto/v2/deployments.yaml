@@ -285,6 +285,7 @@ components:
         - resourceName
         - processDefinitionKey
         - tenantId
+        - name
       properties:
         processDefinitionId:
           allOf:
@@ -299,6 +300,10 @@ components:
         resourceName:
           type: string
           description: The resource name from which this process was parsed.
+        name:
+          type: string
+          nullable: true
+          description: The name of the process.
         tenantId:
           description: The tenant ID of the deployed process.
           allOf:

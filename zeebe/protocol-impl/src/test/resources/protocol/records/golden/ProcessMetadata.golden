@@ -34,6 +34,7 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   private final LongProperty keyProp = new LongProperty(PROCESS_DEFINITION_KEY_KEY);
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
+  private final StringProperty nameProp = new StringProperty("name", "");
 
   // should be set to true if the process was already deployed - property should not be exported
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
@@ -43,7 +44,7 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public ProcessMetadata() {
-    super(9);
+    super(10);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
@@ -52,7 +53,8 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
         .declareProperty(isDuplicateProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp);
+        .declareProperty(versionTagProp)
+        .declareProperty(nameProp);
   }
 
   @Override
@@ -86,6 +88,11 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   }
 
   @Override
+  public String getName() {
+    return bufferAsString(nameProp.getValue());
+  }
+
+  @Override
   public byte[] getChecksum() {
     return BufferUtil.bufferAsArray(checksumProp.getValue());
   }
@@ -112,6 +119,16 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
 
   public ProcessMetadata setDeploymentKey(final long deploymentKey) {
     deploymentKeyProp.setValue(deploymentKey);
+    return this;
+  }
+
+  public ProcessMetadata setName(final String name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
+  public ProcessMetadata setName(final DirectBuffer name) {
+    nameProp.setValue(name);
     return this;
   }
 

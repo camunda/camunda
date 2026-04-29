@@ -40,4 +40,9 @@ public interface Process {
    * @return the tenant identifier that owns this process
    */
   String getTenantId();
+
+  /**
+   * @return the name of the process, or {@code null} if it is not defined in BPMN
+   */
+  String getName();
 }

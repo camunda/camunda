@@ -26,6 +26,7 @@ public final class ProcessImpl implements Process {
   private final int version;
   private final String resourceName;
   private final String tenantId;
+  private final String name;
 
   public ProcessImpl(final ProcessMetadata process) {
     this(
@@ -33,7 +34,8 @@ public final class ProcessImpl implements Process {
         process.getBpmnProcessId(),
         process.getVersion(),
         process.getResourceName(),
-        process.getTenantId());
+        process.getTenantId(),
+        process.getName());
   }
 
   public ProcessImpl(
@@ -41,12 +43,14 @@ public final class ProcessImpl implements Process {
       final String bpmnProcessId,
       final int version,
       final String resourceName,
-      final String tenantId) {
+      final String tenantId,
+      final String name) {
     this.processDefinitionKey = processDefinitionKey;
     this.bpmnProcessId = bpmnProcessId;
     this.version = version;
     this.resourceName = resourceName;
     this.tenantId = tenantId;
+    this.name = name;
   }
 
   @Override
@@ -75,8 +79,13 @@ public final class ProcessImpl implements Process {
   }
 
   @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
   public int hashCode() {
-    return Objects.hash(processDefinitionKey, bpmnProcessId, version, resourceName, tenantId);
+    return Objects.hash(processDefinitionKey, bpmnProcessId, version, resourceName, tenantId, name);
   }
 
   @Override
@@ -92,7 +101,8 @@ public final class ProcessImpl implements Process {
         && version == process.version
         && Objects.equals(bpmnProcessId, process.bpmnProcessId)
         && Objects.equals(resourceName, process.resourceName)
-        && Objects.equals(tenantId, process.tenantId);
+        && Objects.equals(tenantId, process.tenantId)
+        && Objects.equals(name, process.name);
   }
 
   @Override
@@ -110,6 +120,9 @@ public final class ProcessImpl implements Process {
         + '\''
         + ", tenantId='"
         + tenantId
+        + '\''
+        + ", name='"
+        + name
         + '\''
         + '}';
   }

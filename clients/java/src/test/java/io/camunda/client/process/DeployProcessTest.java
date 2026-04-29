@@ -200,8 +200,9 @@ public final class DeployProcessTest extends ClientTest {
     final long key = 123L;
     final String testTenantId = "test-tenant";
     final String filename = DeployProcessTest.class.getResource(BPMN_1_FILENAME).getPath();
+    final String processName = "TestProcess";
     gatewayService.onDeployProcessRequest(
-        key, deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename, testTenantId));
+        key, deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename, testTenantId, processName));
 
     // when
     final DeploymentEvent response =
@@ -210,7 +211,8 @@ public final class DeployProcessTest extends ClientTest {
     // then
     assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getProcesses())
-        .containsExactly(new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename, testTenantId));
+        .containsExactly(
+            new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename, testTenantId, processName));
   }
 
   @Test
@@ -219,6 +221,8 @@ public final class DeployProcessTest extends ClientTest {
     final long key = 345L;
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
+    final String processName1 = "";
+    final String processName2 = "";
     gatewayService.onDeployProcessRequest(
         key,
         deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1),
@@ -237,8 +241,10 @@ public final class DeployProcessTest extends ClientTest {
     assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getProcesses())
         .containsExactly(
-            new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1, DEFAULT_TENANT_IDENTIFIER),
-            new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2, DEFAULT_TENANT_IDENTIFIER));
+            new ProcessImpl(
+                1, BPMN_1_PROCESS_ID, 1, filename1, DEFAULT_TENANT_IDENTIFIER, processName1),
+            new ProcessImpl(
+                2, BPMN_2_PROCESS_ID, 1, filename2, DEFAULT_TENANT_IDENTIFIER, processName2));
   }
 
   @Test
