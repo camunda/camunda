@@ -95,9 +95,47 @@ graph TD
 
 For detailed inputs, triggers, and job definitions, see each workflow's header comments in [`.github/workflows/`](../.github/workflows/).
 
+## Setup
+
+![setup-load-test](../docs/testing/assets/setup-load-test.jpg)
+
+The setup for all of our load tests is equal for better comparability, and consists of two main ingredients.
+
+1. The official [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm), taking care of the general set up of our Camunda 8 Platform.
+2. A custom Helm chart ([camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm)) to set up our load test applications.
+
+By default, the full Camunda Platform is deployed, including Orchestration Cluster (OC), Optimize (with history cleanup), Connectors (with OIDC authentication), and Identity with Keycloak as identity provider. This ensures load tests validate the system in a production-like configuration. Optimize can be disabled via the `enable-optimize` workflow input or the `newLoadTest.sh` script parameter. We always run load tests with a three-node OC cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe, we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) only (pre 8.8).
+
+An Elasticsearch cluster with three nodes is deployed as well, which is used to validate the performance of the exporters. Exporting and archiving throughput must be able to sustain the load of the cluster.
+
+Our [load test Helm Chart](https://github.com/camunda/camunda-load-tests-helm) deploys different load test applications. They can be distinguished into workers and starters. The related code can be found in the [Camunda mono repository](https://github.com/camunda/camunda/tree/main/load-tests/load-tester).
+
+Depending on the test variant, different process models are created and executed by the Starter and Worker applications. They only differ in configurations, which can be done by the respective [camunda-load-test](https://github.com/camunda/camunda-load-tests-helm) Helm chart, and their [values files](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml).
+
+All of this is deployed in an Infra-team-maintained Google Kubernetes Engine (GKE) cluster (`camunda-benchmark-prod`). Access is managed via [Teleport](https://camunda.teleport.sh). Container images are stored in `registry.camunda.cloud/team-zeebe`. Details about the benchmark cluster infrastructure can be found in the [infra-core repository](https://github.com/camunda/infra-core/), and specifically in the [benchmark cluster access guide](https://github.com/camunda/infra-core/blob/stage/docs/kubernetes-cluster/benchmark-cluster-access.md).
+
+For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm Chart will now deploy a single Camunda application (replicated), whereas previously, the Zeebe Brokers and Zeebe Gateways were deployed standalone.
+
+![setup](../docs/testing/assets/setup.png)
+
+### Secondary Storage Options
+
+Load tests can be configured with different secondary storage backends to validate Camunda's performance and reliability across various deployment scenarios:
+
+* **Elasticsearch** (default): Deploys a three-node Elasticsearch cluster. This is the standard configuration used to validate exporter performance and archiving throughput.
+* **OpenSearch**: Deploys an OpenSearch cluster as an alternative to Elasticsearch.
+* **PostgreSQL**: Deploys a PostgreSQL database for RDBMS-based secondary storage testing.
+* **MySQL**: Deploys a MySQL database for RDBMS-based secondary storage testing.
+* **MariaDB**: Deploys a MariaDB database for RDBMS-based secondary storage testing.
+* **MSSQL**: Deploys an MSSQL database for RDBMS-based secondary storage testing.
+* **Oracle**: Deploys an Oracle database for RDBMS-based secondary storage testing.
+* **None**: Runs load tests without any secondary storage. This is useful for testing the core orchestration engine performance in isolation, without the overhead of exporting data to a secondary database. In this mode, Camunda exporters are disabled.
+
+The secondary storage type can be specified when creating a load test via the `newLoadTest.sh` script or the GitHub workflow inputs.
+
 ## Test Scenarios
 
-We have different scenarios targeting different use cases and versions. All use the same [setup architecture](../docs/testing/reliability-testing.md#setup) and [endurance test variants](../docs/testing/reliability-testing.md#endurance-test-variants) described in the reliability testing documentation.
+We have different scenarios targeting different use cases and versions. All use the same [setup](#setup) and [endurance test variants](../docs/testing/reliability-testing.md#endurance-test-variants) described above.
 
 ### Release load tests
 
