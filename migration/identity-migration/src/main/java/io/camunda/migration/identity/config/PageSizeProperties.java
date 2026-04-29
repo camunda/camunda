@@ -7,16 +7,20 @@
  */
 package io.camunda.migration.identity.config;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
 public class PageSizeProperties {
 
   public static final int DEFAULT_PAGE_SIZE = 100;
+  public static final int MAX_PAGE_SIZE = 10_000;
 
   @Min(1)
+  @Max(MAX_PAGE_SIZE)
   private int users = DEFAULT_PAGE_SIZE;
 
   @Min(1)
+  @Max(MAX_PAGE_SIZE)
   private int groups = DEFAULT_PAGE_SIZE;
 
   public int getUsers() {

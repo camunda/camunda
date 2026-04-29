@@ -8,6 +8,7 @@
 package io.camunda.migration.identity.client;
 
 import io.camunda.identity.sdk.users.dto.User;
+import io.camunda.migration.identity.config.PageSizeProperties;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Group;
@@ -48,18 +49,15 @@ public class ManagementIdentityClient {
 
   private final String organizationId;
   private final RestTemplate restTemplate;
-  private final int usersPageSize;
-  private final int groupsPageSize;
+  private final PageSizeProperties pageSize;
 
   public ManagementIdentityClient(
       final RestTemplate restTemplate,
       final String organizationId,
-      final int usersPageSize,
-      final int groupsPageSize) {
+      final PageSizeProperties pageSize) {
     this.restTemplate = restTemplate;
     this.organizationId = organizationId;
-    this.usersPageSize = usersPageSize;
-    this.groupsPageSize = groupsPageSize;
+    this.pageSize = pageSize;
   }
 
   public List<Tenant> fetchTenants() {
@@ -100,7 +98,7 @@ public class ManagementIdentityClient {
                     Group[].class,
                     page,
                     organizationId,
-                    groupsPageSize)))
+                    pageSize.getGroups())))
         .toList();
   }
 
@@ -154,7 +152,7 @@ public class ManagementIdentityClient {
     return Arrays.stream(
             Objects.requireNonNull(
                 restTemplate.getForObject(
-                    MIGRATION_USERS_ENDPOINT, User[].class, page, usersPageSize)))
+                    MIGRATION_USERS_ENDPOINT, User[].class, page, pageSize.getUsers())))
         .toList();
   }
 

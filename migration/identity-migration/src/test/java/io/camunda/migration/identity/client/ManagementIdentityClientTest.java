@@ -12,6 +12,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import io.camunda.migration.identity.config.PageSizeProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -29,7 +30,9 @@ class ManagementIdentityClientTest {
         .andExpect(method(HttpMethod.GET))
         .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
-    final var client = new ManagementIdentityClient(restTemplate, "org-1", 250, 100);
+    final var pageSize = new PageSizeProperties();
+    pageSize.setUsers(250);
+    final var client = new ManagementIdentityClient(restTemplate, "org-1", pageSize);
 
     assertThat(client.fetchUsers(0)).isEmpty();
     server.verify();
@@ -44,7 +47,9 @@ class ManagementIdentityClientTest {
         .andExpect(method(HttpMethod.GET))
         .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
-    final var client = new ManagementIdentityClient(restTemplate, "org-1", 100, 500);
+    final var pageSize = new PageSizeProperties();
+    pageSize.setGroups(500);
+    final var client = new ManagementIdentityClient(restTemplate, "org-1", pageSize);
 
     assertThat(client.fetchGroups(2)).isEmpty();
     server.verify();
