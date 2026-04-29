@@ -151,6 +151,8 @@
 /zeebe/expression-language/ @camunda/core-features
 /zeebe/feel/                @camunda/core-features
 /zeebe/feel-tagged-parameters/ @camunda/core-features
+# Engine-expert skill
+/.claude/skills/engine-expert/ @korthout @camunda/core-features
 
 # Protocol modules
 /zeebe/protocol/            @camunda/core-features
