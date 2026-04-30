@@ -37,14 +37,17 @@ public class ExporterStateInitializer implements ClusterConfigurationModifier {
   private final Set<String> configuredExporters;
   private final MemberId localMemberId;
   private final ConcurrencyControl executor;
+  private final boolean isCoordinator;
 
   public ExporterStateInitializer(
       final Set<String> configuredExporters,
       final MemberId localMemberId,
-      final ConcurrencyControl executor) {
+      final ConcurrencyControl executor,
+      final boolean isCoordinator) {
     this.configuredExporters = configuredExporters;
     this.localMemberId = localMemberId;
     this.executor = executor;
+    this.isCoordinator = isCoordinator;
   }
 
   @Override
@@ -52,10 +55,28 @@ public class ExporterStateInitializer implements ClusterConfigurationModifier {
     final ActorFuture<ClusterConfiguration> result = executor.createFuture();
     if (!configuration.hasMember(localMemberId)) {
       result.complete(configuration);
+    } else if (configuration.isAfterRestore()) {
+      if (isCoordinator) {
+        result.complete(updateExporterStateForAllMembers(configuration));
+      } else {
+        LOGGER.debug(
+            "Skipping exporter state initialization: post-restore pending UpdateRoutingState "
+                + "detected. Coordinator will handle initialization for all members.");
+        result.complete(configuration);
+      }
     } else {
       result.complete(configuration.updateMember(localMemberId, this::updateExporterState));
     }
     return result;
+  }
+
+  private ClusterConfiguration updateExporterStateForAllMembers(
+      final ClusterConfiguration configuration) {
+    ClusterConfiguration updated = configuration;
+    for (final var memberId : configuration.members().keySet()) {
+      updated = updated.updateMember(memberId, this::updateExporterState);
+    }
+    return updated;
   }
 
   private MemberState updateExporterState(final MemberState memberState) {
