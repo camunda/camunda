@@ -6,12 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+function getStage(host: string): 'dev' | 'int' | 'prod' | 'unknown' {
+	if (host.includes(import.meta.env.VITE_DEV_ENV_URL)) {
+		return 'dev';
+	}
 
-export const Route = createFileRoute('/about')({
-	component: About,
-});
+	if (host.includes(import.meta.env.VITE_INT_ENV_URL)) {
+		return 'int';
+	}
 
-function About() {
-	return null;
+	if (host.includes(import.meta.env.VITE_PROD_ENV_URL)) {
+		return 'prod';
+	}
+
+	return 'unknown';
 }
+
+export {getStage};
