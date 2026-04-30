@@ -24,6 +24,10 @@ import type {
   QueryProcessInstancesRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  SearchAgentInstanceHistoryRequestBody,
+  SearchAgentInstancesRequestBody,
+} from './agentInstances/types';
 
 const queryKeys = {
   variables: {
@@ -189,6 +193,17 @@ const queryKeys = {
       'auditLogsSearch',
       payload,
     ],
+  },
+  agentInstances: {
+    get: (agentInstanceKey: string) => ['agentInstance', agentInstanceKey],
+    search: (payload: SearchAgentInstancesRequestBody) => [
+      'agentInstancesSearch',
+      payload,
+    ],
+    historySearch: (
+      agentInstanceKey: string,
+      payload: SearchAgentInstanceHistoryRequestBody,
+    ) => ['agentInstanceHistorySearch', agentInstanceKey, payload],
   },
   incidentProcessInstanceStatisticsByError: {
     getPaginated: (
