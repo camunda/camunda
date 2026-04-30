@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -25,8 +26,9 @@ public final class ExpressionProcessors {
       final Writers writers,
       final ExpressionBehavior expressionBehavior,
       final ExpressionLanguage expressionLanguage,
+      final ElementInstanceState elementInstanceState,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    final var validator = new ExpressionValidator(expressionLanguage);
+    final var validator = new ExpressionValidator(expressionLanguage, elementInstanceState);
     typedRecordProcessors.onCommand(
         ValueType.EXPRESSION,
         ExpressionIntent.EVALUATE,

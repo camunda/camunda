@@ -14,6 +14,7 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
@@ -23,25 +24,59 @@ import java.util.Map;
 public class ExpressionBehavior {
 
   private final ExpressionProcessor clusterExpressionProcessor;
+  private final VariableState variableState;
 
   public ExpressionBehavior(
       final NamespacedEvaluationContext namespaceFullClusterContext,
       final ExpressionLanguage expressionLanguage,
-      final Duration expressionEvaluationTimeout) {
+      final Duration expressionEvaluationTimeout,
+      final VariableState variableState) {
     clusterExpressionProcessor =
         new ExpressionProcessor(
             expressionLanguage, namespaceFullClusterContext, expressionEvaluationTimeout);
+    this.variableState = variableState;
   }
 
+  /**
+   * Evaluates the given expression with the following variable resolution priority (highest first):
+   *
+   * <ol>
+   *   <li>Variables provided in the record body.
+   *   <li>Process/element instance variables visible from the record's scope (the element-instance
+   *       key if set, otherwise the process-instance key), walked up the scope tree.
+   *   <li>Tenant-scoped cluster variables.
+   *   <li>Global cluster variables.
+   * </ol>
+   */
   public Either<Rejection, ExpressionRecord> resolveExpression(
       final Expression expression, final ExpressionRecord expressionRecord) {
+    final long scopeKey = resolveScopeKey(expressionRecord);
     final var variables = expressionRecord.getVariables();
-    final var contextAsEvaluationContext =
+    final var bodyContext =
         variables == null
             ? new InMemoryVariableEvaluationContext(Map.of())
             : new InMemoryVariableEvaluationContext(variables);
-    return evaluate(expression, contextAsEvaluationContext, expressionRecord.getTenantId())
+
+    ExpressionProcessor processor = clusterExpressionProcessor;
+    if (scopeKey >= 0) {
+      // Process/element instance variables: walked up from scopeKey by VariableState#getVariable.
+      processor = processor.prependContext(new VariableEvaluationContext(variableState));
+    }
+    // Body-provided variables take precedence over everything else.
+    processor = processor.prependContext(bodyContext);
+
+    return processor
+        .evaluateAnyExpression(expression, scopeKey, expressionRecord.getTenantId())
+        .mapLeft(this::mapEvaluationFailure)
+        .flatMap(this::rejectIfEvaluationFailed)
         .map(evaluationResult -> mapSuccess(evaluationResult, expressionRecord));
+  }
+
+  private static long resolveScopeKey(final ExpressionRecord record) {
+    if (record.getElementInstanceKey() >= 0) {
+      return record.getElementInstanceKey();
+    }
+    return record.getProcessInstanceKey();
   }
 
   private Either<Rejection, EvaluationResult> rejectIfEvaluationFailed(
@@ -56,15 +91,6 @@ public class ExpressionBehavior {
     }
   }
 
-  private Either<Rejection, EvaluationResult> evaluate(
-      final Expression expression, final ScopedEvaluationContext context, final String tenantId) {
-    return clusterExpressionProcessor
-        .prependContext(context)
-        .evaluateAnyExpression(expression, -1, tenantId)
-        .mapLeft(this::mapEvaluationFailure)
-        .flatMap(this::rejectIfEvaluationFailed);
-  }
-
   private Rejection mapEvaluationFailure(final Failure failure) {
     return new Rejection(RejectionType.PROCESSING_ERROR, failure.getMessage());
   }
@@ -75,6 +101,8 @@ public class ExpressionBehavior {
         .setTenantId(expressionRecord.getTenantId())
         .setExpression(expressionRecord.getExpression())
         .setVariables(expressionRecord.getVariablesBuffer())
+        .setProcessInstanceKey(expressionRecord.getProcessInstanceKey())
+        .setElementInstanceKey(expressionRecord.getElementInstanceKey())
         .setWarnings(
             evaluationResult.getWarnings().stream().map(EvaluationWarning::getMessage).toList())
         .setResultValue(evaluationResult.toBuffer());
