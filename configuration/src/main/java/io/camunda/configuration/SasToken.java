@@ -39,7 +39,7 @@ public class SasToken {
   }
 
   public SasTokenType getType() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".type",
         type,
         SasTokenType.class,

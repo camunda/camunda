@@ -48,7 +48,7 @@ public class LongPolling implements Cloneable {
       ConfigurationDefaults.DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
 
   public boolean isEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enabled",
         enabled,
         Boolean.class,
@@ -61,7 +61,7 @@ public class LongPolling implements Cloneable {
   }
 
   public long getTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".timeout",
         timeout,
         Long.class,
@@ -74,7 +74,7 @@ public class LongPolling implements Cloneable {
   }
 
   public long getProbeTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".probe-timeout",
         probeTimeout,
         Long.class,
@@ -87,7 +87,7 @@ public class LongPolling implements Cloneable {
   }
 
   public int getMinEmptyResponses() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".min-empty-responses",
         minEmptyResponses,
         Integer.class,

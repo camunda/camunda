@@ -58,7 +58,7 @@ public class PrimaryStorage {
   @NestedConfigurationProperty private PrimaryStorageBackup backup = new PrimaryStorageBackup();
 
   public String getDirectory() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".directory",
         directory,
         String.class,
@@ -71,7 +71,7 @@ public class PrimaryStorage {
   }
 
   public String getRuntimeDirectory() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".runtime-directory",
         runtimeDirectory,
         String.class,

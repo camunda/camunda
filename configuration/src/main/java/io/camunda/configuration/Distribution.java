@@ -35,7 +35,7 @@ public class Distribution {
   private Duration redistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
 
   public Duration getMaxBackoffDuration() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-backoff-duration",
         maxBackoffDuration,
         Duration.class,
@@ -48,7 +48,7 @@ public class Distribution {
   }
 
   public Duration getRedistributionInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".redistribution-interval",
         redistributionInterval,
         Duration.class,

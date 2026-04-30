@@ -33,7 +33,7 @@ public class BatchOperation {
   }
 
   public boolean isExportItemsOnCreation() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".export-items-on-creation",
         exportItemsOnCreation,
         Boolean.class,

@@ -94,7 +94,7 @@ public class PrimaryStorageBackup implements Cloneable {
   }
 
   public BackupStoreType getStore() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".store",
         store,
         BackupStoreType.class,
@@ -107,7 +107,7 @@ public class PrimaryStorageBackup implements Cloneable {
   }
 
   public boolean isContinuous() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".continuous",
         continuous,
         Boolean.class,

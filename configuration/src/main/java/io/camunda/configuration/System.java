@@ -46,7 +46,7 @@ public class System {
   @NestedConfigurationProperty private Restore restore = new Restore();
 
   public int getCpuThreadCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".cpu-thread-count",
         cpuThreadCount,
         Integer.class,
@@ -59,7 +59,7 @@ public class System {
   }
 
   public int getIoThreadCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".io-thread-count",
         ioThreadCount,
         Integer.class,
@@ -72,7 +72,7 @@ public class System {
   }
 
   public boolean getClockControlled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".clock-controlled",
         clockControlled,
         Boolean.class,

@@ -34,7 +34,7 @@ public class LogStream {
   private DataSize logSegmentSize = DataSize.ofMegabytes(128);
 
   public int getLogIndexDensity() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".log-index-density",
         logIndexDensity,
         Integer.class,
@@ -47,7 +47,7 @@ public class LogStream {
   }
 
   public DataSize getLogSegmentSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".log-segment-size",
         logSegmentSize,
         DataSize.class,

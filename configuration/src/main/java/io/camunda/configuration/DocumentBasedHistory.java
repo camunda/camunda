@@ -86,7 +86,7 @@ public class DocumentBasedHistory {
   }
 
   public boolean isProcessInstanceEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".process-instance-enabled",
         processInstanceEnabled,
         Boolean.class,
@@ -99,7 +99,7 @@ public class DocumentBasedHistory {
   }
 
   public ProcessInstanceRetentionMode getProcessInstanceRetentionMode() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".process-instance-retention-mode",
         processInstanceRetentionMode,
         ProcessInstanceRetentionMode.class,
@@ -125,7 +125,7 @@ public class DocumentBasedHistory {
   }
 
   public String getElsRolloverDateFormat() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".els-rollover-date-format",
         elsRolloverDateFormat,
         String.class,
@@ -138,7 +138,7 @@ public class DocumentBasedHistory {
   }
 
   public String getRolloverInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".rollover-interval",
         rolloverInterval,
         String.class,
@@ -151,7 +151,7 @@ public class DocumentBasedHistory {
   }
 
   public int getRolloverBatchSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".rollover-batch-size",
         rolloverBatchSize,
         Integer.class,
@@ -172,7 +172,7 @@ public class DocumentBasedHistory {
   }
 
   public String getWaitPeriodBeforeArchiving() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".wait-period-before-archiving",
         waitPeriodBeforeArchiving,
         String.class,
@@ -185,7 +185,7 @@ public class DocumentBasedHistory {
   }
 
   public Duration getDelayBetweenRuns() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".delay-between-runs",
         delayBetweenRuns,
         Duration.class,
@@ -198,7 +198,7 @@ public class DocumentBasedHistory {
   }
 
   public Duration getMaxDelayBetweenRuns() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".max-delay-between-runs",
         maxDelayBetweenRuns,
         Duration.class,
@@ -211,7 +211,7 @@ public class DocumentBasedHistory {
   }
 
   public String getPolicyName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".policy-name",
         policyName,
         String.class,

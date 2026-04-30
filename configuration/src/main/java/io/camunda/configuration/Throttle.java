@@ -44,7 +44,7 @@ public class Throttle {
   private Duration resolution = DEFAULT_RESOLUTION;
 
   public boolean isEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enabled",
         enabled,
         Boolean.class,
@@ -57,7 +57,7 @@ public class Throttle {
   }
 
   public int getAcceptableBacklog() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".acceptable-backlog",
         acceptableBacklog,
         Integer.class,
@@ -70,7 +70,7 @@ public class Throttle {
   }
 
   public int getMinimumLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".minimum-limit",
         minimumLimit,
         Integer.class,
@@ -83,7 +83,7 @@ public class Throttle {
   }
 
   public Duration getResolution() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".resolution",
         resolution,
         Duration.class,

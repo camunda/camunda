@@ -91,7 +91,7 @@ public class Azure {
   @NestedConfigurationProperty private SasToken sasToken = new SasToken();
 
   public String getEndpoint() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".endpoint",
         endpoint,
         String.class,
@@ -104,7 +104,7 @@ public class Azure {
   }
 
   public String getAccountName() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".account-name",
         accountName,
         String.class,
@@ -143,7 +143,7 @@ public class Azure {
   }
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".base-path",
         basePath,
         String.class,
@@ -156,7 +156,7 @@ public class Azure {
   }
 
   public boolean isCreateContainer() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".create-container",
         createContainer,
         Boolean.class,

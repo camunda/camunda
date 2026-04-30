@@ -40,7 +40,7 @@ public class KeyStore implements Cloneable {
   private String password;
 
   public File getFilePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".file-path",
         filePath,
         File.class,

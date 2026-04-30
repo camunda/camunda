@@ -52,7 +52,7 @@ public class TlsCluster implements Cloneable {
   @NestedConfigurationProperty private KeyStore keyStore = new KeyStore();
 
   public boolean isEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enabled",
         enabled,
         Boolean.class,
@@ -65,7 +65,7 @@ public class TlsCluster implements Cloneable {
   }
 
   public File getCertificateChainPath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".certificate-chain-path",
         certificateChainPath,
         File.class,
@@ -78,7 +78,7 @@ public class TlsCluster implements Cloneable {
   }
 
   public File getCertificatePrivateKeyPath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".certificate-private-key-path",
         certificatePrivateKeyPath,
         File.class,

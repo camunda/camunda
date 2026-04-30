@@ -41,7 +41,7 @@ public class Export {
   private Map<Integer, Set<Long>> skipRecords = Map.of();
 
   public Duration getDistributionInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".distribution-interval",
         distributionInterval,
         Duration.class,
