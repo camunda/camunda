@@ -52,7 +52,7 @@ public class SasToken {
   }
 
   public String getValue() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfigurationWithOrdering(
         PREFIX + ".value",
         value,
         String.class,

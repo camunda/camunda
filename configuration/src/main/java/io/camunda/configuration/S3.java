@@ -219,7 +219,7 @@ public class S3 {
   }
 
   public String getSecretKey() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfigurationWithOrdering(
         PREFIX + ".secret-key",
         secretKey,
         String.class,
