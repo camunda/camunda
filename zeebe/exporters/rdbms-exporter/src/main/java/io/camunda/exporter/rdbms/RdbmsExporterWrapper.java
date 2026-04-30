@@ -177,6 +177,7 @@ public class RdbmsExporterWrapper implements Exporter {
           ValueType.TENANT, new TenantExportHandler(rdbmsWriters.getTenantWriter()));
       builder.withHandler(ValueType.ROLE, new RoleExportHandler(rdbmsWriters.getRoleWriter()));
       builder.withHandler(ValueType.USER, new UserExportHandler(rdbmsWriters.getUserWriter()));
+      builder.withHandler(ValueType.GROUP, new GroupExportHandler(rdbmsWriters.getGroupWriter()));
       builder.withHandler(
           ValueType.AUTHORIZATION,
           new AuthorizationExportHandler(rdbmsWriters.getAuthorizationWriter()));
@@ -196,7 +197,6 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.DECISION_EVALUATION,
         new DecisionInstanceExportHandler(rdbmsWriters.getDecisionInstanceWriter()));
-    builder.withHandler(ValueType.GROUP, new GroupExportHandler(rdbmsWriters.getGroupWriter()));
     builder.withHandler(
         ValueType.INCIDENT,
         new IncidentExportHandler(
