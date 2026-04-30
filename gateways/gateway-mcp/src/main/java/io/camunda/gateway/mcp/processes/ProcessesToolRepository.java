@@ -81,12 +81,9 @@ public class ProcessesToolRepository implements ToolRepository {
                                     Operation.neq(MessageSubscriptionState.DELETED.name()))
                                 .toolNameOperations(Operation.exists(true)))
                     .unlimited());
-    final List<Tool> dynamicTools =
-        messageSubscriptionServices.search(query, auth).items().stream()
-            .map(this::buildTool)
-            .toList();
     return Stream.concat(
-            dynamicTools.stream(), staticTools.stream().map(SyncToolSpecification::tool))
+            messageSubscriptionServices.search(query, auth).items().stream().map(this::buildTool),
+            staticTools.stream().map(SyncToolSpecification::tool))
         .toList();
   }
 
