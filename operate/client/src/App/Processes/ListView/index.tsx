@@ -21,6 +21,7 @@ import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
 import {SelectedProcessDefinitionContext} from './selectedProcessDefinitionContext';
 import {useFilters} from 'modules/hooks/useFilters';
 import {variableFilterStore} from 'modules/stores/variableFilter';
+import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 import {reaction} from 'mobx';
 import {tracking} from 'modules/tracking';
 import {useSelectedProcessDefinition} from 'modules/hooks/processDefinitions';
@@ -65,7 +66,9 @@ const ListView: React.FC = observer(() => {
         tracking.track({
           eventName: 'process-instances-filtered',
           filterName: 'variable',
-          multipleValues: variableFilterStore.state.isInMultipleMode,
+          multipleValues: variableFilterStore.variables.some(
+            (v) => (getValidVariableValues(v.values)?.length ?? 0) > 1,
+          ),
         });
       },
     );

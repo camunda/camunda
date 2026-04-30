@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {observer} from 'mobx-react';
 import {
   validateVariableNameCharacters,
@@ -15,7 +15,6 @@ import {
   validateMultipleVariableValuesValid,
   validateVariableValueValid,
 } from 'modules/validators';
-import {useForm} from 'react-final-form';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {tracking} from 'modules/tracking';
 import {Title} from 'modules/components/FiltersPanel/styled';
@@ -48,8 +47,6 @@ async function resolveError(
 }
 
 const Variable: React.FC = observer(() => {
-  const form = useForm();
-  const submitTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [entryStates, setEntryStates] = useState<EntryState[]>([
     {isMultipleMode: false, isModalVisible: false},
   ]);
@@ -109,21 +106,11 @@ const Variable: React.FC = observer(() => {
   const getEntryState = (index: number): EntryState =>
     entryStates[index] ?? {isMultipleMode: false, isModalVisible: false};
 
-  const scheduleSubmit = () => {
-    if (submitTimerRef.current !== undefined) {
-      clearTimeout(submitTimerRef.current);
-    }
-    submitTimerRef.current = setTimeout(() => {
-      form.submit();
-    }, 750);
-  };
-
   const updateVariable = (index: number, update: Partial<Variable>) => {
     const current = variables[index] ?? {name: '', values: ''};
     const updated = [...variables];
     updated[index] = {...current, ...update};
     variableFilterStore.setVariables(updated);
-    scheduleSubmit();
   };
 
   const addVariable = () => {
@@ -137,7 +124,6 @@ const Variable: React.FC = observer(() => {
   const removeVariable = (index: number) => {
     variableFilterStore.setVariables(variables.filter((_, i) => i !== index));
     setEntryStates((prev) => prev.filter((_, i) => i !== index));
-    scheduleSubmit();
   };
 
   const updateEntryState = (index: number, update: Partial<EntryState>) => {
@@ -259,7 +245,6 @@ const Variable: React.FC = observer(() => {
                         onApply={(value) => {
                           updateVariable(index, {values: value});
                           updateEntryState(index, {isModalVisible: false});
-                          form.submit();
                           tracking.track({
                             eventName: 'json-editor-saved',
                             variant: 'search-multiple-variables',
@@ -283,7 +268,6 @@ const Variable: React.FC = observer(() => {
                         onApply={(value) => {
                           updateVariable(index, {values: value});
                           updateEntryState(index, {isModalVisible: false});
-                          form.submit();
                           tracking.track({
                             eventName: 'json-editor-saved',
                             variant: 'search-variable',
