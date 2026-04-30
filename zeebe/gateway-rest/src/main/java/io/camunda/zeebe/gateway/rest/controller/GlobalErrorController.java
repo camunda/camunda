@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
+import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -26,6 +27,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
 @CamundaRestController
+@ClusterScoped
 public class GlobalErrorController implements ErrorController {
 
   private static final Logger LOG = LoggerFactory.getLogger(GlobalErrorController.class);
