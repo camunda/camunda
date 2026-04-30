@@ -12,7 +12,7 @@ import type {
   AgentIteration,
   AgentToolCall,
   ConversationMessage,
-} from 'modules/mock-server/agentDemoData';
+} from './agentData.types';
 
 /** Camunda AI Agent task definitions all start with this prefix. */
 const AI_AGENT_TASK_DEFINITION_PREFIX = 'io.camunda.agenticai:aiagent';

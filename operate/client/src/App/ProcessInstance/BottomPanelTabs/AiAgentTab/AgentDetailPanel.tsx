@@ -25,7 +25,7 @@ import type {
   AgentIteration,
   AgentToolCall,
   ConversationMessage,
-} from 'modules/mock-server/agentDemoData';
+} from 'modules/contexts/agentData.types';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {MetaLabel, DetailSection, AgentAccordionContainer} from './styled';
 

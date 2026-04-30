@@ -11,7 +11,7 @@ import type {
   AgentElementData,
   AgentIteration,
   AgentToolCall,
-} from 'modules/mock-server/agentDemoData';
+} from './agentData.types';
 import {getScenarioByInstanceKey} from 'modules/mock-server/scenarioRegistry';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {detectAgentElement, buildPlaceholderAgentData} from './detectAgent';
