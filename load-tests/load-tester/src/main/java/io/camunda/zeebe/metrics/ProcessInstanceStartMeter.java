@@ -65,6 +65,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
             checkForProcessInstances();
           } catch (final Exception e) {
             LOG.error("Failed to check process instances. Will retry...", e);
+            rescheduleCheck(0);
           }
         },
         delay,
@@ -106,6 +107,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private void checkForProcessInstances() {
     if (startedInstances.isEmpty()) {
       LOG.debug("No instances awaiting, skip check for process instances.");
+      rescheduleCheck(0);
       return;
     }
 
