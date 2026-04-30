@@ -45,6 +45,19 @@ public interface BrokerClusterState {
 
   String getBrokerVersion(int brokerId);
 
+  /**
+   * Returns the composite member ID for the given broker. In zone-aware setups this is {@code
+   * "$zone/$nodeId"} (e.g. {@code "us-east/0"}); otherwise it falls back to the bare node ID as a
+   * string (e.g. {@code "0"}).
+   *
+   * @param brokerId the integer node ID of the broker
+   * @return the composite member ID string, or {@code String.valueOf(brokerId)} if no member ID is
+   *     known
+   */
+  default String getBrokerMemberId(final int brokerId) {
+    return String.valueOf(brokerId);
+  }
+
   PartitionHealthStatus getPartitionHealth(int brokerId, int partition);
 
   long getLastCompletedChangeId();

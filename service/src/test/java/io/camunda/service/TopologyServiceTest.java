@@ -203,18 +203,21 @@ public class TopologyServiceTest {
             List.of(
                 new Broker(
                     0,
+                    "0",
                     "localhost",
                     26501,
                     List.of(new Partition(1, Role.LEADER, Health.HEALTHY)),
                     version),
                 new Broker(
                     1,
+                    "1",
                     "localhost",
                     26502,
                     List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY)),
                     version),
                 new Broker(
                     2,
+                    "2",
                     "localhost",
                     26503,
                     List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
