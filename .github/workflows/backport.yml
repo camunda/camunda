@@ -13,14 +13,17 @@ jobs:
   backport:
     name: Create backport PRs
     runs-on: ubuntu-latest
-    # Only run when pull request is merged
+    # Only run when pull request is merged and carries at least one `backport ` label
     # or when a comment starting with `/backport` is created by someone other than a bot:
     # - https://github.com/backport-action bot user (user id: 97796249)
     # - Monorepo DevOps Automation GitHub App bot user (user id: 248077375)
+    # The label check uses toJSON + contains to match any label whose name starts with
+    # `backport ` (the leading `"` anchors the match to the start of a label name).
     if: >
       (
         github.event_name == 'pull_request' &&
-        github.event.pull_request.merged
+        github.event.pull_request.merged &&
+        contains(toJSON(github.event.pull_request.labels.*.name), '"backport ')
       ) || (
         github.event_name == 'issue_comment' &&
         github.event.issue.pull_request &&
