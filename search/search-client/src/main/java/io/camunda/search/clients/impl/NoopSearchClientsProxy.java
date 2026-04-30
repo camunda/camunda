@@ -53,6 +53,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.WaitingStateEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
@@ -96,6 +97,7 @@ import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.search.query.WaitingStateQuery;
 import io.camunda.security.auth.SecurityContext;
 import java.util.List;
 import java.util.Map;
@@ -471,6 +473,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<DeployedResourceEntity> searchDeployedResources(
       final DeployedResourceQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public SearchQueryResult<WaitingStateEntity> searchWaitingStates(final WaitingStateQuery query) {
     return SearchQueryResult.empty();
   }
 }

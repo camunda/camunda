@@ -49,6 +49,7 @@ import io.camunda.search.clients.reader.UsageMetricsTUDocumentReader;
 import io.camunda.search.clients.reader.UserDocumentReader;
 import io.camunda.search.clients.reader.UserTaskDocumentReader;
 import io.camunda.search.clients.reader.VariableDocumentReader;
+import io.camunda.search.clients.reader.WaitingStateDocumentReader;
 import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
@@ -80,6 +81,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.WaitingStateTemplate;
 
 /** Static factory that creates a complete set of ES/OS document readers for one physical tenant. */
 public final class SearchClientReadersFactory {
@@ -155,6 +157,8 @@ public final class SearchClientReadersFactory {
         new AuditLogDocumentReader(executor, descriptors.get(AuditLogTemplate.class));
     final var globalListenerReader =
         new GlobalListenerDocumentReader(executor, descriptors.get(GlobalListenerIndex.class));
+    final var waitingStateReader =
+        new WaitingStateDocumentReader(executor, descriptors.get(WaitingStateTemplate.class));
 
     // --- Phase 2: Base readers needed by composite readers ---
     final var roleMemberReader =
@@ -243,6 +247,7 @@ public final class SearchClientReadersFactory {
         auditLogReader,
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,
-        globalListenerReader);
+        globalListenerReader,
+        waitingStateReader);
   }
 }

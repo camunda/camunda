@@ -21,6 +21,7 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.entities.WaitingStateEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -28,6 +29,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.search.query.WaitingStateQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -83,6 +85,7 @@ public final class ProcessInstanceServices
   private final ProcessInstanceSearchClient processInstanceSearchClient;
   private final SequenceFlowSearchClient sequenceFlowSearchClient;
   private final IncidentServices incidentServices;
+  private final WaitingStateServices waitingStateServices;
   private final RequestRetryHandler requestRetryHandler;
   private final ExecutorService executor;
   private final int maxVariableNameLength;
@@ -96,6 +99,7 @@ public final class ProcessInstanceServices
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentServices incidentServices,
+      final WaitingStateServices waitingStateServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
@@ -104,6 +108,7 @@ public final class ProcessInstanceServices
         processInstanceSearchClient,
         sequenceFlowSearchClient,
         incidentServices,
+        waitingStateServices,
         executorProvider,
         brokerRequestAuthorizationConverter,
         new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager()),
@@ -116,6 +121,7 @@ public final class ProcessInstanceServices
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentServices incidentServices,
+      final WaitingStateServices waitingStateServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final int maxVariableNameLength) {
@@ -125,6 +131,7 @@ public final class ProcessInstanceServices
         processInstanceSearchClient,
         sequenceFlowSearchClient,
         incidentServices,
+        waitingStateServices,
         executorProvider,
         brokerRequestAuthorizationConverter,
         new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager()),
@@ -137,6 +144,7 @@ public final class ProcessInstanceServices
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentServices incidentServices,
+      final WaitingStateServices waitingStateServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final RequestRetryHandler requestRetryHandler) {
@@ -146,6 +154,7 @@ public final class ProcessInstanceServices
         processInstanceSearchClient,
         sequenceFlowSearchClient,
         incidentServices,
+        waitingStateServices,
         executorProvider,
         brokerRequestAuthorizationConverter,
         requestRetryHandler,
@@ -158,6 +167,7 @@ public final class ProcessInstanceServices
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentServices incidentServices,
+      final WaitingStateServices waitingStateServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final RequestRetryHandler requestRetryHandler,
@@ -170,6 +180,7 @@ public final class ProcessInstanceServices
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.incidentServices = incidentServices;
+    this.waitingStateServices = waitingStateServices;
     this.requestRetryHandler = requestRetryHandler;
     executor = executorProvider.getExecutor();
     this.maxVariableNameLength = maxVariableNameLength;
@@ -515,6 +526,22 @@ public final class ProcessInstanceServices
                 b.filter(
                         query.filter().toBuilder()
                             .treePathOperations(Operation.like("*" + treePath + "*"))
+                            .build())
+                    .page(query.page())
+                    .sort(query.sort())),
+        authentication);
+  }
+
+  public SearchQueryResult<WaitingStateEntity> searchWaitingStates(
+      final long processInstanceKey,
+      final WaitingStateQuery query,
+      final CamundaAuthentication authentication) {
+    return waitingStateServices.search(
+        WaitingStateQuery.of(
+            b ->
+                b.filter(
+                        query.filter().toBuilder()
+                            .processInstanceKeyOperations(Operation.eq(processInstanceKey))
                             .build())
                     .page(query.page())
                     .sort(query.sort())),

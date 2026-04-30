@@ -29,6 +29,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.WaitingStateQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -243,6 +244,23 @@ public class ProcessInstanceController {
         .fold(
             RestErrorMapper::mapProblemToResponse,
             incidentQuery -> searchIncidents(processInstanceKey, incidentQuery));
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaGetMapping(path = "/{processInstanceKey}/waiting-states")
+  public ResponseEntity<Object> getWaitingStates(
+      @PathVariable("processInstanceKey") final long processInstanceKey) {
+    try {
+      final var emptyQuery =
+          WaitingStateQuery.of(
+              b -> b.filter(io.camunda.search.filter.FilterBuilders.waitingState().build()));
+      final var result =
+          processInstanceServices.searchWaitingStates(
+              processInstanceKey, emptyQuery, authenticationProvider.getCamundaAuthentication());
+      return ResponseEntity.ok(result);
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
