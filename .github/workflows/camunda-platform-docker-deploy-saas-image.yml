@@ -106,28 +106,6 @@ jobs:
           dockerfile: Dockerfile
           push: true
       - uses: ./.github/actions/build-platform-docker
-        id: build-push-operate-docker
-        name: Build & Push zeebe-io/operate
-        if: ${{ !inputs.camunda-image-only }}
-        with:
-          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/operate
-          version: ${{ steps.image-tag.outputs.image-tag }}
-          distball: ${{ steps.build-camunda.outputs.distball }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          dockerfile: operate.Dockerfile
-          push: true
-      - uses: ./.github/actions/build-platform-docker
-        id: build-push-tasklist-docker
-        name: Build & Push zeebe-io/tasklist
-        if: ${{ !inputs.camunda-image-only }}
-        with:
-          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/tasklist
-          version: ${{ steps.image-tag.outputs.image-tag }}
-          distball: ${{ steps.build-camunda.outputs.distball }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          dockerfile: tasklist.Dockerfile
-          push: true
-      - uses: ./.github/actions/build-platform-docker
         id: build-push-optimize-docker
         name: Build & Push zeebe-io/optimize
         if: ${{ !inputs.camunda-image-only }}
