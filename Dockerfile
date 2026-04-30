@@ -71,11 +71,45 @@ FROM ubuntu:noble AS distball
 # hadolint ignore=DL3002
 USER root
 WORKDIR /zeebe
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Install tools before COPY so this layer is cached independently of the distball
+# hadolint ignore=DL3008
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends unzip zip && \
+    rm -rf /var/lib/apt/lists/*
+
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} zeebe.tar.gz
 
 RUN mkdir camunda-zeebe && \
     tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
+
+ARG TARGETARCH
+# Slim the RocksDB JNI jar: keeps only the target-arch glibc .so, removing ~60 MB of unused native libs
+# hadolint ignore=DL3003
+RUN \
+    # Map Docker TARGETARCH to the RocksDB native lib filename suffix
+    if [ "$TARGETARCH" = "amd64" ]; then \
+      ROCKSDB_ARCH="linux64"; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+      ROCKSDB_ARCH="linux-aarch64"; \
+    else \
+      echo "Unsupported architecture: $TARGETARCH" >&2 && exit 1; \
+    fi && \
+    # Locate the jar (version-agnostic)
+    ROCKSDB_JAR=$(find camunda-zeebe/lib -name 'rocksdbjni-*.jar' | head -1) && \
+    UNPACK=$(mktemp -d) && \
+    # Unpack, remove all native libs except the one we need, validate, repack
+    unzip -q "$ROCKSDB_JAR" -d "$UNPACK" && \
+    find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) \
+      ! -name "librocksdbjni-${ROCKSDB_ARCH}.so" -delete && \
+    # Verify only one shared lib is left
+    count=$(find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) | wc -l) && \
+    [ "$count" -eq 1 ] || { echo "Expected exactly 1 native lib, found $count" >&2; exit 1; } && \
+    rm "$ROCKSDB_JAR" && \
+    ( cd "$UNPACK" && zip -qr "$OLDPWD/$ROCKSDB_JAR" . ) && \
+    rm -rf "$UNPACK"
 
 
 ### Image containing the zeebe distribution ###
