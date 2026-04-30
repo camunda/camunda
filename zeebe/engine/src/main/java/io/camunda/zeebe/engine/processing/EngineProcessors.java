@@ -401,6 +401,7 @@ public final class EngineProcessors {
         writers,
         bpmnBehaviors.expressionBehavior(),
         bpmnBehaviors.expressionLanguage(),
+        processingState.getElementInstanceState(),
         authCheckBehavior);
 
     JobMetricsProcessors.addJobMetricsProcessors(
