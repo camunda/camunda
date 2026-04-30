@@ -69,7 +69,7 @@ jobs:
   integration-tests:
     name: "${{ inputs.database-type }}"
     permissions: { }  # GITHUB_TOKEN unused in this job
-    timeout-minutes: 20
+    timeout-minutes: ${{ inputs.database-type == 'oracle' && 60 || 20 }}
     runs-on: ${{ inputs.runs-on }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
