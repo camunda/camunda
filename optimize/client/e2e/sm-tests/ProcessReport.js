@@ -24,7 +24,7 @@ fixture('Process report')
   })
   .afterEach(cleanEntities);
 
-test('create a report from a template', async (t) => {
+test.meta({type: 'smoke'})('create a report from a template', async (t) => {
   await t.resizeWindow(1300, 750);
   await t.click(Common.createNewButton);
   await t.click(Common.menuOption('Report'));
@@ -44,7 +44,7 @@ test('create a report from a template', async (t) => {
   await t.expect(e.reportChart.visible).ok();
 });
 
-test('create and name a report', async (t) => {
+test.meta({type: 'smoke'})('create and name a report', async (t) => {
   await u.createNewReport(t);
 
   await t.typeText(Common.nameEditField, 'Invoice Pipeline', {replace: true});
