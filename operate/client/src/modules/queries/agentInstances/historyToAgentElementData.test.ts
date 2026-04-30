@@ -36,22 +36,25 @@ const baseInstance: AgentInstance = {
 };
 
 const makeElement = (
-  overrides: Partial<HistoryElement> & {
+  overrides: Omit<Partial<HistoryElement>, 'content'> & {
     role: HistoryElement['role'];
     content: string;
   },
   index: number,
-): HistoryElement => ({
-  historyElementKey: `he-${index}`,
-  agentInstanceKey: 'agent-1',
-  elementInstanceKey: 'ei-1',
-  jobKey: 'job-1',
-  timestamp: `2026-04-07T10:0${index}:00.000Z`,
-  metrics: {},
-  committed: true,
-  ...overrides,
-  content: [{contentType: 'text', content: overrides.content}],
-});
+): HistoryElement => {
+  const {content, ...rest} = overrides;
+  return {
+    historyElementKey: `he-${index}`,
+    agentInstanceKey: 'agent-1',
+    elementInstanceKey: 'ei-1',
+    jobKey: 'job-1',
+    timestamp: `2026-04-07T10:0${index}:00.000Z`,
+    metrics: {},
+    committed: true,
+    ...rest,
+    content: [{contentType: 'text', content}],
+  };
+};
 
 describe('historyToAgentElementData', () => {
   it('should group one assistant + tool_call + tool_result into a single completed iteration', () => {
@@ -134,7 +137,9 @@ describe('historyToAgentElementData', () => {
 
     expect(result.iterations[0]!.toolCalls).toHaveLength(2);
     expect(result.iterations[0]!.toolCalls[0]!.toolName).toBe('load_user');
-    expect(result.iterations[0]!.toolCalls[0]!.output).toEqual({email: 'a@b.c'});
+    expect(result.iterations[0]!.toolCalls[0]!.output).toEqual({
+      email: 'a@b.c',
+    });
     expect(result.iterations[0]!.toolCalls[1]!.toolName).toBe('now');
     expect(result.iterations[0]!.toolCalls[1]!.output).toEqual({
       iso: '2026-04-07',
