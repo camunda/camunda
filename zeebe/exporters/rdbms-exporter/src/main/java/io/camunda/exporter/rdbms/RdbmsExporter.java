@@ -120,10 +120,10 @@ public final class RdbmsExporter {
             partitionId,
             lastPosition,
             exporterRdbmsPosition.lastExportedPosition(),
-            exporterRdbmsPosition.lastExportedPosition() + 1);
+            exporterRdbmsPosition.lastExportedPosition());
         lastPosition = exporterRdbmsPosition.lastExportedPosition();
         final boolean replayInitiated =
-            controller.requestReplay(exporterRdbmsPosition.lastExportedPosition() + 1);
+            controller.requestReplay(exporterRdbmsPosition.lastExportedPosition());
         if (!replayInitiated) {
           throw new ExporterException(
               String.format(

@@ -534,8 +534,8 @@ class RdbmsExporterTest {
     // when
     exporter.open(controller);
 
-    // then - requestReplay should be called with rdbmsPosition + 1
-    verify(controller).requestReplay(rdbmsPosition + 1);
+    // then - requestReplay should be called with rdbmsPosition
+    verify(controller).requestReplay(rdbmsPosition);
   }
 
   @Test
