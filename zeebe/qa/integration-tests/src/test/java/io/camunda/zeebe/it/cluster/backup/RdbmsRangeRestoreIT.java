@@ -33,7 +33,6 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import javax.sql.DataSource;
@@ -66,25 +65,12 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
       "jdbc:h2:mem:rdbms-restore-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
 
   private static @TempDir Path backupDir;
-  private static final Map<String, Object> H2_PROPERTIES =
-      Map.of(
-          "camunda.data.secondary-storage.type",
-          "rdbms",
-          "spring.datasource.url",
-          H2_URL,
-          "spring.datasource.driver-class-name",
-          "org.h2.Driver",
-          "spring.datasource.username",
-          "sa",
-          "spring.datasource.password",
-          "");
   private Path workingDirectory;
 
   @TestZeebe
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withSecondaryStorageType(SecondaryStorageType.rdbms)
-          .withAdditionalProperties(H2_PROPERTIES)
           .withUnifiedConfig(this::configureBroker);
 
   private BackupActuator backupActuator;
@@ -303,6 +289,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
 
   private void configureBroker(final Camunda cfg) {
     cfg.getSystem().setClockControlled(true);
+    configureRdbms(cfg);
     // Filesystem backup store
     final var fsConfig = new Filesystem();
     fsConfig.setBasePath(backupDir.toAbsolutePath().toString());
@@ -322,19 +309,27 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
   }
 
   private void configureRestoreApp(final Camunda cfg) {
+    configureRdbms(cfg);
     // Filesystem backup store (same as broker)
-    cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
     final var fsConfig = new Filesystem();
     fsConfig.setBasePath(backupDir.toAbsolutePath().toString());
     cfg.getData().getPrimaryStorage().getBackup().setFilesystem(fsConfig);
     cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.FILESYSTEM);
   }
 
+  private static void configureRdbms(final Camunda cfg) {
+    cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
+    final var rdbms = cfg.getData().getSecondaryStorage().getRdbms();
+    rdbms.setUrl(H2_URL);
+    rdbms.setUsername("sa");
+    rdbms.setPassword("");
+  }
+
   @SuppressWarnings("resource")
   private TestRestoreApp testRestoreApp(final Interval interval) {
     return new TestRestoreApp()
+        .withProperty("camunda.data.secondary-storage.type", "rdbms")
         .withUnifiedConfig(this::configureRestoreApp)
-        .withAdditionalProperties(H2_PROPERTIES)
         .withWorkingDirectory(workingDirectory)
         .withTimeRange(interval.start(), interval.end());
   }
@@ -342,8 +337,8 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
   @SuppressWarnings("resource")
   private TestRestoreApp testRestoreApp() {
     return new TestRestoreApp()
+        .withProperty("camunda.data.secondary-storage.type", "rdbms")
         .withUnifiedConfig(this::configureRestoreApp)
-        .withAdditionalProperties(H2_PROPERTIES)
         .withWorkingDirectory(workingDirectory);
   }
 
