@@ -18,8 +18,7 @@ interface TestFixture {
   camunda: CamundaClient;
   /**
    * {@linkcode AsyncDisposableStack} that should be used to defer cleanup in tests.
-   * Reason: Using the `await using` keyword appears to not guarantee that the
-   * test waits for the cleanup to complete.
+   * Using the `await using` keyword fails to run to completing before Playwright terminates.
    */
   cleanup: AsyncDisposableStack;
 }
