@@ -108,6 +108,8 @@ jobs:
       - name: Compute current and find previous benchmark name
         id: names
         run: |
+          set -euo pipefail
+
           # Current benchmark: ISO year + week number (e.g. weekly-2026-12)
           # Format: weekly-YYYY-WW — fits within the 20-char prefix limit for both prod and dev.
           CURRENT_WEEK=$(date -u +%Y-%V)
@@ -132,9 +134,13 @@ jobs:
           #       dev-weekly-2026-12-oc-orchestration-cluster (dev)
           CURRENT_SERVICE="${SERVICE_PREFIX}${CURRENT_WEEK}-oc-orchestration-cluster"
 
-          PREVIOUS=$(aws ecs list-services \
-              --cluster "$ECS_CLUSTER" \
-              --query "serviceArns" --output text \
+          # Fetch service list — fail immediately if the AWS CLI call itself fails.
+          SERVICE_LIST=$(aws ecs list-services \
+            --cluster "$ECS_CLUSTER" \
+            --query "serviceArns" --output text)
+
+          # Filter for previous weekly benchmark; grep returning no matches is not an error.
+          PREVIOUS=$(echo "$SERVICE_LIST" \
             | tr '\t' '\n' \
             | sed 's|.*/||' \
             | grep "^${SERVICE_PREFIX}.*-oc-orchestration-cluster$" \
