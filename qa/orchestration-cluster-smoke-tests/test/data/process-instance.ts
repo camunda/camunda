@@ -8,12 +8,18 @@
 
 import type {
   CamundaClient,
+  CreateProcessInstanceResult,
   ProcessDefinitionKey,
   ProcessInstanceKey,
   ProcessInstanceResult,
 } from '@camunda8/orchestration-cluster-api';
+import type {Page} from '@playwright/test';
 import {makeDisposable, type DisposableData} from './utils/disposable-data.ts';
 
+/**
+ * Creates a process instance and waits until it is fully exposed.
+ * Takes an optional `predicate` and will wait until the create instance fulfills it.
+ */
 async function createProcessInstance(
   camunda: CamundaClient,
   processDefinitionKey: ProcessDefinitionKey,
@@ -30,6 +36,7 @@ async function createProcessInstance(
   });
 }
 
+/** Removes a process instance. If it is still active, it will be canceled first. */
 async function cleanupProcessInstance(
   camunda: CamundaClient,
   processInstanceKey: ProcessInstanceKey,
@@ -39,9 +46,30 @@ async function cleanupProcessInstance(
     {consistency: {waitUpToMs: 5_000}},
   );
   if (instance.state === 'ACTIVE') {
-    await camunda.cancelProcessInstance({processInstanceKey});
+    await camunda
+      .cancelProcessInstance({processInstanceKey}, {retry: false})
+      .catch(() => void null);
   }
   await camunda.deleteProcessInstance({processInstanceKey});
 }
 
-export {cleanupProcessInstance, createProcessInstance};
+/** Wait for a process instance creation that is triggered by the UI. */
+async function waitForProcessInstanceFromApp(
+  camunda: CamundaClient,
+  page: Page,
+): Promise<DisposableData<CreateProcessInstanceResult>> {
+  const res = await page.waitForResponse('/v2/process-instances');
+  if (!res.ok()) {
+    throw new Error('App failed to create process instance');
+  }
+  const instance = (await res.json()) as CreateProcessInstanceResult;
+  return makeDisposable(instance, () => {
+    return cleanupProcessInstance(camunda, instance.processInstanceKey);
+  });
+}
+
+export {
+  cleanupProcessInstance,
+  createProcessInstance,
+  waitForProcessInstanceFromApp,
+};
