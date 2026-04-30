@@ -194,6 +194,9 @@ class RdbmsExporterWrapperTest {
         .as("Should register USER handler on partition 1")
         .containsKey(ValueType.USER);
     assertThat(registeredHandlers)
+        .as("Should register GROUP handler on partition 1")
+        .containsKey(ValueType.GROUP);
+    assertThat(registeredHandlers)
         .as("Should register AUTHORIZATION handler on partition 1")
         .containsKey(ValueType.AUTHORIZATION);
     assertThat(registeredHandlers)
@@ -247,6 +250,9 @@ class RdbmsExporterWrapperTest {
     assertThat(registeredHandlers)
         .as("Should not register USER handler on partition 2")
         .doesNotContainKey(ValueType.USER);
+    assertThat(registeredHandlers)
+        .as("Should not register GROUP handler on partition 2")
+        .doesNotContainKey(ValueType.GROUP);
     assertThat(registeredHandlers)
         .as("Should not register AUTHORIZATION handler on partition 2")
         .doesNotContainKey(ValueType.AUTHORIZATION);
