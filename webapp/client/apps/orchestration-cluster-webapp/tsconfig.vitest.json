@@ -4,7 +4,6 @@
 		"src/**/*",
 		"src/**/*.browser.test.ts",
 		"src/**/*.browser.test.tsx",
-		"./vitest.browser.setup.ts",
 		"./src/vitest-modules/**/*.ts",
 		"./shared-test-modules/**/*.ts"
 	],
