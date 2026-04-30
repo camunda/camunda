@@ -14,10 +14,7 @@ export declare global {
 			cm?: {
 				analytics: boolean;
 				showDrawer: (arg: string) => void;
-				addEventListener: (
-					eventType: string,
-					callback: (arg: {ANALYTICS: 'ACCEPT' | 'DENY'}) => void,
-				) => void;
+				addEventListener: (eventType: string, callback: (arg: {ANALYTICS: 'ACCEPT' | 'DENY'}) => void) => void;
 			};
 		};
 		mixpanel?: Mixpanel;
