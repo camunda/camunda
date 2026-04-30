@@ -66,6 +66,8 @@ class RecordExporter {
     // this allows us to observe that exporting latency is increasing
     exporterMetrics.exportingLatency(valueType, typedEvent.getTimestamp(), currentMillis);
 
+    final var copied = typedEvent.copyOf();
+
     final int exportersCount = containers.size();
 
     // current error handling strategy is simply to repeat forever until the record can be
@@ -75,7 +77,7 @@ class RecordExporter {
 
       try (final var timer =
           exporterMetrics.startExporterExportingTimer(valueType, container.getId())) {
-        if (container.exportRecord(rawMetadata, typedEvent)) {
+        if (container.exportRecord(rawMetadata, copied)) {
           exporterIndex++;
           exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
         } else {
