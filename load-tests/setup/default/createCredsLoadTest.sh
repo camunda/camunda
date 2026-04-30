@@ -28,8 +28,8 @@ gen_password() { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20; }
 gen_token() { openssl rand -hex 16; }
 
 # You can optionally export any of these beforehand to control their values.
-: "${IDENTITY_FIRSTUSER_PASSWORD:=$(gen_password)}"
-: "${IDENTITY_KEYCLOAK_ADMIN_PASSWORD:=$(gen_password)}"
+: "${IDENTITY_FIRSTUSER_PASSWORD:=demo}"
+: "${IDENTITY_KEYCLOAK_ADMIN_PASSWORD:=admin}"
 : "${IDENTITY_KEYCLOAK_POSTGRESQL_ADMIN_PASSWORD:=$(gen_password)}"
 : "${IDENTITY_KEYCLOAK_POSTGRESQL_USER_PASSWORD:=$(gen_password)}"
 : "${IDENTITY_POSTGRESQL_ADMIN_PASSWORD:=$(gen_password)}"
