@@ -337,6 +337,37 @@ class PartitionTransitionImplTest {
         .isSameAs(testException);
   }
 
+  @Test
+  void shouldIgnoreStaleTransitionWithLowerTerm() {
+    // given - first transition is paused mid-flight at term 1
+    final var step = new WaitingTransitionStep(TEST_CONCURRENCY_CONTROL);
+    when(mockStep2.transitionTo(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+
+    final var sut = new PartitionTransitionImpl(of(step, mockStep2));
+    sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+    sut.updateTransitionContext(mockContext);
+
+    final var firstTransitionFuture = sut.transitionTo(1L, Role.FOLLOWER);
+
+    // when - a stale toInactive(0) arrives while FOLLOWER(1) is still running
+    final var staleTransitionFuture = sut.transitionTo(0L, Role.INACTIVE);
+
+    // then - stale transition is immediately cancelled without touching the running one
+    assertThat(staleTransitionFuture.isCompletedExceptionally()).isTrue();
+    assertThat(staleTransitionFuture.getException())
+        .isInstanceOf(CancelledPartitionTransition.class);
+
+    // unblock the first transition and verify it completes successfully
+    step.unblock();
+    await().until(firstTransitionFuture::isDone);
+    assertThat(firstTransitionFuture.isCompletedExceptionally()).isFalse();
+
+    // stale transition steps must never have been invoked
+    verify(mockStep2, never()).transitionTo(mockContext, 0L, Role.INACTIVE);
+    verify(mockStep2, never()).prepareTransition(mockContext, 0L, Role.INACTIVE);
+  }
+
   @Test // regression test for #8044
   void shouldCloseAllCreatedInstancesOfStreamProcessor() {
     // given
