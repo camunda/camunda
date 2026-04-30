@@ -59,6 +59,55 @@ public class AssertVariableInstructionTest {
   private final AssertVariableInstructionHandler instructionHandler =
       new AssertVariableInstructionHandler();
 
+  @Test
+  void shouldAssertGlobalVariable() {
+    // given
+    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+
+    final AssertVariableInstruction instruction =
+        ImmutableAssertVariableInstruction.builder()
+            .processInstanceSelector(
+                ImmutableProcessInstanceSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .variableName(VARIABLE_NAME)
+            .satisfiesJudge(ImmutableSatisfiesJudge.builder().expectation(EXPECTATION).build())
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(mockAssert).hasVariableSatisfiesJudge(eq(VARIABLE_NAME), eq(EXPECTATION));
+    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+  }
+
+  @Test
+  void shouldAssertLocalVariableByElementId() {
+    // given
+    final ProcessInstanceAssert mockAssert = assertionFacade.assertThatProcessInstance(any());
+
+    final AssertVariableInstruction instruction =
+        ImmutableAssertVariableInstruction.builder()
+            .processInstanceSelector(
+                ImmutableProcessInstanceSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+            .variableName(VARIABLE_NAME)
+            .satisfiesJudge(ImmutableSatisfiesJudge.builder().expectation(EXPECTATION).build())
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(mockAssert)
+        .hasLocalVariableSatisfiesJudge(
+            any(ElementSelector.class), eq(VARIABLE_NAME), eq(EXPECTATION));
+    verifyNoMoreInteractions(camundaClient, processTestContext, mockAssert);
+  }
+
   @SuppressWarnings("unchecked")
   @Test
   void shouldApplyThresholdOverride() {
