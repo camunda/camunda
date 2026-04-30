@@ -1,0 +1,126 @@
+flowchart LR
+    %% ══════════════════════════════════════════════════════════════
+    %% Actors / systems (shared across all journeys)
+    %% ══════════════════════════════════════════════════════════════
+    Client(["Client\n(Java SDK / REST)"])
+    GW["REST / gRPC\nGateway"]
+    Broker["Zeebe\nBroker"]
+    Engine["Zeebe\nEngine"]
+    RocksDB[("RocksDB\nstate")]
+    CExp["Camunda\nExporter"]
+    RdbmsExp["RDBMS\nExporter"]
+    ES[("Elasticsearch /\nOpenSearch")]
+    RDBMS[("RDBMS")]
+    Operate["Operate"]
+    Tasklist["Tasklist"]
+    Worker(["Job Worker\n(external app)"])
+
+    %% ──────────────────────────────────────────────────────────────
+    %%  JOURNEY 1 — Process Definition Deployment
+    %%  Client deploys a BPMN file; it is stored in the engine and
+    %%  indexed for querying.
+    %% ──────────────────────────────────────────────────────────────
+    subgraph J1["① Process Definition — Deploy"]
+        direction LR
+        j1a([Client]) -->|"DeployResource\n(BPMN bytes)"| j1b[Gateway]
+        j1b -->|"BrokerRequest"| j1c[Broker]
+        j1c -->|"DEPLOYMENT command\n→ log"| j1d[Engine]
+        j1d -->|"parse BPMN;\nstore in RocksDB"| j1e[(RocksDB)]
+        j1d -->|"DEPLOYMENT CREATED\nevent → log"| j1f[Exporter]
+        j1f -->|"index process\ndefinition doc"| j1g[(ES / OS)]
+        j1f -->|"insert\nPROCESS_DEFINITION row"| j1h[(RDBMS)]
+        j1g -->|"GET /v2/process-definitions"| j1i[Operate]
+    end
+
+    %% ──────────────────────────────────────────────────────────────
+    %%  JOURNEY 2 — Process Instance Lifecycle
+    %%  Client creates an instance; engine executes it; a job is
+    %%  activated and completed by a worker; export follows each step.
+    %% ──────────────────────────────────────────────────────────────
+    subgraph J2["② Process Instance — Create → Execute → Complete"]
+        direction LR
+        j2a([Client]) -->|"CreateProcessInstance\n(variables)"| j2b[Gateway]
+        j2b -->|"BrokerRequest"| j2c[Broker]
+        j2c -->|"PROCESS_INSTANCE\nCREATE command → log"| j2d[Engine]
+        j2d -->|"activate start event;\nadvance BPMN tokens"| j2e[(RocksDB)]
+        j2d -->|"PROCESS_INSTANCE_CREATED\n+ element activation events"| j2f[Exporter]
+        j2f -->|"upsert process\ninstance doc"| j2g[(ES / OS)]
+
+        j2d -->|"JOB_CREATED event\n(service task)"| j2f
+        j2f -->|"index job doc"| j2g
+
+        j2h([Worker]) -->|"ActivateJobs\n(job type)"| j2b
+        j2b -->|"JOB ACTIVATE command"| j2c
+        j2c -->|"route to Engine"| j2d
+        j2d -->|"JOB_ACTIVATED event"| j2f
+        j2f -->|"update job doc\n(activated)"| j2g
+
+        j2h -->|"CompleteJob\n(result variables)"| j2b
+        j2b -->|"JOB COMPLETE command"| j2c
+        j2c -->|"route to Engine"| j2d
+        j2d -->|"JOB_COMPLETED;\ncontinue BPMN token"| j2e
+        j2d -->|"JOB_COMPLETED event\n+ downstream activations"| j2f
+        j2f -->|"update job /\ninstance docs"| j2g
+
+        j2d -->|"PROCESS_INSTANCE\nCOMPLETED event"| j2f
+        j2f -->|"mark instance\ncompleted"| j2g
+        j2g -->|"query"| j2i[Operate]
+    end
+
+    %% ──────────────────────────────────────────────────────────────
+    %%  JOURNEY 3 — User Task
+    %%  Engine creates a user task; Tasklist presents it; user
+    %%  completes it; engine resumes the process.
+    %% ──────────────────────────────────────────────────────────────
+    subgraph J3["③ User Task — Create → Assign → Complete"]
+        direction LR
+        j3a[Engine] -->|"USER_TASK_CREATED event\n(Zeebe user task)"| j3b[Exporter]
+        j3b -->|"index user-task doc"| j3c[(ES / OS)]
+        j3c -->|"GET /v1/tasks"| j3d[Tasklist]
+
+        j3e([User\nBrowser]) -->|"view task list"| j3d
+        j3d -->|"PATCH assign\n/v2/user-tasks/{key}/assignment"| j3f[REST GW]
+        j3f -->|"UserTask ASSIGN\ncommand"| j3g[Broker]
+        j3g -->|"route"| j3a
+        j3a -->|"USER_TASK_ASSIGNED event"| j3b
+        j3b -->|"update task doc\n(assignee)"| j3c
+
+        j3e -->|"submit form +\ncomplete"| j3d
+        j3d -->|"PATCH complete\n/v2/user-tasks/{key}/completion"| j3f
+        j3f -->|"UserTask COMPLETE\ncommand"| j3g
+        j3g -->|"route"| j3a
+        j3a -->|"USER_TASK_COMPLETED;\nresume BPMN token"| j3b
+        j3b -->|"mark task\ncompleted"| j3c
+    end
+
+    %% ──────────────────────────────────────────────────────────────
+    %%  JOURNEY 4 — Export Record Pipeline
+    %%  Every event on the Zeebe log is picked up by the exporter(s)
+    %%  and written to one or more sinks used by the webapps.
+    %% ──────────────────────────────────────────────────────────────
+    subgraph J4["④ Export Record — Engine → Exporter → Sinks → Webapps"]
+        direction LR
+        j4a[Engine\nlog] -->|"Record written\n(any ValueType)"| j4b{Exporter\nDispatch}
+        j4b -->|"CamundaExporter\n(ES / OS path)"| j4c[Camunda\nExporter]
+        j4b -->|"RdbmsExporter\n(SQL path)"| j4d[RDBMS\nExporter]
+        j4c -->|"bulk index\n(operate-*, tasklist-*\nindices)"| j4e[(ES / OS)]
+        j4d -->|"JDBC batch\ninsert/update"| j4f[(RDBMS)]
+        j4e -->|"REST read"| j4g[Operate]
+        j4e -->|"REST read"| j4h[Tasklist]
+        j4e -->|"analytics query"| j4i[Optimize]
+        j4f -->|"JDBC read\n(via db/rdbms)"| j4g
+        j4f -->|"JDBC read"| j4h
+        j4c -->|"checkpoint\n(exporter position)"| j4j[(RocksDB)]
+        j4d -->|"checkpoint\n(EXPORTER_POSITION)"| j4f
+    end
+
+    %% ──────────────────────────────────────────────────────────────
+    %%  Styling
+    %% ──────────────────────────────────────────────────────────────
+    classDef actor    fill:#f5f5f5,stroke:#888,color:#222
+    classDef engine   fill:#fce8d8,stroke:#e07020,color:#6b2a00
+    classDef storage  fill:#f0e8fc,stroke:#8040c0,color:#3a0080
+    classDef exporter fill:#e8f4e8,stroke:#3a9a3a,color:#1a4d1a
+    classDef webapp   fill:#fff8dc,stroke:#c0a000,color:#4d3a00
+    classDef gateway  fill:#dbe8fc,stroke:#4a90d9,color:#1a3c6b
+    classDef dispatch fill:#ffe8e8,stroke:#c02020,color:#4d0000
