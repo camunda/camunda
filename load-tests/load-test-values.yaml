@@ -8,7 +8,7 @@ global:
       - name: harbor-registry
 
   preferRest:
-    enabled: true
+    enabled: false
 
   nodeSelector:
     component: benchmark-n2-standard-4
