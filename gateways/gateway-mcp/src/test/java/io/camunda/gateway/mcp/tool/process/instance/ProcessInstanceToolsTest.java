@@ -34,7 +34,6 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -98,7 +97,6 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
           .endCursor("v")
           .build();
 
-  @MockitoBean private ProcessInstanceServices processInstanceServices;
   @MockitoBean private MultiTenancyConfiguration multiTenancyConfiguration;
 
   @Autowired private JsonMapper objectMapper;

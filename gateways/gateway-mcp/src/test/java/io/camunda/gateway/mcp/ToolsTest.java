@@ -11,8 +11,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.IncidentServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.VariableServices;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
@@ -35,6 +39,10 @@ abstract class ToolsTest {
   @MockitoBean protected CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean protected MessageServices messageServices;
   @MockitoBean protected MessageSubscriptionServices messageSubscriptionServices;
+  @MockitoBean protected ProcessInstanceServices processInstanceServices;
+  @MockitoBean protected VariableServices variableServices;
+  @MockitoBean protected ElementInstanceServices elementInstanceServices;
+  @MockitoBean protected IncidentServices incidentServices;
 
   @LocalServerPort private int serverPort;
 

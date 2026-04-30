@@ -9,27 +9,40 @@ package io.camunda.gateway.mcp.processes;
 
 import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
+import io.camunda.search.query.VariableQuery;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.IncidentServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.VariableServices;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.NonNull;
 
 public class ProcessesToolRepository implements ToolRepository {
+
+  static final String TOOL_GET_PROCESS_STATE = "getProcessState";
 
   protected static final String PROPERTY_INPUTS = "io.camunda.tool:inputs";
   protected static final String PROPERTY_PURPOSE = "io.camunda.tool:purpose";
@@ -50,16 +63,58 @@ public class ProcessesToolRepository implements ToolRepository {
           Tuple.of(PROPERTY_WHEN_NOT_TO_USE, LABEL_WHEN_NOT_TO_USE),
           Tuple.of(PROPERTY_RESULTS, LABEL_RESULTS));
 
+  private static final Tool GET_PROCESS_STATE_TOOL =
+      Tool.builder()
+          .name(TOOL_GET_PROCESS_STATE)
+          .title("Get process state")
+          .description(
+              """
+              Get the current state of a process instance by its key.
+
+              Returns the instance's state (ACTIVE, COMPLETED, TERMINATED), all variables, \
+              currently active element instances, and any open incidents. \
+              Use this after starting a process instance to monitor its progress \
+              or to investigate failures.""")
+          .inputSchema(
+              new JsonSchema(
+                  "object",
+                  Map.of(
+                      "processInstanceKey",
+                      Map.of(
+                          "type",
+                          "integer",
+                          "format",
+                          "int64",
+                          "description",
+                          "The key of the process instance to inspect.")),
+                  List.of("processInstanceKey"),
+                  false,
+                  Map.of(),
+                  Map.of()))
+          .build();
+
   private final MessageSubscriptionServices messageSubscriptionServices;
   private final MessageServices messageServices;
+  private final ProcessInstanceServices processInstanceServices;
+  private final VariableServices variableServices;
+  private final ElementInstanceServices elementInstanceServices;
+  private final IncidentServices incidentServices;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ProcessesToolRepository(
       final MessageSubscriptionServices messageSubscriptionServices,
       final MessageServices messageServices,
+      final ProcessInstanceServices processInstanceServices,
+      final VariableServices variableServices,
+      final ElementInstanceServices elementInstanceServices,
+      final IncidentServices incidentServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.messageSubscriptionServices = messageSubscriptionServices;
     this.messageServices = messageServices;
+    this.processInstanceServices = processInstanceServices;
+    this.variableServices = variableServices;
+    this.elementInstanceServices = elementInstanceServices;
+    this.incidentServices = incidentServices;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -76,14 +131,21 @@ public class ProcessesToolRepository implements ToolRepository {
                                     Operation.neq(MessageSubscriptionState.DELETED.name()))
                                 .toolNameOperations(Operation.exists(true)))
                     .unlimited());
-    return messageSubscriptionServices.search(query, auth).items().stream()
+    final List<Tool> tools = new ArrayList<>();
+    tools.add(GET_PROCESS_STATE_TOOL);
+    messageSubscriptionServices.search(query, auth).items().stream()
         .map(this::buildTool)
-        .toList();
+        .forEach(tools::add);
+    return tools;
   }
 
   @Override
   public @NonNull Either<String, SyncToolSpecification> findTool(
       @NonNull final McpTransportContext transportContext, @NonNull final String toolName) {
+    if (TOOL_GET_PROCESS_STATE.equals(toolName)) {
+      return Either.right(buildGetProcessStateSpec());
+    }
+
     final int lastUnderscore = toolName.lastIndexOf('_');
     if (lastUnderscore < 0) {
       return Either.left("Tool not found: " + toolName);
@@ -120,6 +182,102 @@ public class ProcessesToolRepository implements ToolRepository {
                       record -> Map.of("processInstanceKey", record.getProcessInstanceKey()));
                 })
             .build());
+  }
+
+  private SyncToolSpecification buildGetProcessStateSpec() {
+    return SyncToolSpecification.builder()
+        .tool(GET_PROCESS_STATE_TOOL)
+        .callHandler(
+            (ctx, req) -> {
+              try {
+                final Map<String, Object> args =
+                    req.arguments() != null ? req.arguments() : Map.of();
+                final Object keyArg = args.get("processInstanceKey");
+                if (keyArg == null) {
+                  return CallToolResultMapper.mapErrorToResult(
+                      new IllegalArgumentException("processInstanceKey is required"));
+                }
+                final long processInstanceKey = ((Number) keyArg).longValue();
+                return CallToolResultMapper.from(assembleProcessState(processInstanceKey));
+              } catch (final Exception e) {
+                return CallToolResultMapper.mapErrorToResult(e);
+              }
+            })
+        .build();
+  }
+
+  private Map<String, Object> assembleProcessState(final long processInstanceKey) {
+    final CamundaAuthentication auth = authenticationProvider.getCamundaAuthentication();
+
+    final var instance = processInstanceServices.getByKey(processInstanceKey, auth);
+
+    final var variables =
+        variableServices
+            .search(
+                VariableQuery.of(
+                    b -> b.filter(f -> f.processInstanceKeys(processInstanceKey)).unlimited()),
+                auth)
+            .items()
+            .stream()
+            .map(
+                v -> {
+                  final Map<String, Object> varMap = new LinkedHashMap<>();
+                  varMap.put("name", v.name());
+                  varMap.put("value", v.value());
+                  return varMap;
+                })
+            .toList();
+
+    final var activeElements =
+        elementInstanceServices
+            .search(
+                FlowNodeInstanceQuery.of(
+                    b ->
+                        b.filter(
+                                f ->
+                                    f.processInstanceKeys(processInstanceKey)
+                                        .states(FlowNodeState.ACTIVE.name()))
+                            .unlimited()),
+                auth)
+            .items()
+            .stream()
+            .map(
+                fni -> {
+                  final Map<String, Object> fniMap = new LinkedHashMap<>();
+                  fniMap.put("flowNodeId", fni.flowNodeId());
+                  fniMap.put("flowNodeName", fni.flowNodeName());
+                  fniMap.put("type", fni.type() != null ? fni.type().name() : null);
+                  return fniMap;
+                })
+            .toList();
+
+    final var incidents =
+        incidentServices
+            .search(
+                IncidentQuery.of(
+                    b -> b.filter(f -> f.processInstanceKeys(processInstanceKey)).unlimited()),
+                auth)
+            .items()
+            .stream()
+            .map(
+                inc -> {
+                  final Map<String, Object> incMap = new LinkedHashMap<>();
+                  incMap.put("incidentKey", inc.incidentKey());
+                  incMap.put("errorType", inc.errorType() != null ? inc.errorType().name() : null);
+                  incMap.put("errorMessage", inc.errorMessage());
+                  incMap.put("flowNodeId", inc.flowNodeId());
+                  return incMap;
+                })
+            .toList();
+
+    final Map<String, Object> result = new LinkedHashMap<>();
+    result.put("processInstanceKey", instance.processInstanceKey());
+    result.put("state", instance.state() != null ? instance.state().name() : null);
+    result.put("hasIncident", instance.hasIncident());
+    result.put("variables", variables);
+    result.put("activeElementInstances", activeElements);
+    result.put("incidents", incidents);
+    return result;
   }
 
   private Tool buildTool(final MessageSubscriptionEntity entity) {

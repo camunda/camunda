@@ -36,7 +36,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
-import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.exception.ServiceException;
@@ -93,7 +92,6 @@ class IncidentToolsTest extends OperationalToolsTest {
           .endCursor("v")
           .build();
 
-  @MockitoBean private IncidentServices incidentServices;
   @MockitoBean private JobServices<JobActivationResult> jobServices;
 
   @Autowired private JsonMapper objectMapper;

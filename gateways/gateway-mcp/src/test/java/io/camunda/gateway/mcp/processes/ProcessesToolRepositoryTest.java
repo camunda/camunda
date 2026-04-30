@@ -9,7 +9,6 @@ package io.camunda.gateway.mcp.processes;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,10 +16,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.mcp.ProcessesToolsTest;
+import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
@@ -30,6 +38,8 @@ import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +67,13 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
   void setUp() {
     repository =
         new ProcessesToolRepository(
-            messageSubscriptionServices, messageServices, authenticationProvider);
+            messageSubscriptionServices,
+            messageServices,
+            processInstanceServices,
+            variableServices,
+            elementInstanceServices,
+            incidentServices,
+            authenticationProvider);
   }
 
   @Test
@@ -78,6 +94,7 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
 
     // then
     assertThat(tools)
+        .filteredOn(t -> !ProcessesToolRepository.TOOL_GET_PROCESS_STATE.equals(t.name()))
         .singleElement()
         .satisfies(
             tool -> {
@@ -104,8 +121,8 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
     // when
     final var tools = repository.getTools(transportContext);
 
-    // then
-    final String description = tools.getFirst().description();
+    // then: getProcessState is first; dynamic tool is at index 1
+    final String description = tools.get(1).description();
     assertThat(description)
         .isEqualTo(
             """
@@ -136,8 +153,8 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
     // when
     final var tools = repository.getTools(transportContext);
 
-    // then
-    final String description = tools.getFirst().description();
+    // then: getProcessState is first; dynamic tool is at index 1
+    final String description = tools.get(1).description();
     assertThat(description).isEqualTo("Core purpose only");
   }
 
@@ -187,6 +204,7 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
 
     // then
     assertThat(tools)
+        .filteredOn(t -> !ProcessesToolRepository.TOOL_GET_PROCESS_STATE.equals(t.name()))
         .singleElement()
         .satisfies(
             tool -> {
@@ -236,7 +254,7 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
     when(messageServices.correlateMessage(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(correlationRecord));
 
-    final var toolSpec = repository.getTools(transportContext).getFirst();
+    final var toolSpec = repository.getTools(transportContext).get(1); // index 0 is getProcessState
 
     // when
     final Either<String, SyncToolSpecification> result =
@@ -346,9 +364,9 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
     // when
     final var tools = repository.getTools(transportContext);
 
-    // then
-    assertThat(tools).hasSize(1);
-    assertThat(tools.getFirst().name()).isEqualTo("correlatedTool_88");
+    // then: getProcessState is always present plus the correlated dynamic tool
+    assertThat(tools).hasSize(2);
+    assertThat(tools.get(1).name()).isEqualTo("correlatedTool_88");
   }
 
   @Test
@@ -367,10 +385,10 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
     // when
     final var toolsResult = mcpClient.listTools();
 
-    // then
+    // then: getProcessState is always present alongside the dynamic tool
     assertThat(toolsResult.tools())
-        .extracting(Tool::name, Tool::description)
-        .containsExactly(tuple("myTool_88", "does things"));
+        .extracting(Tool::name)
+        .containsExactly(ProcessesToolRepository.TOOL_GET_PROCESS_STATE, "myTool_88");
   }
 
   @Test
@@ -406,6 +424,224 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
     verify(messageServices)
         .correlateMessage(
             eq(new CorrelateMessageRequest("message", "", Map.of(), "<default>")), any());
+  }
+
+  @Test
+  void shouldAlwaysIncludeStaticGetProcessStateTool() {
+    // given
+    when(messageSubscriptionServices.search(any(), any())).thenReturn(SearchQueryResult.empty());
+
+    // when
+    final var tools = repository.getTools(transportContext);
+
+    // then
+    assertThat(tools)
+        .anySatisfy(
+            tool -> {
+              assertThat(tool.name()).isEqualTo(ProcessesToolRepository.TOOL_GET_PROCESS_STATE);
+              assertThat(tool.title()).isEqualTo("Get process state");
+            });
+  }
+
+  @Test
+  void shouldFindStaticGetProcessStateTool() {
+    // when
+    final var result = repository.findTool(transportContext, ProcessesToolRepository.TOOL_GET_PROCESS_STATE);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().tool().name()).isEqualTo(ProcessesToolRepository.TOOL_GET_PROCESS_STATE);
+    assertThat(result.get().callHandler()).isNotNull();
+  }
+
+  @Test
+  void shouldGetProcessStateAssemblesFullState() {
+    // given
+    final var processInstance =
+        new ProcessInstanceEntity(
+            12345L,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            ProcessInstanceState.ACTIVE,
+            true,
+            "<default>",
+            null,
+            null,
+            null);
+
+    final var variable =
+        new VariableEntity(
+            1L, "orderId", "\"abc\"", null, false, 12345L, 12345L, null, "myProcess", "<default>");
+
+    final var flowNode =
+        new FlowNodeInstanceEntity(
+            500L,
+            12345L,
+            null,
+            99L,
+            null,
+            null,
+            "ServiceTask_1",
+            "My Task",
+            null,
+            FlowNodeType.SERVICE_TASK,
+            FlowNodeState.ACTIVE,
+            null,
+            null,
+            "myProcess",
+            "<default>",
+            null);
+
+    final var incident =
+        new IncidentEntity(
+            777L,
+            99L,
+            "myProcess",
+            12345L,
+            null,
+            ErrorType.JOB_NO_RETRIES,
+            "No retries left",
+            "ServiceTask_1",
+            500L,
+            OffsetDateTime.now(),
+            null,
+            null,
+            "<default>");
+
+    when(processInstanceServices.getByKey(eq(12345L), any())).thenReturn(processInstance);
+    when(variableServices.search(any(), any())).thenReturn(SearchQueryResult.of(variable));
+    when(elementInstanceServices.search(any(), any())).thenReturn(SearchQueryResult.of(flowNode));
+    when(incidentServices.search(any(IncidentQuery.class), any()))
+        .thenReturn(SearchQueryResult.of(incident));
+
+    final var spec = repository.findTool(transportContext, ProcessesToolRepository.TOOL_GET_PROCESS_STATE).get();
+
+    // when
+    final var result =
+        spec.callHandler()
+            .apply(
+                transportContext,
+                CallToolRequest.builder()
+                    .name(ProcessesToolRepository.TOOL_GET_PROCESS_STATE)
+                    .arguments(Map.of("processInstanceKey", 12345L))
+                    .build());
+
+    // then
+    assertThat(result.isError()).isFalse();
+
+    @SuppressWarnings("unchecked")
+    final var content =
+        objectMapper.convertValue(
+            result.structuredContent(), new TypeReference<Map<String, Object>>() {});
+
+    assertThat(content).containsEntry("processInstanceKey", 12345L);
+    assertThat(content).containsEntry("state", "ACTIVE");
+    assertThat(content).containsEntry("hasIncident", true);
+
+    @SuppressWarnings("unchecked")
+    final var variables = (List<Map<String, Object>>) content.get("variables");
+    assertThat(variables)
+        .singleElement()
+        .satisfies(
+            v -> {
+              assertThat(v).containsEntry("name", "orderId");
+              assertThat(v).containsEntry("value", "\"abc\"");
+            });
+
+    @SuppressWarnings("unchecked")
+    final var activeElements = (List<Map<String, Object>>) content.get("activeElementInstances");
+    assertThat(activeElements)
+        .singleElement()
+        .satisfies(
+            e -> {
+              assertThat(e).containsEntry("flowNodeId", "ServiceTask_1");
+              assertThat(e).containsEntry("flowNodeName", "My Task");
+              assertThat(e).containsEntry("type", "SERVICE_TASK");
+            });
+
+    @SuppressWarnings("unchecked")
+    final var incidents = (List<Map<String, Object>>) content.get("incidents");
+    assertThat(incidents)
+        .singleElement()
+        .satisfies(
+            i -> {
+              assertThat(i).containsEntry("incidentKey", 777L);
+              assertThat(i).containsEntry("errorType", "JOB_NO_RETRIES");
+              assertThat(i).containsEntry("errorMessage", "No retries left");
+              assertThat(i).containsEntry("flowNodeId", "ServiceTask_1");
+            });
+  }
+
+  @Test
+  void shouldGetProcessStateReturnsErrorWhenProcessInstanceKeyMissing() {
+    // given
+    final var spec = repository.findTool(transportContext, ProcessesToolRepository.TOOL_GET_PROCESS_STATE).get();
+
+    // when
+    final var result =
+        spec.callHandler()
+            .apply(
+                transportContext, CallToolRequest.builder().name(ProcessesToolRepository.TOOL_GET_PROCESS_STATE).build());
+
+    // then
+    assertThat(result.isError()).isTrue();
+  }
+
+  @Test
+  void shouldClientCallGetProcessStateTool() {
+    // given
+    when(messageSubscriptionServices.search(any(), any())).thenReturn(SearchQueryResult.empty());
+
+    final var processInstance =
+        new ProcessInstanceEntity(
+            12345L,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            ProcessInstanceState.COMPLETED,
+            false,
+            "<default>",
+            null,
+            null,
+            null);
+
+    when(processInstanceServices.getByKey(eq(12345L), any())).thenReturn(processInstance);
+    when(variableServices.search(any(), any())).thenReturn(SearchQueryResult.empty());
+    when(elementInstanceServices.search(any(), any())).thenReturn(SearchQueryResult.empty());
+    when(incidentServices.search(any(IncidentQuery.class), any()))
+        .thenReturn(SearchQueryResult.empty());
+
+    // when
+    final var result =
+        mcpClient.callTool(
+            CallToolRequest.builder()
+                .name(ProcessesToolRepository.TOOL_GET_PROCESS_STATE)
+                .arguments(Map.of("processInstanceKey", 12345L))
+                .build());
+
+    // then
+    assertThat(result.isError()).isFalse();
+    @SuppressWarnings("unchecked")
+    final var content =
+        objectMapper.convertValue(
+            result.structuredContent(), new TypeReference<Map<String, Object>>() {});
+    assertThat(content).containsEntry("state", "COMPLETED");
+    assertThat(content).containsEntry("hasIncident", false);
   }
 
   private static MessageSubscriptionEntity buildStartSubscriptionEntity(

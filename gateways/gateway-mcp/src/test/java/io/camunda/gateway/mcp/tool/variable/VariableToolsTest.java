@@ -29,7 +29,6 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
-import io.camunda.service.VariableServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
@@ -48,7 +47,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
@@ -78,8 +76,6 @@ class VariableToolsTest extends OperationalToolsTest {
           .startCursor("f")
           .endCursor("v")
           .build();
-
-  @MockitoBean private VariableServices variableServices;
 
   @Autowired private JsonMapper objectMapper;
 
