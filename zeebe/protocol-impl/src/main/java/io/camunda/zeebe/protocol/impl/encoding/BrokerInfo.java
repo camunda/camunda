@@ -55,6 +55,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
   private static final DirectBuffer COMMAND_API_NAME = wrapString("commandApi");
+  private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
   private static final Logger LOG = Loggers.PROTOCOL_LOGGER;
 
@@ -445,7 +446,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     if (zone != null) {
       bodyEncoder.zone(zone);
     } else {
-      bodyEncoder.putZone(new byte[0], 0, 0);
+      bodyEncoder.putZone(EMPTY_BYTE_ARRAY, 0, 0);
     }
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
