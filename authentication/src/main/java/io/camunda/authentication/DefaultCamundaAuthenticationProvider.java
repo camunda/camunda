@@ -18,7 +18,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
-import org.checkerframework.checker.index.qual.NonNegative;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -27,14 +26,14 @@ import org.springframework.security.oauth2.server.resource.authentication.Abstra
 
 public class DefaultCamundaAuthenticationProvider implements CamundaAuthenticationProvider {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(DefaultCamundaAuthenticationProvider.class);
-
   /** Maximum TTL for a cache entry even if the token's own expiry is further in the future. */
   static final Duration MAX_CACHE_TTL = Duration.ofHours(24);
 
   /** Fallback TTL when the token carries no expiry claim. */
   static final Duration DEFAULT_CACHE_TTL = Duration.ofMinutes(5);
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(DefaultCamundaAuthenticationProvider.class);
 
   private final CamundaAuthenticationHolder holder;
   private final CamundaAuthenticationConverter<Authentication> converter;
@@ -59,9 +58,7 @@ public class DefaultCamundaAuthenticationProvider implements CamundaAuthenticati
                 new Expiry<String, CamundaAuthentication>() {
                   @Override
                   public long expireAfterCreate(
-                      final String key,
-                      final CamundaAuthentication value,
-                      final long currentTime) {
+                      final String key, final CamundaAuthentication value, final long currentTime) {
                     return computeTtlNanos(key);
                   }
 
@@ -70,7 +67,7 @@ public class DefaultCamundaAuthenticationProvider implements CamundaAuthenticati
                       final String key,
                       final CamundaAuthentication value,
                       final long currentTime,
-                      @NonNegative final long currentDuration) {
+                      final long currentDuration) {
                     return currentDuration;
                   }
 
@@ -79,7 +76,7 @@ public class DefaultCamundaAuthenticationProvider implements CamundaAuthenticati
                       final String key,
                       final CamundaAuthentication value,
                       final long currentTime,
-                      @NonNegative final long currentDuration) {
+                      final long currentDuration) {
                     return currentDuration;
                   }
                 })
@@ -107,11 +104,16 @@ public class DefaultCamundaAuthenticationProvider implements CamundaAuthenticati
     }
 
     // 2. Resolve — use the cross-request cache for OIDC bearer tokens only
-    final CamundaAuthentication result;
-    if (springBasedAuthentication
-        instanceof AbstractOAuth2TokenAuthenticationToken<?> oidcToken) {
+    CamundaAuthentication result;
+    if (springBasedAuthentication instanceof AbstractOAuth2TokenAuthenticationToken<?> oidcToken) {
       final var tokenValue = oidcToken.getToken().getTokenValue();
-      result = tokenCache.get(tokenValue, k -> converter.convert(springBasedAuthentication));
+      result = tokenCache.getIfPresent(tokenValue);
+      if (result == null) {
+        result = converter.convert(springBasedAuthentication);
+        if (result != null) {
+          tokenCache.put(tokenValue, result);
+        }
+      }
     } else {
       result = converter.convert(springBasedAuthentication);
     }
