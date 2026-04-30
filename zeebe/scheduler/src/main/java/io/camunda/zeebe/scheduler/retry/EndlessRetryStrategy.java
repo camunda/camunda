@@ -21,11 +21,18 @@ public final class EndlessRetryStrategy implements RetryStrategy {
 
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
+  private final int maxRetries;
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
+  private int retryCount;
 
   public EndlessRetryStrategy(final ActorControl actor) {
+    this(actor, Integer.MAX_VALUE);
+  }
+
+  public EndlessRetryStrategy(final ActorControl actor, final int maxRetries) {
     this.actor = actor;
+    this.maxRetries = maxRetries;
     retryMechanism = new ActorRetryMechanism();
   }
 
@@ -39,6 +46,7 @@ public final class EndlessRetryStrategy implements RetryStrategy {
       final OperationToRetry callable, final BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();
     terminateCondition = condition;
+    retryCount = 0;
     retryMechanism.wrap(callable, terminateCondition, currentFuture);
 
     actor.run(this::run);
@@ -50,19 +58,23 @@ public final class EndlessRetryStrategy implements RetryStrategy {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
-        actor.run(this::run);
-        actor.yieldThread();
+        if (!retryLimitExceeded(++retryCount, maxRetries, null, LOG, currentFuture)) {
+          actor.run(this::run);
+          actor.yieldThread();
+        }
       }
     } catch (final Exception exception) {
       if (terminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
-      } else {
+      } else if (!retryLimitExceeded(++retryCount, maxRetries, exception, LOG, currentFuture)) {
         actor.run(this::run);
         actor.yieldThread();
         LOG.error(
-            "Caught exception {} with message {}, will retry...",
+            "Caught exception {} with message {} (retry {}/{}), will retry...",
             exception.getClass(),
             exception.getMessage(),
+            retryCount,
+            maxRetries,
             exception);
       }
     }
