@@ -127,11 +127,6 @@ ENV ROCKSDB_MUSL_LIBC=false
 
 WORKDIR ${CAMUNDA_HOME}
 EXPOSE 8080 26500 26501 26502
-VOLUME /tmp
-VOLUME ${CAMUNDA_HOME}/data
-VOLUME ${CAMUNDA_HOME}/logs
-VOLUME ${CAMUNDA_HOME}/documents
-VOLUME /driver-lib
 
 # Switch to root to allow setting up our own user
 USER root
@@ -145,6 +140,12 @@ RUN addgroup --gid 1001 camunda && \
     mkdir ${CAMUNDA_HOME}/documents && \
     chown -R 1001:0 ${CAMUNDA_HOME} && \
     chmod -R 0775 ${CAMUNDA_HOME}
+
+VOLUME /tmp
+VOLUME ${CAMUNDA_HOME}/data
+VOLUME ${CAMUNDA_HOME}/logs
+VOLUME ${CAMUNDA_HOME}/documents
+VOLUME /driver-lib
 
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}

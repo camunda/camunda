@@ -128,11 +128,6 @@ ENV ROCKSDB_MUSL_LIBC=false
 
 WORKDIR ${ZB_HOME}
 EXPOSE 8080 26500 26501 26502
-VOLUME /tmp
-VOLUME ${ZB_HOME}/data
-VOLUME ${ZB_HOME}/logs
-VOLUME ${ZB_HOME}/documents
-VOLUME /driver-lib
 
 # Switch to root to allow setting up our own user
 USER root
@@ -146,6 +141,12 @@ RUN addgroup --gid 1001 camunda && \
     mkdir ${ZB_HOME}/documents && \
     chown -R 1001:0 ${ZB_HOME} && \
     chmod -R 0775 ${ZB_HOME}
+
+VOLUME /tmp
+VOLUME ${ZB_HOME}/data
+VOLUME ${ZB_HOME}/logs
+VOLUME ${ZB_HOME}/documents
+VOLUME /driver-lib
 
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
