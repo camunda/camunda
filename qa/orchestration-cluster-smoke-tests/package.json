@@ -5,6 +5,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "cluster:up": "cd ./config && DATABASE=elasticsearch docker compose up -d camunda",
+    "cluster:down": "cd ./config && DATABASE=elasticsearch docker compose down",
     "format": "prettier --write .",
     "lint": "tsc --noEmit && eslint . && prettier -c .",
     "test": "playwright test",
