@@ -432,6 +432,32 @@ jobs:
           name: operate-visual-regression-report
           path: operate/client/playwright-report/
           retention-days: 30
+      - name: Merge into JUnit Report
+        if: always()
+        run: npx playwright merge-reports --reporter junit ./all-blob-reports > vr-results.xml
+      - name: Test Summary
+        if: always()
+        uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4
+        with:
+          paths: operate/client/vr-results.xml
+      - name: Upload VR test results
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: operate-visual-regression-test-results
+          path: operate/client/vr-results.xml
+          retention-days: 7
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "operate-ci/operate-fe-visual-regression-merge"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   operate-update-screenshots:
     if: inputs.runFeTests

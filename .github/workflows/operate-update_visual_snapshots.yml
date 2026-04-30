@@ -1,0 +1,59 @@
+# description: Runs Operate visual regression tests and updates baseline screenshots.
+# test location: /operate/client/
+# type: CI Helper
+# owner: @camunda/fe-operate
+name: Operate Update Visual Regression Snapshots
+
+on:
+  pull_request:
+    types: [labeled]
+
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  update-snapshots:
+    if: github.event.pull_request.state != 'closed' && github.event.label.name == 'update-snapshots'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2
+      options: --user 1001:1000
+
+    steps:
+      - name: Verify snapshot push token is available
+        env:
+          OPERATE_VISUAL_SNAPSHOTS_TOKEN: ${{ secrets.OPERATE_VISUAL_SNAPSHOTS_TOKEN }}
+        run: |
+          test -n "$OPERATE_VISUAL_SNAPSHOTS_TOKEN"
+      - name: Check out repository code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.OPERATE_VISUAL_SNAPSHOTS_TOKEN }}
+      - name: Setup NodeJS
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+      - name: Install node dependencies
+        working-directory: ./operate/client
+        run: npm ci
+      - name: Build frontend
+        working-directory: ./operate/client
+        run: npm run build:visual-regression
+      - name: Start server
+        working-directory: ./operate/client
+        run: npm run start:visual-regression &
+      - name: Update snapshots
+        working-directory: ./operate/client
+        run: npm run test:visual -- --update-snapshots
+      - name: Commit screenshots
+        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
+        with:
+          commit_message: "test: updated operate snapshots"
+          file_pattern: "operate/client/**/*.png"
+          token: ${{ secrets.OPERATE_VISUAL_SNAPSHOTS_TOKEN }}
