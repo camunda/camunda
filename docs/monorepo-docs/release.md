@@ -4,7 +4,7 @@ This document will become a knowledge base around the [C8 monorepo](https://gith
 
 ## Scope & Goal
 
-The goal of the C8 monorepo release process is to produce artifacts for patch, alpha and minor version releases of Camunda 8 components like Zeebe and (on 8.6+) most C8 webapps for SaaS and Self-Managed usage in a timely fashion. This includes [the ZPT (zeebe-process-test) project](https://github.com/camunda/zeebe-process-test).
+The goal of the C8 monorepo release process is to produce artifacts for patch, alpha and minor version releases of Camunda 8 components like Zeebe and (on 8.6+) most C8 webapps for SaaS and Self-Managed usage in a timely fashion. This includes [the ZPT (zeebe-process-test) project](https://github.com/camunda/zeebe-process-test) for 8.7-8.9.  Optimize is released separately for 8.7.
 
 It also involves automated and manual QA activities on release candidate builds to ensure bug-free artifacts on the final artifacts, e.g. certain benchmarks for Zeebe and interactive tests for C8 webapps.
 
