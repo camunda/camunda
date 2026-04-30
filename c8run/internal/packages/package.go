@@ -16,11 +16,24 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/camunda/camunda/c8run/internal/archive"
+	"github.com/camunda/camunda/c8run/internal/jre"
 	"github.com/rs/zerolog/log"
 )
+
+const requiredJavaMajorVersion = 21
+
+var conservativeJREModules = []string{
+	// jdeps cannot see provider and locale modules loaded indirectly at runtime.
+	"jdk.charsets",
+	"jdk.crypto.ec",
+	"jdk.localedata",
+	"jdk.zipfs",
+}
 
 func Clean(camundaVersion string) {
 	// Older C8Run builds extracted Elasticsearch locally. Remove any leftovers so they cannot be
@@ -58,6 +71,9 @@ func Clean(camundaVersion string) {
 	}
 	if err := os.RemoveAll("rdbms-schema"); err != nil {
 		log.Error().Err(err).Msg("failed to remove rdbms-schema")
+	}
+	if err := os.RemoveAll(jre.DirectoryName); err != nil {
+		log.Error().Err(err).Msg("failed to remove bundled JRE")
 	}
 
 	logFiles := []string{"camunda.log", "connectors.log", "elasticsearch.log"}
@@ -156,6 +172,7 @@ func getFilesToArchive(osType, connectorsFilePath, camundaVersion string) []stri
 		filepath.Join("c8run", "JavaVersion.class"),
 		filepath.Join("c8run", "JavaHome.class"),
 		filepath.Join("c8run", "log"),
+		filepath.Join("c8run", jre.DirectoryName),
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
 		filepath.Join("c8run", ".env"),
 		filepath.Join("c8run", "configuration", "application.yaml"),
@@ -226,6 +243,204 @@ func BuildJavaScripts() error {
 	return nil
 }
 
+func BuildJRE(camundaVersion, connectorsFilePath string) error {
+	if err := ensureJLinkVersion(); err != nil {
+		return err
+	}
+
+	modules, err := detectRequiredJREModules(camundaVersion, connectorsFilePath)
+	if err != nil {
+		return err
+	}
+
+	if err := os.RemoveAll(jre.DirectoryName); err != nil {
+		return fmt.Errorf("failed to remove existing bundled JRE: %w", err)
+	}
+
+	args := buildJLinkArgs(modules, jre.DirectoryName)
+	jlinkCmd := exec.Command("jlink", args...)
+	var out strings.Builder
+	var stderr strings.Builder
+	jlinkCmd.Stdout = &out
+	jlinkCmd.Stderr = &stderr
+	if err := jlinkCmd.Run(); err != nil {
+		return fmt.Errorf("failed to build bundled JRE with jlink: %w\n%s", err, stderr.String())
+	}
+
+	if err := materializeSymlinks(jre.DirectoryName); err != nil {
+		return fmt.Errorf("failed to materialize bundled JRE symlinks: %w", err)
+	}
+
+	return nil
+}
+
+func ensureJLinkVersion() error {
+	cmd := exec.Command("jlink", "--version")
+	var out strings.Builder
+	var stderr strings.Builder
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run jlink --version; install a JDK %d or newer to package C8Run: %w\n%s", requiredJavaMajorVersion, err, stderr.String())
+	}
+
+	majorVersion, err := parseJavaMajorVersion(out.String())
+	if err != nil {
+		return fmt.Errorf("failed to parse jlink version %q: %w", strings.TrimSpace(out.String()), err)
+	}
+	if majorVersion < requiredJavaMajorVersion {
+		return fmt.Errorf("jlink version %d is too old; install a JDK %d or newer to package C8Run", majorVersion, requiredJavaMajorVersion)
+	}
+	return nil
+}
+
+func detectRequiredJREModules(camundaVersion, connectorsFilePath string) ([]string, error) {
+	camundaHome := "camunda-zeebe-" + camundaVersion
+	camundaLibDir := filepath.Join(camundaHome, "lib")
+	camundaJar := filepath.Join(camundaLibDir, "camunda-zeebe-"+camundaVersion+".jar")
+
+	if _, err := os.Stat(camundaJar); err != nil {
+		return nil, fmt.Errorf("failed to locate Camunda distribution JAR %s: %w", camundaJar, err)
+	}
+	if _, err := os.Stat(connectorsFilePath); err != nil {
+		return nil, fmt.Errorf("failed to locate connectors runtime JAR %s: %w", connectorsFilePath, err)
+	}
+
+	classPath := strings.Join(
+		[]string{
+			filepath.Join(camundaLibDir, "*"),
+			connectorsFilePath,
+		},
+		string(os.PathListSeparator),
+	)
+
+	args := []string{
+		"--ignore-missing-deps",
+		"--multi-release",
+		strconv.Itoa(requiredJavaMajorVersion),
+		"--print-module-deps",
+		"--class-path",
+		classPath,
+		camundaJar,
+		connectorsFilePath,
+	}
+	jdepsCmd := exec.Command("jdeps", args...)
+	var out strings.Builder
+	var stderr strings.Builder
+	jdepsCmd.Stdout = &out
+	jdepsCmd.Stderr = &stderr
+	if err := jdepsCmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to determine JRE modules with jdeps: %w\n%s", err, stderr.String())
+	}
+
+	modules := mergeModules(parseJDepsModuleOutput(out.String()), conservativeJREModules)
+	if len(modules) == 0 {
+		return nil, fmt.Errorf("jdeps did not report any JRE modules")
+	}
+	return modules, nil
+}
+
+func parseJavaMajorVersion(version string) (int, error) {
+	version = strings.TrimSpace(version)
+	if version == "" {
+		return 0, fmt.Errorf("empty version")
+	}
+
+	firstToken := strings.Fields(version)[0]
+	firstToken = strings.Trim(firstToken, `"`)
+	parts := strings.Split(firstToken, ".")
+	if len(parts) == 0 {
+		return 0, fmt.Errorf("invalid version")
+	}
+
+	majorVersion, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, err
+	}
+	if majorVersion == 1 && len(parts) > 1 {
+		return strconv.Atoi(parts[1])
+	}
+	return majorVersion, nil
+}
+
+func parseJDepsModuleOutput(output string) []string {
+	var modules []string
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		for _, module := range strings.Split(line, ",") {
+			module = strings.TrimSpace(module)
+			if module != "" {
+				modules = append(modules, module)
+			}
+		}
+	}
+	return mergeModules(modules, nil)
+}
+
+func mergeModules(moduleGroups ...[]string) []string {
+	moduleSet := make(map[string]struct{})
+	for _, modules := range moduleGroups {
+		for _, module := range modules {
+			module = strings.TrimSpace(module)
+			if module != "" {
+				moduleSet[module] = struct{}{}
+			}
+		}
+	}
+
+	mergedModules := make([]string, 0, len(moduleSet))
+	for module := range moduleSet {
+		mergedModules = append(mergedModules, module)
+	}
+	sort.Strings(mergedModules)
+	return mergedModules
+}
+
+func buildJLinkArgs(modules []string, outputDir string) []string {
+	return []string{
+		"--add-modules",
+		strings.Join(modules, ","),
+		"--strip-debug",
+		"--compress",
+		"zip-6",
+		"--no-header-files",
+		"--no-man-pages",
+		"--output",
+		outputDir,
+	}
+}
+
+func materializeSymlinks(root string) error {
+	return filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.Type()&os.ModeSymlink == 0 {
+			return nil
+		}
+
+		targetInfo, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+		if targetInfo.IsDir() {
+			return fmt.Errorf("cannot materialize symlink to directory: %s", path)
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if err := os.Remove(path); err != nil {
+			return err
+		}
+		return os.WriteFile(path, content, targetInfo.Mode().Perm())
+	})
+}
+
 func New(camundaVersion, connectorsVersion string) error {
 	osType, architecture, pkgName, finalOutputExtension, extractFunc, err := setOsSpecificValues()
 	if err != nil {
@@ -268,6 +483,10 @@ func New(camundaVersion, connectorsVersion string) error {
 	if err != nil {
 		log.Warn().Msg("Package " + osType + ": failed to download camunda-db-rdbms-schema, continuing without unpacking it")
 		// Continue without unpacking
+	}
+
+	if err := BuildJRE(camundaVersion, connectorsFilePath); err != nil {
+		return fmt.Errorf("Package "+osType+": failed to build bundled JRE %w\n%s", err, debug.Stack())
 	}
 
 	err = os.Chdir("..")

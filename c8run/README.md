@@ -1,7 +1,7 @@
 # Camunda 8 Run
 
 C8 Run is a packaged distribution of Camunda 8, which allows you to spin up Camunda 8 within seconds.
-It packages the local Java runtime only; the Docker Compose distribution is published separately.
+It packages the Java-based local Camunda runtime with a bundled JRE; the Docker Compose distribution is published separately.
 
 Please refer to the [local installation with Camunda 8 Run guide](https://docs.camunda.io/docs/next/self-managed/quickstart/developer-quickstart/c8run/) for further details.
 
@@ -26,9 +26,10 @@ Only CI checks related to C8Run (those with "c8run" in the name) and CI runs mar
 
 ## Build C8run locally
 
-### 1. Install Go
+### 1. Install Go and JDK 21+
 
 Go **1.25 or newer** is required (the `go.mod` minimum). Verify any existing installation with `go version`.
+A JDK **21 or newer** is required to package C8Run locally because the packager compiles helper classes and creates the bundled JRE with `jdeps` and `jlink`.
 
 ### 2. Configure LDAP credentials in `.env`
 
@@ -60,6 +61,8 @@ go build -o c8run ./cmd/c8run/
 ```bash
 ./package.sh
 ```
+
+The package step creates a platform-specific `jre/` directory and includes it in the final archive. End users do not need to install Java to start C8Run from the packaged distribution.
 
 ### 5. Start Camunda 8 Run
 

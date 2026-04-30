@@ -99,6 +99,11 @@ runs:
         go-version: ">=1.23.1"
         cache: false # disabling since not working anyways without a cache-dependency-path specified
 
+    - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      with:
+        distribution: "temurin"
+        java-version: "21"
+
     - uses: ./.github/actions/setup-build
       if: ${{ inputs.source-build == 'true' }}
       with:
@@ -183,27 +188,17 @@ runs:
       shell: bash
       working-directory: ./c8run
 
-    - if: ${{ inputs.os == 'macos-15-intel' }}
-      name: Set env
-      shell: bash
-      run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV
-
     - if: ${{ inputs.os == 'ubuntu-latest' }}
       name: Linux - Run c8run
       run: ./c8run start --config e2e_tests/prefix-config.yaml
       shell: bash
       working-directory: ./c8run
-      env:
-        JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
-        JAVA_VERSION: 21.0.3
 
     - if: ${{ startsWith(inputs.os, 'macos') }}
       name: Mac - Run c8run
       shell: bash
       run: ./c8run start --config e2e_tests/prefix-config.yaml
       working-directory: ./c8run
-      env:
-        JAVA_VERSION: 21.0.3
 
     - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
