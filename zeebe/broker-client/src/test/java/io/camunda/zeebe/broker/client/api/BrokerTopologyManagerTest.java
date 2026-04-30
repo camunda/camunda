@@ -551,7 +551,7 @@ final class BrokerTopologyManagerTest {
     // given — broker 0 joined with a zone-aware id
     final var broker = createBroker(0);
     final var zonedMemberId = MemberId.from("eu-west/0");
-    final var member = new Member(new MemberConfig().setId(zonedMemberId.id()));
+    final var member = new Member(new MemberConfig().setId(zonedMemberId).setZoneId("eu-west"));
     broker.writeIntoProperties(member.properties());
     members.add(member);
     notifyEvent(new ClusterMembershipEvent(Type.MEMBER_ADDED, member));
