@@ -7,12 +7,12 @@
  */
 package io.camunda.search.clients.reader;
 
-import io.camunda.search.clients.core.SearchClientBasedQueryExecutor;
+import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.WaitingStateEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.WaitingStateQuery;
+import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.zeebe.security.api.ResourceAccessChecks;
 
 public class WaitingStateDocumentReader extends DocumentBasedReader implements WaitingStateReader {
 

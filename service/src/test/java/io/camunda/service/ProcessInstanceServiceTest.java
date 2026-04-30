@@ -120,6 +120,7 @@ public final class ProcessInstanceServiceTest {
             processInstanceSearchClient,
             sequenceFlowSearchClient,
             incidentServices,
+            mock(WaitingStateServices.class),
             executorProvider,
             brokerRequestAuthorizationConverter);
   }

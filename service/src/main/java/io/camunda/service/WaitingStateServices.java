@@ -7,9 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.security.auth.Authorization.withAuthorization;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.READ;
+import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.WaitingStateSearchClient;
 import io.camunda.search.entities.WaitingStateEntity;
@@ -48,7 +46,7 @@ public final class WaitingStateServices
             waitingStateSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, withAuthorization(PROCESS_DEFINITION, READ)))
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                 .searchWaitingStates(query));
   }
 }

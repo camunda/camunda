@@ -7,9 +7,10 @@
  */
 package io.camunda.search.filter;
 
-import static io.camunda.search.filter.util.FilterUtil.addValuesToList;
-import static io.camunda.search.filter.util.FilterUtil.collectValues;
+import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -19,6 +20,12 @@ public record WaitingStateFilter(
     List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<Long>> elementInstanceKeyOperations)
     implements FilterBase {
+
+  public Builder toBuilder() {
+    return new Builder()
+        .processInstanceKeyOperations(processInstanceKeyOperations)
+        .elementInstanceKeyOperations(elementInstanceKeyOperations);
+  }
 
   public static final class Builder implements ObjectBuilder<WaitingStateFilter> {
 

@@ -36,6 +36,7 @@ import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
+import io.camunda.search.clients.WaitingStateSearchClient;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
@@ -72,6 +73,7 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
+import io.camunda.service.WaitingStateServices;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.spring.utils.DatabaseTypeUtils;
@@ -185,6 +187,7 @@ public class CamundaServicesConfiguration {
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentServices incidentServices,
+      final WaitingStateServices waitingStateServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final GatewayRestConfiguration gatewayRestConfiguration) {
@@ -194,6 +197,7 @@ public class CamundaServicesConfiguration {
         processInstanceSearchClient,
         sequenceFlowSearchClient,
         incidentServices,
+        waitingStateServices,
         executorProvider,
         brokerRequestAuthorizationConverter,
         gatewayRestConfiguration.getMaxNameFieldLength());
@@ -272,6 +276,21 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         incidentSearchClient,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public WaitingStateServices waitingStateServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final WaitingStateSearchClient waitingStateSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new WaitingStateServices(
+        brokerClient,
+        securityContextProvider,
+        waitingStateSearchClient,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
