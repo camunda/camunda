@@ -34,7 +34,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.IncidentSelectors;
-import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -62,7 +62,7 @@ public class ResolveIncidentTest {
 
   @Mock private CamundaProcessTestRuntime camundaProcessTestRuntime;
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
-  @Mock private CamundaManagementClient camundaManagementClient;
+  @Mock private CamundaClockClient clockClient;
   @Mock private JsonMapper jsonMapper;
   @Mock private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
 
@@ -98,7 +98,7 @@ public class ResolveIncidentTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
-              camundaManagementClient,
+              clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
               zeebeJsonMapper,
@@ -274,7 +274,7 @@ public class ResolveIncidentTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
-              camundaManagementClient,
+              clockClient,
               DevAwaitBehavior::expectFailure,
               jsonMapper,
               zeebeJsonMapper,
