@@ -16,6 +16,7 @@
 package io.atomix.cluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.stream.Stream;
@@ -32,7 +33,11 @@ final class MemberIdTest {
     final var memberId = MemberId.from(null, 7);
 
     // then
-    assertThat(memberId.id()).isEqualTo("7");
+
+    assertThat(memberId)
+        .returns(7, MemberId::nodeIdx)
+        .returns(null, MemberId::zone)
+        .returns("7", MemberId::id);
   }
 
   @Test
@@ -53,7 +58,10 @@ final class MemberIdTest {
     final var memberId = MemberId.from("  eu-west  ", 7);
 
     // then
-    assertThat(memberId.id()).isEqualTo("eu-west/7");
+    assertThat(memberId)
+        .returns(7, MemberId::nodeIdx)
+        .returns("eu-west", MemberId::zone)
+        .returns("eu-west/7", MemberId::id);
   }
 
   @Test
@@ -62,7 +70,10 @@ final class MemberIdTest {
     final var memberId = MemberId.from("us-east", 7);
 
     // then
-    assertThat(memberId.id()).isEqualTo("us-east/7");
+    assertThat(memberId)
+        .returns(7, MemberId::nodeIdx)
+        .returns("us-east", MemberId::zone)
+        .returns("us-east/7", MemberId::id);
   }
 
   @Test
@@ -70,23 +81,20 @@ final class MemberIdTest {
     // given
     final var memberId = MemberId.from("3");
 
-    // when
-    final var nodeId = memberId.nodeIdx();
-
-    // then
-    assertThat(nodeId).isEqualTo(3);
+    // when / then
+    assertThat(memberId).returns(3, MemberId::nodeIdx).returns(null, MemberId::zone);
   }
 
   @Test
-  void shouldExtractNodeIdFromZonedForm() {
+  void shouldExtractComponentsFromZonedForm() {
     // given
     final var memberId = MemberId.from("us-east/12");
 
-    // when
-    final var nodeId = memberId.nodeIdx();
-
-    // then
-    assertThat(nodeId).isEqualTo(12);
+    // when / then
+    assertThat(memberId)
+        .returns(12, MemberId::nodeIdx)
+        .returns("us-east", MemberId::zone)
+        .returns("us-east/12", MemberId::id);
   }
 
   @Test
@@ -96,6 +104,12 @@ final class MemberIdTest {
 
     // when / then
     assertThatThrownBy(memberId::nodeIdx).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldNotThrowForAnonymous() {
+    // given / when / then
+    assertThatNoException().isThrownBy(MemberId::anonymous);
   }
 
   static Stream<Arguments> isInZoneCases() {
