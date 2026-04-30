@@ -62,7 +62,7 @@ Components that depend on the C8 monorepo releases:
 * DockerHub:
   * [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
   * [Optimize](https://hub.docker.com/r/camunda/optimize/)
-  * [Camunda](https://hub.docker.com/r/camunda/camunda/) (future "Single Application" Docker image)
+  * [Camunda](https://hub.docker.com/r/camunda/camunda/)
 * [GitHub releases](https://github.com/camunda/camunda/releases)
 * SBOM information on FOSSA
 
