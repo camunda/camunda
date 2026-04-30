@@ -85,29 +85,29 @@ RUN mkdir camunda-zeebe && \
     tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
 
 ARG TARGETARCH
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
+# Slim the RocksDB JNI jar: keeps only the target-arch glibc .so, removing ~60 MB of unused native libs
+RUN \
+    # Map Docker TARGETARCH to the RocksDB native lib filename suffix
+    if [ "$TARGETARCH" = "amd64" ]; then \
       ROCKSDB_ARCH="linux64"; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
       ROCKSDB_ARCH="linux-aarch64"; \
     else \
       echo "Unsupported architecture: $TARGETARCH" >&2 && exit 1; \
     fi && \
+    # Locate the jar (version-agnostic)
     ROCKSDB_JAR=$(find camunda-zeebe/lib -name 'rocksdbjni-*.jar' | head -1) && \
     UNPACK=$(mktemp -d) && \
-    OUTPUT=$(mktemp -d) && \
+    # Unpack, remove all native libs except the one we need, validate, repack
     unzip -q "$ROCKSDB_JAR" -d "$UNPACK" && \
-    find "$UNPACK" -type f ! \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) \
-      | while IFS= read -r f; do \
-          install -D "$f" "$OUTPUT/${f#"$UNPACK"/}"; \
-        done && \
-    install "$UNPACK/librocksdbjni-${ROCKSDB_ARCH}.so" \
-            "$OUTPUT/librocksdbjni-${ROCKSDB_ARCH}.so" && \
-    count=$(find "$OUTPUT" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) | wc -l) && \
-    [ "$count" -eq 1 ] || \
-      { echo "Expected exactly 1 native lib, found $count" >&2; exit 1; } && \
+    find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) \
+      ! -name "librocksdbjni-${ROCKSDB_ARCH}.so" -delete && \
+    # Verify only one shared lib is left
+    count=$(find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) | wc -l) && \
+    [ "$count" -eq 1 ] || { echo "Expected exactly 1 native lib, found $count" >&2; exit 1; } && \
     rm "$ROCKSDB_JAR" && \
-    ( cd "$OUTPUT" && zip -qr "$OLDPWD/$ROCKSDB_JAR" . ) && \
-    rm -rf "$UNPACK" "$OUTPUT"
+    ( cd "$UNPACK" && zip -qr "$OLDPWD/$ROCKSDB_JAR" . ) && \
+    rm -rf "$UNPACK"
 
 
 ### Image containing the zeebe distribution ###
