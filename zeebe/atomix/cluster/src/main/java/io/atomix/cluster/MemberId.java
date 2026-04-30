@@ -40,13 +40,21 @@ public class MemberId extends NodeId {
       throw new IllegalArgumentException("Expected id to be of the form $zone/$id, but got " + id);
     } else if (parts.length == 2) {
       zone = parts[0];
-      nodeIdx = Integer.parseInt(parts[1]);
+      nodeIdx = tryParseInt(parts[1]);
     } else if (parts.length == 1) {
       zone = null;
-      nodeIdx = Integer.parseInt(parts[0]);
+      nodeIdx = tryParseInt(parts[0]);
     } else {
       throw new IllegalArgumentException(
           "Expected id to be of the form $zone/$id or $id, but got " + id);
+    }
+  }
+
+  private static @Nullable Integer tryParseInt(final String s) {
+    try {
+      return Integer.parseInt(s);
+    } catch (final NumberFormatException e) {
+      return null;
     }
   }
 

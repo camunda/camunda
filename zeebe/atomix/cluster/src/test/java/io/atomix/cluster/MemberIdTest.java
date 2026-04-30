@@ -91,8 +91,11 @@ final class MemberIdTest {
 
   @Test
   void shouldThrowWhenIdHasNoNumericSuffix() {
-    // given / when / then
-    assertThatThrownBy(() -> MemberId.from("anonymous")).isInstanceOf(NumberFormatException.class);
+    // given
+    final var memberId = MemberId.from("anonymous");
+
+    // when / then
+    assertThatThrownBy(memberId::nodeIdx).isInstanceOf(IllegalStateException.class);
   }
 
   static Stream<Arguments> isInZoneCases() {
