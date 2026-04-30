@@ -117,7 +117,7 @@ public class Azure {
   }
 
   public String getAccountKey() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfigurationWithOrdering(
         PREFIX + ".account-key",
         accountKey,
         String.class,
@@ -130,7 +130,7 @@ public class Azure {
   }
 
   public String getConnectionString() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfigurationWithOrdering(
         PREFIX + ".connection-string",
         connectionString,
         String.class,
