@@ -10,16 +10,8 @@ import fs from 'node:fs/promises';
 import path, {dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-const oldPath = path.join(
-	dirname(fileURLToPath(import.meta.url)),
-	'dist',
-	'index.prod.html',
-);
-const newPath = path.join(
-	dirname(fileURLToPath(import.meta.url)),
-	'dist',
-	'index.html',
-);
+const oldPath = path.join(dirname(fileURLToPath(import.meta.url)), 'dist', 'index.prod.html');
+const newPath = path.join(dirname(fileURLToPath(import.meta.url)), 'dist', 'index.html');
 
 await fs.rename(oldPath, newPath);
 console.log('Rename complete!');

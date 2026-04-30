@@ -23,7 +23,7 @@
 		"build": "vite build",
 		"format": "prettier --write .",
 		"typecheck": "tsc",
-    "prepare": "npm run build"
+		"prepare": "npm run build"
 	},
 	"sideEffects": false,
 	"files": [
@@ -592,7 +592,7 @@
 		"@types/node": "25.6.0",
 		"changelogen": "0.6.2",
 		"typescript": "6.0.3",
-		"vite": "8.0.8",
+		"vite": "8.0.10",
 		"vite-plugin-circular-dependency": "0.5.0",
 		"vite-plugin-dts": "4.5.4",
 		"zod": "^4.3.6"
