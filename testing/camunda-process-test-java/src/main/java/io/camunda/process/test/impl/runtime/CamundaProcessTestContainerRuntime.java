@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
@@ -219,6 +220,12 @@ public class CamundaProcessTestContainerRuntime
             .get()
             .restAddress(getCamundaRestApiAddress())
             .grpcAddress(getCamundaGrpcApiAddress());
+  }
+
+  @Override
+  public Topology waitUntilClusterReady(final Duration timeout) {
+    return CamundaRuntimeHealthChecker.waitUntilClusterReady(
+        getCamundaClientBuilderFactory(), timeout);
   }
 
   public CamundaContainer getCamundaContainer() {

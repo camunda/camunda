@@ -211,7 +211,9 @@ public class CamundaProcessTestRemoteRuntimeTest {
 
     // when/then
     assertThatThrownBy(camundaRuntime::start)
-        .hasMessageContaining("Remote Camunda runtime is unhealthy. [topology:");
+        .hasMessage("Failed to connect to remote Camunda runtime.")
+        .cause()
+        .hasMessageContaining("Cluster is unhealthy. [topology:");
   }
 
   @Test
@@ -235,7 +237,9 @@ public class CamundaProcessTestRemoteRuntimeTest {
 
     // when/then
     assertThatThrownBy(camundaRuntime::start)
+        .hasMessage("Failed to connect to remote Camunda runtime.")
+        .cause()
         .hasMessageContaining(
-            "Remote Camunda runtime has zero available partitions. Please check the remote runtime logs for errors.");
+            "Cluster has no available partitions. Please check the runtime logs for errors. [topology:");
   }
 }
