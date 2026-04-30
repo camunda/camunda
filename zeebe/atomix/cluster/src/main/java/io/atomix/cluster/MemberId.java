@@ -24,7 +24,13 @@ import org.jspecify.annotations.Nullable;
 /** Controller cluster identity. */
 @NullMarked
 public class MemberId extends NodeId {
+  /**
+   * Null when the member is anonymous When a zone is present, this is the node index in the local
+   * cluster (e.g. 0, 1, 2, 3...) If a zone is not present, it's equal to the id
+   */
   private final @Nullable Integer nodeIdx;
+
+  /** Null when the member is not zone aware */
   private final @Nullable String zone;
 
   private MemberId(final @Nullable String zone, final @Nullable Integer nodeIdx, final String id) {
@@ -47,14 +53,6 @@ public class MemberId extends NodeId {
     } else {
       throw new IllegalArgumentException(
           "Expected id to be of the form $zone/$id or $id, but got " + id);
-    }
-  }
-
-  private static @Nullable Integer tryParseInt(final String s) {
-    try {
-      return Integer.parseInt(s);
-    } catch (final NumberFormatException e) {
-      return null;
     }
   }
 
@@ -84,8 +82,7 @@ public class MemberId extends NodeId {
    * it is {@code "$zone/$nodeId"}. Leading/trailing whitespace is stripped from {@code zone}.
    */
   public static MemberId from(final @Nullable String zone, final int nodeId) {
-    final String stripped = zone == null ? null : zone.strip();
-    return new MemberId(stripped, nodeId, buildMemberIdString(stripped, nodeId));
+    return new MemberId(zone, nodeId, buildMemberIdString(zone, nodeId));
   }
 
   public int nodeIdx() {
@@ -95,6 +92,10 @@ public class MemberId extends NodeId {
     return nodeIdx;
   }
 
+  public @Nullable String zone() {
+    return zone;
+  }
+
   /**
    * @return {@code true} if this member id belongs to the given zone.
    */
@@ -102,14 +103,14 @@ public class MemberId extends NodeId {
     return Objects.equals(this.zone, zone);
   }
 
-  private @Nullable Integer validateNodeIdx(final @Nullable Integer nodeIdx) {
+  private static @Nullable Integer validateNodeIdx(final @Nullable Integer nodeIdx) {
     if (nodeIdx != null && nodeIdx < 0) {
       throw new IllegalArgumentException("Expected nodeIdx to be >= 0, but got " + nodeIdx);
     }
     return nodeIdx;
   }
 
-  private @Nullable String validateZone(final @Nullable String zone) {
+  private static @Nullable String validateZone(final @Nullable String zone) {
     if (zone != null && zone.isBlank()) {
       throw new IllegalArgumentException("Expected zone to be non-empty, but got " + zone);
     }
@@ -120,7 +121,15 @@ public class MemberId extends NodeId {
     if (zone == null) {
       return Integer.toString(nodeIdx);
     } else {
-      return zone + "/" + nodeIdx;
+      return validateZone(zone) + "/" + nodeIdx;
+    }
+  }
+
+  private static @Nullable Integer tryParseInt(final String s) {
+    try {
+      return Integer.parseInt(s);
+    } catch (final NumberFormatException e) {
+      return null;
     }
   }
 }
