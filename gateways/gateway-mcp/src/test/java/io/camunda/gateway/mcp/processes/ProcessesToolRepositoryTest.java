@@ -5,13 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mcp.tool.process;
+package io.camunda.gateway.mcp.processes;
 
-import static io.camunda.gateway.mcp.tool.process.ProcessesToolRepository.PROPERTY_INPUTS;
-import static io.camunda.gateway.mcp.tool.process.ProcessesToolRepository.PROPERTY_PURPOSE;
-import static io.camunda.gateway.mcp.tool.process.ProcessesToolRepository.PROPERTY_RESULTS;
-import static io.camunda.gateway.mcp.tool.process.ProcessesToolRepository.PROPERTY_WHEN_NOT_TO_USE;
-import static io.camunda.gateway.mcp.tool.process.ProcessesToolRepository.PROPERTY_WHEN_TO_USE;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -96,11 +91,11 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
     // given
     final var props =
         Map.of(
-            PROPERTY_INPUTS, "Provide a name",
-            PROPERTY_PURPOSE, "Starts an order",
-            PROPERTY_WHEN_TO_USE, "When user wants to place an order",
-            PROPERTY_WHEN_NOT_TO_USE, "For cancellations",
-            PROPERTY_RESULTS, "Returns orderId");
+            ProcessesToolRepository.PROPERTY_INPUTS, "Provide a name",
+            ProcessesToolRepository.PROPERTY_PURPOSE, "Starts an order",
+            ProcessesToolRepository.PROPERTY_WHEN_TO_USE, "When user wants to place an order",
+            ProcessesToolRepository.PROPERTY_WHEN_NOT_TO_USE, "For cancellations",
+            ProcessesToolRepository.PROPERTY_RESULTS, "Returns orderId");
     final var entity =
         buildStartSubscriptionEntity(
             1L, "placeOrder", props, "order.start", "<default>", MessageSubscriptionState.CREATED);
@@ -112,17 +107,27 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
     // then
     final String description = tools.getFirst().description();
     assertThat(description)
-        .contains("## Purpose\nStarts an order")
-        .contains("## Inputs\nProvide a name")
-        .contains("## When to use\nWhen user wants to place an order")
-        .contains("## When not to use\nFor cancellations")
-        .contains("## Results\nReturns orderId");
+        .isEqualTo(
+            """
+                Starts an order
+
+                ## Inputs
+                Provide a name
+
+                ## When to use
+                When user wants to place an order
+
+                ## When not to use
+                For cancellations
+
+                ## Results
+                Returns orderId""");
   }
 
   @Test
   void shouldOmitBlankDescriptionSections() {
     // given
-    final var props = Map.of(PROPERTY_PURPOSE, "Core purpose only");
+    final var props = Map.of(ProcessesToolRepository.PROPERTY_PURPOSE, "Core purpose only");
     final var entity =
         buildStartSubscriptionEntity(
             5L, "minimalTool", props, "minMsg", "<default>", MessageSubscriptionState.CREATED);
@@ -133,12 +138,7 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
 
     // then
     final String description = tools.getFirst().description();
-    assertThat(description)
-        .contains("## Purpose\nCore purpose only")
-        .doesNotContain("## Inputs")
-        .doesNotContain("## When to use")
-        .doesNotContain("## When not to use")
-        .doesNotContain("## Results");
+    assertThat(description).isEqualTo("Core purpose only");
   }
 
   @Test
@@ -150,7 +150,7 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
       {
         "name": "orderProcess_99",
         "title": "orderProcess",
-        "description": "## Purpose\\nCore purpose",
+        "description": "Core purpose",
         "inputSchema": {
           "type": "object",
           "properties": {},
@@ -176,7 +176,7 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
         buildStartSubscriptionEntity(
             99L,
             "orderProcess",
-            Map.of(PROPERTY_PURPOSE, "Core purpose"),
+            Map.of(ProcessesToolRepository.PROPERTY_PURPOSE, "Core purpose"),
             "orderMessage",
             "<default>",
             MessageSubscriptionState.CREATED);
@@ -337,7 +337,7 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
         buildStartSubscriptionEntity(
             88L,
             "correlatedTool",
-            Map.of(PROPERTY_PURPOSE, "correlated"),
+            Map.of(ProcessesToolRepository.PROPERTY_PURPOSE, "correlated"),
             "corr.msg",
             "<default>",
             MessageSubscriptionState.CORRELATED);
@@ -358,7 +358,7 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
         buildStartSubscriptionEntity(
             88L,
             "myTool",
-            Map.of(PROPERTY_PURPOSE, "does things"),
+            Map.of(ProcessesToolRepository.PROPERTY_PURPOSE, "does things"),
             "message",
             "<default>",
             MessageSubscriptionState.CREATED);
@@ -370,7 +370,7 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
     // then
     assertThat(toolsResult.tools())
         .extracting(Tool::name, Tool::description)
-        .containsExactly(tuple("myTool_88", "## Purpose\ndoes things"));
+        .containsExactly(tuple("myTool_88", "does things"));
   }
 
   @Test
@@ -380,7 +380,7 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
         buildStartSubscriptionEntity(
             88L,
             "myTool",
-            Map.of(PROPERTY_PURPOSE, "does things"),
+            Map.of(ProcessesToolRepository.PROPERTY_PURPOSE, "does things"),
             "message",
             "<default>",
             MessageSubscriptionState.CREATED);
