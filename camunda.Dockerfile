@@ -71,6 +71,7 @@ FROM ubuntu:noble AS distball
 # hadolint ignore=DL3002
 USER root
 WORKDIR /camunda
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install tools before COPY so this layer is cached independently of the distball
 # hadolint ignore=DL3008
@@ -86,6 +87,7 @@ RUN mkdir camunda-zeebe && \
 
 ARG TARGETARCH
 # Slim the RocksDB JNI jar: keeps only the target-arch glibc .so, removing ~60 MB of unused native libs
+# hadolint ignore=DL3003
 RUN \
     # Map Docker TARGETARCH to the RocksDB native lib filename suffix
     if [ "$TARGETARCH" = "amd64" ]; then \
