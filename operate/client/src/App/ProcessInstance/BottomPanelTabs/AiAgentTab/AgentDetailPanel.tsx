@@ -110,8 +110,7 @@ function TokensStatCard({
               gap: 'var(--cds-spacing-03)',
               fontSize: 'var(--cds-helper-text-01-font-size, 0.75rem)',
               lineHeight: 'var(--cds-helper-text-01-line-height, 1.33333)',
-              letterSpacing:
-                'var(--cds-helper-text-01-letter-spacing, 0.32px)',
+              letterSpacing: 'var(--cds-helper-text-01-letter-spacing, 0.32px)',
               color: 'var(--cds-text-secondary)',
             }}
           >

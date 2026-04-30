@@ -61,15 +61,13 @@ You have access to the following tools:
   tenantId: '<default>',
 };
 
-const baseElement = (
-  overrides: {
-    historyElementKey: string;
-    role: HistoryElement['role'];
-    timestamp: string;
-    content: string;
-    metrics?: HistoryElement['metrics'];
-  },
-): HistoryElement => ({
+const baseElement = (overrides: {
+  historyElementKey: string;
+  role: HistoryElement['role'];
+  timestamp: string;
+  content: string;
+  metrics?: HistoryElement['metrics'];
+}): HistoryElement => ({
   agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY,
   elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY,
   jobKey: JOB_KEY,
@@ -118,7 +116,7 @@ export const MOCK_AGENT_HISTORY_ELEMENTS: HistoryElement[] = [
     role: 'assistant',
     timestamp: '2026-03-26T14:30:03.000Z',
     content:
-      "Found Leanne Graham (id: 1). Loading her full profile and getting the current date in parallel.",
+      'Found Leanne Graham (id: 1). Loading her full profile and getting the current date in parallel.',
     metrics: {inputTokens: 621, outputTokens: 64, totalTokens: 685},
   }),
   baseElement({

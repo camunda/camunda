@@ -13,11 +13,7 @@ import type {
   AgentToolCall,
   ConversationMessage,
 } from 'modules/contexts/agentData.types';
-import type {
-  AgentInstance,
-  AgentInstanceStatus,
-  HistoryElement,
-} from './types';
+import type {AgentInstance, AgentInstanceStatus, HistoryElement} from './types';
 
 // TODO(API): the API spec does not yet include `limits`. Hardcoding to keep the
 // existing UI counters working — replace once the spec lands the field.
@@ -189,9 +185,7 @@ function historyToAgentElementData(
         role: 'tool_call_result',
         content: [],
         timestamp: element.timestamp,
-        toolResults: [
-          {id: element.historyElementKey, name: '', content: text},
-        ],
+        toolResults: [{id: element.historyElementKey, name: '', content: text}],
       });
     }
   }
@@ -202,9 +196,9 @@ function historyToAgentElementData(
   // statusDetail: name(s) of any in-flight tool call in the most recent iteration.
   const lastIteration = iterations[iterations.length - 1];
   const activeToolNames =
-    lastIteration?.toolCalls.filter((tc) => tc.status === 'ACTIVE').map(
-      (tc) => tc.toolName,
-    ) ?? [];
+    lastIteration?.toolCalls
+      .filter((tc) => tc.status === 'ACTIVE')
+      .map((tc) => tc.toolName) ?? [];
 
   return {
     status: STATUS_MAP[instance.status] ?? 'THINKING',
