@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.http.HttpClient;
@@ -45,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.Level;
@@ -76,6 +78,14 @@ final class JobStreamImplTest {
   // production code compares elapsed nanos against streamInactivityTimeout, so tests need a
   // nanoTime source that moves with scheduled ticks rather than wall clock.
   private final AtomicLong virtualNanos = new AtomicLong();
+  private final AtomicInteger streamInactivityRecreatedCount = new AtomicInteger();
+  private final JobWorkerMetrics metrics =
+      new JobWorkerMetrics() {
+        @Override
+        public void streamInactivityRecreated() {
+          streamInactivityRecreatedCount.incrementAndGet();
+        }
+      };
   private JobClient client;
   private JobStreamerImpl jobStreamer;
   private ListAppender logCapture;
@@ -316,6 +326,39 @@ final class JobStreamImplTest {
   }
 
   @Test
+  void shouldRecordMetricWhenInactivityWatchdogFires() {
+    // given
+    final Duration inactivityTimeout = Duration.ofSeconds(30);
+    jobStreamer = createStreamer(Duration.ofHours(8), inactivityTimeout);
+    jobStreamer.openStreamer(ignored -> {});
+
+    // when - inactivity window elapses twice, triggering two recreations
+    advanceTime(inactivityTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    scheduler.runUntilIdle();
+    advanceTime(inactivityTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    scheduler.runUntilIdle();
+
+    // then
+    assertThat(streamInactivityRecreatedCount.get()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldNotRecordMetricWhenJobsArriveWithinInactivityWindow() {
+    // given
+    final Duration inactivityTimeout = Duration.ofSeconds(30);
+    jobStreamer = createStreamer(Duration.ofHours(8), inactivityTimeout);
+    jobStreamer.openStreamer(ignored -> {});
+
+    // when - activity keeps the watchdog from firing
+    advanceTime(inactivityTimeout.toMillis() - 1, TimeUnit.MILLISECONDS);
+    service.pushJob();
+    scheduler.runUntilIdle();
+
+    // then
+    assertThat(streamInactivityRecreatedCount.get()).isZero();
+  }
+
+  @Test
   void shouldNotRecreateStreamWhenJobsArriveWithinInactivityWindow() {
     // given
     final Duration inactivityTimeout = Duration.ofSeconds(30);
@@ -416,7 +459,8 @@ final class JobStreamImplTest {
         streamInactivityTimeout,
         ignored -> 10_000L,
         scheduler,
-        virtualNanos::get);
+        virtualNanos::get,
+        metrics);
   }
 
   private void advanceTime(final long amount, final TimeUnit unit) {

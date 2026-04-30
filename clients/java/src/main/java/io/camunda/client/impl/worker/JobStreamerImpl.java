@@ -23,6 +23,7 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.StreamJobsResponse;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.impl.Loggers;
 import io.grpc.Status;
 import io.grpc.StatusException;
@@ -57,6 +58,7 @@ final class JobStreamerImpl implements JobStreamer {
   private final BackoffSupplier backoffSupplier;
   private final ScheduledExecutorService executor;
   private final LongSupplier nanoClock;
+  private final JobWorkerMetrics metrics;
   private final Lock streamLock;
 
   // Updated lock-free on every onNext. The scheduled inactivity task reads it when firing and
@@ -94,7 +96,8 @@ final class JobStreamerImpl implements JobStreamer {
       final Duration streamInactivityTimeout,
       final BackoffSupplier backoffSupplier,
       final ScheduledExecutorService executor,
-      final LongSupplier nanoClock) {
+      final LongSupplier nanoClock,
+      final JobWorkerMetrics metrics) {
     this.jobClient = jobClient;
     this.jobType = jobType;
     this.workerName = workerName;
@@ -107,6 +110,7 @@ final class JobStreamerImpl implements JobStreamer {
     this.backoffSupplier = backoffSupplier;
     this.executor = executor;
     this.nanoClock = nanoClock;
+    this.metrics = metrics == null ? JobWorkerMetrics.noop() : metrics;
 
     streamLock = new ReentrantLock();
   }
@@ -325,6 +329,7 @@ final class JobStreamerImpl implements JobStreamer {
       this.streamControl.cancel(
           true, Status.CANCELLED.withCause(new StreamInactivityException()).asException());
       this.streamControl = null;
+      metrics.streamInactivityRecreated();
       return;
     }
     // Activity happened after this task was scheduled; re-arm for the remaining window so the
