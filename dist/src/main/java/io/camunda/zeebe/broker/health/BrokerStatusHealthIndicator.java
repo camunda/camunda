@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.broker.health;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
-import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.util.health.HealthIssue;
+import io.camunda.zeebe.broker.system.management.HealthTree;
 import io.camunda.zeebe.util.health.HealthReport;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.health.contributor.Health;
@@ -21,11 +21,16 @@ import org.springframework.stereotype.Component;
 @Component
 public final class BrokerStatusHealthIndicator implements HealthIndicator {
 
+  private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
+
   private final SpringBrokerBridge brokerBridge;
+  private final ObjectMapper objectMapper;
 
   @Autowired
-  public BrokerStatusHealthIndicator(final SpringBrokerBridge brokerBridge) {
+  public BrokerStatusHealthIndicator(
+      final SpringBrokerBridge brokerBridge, final ObjectMapper objectMapper) {
     this.brokerBridge = brokerBridge;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -48,47 +53,8 @@ public final class BrokerStatusHealthIndicator implements HealthIndicator {
   private void addComponentTreeDetails(
       final Health.Builder builder, final HealthReport report) {
     for (final var entry : report.children().entrySet()) {
-      builder.withDetail(entry.getKey(), toDetailsMap(entry.getValue()));
+      final var tree = HealthTree.fromHealthReport(entry.getKey(), entry.getValue());
+      builder.withDetail(entry.getKey(), objectMapper.convertValue(tree, MAP_TYPE));
     }
-  }
-
-  private Map<String, Object> toDetailsMap(final HealthReport report) {
-    final var details = new LinkedHashMap<String, Object>();
-    details.put("status", report.getStatus().name());
-
-    final var issue = report.issue();
-    if (issue != null) {
-      details.put("issue", formatIssue(issue));
-    }
-
-    if (!report.children().isEmpty()) {
-      final var components = new LinkedHashMap<String, Object>();
-      for (final var entry : report.children().entrySet()) {
-        components.put(entry.getKey(), toDetailsMap(entry.getValue()));
-      }
-      details.put("components", components);
-    }
-
-    return details;
-  }
-
-  private Map<String, Object> formatIssue(final HealthIssue issue) {
-    final var details = new LinkedHashMap<String, Object>();
-
-    if (issue.message() != null) {
-      details.put("message", issue.message());
-    } else if (issue.throwable() != null) {
-      details.put("message", issue.throwable().getMessage());
-    }
-
-    if (issue.since() != null) {
-      details.put("since", issue.since().toString());
-    }
-
-    if (issue.cause() != null) {
-      details.put("cause", toDetailsMap(issue.cause()));
-    }
-
-    return details;
   }
 }
