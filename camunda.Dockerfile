@@ -71,11 +71,43 @@ FROM ubuntu:noble AS distball
 # hadolint ignore=DL3002
 USER root
 WORKDIR /camunda
+
+# Install tools before COPY so this layer is cached independently of the distball
+# hadolint ignore=DL3008
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends unzip zip && \
+    rm -rf /var/lib/apt/lists/*
+
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} camunda.tar.gz
 
 RUN mkdir camunda-zeebe && \
     tar xfvz camunda.tar.gz --strip 1 -C camunda-zeebe
+
+ARG TARGETARCH
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+      ROCKSDB_ARCH="linux64"; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+      ROCKSDB_ARCH="linux-aarch64"; \
+    else \
+      echo "Unsupported architecture: $TARGETARCH" >&2 && exit 1; \
+    fi && \
+    ROCKSDB_JAR=$(find camunda-zeebe/lib -name 'rocksdbjni-*.jar' | head -1) && \
+    UNPACK=$(mktemp -d) && \
+    OUTPUT=$(mktemp -d) && \
+    unzip -q "$ROCKSDB_JAR" -d "$UNPACK" && \
+    find "$UNPACK" -type f ! \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) \
+      | while IFS= read -r f; do \
+          install -D "$f" "$OUTPUT/${f#"$UNPACK"/}"; \
+        done && \
+    install "$UNPACK/librocksdbjni-${ROCKSDB_ARCH}.so" \
+            "$OUTPUT/librocksdbjni-${ROCKSDB_ARCH}.so" && \
+    count=$(find "$OUTPUT" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) | wc -l) && \
+    [ "$count" -eq 1 ] || \
+      { echo "Expected exactly 1 native lib, found $count" >&2; exit 1; } && \
+    rm "$ROCKSDB_JAR" && \
+    ( cd "$OUTPUT" && zip -qr "$OLDPWD/$ROCKSDB_JAR" . ) && \
+    rm -rf "$UNPACK" "$OUTPUT"
 
 
 ### Image containing the camunda distribution ###
