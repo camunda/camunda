@@ -15,11 +15,11 @@ Maven artifacts are available on [Artifactory](https://artifacts.camunda.com/) a
 
 * Pushed commits to `main` branch produce:
   * Maven artifacts with version `8.10.0-SNAPSHOT` for all C8 components
-  * Docker images with tags `X.Y-SNAPSHOT` and `SNAPSHOT` for [Camunda](https://hub.docker.com/r/camunda/camunda), [Operate](https://hub.docker.com/r/camunda/operate), [Tasklist](https://hub.docker.com/r/camunda/tasklist), and [Zeebe](https://hub.docker.com/r/camunda/zeebe)
+  * Docker images with tags `X.Y-SNAPSHOT` and `SNAPSHOT` for [Camunda](https://hub.docker.com/r/camunda/camunda) and [Zeebe](https://hub.docker.com/r/camunda/zeebe)
   * Docker images with tags `X.Y-SNAPSHOT` and `8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize)
 * Pushed commits to `stable/8.9` branch produce:
   * Maven artifacts with version `8.9.0-SNAPSHOT` for Optimize, Operate, Tasklist, Zeebe
-  * Docker images with tag `8.9-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.9-SNAPSHOT), [Operate](https://hub.docker.com/r/camunda/operate/tags?name=8.9-SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=8.9-SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=8.9-SNAPSHOT)
+  * Docker images with tag `8.9-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.9-SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=8.9-SNAPSHOT)
 * Pushed commits to `stable/8.8` branch produce:
   * Maven artifacts with version `8.8.0-SNAPSHOT` for Optimize, Operate, Tasklist, Zeebe
   * Docker images with tag `8.8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.8-SNAPSHOT), [Operate](https://hub.docker.com/r/camunda/operate/tags?name=8.8-SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=8.8-SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=8.8-SNAPSHOT)

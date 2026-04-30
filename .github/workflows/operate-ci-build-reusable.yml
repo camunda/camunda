@@ -136,20 +136,6 @@ jobs:
           dockerfile: operate.Dockerfile
 
       #########################################################################
-      # Build SNAPSHOT Docker image
-      - name: Build SNAPSHOT Docker image
-        if: ${{ env.IS_MAIN_OR_STABLE_BRANCH == 'true' }}
-        uses: ./.github/actions/build-platform-docker
-        with:
-          repository: camunda/operate
-          version: |
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
-          push: true
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          dockerfile: operate.Dockerfile
-
-      #########################################################################
       # Collect information about build status for central statistics with CI Analytics
       - name: Observe build status
         if: always()

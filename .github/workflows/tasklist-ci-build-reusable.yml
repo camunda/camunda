@@ -121,20 +121,6 @@ jobs:
           dockerfile: tasklist.Dockerfile
 
       #########################################################################
-      # Build SNAPSHOT Docker image
-      - name: Build SNAPSHOT Docker image
-        if: ${{ env.IS_MAIN_OR_STABLE_BRANCH == 'true' }}
-        uses: ./.github/actions/build-platform-docker
-        with:
-          repository: camunda/tasklist
-          version: |
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
-          push: true
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          dockerfile: tasklist.Dockerfile
-
-      #########################################################################
       # Collect information about build status for central statistics with CI Analytics
       - name: Observe build status
         if: always()
