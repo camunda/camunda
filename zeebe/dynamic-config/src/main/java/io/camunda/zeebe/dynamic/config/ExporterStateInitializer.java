@@ -101,7 +101,7 @@ public class ExporterStateInitializer implements ClusterConfigurationModifier {
     // Re-enable exporters whose configuration is added back to the application properties.
     final var configReaddedExporters =
         exportersInConfig.entrySet().stream()
-            .filter(entry -> exportersInConfig.containsKey(entry.getKey()))
+            .filter(entry -> configuredExporters.contains(entry.getKey()))
             .filter(entry -> entry.getValue().state().equals(State.CONFIG_NOT_FOUND))
             .toList();
 
