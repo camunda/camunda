@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
@@ -145,6 +146,54 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     job.setIsJobToUserTaskMigration(true);
     // Cancel previous job worker job
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
+  }
+
+  /**
+   * Determines whether a migration represents a conversion from a job worker user task to a Zeebe
+   * (Camunda) user task implementation.
+   *
+   * @param sourceProcessDefinition source process definition
+   * @param targetProcessDefinition target process definition
+   * @param targetElementId target element id in the target process
+   * @param elementInstance the element instance being migrated
+   * @return {@code true} if the migration converts a job worker user task to a Zeebe user task
+   */
+  public static boolean isJobWorkerToZeebeUserTaskConversion(
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ElementInstance elementInstance) {
+    final var elementInstanceRecord = elementInstance.getValue();
+    if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
+      return false;
+    }
+
+    final AbstractFlowElement targetElement =
+        targetProcessDefinition.getProcess().getElementById(targetElementId);
+    if (targetElement == null) {
+      return false;
+    }
+
+    final BpmnElementType targetElementType = targetElement.getElementType();
+    if (targetElementType != BpmnElementType.USER_TASK
+        && !(targetElement instanceof final ExecutableMultiInstanceBody tmi
+            && tmi.getInnerActivity().getElementType() == BpmnElementType.USER_TASK)) {
+      return false;
+    }
+
+    final ExecutableUserTask targetUserTask =
+        targetProcessDefinition
+            .getProcess()
+            .getElementById(targetElementId, ExecutableUserTask.class);
+    final ExecutableUserTask sourceUserTask =
+        sourceProcessDefinition
+            .getProcess()
+            .getElementById(elementInstanceRecord.getElementId(), ExecutableUserTask.class);
+
+    final boolean sourceIsJobWorker = sourceUserTask.getUserTaskProperties() == null;
+    final boolean targetIsZeebeUserTask = targetUserTask.getUserTaskProperties() != null;
+
+    return sourceIsJobWorker && targetIsZeebeUserTask;
   }
 
   private void assignUser(
