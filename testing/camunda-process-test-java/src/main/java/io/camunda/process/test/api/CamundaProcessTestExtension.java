@@ -34,7 +34,6 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
-import io.camunda.process.test.impl.runtime.CamundaRuntimeHealthChecker;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
