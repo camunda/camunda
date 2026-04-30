@@ -122,8 +122,8 @@ public class RestoreManager {
             base.members(),
             base.lastChange(),
             Optional.of(
-                ClusterChangePlan.init(
-                    1L, List.of(new UpdateRoutingState(coordinatorId, Optional.empty())))),
+                ClusterChangePlan.initForRestore(
+                    List.of(new UpdateRoutingState(coordinatorId, Optional.empty())))),
             base.routingState());
     final var persistedConfiguration =
         PersistedClusterConfiguration.ofFile(file, new ProtoBufSerializer());

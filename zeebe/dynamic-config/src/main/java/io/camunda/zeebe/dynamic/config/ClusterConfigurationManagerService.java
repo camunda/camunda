@@ -142,7 +142,8 @@ public final class ClusterConfigurationManagerService
             new ExporterStateInitializer(
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
                 staticConfiguration.localMemberId(),
-                managerActor))
+                managerActor,
+                false))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()));
   }
 
@@ -164,7 +165,8 @@ public final class ClusterConfigurationManagerService
             new ExporterStateInitializer(
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
                 staticConfiguration.localMemberId(),
-                managerActor))
+                managerActor,
+                true))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()));
   }
 
