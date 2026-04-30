@@ -24,6 +24,7 @@ import {
   SCENARIOS,
   getScenarioByInstanceKey,
   getScenarioByDefinitionKey,
+  getScenarioByAgentInstanceKey,
 } from './scenarioRegistry';
 
 const PAGE_DEFAULTS = {
@@ -337,6 +338,60 @@ const handlers: RequestHandler[] = [
         });
       }
       return passthrough();
+    },
+  ),
+
+  // GET single agent instance
+  http.get('*/v2/agent-instances/:agentInstanceKey', ({params}) => {
+    const scenario = getScenarioByAgentInstanceKey(
+      params.agentInstanceKey as string,
+    );
+    if (scenario) {
+      return HttpResponse.json(scenario.agentInstance);
+    }
+    return passthrough();
+  }),
+
+  // POST agent-instances search (filter by processInstanceKey / elementId)
+  http.post('*/v2/agent-instances/search', async ({request}) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    const filter = body?.filter as Record<string, unknown> | undefined;
+    const piKey = filter?.processInstanceKey as string | undefined;
+    const elementIdFilter = filter?.elementId as string | undefined;
+
+    const scenario = piKey ? getScenarioByInstanceKey(piKey) : undefined;
+    if (!scenario) {
+      return passthrough();
+    }
+    if (
+      elementIdFilter !== undefined &&
+      elementIdFilter !== scenario.agentElementId
+    ) {
+      return HttpResponse.json({items: [], total: 0});
+    }
+    return HttpResponse.json({
+      items: [scenario.agentInstance],
+      total: 1,
+    });
+  }),
+
+  // POST agent-instance history search
+  http.post(
+    '*/v2/agent-instances/:agentInstanceKey/history/search',
+    async ({params, request}) => {
+      const scenario = getScenarioByAgentInstanceKey(
+        params.agentInstanceKey as string,
+      );
+      if (!scenario) {
+        return passthrough();
+      }
+      const body = (await request.json()) as Record<string, unknown>;
+      const filter = body?.filter as Record<string, unknown> | undefined;
+      let items = [...scenario.agentInstanceHistory];
+      if (typeof filter?.committed === 'boolean') {
+        items = items.filter((h) => h.committed === filter.committed);
+      }
+      return HttpResponse.json({items, total: items.length});
     },
   ),
 ];
