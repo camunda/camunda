@@ -19,15 +19,45 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 
+/**
+ * Wires the migration handlers used in the SM Keycloak profile. Each handler can be disabled via
+ * its corresponding {@code camunda.migration.identity.handler.keycloak.<name>.enabled=false}
+ * property. Handlers run in declared order; some depend on entities created by predecessors:
+ *
+ * <ul>
+ *   <li>{@code user-role} requires roles created by {@code role}
+ *   <li>{@code authorization} relies on tenants created by {@code tenant} and groups by {@code
+ *       group}
+ * </ul>
+ *
+ * Disabling a predecessor while keeping a consumer enabled raises a {@link
+ * io.camunda.migration.api.MigrationException} at runtime.
+ */
 @Configuration
 @ConditionalOnKeycloak
 public class SMKeycloakMigrationHandlerConfig {
+
+  public static final String ROLE_ENABLED =
+      "camunda.migration.identity.handler.keycloak.role.enabled";
+  public static final String GROUP_ENABLED =
+      "camunda.migration.identity.handler.keycloak.group.enabled";
+  public static final String USER_ROLE_ENABLED =
+      "camunda.migration.identity.handler.keycloak.user-role.enabled";
+  public static final String CLIENT_ENABLED =
+      "camunda.migration.identity.handler.keycloak.client.enabled";
+  public static final String AUTHORIZATION_ENABLED =
+      "camunda.migration.identity.handler.keycloak.authorization.enabled";
+  public static final String TENANT_ENABLED =
+      "camunda.migration.identity.handler.keycloak.tenant.enabled";
+
   @Bean
   @Order(1)
+  @ConditionalOnProperty(name = ROLE_ENABLED, matchIfMissing = true)
   public RoleMigrationHandler roleMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -44,6 +74,7 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(2)
+  @ConditionalOnProperty(name = GROUP_ENABLED, matchIfMissing = true)
   public GroupMigrationHandler groupMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final AuthorizationServices authorizationServices,
@@ -60,6 +91,7 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(3)
+  @ConditionalOnProperty(name = USER_ROLE_ENABLED, matchIfMissing = true)
   public UserRoleMigrationHandler userRoleMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -71,6 +103,7 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(4)
+  @ConditionalOnProperty(name = CLIENT_ENABLED, matchIfMissing = true)
   public ClientMigrationHandler clientMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -82,6 +115,7 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(5)
+  @ConditionalOnProperty(name = AUTHORIZATION_ENABLED, matchIfMissing = true)
   public AuthorizationMigrationHandler authorizationMigrationHandler(
       final CamundaAuthentication authentication,
       final AuthorizationServices authorizationService,
@@ -93,6 +127,7 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(6)
+  @ConditionalOnProperty(name = TENANT_ENABLED, matchIfMissing = true)
   public TenantMigrationHandler tenantMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final TenantServices tenantService,

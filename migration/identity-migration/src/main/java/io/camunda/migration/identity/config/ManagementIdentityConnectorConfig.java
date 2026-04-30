@@ -80,7 +80,7 @@ public class ManagementIdentityConnectorConfig {
             .defaultHeader("Accept", "application/json")
             .build();
     return new ManagementIdentityClient(
-        restTemplate, identityMigrationProperties.getOrganizationId());
+        restTemplate, identityMigrationProperties.getOrganizationId(), properties.getPageSize());
   }
 
   public static final class M2MTokenInterceptor implements ClientHttpRequestInterceptor {
