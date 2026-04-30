@@ -31,7 +31,7 @@ public class SecondaryStorageSecurity {
   }
 
   public boolean isEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".enabled",
         enabled,
         Boolean.class,
@@ -44,7 +44,7 @@ public class SecondaryStorageSecurity {
   }
 
   public String getCertificatePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".certificate-path",
         certificatePath,
         String.class,
@@ -57,7 +57,7 @@ public class SecondaryStorageSecurity {
   }
 
   public boolean isVerifyHostname() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".verify-hostname",
         verifyHostname,
         Boolean.class,
@@ -70,7 +70,7 @@ public class SecondaryStorageSecurity {
   }
 
   public boolean isSelfSigned() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".self-signed",
         selfSigned,
         Boolean.class,

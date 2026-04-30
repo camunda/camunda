@@ -44,7 +44,7 @@ public class Partitioning {
   }
 
   public Scheme getScheme() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".scheme",
         scheme,
         Scheme.class,

@@ -84,7 +84,7 @@ public class Membership implements Cloneable {
   private Duration syncInterval = Duration.ofMillis(10_000);
 
   public boolean isBroadcastUpdates() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".broadcast-updates",
         broadcastUpdates,
         Boolean.class,
@@ -97,7 +97,7 @@ public class Membership implements Cloneable {
   }
 
   public boolean isBroadcastDisputes() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".broadcast-disputes",
         broadcastDisputes,
         Boolean.class,
@@ -110,7 +110,7 @@ public class Membership implements Cloneable {
   }
 
   public boolean isNotifySuspect() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".notify-suspect",
         notifySuspect,
         Boolean.class,
@@ -123,7 +123,7 @@ public class Membership implements Cloneable {
   }
 
   public Duration getGossipInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gossip-interval",
         gossipInterval,
         Duration.class,
@@ -136,7 +136,7 @@ public class Membership implements Cloneable {
   }
 
   public int getGossipFanout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gossip-fanout",
         gossipFanout,
         Integer.class,
@@ -149,7 +149,7 @@ public class Membership implements Cloneable {
   }
 
   public Duration getProbeInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".probe-interval",
         probeInterval,
         Duration.class,
@@ -162,7 +162,7 @@ public class Membership implements Cloneable {
   }
 
   public Duration getProbeTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".probe-timeout",
         probeTimeout,
         Duration.class,
@@ -175,7 +175,7 @@ public class Membership implements Cloneable {
   }
 
   public int getSuspectProbes() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".suspect-probes",
         suspectProbes,
         Integer.class,
@@ -188,7 +188,7 @@ public class Membership implements Cloneable {
   }
 
   public Duration getFailureTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".failure-timeout",
         failureTimeout,
         Duration.class,
@@ -201,7 +201,7 @@ public class Membership implements Cloneable {
   }
 
   public Duration getSyncInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".sync-interval",
         syncInterval,
         Duration.class,
