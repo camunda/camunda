@@ -25,6 +25,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
@@ -40,6 +41,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
+@ClusterScoped
 @RequestMapping("/v2/system")
 public class SystemController {
 
