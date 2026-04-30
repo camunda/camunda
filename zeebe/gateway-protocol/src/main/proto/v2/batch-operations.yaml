@@ -231,6 +231,8 @@ components:
         - batchOperationKey
         - batchOperationType
       description: The created batch operation.
+      x-semantic-provider:
+        - batchOperationKey
       type: object
       properties:
         batchOperationKey:
@@ -316,6 +318,8 @@ components:
             $ref: '#/components/schemas/BatchOperationResponse'
 
     BatchOperationResponse:
+      x-semantic-provider:
+        - batchOperationKey
       required:
         - batchOperationKey
         - batchOperationType
