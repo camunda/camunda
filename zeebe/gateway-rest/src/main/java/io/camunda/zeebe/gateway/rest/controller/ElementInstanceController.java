@@ -129,4 +129,39 @@ public class ElementInstanceController {
       return mapErrorToResponse(e);
     }
   }
+
+  @RequiresSecondaryStorage
+  @CamundaGetMapping(path = "/{elementInstanceKey}/inspection")
+  public ResponseEntity<Object> getElementInstanceInspection(
+      @PathVariable("elementInstanceKey") final Long elementInstanceKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(
+              elementInstanceServices.getElementInstanceInspection(
+                  elementInstanceKey, authenticationProvider.getCamundaAuthentication()));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/inspection/search")
+  public ResponseEntity<Object> searchElementInstanceInspections(
+      @RequestBody(required = false) final java.util.Map<String, Object> request) {
+    try {
+      final java.util.List<Long> elementInstanceKeys =
+          request != null && request.containsKey("filter")
+              ? (java.util.List<Long>)
+                  ((java.util.Map<String, Object>) request.get("filter"))
+                      .getOrDefault("elementInstanceKeys", java.util.List.of())
+              : java.util.List.of();
+
+      return ResponseEntity.ok()
+          .body(
+              elementInstanceServices.searchElementInstanceInspections(
+                  elementInstanceKeys, authenticationProvider.getCamundaAuthentication()));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
 }

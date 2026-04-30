@@ -12,10 +12,14 @@ import static io.camunda.service.authorization.Authorizations.ELEMENT_INSTANCE_R
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.JobEntity;
+import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -27,6 +31,9 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -39,6 +46,7 @@ public final class ElementInstanceServices
   private final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
   private final ProcessCache processCache;
   private final IncidentServices incidentServices;
+  private final JobServices<?> jobServices;
 
   public ElementInstanceServices(
       final BrokerClient brokerClient,
@@ -46,6 +54,7 @@ public final class ElementInstanceServices
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final ProcessCache processCache,
       final IncidentServices incidentServices,
+      final JobServices<?> jobServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
@@ -56,6 +65,7 @@ public final class ElementInstanceServices
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
     this.processCache = processCache;
     this.incidentServices = incidentServices;
+    this.jobServices = jobServices;
   }
 
   @Override
@@ -162,6 +172,66 @@ public final class ElementInstanceServices
                     .sort(query.sort())
                     .page(query.page())),
         authentication);
+  }
+
+  public Map<String, Object> getElementInstanceInspection(
+      final Long elementInstanceKey, final CamundaAuthentication authentication) {
+    final var elementInstance = getByKey(elementInstanceKey, authentication);
+    final List<Map<String, Object>> waitStates = new ArrayList<>();
+
+    // Check if the element type is SERVICE_TASK (which maps to JOB type)
+    if (elementInstance.type() == FlowNodeType.SERVICE_TASK) {
+      // Search for jobs associated with this element instance
+      final var jobQuery =
+          JobQuery.of(
+              b ->
+                  b.filter(
+                      FilterBuilders.job()
+                          .elementInstanceKeyOperations(Operation.eq(elementInstanceKey))
+                          .build()));
+
+      final var jobs = jobServices.search(jobQuery, authentication);
+
+      for (final JobEntity job : jobs.items()) {
+        final Map<String, Object> details = new HashMap<>();
+        details.put("jobKey", String.valueOf(job.jobKey()));
+        details.put("jobType", job.type());
+        details.put("jobKind", job.kind().name());
+
+        final Map<String, Object> waitState = new HashMap<>();
+        waitState.put("type", "JOB");
+        waitState.put("details", details);
+
+        waitStates.add(waitState);
+      }
+    }
+
+    final Map<String, Object> result = new HashMap<>();
+    result.put("elementInstanceKey", String.valueOf(elementInstanceKey));
+    result.put("elementId", elementInstance.flowNodeId());
+    result.put("elementType", elementInstance.type().name());
+    result.put("waitStates", waitStates);
+
+    return result;
+  }
+
+  public Map<String, Object> searchElementInstanceInspections(
+      final List<Long> elementInstanceKeys, final CamundaAuthentication authentication) {
+    final List<Map<String, Object>> items = new ArrayList<>();
+
+    for (final Long key : elementInstanceKeys) {
+      try {
+        items.add(getElementInstanceInspection(key, authentication));
+      } catch (final Exception e) {
+        // Skip element instances that cannot be found or accessed
+      }
+    }
+
+    final Map<String, Object> result = new HashMap<>();
+    result.put("items", items);
+    result.put("total", items.size());
+
+    return result;
   }
 
   public record SetVariablesRequest(
