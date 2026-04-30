@@ -6,12 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {createFileRoute} from '@tanstack/react-router';
 
-export const Route = createFileRoute('/_app')({
-	component: RouteComponent,
+export const Route = createFileRoute('/_auth/')({
+	component: App,
+	head: () => ({
+		meta: [
+			{
+				title: 'Orchestration Cluster',
+			},
+		],
+	}),
 });
 
-function RouteComponent() {
-	return <Outlet />;
+function App() {
+	return null;
 }
