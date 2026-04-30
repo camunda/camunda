@@ -245,7 +245,6 @@ public class ElasticsearchBatchRequest implements BatchRequest {
                             .routing(routing)
                             .retryOnConflict(UPDATE_RETRY_COUNT)
                             .binaryAction(binaryAction)));
-    operations.add(new SizedOperation(op, binaryAction.size()));
     addOperation(op, binaryAction.size());
   }
 
