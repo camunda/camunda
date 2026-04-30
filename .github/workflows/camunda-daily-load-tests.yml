@@ -73,7 +73,7 @@ jobs:
       build-frontend: true
 
   setup-max-rest-load-test:
-    name: Setup max rest load test
+    name: Setup max REST load test
     needs:
       - benchmark-data
     uses: ./.github/workflows/camunda-load-test.yml
