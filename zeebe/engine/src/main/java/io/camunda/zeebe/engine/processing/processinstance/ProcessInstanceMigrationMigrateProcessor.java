@@ -240,10 +240,255 @@ public class ProcessInstanceMigrationMigrateProcessor
     final var elementInstanceRecord = elementInstance.getValue();
     final long processInstanceKey = elementInstanceRecord.getProcessInstanceKey();
     final var elementId = elementInstanceRecord.getElementId();
-
-    requireSupportedElementType(elementInstanceRecord, processInstanceKey, sourceProcessDefinition);
-
     final String targetElementId = sourceElementIdToTargetElementId.get(elementId);
+
+    final boolean isUserTaskConversion =
+        performValidation(
+            elementInstance,
+            sourceProcessDefinition,
+            targetProcessDefinition,
+            sourceElementIdToTargetElementId,
+            elementInstanceRecord,
+            processInstanceKey,
+            targetElementId,
+            elementId);
+
+    final var updatedElementInstanceRecord =
+        getUpdatedElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
+
+    stateWriter.appendFollowUpEvent(
+        elementInstance.getKey(),
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        updatedElementInstanceRecord);
+
+    migrateSequenceFlows(
+        elementInstance,
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        sourceElementIdToTargetElementId,
+        processInstanceKey,
+        elementInstanceRecord,
+        updatedElementInstanceRecord);
+
+    migrateOrConvertJob(
+        elementInstance,
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        isUserTaskConversion,
+        processInstanceKey,
+        targetElementId,
+        updatedElementInstanceRecord);
+
+    migrateElementInstanceIncident(
+        elementInstance, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
+
+    migrateUserTasks(elementInstance, targetProcessDefinition, processInstanceKey, targetElementId);
+
+    migrateVariables(elementInstance, targetProcessDefinition);
+
+    migrateCatchEvents(
+        elementInstance,
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        sourceElementIdToTargetElementId,
+        updatedElementInstanceRecord,
+        targetElementId,
+        processInstanceKey,
+        elementId);
+
+    migrateCalledSubProcessElements(
+        elementInstance.getCalledChildInstanceKey(), updatedElementInstanceRecord);
+  }
+
+  private void migrateOrConvertJob(
+      final ElementInstance elementInstance,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final boolean isUserTaskConversion,
+      final long processInstanceKey,
+      final String targetElementId,
+      final ProcessInstanceRecord updatedElementInstanceRecord) {
+    if (isUserTaskConversion) {
+      final ProcessInstanceMigrationUserTaskBehavior migrationUserTaskBehavior =
+          new ProcessInstanceMigrationUserTaskBehavior(
+              processInstanceKey,
+              elementInstance,
+              sourceProcessDefinition,
+              targetProcessDefinition,
+              bpmnBehaviors,
+              targetElementId,
+              updatedElementInstanceRecord,
+              stateWriter,
+              jobState);
+      migrationUserTaskBehavior.tryMigrateJobWorkerToCamundaUserTask();
+      // TODO: there may be a bug related to migrating incidents for job-based user tasks to Camunda
+      // User Tasks. To write tests that cover this behaviour.
+    } else {
+      migrateJob(elementInstance, targetProcessDefinition, processInstanceKey, targetElementId);
+
+      final var jobIncidentKey = incidentState.getJobIncidentKey(elementInstance.getJobKey());
+      if (jobIncidentKey != MISSING_INCIDENT) {
+        appendIncidentMigratedEvent(
+            jobIncidentKey, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
+      }
+    }
+  }
+
+  private void migrateCatchEvents(
+      final ElementInstance elementInstance,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final ProcessInstanceRecord updatedElementInstanceRecord,
+      final String targetElementId,
+      final long processInstanceKey,
+      final String elementId) {
+    if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
+      // Elements in ACTIVATING state haven't subscribed to events yet. We shouldn't subscribe such
+      // elements to events during migration either. For elements that have been ACTIVATED, a
+      // subscription would already exist if needed. So, we want to deal with the expected event
+      // subscriptions. See: https://github.com/camunda/camunda/issues/19212
+      migrationCatchEventBehaviour.handleCatchEvents(
+          elementInstance,
+          targetProcessDefinition,
+          sourceProcessDefinition,
+          sourceElementIdToTargetElementId,
+          updatedElementInstanceRecord,
+          targetElementId,
+          processInstanceKey,
+          elementId);
+    }
+  }
+
+  private void migrateVariables(
+      final ElementInstance elementInstance, final DeployedProcess targetProcessDefinition) {
+    variableState
+        .getVariablesLocal(elementInstance.getKey())
+        .forEach(
+            variable ->
+                stateWriter.appendFollowUpEvent(
+                    variable.key(),
+                    VariableIntent.MIGRATED,
+                    variableRecord
+                        .setScopeKey(elementInstance.getKey())
+                        .setName(variable.name())
+                        .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+                        .setProcessDefinitionKey(targetProcessDefinition.getKey())
+                        .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                        .setTenantId(elementInstance.getValue().getTenantId())));
+  }
+
+  private void migrateElementInstanceIncident(
+      final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ProcessInstanceRecord updatedElementInstanceRecord) {
+    final long processIncidentKey =
+        incidentState.getProcessInstanceIncidentKey(elementInstance.getKey());
+    if (processIncidentKey != MISSING_INCIDENT) {
+      appendIncidentMigratedEvent(
+          processIncidentKey,
+          targetProcessDefinition,
+          targetElementId,
+          updatedElementInstanceRecord);
+    }
+  }
+
+  private void migrateUserTasks(
+      final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
+      final long processInstanceKey,
+      final String targetElementId) {
+    if (elementInstance.getUserTaskKey() > 0) {
+      final var userTask = userTaskState.getUserTask(elementInstance.getUserTaskKey());
+      if (userTask == null) {
+        throw new SafetyCheckFailedException(
+            String.format(
+                """
+                Expected to migrate a user task for process instance with key '%d', \
+                but could not find user task with key '%d'. \
+                Please report this as a bug""",
+                processInstanceKey, elementInstance.getUserTaskKey()));
+      }
+      stateWriter.appendFollowUpEvent(
+          elementInstance.getUserTaskKey(),
+          UserTaskIntent.MIGRATED,
+          userTask
+              .setProcessDefinitionKey(targetProcessDefinition.getKey())
+              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+              .setElementId(targetElementId)
+              .setVariables(NIL_VALUE));
+    }
+  }
+
+  private void migrateJob(
+      final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
+      final long processInstanceKey,
+      final String targetElementId) {
+    if (elementInstance.getJobKey() > 0) {
+      final var job = jobState.getJob(elementInstance.getJobKey());
+      if (job == null) {
+        throw new SafetyCheckFailedException(
+            String.format(
+                """
+                Expected to migrate a job for process instance with key '%d', \
+                but could not find job with key '%d'. \
+                Please report this as a bug""",
+                processInstanceKey, elementInstance.getJobKey()));
+      }
+      stateWriter.appendFollowUpEvent(
+          elementInstance.getJobKey(),
+          JobIntent.MIGRATED,
+          job.setProcessDefinitionKey(targetProcessDefinition.getKey())
+              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+              .setElementId(targetElementId));
+    }
+  }
+
+  private void migrateSequenceFlows(
+      final ElementInstance elementInstance,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final long processInstanceKey,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final ProcessInstanceRecord updatedElementInstanceRecord) {
+    final Set<ExecutableSequenceFlow> sequenceFlows =
+        getSequenceFlowsToMigrate(
+            sourceProcessDefinition,
+            targetProcessDefinition,
+            sourceElementIdToTargetElementId,
+            elementInstance);
+
+    sequenceFlows.forEach(
+        sequenceFlow -> {
+          // use the original element instance record to fill existing sequence flow data
+          deleteTakenSequenceFlow(elementInstanceRecord, sequenceFlow, elementInstance.getKey());
+
+          final var targetSequenceFlowId =
+              getTargetSequenceFlowId(sourceElementIdToTargetElementId, sequenceFlow);
+          // use updated element instance record to fill new sequence flow data
+          takeNewSequenceFlow(
+              updatedElementInstanceRecord,
+              sequenceFlow,
+              elementInstance.getKey(),
+              targetSequenceFlowId);
+        });
+  }
+
+  private boolean performValidation(
+      final ElementInstance elementInstance,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final long processInstanceKey,
+      final String targetElementId,
+      final String elementId) {
+    requireSupportedElementType(elementInstanceRecord, processInstanceKey, sourceProcessDefinition);
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
@@ -324,157 +569,15 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNoConcurrentCommand(
         eventScopeInstanceState, elementInstanceState, elementInstance, processInstanceKey);
 
-    final var updatedElementInstanceRecord =
-        getUpdatedElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
-
-    stateWriter.appendFollowUpEvent(
-        elementInstance.getKey(),
-        ProcessInstanceIntent.ELEMENT_MIGRATED,
-        updatedElementInstanceRecord);
-
-    final Set<ExecutableSequenceFlow> sequenceFlows =
-        getSequenceFlowsToMigrate(
-            sourceProcessDefinition,
-            targetProcessDefinition,
-            sourceElementIdToTargetElementId,
-            elementInstance);
-
-    sequenceFlows.forEach(
-        sequenceFlow -> {
-          // use the original element instance record to fill existing sequence flow data
-          deleteTakenSequenceFlow(elementInstanceRecord, sequenceFlow, elementInstance.getKey());
-
-          final var targetSequenceFlowId =
-              getTargetSequenceFlowId(
-                  sourceElementIdToTargetElementId, sequenceFlow, processInstanceKey);
-          // use updated element instance record to fill new sequence flow data
-          takeNewSequenceFlow(
-              updatedElementInstanceRecord,
-              sequenceFlow,
-              elementInstance.getKey(),
-              targetSequenceFlowId);
-        });
-
-    if (elementInstance.getJobKey() > 0 && !isUserTaskConversion) {
-      final var job = jobState.getJob(elementInstance.getJobKey());
-      if (job == null) {
-        throw new SafetyCheckFailedException(
-            String.format(
-                """
-                Expected to migrate a job for process instance with key '%d', \
-                but could not find job with key '%d'. \
-                Please report this as a bug""",
-                processInstanceKey, elementInstance.getJobKey()));
-      }
-      stateWriter.appendFollowUpEvent(
-          elementInstance.getJobKey(),
-          JobIntent.MIGRATED,
-          job.setProcessDefinitionKey(targetProcessDefinition.getKey())
-              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
-              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-              .setElementId(targetElementId));
-    }
-
-    final long processIncidentKey =
-        incidentState.getProcessInstanceIncidentKey(elementInstance.getKey());
-    if (processIncidentKey != MISSING_INCIDENT) {
-      appendIncidentMigratedEvent(
-          processIncidentKey,
-          targetProcessDefinition,
-          targetElementId,
-          updatedElementInstanceRecord);
-    }
-
-    final var jobIncidentKey = incidentState.getJobIncidentKey(elementInstance.getJobKey());
-    if (jobIncidentKey != MISSING_INCIDENT) {
-      appendIncidentMigratedEvent(
-          jobIncidentKey, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
-    }
-
-    if (isUserTaskConversion) {
-      final ProcessInstanceMigrationUserTaskBehavior migrationUserTaskBehavior =
-          new ProcessInstanceMigrationUserTaskBehavior(
-              processInstanceKey,
-              elementInstance,
-              sourceProcessDefinition,
-              targetProcessDefinition,
-              bpmnBehaviors,
-              targetElementId,
-              updatedElementInstanceRecord,
-              stateWriter,
-              jobState);
-      migrationUserTaskBehavior.tryMigrateJobWorkerToCamundaUserTask();
-    }
-
-    if (elementInstance.getUserTaskKey() > 0) {
-      final var userTask = userTaskState.getUserTask(elementInstance.getUserTaskKey());
-      if (userTask == null) {
-        throw new SafetyCheckFailedException(
-            String.format(
-                """
-                Expected to migrate a user task for process instance with key '%d', \
-                but could not find user task with key '%d'. \
-                Please report this as a bug""",
-                processInstanceKey, elementInstance.getUserTaskKey()));
-      }
-      stateWriter.appendFollowUpEvent(
-          elementInstance.getUserTaskKey(),
-          UserTaskIntent.MIGRATED,
-          userTask
-              .setProcessDefinitionKey(targetProcessDefinition.getKey())
-              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
-              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-              .setElementId(targetElementId)
-              .setVariables(NIL_VALUE));
-    }
-
-    variableState
-        .getVariablesLocal(elementInstance.getKey())
-        .forEach(
-            variable ->
-                stateWriter.appendFollowUpEvent(
-                    variable.key(),
-                    VariableIntent.MIGRATED,
-                    variableRecord
-                        .setScopeKey(elementInstance.getKey())
-                        .setName(variable.name())
-                        .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
-                        .setProcessDefinitionKey(targetProcessDefinition.getKey())
-                        .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-                        .setTenantId(elementInstance.getValue().getTenantId())));
-
-    if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
-      // Elements in ACTIVATING state haven't subscribed to events yet. We shouldn't subscribe such
-      // elements to events during migration either. For elements that have been ACTIVATED, a
-      // subscription would already exist if needed. So, we want to deal with the expected event
-      // subscriptions. See: https://github.com/camunda/camunda/issues/19212
-      migrationCatchEventBehaviour.handleCatchEvents(
-          elementInstance,
-          targetProcessDefinition,
-          sourceProcessDefinition,
-          sourceElementIdToTargetElementId,
-          updatedElementInstanceRecord,
-          targetElementId,
-          processInstanceKey,
-          elementId);
-    }
-
-    if (updatedElementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
-      migrateCalledSubProcessElements(elementInstance.getCalledChildInstanceKey());
-    }
+    return isUserTaskConversion;
   }
 
   private static DirectBuffer getTargetSequenceFlowId(
       final Map<String, String> sourceElementIdToTargetElementId,
-      final ExecutableSequenceFlow sequenceFlow,
-      final long processInstanceKey) {
+      final ExecutableSequenceFlow sequenceFlow) {
     final String sourceSequenceFlowId = BufferUtil.bufferAsString(sequenceFlow.getId());
     final String targetSequenceFlowId = sourceElementIdToTargetElementId.get(sourceSequenceFlowId);
 
-    final String sourceGatewayElementId =
-        BufferUtil.bufferAsString(sequenceFlow.getTarget().getId());
-    requireNonNullTargetSequenceFlowId(
-        targetSequenceFlowId, sourceSequenceFlowId, sourceGatewayElementId, processInstanceKey);
     return BufferUtil.wrapString(targetSequenceFlowId);
   }
 
@@ -527,17 +630,20 @@ public class ProcessInstanceMigrationMigrateProcessor
    *
    * @param calledChildInstanceKey the key of the called subprocess instance
    */
-  private void migrateCalledSubProcessElements(final long calledChildInstanceKey) {
-    final var calledInstance = elementInstanceState.getInstance(calledChildInstanceKey);
-    if (calledInstance == null) {
-      return;
-    }
-    final var elementInstances = new ArrayDeque<>(List.of(calledInstance));
-    while (!elementInstances.isEmpty()) {
-      final var instance = elementInstances.poll();
-      adjustCalledInstancesTreePath(elementInstances, instance);
-      final List<ElementInstance> children = elementInstanceState.getChildren(instance.getKey());
-      elementInstances.addAll(children);
+  private void migrateCalledSubProcessElements(
+      final long calledChildInstanceKey, final ProcessInstanceRecord updatedElementInstanceRecord) {
+    if (updatedElementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
+      final var calledInstance = elementInstanceState.getInstance(calledChildInstanceKey);
+      if (calledInstance == null) {
+        return;
+      }
+      final var elementInstances = new ArrayDeque<>(List.of(calledInstance));
+      while (!elementInstances.isEmpty()) {
+        final var instance = elementInstances.poll();
+        adjustCalledInstancesTreePath(elementInstances, instance);
+        final List<ElementInstance> children = elementInstanceState.getChildren(instance.getKey());
+        elementInstances.addAll(children);
+      }
     }
   }
 
