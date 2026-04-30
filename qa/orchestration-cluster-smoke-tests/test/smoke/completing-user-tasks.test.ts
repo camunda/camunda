@@ -8,6 +8,7 @@
 
 import type {DeploymentProcessResult} from '@camunda8/orchestration-cluster-api';
 import {deployProcess} from '../data/deploy.ts';
+import {waitForProcessInstanceFromApp} from '../data/process-instance.ts';
 import {ProcessesPage} from '../pages/tasklist/processes-page.ts';
 import {TaskDetailsPage} from '../pages/tasklist/task-details-page.ts';
 import {expect, test} from '../test.ts';
@@ -21,17 +22,26 @@ test.describe('Completing user-tasks', {tag: '@tasklist'}, () => {
     ]);
   });
 
-  test('starts and completes tasks with a form', async ({page}) => {
+  test('starts and completes tasks with a form', async ({
+    page,
+    camunda,
+    cleanup,
+  }) => {
     const processesPage = new ProcessesPage(page);
     const tasklistPage = new TaskDetailsPage(page);
 
-    await test.step('Start signup process and claim task', async () => {
+    await test.step('Start signup process', async () => {
       await processesPage.goto();
       await processesPage.tutorialContinueButton.click();
+
+      const responsePromise = waitForProcessInstanceFromApp(camunda, page);
       await processesPage
         .processTile(process.processDefinitionId)
         .startButton.click();
 
+      cleanup.use(await responsePromise);
+    });
+    await test.step('Claim started user-task', async () => {
       await expect(tasklistPage.taskHeader).toBeVisible();
       await expect(tasklistPage.taskHeader).toContainText('Fill signup form');
       await tasklistPage.assignTaskButton.click();
