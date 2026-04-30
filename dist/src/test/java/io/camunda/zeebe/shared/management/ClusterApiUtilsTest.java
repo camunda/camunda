@@ -40,10 +40,13 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
+import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
+import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -94,6 +97,100 @@ final class ClusterApiUtilsTest {
     assertThat(TopologyChangeCompletedInner.OperationEnum.values())
         .as("Operation " + operation + "is not mapped correctly")
         .contains(encoded.getOperation());
+  }
+
+  @Test
+  void shouldUseBrokerIdAsIntegerForNonZoneAwareBroker() {
+    // given
+    final var memberId = MemberId.from("1");
+    final var operation = new MemberJoinOperation(memberId);
+
+    // when
+    final var encoded = ClusterApiUtils.mapOperation(operation);
+
+    // then
+    assertThat(encoded.getBrokerId()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldUseBrokerIdAsStringForZoneAwareBroker() {
+    // given
+    final var memberId = MemberId.from("zone-a", 0);
+    final var operation = new MemberJoinOperation(memberId);
+
+    // when
+    final var encoded = ClusterApiUtils.mapOperation(operation);
+
+    // then
+    assertThat(encoded.getBrokerId()).isEqualTo("zone-a/0");
+  }
+
+  @Test
+  void shouldUseBrokerIdAsStringInCompletedOperationForZoneAwareBroker() {
+    // given
+    final var memberId = MemberId.from("zone-b", 2);
+    final var operation = new MemberLeaveOperation(memberId);
+
+    // when
+    final var encoded =
+        ClusterApiUtils.mapCompletedOperation(
+            new CompletedOperation(operation, Instant.ofEpochSecond(17172371723L)));
+
+    // then
+    assertThat(encoded.getBrokerId()).isEqualTo("zone-b/2");
+  }
+
+  @Test
+  void shouldUseBrokerIdAsStringInTopologyResponseForZoneAwareBrokers() {
+    // given
+    final var config =
+        ClusterConfiguration.init()
+            .addMember(
+                MemberId.from("zone-a", 0),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
+            .addMember(
+                MemberId.from("zone-b", 0),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
+
+    // when
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
+
+    // then
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    final var body = (GetTopologyResponse) response.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getBrokers())
+        .extracting(b -> b.getId().value())
+        .containsExactlyInAnyOrder("zone-a/0", "zone-b/0");
+  }
+
+  @Test
+  void shouldUseBrokerIdAsIntegerInTopologyResponseForNonZoneAwareBrokers() {
+    // given
+    final var config =
+        ClusterConfiguration.init()
+            .addMember(
+                MemberId.from("0"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
+
+    // when
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
+
+    // then
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    final var body = (GetTopologyResponse) response.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getBrokers())
+        .extracting(BrokerState::getId)
+        .extracting(String::valueOf)
+        .containsExactlyInAnyOrder("0", "1");
   }
 
   @Test

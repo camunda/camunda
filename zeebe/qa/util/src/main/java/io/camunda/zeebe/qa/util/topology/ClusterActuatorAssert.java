@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.topology;
 
+import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.CompletedChange;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
@@ -14,8 +15,10 @@ import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.time.OffsetDateTime;
+import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.AbstractObjectAssert;
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.ObjectAssert;
 
 public final class ClusterActuatorAssert
     extends AbstractObjectAssert<ClusterActuatorAssert, ClusterActuator> {
@@ -33,9 +36,9 @@ public final class ClusterActuatorAssert
         ClusterActuator.of(actuator.anyGateway()), ClusterActuatorAssert.class);
   }
 
-  public ClusterActuatorAssert doesNotHaveBroker(final int brokerId) {
+  public ClusterActuatorAssert doesNotHaveBroker(final Integer brokerId) {
     Assertions.assertThat(actual.getTopology().getBrokers())
-        .filteredOn(b -> b.getId() == brokerId)
+        .filteredOn(b -> b.getId().valueEquals(brokerId))
         .isEmpty();
     return this;
   }
@@ -60,9 +63,7 @@ public final class ClusterActuatorAssert
   }
 
   public ClusterActuatorAssert brokerHasPartition(final int brokerId, final int partitionId) {
-    Assertions.assertThat(actual.getTopology().getBrokers())
-        .filteredOn(b -> b.getId() == brokerId)
-        .singleElement()
+    assertThatBroker(brokerId)
         .matches(
             b -> b.getPartitions().stream().anyMatch(p -> p.getId() == partitionId),
             "Broker %d has partition %d".formatted(brokerId, partitionId));
@@ -71,9 +72,7 @@ public final class ClusterActuatorAssert
 
   public ClusterActuatorAssert brokerDoesNotHavePartition(
       final int brokerId, final int partitionId) {
-    Assertions.assertThat(actual.getTopology().getBrokers())
-        .filteredOn(b -> b.getId() == brokerId)
-        .singleElement()
+    assertThatBroker(brokerId)
         .matches(
             b -> b.getPartitions().stream().noneMatch(p -> p.getId() == partitionId),
             "Broker %d does not have partition %d".formatted(brokerId, partitionId));
@@ -81,9 +80,7 @@ public final class ClusterActuatorAssert
   }
 
   public ClusterActuatorAssert hasActiveBroker(final int brokerId) {
-    Assertions.assertThat(actual.getTopology().getBrokers())
-        .filteredOn(b -> b.getId() == brokerId)
-        .singleElement()
+    assertThatBroker(brokerId)
         .matches(
             b -> b.getState().equals(BrokerStateCode.ACTIVE),
             "Cluster does not have broker %d in Active state".formatted(brokerId));
@@ -98,14 +95,19 @@ public final class ClusterActuatorAssert
 
   public ClusterActuatorAssert brokerHasPartitionAtState(
       final int brokerId, final int partitionId, final PartitionStateCode state) {
-    Assertions.assertThat(actual.getTopology().getBrokers())
-        .filteredOn(b -> b.getId() == brokerId)
-        .singleElement()
+    assertThatBroker(brokerId)
         .matches(
             b ->
                 b.getPartitions().stream()
                     .anyMatch(p -> p.getId() == partitionId && p.getState().equals(state)),
             "Broker %d has partition %d with state %s".formatted(brokerId, partitionId, state));
     return this;
+  }
+
+  private AbstractAssert<ObjectAssert<BrokerState>, BrokerState> assertThatBroker(
+      final Integer brokerId) {
+    return Assertions.assertThat(actual.getTopology().getBrokers())
+        .filteredOn(b -> b.getId().valueEquals(brokerId))
+        .singleElement();
   }
 }

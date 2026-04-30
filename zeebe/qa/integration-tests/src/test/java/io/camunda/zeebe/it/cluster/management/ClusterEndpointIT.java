@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import feign.FeignException;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
@@ -316,7 +317,7 @@ final class ClusterEndpointIT {
         // when
         final var request =
             new ClusterConfigPatchRequest()
-                .brokers(new ClusterConfigPatchRequestBrokers().add(List.of(1)))
+                .brokers(new ClusterConfigPatchRequestBrokers().add(List.of(BrokerId.of(1))))
                 .partitions(
                     new ClusterConfigPatchRequestPartitions().count(2).replicationFactor(2));
         final var response = actuator.patchCluster(request, false, false);
@@ -345,7 +346,7 @@ final class ClusterEndpointIT {
         // when - force remove broker 1
         final var request =
             new ClusterConfigPatchRequest()
-                .brokers(new ClusterConfigPatchRequestBrokers().remove(List.of(1)));
+                .brokers(new ClusterConfigPatchRequestBrokers().remove(List.of(BrokerId.of(1))));
         final var response = actuator.patchCluster(request, false, true);
 
         // then
