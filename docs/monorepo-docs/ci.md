@@ -14,11 +14,14 @@ This page has information and answers questions around how the [C8 monorepo CI](
 Maven artifacts are available on [Artifactory](https://artifacts.camunda.com/) and Docker images are available on [DockerHub](https://hub.docker.com/u/camunda/):
 
 * Pushed commits to `main` branch produce:
-  * Maven artifacts with version `8.9.0-SNAPSHOT` for all C8 components
-  * Docker images with tag `SNAPSHOT` for [Operate](https://hub.docker.com/r/camunda/operate/tags?name=SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=SNAPSHOT)
-  * Docker images with tag `8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8-SNAPSHOT)
+  * Maven artifacts with version `8.10.0-SNAPSHOT` for all C8 components
+  * Docker images with tags `X.Y-SNAPSHOT` and `SNAPSHOT` for [Camunda](https://hub.docker.com/r/camunda/camunda)
+  * Docker images with tags `X.Y-SNAPSHOT` and `8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize)
+* Pushed commits to `stable/8.9` branch produce:
+  * Maven artifacts with version `8.9.0-SNAPSHOT` for Optimize
+  * Docker images with tag `8.9-SNAPSHOT` for [Camunda](https://hub.docker.com/r/camunda/camunda/tags?name=8.9-SNAPSHOT), [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.9-SNAPSHOT)
 * Pushed commits to `stable/8.8` branch produce:
-  * Maven artifacts with version `8.8.0-SNAPSHOT` for Operate, Tasklist, Zeebe
+  * Maven artifacts with version `8.8.0-SNAPSHOT` for Optimize, Operate, Tasklist, Zeebe
   * Docker images with tag `8.8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.8-SNAPSHOT), [Operate](https://hub.docker.com/r/camunda/operate/tags?name=8.8-SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=8.8-SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=8.8-SNAPSHOT)
 * Pushed commits to `stable/8.7` branch produce:
   * Maven artifacts with version `8.7.0-SNAPSHOT` for Operate, Tasklist, Zeebe
@@ -488,7 +491,6 @@ GitHub Actions has a [large ecosystem of existing useful actions](https://github
 * Use the same action for the same (or similar) automation task, see [recipes](https://github.com/camunda/github-actions-recipes).
 * Use actions only from trusted sources (GitHub or small set of select 3rd parties, [settings](https://github.com/camunda/camunda/settings/actions)).
 * **Pin all third-party actions to a full-length commit SHA** instead of a mutable tag. This protects against supply-chain attacks where a tag is moved to point to malicious code. Add a version comment after the SHA for readability:
-
   ```yaml
   # Good — pinned to SHA with version comment
   - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -496,9 +498,7 @@ GitHub Actions has a [large ecosystem of existing useful actions](https://github
   # Bad — mutable tag, vulnerable to tag rewriting
   - uses: actions/checkout@v6
   ```
-
   This applies to all actions outside the `camunda` GitHub Enterprise organizations. Camunda-owned actions referenced by branch (e.g. `@main`) are exempt since we control those repositories.
-
 * Move actions from Camundi personal accounts to `camunda` for long-term maintenance, or find replacement.
 
 For `camunda/camunda` GHA workflows we use a GitHub feature to [technically limit which actions can be used](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#allowing-select-actions-and-reusable-workflows-to-run) to:
@@ -507,7 +507,7 @@ For `camunda/camunda` GHA workflows we use a GitHub feature to [technically limi
 * Allow actions in any [Camunda GitHub Enterprise organization](https://github.com/enterprises/camunda/organizations) like `camunda`, `bpmn-io`, etc.
 * Allow specific actions from 3rd parties that we need (full list see below).
 
-If you need to use a 3rd party action not on the list, [create an issue](#issue-tracking) explaining the motivation and tag the Monorepo CI DRI for further discussion.
+If you need to use a 3rd party action not on the list, ask the Monorepo DevOps team via Slack and explain the motivation.
 
 <details>
 <summary>List of allowed 3rd party actions and reusable workflows</summary>
@@ -522,6 +522,7 @@ browser-actions/setup-firefox@*,
 bufbuild/buf-action@*,
 cloudposse/github-action-matrix-outputs-read@*,
 cloudposse/github-action-matrix-outputs-write@*,
+clowdhaus/argo-cd-action@*,
 codex-/return-dispatch@*,
 dcarbone/install-jq-action@*,
 deadsnakes/action@*,
@@ -539,6 +540,7 @@ google-github-actions/auth@*,
 google-github-actions/get-gke-credentials@*,
 google-github-actions/setup-gcloud@*,
 hadolint/hadolint-action@*,
+hashicorp/setup-terraform@*,
 hashicorp/vault-action@*,
 hoverkraft-tech/compose-action@*,
 jamesives/github-pages-deploy-action@*,
@@ -569,6 +571,7 @@ snyk/actions/setup@*,
 stCarolas/setup-maven@*,
 stefanzweifel/git-auto-commit-action@*,
 teleport-actions/auth-k8s@*,
+teleport-actions/auth@*,
 teleport-actions/setup@*,
 test-summary/action@*,
 tibdex/github-app-token@*,
@@ -628,6 +631,10 @@ If the CI change matches one of the following:
   * fixes incorrect information that would mislead AI agents or developers working on stable versions
   * adds new knowledge about practices, tools, or procedures that apply to stable branch development
   * corrects build, test, or development instructions that affect stable branch workflows
+* is a new CI job for new product feature or test cases: backport **only if** the product feature is backported
+* is a new CI feature: backport **only if** required in the ticket
+* is related to an `on: schedule` GHA workflow: **no need** to backport, only works on `main`
+* is related to [Preview Environments](#preview-environments): **no need** to backport, only supported on `main`
 
 ### Documentation-specific backporting (monorepo-docs/* folders)
 
@@ -635,7 +642,7 @@ When touching `monorepo-docs/*` folders, use these guidelines:
 
 **DO backport:**
 - Critical error corrections in docs
-- Security-related documentation updates  
+- Security-related documentation updates
 - Fixes preventing user confusion about that specific version
 
 **DON'T backport:**
@@ -644,10 +651,6 @@ When touching `monorepo-docs/*` folders, use these guidelines:
 - Style/formatting improvements
 
 **Rationale:** Documentation in stable branches serves as AI context for developers working on that specific version. Only backport changes that fix critical errors or security issues, while avoiding feature additions that don't exist in that release.
-* is a new CI job for new product feature or test cases: backport **only if** the product feature is backported
-* is a new CI feature: backport **only if** required in the ticket
-* is related to an `on: schedule` GHA workflow: **no need** to backport, only works on `main`
-* is related to [Preview Environments](#preview-environments): **no need** to backport, only supported on `main`
 
 ## Slack Notifications
 
@@ -711,15 +714,18 @@ Available commands:
 
 ## Flaky tests
 
-Tests can be viewed as "flaky" when they are not consistenly passing although neither the source code, nor the test code, nor the environment has been meaningfully changed.
-
-We should aim to have all tests consistently passing, avoid introducing new flaky tests and implement our [observability tooling](#ci-health-metrics) to detect and improve existing flaky tests. This allows for better developer experience and smoother processes like [automated dependency updates](#renovate).
+Tests are called "flaky" when they are not consistenly passing, while the circumstances (source code, test code, execution environment) remain the same. Flaky tests are caused by some inherent unreliability in the system. This needs to be avoided by improving the source code or test code, to improve developer experience and allow smooth [automated dependency updates](#renovate).
 
 GitHub Action workflows with Maven testing Java code should use the [flaky-test-extractor-maven-plugin](#flaky-test-extractor-maven-plugin) and report the resulting [detailed flaky test statistics](https://github.com/camunda/camunda/issues/26930) to our [CI health](#ci-health-metrics) database.
 
+Please use the [CI stress testing functionality](#stress-testing) to avoid introducing new flaky tests.
+
+The [**Flaky Test Gate**](./flaky-test-gate.md) blocks PRs that introduce new flaky tests not already known on `main`/`stable/*`. Once a test is flagged on a PR the alert is **sticky** — it remains until either the method body is modified and 3 subsequent CI runs observe the test clean in the affected job, or the `ci:flaky-test-bypass` label is applied. A re-run that happens to pass does not silence the alert. See the [Flaky Test Gate reference](./flaky-test-gate.md) for the full rules, comment templates, and operational concerns.
+
 Related resources:
 
-* [the Flaky tests dashboard (internal)](https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo)
+* [Flaky tests dashboard (internal)](https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo)
+* [Flaky Test Gate reference](./flaky-test-gate.md)
 
 ### flaky-test-extractor-maven-plugin
 
@@ -731,6 +737,22 @@ Some Maven modules in the monorepo [rerun failing Java tests multiple times](htt
 * if a test fails on all retries, it is classified as "failed"
   * this will cause the whole build to fail
   * see [the FAQ](#faq) on how to deal with such cases
+
+To reduce friction, we rerun failing tests up to 4 times on Pull Requests and up to 7 times in the merge queue and on `main` and `stable/*` branches.
+
+### Stress Testing
+
+There are a few jobs in the [Unified CI](#unified-ci) which frequently contain flaky tests. You need to run a CI stress test on your PR to avoid introducing new flaky tests, if you modify Java source or test code used by these CI jobs:
+
+* Zeebe Engine QA
+* Zeebe Cluster QA
+* RDBMS ITs
+
+To run a CI stress test, put the `ci:stress-test` label on any Pull Request and push e.g. a new code change or re-run the [Unified CI](#unified-ci) `ci.yml` workflow manually.
+
+This will lead to 10 concurrent instances of each of the above CI jobs being started. During a CI stress test, failed tests are not retried so ensure that flakiness is visible as failures.
+
+The results are visible via the usual Pull Request comment featuring the "CI failure summary": as soon as there is any failed CI job like `RDBMS ITs (x)` showing up, the stress test found an unreliability that must be fixed before merging.
 
 ## License Checks
 
@@ -791,7 +813,7 @@ The `chat.tools.terminal.autoApprove` setting in `.vscode/settings.json` control
 
 ### How to deal with CI alerts that fire?
 
-Follow the Monorepo CI medic routines and check out the available [CI runbooks](https://github.com/camunda/camunda/wiki/CI-Runbooks) for each alert.
+Follow the Monorepo CI medic routines and check out the available [CI runbooks](./ci-runbooks.md) for each alert.
 
 ### Why is my CI check failing?
 
