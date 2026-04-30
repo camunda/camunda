@@ -652,8 +652,7 @@ final class JsonSerializableToJsonTest {
               record
                   .setExpression("=10 + 5")
                   .setResultValue(wrapString("15"))
-                  .setProcessInstanceKey(1)
-                  .setElementInstanceKey(2)
+                  .setScopeKey(1)
                   .setTenantId("test-tenant")
                   .setWarnings(List.of("warning1", "warning2"))
                   .setVariables(VARIABLES_MSGPACK);
@@ -664,8 +663,7 @@ final class JsonSerializableToJsonTest {
                   "tenantId":"test-tenant",
                   "expression":"=10 + 5",
                   "resultValue":49,
-                  "processInstanceKey":1,
-                  "elementInstanceKey":2,
+                  "scopeKey":1,
                   "warnings":["warning1","warning2"],
                   "variables":{
                     "foo":"bar"
