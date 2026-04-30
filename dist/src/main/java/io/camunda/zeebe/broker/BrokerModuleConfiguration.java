@@ -82,7 +82,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             brokerClient,
             meterRegistry);
     springBrokerBridge.registerShutdownHelper(
-        errorCode -> shutdownHelper.initiateShutdown(errorCode));
+        (errorCode, reason) -> shutdownHelper.initiateShutdown(errorCode, reason));
     broker = new Broker(systemContext, springBrokerBridge);
 
     // already initiate starting the broker
