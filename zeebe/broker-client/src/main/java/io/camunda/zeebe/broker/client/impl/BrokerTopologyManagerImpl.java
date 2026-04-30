@@ -71,9 +71,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     actor.run(
         () -> {
           topologyListeners.add(listener);
-          topology.getBrokers().stream()
-              .map(b -> MemberId.from(String.valueOf(b)))
-              .forEach(listener::brokerAdded);
+          memberProperties.keySet().forEach(listener::brokerAdded);
         });
   }
 

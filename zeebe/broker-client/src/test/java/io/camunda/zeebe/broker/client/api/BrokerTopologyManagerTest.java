@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -543,6 +544,31 @@ final class BrokerTopologyManagerTest {
 
     // then
     assertThat(topologyManager.getTopology().getPartitionsCount()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldBackfillNewListenerWithCanonicalZoneAwareMemberId() {
+    // given — broker 0 joined with a zone-aware id
+    final var broker = createBroker(0);
+    final var zonedMemberId = MemberId.from("eu-west/0");
+    final var member = new Member(new MemberConfig().setId(zonedMemberId).setZoneId("eu-west"));
+    broker.writeIntoProperties(member.properties());
+    members.add(member);
+    notifyEvent(new ClusterMembershipEvent(Type.MEMBER_ADDED, member));
+
+    // when — a new listener is added after the broker is already known
+    final var capturedIds = new CopyOnWriteArrayList<MemberId>();
+    topologyManager.addTopologyListener(
+        new BrokerTopologyListener() {
+          @Override
+          public void brokerAdded(final MemberId memberId) {
+            capturedIds.add(memberId);
+          }
+        });
+    actorSchedulerRule.workUntilDone();
+
+    // then — the listener is backfilled with the zone-aware id, not the bare int "0"
+    assertThat(capturedIds).containsExactly(zonedMemberId);
   }
 
   private void addTopologyListener(final BrokerTopologyListener listener) {

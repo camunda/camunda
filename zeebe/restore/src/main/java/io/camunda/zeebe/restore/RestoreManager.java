@@ -328,8 +328,8 @@ public class RestoreManager implements CloseableSilently {
   }
 
   private Set<InstrumentedRaftPartition> collectPartitions() {
-    final var localBrokerId = configuration.getCluster().getNodeId();
-    final var localMember = MemberId.from(String.valueOf(localBrokerId));
+    final var cluster = configuration.getCluster();
+    final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
     final var clusterTopology =
         new PartitionDistribution(
             StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)
