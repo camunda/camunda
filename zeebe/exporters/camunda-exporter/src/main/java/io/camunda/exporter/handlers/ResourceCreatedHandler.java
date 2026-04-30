@@ -9,8 +9,8 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.util.ResourceUtils;
 import io.camunda.webapps.schema.entities.resource.DeployedResourceEntity;
-import io.camunda.zeebe.exporter.common.utils.ResourceUtils;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
