@@ -1,0 +1,26 @@
+{
+  "name": "orchestration-cluster-smoke-tests",
+  "type": "module",
+  "packageManager": "npm@11.12.1",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write .",
+    "lint": "tsc --noEmit && eslint . && prettier -c .",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui"
+  },
+  "dependencies": {
+    "@playwright/test": "1.59.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.12.2",
+    "eslint": "10.2.0",
+    "eslint-plugin-license-header": "0.9.0",
+    "prettier": "3.8.2",
+    "prettier-plugin-organize-imports": "4.3.0",
+    "typescript": "6.0.2",
+    "typescript-eslint": "8.58.1"
+  }
+}

@@ -10,7 +10,7 @@ import {render, screen} from 'modules/testing/testing-library';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
-import * as userMocks from 'modules/mocks/current-user';
+import {currentUser, currentUserWithTenants} from '@camunda/c8-mocks';
 import {useCurrentUser} from 'modules/api/useCurrentUser.query';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
@@ -68,13 +68,13 @@ describe('<Aside />', () => {
   beforeEach(() => {
     nodeMockServer.use(
       http.get('/v2/authentication/me', () => {
-        return HttpResponse.json(userMocks.currentUser);
+        return HttpResponse.json(currentUser);
       }),
     );
   });
 
   it('should render completed task details', async () => {
-    render(<Aside {...completedTaskMock} user={userMocks.currentUser} />, {
+    render(<Aside {...completedTaskMock} user={currentUser} />, {
       wrapper: getWrapper(),
     });
 
@@ -85,7 +85,7 @@ describe('<Aside />', () => {
   });
 
   it('should render unassigned task details', async () => {
-    render(<Aside {...unassignedTaskMock} user={userMocks.currentUser} />, {
+    render(<Aside {...unassignedTaskMock} user={currentUser} />, {
       wrapper: getWrapper(),
     });
 
@@ -104,7 +104,7 @@ describe('<Aside />', () => {
       <Aside
         {...unassignedTaskMock}
         tenantId="tenantA"
-        user={userMocks.currentUserWithTenants}
+        user={currentUserWithTenants}
       />,
       {
         wrapper: getWrapper(),
@@ -120,10 +120,10 @@ describe('<Aside />', () => {
       isMultiTenancyEnabled: true,
     });
 
-    const firstTenant = userMocks.currentUserWithTenants.tenants[0]!;
+    const firstTenant = currentUserWithTenants.tenants[0]!;
 
     const currentUserWithSingleTenant = {
-      ...userMocks.currentUserWithTenants,
+      ...currentUserWithTenants,
       tenants: [firstTenant],
     };
 
@@ -154,11 +154,7 @@ describe('<Aside />', () => {
     {priority: 80, label: 'Critical'},
   ])('should render priority - $label', ({priority, label}) => {
     render(
-      <Aside
-        {...unassignedTaskMock}
-        priority={priority}
-        user={userMocks.currentUser}
-      />,
+      <Aside {...unassignedTaskMock} priority={priority} user={currentUser} />,
       {
         wrapper: getWrapper(),
       },

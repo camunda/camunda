@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 
 public final class ProcessCacheUtil {
 
+  public static final String EXTENSION_PROPERTY_CAMUNDA_TOOL_NAME = "io.camunda.tool:name";
+  public static final String EXTENSION_PROPERTY_INBOUND_TYPE = "inbound.type";
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCacheUtil.class);
 
   private ProcessCacheUtil() {
@@ -105,7 +107,8 @@ public final class ProcessCacheUtil {
    * @param bpmnProcessId
    * @return ProcessDiagramData
    */
-  public static ProcessDiagramData extractProcessDiagramData(String bpmnXml, String bpmnProcessId) {
+  public static ProcessDiagramData extractProcessDiagramData(
+      final String bpmnXml, final String bpmnProcessId) {
 
     final ProcessModelReader reader =
         ProcessModelReader.of(bpmnXml.getBytes(StandardCharsets.UTF_8), bpmnProcessId).orElse(null);
@@ -115,10 +118,13 @@ public final class ProcessCacheUtil {
       final Collection<FlowNode> flowNodes = reader.extractFlowNodes();
       final Map<String, String> flowNodesMap = getFlowNodesMap(flowNodes);
       final boolean hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
-      return new ProcessDiagramData(callActivityIds, flowNodesMap, hasUserTasks);
+      final Map<String, Map<String, String>> elementExtensionProperties =
+          ProcessModelReader.extractExtensionProperties(flowNodes);
+      return new ProcessDiagramData(
+          callActivityIds, flowNodesMap, hasUserTasks, elementExtensionProperties);
     }
 
-    return new ProcessDiagramData(List.of(), Map.of(), true);
+    return new ProcessDiagramData(List.of(), Map.of(), true, Map.of());
   }
 
   public static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {
@@ -148,8 +154,22 @@ public final class ProcessCacheUtil {
         .map(map -> map.get(flowNodeId));
   }
 
-  public static Map<String, String> getFlowNodesMap(Collection<FlowNode> flowNodes) {
+  public static Map<String, String> getFlowNodesMap(final Collection<FlowNode> flowNodes) {
     return flowNodes.stream()
         .collect(HashMap::new, (map, fn) -> map.put(fn.getId(), fn.getName()), HashMap::putAll);
+  }
+
+  public static String getToolName(final Map<String, String> extensionProperties) {
+    if (extensionProperties == null) {
+      return null;
+    }
+    return extensionProperties.get(EXTENSION_PROPERTY_CAMUNDA_TOOL_NAME);
+  }
+
+  public static String getInboundConnectorType(final Map<String, String> extensionProperties) {
+    if (extensionProperties == null) {
+      return null;
+    }
+    return extensionProperties.get(EXTENSION_PROPERTY_INBOUND_TYPE);
   }
 }

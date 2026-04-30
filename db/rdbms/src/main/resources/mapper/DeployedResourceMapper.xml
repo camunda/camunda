@@ -19,6 +19,7 @@
         typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="RESOURCE_NAME" javaType="java.lang.String"
         typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="RESOURCE_TYPE" javaType="java.lang.String"/>
       <arg column="VERSION" javaType="int"/>
       <arg column="VERSION_TAG" javaType="java.lang.String"/>
       <arg column="DEPLOYMENT_KEY" javaType="java.lang.Long"/>
@@ -29,9 +30,11 @@
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.DeployedResourceDbModel">
-    INSERT INTO ${prefix}DEPLOYED_RESOURCE (RESOURCE_KEY, RESOURCE_ID, RESOURCE_NAME, VERSION, VERSION_TAG,
-                                   DEPLOYMENT_KEY, TENANT_ID, RESOURCE_CONTENT)
-    VALUES (#{resourceKey}, #{resourceId}, #{resourceName}, #{version}, #{versionTag},
+    INSERT INTO ${prefix}DEPLOYED_RESOURCE (RESOURCE_KEY, RESOURCE_ID, RESOURCE_NAME, RESOURCE_TYPE,
+                                            VERSION, VERSION_TAG,
+                                            DEPLOYMENT_KEY, TENANT_ID, RESOURCE_CONTENT)
+    VALUES (#{resourceKey}, #{resourceId}, #{resourceName}, #{resourceType}, #{version},
+            #{versionTag},
             #{deploymentKey}, #{tenantId}, #{resourceContent})
   </insert>
 
@@ -47,6 +50,7 @@
       RESOURCE_KEY,
       RESOURCE_ID,
       RESOURCE_NAME,
+      RESOURCE_TYPE,
       VERSION,
       VERSION_TAG,
       DEPLOYMENT_KEY,
@@ -62,6 +66,7 @@
       RESOURCE_KEY,
       RESOURCE_ID,
       RESOURCE_NAME,
+      RESOURCE_TYPE,
       VERSION,
       VERSION_TAG,
       DEPLOYMENT_KEY,
@@ -70,5 +75,102 @@
     FROM ${prefix}DEPLOYED_RESOURCE
     WHERE RESOURCE_KEY = #{resourceKey}
   </select>
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DeployedResourceDbQuery">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}DEPLOYED_RESOURCE t
+      <include refid="io.camunda.db.rdbms.sql.DeployedResourceMapper.searchFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.DeployedResourceDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.DeployedResourceMapper.resourceResultMap">
+    SELECT * FROM (
+    SELECT RESOURCE_KEY,
+    RESOURCE_ID,
+    RESOURCE_NAME,
+    RESOURCE_TYPE,
+    VERSION,
+    VERSION_TAG,
+    DEPLOYMENT_KEY,
+    TENANT_ID,
+    NULL AS RESOURCE_CONTENT
+    FROM ${prefix}DEPLOYED_RESOURCE
+    <include refid="io.camunda.db.rdbms.sql.DeployedResourceMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    <where>
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND RESOURCE_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <!-- basic filters -->
+      <if test="filter.resourceKeyOperations != null and !filter.resourceKeyOperations.isEmpty()">
+        <foreach collection="filter.resourceKeyOperations" item="operation">
+          AND RESOURCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if
+        test="filter.resourceNameOperations != null and !filter.resourceNameOperations.isEmpty()">
+        <foreach collection="filter.resourceNameOperations" item="operation">
+          AND RESOURCE_NAME
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.resourceIdOperations != null and !filter.resourceIdOperations.isEmpty()">
+        <foreach collection="filter.resourceIdOperations" item="operation">
+          AND RESOURCE_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.resourceTypeOperations != null and !filter.resourceTypeOperations.isEmpty()">
+        <foreach collection="filter.resourceTypeOperations" item="operation">
+          AND RESOURCE_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.versionOperations != null and !filter.versionOperations.isEmpty()">
+        <foreach collection="filter.versionOperations" item="operation">
+          AND VERSION
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.versionTagOperations != null and !filter.versionTagOperations.isEmpty()">
+        <foreach collection="filter.versionTagOperations" item="operation">
+          AND VERSION_TAG
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.deploymentKeyOperations != null and !filter.deploymentKeyOperations.isEmpty()">
+        <foreach collection="filter.deploymentKeyOperations" item="operation">
+          AND DEPLOYMENT_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">
+          #{value}
+        </foreach>
+      </if>
+    </where>
+  </sql>
 
 </mapper>

@@ -120,7 +120,7 @@ const VariablesTable: React.FC<Props> = ({
                         isFetchingNextPage || form.getState().submitting
                       }
                       onClick={async () => {
-                        form.reset({name, value});
+                        form.reset({name, value, variableKey});
                         form.change('value', value);
                       }}
                       hasIconOnly

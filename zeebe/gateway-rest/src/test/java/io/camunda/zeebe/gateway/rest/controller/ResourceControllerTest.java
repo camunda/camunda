@@ -428,6 +428,7 @@ public class ResourceControllerTest extends RestControllerTest {
                     .versionTag("v2.0")
                     .tenantId("tenant-1")
                     .resourceKey(1L)
+                    .deploymentKey(42L)
                     .build()));
 
     // when / then
@@ -574,7 +575,7 @@ public class ResourceControllerTest extends RestControllerTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DeployedResourceEntity(
-                    1L, "test", "test.rpa", 1, null, 100L, "tenant", content)));
+                    1L, "test", "test.rpa", "rpa", 1, null, 100L, "tenant", content)));
 
     // when / then
     webClient

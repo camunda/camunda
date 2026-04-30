@@ -116,7 +116,7 @@ test.describe.parallel('Job Statistics By Worker API Tests', () => {
     );
 
     const body = await res.json();
-    expect(body.items.length).toBe(0);
+    expect(body.items).toHaveLength(0);
     expect(body.page.totalItems).toBe(0);
     expect(body.page.hasMoreTotalItems).toBe(false);
   });
@@ -176,7 +176,7 @@ test.describe.parallel('Job Statistics By Worker API Tests', () => {
       res,
     );
     const body = await res.json();
-    expect(body.items.length).toBe(0);
+    expect(body.items).toHaveLength(0);
     expect(body.page.totalItems).toBe(0);
     expect(body.page.hasMoreTotalItems).toBe(false);
   });

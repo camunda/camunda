@@ -270,7 +270,7 @@ test.describe.parallel('Search Audit Logs API Tests', () => {
         res,
       );
       const body = await res.json();
-      expect(body.items.length).toEqual(0);
+      expect(body.items).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -295,7 +295,7 @@ test.describe.parallel('Search Audit Logs API Tests', () => {
         res,
       );
       const body = await res.json();
-      expect(body.items.length).toEqual(1);
+      expect(body.items).toHaveLength(1);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -513,7 +513,7 @@ test.describe.parallel('Search Audit Logs API Tests', () => {
         );
         const body = await res.json();
         expect(body.page.totalItems).toEqual(0);
-        expect(body.items.length).toEqual(0);
+        expect(body.items).toHaveLength(0);
       }).toPass(defaultAssertionOptions);
     });
 

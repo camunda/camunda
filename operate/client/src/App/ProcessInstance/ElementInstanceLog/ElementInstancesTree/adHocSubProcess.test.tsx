@@ -10,7 +10,7 @@ import {render, screen} from 'modules/testing-library';
 import {open} from 'modules/mocks/diagrams';
 import {searchResult} from 'modules/testUtils';
 import {
-  Wrapper,
+  getWrapper,
   adHocNodeElementInstances,
   mockAdHocSubProcessesInstance,
 } from './mocks';
@@ -44,7 +44,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

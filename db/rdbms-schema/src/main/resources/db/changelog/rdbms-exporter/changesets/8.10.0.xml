@@ -24,12 +24,79 @@
       </column>
       <column name="RESOURCE_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="RESOURCE_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="RESOURCE_TYPE" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="VERSION" type="SMALLINT"/>
       <column name="VERSION_TAG" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="DEPLOYMENT_KEY" type="BIGINT"/>
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="RESOURCE_CONTENT" type="CLOB"/>
     </createTable>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_type_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="MESSAGE_SUBSCRIPTION_TYPE"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="MESSAGE_SUBSCRIPTION_TYPE" type="VARCHAR(50)"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_process_definition_name_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="PROCESS_DEFINITION_NAME"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="PROCESS_DEFINITION_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_process_definition_version_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="PROCESS_DEFINITION_VERSION"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="PROCESS_DEFINITION_VERSION" type="SMALLINT"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_extension_properties_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="EXTENSION_PROPERTIES"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="EXTENSION_PROPERTIES" type="CLOB"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_tool_name_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="TOOL_NAME"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="TOOL_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_message_subscription_inbound_connector_type_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="INBOUND_CONNECTOR_TYPE"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="INBOUND_CONNECTOR_TYPE" type="NVARCHAR(${userCharColumnSize})"/>
+    </addColumn>
   </changeSet>
 
 </databaseChangeLog>

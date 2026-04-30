@@ -33,6 +33,7 @@ import io.camunda.client.api.search.filter.MappingRuleFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.ResourceFilter;
 import io.camunda.client.api.search.filter.RoleFilter;
 import io.camunda.client.api.search.filter.TenantFilter;
 import io.camunda.client.api.search.filter.UserFilter;
@@ -66,6 +67,7 @@ import io.camunda.client.api.search.sort.MappingRuleSort;
 import io.camunda.client.api.search.sort.MessageSubscriptionSort;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
+import io.camunda.client.api.search.sort.ResourceSort;
 import io.camunda.client.api.search.sort.RoleGroupSort;
 import io.camunda.client.api.search.sort.RoleSort;
 import io.camunda.client.api.search.sort.RoleUserSort;
@@ -95,6 +97,7 @@ import io.camunda.client.impl.search.filter.MappingRuleFilterImpl;
 import io.camunda.client.impl.search.filter.MessageSubscriptionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.ResourceFilterImpl;
 import io.camunda.client.impl.search.filter.RoleFilterImpl;
 import io.camunda.client.impl.search.filter.TenantFilterImpl;
 import io.camunda.client.impl.search.filter.UserFilterImpl;
@@ -129,6 +132,7 @@ import io.camunda.client.impl.search.sort.MappingRuleSortImpl;
 import io.camunda.client.impl.search.sort.MessageSubscriptionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessInstanceSortImpl;
+import io.camunda.client.impl.search.sort.ResourceSortImpl;
 import io.camunda.client.impl.search.sort.RoleGroupSortImpl;
 import io.camunda.client.impl.search.sort.RoleSortImpl;
 import io.camunda.client.impl.search.sort.RoleUserSortImpl;
@@ -558,6 +562,18 @@ public final class SearchRequestBuilders {
   public static GlobalTaskListenerSort globalTaskListenerSort(
       final Consumer<GlobalTaskListenerSort> fn) {
     final GlobalTaskListenerSort sort = new GlobalTaskListenerSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static ResourceFilter resourceFilter(final Consumer<ResourceFilter> fn) {
+    final ResourceFilter filter = new ResourceFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ResourceSort resourceSort(final Consumer<ResourceSort> fn) {
+    final ResourceSort sort = new ResourceSortImpl();
     fn.accept(sort);
     return sort;
   }

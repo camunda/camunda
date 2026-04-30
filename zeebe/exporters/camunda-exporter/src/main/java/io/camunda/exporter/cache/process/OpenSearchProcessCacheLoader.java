@@ -45,7 +45,8 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
           processEntity.getVersionTag(),
           processDiagramData.callActivityIds(),
           processDiagramData.flowNodesMap(),
-          processDiagramData.hasUserTasks());
+          processDiagramData.hasUserTasks(),
+          processDiagramData.elementExtensionProperties());
     } else {
       // This should only happen if the process was deleted from OpenSearch which should never
       // happen. Normally, the process is exported before the process instance is exporter. So the

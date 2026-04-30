@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.model.bpmn.builder;
 
+import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType.beforeAll;
 import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType.end;
 import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType.start;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -121,6 +122,59 @@ public class ServiceTaskBuilderTest {
                 assertThat(listener.getTaskHeaders().getHeaders())
                     .extracting(ZeebeHeader::getKey, ZeebeHeader::getValue)
                     .containsExactly(tuple("aKey", "aValue"), tuple("bKey", "bValue")));
+  }
+
+  @Test
+  void shouldDefineBeforeAllExecutionListenerWithCustomRetries() {
+    // given
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType("service_task_type")
+                        .multiInstance(b -> b.zeebeInputCollectionExpression("items"))
+                        .zeebeBeforeAllExecutionListener("el_before_all_type", "5"))
+            .done();
+
+    // then
+    assertThat(getExecutionListeners(instance.getModelElementById("task")))
+        .singleElement()
+        .extracting(
+            ZeebeExecutionListener::getEventType,
+            ZeebeExecutionListener::getType,
+            ZeebeExecutionListener::getRetries)
+        .containsExactly(beforeAll, "el_before_all_type", "5");
+  }
+
+  @Test
+  void shouldDefineBeforeAllStartAndEndExecutionListenersTogether() {
+    // given
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType("service_task_type")
+                        .multiInstance(b -> b.zeebeInputCollectionExpression("items"))
+                        .zeebeBeforeAllExecutionListener("el_before_all")
+                        .zeebeStartExecutionListener("el_start")
+                        .zeebeEndExecutionListener("el_end"))
+            .done();
+
+    // then
+    assertThat(getExecutionListeners(instance.getModelElementById("task")))
+        .hasSize(3)
+        .extracting(
+            ZeebeExecutionListener::getEventType,
+            ZeebeExecutionListener::getType,
+            ZeebeExecutionListener::getRetries)
+        .containsExactly(
+            tuple(beforeAll, "el_before_all", ZeebeExecutionListener.DEFAULT_RETRIES),
+            tuple(start, "el_start", ZeebeExecutionListener.DEFAULT_RETRIES),
+            tuple(end, "el_end", ZeebeExecutionListener.DEFAULT_RETRIES));
   }
 
   private Collection<ZeebeExecutionListener> getExecutionListeners(

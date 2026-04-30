@@ -7,18 +7,39 @@
  */
 package io.camunda.zeebe.broker.exporter.context;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.exporter.api.context.Configuration;
+import io.camunda.zeebe.exporter.api.context.StrictConfiguration;
 import io.camunda.zeebe.util.ReflectUtil;
+import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public record ExporterConfiguration(String id, Map<String, Object> arguments)
     implements Configuration {
@@ -30,6 +51,10 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
    * <p>Features:
    *
    * <ul>
+   *   <li>All incoming keys are normalised to lowercase with separators stripped ({@code
+   *       normalizeKeys}), so {@code myField}, {@code my-field}, {@code MY-FIELD}, and {@code
+   *       myfield} are all equivalent. {@code ACCEPT_CASE_INSENSITIVE_PROPERTIES} then matches the
+   *       normalised key to the Java field name.
    *   <li>Case-insensitive enum, property, and value matching
    *   <li>Custom List deserializer for Spring Boot indexed properties (myList[0]=value)
    *   <li>Custom Path module to preserve relative/absolute paths (no resolution)
@@ -37,7 +62,7 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
    *   <li>JavaTimeModule for other temporal types (Instant, LocalDateTime, etc.)
    * </ul>
    */
-  public static final ObjectMapper MAPPER =
+  static final ObjectMapper MAPPER =
       JsonMapper.builder()
           .addModule(new JavaTimeModule())
           .addModule(createDurationModule())
@@ -51,6 +76,18 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
           .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
           .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
           .build();
+
+  private static final Logger LOG = LoggerFactory.getLogger(ExporterConfiguration.class);
+
+  /**
+   * Strict variant of {@link #MAPPER} that rejects unknown properties. Used in {@link
+   * #fromArgs(Class, Map)} to fail fast at startup when the exporter args contain a typo or an
+   * unsupported property name.
+   */
+  private static final ObjectMapper STRICT_MAPPER =
+      MAPPER.copy().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
+  private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
   @Override
   public String getId() {
@@ -69,12 +106,185 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
 
   public static <T> T fromArgs(final Class<T> configClass, final Map<String, Object> values) {
     if (values != null) {
-      // Use MAPPER (with custom list deserializer) to properly handle Spring Boot indexed
-      // properties like myList[0]=value which are stored as Maps with numeric string keys
-      return MAPPER.convertValue(values, configClass);
+      // Normalize all keys to lowercase-no-separator so that camelCase, kebab-case, and the
+      // all-lowercase concatenated form produced by Spring Boot env var lowercasing are all
+      // equivalent. ACCEPT_CASE_INSENSITIVE_PROPERTIES then matches the normalised key to the
+      // Java field name regardless of original casing.
+      final var normalized = normalizeKeys(values, MAPPER.constructType(configClass));
+      final var mapper =
+          configClass.isAnnotationPresent(StrictConfiguration.class) ? STRICT_MAPPER : MAPPER;
+      try {
+        return mapper.convertValue(normalized, configClass);
+      } catch (final IllegalArgumentException e) {
+        if (e.getCause() instanceof final UnrecognizedPropertyException upe) {
+          // getReferringClass() is the actual class that owns the unrecognized property.
+          // When the typo is inside a nested object it differs from configClass, so prefer it;
+          // fall back to configClass only if Jackson did not populate it.
+          final var referringClass = upe.getReferringClass();
+          final var className =
+              referringClass != null ? referringClass.getSimpleName() : configClass.getSimpleName();
+          // getPathReference() produces a human-readable path like
+          // "ElasticsearchExporterConfiguration[\"index\"]->IndexConfiguration[\"unknownProp\"]"
+          // which lets users locate the typo even in deeply nested configs.
+          final var message =
+              "Unknown exporter configuration property '"
+                  + upe.getPropertyName()
+                  + "' in "
+                  + className
+                  + " (path: "
+                  + upe.getPathReference()
+                  + "); known properties: "
+                  + upe.getKnownPropertyIds();
+          LOG.error(message);
+          throw new IllegalArgumentException(message, upe);
+        }
+        throw e;
+      }
     } else {
       return ReflectUtil.newInstance(configClass);
     }
+  }
+
+  /**
+   * Normalises keys that represent configuration properties to lowercase with separators stripped,
+   * so that {@code myField}, {@code my-field}, {@code MY-FIELD}, and {@code myfield} all map to the
+   * same canonical key.
+   *
+   * <p>The normalisation is type-aware: object-property maps are normalised recursively, while map
+   * keys of {@code Map<K, V>} fields are preserved as user data.
+   *
+   * @param map the raw exporter args map
+   * @return the same structure with normalised lowercase keys
+   */
+  private static Map<String, Object> normalizeKeys(
+      final Map<String, Object> map, final JavaType targetType) {
+    final var result = new LinkedHashMap<String, Object>(map.size());
+    final var propertyTypesByKey = propertyTypesByNormalizedKey(targetType);
+    final var indexedElementType = indexedElementType(targetType, map);
+    for (final var entry : map.entrySet()) {
+      final var normalizedKey = normalizeKey(entry.getKey());
+      var propertyType = propertyTypesByKey.get(normalizedKey);
+      if (propertyType == null) {
+        propertyType = indexedElementType;
+      }
+      result.put(normalizedKey, normalizeValue(entry.getValue(), propertyType));
+    }
+    return result;
+  }
+
+  private static JavaType indexedElementType(
+      final JavaType targetType, final Map<String, Object> map) {
+    if (targetType == null || (!targetType.isCollectionLikeType() && !targetType.isArrayType())) {
+      return null;
+    }
+
+    var hasNumericKeys = false;
+    var hasNonNumericKeys = false;
+    for (final var key : map.keySet()) {
+      try {
+        Integer.parseInt(key);
+        hasNumericKeys = true;
+      } catch (final NumberFormatException e) {
+        hasNonNumericKeys = true;
+      }
+    }
+
+    if (hasNumericKeys && hasNonNumericKeys) {
+      throw new IllegalArgumentException(
+          "Cannot mix indexed (numeric) and named keys in configuration map targeting a collection: "
+              + map.keySet());
+    }
+
+    return hasNumericKeys ? targetType.getContentType() : null;
+  }
+
+  private static Map<String, JavaType> propertyTypesByNormalizedKey(final JavaType targetType) {
+    if (targetType == null || targetType.isMapLikeType() || targetType.isContainerType()) {
+      return Map.of();
+    }
+
+    final var properties =
+        MAPPER.getDeserializationConfig().introspect(targetType).findProperties();
+    if (properties.isEmpty()) {
+      return Map.of();
+    }
+
+    final var propertyTypes = new LinkedHashMap<String, JavaType>(properties.size());
+    for (final var property : properties) {
+      final var propertyType = property.getPrimaryType();
+      if (propertyType != null) {
+        propertyTypes.put(normalizeKey(property.getName()), propertyType);
+      }
+    }
+    return propertyTypes;
+  }
+
+  private static Object normalizeValue(final Object value, final JavaType targetType) {
+    if (value instanceof final Map<?, ?> nestedMap) {
+      return normalizeMapValue(nestedMap, targetType);
+    }
+
+    if (value instanceof final Iterable<?> iterable) {
+      return normalizeIterableValue(iterable, targetType);
+    }
+
+    if (value != null && value.getClass().isArray()) {
+      return normalizeArrayValue(value, targetType);
+    }
+
+    return value;
+  }
+
+  private static Object normalizeMapValue(final Map<?, ?> nestedMap, final JavaType targetType) {
+    if (targetType == null || targetType.hasRawClass(Object.class)) {
+      return nestedMap;
+    }
+
+    if (targetType.isMapLikeType()) {
+      return normalizeMapValues(nestedMap, targetType.getContentType());
+    }
+
+    @SuppressWarnings("unchecked")
+    final var typedNested = (Map<String, Object>) nestedMap;
+    return normalizeKeys(typedNested, targetType);
+  }
+
+  private static List<Object> normalizeIterableValue(
+      final Iterable<?> iterable, final JavaType targetType) {
+    final var contentType =
+        targetType != null && targetType.isCollectionLikeType()
+            ? targetType.getContentType()
+            : null;
+    final var normalized = new ArrayList<>();
+    for (final var item : iterable) {
+      normalized.add(normalizeValue(item, contentType));
+    }
+    return normalized;
+  }
+
+  private static Object[] normalizeArrayValue(final Object value, final JavaType targetType) {
+    final var length = Array.getLength(value);
+    final var contentType =
+        targetType != null && targetType.isArrayType() ? targetType.getContentType() : null;
+    final var normalized = new Object[length];
+    for (int i = 0; i < length; i++) {
+      normalized[i] = normalizeValue(Array.get(value, i), contentType);
+    }
+    return normalized;
+  }
+
+  private static Map<Object, Object> normalizeMapValues(
+      final Map<?, ?> map, final JavaType contentType) {
+    final var result = new LinkedHashMap<Object, Object>(map.size());
+    for (final var entry : map.entrySet()) {
+      result.put(entry.getKey(), normalizeValue(entry.getValue(), contentType));
+    }
+    return result;
+  }
+
+  /** Strips hyphens and lowercases a key so all naming styles map to the same canonical form. */
+  private static String normalizeKey(final String name) {
+    return name.replace("-", "").toLowerCase(Locale.ROOT);
   }
 
   /**
@@ -91,7 +301,7 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
   }
 
   public static <T> Map<String, Object> asArgs(final T config) {
-    return MAPPER.convertValue(config, Map.class);
+    return MAPPER.convertValue(config, MAP_TYPE);
   }
 
   /**
@@ -105,44 +315,36 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
   private static SimpleModule createDurationModule() {
     return new SimpleModule()
         .addSerializer(
-            java.time.Duration.class,
-            new com.fasterxml.jackson.databind.JsonSerializer<java.time.Duration>() {
+            Duration.class,
+            new JsonSerializer<>() {
               @Override
               public void serialize(
-                  final java.time.Duration value,
-                  final com.fasterxml.jackson.core.JsonGenerator gen,
-                  final com.fasterxml.jackson.databind.SerializerProvider serializers)
-                  throws java.io.IOException {
-                // Write as embedded POJO to preserve Duration object when using convertValue()
-                // For TokenBuffer (used by convertValue), this keeps the Duration object as-is
-                if (gen instanceof com.fasterxml.jackson.databind.util.TokenBuffer) {
+                  final Duration value,
+                  final JsonGenerator gen,
+                  final SerializerProvider serializers)
+                  throws IOException {
+                if (gen instanceof TokenBuffer) {
                   gen.writeEmbeddedObject(value);
                 } else {
-                  // For actual JSON output, write as ISO-8601 string
                   gen.writeString(value.toString());
                 }
               }
             })
         .addDeserializer(
-            java.time.Duration.class,
-            new com.fasterxml.jackson.databind.JsonDeserializer<java.time.Duration>() {
+            Duration.class,
+            new JsonDeserializer<>() {
               @Override
-              public java.time.Duration deserialize(
-                  final com.fasterxml.jackson.core.JsonParser p,
-                  final com.fasterxml.jackson.databind.DeserializationContext ctxt)
-                  throws java.io.IOException {
-                // Handle embedded Duration objects (from TokenBuffer used by convertValue)
-                if (p.currentToken()
-                    == com.fasterxml.jackson.core.JsonToken.VALUE_EMBEDDED_OBJECT) {
+              public Duration deserialize(final JsonParser p, final DeserializationContext ctxt)
+                  throws IOException {
+                if (p.currentToken() == JsonToken.VALUE_EMBEDDED_OBJECT) {
                   final Object embedded = p.getEmbeddedObject();
-                  if (embedded instanceof java.time.Duration) {
-                    return (java.time.Duration) embedded;
+                  if (embedded instanceof final Duration duration) {
+                    return duration;
                   }
                 }
-                // Parse from string format like "PT0.5S" (from Spring Boot properties)
                 final String text = p.getText();
                 if (text != null && !text.isEmpty()) {
-                  return java.time.Duration.parse(text);
+                  return Duration.parse(text);
                 }
                 return null;
               }
@@ -161,26 +363,20 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
     return new SimpleModule()
         .addSerializer(
             Path.class,
-            new com.fasterxml.jackson.databind.JsonSerializer<Path>() {
+            new JsonSerializer<>() {
               @Override
               public void serialize(
-                  final Path value,
-                  final com.fasterxml.jackson.core.JsonGenerator gen,
-                  final com.fasterxml.jackson.databind.SerializerProvider serializers)
-                  throws java.io.IOException {
-                // Serialize Path as its string representation, preserving relative/absolute form
+                  final Path value, final JsonGenerator gen, final SerializerProvider serializers)
+                  throws IOException {
                 gen.writeString(value.toString());
               }
             })
         .addDeserializer(
             Path.class,
-            new com.fasterxml.jackson.databind.JsonDeserializer<Path>() {
+            new JsonDeserializer<>() {
               @Override
-              public Path deserialize(
-                  final com.fasterxml.jackson.core.JsonParser p,
-                  final com.fasterxml.jackson.databind.DeserializationContext ctxt)
-                  throws java.io.IOException {
-                // Deserialize string to Path using Path.of(), preserving relative/absolute form
+              public Path deserialize(final JsonParser p, final DeserializationContext ctxt)
+                  throws IOException {
                 return Path.of(p.getText());
               }
             });
@@ -204,7 +400,7 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
      * @param consumer the consumer that modifies the configuration
      * @return this mapper for method chaining
      */
-    public ConfigurationMapper<T> apply(final java.util.function.Consumer<T> consumer) {
+    public ConfigurationMapper<T> apply(final Consumer<T> consumer) {
       consumer.accept(config);
       return this;
     }

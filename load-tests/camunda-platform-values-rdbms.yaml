@@ -34,9 +34,6 @@ orchestration:
         zeebe.broker.flowControl.write.enabled: "true"
         zeebe.broker.flowControl.write.limit: 10000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
-        # RocksDB memory limit setting, limits the overall RocksDB memory usage
-        # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
-        zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
         # History cleanup adjust batch sizes
         camunda.data.secondary-storage.rdbms.history.history-cleanup-batch-size: 100000
         camunda.data.secondary-storage.rdbms.history.history-cleanup-process-instance-batch-size: 2000

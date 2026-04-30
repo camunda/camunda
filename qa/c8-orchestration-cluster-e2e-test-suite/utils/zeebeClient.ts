@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {readFileSync} from 'fs';
-import {basename} from 'path';
+import {readFileSync} from 'node:fs';
+import {basename} from 'node:path';
 import {Camunda8} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 
@@ -24,6 +24,11 @@ const c8 = new Camunda8({
   ZEEBE_REST_ADDRESS: process.env.ZEEBE_REST_ADDRESS,
   ZEEBE_GRPC_ADDRESS:
     process.env.ZEEBE_GRPC_ADDRESS || 'grpc://localhost:26500',
+  // Zeebe server rejects keepalive pings sent without active RPC calls
+  // (permitKeepAliveWithoutCalls=false). Setting this to 0 aligns the client
+  // with the server's expectation and prevents ENHANCE_YOUR_CALM / excess pings errors.
+  // @ts-expect-error -- GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS is a valid gRPC channel option but not yet typed in the SDK
+  GRPC_KEEPALIVE_PERMIT_WITHOUT_CALLS: 0,
 });
 
 function generateManyVariables(): Record<string, string> {
@@ -50,19 +55,19 @@ const deploy = async (processFilePaths: string[]) => {
 };
 
 const deployWithSubstitutions = async (
-  bpmnFilePath: string,
+  filePath: string,
   substitutions: Record<string, string>,
 ): Promise<void> => {
-  let content = readFileSync(bpmnFilePath, 'utf-8');
+  let content = readFileSync(filePath, 'utf-8');
   for (const [placeholder, replacement] of Object.entries(substitutions)) {
     if (!content.includes(placeholder)) {
       throw new Error(
-        `Placeholder '${placeholder}' not found in BPMN file '${bpmnFilePath}'`,
+        `Placeholder '${placeholder}' not found in BPMN file '${filePath}'`,
       );
     }
     content = content.split(placeholder).join(replacement);
   }
-  const name = basename(bpmnFilePath);
+  const name = basename(filePath);
   try {
     await zeebe.deployResources([{content, name}]);
   } catch (error) {
@@ -136,6 +141,14 @@ const createWorker = (
   });
 };
 
+const setVariables = async (
+  elementInstanceKey: string,
+  variables: Record<string, unknown>,
+  local: boolean = false,
+): Promise<void> => {
+  await zeebeGrpc.setVariables({elementInstanceKey, variables, local});
+};
+
 async function checkUpdateOnVersion(
   targetVersion: string,
   processInstanceKey: string,
@@ -156,4 +169,5 @@ export {
   createSingleInstance,
   cancelProcessInstance,
   createWorker,
+  setVariables,
 };

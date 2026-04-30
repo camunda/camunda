@@ -1,4 +1,7 @@
 global:
+  commonLabels:
+    camunda.io/created-by: __AUTHOR__
+    camunda.io/purpose: load-test
   image:
     repository: registry.camunda.cloud/team-zeebe
     pullSecrets:
@@ -16,6 +19,20 @@ global:
       operator: Equal
       value: n2-standard-4
       effect: NoSchedule
+
+  # Enable Stackdriver-formatted JSON logging on starter and worker pods so
+  # Cloud Logging picks up severity, sourceLocation, and serviceContext the
+  # same way it does for zeebe/operate/etc. Toggle is read by
+  # load-tests/load-tester/src/main/resources/log4j2.xml.
+  extraEnvVars:
+    - name: LOAD_TESTER_LOG_APPENDER
+      value: Stackdriver
+    - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
+      value: load-tester
+    - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
 
 # Saas configuration to run load tests against Camunda SaaS environment
 saas:

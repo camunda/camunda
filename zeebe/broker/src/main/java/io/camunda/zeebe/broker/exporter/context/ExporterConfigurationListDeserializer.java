@@ -67,9 +67,12 @@ final class ExporterConfigurationListDeserializer<E> extends JsonDeserializer<Li
     return switch (p.currentToken()) {
       case START_ARRAY -> deserializeArray(p, ctxt);
       case START_OBJECT -> deserializeMapWithNumericKeys(p, ctxt);
+      // Spring Boot flattens an empty YAML list (`[]`) to an empty string in the args map.
+      // Treat any empty string value as an empty list rather than failing.
+      case VALUE_STRING -> p.getText().isEmpty() ? List.of() : deserializeSingletonList(p, ctxt);
       default ->
           throw new IllegalArgumentException(
-              "Expected START_ARRAY or START_OBJECT, got: " + p.currentToken());
+              "Expected START_ARRAY, START_OBJECT, or VALUE_STRING, got: " + p.currentToken());
     };
   }
 
@@ -85,6 +88,19 @@ final class ExporterConfigurationListDeserializer<E> extends JsonDeserializer<Li
       final E value = (E) ctxt.readValue(p, contentType);
       result.add(value);
     }
+    return result;
+  }
+
+  /**
+   * Wraps a single non-empty string value into a one-element list. Spring Boot may pass a plain
+   * string when only one value is configured without explicit YAML array syntax.
+   */
+  @SuppressWarnings("unchecked")
+  private List<E> deserializeSingletonList(final JsonParser p, final DeserializationContext ctxt)
+      throws IOException {
+    final E value = (E) ctxt.readValue(p, contentType);
+    final List<E> result = new ArrayList<>(1);
+    result.add(value);
     return result;
   }
 

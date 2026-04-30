@@ -207,20 +207,29 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-common.outputs.renovate-config-change == 'true'
       }}
-  client-components-changes:
-    description: Output whether Client Components tests should be run based on GitHub event and files changed
+  webapp-client-changes:
+    description: Output whether Webapp Client tests should be run based on GitHub event and files changed
     value: >-
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
-        steps.filter-client-components.outputs.client-components-change == 'true'
+        steps.filter-webapp-client.outputs.webapp-client-change == 'true'
       }}
   docs-changes:
     description: Output whether Documentation tests should be run based on GitHub event and files changed
     value: >-
       ${{
         steps.filter-docs.outputs.docs-change == 'true'
+      }}
+  c8-e2e-test-suite-changes:
+    description: Output whether the C8 Orchestration Cluster E2E test suite lint check should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-c8-e2e-test-suite.outputs.c8-e2e-test-suite-change == 'true'
       }}
 
 runs:
@@ -390,17 +399,16 @@ runs:
 
         optimize-frontend-change:
           - optimize/client/**
-          - optimize/c4/**
           - optimize/backend/src/main/resources/localization/**
 
   - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
-    id: filter-client-components
+    id: filter-webapp-client
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
       ref: ${{ github.event.merge_group.head_ref || github.ref }}
       filters: |
-        client-components-change:
-          - 'client-components/**'
+        webapp-client-change:
+          - 'webapp/client/**'
 
   - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-docs
@@ -414,6 +422,15 @@ runs:
           - 'monorepo-docs-site/*'
           - '.github/workflows/docs-build-deploy.yml'
           - '.github/workflows/docs-preview.yml'
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-c8-e2e-test-suite
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        c8-e2e-test-suite-change:
+          - 'qa/c8-orchestration-cluster-e2e-test-suite/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch

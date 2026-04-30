@@ -254,10 +254,11 @@
           separator=", ">#{value}
         </foreach>
       </if>
-      <if test="filter.bpmnProcessIds != null and !filter.bpmnProcessIds.isEmpty()">
-        AND ut.PROCESS_DEFINITION_ID IN
-        <foreach close=")" collection="filter.bpmnProcessIds" item="value" open="("
-          separator=", ">#{value}
+      <if
+        test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionIdOperations" item="operation">
+          AND ut.PROCESS_DEFINITION_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
       <if test="filter.assigneeOperations != null and !filter.assigneeOperations.isEmpty()">
@@ -278,16 +279,18 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
-      <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
-        AND ut.PROCESS_INSTANCE_KEY IN
-        <foreach close=")" collection="filter.processInstanceKeys" item="value" open="("
-          separator=", ">#{value}
+      <if
+        test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+        <foreach collection="filter.processInstanceKeyOperations" item="operation">
+          AND ut.PROCESS_INSTANCE_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
-      <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
-        AND ut.PROCESS_DEFINITION_KEY IN
-        <foreach close=")" collection="filter.processDefinitionKeys" item="value" open="("
-          separator=", ">#{value}
+      <if
+        test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+        <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+          AND ut.PROCESS_DEFINITION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
       <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">

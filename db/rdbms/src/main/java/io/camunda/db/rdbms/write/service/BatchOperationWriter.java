@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationActivateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
@@ -40,7 +39,6 @@ public class BatchOperationWriter implements RdbmsWriter {
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationWriter.class);
 
   private final ExecutionQueue executionQueue;
-  private final BatchOperationDbReader reader;
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final BatchOperationMapper mapper;
 
@@ -48,12 +46,10 @@ public class BatchOperationWriter implements RdbmsWriter {
   private final boolean exportPendingBatchOperationItems;
 
   public BatchOperationWriter(
-      final BatchOperationDbReader reader,
       final ExecutionQueue executionQueue,
       final BatchOperationMapper mapper,
       final RdbmsWriterConfig config,
       final VendorDatabaseProperties vendorDatabaseProperties) {
-    this.reader = reader;
     this.executionQueue = executionQueue;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.mapper = mapper;
@@ -61,21 +57,20 @@ public class BatchOperationWriter implements RdbmsWriter {
     exportPendingBatchOperationItems = config.exportBatchOperationItemsOnCreation();
   }
 
-  public void createIfNotAlreadyExists(final BatchOperationDbModel batchOperation) {
-    // here we read if the batch operation already exists in the database to avoid PK violations.
-    // since we flush directly after the insert statement, this is transactionally safe
-    if (reader.exists(batchOperation.batchOperationKey())) {
-      LOGGER.trace("Batch operation already exists: {}", batchOperation);
-      return;
-    }
+  public void create(final BatchOperationDbModel batchOperation) {
+    // flush before to make the following insert flush as small as possible to prevent an
+    // ORA-00001 merge into conflict
+    executionQueue.flush();
 
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.BATCH_OPERATION,
             WriteStatementType.INSERT,
             batchOperation.batchOperationKey(),
-            "io.camunda.db.rdbms.sql.BatchOperationMapper.insert",
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.createIfNotExists",
             batchOperation));
+
+    // to have this for available for following batch operation item inserts, we directly flush here
     LOGGER.trace("Force flush to directly create batch operation: {}", batchOperation);
     executionQueue.flush();
   }

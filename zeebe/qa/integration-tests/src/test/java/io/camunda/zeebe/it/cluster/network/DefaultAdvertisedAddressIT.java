@@ -12,13 +12,18 @@ import static io.camunda.application.commons.security.CamundaSecurityConfigurati
 import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.cluster.CamundaCluster;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.zeebe.containers.cluster.ZeebeCluster;
-import java.net.URI;
+import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import java.time.Duration;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -30,61 +35,64 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 final class DefaultAdvertisedAddressIT {
   @Container
-  private final ZeebeCluster cluster =
-      ZeebeCluster.builder()
+  private final CamundaCluster cluster =
+      CamundaCluster.builder()
           .withImage(ZeebeTestContainerDefaults.defaultTestImage())
           .withGatewaysCount(1)
           .withBrokersCount(1)
           .withEmbeddedGateway(false)
-          .withNodeConfig(node -> node.withAdditionalExposedPort(8080))
-          // explicitly unset the (advertised) host to force computing the default
-          .withBrokerConfig(
+          .withNodeConfig(
               node -> {
-                node.getEnvMap().remove("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST");
-                node.getEnvMap().remove("ZEEBE_BROKER_NETWORK_HOST");
-                node.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
-                node.addEnv(UNPROTECTED_API_ENV_VAR, "true");
-                node.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
-              })
-          .withGatewayConfig(
-              node -> {
-                node.getEnvMap().remove("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST");
-                node.getEnvMap().remove("ZEEBE_GATEWAY_CLUSTER_HOST");
-                node.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
-                node.addEnv(UNPROTECTED_API_ENV_VAR, "true");
-                node.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
+                node.withUnifiedConfig(
+                    c -> {
+                      // explicitly unset the (advertised) host to force computing the default
+                      c.getCluster().getNetwork().setAdvertisedHost(null);
+                      c.getCluster().getNetwork().setHost(null);
+                      c.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+
+                      node.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
+                      node.addEnv(UNPROTECTED_API_ENV_VAR, "true");
+                      node.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
+                    });
               })
           .build();
+
+  @SuppressWarnings("unused")
+  @RegisterExtension
+  private final ContainerLogsDumper logsDumper = new ContainerLogsDumper(cluster::getNodes);
 
   @Test
   void shouldFormClusterWithDefaultAdvertisedHost() {
     // given
     final var clientBuilder =
         CamundaClient.newClientBuilder()
-            .restAddress(
-                URI.create("http://localhost:" + cluster.getAvailableGateway().getMappedPort(8080)))
-            .grpcAddress(
-                URI.create("http://" + cluster.getAvailableGateway().getExternalGatewayAddress()));
+            .defaultRequestTimeout(Duration.ofSeconds(5))
+            .restAddress(cluster.getAvailableGateway().getRestAddress())
+            .grpcAddress(cluster.getAvailableGateway().getGrpcAddress())
+            .preferRestOverGrpc(true);
 
     try (final var client = clientBuilder.build()) {
       // when - then
       Awaitility.await("until topology is complete")
-          .atMost(Duration.ofSeconds(30))
+          .atMost(Duration.ofMinutes(2))
           .untilAsserted(
               () ->
-                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                  TopologyAssert.assertThat(
+                          client.newTopologyRequest().send().join(5, TimeUnit.SECONDS))
                       .isComplete(1, 1, 1));
 
       Awaitility.await("until a client request is successful")
-          .atMost(Duration.ofSeconds(30))
+          .atMost(Duration.ofMinutes(1))
           .untilAsserted(
               () ->
-                  client
-                      .newPublishMessageCommand()
-                      .messageName("test-message")
-                      .correlationKey("test-key")
-                      .send()
-                      .join());
+                  Assertions.assertThat(
+                          (Future<?>)
+                              client
+                                  .newPublishMessageCommand()
+                                  .messageName("test-message")
+                                  .correlationKey("test-key")
+                                  .send())
+                      .succeedsWithin(Duration.ofSeconds(5)));
     }
   }
 }

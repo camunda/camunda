@@ -1,15 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
+<Configuration xmlns="https://logging.apache.org/xml/ns"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="
+                   https://logging.apache.org/xml/ns
+                   https://logging.apache.org/xml/ns/log4j-config-2.xsd"
+  status="WARN" shutdownHook="disable">
+  <Properties>
+    <Property name="log.pattern"
+              value="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] %notEmpty{[%X] }%-5level &#9;%logger{36} - %msg%n" />
+  </Properties>
+
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+      <PatternLayout pattern="${log.pattern}"/>
+    </Console>
+
+    <Console name="Stackdriver" target="SYSTEM_OUT">
+      <JsonTemplateLayout charset="UTF-8"
+        eventTemplateUri="classpath:logging/StackdriverLayout.json"
+        locationInfoEnabled="true"
+        stackTraceEnabled="true"/>
     </Console>
   </Appenders>
-  <Loggers>
-    <Logger name="io.camunda" level="${env:CAMUNDA_LOG_LEVEL:-INFO}" />
 
+  <Loggers>
+    <!-- Bootstrap default. Spring Boot's LoggingSystem replaces this with
+         logging.level.* from application.yaml ~500ms after JVM start, so
+         this only governs the very first init lines. Reading the same
+         LOG_LEVEL env var as application.yaml keeps the bootstrap window
+         consistent with the steady-state runtime level. -->
     <Root level="${env:LOG_LEVEL:-WARN}">
-      <AppenderRef ref="Console"/>
+      <AppenderRef ref="${env:LOAD_TESTER_LOG_APPENDER:-Console}"/>
     </Root>
   </Loggers>
+
 </Configuration>

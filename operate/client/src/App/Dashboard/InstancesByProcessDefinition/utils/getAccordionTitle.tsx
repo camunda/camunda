@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import pluralSuffix from 'modules/utils/pluralSuffix';
+import {pluralSuffix} from 'modules/utils/pluralSuffix';
 
 function getAccordionTitle({
   processName,

@@ -329,9 +329,9 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  public void shouldQueryByBpmnProcessId() {
+  public void shouldQueryByProcessDefinitionIds() {
     // given
-    final var filter = FilterBuilders.userTask((f) -> f.bpmnProcessIds("bpmnProcess1"));
+    final var filter = FilterBuilders.userTask((f) -> f.processDefinitionIds("bpmnProcess1"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -345,6 +345,243 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
             (t) -> {
               assertSearchTermQuery(t.must().get(0).queryOption(), "bpmnProcessId", "bpmnProcess1");
             });
+  }
+
+  static Stream<Arguments> provideProcessDefinitionIdOperations() {
+    return Stream.of(
+        processDefinitionIdCase(
+            Operation.eq("proc-1"),
+            query -> assertSearchTermQuery(query, "bpmnProcessId", "proc-1")),
+        processDefinitionIdCase(
+            Operation.neq("proc-1"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermQuery(
+                                            mustNotQuery, "bpmnProcessId", "proc-1")))),
+        processDefinitionIdCase(
+            Operation.exists(true), query -> assertExistsQuery(query, "bpmnProcessId")),
+        processDefinitionIdCase(
+            Operation.exists(false),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertExistsQuery(mustNotQuery, "bpmnProcessId")))),
+        processDefinitionIdCase(
+            Operation.in("proc-1", "proc-2"),
+            query -> assertSearchTermsQuery(query, "bpmnProcessId", "proc-1", "proc-2")),
+        processDefinitionIdCase(
+            Operation.notIn("proc-1", "proc-2"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermsQuery(
+                                            mustNotQuery, "bpmnProcessId", "proc-1", "proc-2")))),
+        processDefinitionIdCase(
+            Operation.like("proc*"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchWildcardQuery.class,
+                        wildcardQuery -> {
+                          assertThat(wildcardQuery.field()).isEqualTo("bpmnProcessId");
+                          assertThat(wildcardQuery.value()).isEqualTo("proc*");
+                        })));
+  }
+
+  private static Arguments processDefinitionIdCase(
+      final Operation<String> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    return Arguments.of(operation, queryAssertion);
+  }
+
+  @ParameterizedTest(name = "[{index}] should map {0}")
+  @MethodSource("provideProcessDefinitionIdOperations")
+  @DisplayName("Should transform processDefinitionId operations into correct search query")
+  void shouldTransformProcessDefinitionIdOperationsToSearchQuery(
+      final Operation<String> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.processDefinitionIdOperations(operation));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> queryAssertion.accept(boolQuery.must().getFirst().queryOption()));
+  }
+
+  static Stream<Arguments> provideProcessDefinitionKeyOperations() {
+    return Stream.of(
+        processDefinitionKeyCase(
+            Operation.eq(123L), query -> assertSearchTermQuery(query, "processDefinitionId", 123L)),
+        processDefinitionKeyCase(
+            Operation.neq(456L),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermQuery(
+                                            mustNotQuery, "processDefinitionId", 456L)))),
+        processDefinitionKeyCase(
+            Operation.exists(true), query -> assertExistsQuery(query, "processDefinitionId")),
+        processDefinitionKeyCase(
+            Operation.exists(false),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertExistsQuery(mustNotQuery, "processDefinitionId")))),
+        processDefinitionKeyCase(
+            Operation.in(123L, 456L),
+            query -> assertSearchTermsQuery(query, "processDefinitionId", 123L, 456L)),
+        processDefinitionKeyCase(
+            Operation.notIn(123L, 456L),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermsQuery(
+                                            mustNotQuery, "processDefinitionId", 123L, 456L)))));
+  }
+
+  private static Arguments processDefinitionKeyCase(
+      final Operation<Long> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    return Arguments.of(operation, queryAssertion);
+  }
+
+  @ParameterizedTest(name = "[{index}] should map {0}")
+  @MethodSource("provideProcessDefinitionKeyOperations")
+  @DisplayName("Should transform processDefinitionKey operations into correct search query")
+  void shouldTransformProcessDefinitionKeyOperationsToSearchQuery(
+      final Operation<Long> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.processDefinitionKeyOperations(operation));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> queryAssertion.accept(boolQuery.must().getFirst().queryOption()));
+  }
+
+  static Stream<Arguments> provideProcessInstanceKeyOperations() {
+    return Stream.of(
+        processInstanceKeyCase(
+            Operation.eq(12345L),
+            query -> assertSearchTermQuery(query, "processInstanceId", 12345L)),
+        processInstanceKeyCase(
+            Operation.neq(67890L),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermQuery(
+                                            mustNotQuery, "processInstanceId", 67890L)))),
+        processInstanceKeyCase(
+            Operation.exists(true), query -> assertExistsQuery(query, "processInstanceId")),
+        processInstanceKeyCase(
+            Operation.exists(false),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertExistsQuery(mustNotQuery, "processInstanceId")))),
+        processInstanceKeyCase(
+            Operation.in(12345L, 67890L),
+            query -> assertSearchTermsQuery(query, "processInstanceId", 12345L, 67890L)),
+        processInstanceKeyCase(
+            Operation.notIn(12345L, 67890L),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermsQuery(
+                                            mustNotQuery, "processInstanceId", 12345L, 67890L)))));
+  }
+
+  private static Arguments processInstanceKeyCase(
+      final Operation<Long> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    return Arguments.of(operation, queryAssertion);
+  }
+
+  @ParameterizedTest(name = "[{index}] should map {0}")
+  @MethodSource("provideProcessInstanceKeyOperations")
+  @DisplayName("Should transform processInstanceKey operations into correct search query")
+  void shouldTransformProcessInstanceKeyOperationsToSearchQuery(
+      final Operation<Long> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.processInstanceKeyOperations(operation));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> queryAssertion.accept(boolQuery.must().getFirst().queryOption()));
   }
 
   @Test

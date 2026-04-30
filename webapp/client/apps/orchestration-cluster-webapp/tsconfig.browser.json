@@ -1,0 +1,14 @@
+{
+	"extends": "./tsconfig.base.json",
+	"include": ["src/**/*"],
+	"compilerOptions": {
+		"jsx": "react-jsx",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"moduleDetection": "force",
+		"types": ["vite/client"],
+		"paths": {
+			"#/modules/*": ["./src/modules/*"]
+		}
+	}
+}

@@ -509,13 +509,33 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-testcontainer</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-query-transformer</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-rest</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -536,11 +556,6 @@
     <dependency>
       <groupId>org.opensearch</groupId>
       <artifactId>opensearch-testcontainers</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-webapp</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -643,7 +658,7 @@
     <repository>
       <id>maven_central</id>
       <name>Maven Central</name>
-      <url>https://repo.maven.apache.org/maven2/</url>
+      <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
     </repository>
   </repositories>
 

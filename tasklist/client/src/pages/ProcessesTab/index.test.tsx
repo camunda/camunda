@@ -21,7 +21,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {Component} from './index';
 import {notificationsStore} from 'modules/notifications/notifications.store';
 import * as formMocks from 'modules/mocks/form';
-import * as userMocks from 'modules/mocks/current-user';
+import {currentUser, currentUserWithTenants} from '@camunda/c8-mocks';
 import {
   getProcessDefinitionMock,
   getQueryProcessDefinitionsResponseMock,
@@ -75,7 +75,7 @@ describe('Processes', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),
@@ -242,7 +242,7 @@ describe('Processes', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUserWithTenants);
+          return HttpResponse.json(currentUserWithTenants);
         },
         {once: true},
       ),
@@ -280,7 +280,7 @@ describe('Processes', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUserWithTenants);
+          return HttpResponse.json(currentUserWithTenants);
         },
         {once: true},
       ),
@@ -317,7 +317,7 @@ describe('Processes', () => {
       http.get(
         '/v2/authentication/me',
         () => {
-          return HttpResponse.json(userMocks.currentUser);
+          return HttpResponse.json(currentUser);
         },
         {once: true},
       ),

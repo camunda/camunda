@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.resource.DeployedResourceEntity;
+import io.camunda.zeebe.exporter.common.utils.ResourceUtils;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -58,6 +59,7 @@ public class ResourceCreatedHandler implements ExportHandler<DeployedResourceEnt
         .setResourceKey(value.getResourceKey())
         .setResourceId(value.getResourceId())
         .setResourceName(value.getResourceName())
+        .setResourceType(ResourceUtils.deriveResourceType(value.getResourceName()))
         .setVersion(value.getVersion())
         .setVersionTag(value.getVersionTag())
         .setDeploymentKey(value.getDeploymentKey())

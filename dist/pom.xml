@@ -317,6 +317,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>webapp-server</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>webapps-common</artifactId>
     </dependency>
     <dependency>
@@ -558,6 +563,11 @@
           <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-tx</artifactId>
     </dependency>
 
     <!-- Micrometer backend/implementations -->
@@ -1040,6 +1050,12 @@
             <ignoredNonTestScopedDependency>org.apache.httpcomponents.core5:httpcore5</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:zeebe-bpmn-model</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:camunda-client-java</ignoredNonTestScopedDependency>
+            <!-- Reach dist transitively (compile) via camunda-authentication and operate-webapp;
+                 only EncodedSlashIntegrationIT references them directly. Declaring them here as
+                 test-scope would shadow that transitive compile scope and break spring-boot:start
+                 at runtime (see PR #52064). -->
+            <ignoredNonTestScopedDependency>org.springframework.security:spring-security-web</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.springframework.security:spring-security-config</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
@@ -1077,6 +1093,14 @@
             <dep>io.camunda.optimize:optimize-backend</dep>
             <dep>io.camunda.optimize:optimize-webjar</dep>
           </ignoredUnusedDeclaredDependencies>
+          <!-- Referenced directly only by EncodedSlashIntegrationIT (test code) but reach dist
+               transitively at compile scope via camunda-authentication / operate-webapp. We
+               cannot declare them as test-scope: that would shadow the transitive compile
+               scope and break spring-boot:start at runtime (PR #52064). -->
+          <ignoredUsedUndeclaredDependencies>
+            <dep>org.springframework.security:spring-security-web</dep>
+            <dep>org.springframework.security:spring-security-config</dep>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
 

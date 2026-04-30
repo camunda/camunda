@@ -9,24 +9,35 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record IncidentProcessInstanceStatisticsByDefinitionEntity(
-    String processDefinitionId,
+    // cache-enriched; null on cache miss.
+    @Nullable String processDefinitionId,
     Long processDefinitionKey,
-    String processDefinitionName,
-    Integer processDefinitionVersion,
-    String tenantId,
+    // cache-enriched; null on cache miss.
+    @Nullable String processDefinitionName,
+    // cache-enriched; null on cache miss.
+    @Nullable Integer processDefinitionVersion,
+    // cache-enriched; null on cache miss.
+    @Nullable String tenantId,
     Long activeInstancesWithErrorCount) {
+
+  public IncidentProcessInstanceStatisticsByDefinitionEntity {
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(activeInstancesWithErrorCount, "activeInstancesWithErrorCount");
+  }
 
   public static final class Builder
       implements ObjectBuilder<IncidentProcessInstanceStatisticsByDefinitionEntity> {
-    private String processDefinitionId;
-    private Long processDefinitionKey;
-    private String processDefinitionName;
-    private Integer processDefinitionVersion;
-    private String tenantId;
-    private Long activeInstancesWithErrorCount;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable String processDefinitionName;
+    private @Nullable Integer processDefinitionVersion;
+    private @Nullable String tenantId;
+    private @Nullable Long activeInstancesWithErrorCount;
 
     public Builder processDefinitionId(final String value) {
       processDefinitionId = value;
@@ -58,6 +69,7 @@ public record IncidentProcessInstanceStatisticsByDefinitionEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public IncidentProcessInstanceStatisticsByDefinitionEntity build() {
       return new IncidentProcessInstanceStatisticsByDefinitionEntity(

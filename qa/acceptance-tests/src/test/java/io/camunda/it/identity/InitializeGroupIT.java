@@ -55,7 +55,7 @@ class InitializeGroupIT {
           .withAuthorizationsEnabled()
           .withSecurityConfig(
               conf -> {
-                conf.getInitialization().setGroups(List.of(CONFIGURED_GROUP_1));
+                conf.getInitialization().getGroups().add(CONFIGURED_GROUP_1);
                 conf.getInitialization().getUsers().add(CONFIGURED_USER);
               });
 

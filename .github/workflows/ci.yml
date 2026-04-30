@@ -59,8 +59,9 @@ jobs:
       stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
       rdbms-integration-tests: ${{steps.filter.outputs.rdbms-integration-tests}}
       renovate-config-changes: ${{ steps.filter.outputs.renovate-config-changes }}
-      client-components-changes: ${{ steps.filter.outputs.client-components-changes }}
+      webapp-client-changes: ${{ steps.filter.outputs.webapp-client-changes }}
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
+      c8-e2e-test-suite-changes: ${{ steps.filter.outputs.c8-e2e-test-suite-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -439,7 +440,7 @@ jobs:
 
           # General UT configuration
           GENERAL_UT_EXTRA_SKIP="camunda-exporter rdbms-exporter"
-          GENERAL_UT_DO_NOT_SKIP="zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-util operate-qa-data-generator operate-qa-it-tests operate-qa-backup-restore-tests tasklist-qa tasklist-qa-util tasklist-it-tests tasklist-qa-backup-restore-tests tasklist-test-coverage"
+          GENERAL_UT_DO_NOT_SKIP="zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-data-generator operate-qa-it-tests tasklist-qa tasklist-qa-util tasklist-it-tests tasklist-test-coverage"
 
           # ============================================================================
           # Integration Test Module Constants (computed from UT constants)
@@ -496,8 +497,8 @@ jobs:
               "maven-build-threads": 2,
               "maven-test-fork-count": 3,
               "runs-on": "gcp-perf-core-8-default",
-              "docker-repository": "localhost:5000/camunda/zeebe",
-              "docker-file": "Dockerfile",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
               "owner": "QA",
               "module": "QA",
               "stressRun": 1
@@ -509,8 +510,8 @@ jobs:
               "maven-build-threads": 2,
               "maven-test-fork-count": 7,
               "runs-on": "gcp-perf-core-16-longrunning",
-              "docker-repository": "localhost:5000/camunda/zeebe",
-              "docker-file": "Dockerfile",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
               "owner": "Distributed Platform",
               "module": "Zeebe",
               "stressRun": 1
@@ -522,8 +523,8 @@ jobs:
               "maven-build-threads": 2,
               "maven-test-fork-count": 7,
               "runs-on": "gcp-perf-core-16-longrunning",
-              "docker-repository": "localhost:5000/camunda/zeebe",
-              "docker-file": "Dockerfile",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
               "owner": "Core Features",
               "module": "Zeebe",
               "stressRun": 1
@@ -535,8 +536,8 @@ jobs:
               "maven-build-threads": 2,
               "maven-test-fork-count": 7,
               "runs-on": "gcp-perf-core-16-longrunning",
-              "docker-repository": "localhost:5000/camunda/zeebe",
-              "docker-file": "Dockerfile",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
               "owner": "DataLayer",
               "module": "Zeebe",
               "stressRun": 1
@@ -574,8 +575,8 @@ jobs:
               "maven-build-threads": 1,
               "maven-test-fork-count": 10,
               "runs-on": "gcp-perf-core-16-default",
-              "docker-repository": "localhost:5000/camunda/zeebe",
-              "docker-file": "Dockerfile",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
               "owner": "Distributed Platform",
               "module": "Zeebe",
               "test-filter": "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*${DOLLAR}*.java",
@@ -601,8 +602,8 @@ jobs:
               "maven-build-threads": 1,
               "maven-test-fork-count": 10,
               "runs-on": "gcp-perf-core-16-default",
-              "docker-repository": "localhost:5000/camunda/zeebe",
-              "docker-file": "Dockerfile",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
               "owner": "General",
               "module": "Zeebe",
               "test-filter": "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**,!**/*${DOLLAR}*.java",
@@ -628,8 +629,8 @@ jobs:
               "maven-build-threads": 1,
               "maven-test-fork-count": 10,
               "runs-on": "gcp-perf-core-8-default",
-              "docker-repository": "localhost:5000/camunda/zeebe",
-              "docker-file": "Dockerfile",
+              "docker-repository": "localhost:5000/camunda/camunda",
+              "docker-file": "camunda.Dockerfile",
               "owner": "Core Features",
               "module": "Zeebe",
               "stressRun": 1
@@ -1433,6 +1434,42 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           user_description: "Identity"
 
+  identity-frontend-sbom-snyk:
+    if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
+    name: "Identity / Tool - Front End - Snyk SBOM"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_OWNER: Identity
+      TEST_PRODUCT: Identity
+      TEST_TYPE: Tool
+    defaults:
+      run:
+        working-directory: identity/client
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: ./.github/actions/frontend-sbom-snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          directory: identity/client
+          sbom-file: identity/client/dist/cyclonedx/bom.json
+          project-name: Identity frontend
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          user_description: "Identity"
+
   tasklist-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     name: "Tasklist"
@@ -1475,13 +1512,42 @@ jobs:
     with:
       stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}
 
-  client-components:
-    if: needs.detect-changes.outputs.client-components-changes == 'true'
-    name: "Client Components"
+  webapp-client:
+    if: needs.detect-changes.outputs.webapp-client-changes == 'true'
+    name: "Webapp Client"
     needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-client-components.yml
+    uses: ./.github/workflows/ci-webapp-client.yml
     secrets: inherit
     permissions: { }
+
+  c8-e2e-test-suite:
+    if: needs.detect-changes.outputs.c8-e2e-test-suite-changes == 'true'
+    name: "Lint / C8 E2E Test Suite"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint (tsc + eslint)
+        run: npm run lint
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
@@ -1646,7 +1712,7 @@ jobs:
       - actionlint
       - archunit-tests
       - build-platform-frontend
-      - client-components
+      - c8-e2e-test-suite
       - codeowners-check
       - commitlint
       - database-integration-tests
@@ -1655,6 +1721,7 @@ jobs:
       - docker-checks
       - general-unit-tests
       - history-tests
+      - identity-frontend-sbom-snyk
       - identity-frontend-tests
       - identity-tests
       - integration-tests
@@ -1671,6 +1738,7 @@ jobs:
       - shell-script-tests
       - tasklist-ci
       - validate-pom-metadata
+      - webapp-client
       - zeebe-ci
       - zeebe-unit-tests
     steps:

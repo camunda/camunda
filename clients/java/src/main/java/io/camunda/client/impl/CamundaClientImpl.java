@@ -177,6 +177,7 @@ import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
+import io.camunda.client.api.search.request.ResourceSearchRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
@@ -354,6 +355,7 @@ import io.camunda.client.impl.search.request.MessageSubscriptionSearchRequestImp
 import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSequenceFlowsRequestImpl;
+import io.camunda.client.impl.search.request.ResourceSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesSearchRequestImpl;
@@ -923,6 +925,11 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public ResourceSearchRequest newResourceSearchRequest() {
+    return new ResourceSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
   public ProcessDefinitionElementStatisticsRequest newProcessDefinitionElementStatisticsRequest(
       final long processDefinitionKey) {
     return new ProcessDefinitionElementStatisticsRequestImpl(
@@ -1270,7 +1277,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public VariableGetRequest newVariableGetRequest(final long variableKey) {
-    return new VariableGetRequestImpl(httpClient, variableKey);
+    return new VariableGetRequestImpl(httpClient, variableKey, jsonMapper);
   }
 
   @Override

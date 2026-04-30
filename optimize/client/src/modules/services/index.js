@@ -35,6 +35,7 @@ export {
   TEXT_REPORT_MAX_CHARACTERS,
   isTextTileTooLong,
   isTextTileValid,
+  applyMissingVariableLabel,
 } from './reportService';
 
 export {addSources, getCollection} from './collectionService';

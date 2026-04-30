@@ -11,8 +11,8 @@ import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {defaultAssertionOptions} from '../constants';
 import {cancelProcessInstance} from '../zeebeClient';
-import {sleep} from '../sleep';
 import {validateResponse} from 'json-body-assertions';
+import {expectBatchState} from './batch-operation-requestHelpers';
 
 export async function getProcessDefinitionKey(
   request: APIRequestContext,
@@ -43,28 +43,57 @@ export async function createCancellationBatch(
   numberOfInstances = 3,
   processDefinitionId = 'batch_cancellation_process',
 ): Promise<string> {
+  const WAVE_SIZE = 30;
   const processInstanceKeys: string[] = [];
-  for (let i = 0; i < numberOfInstances; i++) {
-    const startRes = await request.post(buildUrl('/process-instances'), {
-      headers: jsonHeaders(),
-      data: {
-        processDefinitionId: processDefinitionId,
-      },
-    });
-    await assertStatusCode(startRes, 200);
-    await validateResponse(
-      {
-        path: '/process-instances',
-        method: 'POST',
-        status: '200',
-      },
-      startRes,
+  for (let i = 0; i < numberOfInstances; i += WAVE_SIZE) {
+    const waveCount = Math.min(WAVE_SIZE, numberOfInstances - i);
+    const waveResponses = await Promise.all(
+      Array.from({length: waveCount}, () =>
+        request.post(buildUrl('/process-instances'), {
+          headers: jsonHeaders(),
+          data: {
+            processDefinitionId: processDefinitionId,
+          },
+          timeout: 30_000,
+        }),
+      ),
     );
-    const startJson = await startRes.json();
-    processInstanceKeys.push(String(startJson.processInstanceKey));
+    for (const startRes of waveResponses) {
+      await assertStatusCode(startRes, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        startRes,
+      );
+      const startJson = await startRes.json();
+      processInstanceKeys.push(String(startJson.processInstanceKey));
+    }
   }
 
-  await sleep(7_000);
+  await expect(async () => {
+    const searchRes = await request.post(
+      buildUrl('/process-instances/search'),
+      {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {
+              $in: processInstanceKeys,
+            },
+          },
+        },
+      },
+    );
+    await assertStatusCode(searchRes, 200);
+    const json = await searchRes.json();
+    expect((json.page?.totalItems ?? 0) > 0).toBe(true);
+  }).toPass({
+    ...defaultAssertionOptions,
+    timeout: 60_000,
+  });
 
   const result: Record<string, string> = {};
   await expect(async () => {
@@ -173,7 +202,11 @@ export async function verifyIncidentsForProcessInstance(
       buildUrl(`/process-instances/${processInstanceKey}/incidents/search`),
       {
         headers: jsonHeaders(),
-        data: {},
+        data: {
+          filter: {
+            state: 'ACTIVE',
+          },
+        },
       },
     );
     await assertStatusCode(res, 200);
@@ -219,4 +252,66 @@ export async function expectProcessInstanceCanBeFound(
     intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
     timeout: 180_000,
   });
+}
+
+async function countProcessInstances(
+  request: APIRequestContext,
+  state: string,
+): Promise<number> {
+  const res = await request.post(buildUrl('/process-instances/search'), {
+    headers: jsonHeaders(),
+    data: {filter: {state}, page: {limit: 1}},
+  });
+  await assertStatusCode(res, 200);
+  const json = await res.json();
+  return json.page.totalItems as number;
+}
+
+async function runBatchAndWaitForCompletion(
+  request: APIRequestContext,
+  endpoint: '/process-instances/cancellation' | '/process-instances/deletion',
+  filter: Record<string, unknown>,
+): Promise<void> {
+  const res = await request.post(buildUrl(endpoint), {
+    headers: jsonHeaders(),
+    data: {filter},
+  });
+
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {
+      path: endpoint,
+      method: 'POST',
+      status: '200',
+    },
+    res,
+  );
+  const json = await res.json();
+  const batchKey = json.batchOperationKey;
+
+  await expectBatchState(request, batchKey, 'COMPLETED');
+}
+
+export async function clearAllProcessInstances(
+  request: APIRequestContext,
+): Promise<void> {
+  // Cancel all active instances first.
+  if ((await countProcessInstances(request, 'ACTIVE')) > 0) {
+    await runBatchAndWaitForCompletion(
+      request,
+      '/process-instances/cancellation',
+      {state: 'ACTIVE'},
+    );
+  }
+  // Cancellation moves instances to TERMINATED; delete each terminal state
+  // individually to avoid relying on $or in the search pre-check.
+  for (const state of ['COMPLETED', 'TERMINATED']) {
+    if ((await countProcessInstances(request, state)) > 0) {
+      await runBatchAndWaitForCompletion(
+        request,
+        '/process-instances/deletion',
+        {state},
+      );
+    }
+  }
 }

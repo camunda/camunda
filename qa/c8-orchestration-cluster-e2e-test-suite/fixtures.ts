@@ -34,10 +34,12 @@ import {IdentityRolesPage} from '@pages/IdentityRolesPage';
 import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
 import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
 import {IdentityAuditLogPage} from '@pages/IdentityAuditLogPage';
+import {IdentityGlobalTaskListenersPage} from '@pages/IdentityGlobalTaskListenersPage';
+import {IdentityMcpProcessesPage} from '@pages/IdentityMcpProcessesPage';
 import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage';
 import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
-
-import {sleep} from 'utils/sleep';
+import {SwaggerPage} from '@pages/SwaggerPage';
+import {OperateBatchOperationsPage} from '@pages/OperateBatchOperationsPage';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -56,6 +58,7 @@ type PlaywrightFixtures = {
   operateProcessInstanceViewModificationModePage: OperateProcessInstanceViewModificationModePage;
   operateOperationsDetailsPage: OperateOperationsDetailsPage;
   operateOperationsLogPage: OperateOperationsLogPage;
+  operateBatchOperationsPage: OperateBatchOperationsPage;
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
@@ -70,6 +73,9 @@ type PlaywrightFixtures = {
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
   identityAuditLogPage: IdentityAuditLogPage;
+  identityMcpProcessesPage: IdentityMcpProcessesPage;
+  swaggerPage: SwaggerPage;
+  identityGlobalTaskListenersPage: IdentityGlobalTaskListenersPage;
   suppressHelperModals: void;
 };
 
@@ -119,6 +125,9 @@ const test = base.extend<PlaywrightFixtures>({
   loginPage: async ({page}, use) => {
     await use(new LoginPage(page));
   },
+  swaggerPage: async ({page}, use) => {
+    await use(new SwaggerPage(page));
+  },
   taskPanelPage: async ({page}, use) => {
     await use(new TaskPanelPage(page));
   },
@@ -146,6 +155,9 @@ const test = base.extend<PlaywrightFixtures>({
   operateOperationsLogPage: async ({page}, use) => {
     await use(new OperateOperationsLogPage(page));
   },
+  operateBatchOperationsPage: async ({page}, use) => {
+    await use(new OperateBatchOperationsPage(page));
+  },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));
   },
@@ -154,30 +166,6 @@ const test = base.extend<PlaywrightFixtures>({
   },
   tasklistProcessesPage: async ({page}, use) => {
     await use(new TasklistProcessesPage(page));
-  },
-  resetData: async ({baseURL}, use) => {
-    await use(async () => {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Authorization: `${process.env.CAMUNDA_AUTH_STRATEGY} ${Buffer.from(
-          `${process.env.CAMUNDA_BASIC_AUTH_USERNAME}:${process.env.CAMUNDA_BASIC_AUTH_PASSWORD}`,
-        ).toString('base64')}`,
-      };
-
-      const response = await fetch(
-        `${baseURL}/v1/external/devUtil/recreateData`,
-        {
-          method: 'POST',
-          headers,
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to reset data: ${response.statusText}`);
-      }
-
-      await sleep(1000);
-    });
   },
   publicFormsPage: async ({page}, use) => {
     await use(new PublicFormsPage(page));
@@ -215,6 +203,12 @@ const test = base.extend<PlaywrightFixtures>({
   },
   identityAuditLogPage: async ({page}, use) => {
     await use(new IdentityAuditLogPage(page));
+  },
+  identityGlobalTaskListenersPage: async ({page}, use) => {
+    await use(new IdentityGlobalTaskListenersPage(page));
+  },
+  identityMcpProcessesPage: async ({page}, use) => {
+    await use(new IdentityMcpProcessesPage(page));
   },
 });
 

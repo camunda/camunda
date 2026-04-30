@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
+import io.camunda.container.CamundaContainer.BrokerContainer;
+import io.camunda.container.ZeebeTopologyWaitStrategy;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -20,12 +22,11 @@ import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.VersionUtil;
-import io.zeebe.containers.ZeebeContainer;
-import io.zeebe.containers.ZeebeTopologyWaitStrategy;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
+import org.agrona.collections.MutableBoolean;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,7 @@ import org.testcontainers.utility.DockerImageName;
 public interface BackupCompatibilityAcceptance {
   String PROCESS_ID = "compat-test-process";
   String JOB_TYPE = "compat-test-task";
+  int MAX_BACKUP_RETRIES = 3;
 
   /**
    * Returns the Docker network shared between the storage emulator and the old broker container.
@@ -76,19 +78,19 @@ public interface BackupCompatibilityAcceptance {
    * Optional hook to further customize the old broker container beyond env vars. Implementations
    * can override this to add bind mounts, dependencies, or other container configuration.
    */
-  default void customizeOldBroker(final ZeebeContainer broker) {
+  default void customizeOldBroker(final BrokerContainer broker) {
     // no-op by default
   }
 
   @Test
   default void shouldRestoreBackupFromPreviousVersion() {
     // given
-    final var backupId = 1L;
+    final long backupId;
     final String storeBasePath = RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
     try (final var broker = createOldBroker(storeBasePath)) {
       broker.start();
       createProcessInstanceWithJob(broker);
-      takeBackup(broker, backupId);
+      backupId = takeBackup(broker, 1L);
     }
 
     // when -- restore the backup using the current version (in-process)
@@ -112,12 +114,12 @@ public interface BackupCompatibilityAcceptance {
   @Test
   default void shouldDeleteBackupFromPreviousVersion() {
     // given
-    final var backupId = 1L;
+    final long backupId;
     final String storeBasePath = RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
     try (final var broker = createOldBroker(storeBasePath)) {
       broker.start();
       createProcessInstanceWithJob(broker);
-      takeBackup(broker, backupId);
+      backupId = takeBackup(broker, 1L);
     }
 
     try (final var broker =
@@ -161,13 +163,14 @@ public interface BackupCompatibilityAcceptance {
   default void shouldRestoreBackupWhenSnapshotContainsCheckpointFromPreviousVersion() {
     // given -- two backups: the first writes checkpoint info to RocksDB, and the
     // second's snapshot captures that old-format checkpoint state
-    final var firstBackupId = 1L;
-    final var secondBackupId = 2L;
+    final long firstBackupId;
+    final long secondBackupId;
     final String storeBasePath = RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
     try (final var broker = createOldBroker(storeBasePath)) {
       broker.start();
       createProcessInstanceWithJob(broker);
-      takeBackup(broker, firstBackupId);
+      firstBackupId = takeBackup(broker, 1L);
+      secondBackupId = firstBackupId + 1;
 
       // Checkpoint info from backup #1 is now persisted in RocksDB.
       // Take a second backup whose snapshot includes that state.
@@ -226,7 +229,7 @@ public interface BackupCompatibilityAcceptance {
   }
 
   /** Deploys a process with a service task and creates a single instance on the given broker. */
-  private void createProcessInstanceWithJob(final ZeebeContainer broker) {
+  private void createProcessInstanceWithJob(final BrokerContainer broker) {
     try (final var client =
         CamundaClient.newClientBuilder().restAddress(broker.getRestAddress()).build()) {
       client
@@ -246,7 +249,11 @@ public interface BackupCompatibilityAcceptance {
   }
 
   /** Takes a snapshot and backup on the given broker, waiting for both to complete. */
-  private void takeBackup(final ZeebeContainer broker, final long backupId) {
+  private long takeBackup(final BrokerContainer broker, final long backupId) {
+    return takeBackup(broker, backupId, 0);
+  }
+
+  private long takeBackup(final BrokerContainer broker, final long backupId, final int retryCount) {
     final var partitionsActuator = PartitionsActuator.of(broker);
     partitionsActuator.takeSnapshot();
     Awaitility.await("Snapshot is taken")
@@ -259,16 +266,34 @@ public interface BackupCompatibilityAcceptance {
     final var backupActuator = BackupActuator.of(broker);
     backupActuator.take(backupId);
 
+    final MutableBoolean shouldRetry = new MutableBoolean(false);
     Awaitility.await("until backup is completed")
         .atMost(Duration.ofSeconds(120))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var status = backupActuator.status(backupId);
+              if (shouldRetryBackupDueToSnapshot(status, retryCount)) {
+                shouldRetry.set(true);
+                return;
+              }
               assertThat(status)
                   .describedAs("Backup status (failureReason=%s)", status.getFailureReason())
                   .returns(StateCode.COMPLETED, BackupInfo::getState);
             });
+
+    if (shouldRetry.get()) {
+      createProcessInstanceWithJob(broker);
+      return takeBackup(broker, backupId + 1, retryCount + 1);
+    }
+    return backupId;
+  }
+
+  private boolean shouldRetryBackupDueToSnapshot(final BackupInfo status, final int retryCount) {
+    return status.getState() == StateCode.FAILED
+        && status.getFailureReason() != null
+        && status.getFailureReason().contains("Cannot find a snapshot that can be included")
+        && retryCount < MAX_BACKUP_RETRIES;
   }
 
   /**
@@ -276,7 +301,7 @@ public interface BackupCompatibilityAcceptance {
    * RocksDB state (including any checkpoint info written by prior backups). Unlike {@link
    * #takeBackup}, this waits for the snapshot ID to actually change before proceeding.
    */
-  private void takeBackupWithFreshSnapshot(final ZeebeContainer broker, final long backupId) {
+  private void takeBackupWithFreshSnapshot(final BrokerContainer broker, final long backupId) {
     final var partitionsActuator = PartitionsActuator.of(broker);
     final var previousSnapshotId = partitionsActuator.query().get(1).snapshotId();
 
@@ -305,11 +330,12 @@ public interface BackupCompatibilityAcceptance {
             });
   }
 
-  private ZeebeContainer createOldBroker(final String storeBasePath) {
+  private BrokerContainer createOldBroker(final String storeBasePath) {
     final var broker =
-        new ZeebeContainer(
+        new BrokerContainer(
                 DockerImageName.parse("camunda/zeebe").withTag(VersionUtil.getPreviousVersion()))
             .withNetwork(getNetwork())
+            .withEmbeddedGateway()
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, 1))
             .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "NONE")

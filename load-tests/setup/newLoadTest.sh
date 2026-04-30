@@ -113,49 +113,18 @@ if ! kubectl get namespace $namespace >/dev/null 2>&1; then
   fi
 else
   echo "Namespace '$namespace' already exists"
-  existing_zone="$(kubectl get ns "$namespace" -o json | jq --raw-output ".metadata.annotations[\"$single_zone_annotation_name\"]")"
 
-  if [[ "$existing_zone" == "null" ]]
-  then
-    # Existing namespace, but not labelled. Don't change scheduling there.
-    # This is for backward compatibility reasons and prevent already running
-    # tests, scheduled over multiple zones, from being forcefully rescheduled
-    # on a new single zone.
-    # Once all the namespaces have the annotation, this backward compatibility
-    # step can be removed.
-    availability_zone="~"
-    echo "Namespace ${namespace} is NOT configured to run on a single availability zone ; scheduling will not be changed."
-  else
-    availability_zone="$existing_zone"
-    echo "Namespace ${namespace} has previously been configured to run on the single availability zone: $availability_zone"
-  fi
+  existing_zone="$(kubectl get ns "$namespace" -o json | jq --raw-output ".metadata.annotations[\"$single_zone_annotation_name\"]")"
+  availability_zone="$existing_zone"
+  echo "Namespace ${namespace} has previously been configured to run on the single availability zone: $availability_zone"
 fi
 
-# Sanitize a string to be a valid Kubernetes label value
-sanitize_k8s_label() {
-  local value="$1"
-  # Replace invalid characters with hyphens
-  value=$(echo "$value" | sed 's/[^A-Za-z0-9_.-]/-/g')
-  # Remove leading non-alphanumeric characters
-  value=$(echo "$value" | sed 's/^[^A-Za-z0-9]\+//')
-  # Remove trailing non-alphanumeric characters
-  value=$(echo "$value" | sed 's/[^A-Za-z0-9]\+$//')
-  # Truncate to 63 characters as required by Kubernetes label values
-  value=${value:0:63}
-  # Fallback if the result is empty
-  if [ -z "$value" ]; then
-    value="unknown"
-  fi
-  echo "$value"
-}
-
 # Label to easily find related namespaces
-kubectl label namespace "$namespace" "camunda.io/purpose=load-test" --overwrite
+kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
 
 # Label namespace with author (based on git author)
-raw_git_author=$(git config user.name || echo "unknown")
-git_author=$(sanitize_k8s_label "$raw_git_author")
-kubectl label namespace "$namespace" created-by="$git_author" --overwrite
+git_author=$(compute_git_author)
+kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
 
 # Label namespace with TTL deadline (default: 1 day from now)
 # Try GNU date format first (Linux), then BSD/macOS format
@@ -185,8 +154,8 @@ sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
 sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
-sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" *.yaml
-sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" databases/*.yaml
+sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" *.yaml databases/*.yaml
+sed_inplace "s/__AUTHOR__/$git_author/" *.yaml databases/*.yaml
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update

@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
@@ -32,6 +31,7 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
+import io.camunda.db.rdbms.write.queue.TransactionRunner;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -53,7 +53,6 @@ public class RdbmsWriterFactory {
   private final UserTaskMapper userTaskMapper;
   private final VariableMapper variableMapper;
   private final MeterRegistry meterRegistry;
-  private final BatchOperationDbReader batchOperationReader;
   private final JobMapper jobMapper;
   private final JobMetricsBatchMapper jobMetricsBatchMapper;
   private final SequenceFlowMapper sequenceFlowMapper;
@@ -64,6 +63,7 @@ public class RdbmsWriterFactory {
   private final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper;
   private final ClusterVariableMapper clusterVariableMapper;
   private final HistoryDeletionMapper historyDeletionMapper;
+  private final TransactionRunner transactionRunner;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -81,7 +81,6 @@ public class RdbmsWriterFactory {
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final MeterRegistry meterRegistry,
-      final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final JobMetricsBatchMapper jobMetricsBatchMapper,
       final SequenceFlowMapper sequenceFlowMapper,
@@ -91,7 +90,8 @@ public class RdbmsWriterFactory {
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper,
+      final TransactionRunner transactionRunner) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -109,7 +109,6 @@ public class RdbmsWriterFactory {
     this.jobMapper = jobMapper;
     this.jobMetricsBatchMapper = jobMetricsBatchMapper;
     this.meterRegistry = meterRegistry;
-    this.batchOperationReader = batchOperationReader;
     this.sequenceFlowMapper = sequenceFlowMapper;
     this.usageMetricMapper = usageMetricMapper;
     this.usageMetricTUMapper = usageMetricTUMapper;
@@ -118,6 +117,7 @@ public class RdbmsWriterFactory {
     this.correlatedMessageSubscriptionMapper = correlatedMessageSubscriptionMapper;
     this.clusterVariableMapper = clusterVariableMapper;
     this.historyDeletionMapper = historyDeletionMapper;
+    this.transactionRunner = transactionRunner;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
@@ -128,7 +128,8 @@ public class RdbmsWriterFactory {
             config.partitionId(),
             config.queueSize(),
             config.queueMemoryLimit(),
-            metrics);
+            metrics,
+            transactionRunner);
     return new RdbmsWriters(
         config,
         executionQueue,
@@ -146,7 +147,6 @@ public class RdbmsWriterFactory {
         userTaskMapper,
         variableMapper,
         vendorDatabaseProperties,
-        batchOperationReader,
         jobMapper,
         jobMetricsBatchMapper,
         sequenceFlowMapper,

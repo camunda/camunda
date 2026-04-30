@@ -9,43 +9,59 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record CorrelatedMessageSubscriptionEntity(
-    String correlationKey,
+    @Nullable String correlationKey,
     OffsetDateTime correlationTime,
     String flowNodeId,
-    Long flowNodeInstanceKey,
+    @Nullable Long flowNodeInstanceKey,
     Long messageKey,
     String messageName,
     Integer partitionId,
     String processDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
     Long subscriptionKey,
-    MessageSubscriptionType subscriptionType,
+    @Nullable MessageSubscriptionType subscriptionType,
     String tenantId)
     implements TenantOwnedEntity {
+
+  public CorrelatedMessageSubscriptionEntity {
+    Objects.requireNonNull(correlationTime, "correlationTime");
+    Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(messageKey, "messageKey");
+    Objects.requireNonNull(messageName, "messageName");
+    Objects.requireNonNull(partitionId, "partitionId");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(subscriptionKey, "subscriptionKey");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
+
   public static Builder builder() {
     return new Builder();
   }
 
   public static class Builder {
-    private String correlationKey;
-    private OffsetDateTime correlationTime;
-    private String flowNodeId;
-    private Long flowNodeInstanceKey;
-    private Long messageKey;
-    private String messageName;
-    private Integer partitionId;
-    private String processDefinitionId;
-    private Long processDefinitionKey;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private Long subscriptionKey;
-    private MessageSubscriptionType subscriptionType;
-    private String tenantId;
+    private @Nullable String correlationKey;
+    private @Nullable OffsetDateTime correlationTime;
+    private @Nullable String flowNodeId;
+    private @Nullable Long flowNodeInstanceKey;
+    private @Nullable Long messageKey;
+    private @Nullable String messageName;
+    private @Nullable Integer partitionId;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable Long subscriptionKey;
+    private @Nullable MessageSubscriptionType subscriptionType;
+    private @Nullable String tenantId;
 
     public Builder correlationKey(final String correlationKey) {
       this.correlationKey = correlationKey;
@@ -117,6 +133,7 @@ public record CorrelatedMessageSubscriptionEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     public CorrelatedMessageSubscriptionEntity build() {
       return new CorrelatedMessageSubscriptionEntity(
           correlationKey,

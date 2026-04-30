@@ -57,8 +57,11 @@ export {assertClientsInResponse} from './clients-requestHelpers';
 export {
   setupProcessInstanceForTests,
   activateJobToObtainAValidJobKey,
+  activateJobAndGetHeaders,
+  completeJob,
   getLast24HoursRange,
-  type StatisticsJobItem
+  type StatisticsJobItem,
+  type ActivatedJob,
 } from './job-requestHelpers';
 export {
   createGlobalClusterVariable,
@@ -96,3 +99,14 @@ export {
 } from './global-task-listener-requestHelpers';
 export {type AuditLog} from './audit-log-requestHelpers';
 export {evaluateExpression, EXPRESSION_URL} from './expression-requestHelpers';
+export {
+  type VariableRecord,
+  isRootScope,
+  isLocalScope,
+  getRootScopeVariables,
+  getLocalScopeVariables,
+  getAllProcessInstanceVariables,
+  assertNoVariablesForProcessInstance,
+  getVariablesByName,
+  getVariablesByPatterns,
+} from './optimize-variable-requestHelpers';

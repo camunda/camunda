@@ -261,8 +261,11 @@ jobs:
           ref: ${{ inputs.ref }}
       - name: Get image tag
         id: image-tag
+        if: ${{ inputs.orchestration-tag == '' && inputs.reuse-tag == '' }}
         run: |
-          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          image_tag="${{ inputs.name }}-$(git rev-parse --short HEAD)"
+          echo "image-tag=${image_tag}" >> "$GITHUB_OUTPUT"
+          echo "**Built image tag:** \`${image_tag}\`" >> "$GITHUB_STEP_SUMMARY"
       - name: Validate Docker image tags exist
         if: ${{ inputs.orchestration-tag != '' || inputs.optimize-tag != '' || inputs.identity-tag != '' || inputs.connectors-tag != '' }}
         env:
@@ -495,8 +498,7 @@ jobs:
           load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
                             --set global.image.pullSecrets[0].name=harbor-registry \
-                            --set global.extraEnvVars[0].name=CONFIG_FORCE_app_performReadBenchmarks \
-                            --set global.extraEnvVars[0].value=${{inputs.perform-read-benchmarks}}"
+                            --set global.performReadBenchmarks=${{inputs.perform-read-benchmarks}}"
 
           # Append custom load test inputs
           load_test_config="$load_test_config ${{ inputs.load-test-load }}"

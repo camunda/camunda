@@ -269,25 +269,19 @@ class ApplicationAuthorizationIT {
   }
 
   @Test
-  void accessIdentityWithNewAdminPermissionAllowed() {
+  void accessAdminWithNewAdminPermissionAllowed() {
     // given
     final var webappClient = STANDALONE_CAMUNDA.newWebappClient();
 
     try (final var loggedInClient = webappClient.logIn("new-admin", DEFAULT_PASSWORD)) {
       // when
       final Either<Exception, HttpResponse<String>> result =
-          loggedInClient.send("identity" + PATH_OPERATE_WEBAPP_USER);
+          loggedInClient.send("admin" + PATH_OPERATE_WEBAPP_USER);
 
       // then
       assertThat(result.isLeft()).isFalse();
       final HttpResponse<String> response = result.get();
-
-      // /identity routes redirect to /admin, which is expected behavior
-      assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_MOVED_TEMP);
-      assertThat(response.headers().firstValue("Location"))
-          .isPresent()
-          .get()
-          .satisfies(location -> assertThat(location).contains("/admin/user"));
+      assertAccessAllowed(response);
     }
   }
 

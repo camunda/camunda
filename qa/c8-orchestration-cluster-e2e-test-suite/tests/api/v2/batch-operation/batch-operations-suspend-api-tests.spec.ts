@@ -10,7 +10,6 @@ import {test} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertConflictRequest,
   assertInvalidState,
   assertNotFoundRequest,
   assertStatusCode,
@@ -38,7 +37,7 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request, 3, 'batch_suspension_process');
+        return createCancellationBatch(request, 30, 'batch_suspension_process');
       });
 
     await test.step('Send suspend request', async () => {
@@ -61,7 +60,7 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request, 3, 'batch_suspension_process');
+        return createCancellationBatch(request, 30, 'batch_suspension_process');
       });
 
     await test.step('Suspend batch operation once', async () => {
@@ -138,7 +137,7 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     request,
   }) => {
     const key = await test.step('Create cancel batch operation', async () => {
-      return createCancellationBatch(request, 3, 'batch_suspension_process');
+      return createCancellationBatch(request, 30, 'batch_suspension_process');
     });
 
     await test.step('Send suspend request', async () => {

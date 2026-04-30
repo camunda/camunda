@@ -29,6 +29,7 @@ class NetworkReconnectionHandler {
   }
   reset() {
     window.removeEventListener('online', this.handleReconnection);
+    this.boundCallback = undefined;
   }
 }
 export {NetworkReconnectionHandler};

@@ -4,7 +4,7 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 
 ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
-ARG BASE_DIGEST="sha256:c28de0ca6d34d1017166c2c16e2ed7757ee2f7ad20f7ac5bea8bbf9989cc9bc2"
+ARG BASE_DIGEST="sha256:f21d8148ffd3749c189231e78789ee5ef511f9c8d2c7f497537494d707f95074"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
@@ -13,7 +13,7 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
 ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.10_7-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:be00aca3f4747fa3f4b936fc35dc64eb5862349e262b2ad8d3299cb96a305780"
+ARG BASE_DIGEST_PUBLIC="sha256:420374e45e8e9dce3057e768c87a3e8ba58e815049511d8df95ca88a041ec82b"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
@@ -127,11 +127,6 @@ ENV ROCKSDB_MUSL_LIBC=false
 
 WORKDIR ${CAMUNDA_HOME}
 EXPOSE 8080 26500 26501 26502
-VOLUME /tmp
-VOLUME ${CAMUNDA_HOME}/data
-VOLUME ${CAMUNDA_HOME}/logs
-VOLUME ${CAMUNDA_HOME}/documents
-VOLUME /driver-lib
 
 # Switch to root to allow setting up our own user
 USER root
@@ -145,6 +140,12 @@ RUN addgroup --gid 1001 camunda && \
     mkdir ${CAMUNDA_HOME}/documents && \
     chown -R 1001:0 ${CAMUNDA_HOME} && \
     chmod -R 0775 ${CAMUNDA_HOME}
+
+VOLUME /tmp
+VOLUME ${CAMUNDA_HOME}/data
+VOLUME ${CAMUNDA_HOME}/logs
+VOLUME ${CAMUNDA_HOME}/documents
+VOLUME /driver-lib
 
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}

@@ -923,4 +923,33 @@ public class SecondaryStorageOpensearchTest {
       assertThat(proxy.getPassword()).isEqualTo(EXPECTED_PROXY_PASSWORD);
     }
   }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=opensearch"})
+  class WithDefaultValues {
+
+    final Camunda camunda;
+    final SearchEngineIndexProperties searchEngineIndexProperties;
+
+    WithDefaultValues(
+        @Autowired final Camunda camunda,
+        @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
+      this.camunda = camunda;
+      this.searchEngineIndexProperties = searchEngineIndexProperties;
+    }
+
+    @Test
+    void shouldNumberOfReplicasDefaultToOne() {
+      assertThat(camunda.getData().getSecondaryStorage().getOpensearch().getNumberOfReplicas())
+          .isEqualTo(1);
+      assertThat(searchEngineIndexProperties.getNumberOfReplicas()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldNumberOfShardsDefaultToOne() {
+      assertThat(camunda.getData().getSecondaryStorage().getOpensearch().getNumberOfShards())
+          .isEqualTo(1);
+      assertThat(searchEngineIndexProperties.getNumberOfShards()).isEqualTo(1);
+    }
+  }
 }

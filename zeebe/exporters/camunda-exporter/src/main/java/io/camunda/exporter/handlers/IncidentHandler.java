@@ -81,17 +81,17 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
         .setId(ExporterUtil.toStringOrNull(incidentKey))
         .setKey(incidentKey)
         .setPartitionId(record.getPartitionId())
-        .setPosition(record.getPosition());
+        .setPosition(record.getPosition())
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setFlowNodeInstanceKey(recordValue.getElementInstanceKey())
+        .setTreePath(buildTreePath(record));
+
     if (recordValue.getJobKey() > 0) {
       entity.setJobKey(recordValue.getJobKey());
     }
-    if (recordValue.getProcessInstanceKey() > 0) {
-      entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    }
-    if (recordValue.getProcessDefinitionKey() > 0) {
-      entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-    }
-    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
+
     final String errorMessage = ExporterUtil.trimWhitespace(recordValue.getErrorMessage());
     entity
         .setErrorMessage(errorMessage)
@@ -99,16 +99,11 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
             ErrorType.fromZeebeErrorType(
                 recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()))
         .setFlowNodeId(recordValue.getElementId());
-    if (recordValue.getElementInstanceKey() > 0) {
-      entity.setFlowNodeInstanceKey(recordValue.getElementInstanceKey());
-    }
     entity
         .setState(IncidentState.PENDING)
         .setCreationTime(
             OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC))
         .setTenantId(ExporterUtil.tenantOrDefault(recordValue.getTenantId()));
-
-    entity.setTreePath(buildTreePath(record));
 
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {

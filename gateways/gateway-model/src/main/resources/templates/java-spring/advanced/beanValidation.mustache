@@ -5,7 +5,4 @@
   which is incorrect for nullable properties. OpenAPI required means the key
   must be present, not that the value must be non-null.
   Upstream issue: https://github.com/OpenAPITools/openapi-generator/issues/21050
-}}{{#required}}{{^isReadOnly}}{{^isNullable}}@NotNull
-{{/isNullable}}{{/isReadOnly}}{{/required}}{{#isContainer}}{{^isPrimitiveType}}{{^isEnum}}@Valid
-{{/isEnum}}{{/isPrimitiveType}}{{/isContainer}}{{^isContainer}}{{^isPrimitiveType}}@Valid
-{{/isPrimitiveType}}{{/isContainer}}{{^openApiNullable}}{{>beanValidationCore}}{{/openApiNullable}}{{#openApiNullable}}{{^useOptional}}{{>beanValidationCore}}{{/useOptional}}{{/openApiNullable}}{{#useOptional}}{{#openApiNullable}}{{#isContainer}}{{^required}}{{>beanValidationCore}}{{/required}}{{/isContainer}}{{/openApiNullable}}{{#openApiNullable}}{{#required}}{{>beanValidationCore}}{{/required}}{{/openApiNullable}}{{/useOptional}}
+}}{{#required}}{{^isReadOnly}}{{^isNullable}}@NotNull {{/isNullable}}{{/isReadOnly}}{{/required}}{{#isContainer}}{{^isPrimitiveType}}{{^isEnum}}@Valid {{/isEnum}}{{/isPrimitiveType}}{{/isContainer}}{{^isContainer}}{{^isPrimitiveType}}@Valid {{/isPrimitiveType}}{{/isContainer}}{{^openApiNullable}}{{>beanValidationCore}}{{/openApiNullable}}{{#openApiNullable}}{{^useOptional}}{{>beanValidationCore}}{{/useOptional}}{{/openApiNullable}}{{#useOptional}}{{#openApiNullable}}{{#isContainer}}{{^required}}{{>beanValidationCore}}{{/required}}{{/isContainer}}{{/openApiNullable}}{{#openApiNullable}}{{#required}}{{>beanValidationCore}}{{/required}}{{/openApiNullable}}{{/useOptional}}

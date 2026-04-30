@@ -89,4 +89,61 @@ final class BatchOperationArchiverJobTest extends ArchiverJobRecordingMetricsAbs
                 Map.of(BatchOperationTemplate.ID, List.of("1", "2", "3")),
                 executor));
   }
+
+  @Test
+  void shouldNotPassStringIdsToDependantsWhenAllIdsAreStrings() {
+    // given - all IDs are GUIDs (non-numeric), simulating legacy 8.8 batch operations
+    repository.batches =
+        List.of(
+            new BasicArchiveBatch(
+                "2024-01-01", List.of("abc-def-123", "guid-456-xyz", "non-numeric-id")));
+
+    // when
+    final int count = job.execute().toCompletableFuture().join();
+
+    // then - dependant receives empty IDs (all filtered out), batch operation gets all IDs
+    assertThat(count).isEqualTo(3);
+    assertThat(repository.moves)
+        .containsExactly(
+            new DocumentMove(
+                auditLogTemplate.getFullQualifiedName(),
+                auditLogTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(AuditLogTemplate.BATCH_OPERATION_KEY, List.of()),
+                Map.of(AuditLogTemplate.ENTITY_TYPE, "BATCH"),
+                executor),
+            new DocumentMove(
+                batchOperationTemplate.getFullQualifiedName(),
+                batchOperationTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(
+                    BatchOperationTemplate.ID,
+                    List.of("abc-def-123", "guid-456-xyz", "non-numeric-id")),
+                executor));
+  }
+
+  @Test
+  void shouldOnlyPassNumericIdsToDependantsWhenMixed() {
+    // given - mix of GUID strings and numeric longs, simulating 8.8 -> 8.9 migration
+    repository.batches =
+        List.of(
+            new BasicArchiveBatch("2024-01-01", List.of("1", "abc-def-123", "2", "guid-456-xyz")));
+
+    // when
+    final int count = job.execute().toCompletableFuture().join();
+
+    // then - audit log dependant receives only numeric IDs, batch operation gets all IDs
+    assertThat(count).isEqualTo(4);
+    assertThat(repository.moves)
+        .containsExactly(
+            new DocumentMove(
+                auditLogTemplate.getFullQualifiedName(),
+                auditLogTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(AuditLogTemplate.BATCH_OPERATION_KEY, List.of("1", "2")),
+                Map.of(AuditLogTemplate.ENTITY_TYPE, "BATCH"),
+                executor),
+            new DocumentMove(
+                batchOperationTemplate.getFullQualifiedName(),
+                batchOperationTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(BatchOperationTemplate.ID, List.of("1", "abc-def-123", "2", "guid-456-xyz")),
+                executor));
+  }
 }

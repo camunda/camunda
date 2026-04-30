@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
-
+import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.testcontainers.MinioContainer;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
-import io.zeebe.containers.ZeebeContainer;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -34,19 +34,22 @@ final class S3BackupAuthenticationIT {
   void shouldConnectWithoutConfiguredCredentials() {
     // given
     final var zeebe =
-        new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
+        new BrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
             .withNetwork(NETWORK)
             .dependsOn(MINIO)
             .withoutTopologyCheck()
-            .withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*")
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "S3")
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", BUCKET_NAME)
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", MINIO.internalEndpoint())
-            .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_REGION", MINIO.region())
-            // Set env variables discovered by the AWS SDK, not Zeebe
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                  final var s3Config = cfg.getData().getPrimaryStorage().getBackup().getS3();
+                  cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.S3);
+                  s3Config.setBucketName(BUCKET_NAME);
+                  s3Config.setEndpoint(MINIO.internalEndpoint());
+                  s3Config.setRegion(MINIO.region());
+                })
             .withEnv("AWS_ACCESS_KEY_ID", MINIO.accessKey())
             .withEnv("AWS_SECRET_ACCESS_KEY", MINIO.secretKey())
-            .withEnv(CREATE_SCHEMA_ENV_VAR, "false");
+            .withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*");
 
     // when
     zeebe.start();

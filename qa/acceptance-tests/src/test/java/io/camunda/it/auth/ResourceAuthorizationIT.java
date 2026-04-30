@@ -20,6 +20,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TenantDefinition;
+import io.camunda.qa.util.auth.TestTenant;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -51,8 +53,6 @@ class ResourceAuthorizationIT {
   private static final String UNAUTHORIZED = "unauthorizedUser";
   private static final AtomicLong RESOURCE_KEY_TENANT_A = new AtomicLong();
   private static final AtomicLong RESOURCE_KEY_TENANT_B = new AtomicLong();
-  private static final String TENANT_A = "tenantA";
-  private static final String TENANT_B = "tenantB";
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -76,20 +76,21 @@ class ResourceAuthorizationIT {
   private static final TestUser UNAUTHORIZED_USER =
       new TestUser(UNAUTHORIZED, DEFAULT_PASSWORD, List.of());
 
+  @TenantDefinition
+  private static final TestTenant TENANT_A =
+      new TestTenant("tenantA").addUsers(ADMIN, RESTRICTED, UNAUTHORIZED);
+
+  @TenantDefinition
+  private static final TestTenant TENANT_B = new TestTenant("tenantB").addUsers(ADMIN);
+
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_B);
-    assignUserToTenant(adminClient, ADMIN, TENANT_A);
-    assignUserToTenant(adminClient, ADMIN, TENANT_B);
-    assignUserToTenant(adminClient, RESTRICTED, TENANT_A);
-    assignUserToTenant(adminClient, UNAUTHORIZED, TENANT_A);
 
     final var deploymentTenantA =
         adminClient
             .newDeployResourceCommand()
             .addResourceFromClasspath("rpa/test-rpa.rpa")
-            .tenantId(TENANT_A)
+            .tenantId(TENANT_A.getId())
             .send()
             .join();
     RESOURCE_KEY_TENANT_A.set(deploymentTenantA.getResource().getFirst().getResourceKey());
@@ -98,7 +99,7 @@ class ResourceAuthorizationIT {
         adminClient
             .newDeployResourceCommand()
             .addResourceFromClasspath("rpa/test-rpa.rpa")
-            .tenantId(TENANT_B)
+            .tenantId(TENANT_B.getId())
             .send()
             .join();
     RESOURCE_KEY_TENANT_B.set(deploymentTenantB.getResource().getFirst().getResourceKey());
@@ -200,12 +201,59 @@ class ResourceAuthorizationIT {
         .isEqualTo("Unauthorized to perform operation 'READ' on resource 'RESOURCE'");
   }
 
-  private static void createTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
+  @Test
+  void shouldSearchResourcesWhenAuthorizedByResourceId(
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
+    // when
+    final var results = userClient.newResourceSearchRequest().send().join();
+
+    // then
+    assertThat(results.items()).isNotEmpty();
+    assertThat(results.items()).hasSize(1);
+    assertThat(results.items().getFirst().getResourceId()).isEqualTo(RESOURCE_ID);
+    assertThat(results.items().getFirst().getTenantId()).isEqualTo(TENANT_A.getId());
   }
 
-  private static void assignUserToTenant(
-      final CamundaClient camundaClient, final String username, final String tenant) {
-    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
+  @Test
+  void shouldReturnEmptyForSearchResourcesWhenUnauthorizedByResourceId(
+      @Authenticated(UNAUTHORIZED) final CamundaClient userClient) {
+    // when
+    final var results = userClient.newResourceSearchRequest().send().join();
+
+    // then
+    assertThat(results.items()).isEmpty();
+  }
+
+  @Test
+  void shouldSearchResourcesFilteredByTenantWhenAuthorized(
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
+    // when - restricted user is only a member of TENANT_A
+    final var results =
+        userClient
+            .newResourceSearchRequest()
+            .filter(f -> f.tenantId(TENANT_A.getId()))
+            .send()
+            .join();
+
+    // then
+    assertThat(results.items()).isNotEmpty();
+    assertThat(results.items()).hasSize(1);
+    assertThat(results.items().getFirst().getResourceId()).isEqualTo(RESOURCE_ID);
+    assertThat(results.items().getFirst().getTenantId()).isEqualTo(TENANT_A.getId());
+  }
+
+  @Test
+  void shouldReturnEmptyForSearchResourcesWhenFilteredByUnauthorizedTenant(
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
+    // when - restricted user is only a member of TENANT_A, not TENANT_B
+    final var results =
+        userClient
+            .newResourceSearchRequest()
+            .filter(f -> f.tenantId(TENANT_B.getId()))
+            .send()
+            .join();
+
+    // then
+    assertThat(results.items()).isEmpty();
   }
 }

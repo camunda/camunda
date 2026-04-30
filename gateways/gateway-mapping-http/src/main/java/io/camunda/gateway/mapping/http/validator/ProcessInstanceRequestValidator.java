@@ -42,6 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
 
 public class ProcessInstanceRequestValidator {
@@ -125,7 +126,8 @@ public class ProcessInstanceRequestValidator {
         });
   }
 
-  private static void validateTags(final Set<String> tags, final List<String> violations) {
+  private static void validateTags(
+      final @Nullable Set<String> tags, final List<String> violations) {
     violations.addAll(TagsValidator.validate(tags));
   }
 
@@ -234,8 +236,11 @@ public class ProcessInstanceRequestValidator {
   }
 
   private static void validateActivateInstructions(
-      final List<ProcessInstanceModificationActivateInstruction> instructions,
+      final @Nullable List<ProcessInstanceModificationActivateInstruction> instructions,
       final List<String> violations) {
+    if (instructions == null) {
+      return;
+    }
     validateInstructions(
         instructions,
         (instruction) -> instruction.getElementId() != null,
@@ -249,18 +254,27 @@ public class ProcessInstanceRequestValidator {
                 violations));
     final var variableInstructions =
         instructions.stream()
-            .flatMap(instruction -> instruction.getVariableInstructions().stream())
+            .flatMap(
+                instruction -> {
+                  final var vi = instruction.getVariableInstructions();
+                  return vi == null ? java.util.stream.Stream.empty() : vi.stream();
+                })
             .toList();
     validateInstructions(
         variableInstructions,
-        (variableInstruction) -> !variableInstruction.getVariables().isEmpty(),
+        (variableInstruction) ->
+            variableInstruction.getVariables() != null
+                && !variableInstruction.getVariables().isEmpty(),
         violations,
         ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
   }
 
   private static void validateTerminateInstructions(
-      final List<ProcessInstanceModificationTerminateInstruction> instructions,
+      final @Nullable List<ProcessInstanceModificationTerminateInstruction> instructions,
       final List<String> violations) {
+    if (instructions == null) {
+      return;
+    }
     instructions.forEach(
         instruction -> {
           if (instruction
@@ -281,8 +295,11 @@ public class ProcessInstanceRequestValidator {
   }
 
   private static void validateMoveInstructions(
-      final List<ProcessInstanceModificationMoveInstruction> instructions,
+      final @Nullable List<ProcessInstanceModificationMoveInstruction> instructions,
       final List<String> violations) {
+    if (instructions == null) {
+      return;
+    }
     instructions.forEach(
         instruction -> {
           switch (instruction.getSourceElementInstruction()) {
@@ -320,11 +337,17 @@ public class ProcessInstanceRequestValidator {
         });
     final var variableInstructions =
         instructions.stream()
-            .flatMap(instruction -> instruction.getVariableInstructions().stream())
+            .flatMap(
+                instruction -> {
+                  final var vi = instruction.getVariableInstructions();
+                  return vi == null ? java.util.stream.Stream.empty() : vi.stream();
+                })
             .toList();
     validateInstructions(
         variableInstructions,
-        (variableInstruction) -> !variableInstruction.getVariables().isEmpty(),
+        (variableInstruction) ->
+            variableInstruction.getVariables() != null
+                && !variableInstruction.getVariables().isEmpty(),
         violations,
         ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
   }

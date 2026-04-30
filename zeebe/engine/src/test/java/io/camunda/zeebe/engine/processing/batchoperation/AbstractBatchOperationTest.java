@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -325,22 +326,22 @@ abstract class AbstractBatchOperationTest {
   protected ProcessInstanceEntity fakeProcessInstanceEntity(final long processInstanceKey) {
     return new ProcessInstanceEntity(
         processInstanceKey,
-        null,
-        null,
-        null,
-        -1,
-        null,
-        -1L,
-        -1L,
-        -1L,
-        null,
-        null,
-        null,
-        false,
-        null,
-        null,
-        Set.of(),
-        null);
+        null, // rootProcessInstanceKey
+        "fake-process-def-id", // processDefinitionId
+        null, // processDefinitionName
+        -1, // processDefinitionVersion
+        null, // processDefinitionVersionTag
+        -1L, // processDefinitionKey
+        -1L, // parentProcessInstanceKey
+        -1L, // parentFlowNodeInstanceKey
+        java.time.OffsetDateTime.now(), // startDate
+        null, // endDate
+        ProcessInstanceEntity.ProcessInstanceState.ACTIVE, // state
+        false, // hasIncident
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        null, // treePath
+        Set.of(), // tags
+        null); // businessId
   }
 
   protected IncidentEntity fakeIncidentEntity(
@@ -348,17 +349,17 @@ abstract class AbstractBatchOperationTest {
     return new IncidentEntity(
         incidentKey,
         -1L, // processDefinitionKey
-        null, // processDefinitionId
+        "fake-process-def-id", // processDefinitionId
         processInstanceKey, // processInstanceKey
         null, // rootProcessInstanceKey
         IncidentEntity.ErrorType.UNSPECIFIED,
         "Fake incident message",
         "flowNodeId",
         -1L, // flowNodeInstanceKey
-        null, // creationTime
+        java.time.OffsetDateTime.now(), // creationTime
         IncidentEntity.IncidentState.ACTIVE,
         -1L, // jobKey
-        null // tenantId
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER // tenantId
         );
   }
 
@@ -392,8 +393,17 @@ abstract class AbstractBatchOperationTest {
 
   protected DecisionInstanceEntity fakeDecisionInstanceEntity(final long itemKey) {
     return new DecisionInstanceEntity.Builder()
+        .decisionInstanceId(itemKey + "-1")
         .decisionInstanceKey(itemKey)
+        .state(DecisionInstanceEntity.DecisionInstanceState.EVALUATED)
+        .evaluationDate(java.time.OffsetDateTime.now())
         .processInstanceKey(itemKey)
+        .decisionDefinitionId("fake-decision-def-id")
+        .decisionDefinitionKey(-1L)
+        .decisionDefinitionName("Fake Decision")
+        .decisionDefinitionType(DecisionInstanceEntity.DecisionDefinitionType.DECISION_TABLE)
+        .result("{}")
+        .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .build();
   }
 

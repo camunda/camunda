@@ -26,6 +26,7 @@
     <module>operate</module>
     <module>tasklist</module>
     <module>identity</module>
+    <module>webapp</module>
     <module>webapps-common</module>
     <module>webapps-schema</module>
     <module>webapps-backup</module>
@@ -79,7 +80,7 @@
               <exclude>tasklist/client/**/*</exclude>
               <exclude>operate/client/**/*</exclude>
               <exclude>optimize/client/**/*.md</exclude>
-              <exclude>client-components/**/*</exclude>
+              <exclude>webapp/client/**/*</exclude>
               <!--
               can be removed once upgrading to spotless >= 3.1.0 which supports enabling the
               YamlFrontMatter flexmark extension

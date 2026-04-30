@@ -9,39 +9,75 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record MessageSubscriptionEntity(
     Long messageSubscriptionKey,
     String processDefinitionId,
-    Long processDefinitionKey,
-    Long processInstanceKey,
-    Long rootProcessInstanceKey,
+    @Nullable Long processDefinitionKey,
+    @Nullable Long processInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
     String flowNodeId,
-    Long flowNodeInstanceKey,
+    @Nullable Long flowNodeInstanceKey,
     MessageSubscriptionState messageSubscriptionState,
-    OffsetDateTime dateTime,
+    MessageSubscriptionType messageSubscriptionType,
+    // absent on subscriptions that predate the dateTime field being populated by the handler.
+    @Nullable OffsetDateTime dateTime,
     String messageName,
-    String correlationKey,
-    String tenantId)
+    @Nullable String correlationKey,
+    String tenantId,
+    @Nullable String processDefinitionName,
+    @Nullable Integer processDefinitionVersion,
+    Map<String, String> extensionProperties,
+    @Nullable String toolName,
+    @Nullable String inboundConnectorType)
     implements TenantOwnedEntity {
+
+  public MessageSubscriptionEntity {
+    Objects.requireNonNull(messageSubscriptionKey, "messageSubscriptionKey");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(messageSubscriptionState, "messageSubscriptionState");
+    Objects.requireNonNull(messageName, "messageName");
+    Objects.requireNonNull(tenantId, "tenantId");
+    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
+    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
+    // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
+    extensionProperties = extensionProperties != null ? extensionProperties : new HashMap<>();
+    // Pre-8.10 rows have no messageSubscriptionType stored; default them to PROCESS_EVENT.
+    messageSubscriptionType =
+        messageSubscriptionType != null
+            ? messageSubscriptionType
+            : MessageSubscriptionType.PROCESS_EVENT;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
 
   public static class Builder {
-    private Long messageSubscriptionKey;
-    private String processDefinitionId;
-    private Long processDefinitionKey;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private String flowNodeId;
-    private Long flowNodeInstanceKey;
-    private MessageSubscriptionState messageSubscriptionState;
-    private OffsetDateTime dateTime;
-    private String messageName;
-    private String correlationKey;
-    private String tenantId;
+    private @Nullable Long messageSubscriptionKey;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable String flowNodeId;
+    private @Nullable Long flowNodeInstanceKey;
+    private @Nullable MessageSubscriptionState messageSubscriptionState;
+    private @Nullable MessageSubscriptionType messageSubscriptionType;
+    private @Nullable OffsetDateTime dateTime;
+    private @Nullable String messageName;
+    private @Nullable String correlationKey;
+    private @Nullable String tenantId;
+    private @Nullable String processDefinitionName;
+    private @Nullable Integer processDefinitionVersion;
+    private @Nullable Map<String, String> extensionProperties;
+    private @Nullable String toolName;
+    private @Nullable String inboundConnectorType;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -84,6 +120,36 @@ public record MessageSubscriptionEntity(
       return this;
     }
 
+    public Builder messageSubscriptionType(final MessageSubscriptionType messageSubscriptionType) {
+      this.messageSubscriptionType = messageSubscriptionType;
+      return this;
+    }
+
+    public Builder processDefinitionName(final String processDefinitionName) {
+      this.processDefinitionName = processDefinitionName;
+      return this;
+    }
+
+    public Builder processDefinitionVersion(final Integer processDefinitionVersion) {
+      this.processDefinitionVersion = processDefinitionVersion;
+      return this;
+    }
+
+    public Builder extensionProperties(final Map<String, String> extensionProperties) {
+      this.extensionProperties = extensionProperties;
+      return this;
+    }
+
+    public Builder toolName(final String toolName) {
+      this.toolName = toolName;
+      return this;
+    }
+
+    public Builder inboundConnectorType(final String inboundConnectorType) {
+      this.inboundConnectorType = inboundConnectorType;
+      return this;
+    }
+
     public Builder dateTime(final OffsetDateTime dateTime) {
       this.dateTime = dateTime;
       return this;
@@ -104,6 +170,7 @@ public record MessageSubscriptionEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     public MessageSubscriptionEntity build() {
       return new MessageSubscriptionEntity(
           messageSubscriptionKey,
@@ -114,10 +181,16 @@ public record MessageSubscriptionEntity(
           flowNodeId,
           flowNodeInstanceKey,
           messageSubscriptionState,
+          messageSubscriptionType,
           dateTime,
           messageName,
           correlationKey,
-          tenantId);
+          tenantId,
+          processDefinitionName,
+          processDefinitionVersion,
+          extensionProperties,
+          toolName,
+          inboundConnectorType);
     }
   }
 
@@ -126,5 +199,10 @@ public record MessageSubscriptionEntity(
     CREATED,
     DELETED,
     MIGRATED
+  }
+
+  public enum MessageSubscriptionType {
+    START_EVENT,
+    PROCESS_EVENT
   }
 }

@@ -17,6 +17,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 test.beforeAll(async () => {
   await deploy([
     './resources/usertask_to_be_completed.bpmn',
+    './resources/usertask_for_assign_unassign.bpmn',
     './resources/user_task_with_form.bpmn',
     './resources/user_task_form.form',
     './resources/user_task_with_form_and_vars.bpmn',
@@ -29,6 +30,8 @@ test.beforeAll(async () => {
     './resources/date_and_time_task_with_form.bpmn',
     './resources/form_with_date_and_time.form',
     './resources/number_task_with_form.bpmn',
+    './resources/number_task_input_form.bpmn',
+    './resources/number_task_buttons_form.bpmn',
     './resources/form_with_number.form',
     './resources/radio_button_task_with_form.bpmn',
     './resources/form_with_radio_button.form',
@@ -49,6 +52,7 @@ test.beforeAll(async () => {
 
   await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
+    createInstances('usertask_for_assign_unassign', 1, 1),
     createInstances('user_registration', 1, 2),
     createInstances('user_registration_assigned_filter', 1, 1),
     createInstances('user_registration_with_vars', 1, 2, {
@@ -66,7 +70,8 @@ test.beforeAll(async () => {
     createInstances('Checkbox_User_Task', 1, 1),
     createInstances('Checklist_Task', 1, 1),
     createInstances('Date_and_Time_Task', 1, 1),
-    createInstances('Number_Task', 1, 2),
+    createInstances('Number_Task_Input', 1, 1),
+    createInstances('Number_Task_Buttons', 1, 1),
     createInstances('Tag_List_Task', 1, 1),
     createInstances('Radio_Button_User_Task', 1, 1),
     createInstances('Select', 1, 1),
@@ -127,12 +132,8 @@ test.describe('task details page', () => {
     );
   });
 
-  test('assign and unassign task', async ({
-    page,
-    taskPanelPage,
-    taskDetailsPage,
-  }) => {
-    await taskPanelPage.openTask('usertask_to_be_completed');
+  test('assign and unassign task', async ({taskPanelPage, taskDetailsPage}) => {
+    await taskPanelPage.openTask('usertask_for_assign_unassign');
 
     await expect(taskDetailsPage.assignToMeButton).toBeVisible({
       timeout: 60000,
@@ -359,7 +360,7 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('UserTask_Number');
+    await taskPanelPage.openTask('UserTask_Number_Input');
     await taskDetailsPage.clickAssignToMeButton();
 
     await taskDetailsPage.fillTextInput('Number', '4');
@@ -368,7 +369,7 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('UserTask_Number');
+    await taskPanelPage.openTask('UserTask_Number_Input');
 
     await taskDetailsPage.assertFieldValue('Number', '4');
   });
@@ -378,21 +379,27 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('UserTask_Number');
+    await taskPanelPage.openTask('UserTask_Number_Buttons');
     await taskDetailsPage.clickAssignToMeButton();
 
     await taskDetailsPage.clickIncrementButton();
-    await taskDetailsPage.assertFieldValue('Number', '1');
+    await expect(taskDetailsPage.numberInput).toHaveValue('1');
     await taskDetailsPage.clickIncrementButton();
-    await taskDetailsPage.assertFieldValue('Number', '2');
+    await expect(taskDetailsPage.numberInput).toHaveValue('2');
     await taskDetailsPage.clickDecrementButton();
-    await taskDetailsPage.assertFieldValue('Number', '1');
+    await expect(taskDetailsPage.numberInput).toHaveValue('1');
+    await sleep(500);
     await taskDetailsPage.clickCompleteTaskButton();
-    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(taskDetailsPage.taskCompletedBanner).toBeHidden({
+      timeout: 15000,
+    });
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('UserTask_Number');
+    await taskPanelPage.openTask('UserTask_Number_Buttons');
     await taskDetailsPage.assertFieldValue('Number', '1');
   });
 

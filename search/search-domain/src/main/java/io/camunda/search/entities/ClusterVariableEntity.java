@@ -8,17 +8,26 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ClusterVariableEntity(
     String id,
     String name,
     String value,
-    String fullValue,
-    Boolean isPreview,
+    @Nullable String fullValue,
+    @Nullable Boolean isPreview,
     ClusterVariableScope scope,
-    String tenantId)
+    @Nullable String tenantId)
     implements TenantOwnedEntity {
+
+  public ClusterVariableEntity {
+    Objects.requireNonNull(id, "id");
+    Objects.requireNonNull(name, "name");
+    Objects.requireNonNull(value, "value");
+    Objects.requireNonNull(scope, "scope");
+  }
 
   @Override
   public boolean hasTenantScope() {

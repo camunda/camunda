@@ -65,5 +65,8 @@
   "searchAndAssignGroupToRole": "Search and assign group to role",
   "roleCreated": "Role created",
   "createRoleSuccess": "You have successfully created role {{ roleName }}",
-  "roleNameRequired": "Role name is required"
+  "roleNameRequired": "Role name is required",
+  "editRole": "Edit role",
+  "updatingRole": "Updating role",
+  "roleHasBeenUpdated": "Role has been updated"
 }

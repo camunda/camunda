@@ -10,19 +10,34 @@ package io.camunda.tasklist.data;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 
+import io.camunda.client.impl.command.StreamUtil;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.ResourceServices;
+import io.camunda.service.ResourceServices.DeployResourcesRequest;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.PayloadUtil;
-import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +48,13 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
 
   @Autowired protected TasklistProperties tasklistProperties;
 
-  @Autowired private TasklistServicesAdapter tasklistServicesAdapter;
-
   @Autowired private PayloadUtil payloadUtil;
+
+  @Autowired private ResourceServices resourceServices;
+
+  @Autowired private ProcessInstanceServices processInstanceServices;
+
+  @Autowired private CamundaAuthenticationProvider authenticationProvider;
 
   private final Random random = new Random();
 
@@ -196,7 +215,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
         payload != null && !payload.isEmpty() ? payloadUtil.parsePayload(payload) : Map.of();
     final Runnable runCreateProcessInstance =
         () ->
-            tasklistServicesAdapter.createProcessInstanceWithoutAuthentication(
+            createProcessInstanceWithoutAuthentication(
                 processId, variables, DEFAULT_TENANT_IDENTIFIER);
     try {
       runCreateProcessInstance.run();
@@ -241,9 +260,67 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
   }
 
   private void deployResource(final String classpathResource) {
-    tasklistServicesAdapter.deployResourceWithoutAuthentication(
-        classpathResource, DEFAULT_TENANT_IDENTIFIER);
+    deployResourceWithoutAuthentication(classpathResource, DEFAULT_TENANT_IDENTIFIER);
     LOGGER.debug("Deployment of resource [{}] was performed", classpathResource);
+  }
+
+  public void deployResourceWithoutAuthentication(
+      final String classpathResource, final String tenantId) {
+    try (final InputStream resourceStream =
+        getClass().getClassLoader().getResourceAsStream(classpathResource)) {
+      if (resourceStream != null) {
+        final byte[] bytes = StreamUtil.readInputStream(resourceStream);
+        executeCamundaServiceAnonymously(
+            (authentication) ->
+                resourceServices.deployResources(
+                    new DeployResourcesRequest(Map.of(classpathResource, bytes), tenantId),
+                    authentication));
+      } else {
+        throw new FileNotFoundException(classpathResource);
+      }
+    } catch (final IOException e) {
+      final String exceptionMsg =
+          String.format("Cannot deploy resource from classpath. %s", e.getMessage());
+      throw new TasklistRuntimeException(exceptionMsg, e);
+    }
+  }
+
+  public ProcessInstanceCreationRecord createProcessInstanceWithoutAuthentication(
+      final String bpmnProcessId, final Map<String, Object> variables, final String tenantId) {
+    return executeCamundaServiceAnonymously(
+        (authentication) ->
+            processInstanceServices.createProcessInstance(
+                new ProcessInstanceCreateRequest(
+                    -1L,
+                    bpmnProcessId,
+                    -1,
+                    variables,
+                    tenantId,
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    List.of(),
+                    null,
+                    Set.of(),
+                    null),
+                authentication));
+  }
+
+  private <T> T executeCamundaServiceAnonymously(
+      final Function<CamundaAuthentication, CompletableFuture<T>> method) {
+    return executeCamundaService(
+        method, authenticationProvider.getAnonymousCamundaAuthentication());
+  }
+
+  private <T> T executeCamundaService(
+      final Function<CamundaAuthentication, CompletableFuture<T>> method,
+      final CamundaAuthentication authentication) {
+    try {
+      return method.apply(authentication).join();
+    } catch (final Exception e) {
+      throw e;
+    }
   }
 
   @PreDestroy

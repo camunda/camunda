@@ -93,6 +93,25 @@
       },
       "rootProcessInstanceKey": {
         "type": "long"
+      },
+      "processDefinitionName": {
+        "type": "keyword"
+      },
+      "processDefinitionVersion": {
+        "type": "integer"
+      },
+      "extensionProperties": {
+        "type": "object",
+        "enabled": false
+      },
+      "messageSubscriptionType": {
+        "type": "keyword"
+      },
+      "toolName": {
+        "type": "keyword"
+      },
+      "inboundConnectorType": {
+        "type": "keyword"
       }
 		}
 	}

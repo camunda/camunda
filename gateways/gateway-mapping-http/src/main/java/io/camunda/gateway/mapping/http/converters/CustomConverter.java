@@ -7,9 +7,11 @@
  */
 package io.camunda.gateway.mapping.http.converters;
 
+import org.jspecify.annotations.Nullable;
+
 public interface CustomConverter<T> {
 
   boolean canConvert(final Object value);
 
-  T convertValue(final Object value);
+  @Nullable T convertValue(final Object value);
 }

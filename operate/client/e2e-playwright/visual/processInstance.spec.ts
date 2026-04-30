@@ -157,10 +157,7 @@ test.describe('process instance page', () => {
       .click();
     await processInstancePage.variablesEditor.waitForEditorToLoad();
 
-    await page.addStyleTag({
-      content:
-        '* { caret-color: transparent !important; } .monaco-editor .cursor { animation: none !important; opacity: 0 !important; }',
-    });
+    await processInstancePage.variablesEditor.hideCaret();
 
     await expect(page).toHaveScreenshot();
   });
@@ -409,10 +406,7 @@ test.describe('process instance page', () => {
 
     await expect(page.getByText('Value has to be JSON')).toBeVisible();
 
-    await page.addStyleTag({
-      content:
-        '* { caret-color: transparent !important; } .monaco-editor .cursor { animation: none !important; opacity: 0 !important; }',
-    });
+    await processInstancePage.variablesEditor.hideCaret();
 
     await expect(page).toHaveScreenshot();
   });

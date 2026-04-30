@@ -48,6 +48,7 @@ import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHa
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MappingRuleCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.MappingRuleDeletedHandler;
+import io.camunda.exporter.handlers.MessageSubscriptionFromMessageStartEventSubscriptionHandler;
 import io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
@@ -287,7 +288,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(HistoryDeletionIndex.class).getFullQualifiedName()),
             new MessageSubscriptionFromProcessMessageSubscriptionHandler(
                 indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
-                exporterMetadata),
+                exporterMetadata,
+                processCache),
+            new MessageSubscriptionFromMessageStartEventSubscriptionHandler(
+                indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
+                processCache),
             new UserTaskCreatingHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,

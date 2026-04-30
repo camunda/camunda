@@ -13,7 +13,7 @@ import {render, screen, waitFor} from 'modules/testing/testing-library';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
 import {LocationLog} from 'modules/testing/LocationLog';
-import * as userMocks from 'modules/mocks/current-user';
+import {currentUser} from '@camunda/c8-mocks';
 import * as taskMocks from 'modules/mocks/task';
 import {Component} from '.';
 
@@ -39,11 +39,9 @@ const getWrapper = (id: string = '0', search: string = '') => {
 describe('Task Details', () => {
   beforeEach(() => {
     nodeMockServer.use(
-      http.get(
-        '/v2/authentication/me',
-        () => HttpResponse.json(userMocks.currentUser),
-        {once: true},
-      ),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
     );
   });
 

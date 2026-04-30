@@ -37,6 +37,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Mapper for converting simple search request models into advanced search query representations.
@@ -51,7 +52,7 @@ import java.util.stream.Stream;
 public class SimpleSearchQueryMapper {
 
   public static io.camunda.gateway.protocol.model.SearchQueryPageRequest toPageRequest(
-      final SearchQueryPageRequest page) {
+      final @Nullable SearchQueryPageRequest page) {
     if (page == null) {
       return new LimitPagination();
     }
@@ -78,19 +79,22 @@ public class SimpleSearchQueryMapper {
               Status.INVALID_ARGUMENT));
     }
     // create page request
-    if (!isEmpty(page.getBefore())) {
-      return new CursorBackwardPagination().before(page.getBefore()).limit(page.getLimit());
+    final var before = page.getBefore();
+    if (!isEmpty(before)) {
+      return new CursorBackwardPagination().before(before).limit(page.getLimit());
     }
-    if (!isEmpty(page.getAfter())) {
-      return new CursorForwardPagination().after(page.getAfter()).limit(page.getLimit());
+    final var after = page.getAfter();
+    if (!isEmpty(after)) {
+      return new CursorForwardPagination().after(after).limit(page.getLimit());
     }
-    if (!isEmpty(page.getFrom())) {
-      return new OffsetPagination().from(page.getFrom()).limit(page.getLimit());
+    final var from = page.getFrom();
+    if (!isEmpty(from)) {
+      return new OffsetPagination().from(from).limit(page.getLimit());
     }
     return new LimitPagination().limit(page.getLimit());
   }
 
-  private static boolean isEmpty(final Object value) {
+  private static boolean isEmpty(final @Nullable Object value) {
     if (value == null) {
       return true;
     }
@@ -101,7 +105,7 @@ public class SimpleSearchQueryMapper {
   }
 
   public static io.camunda.gateway.protocol.model.IncidentFilter toIncidentFilter(
-      final IncidentFilter filter) {
+      final @Nullable IncidentFilter filter) {
     final var filterModel = new io.camunda.gateway.protocol.model.IncidentFilter();
     if (filter != null) {
       ofNullable(filter.getProcessDefinitionId())
@@ -145,7 +149,7 @@ public class SimpleSearchQueryMapper {
   }
 
   public static io.camunda.gateway.protocol.model.ProcessInstanceFilter toProcessInstanceFilter(
-      final io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter filter) {
+      final io.camunda.gateway.protocol.model.simple.@Nullable ProcessInstanceFilter filter) {
     final var filterModel = new io.camunda.gateway.protocol.model.ProcessInstanceFilter();
     if (filter != null) {
       mapProcessInstanceFilterFields(filter, filterModel);
@@ -284,7 +288,7 @@ public class SimpleSearchQueryMapper {
   }
 
   public static io.camunda.gateway.protocol.model.ProcessDefinitionFilter toProcessDefinitionFilter(
-      final io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter filter) {
+      final io.camunda.gateway.protocol.model.simple.@Nullable ProcessDefinitionFilter filter) {
     final var filterModel = new io.camunda.gateway.protocol.model.ProcessDefinitionFilter();
     if (filter != null) {
       ofNullable(filter.getName())
@@ -305,7 +309,7 @@ public class SimpleSearchQueryMapper {
   }
 
   public static io.camunda.gateway.protocol.model.VariableFilter toVariableFilter(
-      final io.camunda.gateway.protocol.model.simple.VariableFilter filter) {
+      final io.camunda.gateway.protocol.model.simple.@Nullable VariableFilter filter) {
     final var filterModel = new io.camunda.gateway.protocol.model.VariableFilter();
     if (filter != null) {
       ofNullable(filter.getName())
@@ -330,7 +334,7 @@ public class SimpleSearchQueryMapper {
   }
 
   public static io.camunda.gateway.protocol.model.UserTaskFilter toUserTaskFilter(
-      final io.camunda.gateway.protocol.model.simple.UserTaskFilter filter) {
+      final io.camunda.gateway.protocol.model.simple.@Nullable UserTaskFilter filter) {
     final var filterModel = new io.camunda.gateway.protocol.model.UserTaskFilter();
     if (filter != null) {
       ofNullable(filter.getState())
@@ -355,7 +359,9 @@ public class SimpleSearchQueryMapper {
       ofNullable(filter.getTenantId())
           .map(SimpleSearchQueryMapper::getStringFilter)
           .ifPresent(filterModel::tenantId);
-      ofNullable(filter.getProcessDefinitionId()).ifPresent(filterModel::processDefinitionId);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(SimpleSearchQueryMapper::getStringFilter)
+          .ifPresent(filterModel::processDefinitionId);
       ofNullable(filter.getCreationDate())
           .map(SimpleSearchQueryMapper::getDateTimeFilter)
           .ifPresent(filterModel::creationDate);
@@ -375,8 +381,12 @@ public class SimpleSearchQueryMapper {
           .map(SimpleSearchQueryMapper::mapVariableValueFilterProperties)
           .ifPresent(filterModel::localVariables);
       ofNullable(filter.getUserTaskKey()).ifPresent(filterModel::userTaskKey);
-      ofNullable(filter.getProcessDefinitionKey()).ifPresent(filterModel::processDefinitionKey);
-      ofNullable(filter.getProcessInstanceKey()).ifPresent(filterModel::processInstanceKey);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::processDefinitionKey);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
+          .ifPresent(filterModel::processInstanceKey);
       ofNullable(filter.getElementInstanceKey()).ifPresent(filterModel::elementInstanceKey);
       ofNullable(filter.getTags()).ifPresent(filterModel::tags);
     }
@@ -384,7 +394,7 @@ public class SimpleSearchQueryMapper {
   }
 
   public static io.camunda.gateway.protocol.model.UserTaskVariableFilter toUserTaskVariableFilter(
-      final io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter simple) {
+      final io.camunda.gateway.protocol.model.simple.@Nullable UserTaskVariableFilter simple) {
     if (simple == null) {
       return new io.camunda.gateway.protocol.model.UserTaskVariableFilter();
     }
@@ -393,16 +403,16 @@ public class SimpleSearchQueryMapper {
         .name(getStringFilter(simple.getName()));
   }
 
-  public static OffsetPagination toOffsetPagination(
-      final io.camunda.gateway.protocol.model.simple.OffsetPagination simple) {
+  public static @Nullable OffsetPagination toOffsetPagination(
+      final io.camunda.gateway.protocol.model.simple.@Nullable OffsetPagination simple) {
     if (simple == null) {
       return null;
     }
     return new OffsetPagination().from(simple.getFrom()).limit(simple.getLimit());
   }
 
-  private static List<VariableValueFilterProperty> mapVariableValueFilterProperties(
-      final List<io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty>
+  private static @Nullable List<VariableValueFilterProperty> mapVariableValueFilterProperties(
+      final @Nullable List<io.camunda.gateway.protocol.model.simple.VariableValueFilterProperty>
           variableFilters) {
     if (variableFilters == null) {
       return null;
@@ -415,21 +425,21 @@ public class SimpleSearchQueryMapper {
         .toList();
   }
 
-  private static StringFilterProperty getStringFilter(final String value) {
+  private static StringFilterProperty getStringFilter(final @Nullable String value) {
     return new AdvancedStringFilter().$eq(value);
   }
 
-  private static BasicStringFilterProperty getBasicStringFilter(final String value) {
+  private static BasicStringFilterProperty getBasicStringFilter(final @Nullable String value) {
     return new BasicStringFilter().$eq(value);
   }
 
   private static io.camunda.gateway.protocol.model.IntegerFilterProperty getIntegerFilter(
-      final Integer value) {
+      final @Nullable Integer value) {
     return new AdvancedIntegerFilter().$eq(value);
   }
 
-  private static io.camunda.gateway.protocol.model.DateTimeFilterProperty getDateTimeFilter(
-      final SimpleDateTimeFilterProperty value) {
+  private static io.camunda.gateway.protocol.model.@Nullable DateTimeFilterProperty
+      getDateTimeFilter(final @Nullable SimpleDateTimeFilterProperty value) {
     if (value == null
         || (value.from() == null || value.from().isBlank())
             && (value.to() == null || value.to().isBlank())) {

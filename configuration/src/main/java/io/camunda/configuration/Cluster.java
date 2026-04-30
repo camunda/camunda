@@ -151,6 +151,12 @@ public class Cluster implements Cloneable {
    */
   @NestedConfigurationProperty private Partitioning partitioning = new Partitioning();
 
+  /**
+   * The zone this broker belongs to. Used for zone-aware routing and replication. If not set, the
+   * broker is considered to be in a single-zone setup.
+   */
+  private String zone;
+
   private boolean sendOnLegacySubject = true;
   private boolean receiveOnLegacySubject = true;
 
@@ -338,6 +344,14 @@ public class Cluster implements Cloneable {
     this.sendOnLegacySubject = sendOnLegacySubject;
   }
 
+  public String getZone() {
+    return zone;
+  }
+
+  public void setZone(final String zone) {
+    this.zone = zone;
+  }
+
   @Override
   public Object clone() {
     try {
@@ -381,6 +395,9 @@ public class Cluster implements Cloneable {
         + sendOnLegacySubject
         + ", receiveOnLegacySubject="
         + receiveOnLegacySubject
+        + ", zone='"
+        + zone
+        + '\''
         + '}';
   }
 

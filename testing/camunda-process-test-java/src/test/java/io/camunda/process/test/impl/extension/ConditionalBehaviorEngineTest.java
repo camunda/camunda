@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -448,5 +449,27 @@ class ConditionalBehaviorEngineTest {
     await()
         .atMost(5, TimeUnit.SECONDS)
         .untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(2));
+  }
+
+  @Test
+  void shouldNotWaitForResetAfterFailedAction() {
+    final List<Long> fireTimestampsNanos = new CopyOnWriteArrayList<>();
+
+    engine
+        .when(() -> {})
+        .then(
+            () -> {
+              fireTimestampsNanos.add(System.nanoTime());
+              throw new RuntimeException("always fails");
+            });
+
+    await()
+        .atMost(3, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(fireTimestampsNanos).hasSizeGreaterThanOrEqualTo(2));
+
+    final long gapMillis =
+        TimeUnit.NANOSECONDS.toMillis(fireTimestampsNanos.get(1) - fireTimestampsNanos.get(0));
+    // resetTimeout=5s, pollInterval=100ms — any gap < 5s proves reset-wait was skipped.
+    assertThat(gapMillis).isLessThan(5000);
   }
 }

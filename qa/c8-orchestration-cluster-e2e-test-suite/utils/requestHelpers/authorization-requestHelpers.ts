@@ -21,7 +21,7 @@ import {
   authorizedComponentRequiredFields,
 } from '../beans/requestBeans';
 import {validateResponse} from 'json-body-assertions';
-import { defaultAssertionOptions } from 'utils/constants';
+import {defaultAssertionOptions} from 'utils/constants';
 
 export interface Authorization {
   ownerId: string;

@@ -13,6 +13,7 @@ public record DeployedResourceDbModel(
     Long resourceKey,
     String resourceId,
     String resourceName,
+    String resourceType,
     int version,
     String versionTag,
     Long deploymentKey,
@@ -25,6 +26,7 @@ public record DeployedResourceDbModel(
     private Long resourceKey;
     private String resourceId;
     private String resourceName;
+    private String resourceType;
     private int version;
     private String versionTag;
     private Long deploymentKey;
@@ -43,6 +45,11 @@ public record DeployedResourceDbModel(
 
     public DeployedResourceDbModelBuilder resourceName(final String resourceName) {
       this.resourceName = resourceName;
+      return this;
+    }
+
+    public DeployedResourceDbModelBuilder resourceType(final String resourceType) {
+      this.resourceType = resourceType;
       return this;
     }
 
@@ -77,6 +84,7 @@ public record DeployedResourceDbModel(
           resourceKey,
           resourceId,
           resourceName,
+          resourceType,
           version,
           versionTag,
           deploymentKey,

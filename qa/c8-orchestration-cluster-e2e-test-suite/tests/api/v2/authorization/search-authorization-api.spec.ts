@@ -223,7 +223,7 @@ test.describe.parallel('Search Authorization API', () => {
 
       const body = await res.json();
       expect(body.page.totalItems).toBe(2);
-      expect(body.items.length).toBe(2);
+      expect(body.items).toHaveLength(2);
       const authorization: Authorization = body.items[0];
       verifyAuthorizationFields(authorization, expectedUserAuthorization);
     }).toPass(defaultAssertionOptions);
@@ -259,7 +259,7 @@ test.describe.parallel('Search Authorization API', () => {
 
       const body = await res.json();
       expect(body.page.totalItems).toEqual(1);
-      expect(body.items.length).toEqual(1);
+      expect(body.items).toHaveLength(1);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -318,7 +318,7 @@ test.describe.parallel('Search Authorization API', () => {
 
       const body = await res.json();
       expect(body.page.totalItems).toEqual(0);
-      expect(body.items.length).toEqual(0);
+      expect(body.items).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -437,7 +437,7 @@ test.describe.parallel('Search Authorization API', () => {
         );
         const body = await res.json();
         expect(body.page.totalItems).toEqual(0);
-        expect(body.items.length).toEqual(0);
+        expect(body.items).toHaveLength(0);
       }).toPass(defaultAssertionOptions);
     });
   });
@@ -452,7 +452,11 @@ test.describe.parallel('Search Authorization API', () => {
           page: {from: -1, limit: -1},
         },
       });
-      await assertInvalidArgument(res, 400, "The value for page.from is '-1' but must be a non-negative number.");
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.from is '-1' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 
@@ -476,7 +480,7 @@ test.describe.parallel('Search Authorization API', () => {
 
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(35);
-      expect(body.items.length).toEqual(0);
+      expect(body.items).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
 });

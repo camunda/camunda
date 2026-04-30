@@ -11,31 +11,44 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public record DecisionInstanceEntity(
     String decisionInstanceId, // this is the unique identifier of the decision instance
     Long decisionInstanceKey,
     DecisionInstanceState state,
     OffsetDateTime evaluationDate,
-    String evaluationFailure,
-    String evaluationFailureMessage,
-    Long processDefinitionKey,
-    Long processInstanceKey,
-    Long rootProcessInstanceKey,
-    Long flowNodeInstanceKey,
+    @Nullable String evaluationFailure,
+    @Nullable String evaluationFailureMessage,
+    @Nullable Long processDefinitionKey,
+    @Nullable Long processInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
+    @Nullable Long flowNodeInstanceKey,
     String tenantId,
     String decisionDefinitionId,
     Long decisionDefinitionKey,
     String decisionDefinitionName,
-    Integer decisionDefinitionVersion,
+    // null in legacy/partially-migrated rows.
+    @Nullable Integer decisionDefinitionVersion,
     DecisionDefinitionType decisionDefinitionType,
-    Long rootDecisionDefinitionKey,
+    @Nullable Long rootDecisionDefinitionKey,
     String result,
     List<DecisionInstanceInputEntity> evaluatedInputs,
     List<DecisionInstanceOutputEntity> evaluatedOutputs)
     implements TenantOwnedEntity {
 
   public DecisionInstanceEntity {
+    Objects.requireNonNull(decisionInstanceId, "decisionInstanceId");
+    Objects.requireNonNull(decisionInstanceKey, "decisionInstanceKey");
+    Objects.requireNonNull(state, "state");
+    Objects.requireNonNull(evaluationDate, "evaluationDate");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(decisionDefinitionId, "decisionDefinitionId");
+    Objects.requireNonNull(decisionDefinitionKey, "decisionDefinitionKey");
+    Objects.requireNonNull(decisionDefinitionName, "decisionDefinitionName");
+    Objects.requireNonNull(decisionDefinitionType, "decisionDefinitionType");
+    Objects.requireNonNull(result, "result");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
@@ -69,26 +82,26 @@ public record DecisionInstanceEntity(
 
   public static class Builder implements ObjectBuilder<DecisionInstanceEntity> {
 
-    private String decisionInstanceId;
-    private Long decisionInstanceKey;
-    private DecisionInstanceState state;
-    private OffsetDateTime evaluationDate;
-    private String evaluationFailure;
-    private String evaluationFailureMessage;
-    private Long processDefinitionKey;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private Long flowNodeInstanceKey;
-    private String tenantId;
-    private String decisionDefinitionId;
-    private Long decisionDefinitionKey;
-    private String decisionDefinitionName;
-    private Integer decisionDefinitionVersion;
-    private DecisionDefinitionType decisionDefinitionType;
-    private Long rootDecisionDefinitionKey;
-    private String result;
-    private List<DecisionInstanceInputEntity> evaluatedInputs;
-    private List<DecisionInstanceOutputEntity> evaluatedOutputs;
+    private @Nullable String decisionInstanceId;
+    private @Nullable Long decisionInstanceKey;
+    private @Nullable DecisionInstanceState state;
+    private @Nullable OffsetDateTime evaluationDate;
+    private @Nullable String evaluationFailure;
+    private @Nullable String evaluationFailureMessage;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable Long flowNodeInstanceKey;
+    private @Nullable String tenantId;
+    private @Nullable String decisionDefinitionId;
+    private @Nullable Long decisionDefinitionKey;
+    private @Nullable String decisionDefinitionName;
+    private @Nullable Integer decisionDefinitionVersion;
+    private @Nullable DecisionDefinitionType decisionDefinitionType;
+    private @Nullable Long rootDecisionDefinitionKey;
+    private @Nullable String result;
+    private @Nullable List<DecisionInstanceInputEntity> evaluatedInputs;
+    private @Nullable List<DecisionInstanceOutputEntity> evaluatedOutputs;
 
     public Builder decisionInstanceId(final String decisionInstanceId) {
       this.decisionInstanceId = decisionInstanceId;
@@ -110,32 +123,32 @@ public record DecisionInstanceEntity(
       return this;
     }
 
-    public Builder evaluationFailure(final String evaluationFailure) {
+    public Builder evaluationFailure(final @Nullable String evaluationFailure) {
       this.evaluationFailure = evaluationFailure;
       return this;
     }
 
-    public Builder evaluationFailureMessage(final String evaluationFailureMessage) {
+    public Builder evaluationFailureMessage(final @Nullable String evaluationFailureMessage) {
       this.evaluationFailureMessage = evaluationFailureMessage;
       return this;
     }
 
-    public Builder processDefinitionKey(final Long processDefinitionKey) {
+    public Builder processDefinitionKey(final @Nullable Long processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
-    public Builder processInstanceKey(final Long processInstanceKey) {
+    public Builder processInstanceKey(final @Nullable Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
-    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    public Builder rootProcessInstanceKey(final @Nullable Long rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
-    public Builder flowNodeInstanceKey(final Long flowNodeInstanceKey) {
+    public Builder flowNodeInstanceKey(final @Nullable Long flowNodeInstanceKey) {
       this.flowNodeInstanceKey = flowNodeInstanceKey;
       return this;
     }
@@ -160,7 +173,7 @@ public record DecisionInstanceEntity(
       return this;
     }
 
-    public Builder decisionDefinitionVersion(final Integer decisionDefinitionVersion) {
+    public Builder decisionDefinitionVersion(final @Nullable Integer decisionDefinitionVersion) {
       this.decisionDefinitionVersion = decisionDefinitionVersion;
       return this;
     }
@@ -170,7 +183,7 @@ public record DecisionInstanceEntity(
       return this;
     }
 
-    public Builder rootDecisionDefinitionKey(final Long rootDecisionDefinitionKey) {
+    public Builder rootDecisionDefinitionKey(final @Nullable Long rootDecisionDefinitionKey) {
       this.rootDecisionDefinitionKey = rootDecisionDefinitionKey;
       return this;
     }
@@ -190,6 +203,7 @@ public record DecisionInstanceEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public DecisionInstanceEntity build() {
       return new DecisionInstanceEntity(
@@ -216,10 +230,15 @@ public record DecisionInstanceEntity(
     }
   }
 
-  public record DecisionInstanceInputEntity(String inputId, String inputName, String inputValue) {}
+  public record DecisionInstanceInputEntity(
+      @Nullable String inputId, @Nullable String inputName, @Nullable String inputValue) {}
 
   public record DecisionInstanceOutputEntity(
-      String outputId, String outputName, String outputValue, String ruleId, int ruleIndex) {}
+      @Nullable String outputId,
+      @Nullable String outputName,
+      @Nullable String outputValue,
+      @Nullable String ruleId,
+      int ruleIndex) {}
 
   public enum DecisionDefinitionType {
     DECISION_TABLE,

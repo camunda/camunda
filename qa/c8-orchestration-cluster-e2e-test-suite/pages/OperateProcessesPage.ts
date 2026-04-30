@@ -348,7 +348,8 @@ class OperateProcessesPage {
   }
 
   async clickCancelBatchOperationButton(): Promise<void> {
-    await this.cancelBatchOperationButton.click();
+    await expect(this.cancelBatchOperationButton).toBeVisible({timeout: 30000});
+    await this.cancelBatchOperationButton.click({timeout: 30000});
   }
 
   async clickApplyCancelBatchOperationDialogButton(): Promise<void> {

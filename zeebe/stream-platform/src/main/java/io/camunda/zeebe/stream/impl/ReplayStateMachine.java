@@ -105,7 +105,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     lastProcessedPositionState = context.getLastProcessedPositionState();
 
     typedEvent = new TypedRecordImpl(context.getLogStream().getPartitionId());
-    replayStrategy = new RecoverableRetryStrategy(actor);
+    replayStrategy = new RecoverableRetryStrategy(actor, context.getMaxRecoverableRetries());
     streamProcessorMode = context.getProcessorMode();
     logStream = context.getLogStream();
     logStreamBatchReader = new LogStreamBatchReaderImpl(context.getLogStreamReader());

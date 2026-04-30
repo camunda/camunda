@@ -116,9 +116,11 @@ jobs:
         # we're excluding optimize from the build, not to impact this Operate workflow.
         run: ./mvnw clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: >
-          ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true
-          -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda
+        run: |
+          DIST_DIR="$(find dist/target -maxdepth 1 -type d -name 'camunda-zeebe*' | head -n 1)"
+
+          nohup "$DIST_DIR/bin/camunda" > "$RUNNER_TEMP/operate.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/operate.pid"
         env:
           SPRING_PROFILES_ACTIVE: operate,consolidated-auth,broker
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
@@ -132,8 +134,31 @@ jobs:
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME: Demo
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL: demo@example.com
           CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
-          CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: true
           CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: false
+          CAMUNDA_DATA_AUDITLOG_ENABLED: true
+          CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_0: ADMIN
+          CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_1: DEPLOYED_RESOURCES
+          CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_2: USER_TASKS
+          CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_0: VARIABLE
+          CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_1: BATCH
+          CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_0: ADMIN
+          CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES_0: PROCESS_INSTANCE
+
+      - name: Wait for Operate to be ready
+        run: |
+          echo "Waiting for Operate to be ready..."
+          for i in $(seq 1 90); do
+            if curl -sf -u demo:demo http://localhost:8080/v2/topology >/dev/null 2>&1; then
+              echo "Operate is ready!"
+              exit 0
+            fi
+            echo "Waiting... ($i/90)"
+            sleep 5
+          done
+          echo "Operate failed to start in time."
+          echo "=== Last 100 lines of log ==="
+          tail -100 "$RUNNER_TEMP/operate.log"
+          exit 1
 
       - name: Python setup
         if: always()
@@ -173,6 +198,19 @@ jobs:
         with:
           name: logs.tgz
           path: ./logs.tgz
+
+      - name: Show Operate logs on failure
+        if: failure()
+        run: |
+          echo "=== Camunda logs ==="
+          cat "$RUNNER_TEMP/operate.log"
+
+      - name: Stop Operate
+        if: always()
+        run: |
+          if [[ -f "$RUNNER_TEMP/operate.pid" ]]; then
+            kill "$(cat "$RUNNER_TEMP/operate.pid")" || true
+          fi
 
       - name: Observe build status
         if: always()

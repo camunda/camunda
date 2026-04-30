@@ -87,12 +87,15 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     final var reader = getProcessModelReader(process);
 
     final boolean hasUserTasks;
+    final Map<String, Map<String, String>> elementExtensionProperties;
     if (reader != null) {
       final var flowNodes = reader.extractFlowNodes();
       extractProcessModelData(reader, entity, flowNodes);
       hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
+      elementExtensionProperties = ProcessModelReader.extractExtensionProperties(flowNodes);
     } else {
       hasUserTasks = true;
+      elementExtensionProperties = Map.of();
     }
 
     // update local cache so that the process info is available immediately to the process instance
@@ -104,7 +107,8 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
             entity.getVersionTag(),
             entity.getCallActivityIds(),
             getFlowNodesMap(entity.getFlowNodes()),
-            hasUserTasks);
+            hasUserTasks,
+            elementExtensionProperties);
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 

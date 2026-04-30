@@ -73,7 +73,7 @@ test.describe.parallel('Process Instance Modify Process API', () => {
         );
         const body = await res.json();
         expect(body).toHaveProperty('items');
-        expect(body.items.length).toBe(1);
+        expect(body.items).toHaveLength(1);
         expect(body.items[0].elementId).toBe('first_task');
         localStorage['elementInstanceKey'] = body.items[0].elementInstanceKey;
       }).toPass(defaultAssertionOptions);
@@ -124,7 +124,7 @@ test.describe.parallel('Process Instance Modify Process API', () => {
         );
         const body = await res.json();
         expect(body).toHaveProperty('items');
-        expect(body.items.length).toBe(2);
+        expect(body.items).toHaveLength(2);
         expect(body.items[0].elementId).toBe('first_task');
         expect(body.items[0].state).toBe('CANCELED');
         expect(body.items[1].elementId).toBe('second_task');

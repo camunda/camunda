@@ -11,10 +11,10 @@ import {observer} from 'mobx-react';
 import {useNavigate} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {DrdViewer} from 'modules/dmn-js/DrdViewer';
-import {PanelHeader, Container, Stack} from './styled';
+import {PanelHeader, Container, Stack, ErrorMessage} from './styled';
 import {tracking} from 'modules/tracking';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
-import {Button} from '@carbon/react';
+import {Button, Loading} from '@carbon/react';
 import {Close, Maximize, Minimize} from '@carbon/react/icons';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {useDecisionDefinitionXml} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
@@ -28,6 +28,7 @@ type DrdProps = {
   decisionEvaluationKey?: string;
   drdPanelState: DrdPanelState;
   onChangeDrdPanelState(state: DrdPanelState): void;
+  isError?: boolean;
 };
 
 const Drd: React.FC<DrdProps> = observer((props) => {
@@ -36,8 +37,16 @@ const Drd: React.FC<DrdProps> = observer((props) => {
   const navigate = useNavigate();
 
   const [overlayState, overlayActions] = useDrdStateOverlay();
-  const {data: drdData} = useDrdData(props.decisionEvaluationKey);
-  const {data: decisionDefinitionXml} = useDecisionDefinitionXml({
+  const {
+    data: drdData,
+    isPending: isDrdDataPending,
+    isError: isDrdDataError,
+  } = useDrdData(props.decisionEvaluationKey);
+  const {
+    data: decisionDefinitionXml,
+    isPending: isDecisionDefinitionXmlPending,
+    isError: isDecisionDefinitionXmlError,
+  } = useDecisionDefinitionXml({
     decisionDefinitionKey: props.decisionDefinitionKey,
   });
 
@@ -132,6 +141,12 @@ const Drd: React.FC<DrdProps> = observer((props) => {
         </Stack>
       </PanelHeader>
       <div data-testid="drd-viewer" ref={drdViewerRef} />
+
+      {(isDrdDataPending || isDecisionDefinitionXmlPending) &&
+        !props.isError && <Loading data-testid="drd-loading" />}
+      {(props.isError || isDrdDataError || isDecisionDefinitionXmlError) && (
+        <ErrorMessage />
+      )}
 
       {overlayState.map((overlay) => (
         <StateOverlay

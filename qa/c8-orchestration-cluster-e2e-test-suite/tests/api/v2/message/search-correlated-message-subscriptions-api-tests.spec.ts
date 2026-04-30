@@ -453,7 +453,11 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         },
       );
-      await assertInvalidArgument(res, 400, "The value for page.limit is '-5' but must be a non-negative number.");
+      await assertInvalidArgument(
+        res,
+        400,
+        "The value for page.limit is '-5' but must be a non-negative number.",
+      );
     }).toPass(defaultAssertionOptions);
   });
 
@@ -480,7 +484,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         res,
       );
       const json = await res.json();
-      expect(json.items.length).toBe(0);
+      expect(json.items).toHaveLength(0);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
     }).toPass(defaultAssertionOptions);
   });

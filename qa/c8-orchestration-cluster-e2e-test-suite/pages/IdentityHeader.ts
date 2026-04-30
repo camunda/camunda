@@ -7,7 +7,6 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
-import {sleep} from '../utils/sleep';
 
 export class IdentityHeader {
   readonly page: Page;
@@ -18,6 +17,7 @@ export class IdentityHeader {
   readonly authorizationsTab: Locator;
   readonly usersTab: Locator;
   readonly groupsTab: Locator;
+  readonly globalTaskListenersTab: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -35,6 +35,9 @@ export class IdentityHeader {
       .locator('nav a')
       .filter({hasText: /^Authorizations$/});
     this.groupsTab = page.locator('nav a').filter({hasText: /^Groups$/});
+    this.globalTaskListenersTab = page
+      .locator('nav a')
+      .filter({hasText: /^Global user task listeners$/i});
   }
 
   async logout() {
@@ -46,7 +49,7 @@ export class IdentityHeader {
     await expect(this.page.getByText('logged out...')).not.toBeVisible({
       timeout: 15000,
     });
-    await sleep(2000);
+    await this.page.waitForURL(/login/, {timeout: 30000});
   }
 
   async navigateToRoles() {
@@ -67,5 +70,9 @@ export class IdentityHeader {
 
   async navigateToGroups() {
     await this.groupsTab.click();
+  }
+
+  async navigateToGlobalTaskListeners() {
+    await this.globalTaskListenersTab.click();
   }
 }

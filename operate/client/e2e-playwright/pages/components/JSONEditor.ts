@@ -41,6 +41,13 @@ class JSONEditor {
   async blur() {
     await this.page.keyboard.press('Escape');
   }
+
+  async hideCaret() {
+    await this.page.addStyleTag({
+      content:
+        '* { caret-color: transparent !important; } .monaco-editor .cursor { animation: none !important; opacity: 0 !important; }',
+    });
+  }
 }
 
 export {JSONEditor};

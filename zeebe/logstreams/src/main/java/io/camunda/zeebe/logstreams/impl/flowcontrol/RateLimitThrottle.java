@@ -12,6 +12,7 @@ import static java.lang.Math.clamp;
 import com.google.common.util.concurrent.RateLimiter;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import java.util.concurrent.atomic.AtomicLong;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,8 +24,8 @@ final class RateLimitThrottle {
   private final AtomicLong lastUpdate = new AtomicLong(-1);
 
   private final LogStreamMetrics metrics;
-  private final RateLimit limit;
-  private final RateLimiter limiter;
+  private final @Nullable RateLimit limit;
+  private final @Nullable RateLimiter limiter;
   private final RateMeasurement measurement;
   private final long resolution;
   private final boolean enabled;
@@ -32,8 +33,8 @@ final class RateLimitThrottle {
 
   RateLimitThrottle(
       final LogStreamMetrics metrics,
-      final RateLimit limit,
-      final RateLimiter limiter,
+      final @Nullable RateLimit limit,
+      final @Nullable RateLimiter limiter,
       final RateMeasurement measurement) {
     this.metrics = metrics;
     this.limit = limit;
@@ -50,6 +51,10 @@ final class RateLimitThrottle {
     }
 
     if (canSkipUpdate(timestamp)) {
+      return;
+    }
+
+    if (limit == null || limiter == null) {
       return;
     }
 

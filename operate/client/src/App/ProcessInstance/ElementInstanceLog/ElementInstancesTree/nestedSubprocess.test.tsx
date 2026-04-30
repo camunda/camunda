@@ -9,7 +9,7 @@
 import {act} from 'react';
 import {render, screen} from 'modules/testing-library';
 import {open} from 'modules/mocks/diagrams';
-import {Wrapper, mockNestedSubProcessesInstance} from './mocks';
+import {getWrapper, mockNestedSubProcessesInstance} from './mocks';
 import {ElementInstancesTree} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
@@ -97,7 +97,7 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -163,7 +163,7 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
         businessObjects={businessObjects}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 

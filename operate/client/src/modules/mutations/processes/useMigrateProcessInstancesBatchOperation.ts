@@ -6,18 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  useMutation,
-  useQueryClient,
-  type UseMutationOptions,
-} from '@tanstack/react-query';
+import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
 import {migrateProcessInstancesBatchOperation} from 'modules/api/v2/processes/migrateProcessInstancesBatchOperation';
 import type {
   CreateMigrationBatchOperationRequestBody,
   CreateMigrationBatchOperationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import type {RequestError} from 'modules/request';
-import {queryKeys} from 'modules/queries/queryKeys';
 
 const useMigrateProcessInstancesBatchOperation = (
   options?: Partial<
@@ -28,18 +23,12 @@ const useMigrateProcessInstancesBatchOperation = (
     >
   >,
 ) => {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationKey: ['createProcessInstanceMigrationBatchOperation'],
     mutationFn: async (payload) => {
       const {response, error} =
         await migrateProcessInstancesBatchOperation(payload);
       if (response !== null) {
-        await queryClient.invalidateQueries({
-          queryKey: queryKeys.batchOperations.query(),
-        });
-
         return response;
       }
       throw error;

@@ -173,7 +173,7 @@ test.describe.parallel('Process Definition Search API', () => {
         body,
       );
       expect(body.page.totalItems).toBe(0);
-      expect(body.items.length).toBe(0);
+      expect(body.items).toHaveLength(0);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -198,7 +198,7 @@ test.describe.parallel('Process Definition Search API', () => {
         body,
       );
       expect(body.page.totalItems).toBeGreaterThan(1);
-      expect(body.items.length).toBe(1);
+      expect(body.items).toHaveLength(1);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -213,7 +213,11 @@ test.describe.parallel('Process Definition Search API', () => {
         },
       },
     });
-    await assertInvalidArgument(res, 400, "The value for page.limit is '-1' but must be a non-negative number.");
+    await assertInvalidArgument(
+      res,
+      400,
+      "The value for page.limit is '-1' but must be a non-negative number.",
+    );
   });
 
   test('Search Process Definitions - with sorting', async ({request}) => {

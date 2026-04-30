@@ -112,6 +112,7 @@ class ResourceExportHandlerTest {
     assertThat(model.resourceKey()).isEqualTo(42L);
     assertThat(model.resourceId()).isEqualTo("res-id");
     assertThat(model.resourceName()).isEqualTo("my-script.rpa");
+    assertThat(model.resourceType()).isEqualTo("rpa");
     assertThat(model.version()).isEqualTo(3);
     assertThat(model.versionTag()).isEqualTo("v3");
     assertThat(model.deploymentKey()).isEqualTo(100L);
@@ -139,6 +140,37 @@ class ResourceExportHandlerTest {
 
     // then
     verify(writer).delete(99L);
+    verifyNoMoreInteractions(writer);
+  }
+
+  @Test
+  void shouldExtractFileTypeFromFilenameWithMultipleDots() {
+    // given
+    final Resource value =
+        ImmutableResource.builder()
+            .from(factory.generateObject(Resource.class))
+            .withResourceKey(43L)
+            .withResourceId("res-id")
+            .withResourceName("user.1/my.script.rpa")
+            .withVersion(1)
+            .withVersionTag("v1")
+            .withDeploymentKey(100L)
+            .withTenantId("tenant-1")
+            .withResourceProp("rpa-content")
+            .build();
+    final Record<Resource> record =
+        factory.generateRecord(
+            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.CREATED).withValue(value));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(dbModelCaptor.capture());
+    final DeployedResourceDbModel model = dbModelCaptor.getValue();
+    assertThat(model.resourceName()).isEqualTo("user.1/my.script.rpa");
+    assertThat(model.resourceType()).isEqualTo("rpa");
+
     verifyNoMoreInteractions(writer);
   }
 }
