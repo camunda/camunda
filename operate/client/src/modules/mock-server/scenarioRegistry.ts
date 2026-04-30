@@ -13,10 +13,10 @@ import type {
   ElementInstance,
   Job,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {
-  type AgentElementData,
-  MOCK_AGENT_ENRICHMENT_DATA,
-} from './agentDemoData/agentEnrichmentData';
+import type {
+  AgentInstance,
+  HistoryElement,
+} from 'modules/queries/agentInstances/types';
 
 import {
   MOCK_AGENT_INSTANCE_KEY,
@@ -24,6 +24,7 @@ import {
   MOCK_AGENT_DEFINITION_ID,
   MOCK_AGENT_SUBPROCESS_KEY,
   MOCK_AGENT_SUBPROCESS_ELEMENT_IDS,
+  MOCK_AGENT_AGENT_INSTANCE_KEY,
 } from './agentDemoData/constants';
 import {AGENT_BPMN_XML} from './agentDemoData/agentBpmnXml';
 import {
@@ -35,25 +36,10 @@ import {
   MOCK_AGENT_VARIABLES,
   MOCK_AGENT_JOBS,
 } from './agentDemoData/agentProcessInstance';
-
 import {
-  MOCK_LOAN_INSTANCE_KEY,
-  MOCK_LOAN_DEFINITION_KEY,
-  MOCK_LOAN_DEFINITION_ID,
-  MOCK_LOAN_AGENT_TASK_KEY,
-  MOCK_LOAN_AGENT_ELEMENT_IDS,
-} from './loanEvaluationDemoData/constants';
-import {LOAN_BPMN_XML} from './loanEvaluationDemoData/loanBpmnXml';
-import {
-  MOCK_LOAN_PROCESS_INSTANCE,
-  MOCK_LOAN_PROCESS_DEFINITION,
-  MOCK_LOAN_ELEMENT_INSTANCES,
-  MOCK_LOAN_ELEMENT_STATISTICS,
-  MOCK_LOAN_SEQUENCE_FLOWS,
-  MOCK_LOAN_VARIABLES,
-  MOCK_LOAN_JOBS,
-} from './loanEvaluationDemoData/loanProcessInstance';
-import {MOCK_LOAN_ENRICHMENT_DATA} from './loanEvaluationDemoData/loanEnrichmentData';
+  MOCK_AGENT_INSTANCE,
+  MOCK_AGENT_HISTORY_ELEMENTS,
+} from './agentDemoData/agentInstanceData';
 
 type MockElementInstance = ElementInstance & {flowScopeKey: string};
 
@@ -67,6 +53,7 @@ export interface ScenarioDefinition {
   agentElementId: string;
   agentElementInstanceKey: string;
   agentElementIds: Set<string>;
+  agentInstanceKey: string;
   bpmnXml: string;
   processInstance: ProcessInstance;
   processDefinition: ProcessDefinition;
@@ -85,7 +72,8 @@ export interface ScenarioDefinition {
   };
   variables: Variable[];
   jobs: Job[];
-  enrichmentData: Record<string, AgentElementData>;
+  agentInstance: AgentInstance;
+  agentInstanceHistory: HistoryElement[];
 }
 
 export const SCENARIOS: ScenarioDefinition[] = [
@@ -93,12 +81,13 @@ export const SCENARIOS: ScenarioDefinition[] = [
     instanceKey: MOCK_AGENT_INSTANCE_KEY,
     definitionKey: MOCK_AGENT_DEFINITION_KEY,
     definitionId: MOCK_AGENT_DEFINITION_ID,
-    name: 'AI Agent Subprocess',
+    name: 'Agent chat with tools',
     description: 'Ad-hoc subprocess with agent + tools bundled together',
     pattern: 'subprocess',
     agentElementId: 'AI_Agent',
     agentElementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY,
     agentElementIds: MOCK_AGENT_SUBPROCESS_ELEMENT_IDS,
+    agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY,
     bpmnXml: AGENT_BPMN_XML,
     processInstance: MOCK_AGENT_PROCESS_INSTANCE,
     processDefinition: MOCK_AGENT_PROCESS_DEFINITION,
@@ -107,27 +96,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
     sequenceFlows: MOCK_AGENT_SEQUENCE_FLOWS,
     variables: MOCK_AGENT_VARIABLES,
     jobs: MOCK_AGENT_JOBS,
-    enrichmentData: MOCK_AGENT_ENRICHMENT_DATA,
-  },
-  {
-    instanceKey: MOCK_LOAN_INSTANCE_KEY,
-    definitionKey: MOCK_LOAN_DEFINITION_KEY,
-    definitionId: MOCK_LOAN_DEFINITION_ID,
-    name: 'AI Agent Task',
-    description: 'Service task + separate tools subprocess + explicit loop',
-    pattern: 'task',
-    agentElementId: 'ai_task_agent',
-    agentElementInstanceKey: MOCK_LOAN_AGENT_TASK_KEY,
-    agentElementIds: MOCK_LOAN_AGENT_ELEMENT_IDS,
-    bpmnXml: LOAN_BPMN_XML,
-    processInstance: MOCK_LOAN_PROCESS_INSTANCE,
-    processDefinition: MOCK_LOAN_PROCESS_DEFINITION,
-    elementInstances: MOCK_LOAN_ELEMENT_INSTANCES,
-    elementStatistics: MOCK_LOAN_ELEMENT_STATISTICS,
-    sequenceFlows: MOCK_LOAN_SEQUENCE_FLOWS,
-    variables: MOCK_LOAN_VARIABLES,
-    jobs: MOCK_LOAN_JOBS,
-    enrichmentData: MOCK_LOAN_ENRICHMENT_DATA,
+    agentInstance: MOCK_AGENT_INSTANCE,
+    agentInstanceHistory: MOCK_AGENT_HISTORY_ELEMENTS,
   },
 ];
 
@@ -141,4 +111,10 @@ export function getScenarioByDefinitionKey(
   key: string,
 ): ScenarioDefinition | undefined {
   return SCENARIOS.find((s) => s.definitionKey === key);
+}
+
+export function getScenarioByAgentInstanceKey(
+  key: string,
+): ScenarioDefinition | undefined {
+  return SCENARIOS.find((s) => s.agentInstanceKey === key);
 }
