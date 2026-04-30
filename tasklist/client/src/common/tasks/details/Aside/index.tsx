@@ -63,17 +63,6 @@ const Aside: React.FC<Props> = ({
             </ContainedListItem>
           )}
         </>
-        {businessId ? (
-          <ContainedListItem>
-            <span className={styles.itemHeading}>
-              {t('taskDetailsBusinessIdLabel')}
-            </span>
-            <br />
-            <span className={styles.itemBody} data-testid="business-id">
-              {businessId}
-            </span>
-          </ContainedListItem>
-        ) : null}
         <ContainedListItem>
           <span className={styles.itemHeading}>
             {t('taskDetailsCreationDateLabel')}
@@ -135,6 +124,17 @@ const Aside: React.FC<Props> = ({
             </span>
             <br />
             <span className={styles.itemBody}>{formatDate(followUpDate)}</span>
+          </ContainedListItem>
+        ) : null}
+        {businessId ? (
+          <ContainedListItem>
+            <span className={styles.itemHeading}>
+              {t('taskDetailsBusinessIdLabel')}
+            </span>
+            <br />
+            <span className={styles.itemBody} data-testid="business-id">
+              {businessId}
+            </span>
           </ContainedListItem>
         ) : null}
       </ContainedList>
