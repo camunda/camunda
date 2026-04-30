@@ -7,7 +7,7 @@
 		"preview": "vite preview",
 		"build": "vite build && node ./renameProdIndex.mjs",
 		"build:visual-regression": "vite build --mode visual-regression",
-		"typecheck": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.browser.json && tsc -p tsconfig.vitest.json && tsc -p tsconfig.node.json",
 		"extract-sbom": "vite build --mode sbom",
 		"test:unit": "vitest",
 		"test:unit:ui": "vitest --browser.headless=false",
