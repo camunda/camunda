@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mcp.tool.process;
+package io.camunda.gateway.mcp.processes;
 
 import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
@@ -19,13 +19,14 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.collection.Tuple;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.jspecify.annotations.NonNull;
 
 public class ProcessesToolRepository implements ToolRepository {
@@ -36,23 +37,18 @@ public class ProcessesToolRepository implements ToolRepository {
   protected static final String PROPERTY_WHEN_NOT_TO_USE = "io.camunda.tool:when_not_to_use";
   protected static final String PROPERTY_WHEN_TO_USE = "io.camunda.tool:when_to_use";
 
-  protected static final String LABEL_INPUTS = "Inputs";
-  protected static final String LABEL_PURPOSE = "Purpose";
-  protected static final String LABEL_RESULTS = "Results";
-  protected static final String LABEL_WHEN_NOT_TO_USE = "When not to use";
-  protected static final String LABEL_WHEN_TO_USE = "When to use";
+  protected static final String LABEL_INPUTS = "## Inputs";
+  protected static final String LABEL_RESULTS = "## Results";
+  protected static final String LABEL_WHEN_NOT_TO_USE = "## When not to use";
+  protected static final String LABEL_WHEN_TO_USE = "## When to use";
 
-  private static final String[] DESCRIPTION_KEYS = {
-    PROPERTY_PURPOSE,
-    PROPERTY_INPUTS,
-    PROPERTY_WHEN_TO_USE,
-    PROPERTY_WHEN_NOT_TO_USE,
-    PROPERTY_RESULTS
-  };
-
-  private static final String[] DESCRIPTION_LABELS = {
-    LABEL_PURPOSE, LABEL_INPUTS, LABEL_WHEN_TO_USE, LABEL_WHEN_NOT_TO_USE, LABEL_RESULTS
-  };
+  private static final List<Tuple<String, String>> DESCRIPTION_PARTS =
+      List.of(
+          Tuple.of(PROPERTY_PURPOSE, null),
+          Tuple.of(PROPERTY_INPUTS, LABEL_INPUTS),
+          Tuple.of(PROPERTY_WHEN_TO_USE, LABEL_WHEN_TO_USE),
+          Tuple.of(PROPERTY_WHEN_NOT_TO_USE, LABEL_WHEN_NOT_TO_USE),
+          Tuple.of(PROPERTY_RESULTS, LABEL_RESULTS));
 
   private final MessageSubscriptionServices messageSubscriptionServices;
   private final MessageServices messageServices;
@@ -154,13 +150,21 @@ public class ProcessesToolRepository implements ToolRepository {
   }
 
   private String buildDescription(final Map<String, String> props) {
-    final List<String> sections = new ArrayList<>();
-    for (int i = 0; i < DESCRIPTION_KEYS.length; i++) {
-      final String value = props.get(DESCRIPTION_KEYS[i]);
-      if (value != null && !value.isBlank()) {
-        sections.add("## " + DESCRIPTION_LABELS[i] + "\n" + value);
-      }
-    }
-    return String.join("\n\n", sections);
+    return String.join(
+        "\n\n",
+        DESCRIPTION_PARTS.stream()
+            .map(
+                part -> {
+                  final String value = props.get(part.getLeft());
+                  if (value == null || value.isBlank()) {
+                    return null;
+                  }
+                  if (part.getRight() == null) {
+                    return value;
+                  }
+                  return part.getRight() + "\n" + value;
+                })
+            .filter(Objects::nonNull)
+            .toList());
   }
 }
