@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBusinessRuleTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -48,7 +49,8 @@ public final class StraightThroughProcessingLoopValidator {
           BpmnElementType.TASK,
           BpmnElementType.CALL_ACTIVITY,
           BpmnElementType.INTERMEDIATE_THROW_EVENT,
-          BpmnElementType.SCRIPT_TASK);
+          BpmnElementType.SCRIPT_TASK,
+          BpmnElementType.BUSINESS_RULE_TASK);
 
   static {
     STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(BpmnElementType.MANUAL_TASK, NOOP_VALIDATOR);
@@ -69,6 +71,9 @@ public final class StraightThroughProcessingLoopValidator {
     STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
         BpmnElementType.SCRIPT_TASK,
         StraightThroughProcessingLoopValidator::isScriptTaskStraightThrough);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
+        BpmnElementType.BUSINESS_RULE_TASK,
+        StraightThroughProcessingLoopValidator::isBusinessRuleTaskStraightThrough);
   }
 
   /**
@@ -350,5 +355,11 @@ public final class StraightThroughProcessingLoopValidator {
     // If a script task is handled by a job worker is it not straight-through.
     final var scriptTask = (ExecutableScriptTask) element;
     return scriptTask.getJobWorkerProperties() == null;
+  }
+
+  private static boolean isBusinessRuleTaskStraightThrough(final ExecutableFlowNode element) {
+    // If a business rule task is handled by a job worker it is not straight-through.
+    final var businessRuleTask = (ExecutableBusinessRuleTask) element;
+    return businessRuleTask.getJobWorkerProperties() == null;
   }
 }
