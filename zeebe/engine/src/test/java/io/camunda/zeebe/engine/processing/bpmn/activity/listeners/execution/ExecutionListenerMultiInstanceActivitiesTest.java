@@ -22,12 +22,14 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -90,13 +92,13 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("items", ITEMS).create();
 
-    // when — drive each inner instance: start EL → service task
+    // when
     for (int i = 0; i < ITEMS.size(); i++) {
       completeJobByType(processInstanceKey, START_1, i);
       completeJobByType(processInstanceKey, SERVICE_TASK_TYPE, i);
     }
 
-    // then — exactly one start EL job per inner instance, all marked as START
+    // then
     assertProcessCompleted(processInstanceKey);
 
     assertThat(
@@ -123,7 +125,7 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("items", ITEMS).create();
 
-    // when — for each inner instance: start_1 → start_2 → start_3 → service task
+    // when
     for (int i = 0; i < ITEMS.size(); i++) {
       completeJobByType(processInstanceKey, START_1, i);
       completeJobByType(processInstanceKey, START_2, i);
@@ -131,8 +133,12 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
       completeJobByType(processInstanceKey, SERVICE_TASK_TYPE, i);
     }
 
-    // then — start listeners executed in declared order, repeated per inner instance
-    assertProcessCompleted(processInstanceKey);
+    // then
+    final var completedProcess =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
     final List<Tuple> expected = new ArrayList<>();
     for (int i = 0; i < ITEMS.size(); i++) {
       expected.add(tuple(START_1, JobListenerEventType.START));
@@ -140,10 +146,12 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
       expected.add(tuple(START_3, JobListenerEventType.START));
     }
     assertThat(
-            RecordingExporter.jobRecords(JobIntent.COMPLETED)
+            RecordingExporter.records()
+                .limit(l -> l.getPosition() >= completedProcess.getPosition())
+                .jobRecords()
+                .withIntent(JobIntent.COMPLETED)
                 .withProcessInstanceKey(processInstanceKey)
                 .filter(r -> r.getValue().getJobKind() == JobKind.EXECUTION_LISTENER)
-                .limit(expected.size())
                 .map(Record::getValue))
         .extracting(JobRecordValue::getType, JobRecordValue::getJobListenerEventType)
         .containsExactlyElementsOf(expected);
@@ -156,19 +164,19 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
     ENGINE.deployment().withXmlResource(process).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // when — beforeAll listener job is created
+    // when
     final Record<JobRecordValue> beforeAllJob =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(BEFORE_ALL_1)
             .getFirst();
 
-    // then — it is the right kind of job
+    // then
     assertThat(beforeAllJob.getValue().getJobKind()).isEqualTo(JobKind.EXECUTION_LISTENER);
     assertThat(beforeAllJob.getValue().getJobListenerEventType())
         .isEqualTo(JobListenerEventType.BEFORE_ALL);
 
-    // when — listener completes with the input collection and all service-task jobs complete
+    // when
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -177,10 +185,9 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
         .complete();
     completeAllServiceTasks(processInstanceKey, ITEMS.size());
 
-    // then — process completes
+    // then
     assertProcessCompleted(processInstanceKey);
 
-    // contains only BEFORE_ALL_1
     final Tuple expected = tuple(BEFORE_ALL_1, JobListenerEventType.BEFORE_ALL);
     assertThat(
             RecordingExporter.jobRecords(JobIntent.COMPLETED)
@@ -191,7 +198,6 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
         .extracting(JobRecordValue::getType, JobRecordValue::getJobListenerEventType)
         .containsOnlyOnce(expected);
 
-    // and — the first child instance only activated AFTER the beforeAll listener completed
     final long miBodyKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
@@ -230,7 +236,7 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
     ENGINE.deployment().withXmlResource(process).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // when — complete the listeners one by one (the first sets the collection)
+    // when
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -241,10 +247,9 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
     ENGINE.job().ofInstance(processInstanceKey).withType(BEFORE_ALL_3).complete();
     completeAllServiceTasks(processInstanceKey, ITEMS.size());
 
-    // then — process completes and beforeAll jobs were created/completed in declared order
+    // then
     assertProcessCompleted(processInstanceKey);
 
-    // contains only BEFORE_ALL_1 → BEFORE_ALL_2 → BEFORE_ALL_3
     final List<Tuple> expected = new ArrayList<>();
     expected.add(tuple(BEFORE_ALL_1, JobListenerEventType.BEFORE_ALL));
     expected.add(tuple(BEFORE_ALL_2, JobListenerEventType.BEFORE_ALL));
@@ -258,7 +263,6 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
         .extracting(JobRecordValue::getType, JobRecordValue::getJobListenerEventType)
         .containsExactlyElementsOf(expected);
 
-    // and — the first child instance only activated AFTER all the beforeAll listener completed
     final long miBodyKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
@@ -313,7 +317,7 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
       completeJobByType(processInstanceKey, SERVICE_TASK_TYPE, i);
     }
 
-    // then — beforeAlls fire once in order, then each instance runs its starts in order
+    // then
     assertProcessCompleted(processInstanceKey);
 
     final List<Tuple> expected = new ArrayList<>();
@@ -335,7 +339,7 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
 
   @Test
   public void shouldOverwriteVariableWhenMultipleBeforeAllListenersSetTheSameVariable() {
-    // given — two beforeAll listeners that will both write to the same variable ("items")
+    // given
     final BpmnModelInstance process =
         process(
             t ->
@@ -344,7 +348,7 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
     ENGINE.deployment().withXmlResource(process).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // when — first listener sets items to a 2-element list, second overwrites with a 3-element one
+    // when
     final List<Integer> firstItems = List.of(1, 2);
     final List<Integer> secondItems = List.of(10, 20, 30);
 
@@ -361,14 +365,11 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
         .withVariables(Map.of("items", secondItems))
         .complete();
 
-    // and — drive the inner service-task jobs to completion using the overwritten collection size
     completeAllServiceTasks(processInstanceKey, secondItems.size());
 
-    // then — process completes
+    // then
     assertProcessCompleted(processInstanceKey);
 
-    // and — exactly `secondItems.size()` inner instances were activated (i.e. the second write
-    // fully overwrote the first one; values were not merged)
     final long innerInstancesCount =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -397,13 +398,145 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
   }
 
   @Test
-  public void shouldCancelBeforeAllListenerJobWhenProcessIsCanceled() {
-    // given — a multi-instance service task with a single beforeAll execution listener
+  public void shouldExposeBeforeAllListenerVariablesToInnerInstances() {
+    // given
     final BpmnModelInstance process = process(t -> t.zeebeBeforeAllExecutionListener(BEFORE_ALL_1));
     ENGINE.deployment().withXmlResource(process).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // and — the beforeAll listener job exists and is still pending
+    // when
+    final String extraVarName = "extra";
+    final String extraVarValue = "from-before-all";
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(BEFORE_ALL_1)
+        .withVariables(Map.of("items", ITEMS, extraVarName, extraVarValue))
+        .complete();
+
+    final List<Map<String, Object>> innerJobVariables = new ArrayList<>();
+    for (int i = 0; i < ITEMS.size(); i++) {
+      RecordingExporter.jobRecords(JobIntent.CREATED)
+          .withProcessInstanceKey(processInstanceKey)
+          .withType(SERVICE_TASK_TYPE)
+          .skip(i)
+          .getFirst();
+
+      final var batch =
+          ENGINE.jobs().withType(SERVICE_TASK_TYPE).withMaxJobsToActivate(1).activate().getValue();
+      final long activatedKey = batch.getJobKeys().getFirst();
+      final JobRecordValue activated = batch.getJobs().getFirst();
+      innerJobVariables.add(activated.getVariables());
+      ENGINE.job().ofInstance(processInstanceKey).withKey(activatedKey).complete();
+    }
+
+    // then
+    assertProcessCompleted(processInstanceKey);
+
+    assertThat(innerJobVariables)
+        .as(
+            "every inner instance must see the non-collection variable '%s' set by the beforeAll listener",
+            extraVarName)
+        .hasSize(ITEMS.size())
+        .allSatisfy(vars -> assertThat(vars).containsEntry(extraVarName, extraVarValue));
+  }
+
+  @Test
+  public void shouldFireInnerBeforeAllListenerOncePerOuterIterationOnNestedMultiInstance() {
+    // given
+    final String outerBeforeAll = "outer-before-all";
+    final String innerBeforeAll = "inner-before-all";
+    final String innerTask = "inner-task";
+    final List<Integer> outerItems = List.of(10, 20);
+    final List<Integer> innerItems = List.of(1, 2);
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "outer-sub",
+                outer ->
+                    outer
+                        .zeebeBeforeAllExecutionListener(outerBeforeAll)
+                        .multiInstance(
+                            m ->
+                                m.sequential()
+                                    .zeebeInputCollectionExpression("outerItems")
+                                    .zeebeInputElement("outerItem"))
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask(
+                            "inner-task",
+                            t ->
+                                t.zeebeJobType(innerTask)
+                                    .zeebeBeforeAllExecutionListener(innerBeforeAll)
+                                    .multiInstance(
+                                        m ->
+                                            m.sequential()
+                                                .zeebeInputCollectionExpression("innerItems")
+                                                .zeebeInputElement("innerItem")))
+                        .endEvent())
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(outerBeforeAll)
+        .withVariables(Map.of("outerItems", outerItems))
+        .complete();
+
+    for (int outer = 0; outer < outerItems.size(); outer++) {
+      final long innerBeforeAllJobKey =
+          RecordingExporter.jobRecords(JobIntent.CREATED)
+              .withProcessInstanceKey(processInstanceKey)
+              .withType(innerBeforeAll)
+              .skip(outer)
+              .getFirst()
+              .getKey();
+      ENGINE
+          .job()
+          .ofInstance(processInstanceKey)
+          .withKey(innerBeforeAllJobKey)
+          .withVariables(Map.of("innerItems", innerItems))
+          .complete();
+      for (int inner = 0; inner < innerItems.size(); inner++) {
+        completeJobByType(processInstanceKey, innerTask, outer * innerItems.size() + inner);
+      }
+    }
+
+    // then
+    assertProcessCompleted(processInstanceKey);
+
+    final List<Tuple> expected = new ArrayList<>();
+    expected.add(tuple(outerBeforeAll, JobKind.EXECUTION_LISTENER));
+    for (int i = 0; i < outerItems.size(); i++) {
+      expected.add(tuple(innerBeforeAll, JobKind.EXECUTION_LISTENER));
+      for (int j = 0; j < innerItems.size(); j++) {
+        expected.add(tuple(innerTask, JobKind.BPMN_ELEMENT));
+      }
+    }
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(expected.size())
+                .map(Record::getValue))
+        .extracting(JobRecordValue::getType, JobRecordValue::getJobKind)
+        .as("inner beforeAll fires once per outer iteration, before that iteration's tasks")
+        .containsExactlyElementsOf(expected);
+  }
+
+  @Test
+  public void shouldCancelBeforeAllListenerJobWhenProcessIsCanceled() {
+    // given
+    final BpmnModelInstance process = process(t -> t.zeebeBeforeAllExecutionListener(BEFORE_ALL_1));
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
     final Record<JobRecordValue> beforeAllJob =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -411,10 +544,10 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
             .getFirst();
     assertThat(beforeAllJob.getValue().getJobKind()).isEqualTo(JobKind.EXECUTION_LISTENER);
 
-    // when — the process instance is canceled while the listener is still pending
+    // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then — the process is terminated
+    // then
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -422,7 +555,6 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
                 .exists())
         .isTrue();
 
-    // and — the pending beforeAll listener job is canceled (not left orphaned)
     final Record<JobRecordValue> canceled =
         RecordingExporter.jobRecords(JobIntent.CANCELED)
             .withProcessInstanceKey(processInstanceKey)
@@ -436,23 +568,33 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
   }
 
   @Test
-  public void shouldNotDuplicateBeforeAllJobAfterEngineRestartWhilePending() {
-    // given — a multi-instance service task with a single beforeAll execution listener
-    final BpmnModelInstance process = process(t -> t.zeebeBeforeAllExecutionListener(BEFORE_ALL_1));
+  public void shouldPopulateOutputCollectionAfterBeforeAllSuppliesInputCollection() {
+    // given
+    final String outputCollectionVar = "results";
+    final String outputElementExpr = "= item * 10";
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                ELEMENT_ID,
+                t ->
+                    t.zeebeJobType(SERVICE_TASK_TYPE)
+                        .zeebeBeforeAllExecutionListener(BEFORE_ALL_1)
+                        .multiInstance(
+                            m ->
+                                m.sequential()
+                                    .zeebeInputCollectionExpression("items")
+                                    .zeebeInputElement("item")
+                                    .zeebeOutputCollection(outputCollectionVar)
+                                    .zeebeOutputElementExpression(outputElementExpr)))
+            .endEvent()
+            .done();
+
     ENGINE.deployment().withXmlResource(process).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // and — the beforeAll listener job is created but not yet completed
-    RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withType(BEFORE_ALL_1)
-        .getFirst();
-
-    // when — engine snapshots and reprocesses (simulates a restart)
-    ENGINE.snapshot();
-    ENGINE.reprocess();
-
-    // and — the (single) listener job is completed once after the restart
+    // when
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -461,38 +603,87 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
         .complete();
     completeAllServiceTasks(processInstanceKey, ITEMS.size());
 
-    // then — the process completes, the listener job was not duplicated, and the first child
-    // instance still only activates after that single completion
+    // then
     assertProcessCompleted(processInstanceKey);
 
-    assertThat(countJobRecords(processInstanceKey, BEFORE_ALL_1, JobIntent.CREATED))
-        .as("beforeAll listener job must not be re-created after engine restart")
-        .isEqualTo(1);
-    assertThat(countJobRecords(processInstanceKey, BEFORE_ALL_1, JobIntent.COMPLETED))
-        .as("beforeAll listener job must be completed exactly once after engine restart")
-        .isEqualTo(1);
+    final var outputCollectionValue =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withName(outputCollectionVar)
+            .withScopeKey(processInstanceKey)
+            .getFirst()
+            .getValue()
+            .getValue();
 
-    final long miBodyKey =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
-            .getFirst()
-            .getKey();
-    final long beforeAllCompletedPosition =
-        RecordingExporter.jobRecords(JobIntent.COMPLETED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withType(BEFORE_ALL_1)
-            .getFirst()
-            .getPosition();
-    final long firstChildActivatingPosition =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-            .withProcessInstanceKey(processInstanceKey)
-            .withFlowScopeKey(miBodyKey)
-            .getFirst()
-            .getPosition();
-    assertThat(firstChildActivatingPosition)
-        .as("first child instance still activates only after the (single) beforeAll completion")
-        .isGreaterThan(beforeAllCompletedPosition);
+    assertThat(outputCollectionValue)
+        .as(
+            "output collection must contain one evaluated entry per item supplied by the beforeAll listener")
+        .isEqualTo("[10,20,30]");
+  }
+
+  @Test
+  public void shouldTriggerBoundaryTimerEventOnMultiInstanceBodyAfterBeforeAllCompletes() {
+    // given
+    final String boundaryEventId = "boundary_timer";
+    final String canceledEndEventId = "canceled";
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                ELEMENT_ID,
+                t ->
+                    t.zeebeJobType(SERVICE_TASK_TYPE)
+                        .zeebeBeforeAllExecutionListener(BEFORE_ALL_1)
+                        .multiInstance(
+                            m ->
+                                m.parallel()
+                                    .zeebeInputCollectionExpression("items")
+                                    .zeebeInputElement("item")))
+            .boundaryEvent(boundaryEventId, b -> b.cancelActivity(true).timerWithDuration("PT1H"))
+            .endEvent(canceledEndEventId)
+            .moveToActivity(ELEMENT_ID)
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(BEFORE_ALL_1)
+        .withVariables(Map.of("items", ITEMS))
+        .complete();
+
+    // wait for the boundary timer subscription to exist before advancing time
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withHandlerNodeId(boundaryEventId)
+        .getFirst();
+
+    ENGINE.increaseTime(Duration.ofHours(2));
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+                .withElementId(ELEMENT_ID)
+                .exists())
+        .as("multi-instance body must be terminated by the interrupting boundary timer")
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(canceledEndEventId)
+                .exists())
+        .as("process must complete through the boundary-event path")
+        .isTrue();
+
+    assertProcessCompleted(processInstanceKey);
   }
 
   // ---------------------------------------------------------------------------
@@ -604,17 +795,5 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
                 .withElementType(BpmnElementType.PROCESS)
                 .exists())
         .isTrue();
-  }
-
-  private static long countJobRecords(
-      final long processInstanceKey, final String jobType, final JobIntent intent) {
-    return RecordingExporter.records()
-        .betweenProcessInstance(processInstanceKey)
-        .withValueType(ValueType.JOB)
-        .withIntent(intent)
-        .map(Record::getValue)
-        .map(JobRecordValue.class::cast)
-        .filter(v -> jobType.equals(v.getType()))
-        .count();
   }
 }
