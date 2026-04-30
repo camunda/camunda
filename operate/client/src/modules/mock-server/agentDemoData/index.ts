@@ -15,17 +15,8 @@ export {
   MOCK_AGENT_LLM_CALL_2_KEY,
   MOCK_AGENT_LLM_CALL_3_KEY,
   MOCK_AGENT_SUBPROCESS_ELEMENT_IDS,
+  MOCK_AGENT_AGENT_INSTANCE_KEY,
 } from './constants';
-
-import {MOCK_AGENT_INSTANCE_KEY, MOCK_AGENT_DEFINITION_KEY} from './constants';
-
-export function isAgentDemoInstance(processInstanceKey: string): boolean {
-  return processInstanceKey === MOCK_AGENT_INSTANCE_KEY;
-}
-
-export function isAgentDemoDefinition(processDefinitionKey: string): boolean {
-  return processDefinitionKey === MOCK_AGENT_DEFINITION_KEY;
-}
 
 export {AGENT_BPMN_XML} from './agentBpmnXml';
 export {
@@ -37,12 +28,7 @@ export {
   MOCK_AGENT_VARIABLES,
   MOCK_AGENT_JOBS,
 } from './agentProcessInstance';
-export {MOCK_AGENT_ENRICHMENT_DATA} from './agentEnrichmentData';
-export type {
-  AgentStatus,
-  AgentToolCall,
-  AgentIteration,
-  AgentUsage,
-  AgentElementData,
-  ConversationMessage,
-} from './agentEnrichmentData';
+export {
+  MOCK_AGENT_INSTANCE,
+  MOCK_AGENT_HISTORY_ELEMENTS,
+} from './agentInstanceData';

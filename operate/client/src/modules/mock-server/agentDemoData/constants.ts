@@ -26,3 +26,5 @@ export const MOCK_AGENT_SUBPROCESS_ELEMENT_IDS = new Set([
   'GetDateAndTime',
   'AskHumanToSendEmail',
 ]);
+
+export const MOCK_AGENT_AGENT_INSTANCE_KEY = '4451799813685200';
