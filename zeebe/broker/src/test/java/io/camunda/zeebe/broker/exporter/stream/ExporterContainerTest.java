@@ -804,6 +804,76 @@ final class ExporterContainerTest {
   }
 
   @Nested
+  class RequestReplay {
+
+    private static final long INITIAL_POSITION = 10L;
+    private static final long REPLAY_POSITION = 5L;
+
+    @BeforeEach
+    void beforeEach(final @TempDir Path storagePath) throws ExporterLoadException {
+      runtime = new ExporterContainerRuntime(storagePath);
+    }
+
+    @Test
+    void shouldRequestReplaySuccessfully() throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(
+                  EXPORTER_ID, FakeExporter.class, Map.of("key", "value"));
+      exporterContainer =
+          runtime.newContainer(
+              descriptor,
+              PARTITION_ID,
+              new ExporterInitializationInfo(0, null),
+              new SimpleMeterRegistry(),
+              pos -> true);
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, INITIAL_POSITION);
+      exporterContainer.initMetadata();
+
+      // when
+      final boolean result = exporterContainer.requestReplay(REPLAY_POSITION);
+
+      // then
+      assertThat(result).isTrue();
+      assertThat(exporterContainer.getPosition()).isEqualTo(REPLAY_POSITION);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(REPLAY_POSITION);
+      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(REPLAY_POSITION);
+    }
+
+    @Test
+    void shouldNotUpdateStateWhenReplayRequestIsRejected() throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(
+                  EXPORTER_ID, FakeExporter.class, Map.of("key", "value"));
+      exporterContainer =
+          runtime.newContainer(
+              descriptor,
+              PARTITION_ID,
+              new ExporterInitializationInfo(0, null),
+              new SimpleMeterRegistry(),
+              pos -> false);
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, INITIAL_POSITION);
+      exporterContainer.initMetadata();
+
+      // when
+      final boolean result = exporterContainer.requestReplay(REPLAY_POSITION);
+
+      // then
+      assertThat(result).isFalse();
+      assertThat(exporterContainer.getPosition()).isEqualTo(INITIAL_POSITION);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(INITIAL_POSITION);
+      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(INITIAL_POSITION);
+    }
+  }
+
+  @Nested
   class RecordFilterConditions {
 
     @BeforeEach

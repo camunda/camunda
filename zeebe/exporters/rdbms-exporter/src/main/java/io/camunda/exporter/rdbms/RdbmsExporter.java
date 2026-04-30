@@ -101,11 +101,6 @@ public final class RdbmsExporter {
       throw new ExporterException("Schema is not ready for use");
     }
 
-    if (!flushAfterEachRecord()) {
-      currentFlushTask =
-          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
-    }
-
     initializeRdbmsPosition();
     lastPosition = controller.getLastExportedRecordPosition();
     if (exporterRdbmsPosition.lastExportedPosition() > -1) {
@@ -121,10 +116,21 @@ public final class RdbmsExporter {
         updatePositionInBroker();
       } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
         LOG.info(
-            "[RDBMS Exporter P{}] Position in Broker {} is more advanced than in rdbms {}",
+            "[RDBMS Exporter P{}] Broker position {} is more advanced than rdbms position {}. Requesting replay from {}",
             partitionId,
+            lastPosition,
             exporterRdbmsPosition.lastExportedPosition(),
-            lastPosition);
+            exporterRdbmsPosition.lastExportedPosition());
+        lastPosition = exporterRdbmsPosition.lastExportedPosition();
+        final boolean replayInitiated =
+            controller.requestReplay(exporterRdbmsPosition.lastExportedPosition());
+        if (!replayInitiated) {
+          throw new ExporterException(
+              String.format(
+                  "[RDBMS Exporter P%d] Cannot replay records from position %d: log segments are no longer available. "
+                      + "The RDBMS secondary storage cannot be recovered automatically.",
+                  partitionId, exporterRdbmsPosition.lastExportedPosition() + 1));
+        }
       }
     }
     lastFlushedPosition = lastPosition;
@@ -133,6 +139,10 @@ public final class RdbmsExporter {
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
 
+    if (!flushAfterEachRecord()) {
+      currentFlushTask =
+          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+    }
     // schedule first cleanup in 1 second. Future intervals are given by the history cleanup service
     // itself
     currentCleanupTask =

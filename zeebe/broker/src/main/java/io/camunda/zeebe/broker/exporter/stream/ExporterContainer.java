@@ -47,14 +47,17 @@ final class ExporterContainer implements Controller {
   private ExporterMetrics metrics;
   private ActorControl actor;
   private final ExporterInitializationInfo initializationInfo;
+  private final ExporterReplayControl replayControl;
 
   ExporterContainer(
       final ExporterDescriptor descriptor,
       final int partitionId,
       final ExporterInitializationInfo initializationInfo,
       final MeterRegistry meterRegistry,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final ExporterReplayControl replayControl) {
     this.initializationInfo = initializationInfo;
+    this.replayControl = replayControl;
     context =
         new ExporterContext(
             Loggers.getExporterLogger(descriptor.getId()),
@@ -197,6 +200,25 @@ final class ExporterContainer implements Controller {
     return Optional.ofNullable(exportersState.getExporterMetadata(getId()))
         .filter(metadata -> metadata.capacity() > 0)
         .map(BufferUtil::bufferAsArray);
+  }
+
+  @Override
+  public boolean requestReplay(final long lastExportedPosition) {
+    LOG.info(
+        "Replay requested for exporter '{}': resetting position from {} to {}",
+        getId(),
+        position,
+        lastExportedPosition);
+
+    final boolean replayResult = replayControl.requestReplay(lastExportedPosition);
+    if (replayResult) {
+      position = lastExportedPosition;
+      lastUnacknowledgedPosition = lastExportedPosition;
+      lastAcknowledgedPosition = lastExportedPosition;
+      lastExportedMetadata = null;
+      exportersState.setPosition(getId(), lastExportedPosition);
+    }
+    return replayResult;
   }
 
   public String getId() {
