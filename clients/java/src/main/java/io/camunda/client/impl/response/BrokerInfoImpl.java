@@ -36,8 +36,8 @@ public final class BrokerInfoImpl implements BrokerInfo {
   public BrokerInfoImpl(final GatewayOuterClass.BrokerInfo grpcBrokerInfo) {
     nodeId = grpcBrokerInfo.getNodeId();
     // TODO: use grpcBrokerInfo.getZone() once the gRPC protocol carries the zone (see #51586)
-    zone = null;
-    memberId = null;
+    zone = "";
+    memberId = "";
     host = grpcBrokerInfo.getHost();
     port = grpcBrokerInfo.getPort();
     version = grpcBrokerInfo.getVersion();
@@ -51,8 +51,8 @@ public final class BrokerInfoImpl implements BrokerInfo {
   public BrokerInfoImpl(final io.camunda.client.protocol.rest.BrokerInfo httpBrokerInfo) {
     nodeId = httpBrokerInfo.getNodeId();
     // TODO: use httpBrokerInfo.getZone() once the REST protocol carries the zone (see #51998)
-    zone = null;
-    memberId = null;
+    zone = "";
+    memberId = "";
     host = httpBrokerInfo.getHost();
     port = httpBrokerInfo.getPort();
     version = httpBrokerInfo.getVersion();
@@ -75,7 +75,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   @Override
   public String getMemberId() {
-    if (memberId == null) {
+    if (memberId == null || memberId.isEmpty()) {
       return String.valueOf(nodeId);
     } else {
       return memberId;
