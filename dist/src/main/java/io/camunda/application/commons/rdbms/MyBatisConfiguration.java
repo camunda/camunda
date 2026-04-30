@@ -7,11 +7,13 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
+
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.NoopSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
@@ -64,13 +66,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
-@Import({DataSourceAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class})
+@Import(DataSourceTransactionManagerAutoConfiguration.class)
 public class MyBatisConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
@@ -129,13 +130,29 @@ public class MyBatisConfiguration {
   }
 
   @Bean
-  public VendorDatabaseProperties databaseProperties(
-      final DataSource dataSource, final RdbmsDatabaseIdProvider databaseIdProvider)
+  public RdbmsDataSources rdbmsDataSources(
+      final PhysicalTenantResolver physicalTenantResolver,
+      final RdbmsDatabaseIdProvider databaseIdProvider)
       throws IOException {
-    final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
-    LOGGER.info("Detected databaseId: {}", databaseId);
+    return RdbmsDataSources.of(
+        physicalTenantResolver.mapValues(
+            camunda -> camunda.getData().getSecondaryStorage().getRdbms()),
+        databaseIdProvider);
+  }
 
-    return VendorDatabasePropertiesLoader.load(databaseId);
+  // The following 2 beans expose the default physical tenant's DataSource and
+  // VendorDatabaseProperties so that downstream consumers (sqlSessionFactory,
+  // rdbmsExporterLiquibase, rdbmsWriterFactory, rdbmsExporterFactory)
+  // can keep injecting them as singletons. They will be removed in future PRs.
+
+  @Bean
+  public DataSource dataSource(final RdbmsDataSources rdbmsDataSources) {
+    return rdbmsDataSources.dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Bean
+  public VendorDatabaseProperties databaseProperties(final RdbmsDataSources rdbmsDataSources) {
+    return rdbmsDataSources.vendorPropertiesFor(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Bean
