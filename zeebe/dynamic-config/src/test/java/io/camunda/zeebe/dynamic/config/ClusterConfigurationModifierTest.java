@@ -10,7 +10,9 @@ package io.camunda.zeebe.dynamic.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class ClusterConfigurationModifierTest {
 
@@ -78,7 +82,8 @@ final class ClusterConfigurationModifierTest {
     void shouldUpdateExporterConfig(final ExporterConfigParameter parameter) {
       // given
       final var exporterStateInitializer =
-          new ExporterStateInitializer(parameter.configuredExporters(), LOCAL_MEMBER_ID, executor);
+          new ExporterStateInitializer(
+              parameter.configuredExporters(), LOCAL_MEMBER_ID, executor, false);
 
       // when
       final var newConfiguration =
@@ -123,7 +128,7 @@ final class ClusterConfigurationModifierTest {
 
       // when
       final var newConfiguration =
-          new ExporterStateInitializer(Set.of("expA", "expB"), LOCAL_MEMBER_ID, executor)
+          new ExporterStateInitializer(Set.of("expA", "expB"), LOCAL_MEMBER_ID, executor, false)
               .modify(currentConfiguration)
               .join();
 
@@ -140,7 +145,7 @@ final class ClusterConfigurationModifierTest {
     void shouldNotUpdateMemberStateIfNoExporterChanges() {
       // when
       final var newConfiguration =
-          new ExporterStateInitializer(Set.of("expA", "expB"), LOCAL_MEMBER_ID, executor)
+          new ExporterStateInitializer(Set.of("expA", "expB"), LOCAL_MEMBER_ID, executor, false)
               .modify(withTwoEnabledExporters())
               .join();
 
@@ -286,6 +291,125 @@ final class ClusterConfigurationModifierTest {
           Named.of(
               "Disabled Exporter's Config is Removed",
               new ExporterConfigParameter(currentConfiguration, Set.of("expA"), initialConfig)));
+    }
+
+    @Test
+    void shouldUpdateAllMembersWhenCoordinatorAndPostRestore() {
+      // given
+      final var member1 = MemberId.from("1");
+      final var configWithPendingOp =
+          withRestorePendingChange(withTwoMembers(LOCAL_MEMBER_ID, member1), LOCAL_MEMBER_ID);
+
+      // when
+      final var result =
+          new ExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, executor, true)
+              .modify(configWithPendingOp)
+              .join();
+
+      // then — expA was added for both members
+      ClusterConfigurationAssert.assertThatClusterTopology(result)
+          .member(LOCAL_MEMBER_ID)
+          .hasPartitionSatisfying(
+              1, p -> assertThat(p.config().exporting().exporters()).containsKey("expA"))
+          .describedAs("Local member is updated");
+      ClusterConfigurationAssert.assertThatClusterTopology(result)
+          .member(member1)
+          .hasPartitionSatisfying(
+              1, p -> assertThat(p.config().exporting().exporters()).containsKey("expA"))
+          .describedAs("Other member is updated");
+    }
+
+    @Test
+    void shouldSkipWhenNonCoordinatorAndPostRestore() {
+      // given
+      final var configWithPendingOp =
+          withRestorePendingChange(withTwoEnabledExporters(), LOCAL_MEMBER_ID);
+
+      // when
+      final var result =
+          new ExporterStateInitializer(
+                  Set.of("expA", "expB", "expC"), LOCAL_MEMBER_ID, executor, false)
+              .modify(configWithPendingOp)
+              .join();
+
+      // then — config is unchanged
+      assertThat(result)
+          .describedAs("Exporter state is not initialized")
+          .isEqualTo(configWithPendingOp);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldUpdateOnlyLocalMemberOnNormalRestart(final boolean isCoordinator) {
+      // given — two members, no pending changes
+      final var member1 = MemberId.from("1");
+      final var config = withTwoMembers(LOCAL_MEMBER_ID, member1);
+
+      // when — coordinator on normal restart (no pending UpdateRoutingState)
+      final var result =
+          new ExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, executor, isCoordinator)
+              .modify(config)
+              .join();
+
+      // then — only local member is updated
+      ClusterConfigurationAssert.assertThatClusterTopology(result)
+          .member(LOCAL_MEMBER_ID)
+          .hasPartitionSatisfying(
+              1, p -> assertThat(p.config().exporting().exporters()).containsKey("expA"))
+          .describedAs("Local member is updated");
+      ClusterConfigurationAssert.assertThatClusterTopology(result)
+          .member(member1)
+          .hasPartitionSatisfying(
+              1, p -> assertThat(p.config().exporting().exporters()).doesNotContainKey("expA"))
+          .describedAs("Other member is not updated");
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldUpdateLocalMemberWhenNotPostRestoreWithPendingChanges(final boolean isCoordinator) {
+      // given — pending ops that are not post restore
+      final var member1 = MemberId.from("1");
+      final var config =
+          withTwoMembers(LOCAL_MEMBER_ID, member1)
+              .startConfigurationChange(
+                  List.of(new UpdateRoutingState(LOCAL_MEMBER_ID, Optional.empty())));
+
+      // when
+      final var result =
+          new ExporterStateInitializer(Set.of("expA"), LOCAL_MEMBER_ID, executor, isCoordinator)
+              .modify(config)
+              .join();
+
+      // then
+      assertThat(result).isNotEqualTo(config);
+      ClusterConfigurationAssert.assertThatClusterTopology(result)
+          .member(LOCAL_MEMBER_ID)
+          .hasPartitionSatisfying(
+              1, p -> assertThat(p.config().exporting().exporters()).containsKey("expA"));
+    }
+
+    private static ClusterConfiguration withRestorePendingChange(
+        final ClusterConfiguration base, final MemberId coordinatorId) {
+      return new ClusterConfiguration(
+          base.version(),
+          base.members(),
+          base.lastChange(),
+          Optional.of(
+              ClusterChangePlan.initForRestore(
+                  List.of(new UpdateRoutingState(coordinatorId, Optional.empty())))),
+          base.routingState(),
+          base.clusterId(),
+          base.incarnationNumber());
+    }
+
+    private static ClusterConfiguration withTwoMembers(
+        final MemberId member0, final MemberId member1) {
+      final DynamicPartitionConfig config = DynamicPartitionConfig.init();
+      return ClusterConfiguration.init()
+          .addMember(
+              member0, MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, config))))
+          .addMember(
+              member1, MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, config))));
     }
 
     private static ClusterConfiguration withTwoEnabledExporters() {
