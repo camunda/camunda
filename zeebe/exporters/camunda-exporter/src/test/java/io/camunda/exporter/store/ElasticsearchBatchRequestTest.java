@@ -26,7 +26,9 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import co.elastic.clients.elasticsearch.core.bulk.OperationType;
+import co.elastic.clients.elasticsearch.core.bulk.UpdateAction;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.util.BinaryData;
 import io.camunda.exporter.entities.TestExporterEntity;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -35,6 +37,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,11 +54,13 @@ class ElasticsearchBatchRequestTest {
   private ElasticsearchClient elasticsearchClient;
   private Builder requestBuilder;
   private ElasticsearchScriptBuilder scriptBuilder;
+  private JacksonJsonpMapper jsonpMapper;
 
   @BeforeEach
   void setUp() throws IOException {
     elasticsearchClient = mock(ElasticsearchClient.class);
-    when(elasticsearchClient._jsonpMapper()).thenReturn(new JacksonJsonpMapper());
+    jsonpMapper = new JacksonJsonpMapper();
+    when(elasticsearchClient._jsonpMapper()).thenReturn(jsonpMapper);
     requestBuilder = new Builder();
     scriptBuilder = mock(ElasticsearchScriptBuilder.class);
     batchRequest =
@@ -84,10 +89,10 @@ class ElasticsearchBatchRequestTest {
 
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isIndex()).isTrue();
-    final IndexOperation<TestExporterEntity> index = bulkOperation.index();
+    final IndexOperation<?> index = bulkOperation.index();
     assertThat(index.index()).isEqualTo(INDEX);
     assertThat(index.id()).isEqualTo(ID);
-    assertThat(index.document()).isEqualTo(entity);
+    assertDocumentEquals(index.document(), entity);
   }
 
   @Test
@@ -112,11 +117,11 @@ class ElasticsearchBatchRequestTest {
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isIndex()).isTrue();
 
-    final IndexOperation<TestExporterEntity> index = bulkOperation.index();
+    final IndexOperation<?> index = bulkOperation.index();
     assertThat(index.index()).isEqualTo(INDEX);
     assertThat(index.id()).isEqualTo(ID);
     assertThat(index.routing()).isEqualTo(routing);
-    assertThat(index.document()).isEqualTo(entity);
+    assertDocumentEquals(index.document(), entity);
   }
 
   @Test
@@ -143,8 +148,7 @@ class ElasticsearchBatchRequestTest {
     final var update = bulkOperation.update();
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.action().doc()).isEqualTo(updateFields);
-    assertThat(update.action().upsert()).isEqualTo(entity);
+    assertActionEquals(update.binaryAction(), a -> a.doc(updateFields).upsert(entity));
   }
 
   @Test
@@ -173,8 +177,7 @@ class ElasticsearchBatchRequestTest {
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
     assertThat(update.routing()).isEqualTo(routing);
-    assertThat(update.action().doc()).isEqualTo(updateFields);
-    assertThat(update.action().upsert()).isEqualTo(entity);
+    assertActionEquals(update.binaryAction(), a -> a.doc(updateFields).upsert(entity));
   }
 
   @Test
@@ -184,7 +187,7 @@ class ElasticsearchBatchRequestTest {
     final String script = "script";
     final Map<String, Object> params = Map.of("id", "id2");
 
-    final Script scriptWithParameters = mock(Script.class);
+    final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
     // When
@@ -205,8 +208,7 @@ class ElasticsearchBatchRequestTest {
     final var update = bulkOperation.update();
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.action().script()).isEqualTo(scriptWithParameters);
-    assertThat(update.action().upsert()).isEqualTo(entity);
+    assertActionEquals(update.binaryAction(), a -> a.script(scriptWithParameters).upsert(entity));
   }
 
   @Test
@@ -217,7 +219,7 @@ class ElasticsearchBatchRequestTest {
     final Map<String, Object> params = Map.of("id", "id2");
     final String routing = "routing";
 
-    final Script scriptWithParameters = mock(Script.class);
+    final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
     // When
@@ -239,8 +241,7 @@ class ElasticsearchBatchRequestTest {
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
     assertThat(update.routing()).isEqualTo(routing);
-    assertThat(update.action().script()).isEqualTo(scriptWithParameters);
-    assertThat(update.action().upsert()).isEqualTo(entity);
+    assertActionEquals(update.binaryAction(), a -> a.script(scriptWithParameters).upsert(entity));
   }
 
   @Test
@@ -265,7 +266,7 @@ class ElasticsearchBatchRequestTest {
     final var update = bulkOperation.update();
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.action().doc()).isEqualTo(updateFields);
+    assertActionEquals(update.binaryAction(), a -> a.doc(updateFields));
   }
 
   @Test
@@ -291,7 +292,7 @@ class ElasticsearchBatchRequestTest {
     final var update = bulkOperation.update();
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.action().doc()).isEqualTo(entity);
+    assertActionEquals(update.binaryAction(), a -> a.doc(entity));
   }
 
   @Test
@@ -300,7 +301,7 @@ class ElasticsearchBatchRequestTest {
     final String script = "script";
     final Map<String, Object> params = Map.of("id", "id2");
 
-    final Script scriptWithParameters = mock(Script.class);
+    final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
     // When
@@ -321,7 +322,7 @@ class ElasticsearchBatchRequestTest {
     final var update = bulkOperation.update();
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.action().script()).isEqualTo(scriptWithParameters);
+    assertActionEquals(update.binaryAction(), a -> a.script(scriptWithParameters));
   }
 
   @Test
@@ -501,5 +502,39 @@ class ElasticsearchBatchRequestTest {
     // Then
     verify(errorHandler)
         .accept(INDEX_WITH_HANDLER, new Error(message, item.error().type(), notFound));
+  }
+
+  private void assertDocumentEquals(final Object actualDocument, final Object expectedDocument) {
+    assertThat(actualDocument).isInstanceOf(BinaryData.class);
+    final byte[] actualBytes = readAllBytes((BinaryData) actualDocument);
+    final byte[] expectedBytes = readAllBytes(BinaryData.of(expectedDocument, jsonpMapper));
+    assertThat(actualBytes).isEqualTo(expectedBytes);
+  }
+
+  private void assertActionEquals(
+      final BinaryData actualAction,
+      final Consumer<UpdateAction.Builder<Object, Object>> expectedActionBuilder) {
+    assertThat(actualAction).as("update should carry pre-serialized binary action").isNotNull();
+    final UpdateAction<Object, Object> expected =
+        UpdateAction.of(
+            b -> {
+              expectedActionBuilder.accept(b);
+              return b;
+            });
+    final byte[] actualBytes = readAllBytes(actualAction);
+    final byte[] expectedBytes = readAllBytes(BinaryData.of(expected, jsonpMapper));
+    assertThat(actualBytes).isEqualTo(expectedBytes);
+  }
+
+  private static byte[] readAllBytes(final BinaryData data) {
+    try {
+      return data.asInputStream().readAllBytes();
+    } catch (final IOException e) {
+      throw new AssertionError("failed to read BinaryData", e);
+    }
+  }
+
+  private static Script realScript(final String source) {
+    return Script.of(s -> s.source(source));
   }
 }
