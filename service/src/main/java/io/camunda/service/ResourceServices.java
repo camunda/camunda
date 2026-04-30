@@ -19,6 +19,7 @@ import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.util.ResourceUtils;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.exception.ErrorMapper;
@@ -182,11 +183,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
               // Filter by resource type if specified
               if (resourceTypeFilter != null
                   && !resourceTypeFilter.equalsIgnoreCase(entity.resourceType())) {
-                throw new ServiceException(
-                    String.format(
-                        "Resource with key '%d' is not of type '%s'",
-                        resourceKey, resourceTypeFilter),
-                    ServiceException.Status.NOT_FOUND);
+                throw resourceNotFoundException(resourceKey);
               }
 
               return entity;
@@ -210,7 +207,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
                         record.getResourceKey(),
                         record.getResourceId(),
                         record.getResourceName(),
-                        null,
+                        ResourceUtils.deriveResourceType(record.getResourceName()),
                         record.getVersion(),
                         record.getVersionTag(),
                         record.getDeploymentKey(),
@@ -218,17 +215,10 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
                         includeContent ? record.getResourceProp() : null);
 
                 // Filter by resource type if specified
-                // Note: primary storage doesn't have resourceType, so we cannot filter
-                // This means the old /content endpoint will work for all resources when using
-                // primary storage
                 if (resourceTypeFilter != null
                     && entity.resourceType() != null
                     && !resourceTypeFilter.equalsIgnoreCase(entity.resourceType())) {
-                  throw new ServiceException(
-                      String.format(
-                          "Resource with key '%d' is not of type '%s'",
-                          resourceKey, resourceTypeFilter),
-                      ServiceException.Status.NOT_FOUND);
+                  throw resourceNotFoundException(resourceKey);
                 }
 
                 return entity;
@@ -236,13 +226,17 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     }
   }
 
+  private static ServiceException resourceNotFoundException(final long resourceKey) {
+    return new ServiceException(
+        String.format("Resource with key '%d' not found", resourceKey),
+        ServiceException.Status.NOT_FOUND);
+  }
+
   // Normalizes NOT_FOUND errors to match secondary storage format
   private ServiceException mapResourceNotFoundError(final Throwable error, final long resourceKey) {
     final ServiceException mappedException = ErrorMapper.mapError(error);
     if (mappedException.getStatus() == ServiceException.Status.NOT_FOUND) {
-      return new ServiceException(
-          String.format("Resource with key '%d' not found", resourceKey),
-          ServiceException.Status.NOT_FOUND);
+      return resourceNotFoundException(resourceKey);
     }
     return mappedException;
   }
