@@ -58,6 +58,24 @@ export function frequency(number?: number | string | null, precision?: number) {
   return intl.format(Number(number));
 }
 
+export function tokens(number?: number | string | null): string {
+  if ((!number && number !== 0) || Number.isNaN(number)) {
+    return '--';
+  }
+
+  const n = Number(number);
+  if (n >= 1_000_000_000) {
+    return `${(n / 1_000_000_000).toFixed(1)}B`;
+  }
+  if (n >= 1_000_000) {
+    return `${(n / 1_000_000).toFixed(1)}M`;
+  }
+  if (n >= 1_000) {
+    return `${(n / 1_000).toFixed(1)}K`;
+  }
+  return String(n);
+}
+
 export function percentage(number?: number | string | null) {
   if ((!number && number !== 0) || Number.isNaN(number)) {
     return '--';

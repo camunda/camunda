@@ -15,6 +15,7 @@ import {getMaxNumDataSourcesForReport} from 'config';
 import TemplateModal from './TemplateModal';
 import {
   accelerationDashboardTemplate,
+  agentControlPlaneDashboardTemplate,
   efficiencyDashboardTemplate,
   operationsMonitoringDashboardTemplate,
   portfolioPerformanceDashboardTemplate,
@@ -48,6 +49,7 @@ export default function DashboardTemplateModal({
       name: 'singleProcessGroup',
       templates: [
         processDashboardTemplate(generateDocsLink),
+        agentControlPlaneDashboardTemplate(generateDocsLink),
         productivityDashboardTemplate(generateDocsLink),
         efficiencyDashboardTemplate(generateDocsLink),
         accelerationDashboardTemplate(generateDocsLink),

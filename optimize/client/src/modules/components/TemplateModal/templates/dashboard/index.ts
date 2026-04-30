@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+export {agentControlPlaneDashboardTemplate} from './agentControlPlaneDashboardTemplate';
 export {productivityDashboardTemplate} from './productivityDashboardTemplate';
 export {efficiencyDashboardTemplate} from './efficiencyDashboardTemplate';
 export {accelerationDashboardTemplate} from './accelerationDashboardTemplate';
