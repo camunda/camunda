@@ -240,8 +240,9 @@ public class ExporterConfiguration {
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
     private int rolloverBatchSize = 100;
-    private int reindexBatchSize = 1000;
+    private int reindexBatchSize = 2500;
     private int archiveByIdMaxRetryAttempts = 3;
+    private int archiveByIdRetryDelayMs = 1000;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
     private int maxDelayBetweenRuns = 60000;
@@ -325,6 +326,14 @@ public class ExporterConfiguration {
       this.archiveByIdMaxRetryAttempts = archiveByIdMaxRetryAttempts;
     }
 
+    public int getArchiveByIdRetryDelayMs() {
+      return archiveByIdRetryDelayMs;
+    }
+
+    public void setArchiveByIdRetryDelayMs(final int archiveByIdRetryDelayMs) {
+      this.archiveByIdRetryDelayMs = archiveByIdRetryDelayMs;
+    }
+
     public RetentionConfiguration getRetention() {
       return retention;
     }
@@ -390,6 +399,8 @@ public class ExporterConfiguration {
           + reindexBatchSize
           + ", archiveByIdMaxRetryAttempts="
           + archiveByIdMaxRetryAttempts
+          + ", archiveByIdMaxRetryDelayMs="
+          + archiveByIdRetryDelayMs
           + ", waitPeriodBeforeArchiving='"
           + waitPeriodBeforeArchiving
           + '\''
