@@ -58,7 +58,7 @@ public class JobMetricsConfig {
   private boolean enabled = DEFAULT_ENABLED;
 
   public Duration getExportInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".export-interval",
         exportInterval,
         Duration.class,
@@ -71,7 +71,7 @@ public class JobMetricsConfig {
   }
 
   public int getMaxWorkerNameLength() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-worker-name-length",
         maxWorkerNameLength,
         Integer.class,
@@ -84,7 +84,7 @@ public class JobMetricsConfig {
   }
 
   public int getMaxJobTypeLength() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-job-type-length",
         maxJobTypeLength,
         Integer.class,
@@ -97,7 +97,7 @@ public class JobMetricsConfig {
   }
 
   public int getMaxTenantIdLength() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-tenant-id-length",
         maxTenantIdLength,
         Integer.class,
@@ -110,7 +110,7 @@ public class JobMetricsConfig {
   }
 
   public int getMaxUniqueKeys() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-unique-keys",
         maxUniqueKeys,
         Integer.class,
@@ -123,7 +123,7 @@ public class JobMetricsConfig {
   }
 
   public boolean isEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enabled",
         enabled,
         Boolean.class,

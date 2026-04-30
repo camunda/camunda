@@ -20,7 +20,7 @@ public class Opensearch extends DocumentBasedSecondaryStorageDatabase {
   }
 
   public boolean isAwsEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         "camunda.data.secondary-storage.opensearch.aws-enabled",
         awsEnabled,
         Boolean.class,

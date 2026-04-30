@@ -24,7 +24,7 @@ public class Filesystem {
   private String basePath;
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".base-path",
         basePath,
         String.class,

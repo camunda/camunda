@@ -31,7 +31,7 @@ public class Monitoring {
   }
 
   public boolean isJfr() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".jfr",
         isJfr,
         Boolean.class,

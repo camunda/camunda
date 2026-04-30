@@ -30,7 +30,7 @@ public class ProcessInstanceCreation {
   private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
 
   public boolean isBusinessIdUniquenessEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".business-id-uniqueness-enabled",
         businessIdUniquenessEnabled,
         Boolean.class,

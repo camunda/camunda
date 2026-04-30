@@ -46,7 +46,7 @@ public class Ssl implements Cloneable {
   @NestedConfigurationProperty private KeyStore keyStore = new KeyStore();
 
   public boolean isEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enabled",
         enabled,
         Boolean.class,
@@ -59,7 +59,7 @@ public class Ssl implements Cloneable {
   }
 
   public File getCertificate() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".certificate",
         certificate,
         File.class,
@@ -72,7 +72,7 @@ public class Ssl implements Cloneable {
   }
 
   public File getCertificatePrivateKey() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".certificate-private-key",
         certificatePrivateKey,
         File.class,
