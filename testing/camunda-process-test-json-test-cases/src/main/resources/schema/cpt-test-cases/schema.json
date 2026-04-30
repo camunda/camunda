@@ -84,6 +84,9 @@
           "$ref": "#/definitions/CompleteUserTaskInstruction"
         },
         {
+          "$ref": "#/definitions/ConditionalBehaviorInstruction"
+        },
+        {
           "$ref": "#/definitions/CreateProcessInstanceInstruction"
         },
         {
@@ -1268,6 +1271,96 @@
         "type",
         "processInstanceSelector",
         "variables"
+      ],
+      "additionalProperties": false
+    },
+    "ConditionalBehaviorInstruction": {
+      "description": "An instruction to register a conditional behavior that reacts to process state changes. The behavior watches the given conditions on a background scheduler; the conditions form a conjunction so the behavior fires only when every assertion succeeds. Actions are consumed in order: the first match fires the first action, the second match fires the second, and the last action repeats indefinitely. Conditional behaviors should be registered before any CREATE_PROCESS_INSTANCE instruction in the same test case so the engine can observe early state changes.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "CONDITIONAL_BEHAVIOR"
+        },
+        "name": {
+          "description": "A descriptive name for diagnostics. Optional.",
+          "type": "string"
+        },
+        "conditions": {
+          "description": "The conditions to watch. Must contain at least one ASSERT_* instruction. The conditions form a conjunction; the behavior fires only when every assertion succeeds.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/AssertDecisionInstruction"
+              },
+              {
+                "$ref": "#/definitions/AssertElementInstanceInstruction"
+              },
+              {
+                "$ref": "#/definitions/AssertElementInstancesInstruction"
+              },
+              {
+                "$ref": "#/definitions/AssertProcessInstanceInstruction"
+              },
+              {
+                "$ref": "#/definitions/AssertProcessInstanceMessageSubscriptionInstruction"
+              },
+              {
+                "$ref": "#/definitions/AssertUserTaskInstruction"
+              },
+              {
+                "$ref": "#/definitions/AssertVariablesInstruction"
+              }
+            ]
+          }
+        },
+        "actions": {
+          "description": "The actions to execute when the condition is met. Must contain at least one action. Actions are consumed in order: the first match fires the first action, the second match fires the second, and the last action repeats indefinitely.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/BroadcastSignalInstruction"
+              },
+              {
+                "$ref": "#/definitions/CompleteJobInstruction"
+              },
+              {
+                "$ref": "#/definitions/CompleteJobAdHocSubProcessInstruction"
+              },
+              {
+                "$ref": "#/definitions/CompleteJobUserTaskListenerInstruction"
+              },
+              {
+                "$ref": "#/definitions/CompleteUserTaskInstruction"
+              },
+              {
+                "$ref": "#/definitions/CorrelateMessageInstruction"
+              },
+              {
+                "$ref": "#/definitions/PublishMessageInstruction"
+              },
+              {
+                "$ref": "#/definitions/ResolveIncidentInstruction"
+              },
+              {
+                "$ref": "#/definitions/ThrowBpmnErrorFromJobInstruction"
+              },
+              {
+                "$ref": "#/definitions/UpdateVariablesInstruction"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "conditions",
+        "actions"
       ],
       "additionalProperties": false
     }

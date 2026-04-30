@@ -33,6 +33,59 @@
           "state": "IS_COMPLETED"
         }
       ]
+    },
+    {
+      "name": "Conditional behavior auto-completes review task",
+      "description": "Registers a conditional behavior before the process starts: when the review user task is active, complete it with approved=true.",
+      "instructions": [
+        {
+          "type": "CONDITIONAL_BEHAVIOR",
+          "name": "auto-complete-review-task",
+          "conditions": [
+            {
+              "type": "ASSERT_ELEMENT_INSTANCE",
+              "processInstanceSelector": {
+                "processDefinitionId": "review-process"
+              },
+              "elementSelector": {
+                "elementName": "Review Task"
+              },
+              "state": "IS_ACTIVE"
+            },
+            {
+              "type": "ASSERT_USER_TASK",
+              "userTaskSelector": {
+                "taskName": "Review Task"
+              },
+              "state": "IS_CREATED"
+            }
+          ],
+          "actions": [
+            {
+              "type": "COMPLETE_USER_TASK",
+              "userTaskSelector": {
+                "taskName": "Review Task"
+              },
+              "variables": {
+                "approved": true
+              }
+            }
+          ]
+        },
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "review-process"
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "review-process"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
     }
   ]
 }

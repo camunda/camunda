@@ -30,6 +30,7 @@ import io.camunda.process.test.api.testCases.instructions.CompleteJobAdHocSubPro
 import io.camunda.process.test.api.testCases.instructions.CompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.CompleteJobUserTaskListenerInstruction;
 import io.camunda.process.test.api.testCases.instructions.CompleteUserTaskInstruction;
+import io.camunda.process.test.api.testCases.instructions.ConditionalBehaviorInstruction;
 import io.camunda.process.test.api.testCases.instructions.CorrelateMessageInstruction;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.EvaluateConditionalStartEventInstruction;
@@ -88,6 +89,9 @@ import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruc
   @JsonSubTypes.Type(
       value = CompleteUserTaskInstruction.class,
       name = TestCaseInstructionType.COMPLETE_USER_TASK),
+  @JsonSubTypes.Type(
+      value = ConditionalBehaviorInstruction.class,
+      name = TestCaseInstructionType.CONDITIONAL_BEHAVIOR),
   @JsonSubTypes.Type(
       value = CreateProcessInstanceInstruction.class,
       name = TestCaseInstructionType.CREATE_PROCESS_INSTANCE),

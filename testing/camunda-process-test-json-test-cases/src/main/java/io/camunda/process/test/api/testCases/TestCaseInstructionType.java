@@ -31,6 +31,7 @@ public class TestCaseInstructionType {
   public static final String COMPLETE_JOB_AD_HOC_SUB_PROCESS = "COMPLETE_JOB_AD_HOC_SUB_PROCESS";
   public static final String COMPLETE_JOB_USER_TASK_LISTENER = "COMPLETE_JOB_USER_TASK_LISTENER";
   public static final String COMPLETE_USER_TASK = "COMPLETE_USER_TASK";
+  public static final String CONDITIONAL_BEHAVIOR = "CONDITIONAL_BEHAVIOR";
   public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
   public static final String EVALUATE_CONDITIONAL_START_EVENT = "EVALUATE_CONDITIONAL_START_EVENT";
   public static final String EVALUATE_DECISION = "EVALUATE_DECISION";
