@@ -16,12 +16,12 @@ type Variable = {
 };
 
 type State = {
-  variable?: Variable;
+  variables: Variable[];
   isInMultipleMode: boolean;
 };
 
 const DEFAULT_STATE: State = {
-  variable: undefined,
+  variables: [],
   isInMultipleMode: false,
 };
 
@@ -37,32 +37,42 @@ class VariableFilter {
     this.state = {...DEFAULT_STATE};
   };
 
-  setVariable = (variable?: Variable) => {
-    if (!isEqual(this.state.variable, variable)) {
-      this.state.variable = variable;
+  setVariables = (variables: Variable[]) => {
+    if (!isEqual(this.state.variables, variables)) {
+      this.state.variables = variables;
     }
+  };
+
+  setVariable = (variable?: Variable) => {
+    this.setVariables(variable ? [variable] : []);
   };
 
   setIsInMultipleMode = (isInMultipleMode: boolean) => {
     this.state.isInMultipleMode = isInMultipleMode;
   };
 
+  get variables() {
+    return this.state.variables;
+  }
+
+  /** @deprecated Use variables[0] directly */
   get variable() {
-    return this.state.variable;
+    return this.state.variables[0];
   }
 
   get variableWithValidatedValues() {
-    if (!this.state.variable) {
+    const first = this.state.variables[0];
+    if (!first) {
       return undefined;
     }
 
     const values =
-      getValidVariableValues(this.state.variable.values)?.map((value) =>
+      getValidVariableValues(first.values)?.map((value) =>
         JSON.stringify(value),
       ) ?? [];
 
     return {
-      name: this.state.variable.name,
+      name: first.name,
       values,
     };
   }

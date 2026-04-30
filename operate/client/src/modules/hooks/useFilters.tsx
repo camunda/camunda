@@ -53,12 +53,13 @@ const useFilters = () => {
   };
 
   const getFilters = () => {
+    const firstVariable = variableFilterStore.variable;
     return {
       ...getProcessInstanceFilters(location.search),
-      ...(variableFilterStore.state.variable !== undefined
+      ...(firstVariable !== undefined
         ? {
-            variableName: variableFilterStore.state.variable?.name,
-            variableValues: variableFilterStore.state.variable?.values,
+            variableName: firstVariable.name,
+            variableValues: firstVariable.values,
           }
         : {}),
     };

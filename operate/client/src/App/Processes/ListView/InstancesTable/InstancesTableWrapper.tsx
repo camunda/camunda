@@ -45,8 +45,8 @@ const InstancesTableWrapper: React.FC = observer(() => {
   const hasActiveFilter = searchParams.get('active') === 'true';
   const hasIncidentsFilter = searchParams.get('incidents') === 'true';
 
-  const variable = variableFilterStore.variable;
-  const filter = useProcessInstancesSearchFilter(variable);
+  const variables = variableFilterStore.variables;
+  const filter = useProcessInstancesSearchFilter(variables);
   const sort = useProcessInstancesSearchSort();
 
   const enablePeriodicRefetch =

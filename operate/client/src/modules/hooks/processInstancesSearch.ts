@@ -15,28 +15,35 @@ import {useSearchParams} from 'react-router-dom';
 import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 import type {Variable} from 'modules/stores/variableFilter';
 
-function useProcessInstancesSearchFilter(variable?: Variable) {
+function useProcessInstancesSearchFilter(variables?: Variable[]) {
   const [searchParams] = useSearchParams();
 
   return useMemo(() => {
     const filter = parseProcessInstancesSearchFilter(searchParams);
 
-    if (filter && variable?.name && variable?.values) {
-      const parsed = (getValidVariableValues(variable.values) ?? []).map((v) =>
-        JSON.stringify(v),
-      );
-      if (parsed.length > 0) {
-        filter.variables = [
-          {
-            name: variable?.name,
-            value: parsed.length === 1 ? parsed[0]! : {$in: parsed},
-          },
-        ];
+    if (filter && variables && variables.length > 0) {
+      const variableEntries = variables
+        .filter((v) => v.name && v.values)
+        .flatMap((v) => {
+          const parsed = (getValidVariableValues(v.values) ?? []).map((val) =>
+            JSON.stringify(val),
+          );
+          if (parsed.length === 0) return [];
+          return [
+            {
+              name: v.name,
+              value: parsed.length === 1 ? parsed[0]! : {$in: parsed},
+            },
+          ];
+        });
+
+      if (variableEntries.length > 0) {
+        filter.variables = variableEntries;
       }
     }
 
     return filter;
-  }, [searchParams, variable]);
+  }, [searchParams, variables]);
 }
 
 function useProcessInstancesSearchSort() {
