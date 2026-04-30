@@ -73,14 +73,11 @@ public final class CamundaRdbmsTestApplication
       if (databaseContainer instanceof final JdbcDatabaseContainer<?> jdbcDatabaseContainer) {
         final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
         rdbms.setUrl(jdbcDatabaseContainer.getJdbcUrl());
-        // In order to ensure that a test runs against the intended database, we also need to set
-        // Spring’s datasource properties. Otherwise, Spring might default to an embedded database
-        // (H2). See also property substitution in dist/application.properties for further details.
         withAdditionalProperties(
             Map.of(
-                "spring.datasource.url", rdbms.getUrl(),
-                "spring.datasource.username", rdbms.getUsername(),
-                "spring.datasource.password", rdbms.getPassword(),
+                "camunda.data.secondary-storage.rdbms.url", rdbms.getUrl(),
+                "camunda.data.secondary-storage.rdbms.username", rdbms.getUsername(),
+                "camunda.data.secondary-storage.rdbms.password", rdbms.getPassword(),
                 "camunda.data.secondary-storage.rdbms.auto-ddl", rdbms.getAutoDdl()));
       }
     }

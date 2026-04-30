@@ -248,19 +248,20 @@ public class MultiDbConfigurator {
       final boolean retentionEnabled,
       final String url,
       final String username,
-      final String password,
-      final String driverClass) {
-    // db type
-    testApplication.withSecondaryStorageType(SecondaryStorageType.rdbms);
+      final String password) {
+    final String tablePrefix = generateTablePrefix();
 
-    testApplication.withProperty(
-        "camunda.data.secondary-storage.rdbms.prefix", generateTablePrefix());
-    // --
+    testApplication
+        .withSecondaryStorageType(SecondaryStorageType.rdbms)
+        .withUnifiedConfig(
+            cfg -> {
+              final var rdbms = cfg.getData().getSecondaryStorage().getRdbms();
+              rdbms.setUrl(url);
+              rdbms.setUsername(username);
+              rdbms.setPassword(password);
+              rdbms.setPrefix(tablePrefix);
+            });
 
-    testApplication.withProperty("spring.datasource.url", url);
-    testApplication.withProperty("spring.datasource.driver-class-name", driverClass);
-    testApplication.withProperty("spring.datasource.username", username);
-    testApplication.withProperty("spring.datasource.password", password);
     testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
 
