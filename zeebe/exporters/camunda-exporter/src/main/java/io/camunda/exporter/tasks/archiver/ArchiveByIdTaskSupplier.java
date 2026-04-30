@@ -103,7 +103,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                         retryCount.set(0);
                         return deletedCount;
                       })
-                  .exceptionally(
+                  .exceptionallyCompose(
                       ex -> {
                         if (isRetryableError(ex)
                             && retryCount.incrementAndGet()
@@ -117,7 +117,17 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                               retryCount.get(),
                               config.getArchiveByIdMaxRetryAttempts(),
                               ex.getMessage());
-                          return 0L;
+
+                          // Whilst this is crude, we exploit the fact the ES/OS visibility is
+                          // around 2 second, and incrementing delay (default=1000ms) should give a
+                          // fighting chance to complete in the next attempt. If not will fail and
+                          // the next retry should take this over the full 2-second refresh interval
+                          final int retryDelayMs =
+                              config.getArchiveByIdRetryDelayMs() * retryCount.get();
+                          return CompletableFuture.supplyAsync(
+                              () -> 0L,
+                              CompletableFuture.delayedExecutor(
+                                  retryDelayMs, TimeUnit.MILLISECONDS, executor));
                         }
                         // reset retry count so the next batch starts with fresh retries
                         retryCount.set(0);
@@ -171,7 +181,8 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     if (thr != null && thr.getCause() != null) {
       return thr.getCause() instanceof SocketTimeoutException
           || thr.getCause() instanceof ElasticsearchException
-          || thr.getCause() instanceof OpenSearchException;
+          || thr.getCause() instanceof OpenSearchException
+          || thr.getCause() instanceof BatchCountMismatchException;
     }
     return false;
   }
