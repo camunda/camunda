@@ -12,6 +12,7 @@ import {routeTree} from './routeTree.gen';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import './index.scss';
 import {ThemeProvider} from './modules/theme/ThemeProvider';
+import {tracking} from '#/modules/tracking';
 
 const queryClient = new QueryClient();
 
@@ -35,11 +36,14 @@ const rootElement = document.getElementById('app')!;
 
 if (!rootElement.innerHTML) {
 	const root = ReactDOM.createRoot(rootElement);
-	root.render(
-		<ThemeProvider>
-			<QueryClientProvider client={queryClient}>
-				<RouterProvider router={router} />
-			</QueryClientProvider>
-		</ThemeProvider>,
-	);
+
+	tracking.loadAnalyticsToWillingUsers().finally(() => {
+		root.render(
+			<ThemeProvider>
+				<QueryClientProvider client={queryClient}>
+					<RouterProvider router={router} />
+				</QueryClientProvider>
+			</ThemeProvider>,
+		);
+	});
 }
