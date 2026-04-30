@@ -121,15 +121,13 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
               final long duration = endQueryTime - startQueryTime;
               dataAvailabilityQueryDurationTimer.record(duration, TimeUnit.NANOSECONDS);
 
-              if (error != null) {
+              if (error == null) {
+                LOG.debug("Available process instances items: {}", availableInstances.size());
+                processAvailableInstances(availableInstances);
+              } else {
                 LOG.error("Error while checking for available process instances", error);
-                cleanUpStaleInstances();
-                rescheduleCheck(duration);
-                return;
               }
 
-              LOG.debug("Available process instances items: {}", availableInstances.size());
-              processAvailableInstances(availableInstances);
               cleanUpStaleInstances();
               rescheduleCheck(duration);
             },
