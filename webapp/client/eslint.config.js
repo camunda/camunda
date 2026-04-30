@@ -19,7 +19,7 @@ const files = {
 
 export default defineConfig([
 	{
-		ignores: ['packages/**/dist/**/*', 'apps/**/dist/**/*'],
+		ignores: ['packages/**/dist/**/*', 'apps/**/dist/**/*', 'target/**/*'],
 	},
 
 	{

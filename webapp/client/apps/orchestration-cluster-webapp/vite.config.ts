@@ -50,8 +50,7 @@ const config = defineConfig(({mode}) => ({
 				postBanner: '/*! licenses: /assets/vendor.LICENSE.txt */',
 			},
 			input: {
-				index:
-					mode === 'visual-regression' ? './index.html' : './index.prod.html',
+				index: mode === 'visual-regression' ? './index.html' : './index.prod.html',
 			},
 		},
 	},
