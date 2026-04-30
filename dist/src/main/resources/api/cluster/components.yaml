@@ -333,6 +333,13 @@ schemas:
           - POST_SCALING
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
+      memberId:
+        type: string
+        description: >
+          The canonical member identity string. In a zone-aware cluster this is
+          "$zone/$nodeId" (e.g. "zone-a/0"); otherwise it equals the numeric node ID
+          as a string (e.g. "0").
+        example: "zone-a/0"
       partitionId:
         $ref: "components.yaml#/schemas/PartitionId"
       priority:
@@ -354,6 +361,13 @@ schemas:
     properties:
       id:
         $ref: "components.yaml#/schemas/BrokerId"
+      memberId:
+        type: string
+        description: >
+          The canonical member identity string. In a zone-aware cluster this is
+          "$zone/$nodeId" (e.g. "zone-a/0"); otherwise it equals the numeric node ID
+          as a string (e.g. "0").
+        example: "zone-a/0"
       state:
         $ref: "components.yaml#/schemas/BrokerStateCode"
       version:

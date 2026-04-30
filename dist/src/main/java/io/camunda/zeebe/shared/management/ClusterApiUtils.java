@@ -91,6 +91,11 @@ final class ClusterApiUtils {
     throw new IllegalStateException("Utility class");
   }
 
+  /** Extracts the numeric node index from a MemberId for backward-compatible brokerId fields. */
+  private static int nodeIdx(final MemberId memberId) {
+    return memberId.nodeIdx();
+  }
+
   static ResponseEntity<?> mapError(final Throwable error) {
     if (error instanceof CompletionException) {
       return mapError(error.getCause());
@@ -167,69 +172,80 @@ final class ClusterApiUtils {
       case final MemberJoinOperation join ->
           new Operation()
               .operation(OperationEnum.BROKER_ADD)
-              .brokerId(Integer.parseInt(join.memberId().id()));
+              .brokerId(nodeIdx(join.memberId()))
+              .memberId(join.memberId().id());
       case final MemberLeaveOperation leave ->
           new Operation()
               .operation(OperationEnum.BROKER_REMOVE)
-              .brokerId(Integer.parseInt(leave.memberId().id()));
+              .brokerId(nodeIdx(leave.memberId()))
+              .memberId(leave.memberId().id());
       case final PartitionJoinOperation join ->
           new Operation()
               .operation(OperationEnum.PARTITION_JOIN)
-              .brokerId(Integer.parseInt(join.memberId().id()))
+              .brokerId(nodeIdx(join.memberId()))
+              .memberId(join.memberId().id())
               .partitionId(join.partitionId())
               .priority(join.priority());
       case final PartitionLeaveOperation leave ->
           new Operation()
               .operation(OperationEnum.PARTITION_LEAVE)
-              .brokerId(Integer.parseInt(leave.memberId().id()))
+              .brokerId(nodeIdx(leave.memberId()))
+              .memberId(leave.memberId().id())
               .partitionId(leave.partitionId());
       case final PartitionReconfigurePriorityOperation reconfigure ->
           new Operation()
               .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
-              .brokerId(Integer.parseInt(reconfigure.memberId().id()))
+              .brokerId(nodeIdx(reconfigure.memberId()))
+              .memberId(reconfigure.memberId().id())
               .partitionId(reconfigure.partitionId())
               .priority(reconfigure.priority());
       case final PartitionForceReconfigureOperation partitionForceReconfigureOperation ->
           new Operation()
               .operation(OperationEnum.PARTITION_FORCE_RECONFIGURE)
-              .brokerId(Integer.parseInt(partitionForceReconfigureOperation.memberId().id()))
+              .brokerId(nodeIdx(partitionForceReconfigureOperation.memberId()))
+              .memberId(partitionForceReconfigureOperation.memberId().id())
               .partitionId(partitionForceReconfigureOperation.partitionId())
               .brokers(
                   partitionForceReconfigureOperation.members().stream()
-                      .map(MemberId::id)
-                      .map(Integer::parseInt)
+                      .map(m -> nodeIdx(m))
                       .collect(toList()));
       case final MemberRemoveOperation memberRemoveOperation ->
           new Operation()
               .operation(OperationEnum.BROKER_REMOVE)
-              .brokerId(Integer.parseInt(memberRemoveOperation.memberId().id()))
-              .brokers(List.of(Integer.parseInt(memberRemoveOperation.memberToRemove().id())));
+              .brokerId(nodeIdx(memberRemoveOperation.memberId()))
+              .memberId(memberRemoveOperation.memberId().id())
+              .brokers(List.of(nodeIdx(memberRemoveOperation.memberToRemove())));
       case final PartitionDisableExporterOperation disableExporterOperation ->
           new Operation()
               .operation(OperationEnum.PARTITION_DISABLE_EXPORTER)
-              .brokerId(Integer.parseInt(disableExporterOperation.memberId().id()))
+              .brokerId(nodeIdx(disableExporterOperation.memberId()))
+              .memberId(disableExporterOperation.memberId().id())
               .partitionId(disableExporterOperation.partitionId())
               .exporterId(disableExporterOperation.exporterId());
       case final PartitionEnableExporterOperation enableExporterOperation ->
           new Operation()
               .operation(OperationEnum.PARTITION_ENABLE_EXPORTER)
-              .brokerId(Integer.parseInt(enableExporterOperation.memberId().id()))
+              .brokerId(nodeIdx(enableExporterOperation.memberId()))
+              .memberId(enableExporterOperation.memberId().id())
               .partitionId(enableExporterOperation.partitionId())
               .exporterId(enableExporterOperation.exporterId());
       case final PartitionDeleteExporterOperation deleteExporterOperation ->
           new Operation()
               .operation(OperationEnum.PARTITION_DELETE_EXPORTER)
-              .brokerId(Integer.parseInt(deleteExporterOperation.memberId().id()))
+              .brokerId(nodeIdx(deleteExporterOperation.memberId()))
+              .memberId(deleteExporterOperation.memberId().id())
               .partitionId(deleteExporterOperation.partitionId())
               .exporterId(deleteExporterOperation.exporterId());
       case final StartPartitionScaleUp startScaleUp ->
           new Operation()
               .operation(OperationEnum.START_PARTITION_SCALE_UP)
-              .brokerId(Integer.parseInt(startScaleUp.memberId().id()));
+              .brokerId(nodeIdx(startScaleUp.memberId()))
+              .memberId(startScaleUp.memberId().id());
       case final PartitionBootstrapOperation bootstrapOperation ->
           new Operation()
               .operation(OperationEnum.PARTITION_BOOTSTRAP)
-              .brokerId(Integer.parseInt(bootstrapOperation.memberId().id()))
+              .brokerId(nodeIdx(bootstrapOperation.memberId()))
+              .memberId(bootstrapOperation.memberId().id())
               .partitionId(bootstrapOperation.partitionId())
               .priority(bootstrapOperation.priority());
       case final DeleteHistoryOperation deleteHistoryOperation ->
@@ -237,35 +253,33 @@ final class ClusterApiUtils {
       case final AwaitRedistributionCompletion redistributionCompletion ->
           new Operation()
               .operation(OperationEnum.AWAIT_REDISTRIBUTION)
-              .brokerId(Integer.parseInt(redistributionCompletion.memberId().id()));
+              .brokerId(nodeIdx(redistributionCompletion.memberId()))
+              .memberId(redistributionCompletion.memberId().id());
       case final AwaitRelocationCompletion relocationCompletion ->
           new Operation()
               .operation(OperationEnum.AWAIT_RELOCATION)
-              .brokerId(Integer.parseInt(relocationCompletion.memberId().id()));
+              .brokerId(nodeIdx(relocationCompletion.memberId()))
+              .memberId(relocationCompletion.memberId().id());
       case final UpdateRoutingState updateRoutingState ->
           new Operation()
               .operation(OperationEnum.UPDATE_ROUTING_STATE)
-              .brokerId(Integer.parseInt(updateRoutingState.memberId().id()));
+              .brokerId(nodeIdx(updateRoutingState.memberId()))
+              .memberId(updateRoutingState.memberId().id());
       case final UpdateIncarnationNumberOperation updateIncarnationNumberOperation ->
           new Operation().operation(OperationEnum.UPDATE_INCARNATION_NUMBER);
       case final PreScalingOperation preScalingOperation ->
           new Operation()
               .operation(OperationEnum.PRE_SCALING)
-              .brokerId(Integer.parseInt(preScalingOperation.memberId().id()))
-              .brokers(
-                  preScalingOperation.clusterMembers().stream()
-                      .map(MemberId::id)
-                      .map(Integer::parseInt)
-                      .toList());
+              .brokerId(nodeIdx(preScalingOperation.memberId()))
+              .memberId(preScalingOperation.memberId().id())
+              .brokers(preScalingOperation.clusterMembers().stream().map(m -> nodeIdx(m)).toList());
       case final PostScalingOperation postScalingOperation ->
           new Operation()
               .operation(OperationEnum.POST_SCALING)
-              .brokerId(Integer.parseInt(postScalingOperation.memberId().id()))
+              .brokerId(nodeIdx(postScalingOperation.memberId()))
+              .memberId(postScalingOperation.memberId().id())
               .brokers(
-                  postScalingOperation.clusterMembers().stream()
-                      .map(MemberId::id)
-                      .map(Integer::parseInt)
-                      .toList());
+                  postScalingOperation.clusterMembers().stream().map(m -> nodeIdx(m)).toList());
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
@@ -276,7 +290,8 @@ final class ClusterApiUtils {
         .map(
             entry ->
                 new BrokerState()
-                    .id(Integer.parseInt(entry.getKey().id()))
+                    .id(nodeIdx(entry.getKey()))
+                    .memberId(entry.getKey().id())
                     .state(mapBrokerState(entry.getValue().state()))
                     .lastUpdatedAt(mapInstantToDateTime(entry.getValue().lastUpdated()))
                     .version(entry.getValue().version())
@@ -442,70 +457,81 @@ final class ClusterApiUtils {
           case final MemberJoinOperation join ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_ADD)
-                  .brokerId(Integer.parseInt(join.memberId().id()));
+                  .brokerId(nodeIdx(join.memberId()))
+                  .memberId(join.memberId().id());
           case final MemberLeaveOperation leave ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
-                  .brokerId(Integer.parseInt(leave.memberId().id()));
+                  .brokerId(nodeIdx(leave.memberId()))
+                  .memberId(leave.memberId().id());
           case final PartitionJoinOperation join ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_JOIN)
-                  .brokerId(Integer.parseInt(join.memberId().id()))
+                  .brokerId(nodeIdx(join.memberId()))
+                  .memberId(join.memberId().id())
                   .partitionId(join.partitionId())
                   .priority(join.priority());
           case final PartitionLeaveOperation leave ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_LEAVE)
-                  .brokerId(Integer.parseInt(leave.memberId().id()))
+                  .brokerId(nodeIdx(leave.memberId()))
+                  .memberId(leave.memberId().id())
                   .partitionId(leave.partitionId());
           case final PartitionReconfigurePriorityOperation reconfigure ->
               new TopologyChangeCompletedInner()
                   .operation(
                       TopologyChangeCompletedInner.OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
-                  .brokerId(Integer.parseInt(reconfigure.memberId().id()))
+                  .brokerId(nodeIdx(reconfigure.memberId()))
+                  .memberId(reconfigure.memberId().id())
                   .partitionId(reconfigure.partitionId())
                   .priority(reconfigure.priority());
           case final PartitionForceReconfigureOperation partitionForceReconfigureOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_FORCE_RECONFIGURE)
-                  .brokerId(Integer.parseInt(partitionForceReconfigureOperation.memberId().id()))
+                  .brokerId(nodeIdx(partitionForceReconfigureOperation.memberId()))
+                  .memberId(partitionForceReconfigureOperation.memberId().id())
                   .partitionId(partitionForceReconfigureOperation.partitionId())
                   .brokers(
                       partitionForceReconfigureOperation.members().stream()
-                          .map(MemberId::id)
-                          .map(Integer::parseInt)
+                          .map(m -> nodeIdx(m))
                           .toList());
           case final MemberRemoveOperation memberRemoveOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
-                  .brokerId(Integer.parseInt(memberRemoveOperation.memberId().id()))
-                  .brokers(List.of(Integer.parseInt(memberRemoveOperation.memberToRemove().id())));
+                  .brokerId(nodeIdx(memberRemoveOperation.memberId()))
+                  .memberId(memberRemoveOperation.memberId().id())
+                  .brokers(List.of(nodeIdx(memberRemoveOperation.memberToRemove())));
           case final PartitionDisableExporterOperation disableExporterOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_DISABLE_EXPORTER)
-                  .brokerId(Integer.parseInt(disableExporterOperation.memberId().id()))
+                  .brokerId(nodeIdx(disableExporterOperation.memberId()))
+                  .memberId(disableExporterOperation.memberId().id())
                   .partitionId(disableExporterOperation.partitionId())
                   .exporterId(disableExporterOperation.exporterId());
           case final PartitionEnableExporterOperation enableExporterOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_ENABLE_EXPORTER)
-                  .brokerId(Integer.parseInt(enableExporterOperation.memberId().id()))
+                  .brokerId(nodeIdx(enableExporterOperation.memberId()))
+                  .memberId(enableExporterOperation.memberId().id())
                   .partitionId(enableExporterOperation.partitionId())
                   .exporterId(enableExporterOperation.exporterId());
           case final PartitionDeleteExporterOperation deleteExporterOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_DELETE_EXPORTER)
-                  .brokerId(Integer.parseInt(deleteExporterOperation.memberId().id()))
+                  .brokerId(nodeIdx(deleteExporterOperation.memberId()))
+                  .memberId(deleteExporterOperation.memberId().id())
                   .partitionId(deleteExporterOperation.partitionId())
                   .exporterId(deleteExporterOperation.exporterId());
           case final StartPartitionScaleUp startScaleUp ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.START_PARTITION_SCALE_UP)
-                  .brokerId(Integer.parseInt(startScaleUp.memberId().id()));
+                  .brokerId(nodeIdx(startScaleUp.memberId()))
+                  .memberId(startScaleUp.memberId().id());
           case final PartitionBootstrapOperation bootstrapOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_BOOTSTRAP)
-                  .brokerId(Integer.parseInt(bootstrapOperation.memberId().id()))
+                  .brokerId(nodeIdx(bootstrapOperation.memberId()))
+                  .memberId(bootstrapOperation.memberId().id())
                   .partitionId(bootstrapOperation.partitionId())
                   .priority(bootstrapOperation.priority());
           case final DeleteHistoryOperation deleteHistoryOperation ->
@@ -514,37 +540,37 @@ final class ClusterApiUtils {
           case final AwaitRedistributionCompletion redistributionCompletion ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.AWAIT_REDISTRIBUTION)
-                  .brokerId(Integer.parseInt(redistributionCompletion.memberId().id()));
+                  .brokerId(nodeIdx(redistributionCompletion.memberId()))
+                  .memberId(redistributionCompletion.memberId().id());
           case final AwaitRelocationCompletion relocationCompletion ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.AWAIT_RELOCATION)
-                  .brokerId(Integer.parseInt(relocationCompletion.memberId().id()));
+                  .brokerId(nodeIdx(relocationCompletion.memberId()))
+                  .memberId(relocationCompletion.memberId().id());
           case final UpdateRoutingState updateRoutingState ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UPDATE_ROUTING_STATE)
-                  .brokerId(Integer.parseInt(updateRoutingState.memberId().id()));
+                  .brokerId(nodeIdx(updateRoutingState.memberId()))
+                  .memberId(updateRoutingState.memberId().id());
           case final UpdateIncarnationNumberOperation updateIncarnationNumberOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UPDATE_INCARNATION_NUMBER)
-                  .brokerId(Integer.parseInt(updateIncarnationNumberOperation.memberId().id()));
+                  .brokerId(nodeIdx(updateIncarnationNumberOperation.memberId()))
+                  .memberId(updateIncarnationNumberOperation.memberId().id());
           case final PreScalingOperation preScalingOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.PRE_SCALING)
-                  .brokerId(Integer.parseInt(preScalingOperation.memberId().id()))
+                  .brokerId(nodeIdx(preScalingOperation.memberId()))
+                  .memberId(preScalingOperation.memberId().id())
                   .brokers(
-                      preScalingOperation.clusterMembers().stream()
-                          .map(MemberId::id)
-                          .map(Integer::parseInt)
-                          .toList());
+                      preScalingOperation.clusterMembers().stream().map(m -> nodeIdx(m)).toList());
           case final PostScalingOperation postScalingOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.POST_SCALING)
-                  .brokerId(Integer.parseInt(postScalingOperation.memberId().id()))
+                  .brokerId(nodeIdx(postScalingOperation.memberId()))
+                  .memberId(postScalingOperation.memberId().id())
                   .brokers(
-                      postScalingOperation.clusterMembers().stream()
-                          .map(MemberId::id)
-                          .map(Integer::parseInt)
-                          .toList());
+                      postScalingOperation.clusterMembers().stream().map(m -> nodeIdx(m)).toList());
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);
