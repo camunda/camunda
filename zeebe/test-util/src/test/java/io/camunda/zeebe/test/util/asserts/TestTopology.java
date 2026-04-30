@@ -104,12 +104,16 @@ record TestTopology(
 
     @Override
     public String getZone() {
-      return "";
+      return zone;
     }
 
     @Override
     public String getMemberId() {
-      return zone + "/" + nodeId;
+      if (zone == null) {
+        return String.valueOf(nodeId);
+      } else {
+        return zone + "/" + nodeId;
+      }
     }
 
     @Override
