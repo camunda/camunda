@@ -10,6 +10,7 @@ package io.camunda.authentication;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,7 +78,7 @@ class CachingCamundaAuthenticationProviderTest {
   // ── tests ──────────────────────────────────────────────────────────────────
 
   @Test
-  void cacheMissOnFirstCall_delegateConverterIsCalled() {
+  void shouldCallDelegateConverterOnCacheMiss() {
     // given
     final var oidcAuth = jwtAuth("token-aaa");
     SecurityContextHolder.getContext().setAuthentication(oidcAuth);
@@ -93,7 +94,7 @@ class CachingCamundaAuthenticationProviderTest {
   }
 
   @Test
-  void cacheHitOnSecondCall_converterCalledOnlyOnce() {
+  void shouldReturnCachedResultOnSecondCall() {
     // given
     final var oidcAuth = jwtAuth("token-bbb");
     SecurityContextHolder.getContext().setAuthentication(oidcAuth);
@@ -115,7 +116,7 @@ class CachingCamundaAuthenticationProviderTest {
   }
 
   @Test
-  void differentTokens_eachResolvedIndependently() {
+  void shouldResolveEachTokenIndependently() {
     // given
     final var authA = jwtAuth("token-ccc");
     final var authD = jwtAuth("token-ddd");
@@ -141,7 +142,7 @@ class CachingCamundaAuthenticationProviderTest {
   }
 
   @Test
-  void nonOidcAuth_cacheIsBypassed_converterCalledEachTime() {
+  void shouldBypassCacheForNonOidcAuth() {
     // given
     final var basicAuth = nonOidcAuth();
     SecurityContextHolder.getContext().setAuthentication(basicAuth);
@@ -160,7 +161,7 @@ class CachingCamundaAuthenticationProviderTest {
   }
 
   @Test
-  void perRequestHolderPopulatedAfterFirstCall() {
+  void shouldPopulatePerRequestHolderAfterFirstCall() {
     // given
     final var oidcAuth = jwtAuth("token-eee");
     SecurityContextHolder.getContext().setAuthentication(oidcAuth);
@@ -176,7 +177,7 @@ class CachingCamundaAuthenticationProviderTest {
   }
 
   @Test
-  void cacheHit_holderIsStillPopulated() {
+  void shouldPopulateHolderOnCacheHit() {
     // given — prime the cache directly (simulates a previous request having resolved the token)
     final var oidcAuth = jwtAuth("token-fff");
     SecurityContextHolder.getContext().setAuthentication(oidcAuth);
@@ -191,7 +192,7 @@ class CachingCamundaAuthenticationProviderTest {
 
     // then — result served from cache, and holder is populated for intra-request subsequent calls
     assertThat(result).isEqualTo(expected);
-    verify(converter, times(0)).convert(any());
+    verify(converter, never()).convert(any());
     verify(holder).set(expected);
   }
 }
