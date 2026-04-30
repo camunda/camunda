@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,12 +69,27 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
    * @return the list of stateless tool specifications
    */
   public List<SyncToolSpecification> getToolSpecifications() {
+    return getToolSpecifications(annotation -> true);
+  }
+
+  /**
+   * Get the stateless tool specifications filtered by an annotation predicate.
+   *
+   * @param annotationFilter predicate applied to the {@link CamundaMcpTool} annotation of each
+   *     method; only methods whose annotation matches are included
+   * @return the filtered list of stateless tool specifications
+   */
+  public List<SyncToolSpecification> getToolSpecifications(
+      final Predicate<CamundaMcpTool> annotationFilter) {
     final List<SyncToolSpecification> toolSpecs =
         toolObjects.stream()
             .map(
                 toolObject ->
                     Stream.of(doGetClassMethods(toolObject))
                         .filter(method -> method.isAnnotationPresent(CamundaMcpTool.class))
+                        .filter(
+                            method ->
+                                annotationFilter.test(method.getAnnotation(CamundaMcpTool.class)))
                         .filter(McpPredicates.filterReactiveReturnTypeMethod())
                         .filter(McpPredicates.filterMethodWithBidirectionalParameters())
                         .sorted(Comparator.comparing(Method::getName))

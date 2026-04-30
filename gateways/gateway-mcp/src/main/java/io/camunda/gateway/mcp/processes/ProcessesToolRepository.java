@@ -27,6 +27,8 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.jspecify.annotations.NonNull;
 
 public class ProcessesToolRepository implements ToolRepository {
@@ -53,14 +55,17 @@ public class ProcessesToolRepository implements ToolRepository {
   private final MessageSubscriptionServices messageSubscriptionServices;
   private final MessageServices messageServices;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final List<SyncToolSpecification> staticTools;
 
   public ProcessesToolRepository(
       final MessageSubscriptionServices messageSubscriptionServices,
       final MessageServices messageServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final List<SyncToolSpecification> staticTools) {
     this.messageSubscriptionServices = messageSubscriptionServices;
     this.messageServices = messageServices;
     this.authenticationProvider = authenticationProvider;
+    this.staticTools = List.copyOf(staticTools);
   }
 
   @Override
@@ -76,14 +81,24 @@ public class ProcessesToolRepository implements ToolRepository {
                                     Operation.neq(MessageSubscriptionState.DELETED.name()))
                                 .toolNameOperations(Operation.exists(true)))
                     .unlimited());
-    return messageSubscriptionServices.search(query, auth).items().stream()
-        .map(this::buildTool)
+    final List<Tool> dynamicTools =
+        messageSubscriptionServices.search(query, auth).items().stream()
+            .map(this::buildTool)
+            .toList();
+    return Stream.concat(
+            dynamicTools.stream(), staticTools.stream().map(SyncToolSpecification::tool))
         .toList();
   }
 
   @Override
   public @NonNull Either<String, SyncToolSpecification> findTool(
       @NonNull final McpTransportContext transportContext, @NonNull final String toolName) {
+    final Optional<SyncToolSpecification> staticTool =
+        staticTools.stream().filter(spec -> spec.tool().name().equals(toolName)).findFirst();
+    if (staticTool.isPresent()) {
+      return Either.right(staticTool.get());
+    }
+
     final int lastUnderscore = toolName.lastIndexOf('_');
     if (lastUnderscore < 0) {
       return Either.left("Tool not found: " + toolName);

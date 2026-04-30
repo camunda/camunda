@@ -71,7 +71,8 @@ public class ProcessInstanceTools {
 
   @CamundaMcpTool(
       description = "Get process instance by key. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true),
+      processesServer = true)
   public CallToolResult getProcessInstance(
       @McpToolParam(
               description =

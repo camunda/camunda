@@ -52,7 +52,8 @@ public class VariableTools {
   @CamundaMcpTool(
       description =
           "Search for variables. " + VARIABLE_VALUE_RETURN_FORMAT + " " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true),
+      processesServer = true)
   public CallToolResult searchVariables(
       @McpToolParam(description = FILTER_DESCRIPTION, required = false) final VariableFilter filter,
       @McpToolParam(description = SORT_DESCRIPTION, required = false)
