@@ -106,14 +106,14 @@ services:
       - 8000:8000
     restart: always
   operate:
-    image: camunda/operate:8.9.0
+    image: camunda/camunda:8.9.0
     container_name: operate
     environment:
       - SERVER_PORT=8081
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-      - SPRING_PROFILES_ACTIVE=dev-data
+      - SPRING_PROFILES_ACTIVE=dev-data,operate
       - CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_CLIENT_ID=operate
@@ -135,7 +135,7 @@ services:
       - zeebe
       - identity
   tasklist:
-    image: camunda/tasklist:8.9.0
+    image: camunda/camunda:8.9.0
     container_name: tasklist
     environment:
       - SERVER_PORT=8082
@@ -147,6 +147,7 @@ services:
       - CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist
       - CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive
       - CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api
+      - SPRING_PROFILES_ACTIVE=tasklist
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
       - CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test

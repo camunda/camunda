@@ -124,12 +124,12 @@ services:
       - "8000:8000"
     restart: always
   operate:
-    image: camunda/operate:SNAPSHOT
+    image: camunda/camunda:SNAPSHOT
     container_name: operate
     environment:
       - SERVER_PORT=8081
       - SERVER_SERVLET_CONTEXT_PATH=/operate
-      - SPRING_PROFILES_ACTIVE=dev-data
+      - SPRING_PROFILES_ACTIVE=dev-data,operate
       - CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8082/tasklist
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_OPERATE_OPENSEARCH_URL=http://opensearch:9200

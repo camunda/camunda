@@ -45,7 +45,7 @@ jobs:
     timeout-minutes: 40
     permissions: { }
     env:
-      OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
+      CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
     services:
       registry:
         image: registry:3
@@ -57,7 +57,7 @@ jobs:
       - uses: hadolint/hadolint-action@v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image
-          dockerfile: operate.Dockerfile
+          dockerfile: camunda.Dockerfile
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v3.4.0
@@ -107,8 +107,8 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.OPERATE_TEST_DOCKER_IMAGE }}
-          file: operate.Dockerfile
+          tags: ${{ env.CAMUNDA_TEST_DOCKER_IMAGE }}
+          file: camunda.Dockerfile
       - name: Run Docker tests
         run: ./mvnw -pl operate/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report

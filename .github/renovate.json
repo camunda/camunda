@@ -126,9 +126,7 @@
       "matchFileNames": [
         "Dockerfile",
         "camunda.Dockerfile",
-        "operate.Dockerfile",
-        "optimize.Dockerfile",
-        "tasklist.Dockerfile"
+        "optimize.Dockerfile"
       ],
       "prPriority": 10
     },

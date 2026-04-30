@@ -1,16 +1,14 @@
 # This GitHub Actions workflow automates the CI build process for the 'operate' service.
-# It triggers on a `workflow_call` event and accepts inputs for branch name[required], Java version[optional]
+# It triggers on a `workflow_call` event and accepts a branch name input.
 #
 # It consists of a several steps:
 # 1. Setup: It checks out the specified branch, sets up Java and Maven with the provided inputs, and imports secrets from Vault.
-# 2. Build: Then it builds the Maven artifacts and Docker images
-# 3. Upload: Deploys SNAPSHOT Docker image and mvn artifacts
+# 2. Build: Then it builds the Maven artifacts.
 #
-# Environment variables are used to define the image tags used for Docker builds.
 # This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
 # and enables detailed reporting of test results.
 # description: Automates the build process for operate workflows
-# called by: operate-ci.yml, preview-env-build-and-deploy.yml
+# called by: operate-ci.yml
 # test location:
 # type: CI
 # owner: @camunda/core-features
@@ -24,14 +22,6 @@ on:
         description: "The branch name to be used for the workflow"
         required: true
         type: string
-      pushDocker:
-        description: "Whether the built docker images are pushed to camunda registry"
-        type: boolean
-        default: true
-      previewEnv:
-        description: "Defines whether this is a preview environment build or not. If true, the image will be pushed to the Harbor Docker registry."
-        type: boolean
-        default: false
 
 defaults:
   run:
@@ -44,21 +34,12 @@ env:
   BRANCH_NAME: ${{ inputs.branch }}
   IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
   IS_MAIN_OR_STABLE_BRANCH: ${{ inputs.branch == 'main' || startsWith(inputs.branch, 'stable/') }}
-  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
-  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
-  utils-get-snapshot-docker-tag:
-    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
-    secrets: inherit
-    permissions:
-      contents: read
-
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [ utils-get-snapshot-docker-tag ]
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
@@ -66,18 +47,6 @@ jobs:
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
-
-      #########################################################################
-      # Setup: define env variables
-      - name: Set GitHub environment variables
-        run: |
-          GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
-          BRANCH_SLUG=$(echo "${{ inputs.branch }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
-          {
-            echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "main" ]; then echo "$GIT_COMMIT_HASH"; else echo "branch-$BRANCH_SLUG"; fi)"
-            echo "CI_IMAGE_TAG=ci-$GIT_COMMIT_HASH"
-            echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH"
-          } >> "$GITHUB_ENV"
 
       #########################################################################
       # Setup: import secrets from vault
@@ -116,38 +85,10 @@ jobs:
           package-manager: "npm"
 
       #########################################################################
-      # Build: maven artifacts and Docker images
+      # Build: maven artifacts
       - name: Build Maven
         run: |
           ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-
-      #########################################################################
-      # Build Docker image
-      - name: Build Docker image
-        uses: ./.github/actions/build-platform-docker
-        with:
-          repository: ${{ inputs.previewEnv && 'registry.camunda.cloud/team-camunda/operate' || 'registry.camunda.cloud/team-operate/camunda-operate' }}
-          version: |
-            ${{ env.IMAGE_TAG }}
-            ${{ env.CI_IMAGE_TAG }}
-            ${{ env.PR_IMAGE_TAG }}
-          push: ${{ inputs.pushDocker }}
-          platforms: ${{ inputs.pushDocker && env.DOCKER_PLATFORMS || 'linux/amd64' }}
-          dockerfile: operate.Dockerfile
-
-      #########################################################################
-      # Build SNAPSHOT Docker image
-      - name: Build SNAPSHOT Docker image
-        if: ${{ env.IS_MAIN_OR_STABLE_BRANCH == 'true' }}
-        uses: ./.github/actions/build-platform-docker
-        with:
-          repository: camunda/operate
-          version: |
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
-            ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
-          push: true
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          dockerfile: operate.Dockerfile
 
       #########################################################################
       # Collect information about build status for central statistics with CI Analytics
