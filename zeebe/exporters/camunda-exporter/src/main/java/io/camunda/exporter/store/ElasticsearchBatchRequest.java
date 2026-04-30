@@ -14,7 +14,10 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import co.elastic.clients.elasticsearch.core.bulk.OperationType;
+import co.elastic.clients.elasticsearch.core.bulk.UpdateAction;
+import co.elastic.clients.elasticsearch.core.bulk.UpdateAction.Builder;
 import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.util.BinaryData;
 import co.elastic.clients.util.VisibleForTesting;
@@ -30,7 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,10 +54,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final ElasticsearchClient esClient,
       final BulkRequest.Builder bulkRequestBuilder,
       final ElasticsearchScriptBuilder scriptBuilder) {
-    this.esClient = esClient;
-    this.scriptBuilder = scriptBuilder;
-    jsonpMapper = esClient._jsonpMapper();
-    maxBulkBytes = DEFAULT_MAX_BULK_BYTES;
+    this(esClient, scriptBuilder, DEFAULT_MAX_BULK_BYTES);
   }
 
   @VisibleForTesting
@@ -82,7 +82,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Override
   public BatchRequest addWithId(final String index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
-    addOperation(op -> op.index(idx -> idx.index(index).id(id).document(entity)));
+    addIndexOp(index, id, null, entity);
     return this;
   }
 
@@ -91,9 +91,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String index, final ExporterEntity entity, final String routing) {
     LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
-    addOperation(
-        op ->
-            op.index(idx -> idx.index(index).id(entity.getId()).document(entity).routing(routing)));
+    addIndexOp(index, entity.getId(), routing, entity);
     return this;
   }
 
@@ -120,16 +118,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         id,
         entity,
         updateFields);
-
-    addOperation(
-        op ->
-            op.update(
-                upd ->
-                    upd.index(index)
-                        .id(id)
-                        .routing(routing)
-                        .action(a -> a.doc(updateFields).upsert(entity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+    addUpdateOp(index, id, routing, a -> a.doc(updateFields).upsert(entity));
     return this;
   }
 
@@ -159,19 +148,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         entity,
         script,
         parameters);
-
-    addOperation(
-        op ->
-            op.update(
-                upd ->
-                    upd.index(index)
-                        .id(id)
-                        .routing(routing)
-                        .action(
-                            a ->
-                                a.script(scriptBuilder.getScriptWithParameters(script, parameters))
-                                    .upsert(entity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+    addUpdateOp(
+        index,
+        id,
+        routing,
+        a -> a.script(scriptBuilder.getScriptWithParameters(script, parameters)).upsert(entity));
     return this;
   }
 
@@ -180,30 +161,14 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String index, final String id, final Map<String, Object> updateFields) {
     LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
-
-    addOperation(
-        op ->
-            op.update(
-                up ->
-                    up.index(index)
-                        .id(id)
-                        .action(a -> a.doc(updateFields))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+    addUpdateOp(index, id, null, a -> a.doc(updateFields));
     return this;
   }
 
   @Override
   public BatchRequest update(final String index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add update request for index {} id {} and entity {}", index, id, entity);
-
-    addOperation(
-        op ->
-            op.update(
-                up ->
-                    up.index(index)
-                        .id(id)
-                        .action(a -> a.doc(entity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+    addUpdateOp(index, id, null, a -> a.doc(entity));
     return this;
   }
 
@@ -219,24 +184,15 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         id,
         script,
         parameters);
-
-    addOperation(
-        op ->
-            op.update(
-                up ->
-                    up.index(index)
-                        .id(id)
-                        .action(
-                            a ->
-                                a.script(scriptBuilder.getScriptWithParameters(script, parameters)))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+    addUpdateOp(
+        index, id, null, a -> a.script(scriptBuilder.getScriptWithParameters(script, parameters)));
     return this;
   }
 
   @Override
   public BatchRequest delete(final String index, final String id) {
     LOGGER.debug("Add delete request for index {} and id {}", index, id);
-    addOperation(op -> op.delete(del -> del.index(index).id(id)));
+    addDeleteOp(index, id, null);
     return this;
   }
 
@@ -244,7 +200,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest deleteWithRouting(final String index, final String id, final String routing) {
     LOGGER.debug(
         "Add delete index request with routing {} for index {} and entity {} ", routing, index, id);
-    addOperation(op -> op.delete(idx -> idx.index(index).id(id).routing(routing)));
+    addDeleteOp(index, id, routing);
     return this;
   }
 
@@ -259,15 +215,48 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     execute(null, true);
   }
 
-  private void addOperation(final Consumer<BulkOperation.Builder> opBuilder) {
-    final BulkOperation operation =
-        BulkOperation.of(
+  private void addIndexOp(
+      final String index, final String id, final String routing, final ExporterEntity entity) {
+    final BinaryData binaryDoc = BinaryData.of(entity, jsonpMapper);
+    final IndexOperation<Object> indexOp =
+        IndexOperation.of(i -> i.index(index).id(id).routing(routing).document(binaryDoc));
+    addOperation(BulkOperation.of(b -> b.index(indexOp)), binaryDoc.size());
+  }
+
+  private void addUpdateOp(
+      final String index,
+      final String id,
+      final String routing,
+      final Function<Builder<Object, Object>, ?> actionBuilder) {
+    final UpdateAction<Object, Object> action =
+        UpdateAction.of(
             b -> {
-              opBuilder.accept(b);
+              actionBuilder.apply(b);
               return b;
             });
-    final long sizeBytes = BinaryData.of(operation, jsonpMapper).size();
-    operations.add(new SizedOperation(operation, sizeBytes));
+    final BinaryData binaryAction = BinaryData.of(action, jsonpMapper);
+    final BulkOperation op =
+        BulkOperation.of(
+            b ->
+                b.update(
+                    u ->
+                        u.index(index)
+                            .id(id)
+                            .routing(routing)
+                            .retryOnConflict(UPDATE_RETRY_COUNT)
+                            .binaryAction(binaryAction)));
+    operations.add(new SizedOperation(op, binaryAction.size()));
+    addOperation(op, binaryAction.size());
+  }
+
+  private void addDeleteOp(final String index, final String id, final String routing) {
+    final BulkOperation op =
+        BulkOperation.of(b -> b.delete(d -> d.index(index).id(id).routing(routing)));
+    addOperation(op, 0L);
+  }
+
+  private void addOperation(final BulkOperation op, final long payloadBytes) {
+    operations.add(new SizedOperation(op, payloadBytes));
   }
 
   private void execute(
@@ -280,7 +269,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final List<BulkOperation> chunk = new ArrayList<>();
       long chunkBytes = 0L;
       for (final SizedOperation sized : operations) {
-        if (chunkBytes + sized.sizeBytes() > maxBulkBytes) {
+        if (chunkBytes + sized.sizeBytes() > maxBulkBytes && !chunk.isEmpty()) {
           executeChunk(chunk, shouldRefresh, customErrorHandlers);
           chunk.clear();
           chunkBytes = 0L;
