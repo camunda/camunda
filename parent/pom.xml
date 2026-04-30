@@ -1951,6 +1951,7 @@
         <version>${version.gson}</version>
       </dependency>
 
+      <!-- no direct usages; kept here to pin the transitive version pulled in by gRPC and Guava -->
       <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
