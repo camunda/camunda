@@ -49,19 +49,19 @@ public class ElasticsearchListViewStore implements ListViewStore {
             .index(ElasticsearchUtil.whereToSearch(listViewTemplate, QueryType.ALL))
             .query(tenantAwareQuery);
 
-    final var resStream =
+    try (final var resStream =
         ElasticsearchUtil.scrollAllStream(
-            esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS);
+            esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)) {
+      final var processInstanceId2IndexName =
+          resStream
+              .flatMap(res -> res.hits().hits().stream())
+              .collect(Collectors.toMap(hit -> Long.valueOf(hit.id()), hit -> hit.index()));
 
-    final var processInstanceId2IndexName =
-        resStream
-            .flatMap(res -> res.hits().hits().stream())
-            .collect(Collectors.toMap(hit -> Long.valueOf(hit.id()), hit -> hit.index()));
-
-    if (processInstanceId2IndexName.isEmpty()) {
-      throw new NotFoundException(
-          String.format("Process instances %s doesn't exists.", processInstanceIds));
+      if (processInstanceId2IndexName.isEmpty()) {
+        throw new NotFoundException(
+            String.format("Process instances %s doesn't exists.", processInstanceIds));
+      }
+      return processInstanceId2IndexName;
     }
-    return processInstanceId2IndexName;
   }
 }

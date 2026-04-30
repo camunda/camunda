@@ -72,10 +72,8 @@ public class ElasticsearchOperationStore implements OperationStore {
             .query(ElasticsearchUtil.idsQuery(ids.toArray(String[]::new)))
             .source(s -> s.fetch(Boolean.FALSE));
 
-    try {
-      final var resStream =
-          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS);
-
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS)) {
       return resStream
           .flatMap(res -> res.hits().hits().stream())
           .collect(Collectors.toMap(Hit::id, Hit::index));
@@ -126,12 +124,9 @@ public class ElasticsearchOperationStore implements OperationStore {
     final var searchRequestBuilder =
         new SearchRequest.Builder().index(operationTemplate.getAlias()).size(1).query(query);
 
-    try {
-      return ElasticsearchUtil.scrollAllStream(
-              esClient, searchRequestBuilder, OperationEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
     } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining the operations: %s", e.getMessage());

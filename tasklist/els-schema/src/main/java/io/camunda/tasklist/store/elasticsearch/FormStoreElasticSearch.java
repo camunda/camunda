@@ -94,9 +94,10 @@ public class FormStoreElasticSearch implements FormStore {
             .query(query)
             .source(s -> s.filter(f -> f.includes(FormIndex.ID)));
 
-    try {
-      return ElasticsearchUtil.scrollAllStream(
-              esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
+    try (final var scrollStream =
+        ElasticsearchUtil.scrollAllStream(
+            esClient, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)) {
+      return scrollStream
           .flatMap(response -> response.hits().hits().stream())
           .map(Hit::id)
           .filter(Objects::nonNull)
