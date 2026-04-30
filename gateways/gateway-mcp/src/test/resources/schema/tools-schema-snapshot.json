@@ -1113,6 +1113,27 @@
       "annotations": {
         "readOnlyHint": true
       }
+    },
+    {
+      "name": "getProcessState",
+      "title": "getProcessState",
+      "description": "Get the current state of a process instance by its key. Returns the process state, current variables, active element instances, and incident status. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "processInstanceKey": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The assigned key of the process instance, which acts as a unique identifier for this process instance."
+          }
+        },
+        "required": [
+          "processInstanceKey"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
     }
   ]
 }

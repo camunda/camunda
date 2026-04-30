@@ -12,10 +12,12 @@ import io.camunda.gateway.mcp.tool.cluster.ClusterTools;
 import io.camunda.gateway.mcp.tool.incident.IncidentTools;
 import io.camunda.gateway.mcp.tool.process.definition.ProcessDefinitionTools;
 import io.camunda.gateway.mcp.tool.process.instance.ProcessInstanceTools;
+import io.camunda.gateway.mcp.tool.process.state.ProcessStateTools;
 import io.camunda.gateway.mcp.tool.usertask.UserTaskTools;
 import io.camunda.gateway.mcp.tool.variable.VariableTools;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.ProcessDefinitionServices;
@@ -56,6 +58,7 @@ import tools.jackson.databind.node.ObjectNode;
       IncidentTools.class,
       ProcessDefinitionTools.class,
       ProcessInstanceTools.class,
+      ProcessStateTools.class,
       UserTaskTools.class,
       VariableTools.class
     })
@@ -74,6 +77,7 @@ class ToolsSchemaRegressionTest extends OperationalToolsTest {
   @MockitoBean private ProcessInstanceServices processInstanceServices;
   @MockitoBean private UserTaskServices userTaskServices;
   @MockitoBean private VariableServices variableServices;
+  @MockitoBean private ElementInstanceServices elementInstanceServices;
   @MockitoBean private MultiTenancyConfiguration multiTenancyConfiguration;
 
   @TestFactory
