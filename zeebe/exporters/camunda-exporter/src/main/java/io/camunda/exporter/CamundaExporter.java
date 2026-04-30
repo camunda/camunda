@@ -42,6 +42,7 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
+import io.camunda.exporter.store.PendingFlush;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
 import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
 import io.camunda.search.schema.MappingSource;
@@ -67,6 +68,10 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +79,8 @@ import org.slf4j.LoggerFactory;
 public class CamundaExporter implements Exporter {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
 
+  private final Supplier<ExecutorService> flushExecutorSupplier;
+  private ExecutorService flushExecutor;
   private Controller controller;
   private ExporterConfiguration configuration;
   private ClientAdapter clientAdapter;
@@ -88,13 +95,13 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
-  private long lastFlushTimestamp = 0L;
-
   private long flushDelayMs;
+  private long lastFlushActiveTimestamp = 0L;
+  private PendingFlush pendingFlush;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
-    this(new DefaultExporterResourceProvider(), null);
+    this(new DefaultExporterResourceProvider());
   }
 
   @VisibleForTesting
@@ -103,9 +110,22 @@ public class CamundaExporter implements Exporter {
   }
 
   @VisibleForTesting
-  public CamundaExporter(final ExporterResourceProvider provider, final ExporterMetadata metadata) {
+  CamundaExporter(final ExporterResourceProvider provider, final ExporterMetadata metadata) {
+    this(provider, metadata, CamundaExporter::createFlushExecutor);
+  }
+
+  @VisibleForTesting
+  CamundaExporter(
+      final ExporterResourceProvider provider,
+      final ExporterMetadata metadata,
+      final Supplier<ExecutorService> flushExecutorSupplier) {
     this.provider = provider;
     this.metadata = metadata;
+    this.flushExecutorSupplier = flushExecutorSupplier;
+  }
+
+  private static ExecutorService createFlushExecutor() {
+    return Executors.newVirtualThreadPerTaskExecutor();
   }
 
   @Override
@@ -136,7 +156,9 @@ public class CamundaExporter implements Exporter {
       }
 
       writer = createBatchWriter();
-      lastFlushTimestamp = context.clock().millis();
+      lastFlushActiveTimestamp = context.clock().millis();
+      pendingFlush = null;
+
       checkImportersCompletedAndReschedule();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
@@ -151,7 +173,6 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
-
     if (writer != null) {
       try {
         flush();
@@ -159,6 +180,35 @@ public class CamundaExporter implements Exporter {
       } catch (final Exception e) {
         LOG.warn("Failed to flush records before closing exporter.", e);
       }
+    }
+
+    if (taskManager != null) {
+      CloseHelper.close(error -> LOG.warn("Failed to close background tasks", error), taskManager);
+      taskManager = null;
+    }
+
+    if (pendingFlush != null) {
+      try {
+        pendingFlush.waitForCompletion();
+      } catch (final Exception e) {
+        LOG.warn("Pending flush failed when closing exporter.", e);
+      }
+      pendingFlush = null;
+    }
+
+    if (flushExecutor != null) {
+      flushExecutor.shutdown();
+      try {
+        if (!flushExecutor.awaitTermination(10L, TimeUnit.SECONDS)) {
+          LOG.warn("Flush executor failed to terminate within timeout");
+        }
+      } catch (final Exception e) {
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+        LOG.warn("Erroring terminating flush executor", e);
+      }
+      flushExecutor = null;
     }
 
     if (clientAdapter != null) {
@@ -175,10 +225,6 @@ public class CamundaExporter implements Exporter {
 
     provider.reset();
 
-    if (taskManager != null) {
-      CloseHelper.close(error -> LOG.warn("Failed to close background tasks", error), taskManager);
-      taskManager = null;
-    }
     LOG.info("Exporter resources closed");
   }
 
@@ -312,6 +358,8 @@ public class CamundaExporter implements Exporter {
                 clientAdapter.objectMapper(),
                 provider.getProcessCache())
             .build();
+
+    flushExecutor = flushExecutorSupplier.get();
   }
 
   private SchemaManager createSchemaManager() {
@@ -375,10 +423,13 @@ public class CamundaExporter implements Exporter {
       metrics.recordFlushReasonBatchMemory();
       return true;
     }
-    if (writer.getBatchSize() > 0
-        && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs) {
-      metrics.recordFlushReasonScheduled();
-      return true;
+    if (writer.getBatchSize() > 0) {
+      final long now = context.clock().millis();
+      final long lastFlushTimestamp = updateAndGetLastActiveFlushTimestamp(now);
+      if ((now - lastFlushTimestamp) >= flushDelayMs) {
+        metrics.recordFlushReasonScheduled();
+        return true;
+      }
     }
     return false;
   }
@@ -391,8 +442,22 @@ public class CamundaExporter implements Exporter {
     return builder.build();
   }
 
+  private void updateLastActiveFlushTimestamp(final PendingFlush pendingFlush, final long now) {
+    // if the flush has not completed we use the current time - as a way to indicate the flush
+    // is still going on, so we can avoid triggering another flush before this one has finished
+    lastFlushActiveTimestamp = pendingFlush.maybeFlushTimeMillis().orElse(now);
+  }
+
+  private long updateAndGetLastActiveFlushTimestamp(final long now) {
+    if (pendingFlush != null) {
+      updateLastActiveFlushTimestamp(pendingFlush, now);
+    }
+    return lastFlushActiveTimestamp;
+  }
+
   private void scheduleDelayedFlush(final long now) {
     long nextDelayMs = flushDelayMs;
+    final long lastFlushTimestamp = updateAndGetLastActiveFlushTimestamp(now);
     if (lastFlushTimestamp > 0) {
       nextDelayMs = Math.max(0, flushDelayMs - (now - lastFlushTimestamp));
     }
@@ -403,6 +468,7 @@ public class CamundaExporter implements Exporter {
   private void flushAndReschedule() {
     final var now = context.clock().millis();
     try {
+      final long lastFlushTimestamp = updateAndGetLastActiveFlushTimestamp(now);
       if (now - lastFlushTimestamp >= flushDelayMs) {
         metrics.recordFlushReasonScheduled();
         flush();
@@ -455,12 +521,36 @@ public class CamundaExporter implements Exporter {
     }
   }
 
+  @VisibleForTesting
+  void waitForPendingFlush() {
+    if (pendingFlush != null) {
+      pendingFlush.waitForCompletion();
+      // Update the record counters only after the flush was successful. If the asynchronous flush
+      // fails then the exporter will be invoked with the same record again.
+      updateLastExportedPosition(pendingFlush.getLastPosition());
+      updateLastActiveFlushTimestamp(pendingFlush, context.clock().millis());
+      pendingFlush = null;
+    }
+  }
+
   private void flush() {
+    waitForPendingFlush();
+
+    final var currentWriter = writer;
+    pendingFlush =
+        new PendingFlush(
+            flushExecutor, context.clock(), () -> flushWriter(currentWriter), lastPosition);
+
+    writer = createBatchWriter();
+  }
+
+  private void flushWriter(final ExporterBatchWriter writer) {
     if (writer.getBatchSize() > 0) {
       try (final var ignored = metrics.measureFlushDuration()) {
         metrics.recordBulkSize(writer.getBatchSize());
         final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
         writer.flush(batchRequest);
+
         metrics.recordFlushOccurrence(Instant.now());
         metrics.stopFlushLatencyMeasurement();
       } catch (final PersistenceException ex) {
@@ -468,11 +558,6 @@ public class CamundaExporter implements Exporter {
         throw new ExporterException(ex.getMessage(), ex);
       }
     }
-
-    // Update record counters and lastFlushTimestamp only after the flush attempt was successful.
-    // If the synchronous flush fails then the exporter will be invoked with the same record again.
-    lastFlushTimestamp = context.clock().millis();
-    updateLastExportedPosition(lastPosition);
   }
 
   private void updateLastExportedPosition(final long lastPosition) {

@@ -9,11 +9,17 @@ package io.camunda.exporter;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,10 +28,12 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -37,6 +45,14 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,6 +99,93 @@ final class CamundaExporterTest {
     final var record = spy(factory.generateRecord(ValueType.VARIABLE));
     when(record.getBrokerVersion()).thenReturn("8.8.0");
     return record;
+  }
+
+  static class RunImmediately extends AbstractExecutorService {
+    private boolean shutdown;
+
+    @Override
+    public void shutdown() {
+      shutdown = true;
+    }
+
+    @Override
+    public List<Runnable> shutdownNow() {
+      shutdown();
+      return List.of();
+    }
+
+    @Override
+    public boolean isShutdown() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean awaitTermination(final long timeout, final TimeUnit unit) {
+      return shutdown;
+    }
+
+    @Override
+    public void execute(final Runnable command) {
+      command.run();
+    }
+  }
+
+  static class RunLater extends AbstractExecutorService {
+    private boolean shutdown;
+    private final Queue<Runnable> tasks = new ConcurrentLinkedQueue<>();
+
+    int runTasks() {
+      var run = 0;
+      while (!tasks.isEmpty()) {
+        final var next = tasks.poll();
+        next.run();
+        run++;
+      }
+      return run;
+    }
+
+    @Override
+    public void shutdown() {
+      shutdown = true;
+    }
+
+    @Override
+    public List<Runnable> shutdownNow() {
+      shutdown();
+      return new ArrayList<>(tasks);
+    }
+
+    @Override
+    public boolean isShutdown() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean awaitTermination(final long timeout, final TimeUnit unit) {
+      return shutdown;
+    }
+
+    @Override
+    public void execute(final Runnable command) {
+      if (shutdown) {
+        // when shutdown we'll change behaviour
+        // otherwise we can end up blocking the tests from finishing
+        command.run();
+      } else {
+        tasks.add(command);
+      }
+    }
   }
 
   private static final class NoopExporterEntityCacheProvider
@@ -138,6 +241,45 @@ final class CamundaExporterTest {
     public void close() {}
   }
 
+  private static final class FailingBatchRequestClientAdapter implements ClientAdapter {
+    private final ExporterEntityCacheProvider entityCacheProvider =
+        new NoopExporterEntityCacheProvider();
+    private final SearchEngineClient client =
+        mock(
+            SearchEngineClient.class,
+            Mockito.withSettings().defaultAnswer(Answers.RETURNS_SMART_NULLS));
+
+    @Override
+    public ObjectMapper objectMapper() {
+      return TestObjectMapper.objectMapper();
+    }
+
+    @Override
+    public SearchEngineClient getSearchEngineClient() {
+      return client;
+    }
+
+    @Override
+    public BatchRequest createBatchRequest() {
+      final var request =
+          mock(BatchRequest.class, Mockito.withSettings().defaultAnswer(Answers.RETURNS_SELF));
+      try {
+        doThrow(new PersistenceException("simulated flush failure")).when(request).execute(any());
+      } catch (final PersistenceException e) {
+        throw new RuntimeException(e);
+      }
+      return request;
+    }
+
+    @Override
+    public ExporterEntityCacheProvider getExporterEntityCacheProvider() {
+      return entityCacheProvider;
+    }
+
+    @Override
+    public void close() {}
+  }
+
   private static final class MutableClock implements InstantSource {
     private long millis;
 
@@ -162,7 +304,7 @@ final class CamundaExporterTest {
       // given
       final var expected = new ExporterMetadata(TestObjectMapper.objectMapper());
       final var metadata = new ExporterMetadata(TestObjectMapper.objectMapper());
-      exporter = new CamundaExporter(resourceProvider, metadata);
+      exporter = new CamundaExporter(resourceProvider, metadata, RunImmediately::new);
       expected.setLastIncidentUpdatePosition(3);
       expected.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, 5);
       expected.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 5);
@@ -183,6 +325,47 @@ final class CamundaExporterTest {
   }
 
   @Nested
+  final class CloseTest {
+    @Test
+    void shouldShutdownFlushExecutorBeforeClosing() throws Exception {
+      // given
+      final Supplier<ExecutorService> executorServiceSupplier = mock(Supplier.class);
+      final ExecutorService configureExecutorService = mock(ExecutorService.class);
+      final ExecutorService openExecutorService = spy(new RunImmediately());
+      when(executorServiceSupplier.get()).thenReturn(configureExecutorService, openExecutorService);
+
+      exporter =
+          new CamundaExporter(
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()),
+              executorServiceSupplier);
+
+      // when
+      exporter.configure(testContext);
+      exporter.open(testController);
+      exporter.close();
+
+      // then
+
+      // NB called twice because configure creates and closes things to verify config
+      verify(executorServiceSupplier, times(2)).get();
+
+      final var inOrder = Mockito.inOrder(configureExecutorService, openExecutorService);
+
+      inOrder.verify(configureExecutorService).shutdown();
+      inOrder.verify(configureExecutorService).awaitTermination(anyLong(), any());
+      verifyNoMoreInteractions(configureExecutorService);
+
+      // pending flush will have been triggered when closing
+      // so we'll verify that has happened
+      inOrder.verify(openExecutorService).execute(any(Runnable.class));
+      inOrder.verify(openExecutorService).shutdown();
+      inOrder.verify(openExecutorService).awaitTermination(anyLong(), any());
+      verifyNoMoreInteractions(openExecutorService);
+    }
+  }
+
+  @Nested
   final class FlushTest {
     @Test
     void shouldUpdateMetadataOnFlush() {
@@ -192,7 +375,8 @@ final class CamundaExporterTest {
 
       // given
       final var expected = new ExporterMetadata(TestObjectMapper.objectMapper());
-      exporter = new CamundaExporter(resourceProvider, expected);
+
+      exporter = new CamundaExporter(resourceProvider, expected, RunImmediately::new);
 
       final var exporterEngineClient = stubbedClientAdapterInUse.getSearchEngineClient();
       when(exporterEngineClient.importersCompleted(anyInt(), any())).thenReturn(true);
@@ -206,7 +390,11 @@ final class CamundaExporterTest {
       exporter.open(testController);
 
       clock.advance(1001);
+
       testController.runScheduledTasks(Duration.ofHours(1));
+
+      // force wait for pending flush to update metadata
+      exporter.close();
 
       // then
       final var actual = new ExporterMetadata(TestObjectMapper.objectMapper());
@@ -233,7 +421,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(5);
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()),
+              RunImmediately::new);
 
       // when
       exporter.configure(testContext);
@@ -256,7 +446,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(1);
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()),
+              RunImmediately::new);
       exporter.configure(testContext);
       exporter.open(testController);
 
@@ -285,7 +477,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(1);
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()),
+              RunImmediately::new);
       exporter.configure(testContext);
       exporter.open(testController);
 
@@ -299,6 +493,9 @@ final class CamundaExporterTest {
       // advance clock to trigger scheduled flush task at t=1000
       clock.advance(500);
       testController.runScheduledTasks(Duration.ofSeconds(1));
+
+      // wait for exporter to update positions
+      exporter.waitForPendingFlush();
 
       // then — validate record1 was exported (position updated after timed flush)
       assertThat(testController.getPosition())
@@ -314,6 +511,9 @@ final class CamundaExporterTest {
           factory.generateRecord(
               ValueType.VARIABLE, b -> b.withPosition(2L).withBrokerVersion("8.8.0"));
       exporter.export(record2);
+
+      // wait for exporter to update positions
+      exporter.waitForPendingFlush();
 
       // then — validate record2 was exported (position updated after flush)
       assertThat(testController.getPosition())
@@ -333,7 +533,9 @@ final class CamundaExporterTest {
       configuration.getBulk().setDelay(1); // 1 second
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()),
+              RunImmediately::new);
       exporter.configure(testContext);
       exporter.open(testController);
 
@@ -364,7 +566,9 @@ final class CamundaExporterTest {
       configuration.getIndex().setShouldWaitForImporters(false); // do not wait for importers
       exporter =
           new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()),
+              RunImmediately::new);
       exporter.configure(testContext);
       exporter.open(testController);
 
@@ -377,6 +581,255 @@ final class CamundaExporterTest {
         final var tasks = testController.getScheduledTasks();
         assertThat(tasks.getLast().getDelay()).isEqualTo(Duration.ofMillis(1000));
       }
+    }
+  }
+
+  @Nested
+  final class AsyncFlushTest {
+
+    private final ProtocolFactory factory = new ProtocolFactory();
+
+    private Record<?> stubRecord() {
+      final var record = spy(factory.generateRecord(ValueType.VARIABLE));
+      when(record.getBrokerVersion()).thenReturn("8.8.0");
+      return record;
+    }
+
+    @Test
+    void shouldUpdatePositionAfterAsyncFlushOnNextExport() {
+      // given
+      configuration.getBulk().setSize(1);
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      final var record = stubRecord();
+
+      // when
+      exporter.export(record);
+      final var record2 = stubRecord();
+      exporter.export(record2);
+
+      // then
+      assertThat(testController.getPosition()).isEqualTo(record.getPosition());
+    }
+
+    @Test
+    void shouldUpdatePositionAfterAsyncFlushOnClose() {
+      // given
+      configuration.getBulk().setSize(1);
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      final var record = stubRecord();
+
+      // when
+      exporter.export(record);
+      exporter.close();
+
+      // then
+      assertThat(testController.getPosition()).isEqualTo(record.getPosition());
+    }
+
+    @Test
+    void shouldPropagateAsyncFlushErrorOnNextExport() {
+      // given
+      final var failingAdapter = new FailingBatchRequestClientAdapter();
+      mockedClientAdapterFactory
+          .when(() -> ClientAdapter.of(configuration.getConnect()))
+          .thenReturn(failingAdapter);
+
+      configuration.getBulk().setSize(1);
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      // when
+      exporter.export(stubRecord());
+
+      // then
+      assertThatThrownBy(() -> exporter.export(stubRecord()))
+          .isInstanceOf(ExporterException.class)
+          .hasRootCauseInstanceOf(PersistenceException.class);
+    }
+
+    @Test
+    void shouldNotUpdatePositionOnFailedAsyncFlush() {
+      // given
+      final var failingAdapter = new FailingBatchRequestClientAdapter();
+      mockedClientAdapterFactory
+          .when(() -> ClientAdapter.of(configuration.getConnect()))
+          .thenReturn(failingAdapter);
+
+      configuration.getBulk().setSize(1);
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+      final var initialPosition = testController.getPosition();
+
+      // when
+      exporter.export(stubRecord());
+
+      // then
+      try {
+        exporter.export(stubRecord());
+      } catch (final ExporterException expected) {
+        assertThat(expected).hasRootCauseInstanceOf(PersistenceException.class);
+      }
+      assertThat(testController.getPosition()).isEqualTo(initialPosition);
+    }
+
+    @Test
+    void shouldSwapWriterOnFlushAndContinueBatching() {
+      // given
+      configuration.getBulk().setSize(1);
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      // when
+      final var record1 = stubRecord();
+      exporter.export(record1);
+
+      final var record2 = stubRecord();
+      exporter.export(record2);
+
+      final var record3 = stubRecord();
+      exporter.export(record3);
+
+      // then
+      assertThat(testController.getPosition()).isGreaterThanOrEqualTo(record2.getPosition());
+    }
+
+    @Test
+    void shouldNotPropagateAsyncFlushErrorOnScheduledFlush() {
+      // given
+      final var failingAdapter = spy(new FailingBatchRequestClientAdapter());
+      mockedClientAdapterFactory
+          .when(() -> ClientAdapter.of(configuration.getConnect()))
+          .thenReturn(failingAdapter);
+
+      final var clock = new MutableClock(1000);
+      testContext.setClock(clock);
+      configuration.getBulk().setDelay(1);
+      // don't flush immediately on export, so we can verify scheduled flush behavior
+      configuration.getBulk().setSize(100);
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      // when
+      exporter.export(stubRecord());
+
+      // then
+      clock.advance(1001);
+      final var initialPosition = testController.getPosition();
+      testController.runScheduledTasks(Duration.ofHours(1));
+      assertThat(testController.getPosition()).isEqualTo(initialPosition);
+
+      // verify flush was attempted
+      waitForPendingFlushToFail();
+      verify(failingAdapter).createBatchRequest();
+    }
+
+    @Test
+    void shouldRetryFlushAfterError() {
+      // given
+      final var failingAdapter = spy(new FailingBatchRequestClientAdapter());
+      mockedClientAdapterFactory
+          .when(() -> ClientAdapter.of(configuration.getConnect()))
+          .thenReturn(failingAdapter);
+
+      configuration.getBulk().setSize(1);
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      // when
+      exporter.export(stubRecord());
+
+      // then
+
+      // verify flush was attempted
+      waitForPendingFlushToFail();
+      verify(failingAdapter).createBatchRequest();
+
+      // and exception thrown for next export attempt
+      assertThatThrownBy(() -> exporter.export(stubRecord()))
+          .isInstanceOf(ExporterException.class)
+          .hasRootCauseInstanceOf(PersistenceException.class);
+
+      // which should trigger a retry
+      verify(failingAdapter, times(2)).createBatchRequest();
+    }
+
+    @Test
+    void shouldNotPerformScheduledFlushIfPendingFlushCompletedRecently() {
+      // given
+      final StubClientAdapter clientAdapter = spy(new StubClientAdapter());
+      mockedClientAdapterFactory
+          .when(() -> ClientAdapter.of(configuration.getConnect()))
+          .thenReturn(clientAdapter);
+
+      final var clock = new MutableClock(1000);
+      testContext.setClock(clock);
+      configuration.getBulk().setDelay(1);
+      try (final var executor = new RunLater()) {
+        final Supplier<ExecutorService> flushExecutorSupplier = mock(Supplier.class);
+        // first executor is created and shutdown to check config, so returning a mock for
+        // for that so the RunLater executor is not shutdown before we want it to be
+        when(flushExecutorSupplier.get()).thenReturn(mock(ExecutorService.class), executor);
+        exporter =
+            new CamundaExporter(
+                resourceProvider,
+                new ExporterMetadata(TestObjectMapper.objectMapper()),
+                flushExecutorSupplier);
+        exporter.configure(testContext);
+        exporter.open(testController);
+
+        // when
+
+        // this should trigger a flush
+        configuration.getBulk().setSize(1);
+        exporter.export(stubRecord());
+
+        clock.advance(1001);
+        final var ran = executor.runTasks();
+        assertThat(ran).isEqualTo(1);
+
+        verify(clientAdapter).createBatchRequest();
+
+        // this should not trigger a flush as the async flush completed recently
+        // and the batch size has not been exceeded
+        configuration.getBulk().setSize(100);
+        exporter.export(stubRecord());
+
+        // then
+        // still only the initial flush
+        assertThat(executor.runTasks()).isEqualTo(0);
+        verify(clientAdapter).createBatchRequest();
+      }
+    }
+
+    private void waitForPendingFlushToFail() {
+      assertThatThrownBy(() -> exporter.waitForPendingFlush())
+          .isInstanceOf(ExporterException.class)
+          .hasRootCauseInstanceOf(PersistenceException.class);
     }
   }
 }
