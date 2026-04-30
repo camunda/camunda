@@ -72,10 +72,30 @@ jobs:
       scenario: max
       build-frontend: true
 
+<<<<<<< HEAD
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
     needs: [ setup-max-load-test ]
+=======
+  setup-max-rest-load-test:
+    name: Setup max rest load test
+    needs:
+      - benchmark-data
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.benchmark-data.outputs.benchmark }}-rest
+      ttl: 1
+      scenario: max
+      build-frontend: true
+      load-test-load: --set global.preferRest.enabled=true
+
+  notify:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [ setup-max-load-test, setup-max-rest-load-test ]
+>>>>>>> 4d27ebd7 (refactor: default load tests to gRPC instead of REST)
     if: failure()
     timeout-minutes: 5
     permissions: { }
