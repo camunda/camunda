@@ -40,7 +40,7 @@ public class TasklistIndexController {
    *
    * <ul>
    *   <li>{@code (?!assets)} - excludes the "assets" directory
-   *   <li>{@code (?!.*\\.)} - excludes paths containing a dot (e.g., favicon.ico)
+   *   <li>{@code (?!.*\\.ico$)} - excludes paths ending with {@code .ico} (e.g., favicon.ico)
    *   <li>{@code .*} - matches any other path segment (SPA routes)
    * </ul>
    *
@@ -51,8 +51,8 @@ public class TasklistIndexController {
    */
   @RequestMapping(
       value = {
-        "/tasklist/{path:^(?!assets)(?!.*\\.).*}",
-        "/tasklist/{path:^(?!assets)(?!.*\\.).*}/**"
+        "/tasklist/{path:^(?!assets)(?!.*\\.ico$).*}",
+        "/tasklist/{path:^(?!assets)(?!.*\\.ico$).*}/**"
       })
   public String forwardToTasklist(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "tasklist");

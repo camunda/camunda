@@ -44,7 +44,7 @@ public class AdminIndexController {
    *
    * <ul>
    *   <li>{@code (?!assets)} - excludes the "assets" directory
-   *   <li>{@code (?!.*\\.)} - excludes paths containing a dot (e.g., favicon.ico)
+   *   <li>{@code (?!.*\\.ico$)} - excludes paths ending with {@code .ico} (e.g., favicon.ico)
    *   <li>{@code .*} - matches any other path segment (SPA routes)
    * </ul>
    *
@@ -54,7 +54,10 @@ public class AdminIndexController {
    * instead of being served as static files.
    */
   @RequestMapping(
-      value = {"/admin/{path:^(?!assets)(?!.*\\.).*}", "/admin/{path:^(?!assets)(?!.*\\.).*}/**"})
+      value = {
+        "/admin/{path:^(?!assets)(?!.*\\.ico$).*}",
+        "/admin/{path:^(?!assets)(?!.*\\.ico$).*}/**"
+      })
   public String forwardToAdmin(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "admin");
   }
