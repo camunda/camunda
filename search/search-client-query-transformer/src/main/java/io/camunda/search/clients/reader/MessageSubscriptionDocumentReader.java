@@ -23,6 +23,16 @@ public class MessageSubscriptionDocumentReader extends DocumentBasedReader
   }
 
   @Override
+  public io.camunda.search.entities.MessageSubscriptionEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getById(
+            String.valueOf(key),
+            MessageSubscriptionEntity.class,
+            indexDescriptor.getFullQualifiedName());
+  }
+
+  @Override
   public SearchQueryResult<io.camunda.search.entities.MessageSubscriptionEntity> search(
       final MessageSubscriptionQuery query, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor().search(query, MessageSubscriptionEntity.class, resourceAccessChecks);
