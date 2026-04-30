@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -222,11 +223,48 @@ class ArchiveByIdTaskSupplierTest {
     assertThat(taskSupplier.getTotalArchived()).isEqualTo(2L);
   }
 
+  @Test
+  void shouldDelayBeforeRetryingRetryableError() {
+    // given
+    final var retryableError = new CompletionException(new SocketTimeoutException("timeout"));
+    final var reindexCallCount = new AtomicInteger(0);
+    final var config = historyConfigWithMaxRetry(3);
+    config.setArchiveByIdRetryDelayMs(500); // 500ms delay for testing
+
+    final var taskSupplier =
+        new ArchiveByIdTaskSupplier<>(
+            config,
+            "source-idx",
+            "destination-idx",
+            searchAfter ->
+                CompletableFuture.completedFuture(
+                    ArchiveDocIdsBatch.from(List.of("doc1"), List.of("after1"))),
+            (source, dest, ids) -> {
+              if (reindexCallCount.incrementAndGet() == 1) {
+                return CompletableFuture.failedFuture(retryableError);
+              }
+              return CompletableFuture.completedFuture((long) ids.size());
+            },
+            (source, ids) -> CompletableFuture.completedFuture((long) ids.size()),
+            DIRECT_EXECUTOR,
+            metrics,
+            LOGGER);
+
+    // when
+    final long startNanos = System.nanoTime();
+    final var result = taskSupplier.moveNextBatch().join();
+    final long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+
+    // then
+    assertThat(result).isEqualTo(0L);
+    assertThat(elapsedMs).isGreaterThanOrEqualTo(499); // 500ms delay
+    verify(metrics, times(1)).recordArchiverBatchRetry();
+  }
 
   private static HistoryConfiguration historyConfigWithMaxRetry(final int maxRetryCount) {
     final var config = new HistoryConfiguration();
     config.setArchiveByIdMaxRetryAttempts(maxRetryCount);
+    config.setArchiveByIdRetryDelayMs(0);
     return config;
   }
-
 }
