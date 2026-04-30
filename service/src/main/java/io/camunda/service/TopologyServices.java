@@ -254,10 +254,18 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   public record Broker(
-      Integer nodeId, String host, Integer port, List<Partition> partitions, String version) {
+      Integer nodeId,
+      String zone,
+      String memberId,
+      String host,
+      Integer port,
+      List<Partition> partitions,
+      String version) {
 
     static class Builder {
       Integer nodeId;
+      String zone;
+      String memberId;
       String host;
       Integer port;
       List<Partition> partitions = new ArrayList<>();
@@ -269,6 +277,16 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
 
       public Builder nodeId(final Integer nodeId) {
         this.nodeId = nodeId;
+        return this;
+      }
+
+      public Builder zone(final String zone) {
+        this.zone = zone;
+        return this;
+      }
+
+      public Builder memberId(final String memberId) {
+        this.memberId = memberId;
         return this;
       }
 
@@ -293,7 +311,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
       }
 
       public Broker build() {
-        return new Broker(nodeId, host, port, partitions, version);
+        return new Broker(nodeId, zone, memberId, host, port, partitions, version);
       }
     }
   }
