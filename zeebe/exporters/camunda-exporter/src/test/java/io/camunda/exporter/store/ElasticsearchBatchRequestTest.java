@@ -26,6 +26,7 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import co.elastic.clients.elasticsearch.core.bulk.OperationType;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import io.camunda.exporter.entities.TestExporterEntity;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -54,6 +55,7 @@ class ElasticsearchBatchRequestTest {
   @BeforeEach
   void setUp() throws IOException {
     elasticsearchClient = mock(ElasticsearchClient.class);
+    when(elasticsearchClient._jsonpMapper()).thenReturn(new JacksonJsonpMapper());
     requestBuilder = new Builder();
     scriptBuilder = mock(ElasticsearchScriptBuilder.class);
     batchRequest =
@@ -386,6 +388,26 @@ class ElasticsearchBatchRequestTest {
     // verify that there are two operations in the bulk request
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(2);
+  }
+
+  @Test
+  void shouldSplitIntoMultipleBulksWhenAccumulatedSizeExceedsCap()
+      throws PersistenceException, IOException {
+    // given - a tiny cap that any 2 operations will exceed, forcing one bulk per op
+    final ElasticsearchBatchRequest tinyCapRequest =
+        new ElasticsearchBatchRequest(elasticsearchClient, scriptBuilder, 1L);
+    final TestExporterEntity entity = new TestExporterEntity().setId(ID);
+
+    // when
+    tinyCapRequest.add(INDEX, entity);
+    tinyCapRequest.add(INDEX, entity);
+    tinyCapRequest.add(INDEX, entity);
+    tinyCapRequest.execute();
+
+    // then - three separate bulk calls, one operation each
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient, org.mockito.Mockito.times(3)).bulk(captor.capture());
+    assertThat(captor.getAllValues()).allSatisfy(req -> assertThat(req.operations()).hasSize(1));
   }
 
   @Test
