@@ -72,11 +72,12 @@ public class MemberId extends NodeId {
   /**
    * Creates a zone-aware member identifier.
    *
-   * <p>When {@code zone} is {@code null} or blank the result is the bare form {@code "$nodeId"};
-   * otherwise it is {@code "$zone/$nodeId"}.
+   * <p>When {@code zone} is {@code null} the result is the bare form {@code "$nodeId"}; otherwise
+   * it is {@code "$zone/$nodeId"}. Leading/trailing whitespace is stripped from {@code zone}.
    */
   public static MemberId from(final @Nullable String zone, final int nodeId) {
-    return new MemberId(zone, nodeId, buildMemberIdString(zone, nodeId));
+    final String stripped = zone == null ? null : zone.strip();
+    return new MemberId(stripped, nodeId, buildMemberIdString(stripped, nodeId));
   }
 
   public int nodeIdx() {

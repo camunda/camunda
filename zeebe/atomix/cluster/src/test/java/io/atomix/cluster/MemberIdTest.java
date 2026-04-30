@@ -1,12 +1,11 @@
 /*
- * Copyright 2014-present Open Networking Foundation
  * Copyright © 2020 camunda services GmbH (info@camunda.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,21 +36,15 @@ final class MemberIdTest {
   }
 
   @Test
-  void shouldFormatIdWithoutZoneWhenZoneIsEmpty() {
-    // given / when
-    final var memberId = MemberId.from("", 7);
-
-    // then
-    assertThat(memberId.id()).isEqualTo("7");
+  void shouldThrowWhenZoneIsEmpty() {
+    // given / when / then
+    assertThatThrownBy(() -> MemberId.from("", 7)).isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
-  void shouldFormatIdWithoutZoneWhenZoneIsBlank() {
-    // given / when
-    final var memberId = MemberId.from("   ", 7);
-
-    // then
-    assertThat(memberId.id()).isEqualTo("7");
+  void shouldThrowWhenZoneIsBlank() {
+    // given / when / then
+    assertThatThrownBy(() -> MemberId.from("   ", 7)).isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
@@ -98,16 +91,12 @@ final class MemberIdTest {
 
   @Test
   void shouldThrowWhenIdHasNoNumericSuffix() {
-    // given
-    final var memberId = MemberId.from("anonymous");
-
-    // then
-    assertThatThrownBy(memberId::nodeIdx).isInstanceOf(NumberFormatException.class);
+    // given / when / then
+    assertThatThrownBy(() -> MemberId.from("anonymous")).isInstanceOf(NumberFormatException.class);
   }
 
   static Stream<Arguments> isInZoneCases() {
     return Stream.of(
-        //          id            zone        expected
         Arguments.of("us-east/7", "us-east", true), // matching zone
         Arguments.of("us-east/7", "eu-west", false), // different zone
         Arguments.of("7", "us-east", false), // zone set but id is bare
@@ -119,6 +108,7 @@ final class MemberIdTest {
   @ParameterizedTest
   @MethodSource("isInZoneCases")
   void shouldCheckIsInZone(final String id, final String zone, final boolean expected) {
+    // given / when / then
     assertThat(MemberId.from(id).isInZone(zone)).isEqualTo(expected);
   }
 
