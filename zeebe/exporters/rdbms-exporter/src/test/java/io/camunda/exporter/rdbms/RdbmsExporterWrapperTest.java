@@ -208,6 +208,12 @@ class RdbmsExporterWrapperTest {
     assertThat(registeredHandlers)
         .as("Should register FORM handler on partition 1")
         .containsKey(ValueType.FORM);
+    assertThat(registeredHandlers)
+        .as("Should register CLUSTER_VARIABLE handler on partition 1")
+        .containsKey(ValueType.CLUSTER_VARIABLE);
+    assertThat(registeredHandlers)
+        .as("Should register GLOBAL_LISTENER handler on partition 1")
+        .containsKey(ValueType.GLOBAL_LISTENER);
   }
 
   @Test
@@ -265,6 +271,12 @@ class RdbmsExporterWrapperTest {
     assertThat(registeredHandlers)
         .as("Should not register FORM handler on partition 2")
         .doesNotContainKey(ValueType.FORM);
+    assertThat(registeredHandlers)
+        .as("Should not register CLUSTER_VARIABLE handler on partition 1")
+        .doesNotContainKey(ValueType.CLUSTER_VARIABLE);
+    assertThat(registeredHandlers)
+        .as("Should not register GLOBAL_LISTENER handler on partition 1")
+        .doesNotContainKey(ValueType.GLOBAL_LISTENER);
   }
 
   private void assertAuditLogExportPresent(
