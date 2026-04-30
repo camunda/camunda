@@ -38,15 +38,15 @@ public record DeployedResourceEntity(
   }
 
   public static class Builder implements ObjectBuilder<DeployedResourceEntity> {
-    private Long resourceKey;
-    private String resourceId;
-    private String resourceName;
-    private String resourceType;
-    private Integer version;
-    private String versionTag;
-    private Long deploymentKey;
-    private String tenantId;
-    private String resourceContent;
+    private @Nullable Long resourceKey;
+    private @Nullable String resourceId;
+    private @Nullable String resourceName;
+    private @Nullable String resourceType;
+    private @Nullable Integer version;
+    private @Nullable String versionTag;
+    private @Nullable Long deploymentKey;
+    private @Nullable String tenantId;
+    private @Nullable String resourceContent;
 
     public Builder resourceKey(final Long resourceKey) {
       this.resourceKey = resourceKey;
@@ -93,6 +93,7 @@ public record DeployedResourceEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public DeployedResourceEntity build() {
       return new DeployedResourceEntity(

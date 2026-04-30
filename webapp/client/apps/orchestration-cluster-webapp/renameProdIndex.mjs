@@ -1,0 +1,25 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import fs from 'node:fs/promises';
+import path, {dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
+
+const oldPath = path.join(
+	dirname(fileURLToPath(import.meta.url)),
+	'dist',
+	'index.prod.html',
+);
+const newPath = path.join(
+	dirname(fileURLToPath(import.meta.url)),
+	'dist',
+	'index.html',
+);
+
+await fs.rename(oldPath, newPath);
+console.log('Rename complete!');

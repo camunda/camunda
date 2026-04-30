@@ -66,20 +66,20 @@ public record JobMetricsBatchEntity(
 
   public static class Builder implements ObjectBuilder<JobMetricsBatchEntity> {
 
-    private String key;
-    private Integer partitionId;
-    private OffsetDateTime startTime;
-    private OffsetDateTime endTime;
-    private Boolean incompleteBatch;
-    private String tenantId;
-    private Integer failedCount;
-    private OffsetDateTime lastFailedAt;
-    private Integer completedCount;
-    private OffsetDateTime lastCompletedAt;
-    private Integer createdCount;
-    private OffsetDateTime lastCreatedAt;
-    private String jobType;
-    private String worker;
+    private @Nullable String key;
+    private @Nullable Integer partitionId;
+    private @Nullable OffsetDateTime startTime;
+    private @Nullable OffsetDateTime endTime;
+    private @Nullable Boolean incompleteBatch;
+    private @Nullable String tenantId;
+    private @Nullable Integer failedCount;
+    private @Nullable OffsetDateTime lastFailedAt;
+    private @Nullable Integer completedCount;
+    private @Nullable OffsetDateTime lastCompletedAt;
+    private @Nullable Integer createdCount;
+    private @Nullable OffsetDateTime lastCreatedAt;
+    private @Nullable String jobType;
+    private @Nullable String worker;
 
     public Builder key(final String key) {
       this.key = key;
@@ -151,6 +151,7 @@ public record JobMetricsBatchEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public JobMetricsBatchEntity build() {
       return new JobMetricsBatchEntity(

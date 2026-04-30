@@ -396,4 +396,13 @@ public final class FilterBuilders {
       final Function<GlobalListenerFilter.Builder, ObjectBuilder<GlobalListenerFilter>> fn) {
     return fn.apply(globalListener()).build();
   }
+
+  public static DeployedResourceFilter.Builder deployedResource() {
+    return new DeployedResourceFilter.Builder();
+  }
+
+  public static DeployedResourceFilter deployedResource(
+      final Function<DeployedResourceFilter.Builder, ObjectBuilder<DeployedResourceFilter>> fn) {
+    return fn.apply(deployedResource()).build();
+  }
 }

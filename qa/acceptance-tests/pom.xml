@@ -520,6 +520,26 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-query-transformer</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-rest</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-exporter</artifactId>
       <scope>test</scope>
     </dependency>
@@ -638,7 +658,7 @@
     <repository>
       <id>maven_central</id>
       <name>Maven Central</name>
-      <url>https://repo.maven.apache.org/maven2/</url>
+      <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
     </repository>
   </repositories>
 

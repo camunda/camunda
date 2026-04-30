@@ -19,6 +19,7 @@ import io.camunda.search.sort.ClusterVariableSort;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
+import io.camunda.search.sort.DeployedResourceSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.GlobalListenerSort;
 import io.camunda.search.sort.GroupMemberSort;
@@ -88,6 +89,32 @@ public class SearchQuerySortRequestMapper {
   static List<SearchQuerySortRequest<RoleClientSearchQuerySortRequest.FieldEnum>>
       fromRoleClientSearchQuerySortRequest(final List<RoleClientSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  static List<SearchQuerySortRequest<ResourceSearchQuerySortRequest.FieldEnum>>
+      fromResourceSearchQuerySortRequest(final List<ResourceSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  static List<String> applyResourceSortField(
+      final ResourceSearchQuerySortRequest.FieldEnum field,
+      final DeployedResourceSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case RESOURCE_KEY -> builder.resourceKey();
+        case RESOURCE_NAME -> builder.resourceName();
+        case RESOURCE_ID -> builder.resourceId();
+        case VERSION -> builder.version();
+        case VERSION_TAG -> builder.versionTag();
+        case DEPLOYMENT_KEY -> builder.deploymentKey();
+        case TENANT_ID -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
   }
 
   static List<SearchQuerySortRequest<GroupSearchQuerySortRequest.FieldEnum>>

@@ -63,6 +63,7 @@ import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
@@ -392,6 +393,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
+    return this;
+  }
+
+  @Override
   public SearchClientsProxy withSecurityContext(final SecurityContext securityContext) {
     return this;
   }
@@ -460,5 +466,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public DeployedResourceEntity getDeployedResourceMetadata(final long key) {
     return null;
+  }
+
+  @Override
+  public SearchQueryResult<DeployedResourceEntity> searchDeployedResources(
+      final DeployedResourceQuery query) {
+    return SearchQueryResult.empty();
   }
 }

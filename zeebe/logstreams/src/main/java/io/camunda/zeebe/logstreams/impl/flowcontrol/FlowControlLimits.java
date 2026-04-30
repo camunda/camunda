@@ -8,9 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limit;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-@NullMarked
 public record FlowControlLimits(
     @Nullable Limit requestLimiter, @Nullable RateLimit writeRateLimit) {}

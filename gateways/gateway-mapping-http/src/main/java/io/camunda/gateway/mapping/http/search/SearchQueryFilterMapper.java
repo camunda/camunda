@@ -35,6 +35,7 @@ import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
+import io.camunda.gateway.protocol.model.ResourceFilter;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
 import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
@@ -51,6 +52,7 @@ import io.camunda.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
+import io.camunda.search.filter.DeployedResourceFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.GlobalJobStatisticsFilter;
@@ -1410,6 +1412,38 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getSource())
           .map(mapToStringOperations())
           .ifPresent(builder::sourceOperations);
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, DeployedResourceFilter> toDeployedResourceFilter(
+      final @Nullable ResourceFilter filter) {
+    final var builder = FilterBuilders.deployedResource();
+    final List<String> validationErrors = new ArrayList<>();
+
+    if (filter != null) {
+      ofNullable(filter.getResourceKey())
+          .map(mapToKeyOperations("resourceKey", validationErrors))
+          .ifPresent(builder::resourceKeyOperations);
+      ofNullable(filter.getResourceName())
+          .map(mapToStringOperations())
+          .ifPresent(builder::resourceNameOperations);
+      ofNullable(filter.getResourceId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::resourceIdOperations);
+      ofNullable(filter.getVersion())
+          .map(mapToIntegerOperations("version", validationErrors))
+          .ifPresent(builder::versionOperations);
+      ofNullable(filter.getVersionTag())
+          .map(mapToStringOperations())
+          .ifPresent(builder::versionTagOperations);
+      ofNullable(filter.getDeploymentKey())
+          .map(mapToKeyOperations("deploymentKey", validationErrors))
+          .ifPresent(builder::deploymentKeyOperations);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 
     return validationErrors.isEmpty()

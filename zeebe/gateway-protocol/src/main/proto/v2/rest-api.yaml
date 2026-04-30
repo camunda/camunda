@@ -321,6 +321,8 @@ paths:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1statistics~1element-instances'
 
   # Resource endpoints
+  /resources/search:
+    $ref: 'deployments.yaml#/paths/~1resources~1search'
   /resources/{resourceKey}:
     $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}'
   /resources/{resourceKey}/content:

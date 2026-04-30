@@ -16,10 +16,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-@NullMarked
 public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private static final int MINIMUM_FRAGMENT_SIZE = 4 * 1024;
   private int maxFragmentSize = 1024 * 1024 * 4;

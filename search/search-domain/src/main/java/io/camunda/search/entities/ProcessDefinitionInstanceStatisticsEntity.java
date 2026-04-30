@@ -32,12 +32,12 @@ public record ProcessDefinitionInstanceStatisticsEntity(
   }
 
   public static class Builder implements ObjectBuilder<ProcessDefinitionInstanceStatisticsEntity> {
-    private String processDefinitionId;
-    private String tenantId;
-    private String latestProcessDefinitionName;
-    private Boolean hasMultipleVersions;
-    private Long activeInstancesWithoutIncidentCount;
-    private Long activeInstancesWithIncidentCount;
+    private @Nullable String processDefinitionId;
+    private @Nullable String tenantId;
+    private @Nullable String latestProcessDefinitionName;
+    private @Nullable Boolean hasMultipleVersions;
+    private @Nullable Long activeInstancesWithoutIncidentCount;
+    private @Nullable Long activeInstancesWithIncidentCount;
 
     public Builder processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
@@ -69,6 +69,7 @@ public record ProcessDefinitionInstanceStatisticsEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public ProcessDefinitionInstanceStatisticsEntity build() {
       return new ProcessDefinitionInstanceStatisticsEntity(
