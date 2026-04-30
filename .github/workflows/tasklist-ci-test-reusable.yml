@@ -58,8 +58,8 @@ jobs:
           - database: opensearch
             testProfile: docker-os
     env:
-      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
-      TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
+      CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda
+      CAMUNDA_TEST_DOCKER_IMAGE_TAG: current-test
     services:
       # local registry is used as this job needs to push its docker image to be used by IT
       registry:
@@ -99,8 +99,8 @@ jobs:
             -B --fail-at-end \
             -Dfailsafe.rerunFailingTestsCount=2 \
             -Dcamunda.data.secondary-storage.type=${{ matrix.database }} \
-            -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
-            -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+            -Dtasklist.currentVersion.docker.tag=${{ env.CAMUNDA_TEST_DOCKER_IMAGE_TAG }} \
+            -Dtasklist.currentVersion.docker.repo=${{ env.CAMUNDA_TEST_DOCKER_IMAGE }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize

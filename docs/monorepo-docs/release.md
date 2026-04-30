@@ -552,8 +552,6 @@ The Monorepo release produces core backend artifacts, while the Big Release Trai
 While Monorepo (camunda/camunda) releases artifacts for:
 * [Camunda](https://hub.docker.com/r/camunda/camunda/)
 * [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
-* [Operate](https://hub.docker.com/r/camunda/operate/)
-* [Tasklist](https://hub.docker.com/r/camunda/tasklist/)
 
 The big release train releases:
 * Identity Management Component (camunda-cloud/identity)

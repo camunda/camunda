@@ -58,7 +58,7 @@ jobs:
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
 
-  # Checks to see if Operate can properly build itself and a docker image
+  # Checks to see if Operate can properly build itself
   build-operate-backend:
     if: inputs.runBeTests
     name: "Build Back End"
