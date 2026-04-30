@@ -405,4 +405,13 @@ public final class FilterBuilders {
       final Function<DeployedResourceFilter.Builder, ObjectBuilder<DeployedResourceFilter>> fn) {
     return fn.apply(deployedResource()).build();
   }
+
+  public static WaitingStateFilter.Builder waitingState() {
+    return new WaitingStateFilter.Builder();
+  }
+
+  public static WaitingStateFilter waitingState(
+      final Function<WaitingStateFilter.Builder, ObjectBuilder<WaitingStateFilter>> fn) {
+    return fn.apply(waitingState()).build();
+  }
 }

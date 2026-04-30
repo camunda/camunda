@@ -7,7 +7,7 @@
  */
 package io.camunda.webapps.schema.descriptors.template;
 
-import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.CAMUNDA;
 
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
@@ -48,6 +48,6 @@ public class WaitingStateTemplate extends AbstractTemplateDescriptor
 
   @Override
   public String getComponentName() {
-    return OPERATE.toString();
+    return CAMUNDA.toString();
   }
 }
