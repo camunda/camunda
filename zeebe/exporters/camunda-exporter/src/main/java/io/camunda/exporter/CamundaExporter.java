@@ -305,10 +305,6 @@ public class CamundaExporter implements Exporter {
       metrics.recordFlushReasonBatchSize();
       return true;
     }
-    if (writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit()) {
-      metrics.recordFlushReasonBatchMemory();
-      return true;
-    }
     if (writer.getBatchSize() > 0
         && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs) {
       metrics.recordFlushReasonScheduled();
