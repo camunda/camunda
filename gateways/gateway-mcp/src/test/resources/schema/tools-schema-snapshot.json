@@ -442,6 +442,27 @@
       }
     },
     {
+      "name": "getProcessState",
+      "title": "Get process state",
+      "description": "Get the current state of a process instance by its key.\n\nReturns the instance's state (ACTIVE, COMPLETED, TERMINATED), all variables, currently active element instances, and any open incidents. Use this after starting a process instance to monitor its progress or to investigate failures.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "processInstanceKey": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The key of the process instance to inspect."
+          }
+        },
+        "required": [
+          "processInstanceKey"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
       "name": "searchProcessInstances",
       "title": "searchProcessInstances",
       "description": "Search for process instances. Note: Results are eventually consistent and may not immediately reflect recent changes.",

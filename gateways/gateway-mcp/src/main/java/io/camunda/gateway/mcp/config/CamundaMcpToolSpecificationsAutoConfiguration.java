@@ -13,7 +13,8 @@ import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.CamundaSyncStatelessMcpToolProvider;
-import io.camunda.gateway.mcp.processes.ProcessesToolRepository;
+import io.camunda.gateway.mcp.tool.process.ProcessesToolRepository;
+import io.camunda.gateway.mcp.tool.process.instance.ProcessStateTools;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.IncidentServices;
@@ -54,10 +55,27 @@ public class CamundaMcpToolSpecificationsAutoConfiguration {
   @Bean(name = "clusterMcpToolSpecifications")
   public List<SyncToolSpecification> mcpGatewayToolSpecifications(
       final CamundaMcpToolAnnotatedBeans annotatedBeans,
-      final CamundaJsonSchemaGenerator jsonSchemaGenerator) {
+      final CamundaJsonSchemaGenerator jsonSchemaGenerator,
+      final ProcessStateTools processStateTools) {
     return new CamundaSyncStatelessMcpToolProvider(
             annotatedBeans.getBeansByAnnotation(CamundaMcpTool.class), jsonSchemaGenerator)
         .getToolSpecifications();
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public ProcessStateTools processStateTools(
+      final ProcessInstanceServices processInstanceServices,
+      final VariableServices variableServices,
+      final ElementInstanceServices elementInstanceServices,
+      final IncidentServices incidentServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    return new ProcessStateTools(
+        processInstanceServices,
+        variableServices,
+        elementInstanceServices,
+        incidentServices,
+        authenticationProvider);
   }
 
   @Bean(name = "processesToolRepository")
@@ -65,18 +83,13 @@ public class CamundaMcpToolSpecificationsAutoConfiguration {
   public ToolRepository processesToolRepository(
       final MessageSubscriptionServices messageSubscriptionServices,
       final MessageServices messageServices,
-      final ProcessInstanceServices processInstanceServices,
-      final VariableServices variableServices,
-      final ElementInstanceServices elementInstanceServices,
-      final IncidentServices incidentServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final ProcessStateTools processStateTools,
+      final CamundaJsonSchemaGenerator jsonSchemaGenerator) {
+    final List<SyncToolSpecification> staticSpecs =
+        new CamundaSyncStatelessMcpToolProvider(List.of(processStateTools), jsonSchemaGenerator)
+            .getToolSpecifications();
     return new ProcessesToolRepository(
-        messageSubscriptionServices,
-        messageServices,
-        processInstanceServices,
-        variableServices,
-        elementInstanceServices,
-        incidentServices,
-        authenticationProvider);
+        messageSubscriptionServices, messageServices, authenticationProvider, staticSpecs);
   }
 }
