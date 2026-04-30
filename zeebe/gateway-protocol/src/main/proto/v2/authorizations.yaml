@@ -354,7 +354,7 @@ components:
             $ref: '#/components/schemas/AuthorizationResult'
 
     AuthorizationCreateResult:
-      x-semantic-provider: 
+      x-semantic-provider:
         - authorizationKey
       type: object
       properties:
