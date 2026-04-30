@@ -128,7 +128,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   @Override
   public String getPassword() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
         prefix() + ".password",
         super.getPassword(),
         String.class,

@@ -84,7 +84,7 @@ public class IncidentNotifier {
   }
 
   public String getM2mClientSecret() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
         prefix() + ".m2m-client-secret",
         m2mClientSecret,
         String.class,

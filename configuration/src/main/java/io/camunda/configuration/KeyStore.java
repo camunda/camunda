@@ -53,7 +53,7 @@ public class KeyStore implements Cloneable {
   }
 
   public String getPassword() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
         prefix + ".password",
         password,
         String.class,
