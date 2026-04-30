@@ -20,8 +20,10 @@ in the package.
 
 ### Running Tests
 
-1. Run `npm run cluster:up` to start an Orchestration Cluster with ElasticSearch.
-2. Wait a bit, until Camunda is fully started.
+1. Run `npm run cluster:up` to start an Orchestration Cluster with
+   ElasticSearch.
+2. Wait until Camunda is available under
+   [http://localhost:8080](http://localhost:8080).
 3. Run `npm run test` to execute the smoke test suite.
 4. Run `npm run cluster:down` to remove the Orchestration Cluster.
 
