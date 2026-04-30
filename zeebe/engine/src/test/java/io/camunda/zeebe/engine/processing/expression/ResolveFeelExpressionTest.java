@@ -896,23 +896,71 @@ public class ResolveFeelExpressionTest {
   }
 
   @Test
-  public void shouldRejectWhenBothProcessInstanceKeyAndElementInstanceKeyProvided() {
+  public void shouldWriteProcessInstanceKeyAsScopeKeyOnEvaluatedRecord() {
+    // given
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("processScopeKey")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId("processScopeKey").create();
+
     // when
     final var record =
         ENGINE_RULE
             .expression()
             .withExpression("=1")
-            .withProcessInstanceKey(1L)
-            .withElementInstanceKey(2L)
-            .expectRejection()
+            .withProcessInstanceKey(processInstanceKey)
             .resolve();
 
     // then
     Assertions.assertThat(record)
-        .hasIntent(ExpressionIntent.EVALUATE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
-    assertThat(record.getRejectionReason())
-        .contains("Either 'processInstanceKey' or 'elementInstanceKey' must be provided, not both");
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getScopeKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  public void shouldWriteElementInstanceKeyAsScopeKeyOnEvaluatedRecord() {
+    // given
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("elementScopeKey")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId("elementScopeKey").create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst()
+            .getKey();
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=1")
+            .withElementInstanceKey(elementInstanceKey)
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getScopeKey()).isEqualTo(elementInstanceKey);
   }
 
   @Test

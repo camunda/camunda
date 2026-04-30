@@ -24,16 +24,9 @@ public final class ExpressionValidator {
   private static final String ERROR_MESSAGE_EMPTY_EXPRESSION = "No expression provided";
   private static final String ERROR_MESSAGE_BLANK_EXPRESSION =
       "The expression must not be blank or empty";
-  private static final String ERROR_MESSAGE_BOTH_KEYS_PROVIDED =
-      "Either 'processInstanceKey' or 'elementInstanceKey' must be provided, not both";
-  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
-      "No process instance found with key '%d'";
-  private static final String ERROR_MESSAGE_ELEMENT_INSTANCE_NOT_FOUND =
-      "No element instance found with key '%d'";
-  private static final String ERROR_MESSAGE_TENANT_MISMATCH_PROCESS_INSTANCE =
-      "No process instance found with key '%d' for tenant '%s'";
-  private static final String ERROR_MESSAGE_TENANT_MISMATCH_ELEMENT_INSTANCE =
-      "No element instance found with key '%d' for tenant '%s'";
+  private static final String ERROR_MESSAGE_SCOPE_NOT_FOUND = "No scope found with key '%d'";
+  private static final String ERROR_MESSAGE_TENANT_MISMATCH_SCOPE =
+      "No scope found with key '%d' for tenant '%s'";
 
   private final ExpressionLanguage expressionLanguage;
   private final ElementInstanceState elementInstanceState;
@@ -49,11 +42,37 @@ public final class ExpressionValidator {
     final var record = command.getValue();
     return parseValidExpression(record)
         .flatMap(
-            expression ->
-                validateScope(record)
-                    .map(
-                        resolvedInstance ->
-                            new ValidatedCommand(expression, record, resolvedInstance)));
+            expr -> resolveScope(record).map(scope -> new ValidatedCommand(expr, record, scope)));
+  }
+
+  private Either<Rejection, Optional<ResolvedInstance>> resolveScope(
+      final ExpressionRecord record) {
+    final long scopeKey = record.getScopeKey();
+    return isSet(scopeKey)
+        ? validateInstance(record, scopeKey).map(Optional::of)
+        : Either.right(Optional.empty());
+  }
+
+  private Either<Rejection, ResolvedInstance> validateInstance(
+      final ExpressionRecord record, final long scopeKey) {
+
+    final var instance = elementInstanceState.getInstance(scopeKey);
+    if (instance == null) {
+      return reject(RejectionType.NOT_FOUND, ERROR_MESSAGE_SCOPE_NOT_FOUND.formatted(scopeKey));
+    }
+
+    final var value = instance.getValue();
+    if (tenantMismatch(record.getTenantId(), value.getTenantId())) {
+      return reject(
+          RejectionType.NOT_FOUND,
+          ERROR_MESSAGE_TENANT_MISMATCH_SCOPE.formatted(scopeKey, record.getTenantId()));
+    }
+
+    return Either.right(new ResolvedInstance(value.getTenantId(), value.getBpmnProcessId()));
+  }
+
+  private static boolean tenantMismatch(final String provided, final String actual) {
+    return provided != null && !provided.isEmpty() && !provided.equals(actual);
   }
 
   /** Combines text-level validation and FEEL parsing — they always travel together. */
@@ -76,58 +95,6 @@ public final class ExpressionValidator {
     return Either.right(expression);
   }
 
-  /**
-   * Identifies the (optional) scope and, if present, validates that the caller's tenant owns it.
-   * Returns {@code Optional.empty()} when no scope was supplied — this is a valid state, not an
-   * error.
-   */
-  private Either<Rejection, Optional<ResolvedInstance>> validateScope(
-      final ExpressionRecord record) {
-    final boolean hasProcessInstanceKey = isSet(record.getProcessInstanceKey());
-    final boolean hasElementInstanceKey = isSet(record.getElementInstanceKey());
-
-    // Mutually exclusive — supplying both is a client-side error.
-    if (hasProcessInstanceKey && hasElementInstanceKey) {
-      return reject(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_BOTH_KEYS_PROVIDED);
-    }
-
-    // Neither set → evaluation runs without an instance scope.
-    if (!hasProcessInstanceKey && !hasElementInstanceKey) {
-      return Either.right(Optional.empty());
-    }
-
-    final var target =
-        hasElementInstanceKey
-            ? ScopeTarget.elementInstance(record.getElementInstanceKey())
-            : ScopeTarget.processInstance(record.getProcessInstanceKey());
-
-    return validateInstance(record, target).map(Optional::of);
-  }
-
-  private Either<Rejection, ResolvedInstance> validateInstance(
-      final ExpressionRecord record, final ScopeTarget target) {
-    final var instance = elementInstanceState.getInstance(target.key());
-
-    // Unknown key → 404 rather than leaking details about what exists.
-    if (instance == null) {
-      return reject(RejectionType.NOT_FOUND, target.notFoundMessage());
-    }
-
-    final var providedTenantId = record.getTenantId();
-    final var actualTenantId = instance.getValue().getTenantId();
-
-    // Tenant mismatch is also reported as not-found so we don't confirm the instance
-    // exists under a different tenant.
-    if (providedTenantId != null
-        && !providedTenantId.isEmpty()
-        && !providedTenantId.equals(actualTenantId)) {
-      return reject(RejectionType.NOT_FOUND, target.tenantMismatchMessage(providedTenantId));
-    }
-
-    return Either.right(
-        new ResolvedInstance(actualTenantId, instance.getValue().getBpmnProcessId()));
-  }
-
   private static boolean isSet(final long key) {
     return key != UNSET_KEY;
   }
@@ -146,45 +113,4 @@ public final class ExpressionValidator {
    * (tenant inference, authorization checks) without a second state lookup.
    */
   public record ResolvedInstance(String tenantId, String bpmnProcessId) {}
-
-  private record ProcessInstanceScopeTarget(long key) implements ScopeTarget {
-    @Override
-    public String notFoundMessage() {
-      return ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(key);
-    }
-
-    @Override
-    public String tenantMismatchMessage(final String tenantId) {
-      return ERROR_MESSAGE_TENANT_MISMATCH_PROCESS_INSTANCE.formatted(key, tenantId);
-    }
-  }
-
-  private record ElementInstanceScopeTarget(long key) implements ScopeTarget {
-    @Override
-    public String notFoundMessage() {
-      return ERROR_MESSAGE_ELEMENT_INSTANCE_NOT_FOUND.formatted(key);
-    }
-
-    @Override
-    public String tenantMismatchMessage(final String tenantId) {
-      return ERROR_MESSAGE_TENANT_MISMATCH_ELEMENT_INSTANCE.formatted(key, tenantId);
-    }
-  }
-
-  private sealed interface ScopeTarget
-      permits ProcessInstanceScopeTarget, ElementInstanceScopeTarget {
-    long key();
-
-    String notFoundMessage();
-
-    String tenantMismatchMessage(String tenantId);
-
-    static ScopeTarget processInstance(final long key) {
-      return new ProcessInstanceScopeTarget(key);
-    }
-
-    static ScopeTarget elementInstance(final long key) {
-      return new ElementInstanceScopeTarget(key);
-    }
-  }
 }

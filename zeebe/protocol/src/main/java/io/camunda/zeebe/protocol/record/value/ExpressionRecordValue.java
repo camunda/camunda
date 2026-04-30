@@ -67,16 +67,10 @@ public interface ExpressionRecordValue extends RecordValue, TenantOwned, RecordV
   List<String> getWarnings();
 
   /**
-   * Returns the process instance key that provides context for this expression evaluation.
+   * Returns the process or element instance key that provides context for this expression
+   * evaluation.
    *
-   * @return the process instance key, or {@code -1} if not set
+   * @return the scope key, or {@code -1} if not set
    */
-  long getProcessInstanceKey();
-
-  /**
-   * Returns the element instance key that provides context for this expression evaluation.
-   *
-   * @return the element instance key, or {@code -1} if not set
-   */
-  long getElementInstanceKey();
+  long getScopeKey();
 }

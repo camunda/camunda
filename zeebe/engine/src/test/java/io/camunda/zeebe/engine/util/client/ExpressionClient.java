@@ -63,12 +63,12 @@ public final class ExpressionClient {
   }
 
   public ExpressionClient withProcessInstanceKey(final long key) {
-    expressionRecord.setProcessInstanceKey(key);
+    expressionRecord.setScopeKey(key);
     return this;
   }
 
   public ExpressionClient withElementInstanceKey(final long key) {
-    expressionRecord.setElementInstanceKey(key);
+    expressionRecord.setScopeKey(key);
     return this;
   }
 

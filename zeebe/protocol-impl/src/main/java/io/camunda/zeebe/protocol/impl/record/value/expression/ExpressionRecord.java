@@ -32,8 +32,7 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   private static final StringValue WARNINGS_KEY = new StringValue("warnings");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
-  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
+  private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
 
   private final StringProperty expressionProp = new StringProperty(EXPRESSION_KEY);
 
@@ -46,21 +45,16 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
 
-  private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
-
-  private final LongProperty elementInstanceKeyProp =
-      new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
+  private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY, -1L);
 
   public ExpressionRecord() {
-    super(7);
+    super(6);
     declareProperty(expressionProp)
         .declareProperty(resultValueProp)
         .declareProperty(warningsProp)
         .declareProperty(tenantIdProp)
         .declareProperty(variablesProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(elementInstanceKeyProp);
+        .declareProperty(scopeKeyProp);
   }
 
   @Override
@@ -125,22 +119,12 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   }
 
   @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+  public long getScopeKey() {
+    return scopeKeyProp.getValue();
   }
 
-  public ExpressionRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
-    return this;
-  }
-
-  @Override
-  public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
-  }
-
-  public ExpressionRecord setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProp.setValue(elementInstanceKey);
+  public ExpressionRecord setScopeKey(final long scopeKey) {
+    scopeKeyProp.setValue(scopeKey);
     return this;
   }
 }
