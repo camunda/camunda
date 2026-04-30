@@ -61,8 +61,6 @@ Components that depend on the C8 monorepo releases:
 * [Maven Central](https://central.sonatype.com/search?q=camunda&sort=published)
 * DockerHub:
   * [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
-  * [Operate](https://hub.docker.com/r/camunda/operate/)
-  * [Tasklist](https://hub.docker.com/r/camunda/tasklist/)
   * [Optimize](https://hub.docker.com/r/camunda/optimize/)
   * [Camunda](https://hub.docker.com/r/camunda/camunda/) (future "Single Application" Docker image)
 * [GitHub releases](https://github.com/camunda/camunda/releases)
@@ -554,8 +552,6 @@ The Monorepo release is a step within the C8 Release Train. It produces the core
 While Monorepo (camunda/camunda) releases artifacts for:
 * [Camunda](https://hub.docker.com/r/camunda/camunda/)
 * [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
-* [Operate](https://hub.docker.com/r/camunda/operate/)
-* [Tasklist](https://hub.docker.com/r/camunda/tasklist/)
 
 The big release train releases:
 * Identity Management Component (camunda-cloud/identity)
