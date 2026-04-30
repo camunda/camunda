@@ -75,6 +75,7 @@ import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.WaitingStateHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
@@ -131,6 +132,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.WaitingStateTemplate;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
@@ -332,6 +334,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new MappingRuleDeletedHandler(
                 indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
             new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName()),
+            new WaitingStateHandler(
+                indexDescriptors.get(WaitingStateTemplate.class).getFullQualifiedName()),
             new MigratedVariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()),
             // Batch Operation Handler

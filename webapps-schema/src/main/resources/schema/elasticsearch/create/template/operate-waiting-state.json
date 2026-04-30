@@ -1,0 +1,31 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "elementInstanceKey": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "elementType": {
+        "type": "keyword"
+      },
+      "details": {
+        "type": "keyword"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "position": {
+        "type": "long"
+      }
+    }
+  }
+}

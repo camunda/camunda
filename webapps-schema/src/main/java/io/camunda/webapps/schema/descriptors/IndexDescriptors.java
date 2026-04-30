@@ -44,6 +44,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.WaitingStateTemplate;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
@@ -92,7 +93,8 @@ public class IndexDescriptors {
                 new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
                 new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
                 new GlobalListenerIndex(indexPrefix, isElasticsearch),
-                new DeployedResourceIndex(indexPrefix, isElasticsearch))
+                new DeployedResourceIndex(indexPrefix, isElasticsearch),
+                new WaitingStateTemplate(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 
