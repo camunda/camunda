@@ -73,6 +73,12 @@ public class MessageSubscriptionDbReader extends AbstractEntityReader<MessageSub
         dbSort);
   }
 
+  @Override
+  public MessageSubscriptionEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(key).orElse(null);
+  }
+
   public Optional<MessageSubscriptionEntity> findOne(final long key) {
     final var result =
         search(MessageSubscriptionQuery.of(b -> b.filter(f -> f.messageSubscriptionKeys(key))));

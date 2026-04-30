@@ -13,12 +13,12 @@ import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.camunda.gateway.mcp.config.server.ToolRepository;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.CamundaSyncStatelessMcpToolProvider;
-import io.camunda.zeebe.util.Either;
-import io.modelcontextprotocol.common.McpTransportContext;
+import io.camunda.gateway.mcp.processes.ProcessesToolRepository;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.service.MessageServices;
+import io.camunda.service.MessageSubscriptionServices;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
-import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.List;
-import org.jspecify.annotations.NonNull;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -58,18 +58,11 @@ public class CamundaMcpToolSpecificationsAutoConfiguration {
 
   @Bean(name = "processesToolRepository")
   @ConditionalOnMissingBean(name = "processesToolRepository")
-  public ToolRepository processesToolRepository() {
-    return new ToolRepository() {
-      @Override
-      public @NonNull List<Tool> getTools(@NonNull final McpTransportContext transportContext) {
-        return List.of();
-      }
-
-      @Override
-      public @NonNull Either<String, SyncToolSpecification> findTool(
-          @NonNull final McpTransportContext transportContext, @NonNull final String toolName) {
-        return Either.left("Not implemented yet");
-      }
-    };
+  public ToolRepository processesToolRepository(
+      final MessageSubscriptionServices messageSubscriptionServices,
+      final MessageServices messageServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    return new ProcessesToolRepository(
+        messageSubscriptionServices, messageServices, authenticationProvider);
   }
 }

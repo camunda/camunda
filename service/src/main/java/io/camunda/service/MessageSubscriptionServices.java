@@ -54,6 +54,17 @@ public class MessageSubscriptionServices
                 .searchMessageSubscriptions(query));
   }
 
+  public MessageSubscriptionEntity getByKey(
+      final long key, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            searchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
+                .getMessageSubscription(key));
+  }
+
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity> searchCorrelated(
       final CorrelatedMessageSubscriptionQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
