@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.nodeIdNullValue
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionsCountNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.replicationFactorNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLength;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.zoneHeaderLength;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.protocol.impl.Loggers;
@@ -76,6 +77,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private int clusterSize;
   private int replicationFactor;
   private DirectBuffer version = new UnsafeBuffer();
+  private String zone;
 
   public BrokerInfo() {
     reset();
@@ -94,6 +96,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     replicationFactor = replicationFactorNullValue();
     addresses.clear();
     version.wrap(0, 0);
+    zone = null;
     clearPartitions();
 
     return this;
@@ -190,6 +193,15 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   public void setVersion(final DirectBuffer buffer, final int offset, final int length) {
     version.wrap(buffer, offset, length);
+  }
+
+  public String getZone() {
+    return zone;
+  }
+
+  public BrokerInfo setZone(final String zone) {
+    this.zone = zone;
+    return this;
   }
 
   public Map<DirectBuffer, DirectBuffer> getAddresses() {
@@ -317,17 +329,23 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
           partitionLeaderTermsDecoder.partitionId(), partitionLeaderTermsDecoder.term());
     }
 
+    final PartitionHealthDecoder partitionHealthDecoder = bodyDecoder.partitionHealth();
+    while (partitionHealthDecoder.hasNext()) {
+      partitionHealthDecoder.next();
+      partitionHealthStatuses.put(
+          partitionHealthDecoder.partitionId(), partitionHealthDecoder.healthStatus());
+    }
+
     if (bodyDecoder.versionLength() > 0) {
       bodyDecoder.wrapVersion(version);
     } else {
       bodyDecoder.skipVersion();
     }
 
-    final PartitionHealthDecoder partitionHealthDecoder = bodyDecoder.partitionHealth();
-    while (partitionHealthDecoder.hasNext()) {
-      partitionHealthDecoder.next();
-      partitionHealthStatuses.put(
-          partitionHealthDecoder.partitionId(), partitionHealthDecoder.healthStatus());
+    if (bodyDecoder.zoneLength() > 0) {
+      zone = bodyDecoder.zone();
+    } else {
+      bodyDecoder.skipZone();
     }
 
     assert bodyDecoder.limit() == frameEnd
@@ -348,7 +366,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
             + PartitionLeaderTermsEncoder.sbeHeaderSize()
             + PartitionHealthEncoder.sbeHeaderSize()
             + versionHeaderLength()
-            + version.capacity();
+            + version.capacity()
+            + zoneHeaderLength()
+            + (zone != null ? zone.getBytes(StandardCharsets.UTF_8).length : 0);
 
     for (final Entry<DirectBuffer, DirectBuffer> entry : addresses.entrySet()) {
       length +=
@@ -410,8 +430,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       }
     }
 
-    bodyEncoder.putVersion(version, 0, version.capacity());
-
     final int partitionHealthCount = partitionHealthStatuses.size();
     final PartitionHealthEncoder partitionHealthEncoder =
         bodyEncoder.partitionHealthCount(partitionHealthCount);
@@ -420,6 +438,14 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       for (final Entry<Integer, PartitionHealthStatus> entry : partitionHealthStatuses.entrySet()) {
         partitionHealthEncoder.next().partitionId(entry.getKey()).healthStatus(entry.getValue());
       }
+    }
+
+    bodyEncoder.putVersion(version, 0, version.capacity());
+
+    if (zone != null) {
+      bodyEncoder.zone(zone);
+    } else {
+      bodyEncoder.putZone(new byte[0], 0, 0);
     }
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
@@ -510,6 +536,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         + partitionHealthStatuses
         + ", version="
         + BufferUtil.bufferAsString(version)
+        + ", zone="
+        + zone
         + '}';
   }
 }
