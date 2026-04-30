@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.job.JobCommandPreconditionValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -52,8 +53,7 @@ public class JobUpdateBehaviour {
             jobState,
             processingStateState.getBannedInstanceState(),
             "update",
-            List.of(),
-            List.of(this::isAuthorized),
+            List.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED),
             authCheckBehavior);
     this.authCheckBehavior = authCheckBehavior;
   }
@@ -62,7 +62,7 @@ public class JobUpdateBehaviour {
     return preconditionChecker.check(command);
   }
 
-  private Either<Rejection, JobRecord> isAuthorized(
+  public Either<Rejection, JobRecord> isAuthorized(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     if (authCheckBehavior.shouldSkipAllChecks()) {
       return Either.right(job);

@@ -38,6 +38,7 @@ public final class JobUpdateRetriesProcessor implements TypedRecordProcessor<Job
     final long jobKey = command.getKey();
     jobUpdateBehaviour
         .checkJobCommand(command)
+        .flatMap(job -> jobUpdateBehaviour.isAuthorized(command, job))
         .ifRightOrLeft(
             job ->
                 jobUpdateBehaviour
