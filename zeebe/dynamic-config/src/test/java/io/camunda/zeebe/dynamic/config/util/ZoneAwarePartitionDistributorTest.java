@@ -32,7 +32,7 @@ final class ZoneAwarePartitionDistributorTest {
   // -------------------------------------------------------------------------
 
   private static List<MemberId> brokers(final String region, final int count) {
-    return IntStream.range(0, count).mapToObj(i -> MemberId.from(region + "-" + i)).toList();
+    return IntStream.range(0, count).mapToObj(i -> MemberId.from(region, i)).toList();
   }
 
   private static List<PartitionId> partitions(final int count) {
@@ -142,7 +142,7 @@ final class ZoneAwarePartitionDistributorTest {
                 .isPresent()
                 .get()
                 .matches(
-                    m -> m.id().startsWith(primaryRegion),
+                    m -> m.isInZone(primaryRegion),
                     "primary should be in region " + primaryRegion));
   }
 
@@ -234,8 +234,8 @@ final class ZoneAwarePartitionDistributorTest {
     final var p1 = partitionById(result, 1);
     final var p2 = partitionById(result, 2);
 
-    assertThat(p1.getPrimary().orElseThrow()).isEqualTo(MemberId.from("us-east1-0"));
-    assertThat(p2.getPrimary().orElseThrow()).isEqualTo(MemberId.from("us-east1-1"));
+    assertThat(p1.getPrimary().orElseThrow()).isEqualTo(MemberId.from("us-east1", 0));
+    assertThat(p2.getPrimary().orElseThrow()).isEqualTo(MemberId.from("us-east1", 1));
   }
 
   // -------------------------------------------------------------------------
@@ -255,7 +255,7 @@ final class ZoneAwarePartitionDistributorTest {
     result.forEach(
         p -> {
           assertThat(p.members()).hasSize(3);
-          p.members().forEach(m -> assertThat(m.id()).startsWith("us-east1-"));
+          p.members().forEach(m -> assertThat(m.zone()).isEqualTo("us-east1"));
         });
   }
 
@@ -382,11 +382,11 @@ final class ZoneAwarePartitionDistributorTest {
     // given — spec declares 2 brokers but we only pass 1 to distributePartitions
     final var specs = List.of(new ZoneSpec("us-east1", 2, 1000, brokers("us-east1", 2)));
     final var distributor = new ZoneAwarePartitionDistributor(specs);
-    final Set<MemberId> onlyOneBroker = Set.of(MemberId.from("us-east1-0"));
+    final Set<MemberId> onlyOneBroker = Set.of(MemberId.from("us-east1", 0));
 
     // when / then
     assertThatThrownBy(() -> distributor.distributePartitions(onlyOneBroker, partitions(1), 2))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("us-east1-1");
+        .hasMessageContaining("us-east1/1");
   }
 }

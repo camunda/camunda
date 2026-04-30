@@ -29,10 +29,10 @@ import java.util.LinkedHashMap;
  *   cluster:
  *     size: 5
  *     replication-factor: 5
- *     region: us-east1         # set per broker; env: CAMUNDA_CLUSTER_REGION
+ *     zone: us-east1         # set per broker; env: CAMUNDA_CLUSTER_ZONE
  *     partitioning:
  *       scheme: REGION_AWARE
- *       region-aware:
+ *       zone-aware:
  *         regions:
  *           us-east1:
  *             numberOfBrokers: 2

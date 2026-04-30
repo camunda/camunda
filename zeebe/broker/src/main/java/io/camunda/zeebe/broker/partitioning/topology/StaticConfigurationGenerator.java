@@ -87,7 +87,7 @@ public final class StaticConfigurationGenerator {
                   final var regionCfg = e.getValue();
                   final List<MemberId> brokers =
                       IntStream.range(0, regionCfg.getNumberOfBrokers())
-                          .mapToObj(localId -> MemberId.from(regionName + "-" + localId))
+                          .mapToObj(localId -> MemberId.from(regionName, localId))
                           .toList();
                   return new ZoneSpec(
                       regionName,
@@ -127,9 +127,9 @@ public final class StaticConfigurationGenerator {
   }
 
   /**
-   * Generates composite {@link MemberId}s for all brokers in a region-aware cluster. The format is
-   * {@code "region-localNodeId"} (e.g. {@code "us-east1-0"}). Local node IDs are 0-indexed within
-   * each region, derived from the {@link
+   * Generates composite {@link MemberId}s for all brokers in a zone-aware cluster. The format is
+   * {@code "zone/localNodeId"} (e.g. {@code "us-east1/0"}). Local node IDs are 0-indexed within
+   * each zone, derived from the {@link
    * io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg} configuration in the
    * same insertion order used by each broker to determine its own member ID.
    */
@@ -138,7 +138,7 @@ public final class StaticConfigurationGenerator {
         .flatMap(
             e ->
                 IntStream.range(0, e.getValue().getNumberOfBrokers())
-                    .mapToObj(localId -> MemberId.from(e.getKey() + "-" + localId)))
+                    .mapToObj(localId -> MemberId.from(e.getKey(), localId)))
         .collect(Collectors.toSet());
   }
 

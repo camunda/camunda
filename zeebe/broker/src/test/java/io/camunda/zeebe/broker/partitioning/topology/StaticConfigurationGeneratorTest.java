@@ -16,8 +16,11 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.RegionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -133,5 +136,56 @@ fixed:
 
   private static MemberId member(final int id) {
     return MemberId.from(String.valueOf(id));
+  }
+
+  @Test
+  void shouldGenerateZoneAwareDistribution() {
+    // given — 2 zones: us-east (2 brokers, 2 replicas), us-west (1 broker, 1 replica)
+    final var usEast = new RegionCfg();
+    usEast.setNumberOfBrokers(2);
+    usEast.setNumberOfReplicas(2);
+    usEast.setPriority(1000);
+
+    final var usWest = new RegionCfg();
+    usWest.setNumberOfBrokers(1);
+    usWest.setNumberOfReplicas(1);
+    usWest.setPriority(500);
+
+    final var zoneAwareCfg = new ZoneAwareCfg();
+    final var regions = new LinkedHashMap<String, RegionCfg>();
+    regions.put("us-east", usEast);
+    regions.put("us-west", usWest);
+    zoneAwareCfg.setRegions(regions);
+
+    final var partitioningCfg = new PartitioningCfg();
+    partitioningCfg.setScheme(Scheme.REGION_AWARE);
+    partitioningCfg.setZoneAware(zoneAwareCfg);
+
+    final var clusterCfg = new ClusterCfg();
+    clusterCfg.setClusterSize(3);
+    clusterCfg.setPartitionsCount(2);
+    clusterCfg.setReplicationFactor(3);
+
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.setCluster(clusterCfg);
+    brokerCfg.getExperimental().setPartitioning(partitioningCfg);
+    brokerCfg.setExporters(Map.of());
+
+    // when
+    final var partitionDistribution =
+        StaticConfigurationGenerator.getStaticConfiguration(brokerCfg, MemberId.from("us-east", 0))
+            .generatePartitionDistribution();
+
+    // then — every partition has 3 members (RF=3)
+    assertThat(partitionDistribution).hasSize(2);
+    partitionDistribution.forEach(p -> assertThat(p.members()).hasSize(3));
+
+    // All members use zone/nodeId format
+    partitionDistribution.forEach(
+        p -> p.members().forEach(m -> assertThat(m.zone()).isNotNull().isIn("us-east", "us-west")));
+
+    // Primary should be from the highest-priority zone (us-east)
+    partitionDistribution.forEach(
+        p -> assertThat(p.getPrimary().orElseThrow().isInZone("us-east")).isTrue());
   }
 }
