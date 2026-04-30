@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {isValidJSON} from 'modules/utils';
 import type {VariableFilterOperator} from 'modules/stores/variableFilter';
 
 type OperatorConfig = {
@@ -32,4 +33,42 @@ type DraftCondition = {
   value: string;
 };
 
-export {MAX_CONDITIONS, VARIABLE_FILTER_OPERATORS, type DraftCondition};
+type RowErrors = {
+  name?: string;
+  value?: string;
+};
+
+const validateCondition = (condition: DraftCondition): RowErrors => {
+  const errors: RowErrors = {};
+
+  if (!condition.name.trim()) {
+    errors.name = 'Variable name is required';
+  }
+
+  if (
+    condition.operator !== 'exists' &&
+    condition.operator !== 'doesNotExist'
+  ) {
+    if (!condition.value.trim()) {
+      errors.value = 'Value is required';
+    } else if (
+      condition.operator !== 'contains' &&
+      !isValidJSON(condition.value)
+    ) {
+      errors.value = 'Value must be valid JSON';
+    }
+  }
+
+  return errors;
+};
+
+const hasErrors = (errors: RowErrors) => Object.keys(errors).length > 0;
+
+export {
+  MAX_CONDITIONS,
+  VARIABLE_FILTER_OPERATORS,
+  validateCondition,
+  hasErrors,
+  type DraftCondition,
+  type RowErrors,
+};

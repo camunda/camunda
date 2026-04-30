@@ -11,8 +11,14 @@ import {Button, Stack} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
 import {VariableFilterRow} from './VariableFilterRow';
 import type {VariableCondition} from 'modules/stores/variableFilter';
-import {type DraftCondition, MAX_CONDITIONS} from './constants';
-import {Modal, FilterRowsContainer, Description} from './styled';
+import {
+  type DraftCondition,
+  type RowErrors,
+  MAX_CONDITIONS,
+  validateCondition,
+  hasErrors,
+} from './constants';
+import {Modal, Description} from './styled';
 
 type Props = {
   isOpen: boolean;
@@ -28,16 +34,6 @@ const createDraft = (): DraftCondition => ({
   value: '',
 });
 
-const isConditionValid = (c: DraftCondition): boolean => {
-  if (!c.name.trim()) {
-    return false;
-  }
-  if (c.operator === 'exists' || c.operator === 'doesNotExist') {
-    return true;
-  }
-  return c.value.trim() !== '';
-};
-
 const VariableFilterModal: React.FC<Props> = ({
   isOpen,
   initialConditions,
@@ -50,6 +46,10 @@ const VariableFilterModal: React.FC<Props> = ({
         ? initialConditions.map((c) => ({...c, id: crypto.randomUUID()}))
         : [createDraft()],
   );
+  const [rowErrors, setRowErrors] = useState<Record<string, RowErrors>>({});
+  const [failedOnLastSubmit, setFailedOnLastSubmit] = useState<Set<string>>(
+    new Set(),
+  );
 
   const handleAddCondition = () => {
     if (draftConditions.length >= MAX_CONDITIONS) {
@@ -60,22 +60,64 @@ const VariableFilterModal: React.FC<Props> = ({
 
   const handleConditionChange = (updated: DraftCondition) => {
     setDraftConditions((prev) =>
-      prev.map((c) => (c.id === updated.id ? updated : c)),
+      prev.map((condition) =>
+        condition.id === updated.id ? updated : condition,
+      ),
     );
+    if (failedOnLastSubmit.has(updated.id)) {
+      const errors = validateCondition(updated);
+      setRowErrors((prev) => ({...prev, [updated.id]: errors}));
+    }
   };
 
   const handleConditionDelete = (id: string) => {
-    setDraftConditions((prev) => prev.filter((c) => c.id !== id));
+    setDraftConditions((prev) =>
+      prev.filter((condition) => condition.id !== id),
+    );
+    setRowErrors((prev) => {
+      const next = {...prev};
+      delete next[id];
+      return next;
+    });
+    setFailedOnLastSubmit((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   };
 
   const handleApply = () => {
-    const valid = draftConditions
-      .filter(isConditionValid)
-      .map(({id: _id, ...rest}) => rest);
-    onApply(valid);
+    const newErrors: Record<string, RowErrors> = {};
+    const newFailed = new Set<string>();
+
+    for (const condition of draftConditions) {
+      const errors = validateCondition(condition);
+      if (hasErrors(errors)) {
+        newErrors[condition.id] = errors;
+        newFailed.add(condition.id);
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setRowErrors(newErrors);
+      setFailedOnLastSubmit(newFailed);
+      return;
+    }
+
+    onApply(draftConditions.map(({id: _id, ...rest}) => rest));
   };
 
-  const isApplyDisabled = !draftConditions.some(isConditionValid);
+  const handleFieldBlur = (id: string) => {
+    if (!failedOnLastSubmit.has(id)) {
+      return;
+    }
+    const condition = draftConditions.find((condition) => condition.id === id);
+    if (!condition) {
+      return;
+    }
+    const errors = validateCondition(condition);
+    setRowErrors((prev) => ({...prev, [id]: errors}));
+  };
 
   return (
     <Modal
@@ -86,7 +128,6 @@ const VariableFilterModal: React.FC<Props> = ({
       onRequestSubmit={handleApply}
       onRequestClose={onClose}
       onSecondarySubmit={onClose}
-      primaryButtonDisabled={isApplyDisabled}
       preventCloseOnClickOutside
       size="md"
     >
@@ -95,7 +136,7 @@ const VariableFilterModal: React.FC<Props> = ({
           Define one or more conditions to filter process instances by variable
           values. All conditions are combined with AND logic.
         </Description>
-        <FilterRowsContainer gap={4}>
+        <Stack gap={4}>
           {draftConditions.map((condition, index) => (
             <VariableFilterRow
               key={condition.id}
@@ -104,9 +145,11 @@ const VariableFilterModal: React.FC<Props> = ({
               onDelete={() => handleConditionDelete(condition.id)}
               isDeleteHidden={draftConditions.length === 1}
               rowIndex={index}
+              errors={rowErrors[condition.id] ?? {}}
+              onBlur={() => handleFieldBlur(condition.id)}
             />
           ))}
-        </FilterRowsContainer>
+        </Stack>
         <Button
           kind="ghost"
           size="sm"

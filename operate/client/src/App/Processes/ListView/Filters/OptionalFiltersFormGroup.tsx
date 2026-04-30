@@ -140,6 +140,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
   ({visibleFilters, onVisibleFilterChange}) => {
     const location = useLocation() as LocationType;
     const form = useForm();
+    const hasActiveVariableFilters =
+      MULTI_VARIABLE_FILTER && variableFilterStore.hasActiveFilters;
 
     useEffect(() => {
       const filters = getProcessInstanceFilters(location.search);
@@ -158,11 +160,17 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               ...('endDateFrom' in filters && 'endDateTo' in filters
                 ? ['endDateRange']
                 : []),
+              ...(hasActiveVariableFilters ? ['variable'] : []),
             ] as OptionalFilter[]),
           ]),
         );
       });
-    }, [location.state, location.search, onVisibleFilterChange]);
+    }, [
+      location.state,
+      location.search,
+      onVisibleFilterChange,
+      hasActiveVariableFilters,
+    ]);
 
     const [isStartDateRangeModalOpen, setIsStartDateRangeModalOpen] =
       useState<boolean>(false);
@@ -303,10 +311,6 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                       ),
                     );
 
-                    if (filter === 'variable' && MULTI_VARIABLE_FILTER) {
-                      variableFilterStore.setConditions([]);
-                    }
-
                     OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
                       form.change(key, undefined);
                       if (key === 'errorMessage') {
@@ -314,6 +318,11 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                         form.change('incidentErrorHashCode', undefined);
                       }
                     });
+
+                    if (filter === 'variable' && MULTI_VARIABLE_FILTER) {
+                      variableFilterStore.setConditions([]);
+                    }
+
                     form.submit();
                   }}
                 >

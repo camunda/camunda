@@ -13,7 +13,11 @@ import {createPortal} from 'react-dom';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {IconTextInput} from 'modules/components/IconInput';
 import type {VariableFilterOperator} from 'modules/stores/variableFilter';
-import {type DraftCondition, VARIABLE_FILTER_OPERATORS} from './constants';
+import {
+  type DraftCondition,
+  type RowErrors,
+  VARIABLE_FILTER_OPERATORS,
+} from './constants';
 import {
   FilterRow,
   ConditionDropdownContainer,
@@ -27,6 +31,8 @@ type Props = {
   onDelete: () => void;
   isDeleteHidden: boolean;
   rowIndex: number;
+  errors: RowErrors;
+  onBlur: () => void;
 };
 
 const getValuePlaceholder = (operator: VariableFilterOperator): string => {
@@ -46,6 +52,8 @@ const VariableFilterRow: React.FC<Props> = ({
   onDelete,
   isDeleteHidden,
   rowIndex,
+  errors,
+  onBlur,
 }) => {
   const [isJsonEditorOpen, setIsJsonEditorOpen] = useState(false);
 
@@ -89,6 +97,9 @@ const VariableFilterRow: React.FC<Props> = ({
           placeholder="Variable name"
           value={condition.name}
           onChange={handleNameChange}
+          onBlur={onBlur}
+          invalid={!!errors.name}
+          invalidText={errors.name}
           size="sm"
           autoComplete="off"
           data-testid={`variable-filter-name-${condition.id}`}
@@ -117,6 +128,9 @@ const VariableFilterRow: React.FC<Props> = ({
               placeholder={getValuePlaceholder(condition.operator)}
               value={condition.value}
               onChange={handleValueChange}
+              onBlur={onBlur}
+              invalid={!!errors.value}
+              invalidText={errors.value}
               size="sm"
               Icon={Maximize}
               buttonLabel="Open JSON editor"

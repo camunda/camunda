@@ -61,7 +61,9 @@ class VariableFilter {
   }
 
   reset = () => {
-    this.state = {...DEFAULT_STATE};
+    this.state.variable = DEFAULT_STATE.variable;
+    this.state.isInMultipleMode = DEFAULT_STATE.isInMultipleMode;
+    this.state.conditions = DEFAULT_STATE.conditions;
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
   };
 

@@ -7,11 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {
-  Stack,
-  IconButton as BaseIconButton,
-  Modal as BaseModal,
-} from '@carbon/react';
+import {IconButton as BaseIconButton, Modal as BaseModal} from '@carbon/react';
 import {styles} from '@carbon/elements';
 
 const Modal = styled(BaseModal)`
@@ -25,13 +21,11 @@ const Description = styled.p`
   ${styles.bodyShort01};
 `;
 
-const FilterRowsContainer = styled(Stack)``;
-
 const FilterRow = styled.div`
   display: grid;
   grid-template-columns: 1fr 170px 1fr auto;
   gap: var(--cds-spacing-05);
-  align-items: end;
+  align-items: start;
 `;
 
 const ConditionDropdownContainer = styled.div`
@@ -60,7 +54,6 @@ const ConditionItem = styled.li`
 export {
   Modal,
   Description,
-  FilterRowsContainer,
   FilterRow,
   ConditionDropdownContainer,
   ValueFieldContainer,

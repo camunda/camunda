@@ -48,23 +48,8 @@ describe('<VariableFilterModal />', () => {
     expect(nameInputs[1]!).toHaveValue('count');
   });
 
-  it('should disable Apply button when all rows are empty', () => {
+  it('should always enable Apply button', () => {
     renderModal();
-
-    expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
-  });
-
-  it('should enable Apply button when at least one row is valid', async () => {
-    const {user} = renderModal();
-
-    await user.type(
-      screen.getAllByPlaceholderText('Variable name')[0]!,
-      'myVar',
-    );
-    await user.type(
-      screen.getAllByPlaceholderText('value in JSON format')[0]!,
-      '"hello"',
-    );
 
     expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled();
   });
@@ -120,22 +105,6 @@ describe('<VariableFilterModal />', () => {
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
     expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('should filter out invalid (nameless) conditions on Apply', async () => {
-    const onApply = vi.fn();
-    const conditions: VariableCondition[] = [
-      {name: 'status', operator: 'equals', value: '"active"'},
-    ];
-    const {user} = renderModal({initialConditions: conditions, onApply});
-
-    await user.click(screen.getByRole('button', {name: 'Add condition'}));
-
-    await user.click(screen.getByRole('button', {name: 'Apply'}));
-
-    const applied = onApply.mock.calls[0]![0] as VariableCondition[];
-    expect(applied).toHaveLength(1);
-    expect(applied[0]!.name).toBe('status');
   });
 
   it('should accept exists operator without value as valid', async () => {
@@ -215,5 +184,141 @@ describe('<VariableFilterModal />', () => {
 
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(1);
     expect(screen.getAllByPlaceholderText('Variable name')[0]!).toHaveValue('');
+  });
+
+  it('should show name error and keep modal open when name is empty on Apply', async () => {
+    const onApply = vi.fn();
+    const {user} = renderModal({onApply});
+
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    expect(screen.getByText('Variable name is required')).toBeInTheDocument();
+    expect(onApply).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('dialog', {name: 'Filter by Variable'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should show JSON error when value is not valid JSON on Apply', async () => {
+    const onApply = vi.fn();
+    const {user} = renderModal({onApply});
+
+    await user.type(
+      screen.getAllByPlaceholderText('Variable name')[0]!,
+      'myVar',
+    );
+    await user.type(
+      screen.getAllByPlaceholderText('value in JSON format')[0]!,
+      'not-json',
+    );
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    expect(screen.getByText('Value must be valid JSON')).toBeInTheDocument();
+    expect(onApply).not.toHaveBeenCalled();
+  });
+
+  it('should not show JSON error for contains operator', async () => {
+    const onApply = vi.fn();
+    const {user} = renderModal({onApply});
+
+    await user.type(
+      screen.getAllByPlaceholderText('Variable name')[0]!,
+      'myVar',
+    );
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('contains'));
+    await user.type(
+      screen.getAllByPlaceholderText('search text')[0]!,
+      'active',
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    expect(
+      screen.queryByText('Value must be valid JSON'),
+    ).not.toBeInTheDocument();
+    expect(onApply).toHaveBeenCalledOnce();
+  });
+
+  it('should clear error on blur after correcting the field', async () => {
+    const {user} = renderModal();
+
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+    expect(screen.getByText('Variable name is required')).toBeInTheDocument();
+
+    await user.type(
+      screen.getAllByPlaceholderText('Variable name')[0]!,
+      'myVar',
+    );
+    await user.tab();
+
+    expect(
+      screen.queryByText('Variable name is required'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not re-validate on blur if row was never submitted with an error', async () => {
+    const {user} = renderModal();
+
+    await user.click(screen.getAllByPlaceholderText('Variable name')[0]!);
+    await user.tab();
+
+    expect(
+      screen.queryByText('Variable name is required'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should clear errors when a row is deleted', async () => {
+    const {user} = renderModal();
+
+    await user.click(screen.getByRole('button', {name: 'Add condition'}));
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    expect(screen.getAllByText('Variable name is required')).toHaveLength(2);
+
+    const deleteButtons = screen.getAllByRole('button', {
+      name: 'Remove condition',
+    });
+    await user.click(deleteButtons[0]!);
+
+    expect(screen.getAllByText('Variable name is required')).toHaveLength(1);
+  });
+
+  it('should re-validate immediately when operator changes on a previously-failed row', async () => {
+    const onApply = vi.fn();
+    const {user} = renderModal({onApply});
+
+    await user.type(
+      screen.getAllByPlaceholderText('Variable name')[0]!,
+      'myVar',
+    );
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+    expect(screen.getByText('Value is required')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('exists'));
+
+    expect(screen.queryByText('Value is required')).not.toBeInTheDocument();
+  });
+
+  it('should apply successfully when all conditions are valid', async () => {
+    const onApply = vi.fn();
+    const {user} = renderModal({onApply});
+
+    await user.type(
+      screen.getAllByPlaceholderText('Variable name')[0]!,
+      'status',
+    );
+    await user.type(
+      screen.getAllByPlaceholderText('value in JSON format')[0]!,
+      '"active"',
+    );
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    expect(onApply).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByText('Variable name is required'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Value is required')).not.toBeInTheDocument();
   });
 });

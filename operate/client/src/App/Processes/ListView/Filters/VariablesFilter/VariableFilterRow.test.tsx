@@ -20,6 +20,12 @@ const makeCondition = (
   ...overrides,
 });
 
+let defaultRowProps: {errors: object; onBlur: () => void};
+
+beforeEach(() => {
+  defaultRowProps = {errors: {}, onBlur: vi.fn()};
+});
+
 describe('<VariableFilterRow />', () => {
   it('should render name and value inputs and operator dropdown', () => {
     render(
@@ -29,6 +35,7 @@ describe('<VariableFilterRow />', () => {
         onDelete={vi.fn()}
         isDeleteHidden={true}
         rowIndex={0}
+        {...defaultRowProps}
       />,
     );
 
@@ -51,6 +58,7 @@ describe('<VariableFilterRow />', () => {
         onDelete={vi.fn()}
         isDeleteHidden={true}
         rowIndex={0}
+        {...defaultRowProps}
       />,
     );
 
@@ -67,6 +75,7 @@ describe('<VariableFilterRow />', () => {
         onDelete={vi.fn()}
         isDeleteHidden={true}
         rowIndex={0}
+        {...defaultRowProps}
       />,
     );
 
@@ -83,6 +92,7 @@ describe('<VariableFilterRow />', () => {
         onDelete={vi.fn()}
         isDeleteHidden={false}
         rowIndex={0}
+        {...defaultRowProps}
       />,
     );
 
@@ -100,6 +110,7 @@ describe('<VariableFilterRow />', () => {
         onDelete={vi.fn()}
         isDeleteHidden={true}
         rowIndex={0}
+        {...defaultRowProps}
       />,
     );
 
@@ -117,6 +128,7 @@ describe('<VariableFilterRow />', () => {
         onDelete={vi.fn()}
         isDeleteHidden={true}
         rowIndex={0}
+        {...defaultRowProps}
       />,
     );
 
@@ -136,11 +148,88 @@ describe('<VariableFilterRow />', () => {
         onDelete={onDelete}
         isDeleteHidden={false}
         rowIndex={0}
+        {...defaultRowProps}
       />,
     );
 
     await user.click(screen.getByTestId('delete-variable-filter-test-id'));
 
     expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it('should show name error when name error is provided', () => {
+    render(
+      <VariableFilterRow
+        condition={makeCondition()}
+        onChange={vi.fn()}
+        onDelete={vi.fn()}
+        isDeleteHidden={true}
+        rowIndex={0}
+        errors={{name: 'Variable name is required'}}
+        onBlur={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Variable name is required')).toBeInTheDocument();
+    expect(screen.getByTestId('variable-filter-name-test-id')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
+
+  it('should show value error when value error is provided', () => {
+    render(
+      <VariableFilterRow
+        condition={makeCondition({name: 'status'})}
+        onChange={vi.fn()}
+        onDelete={vi.fn()}
+        isDeleteHidden={true}
+        rowIndex={0}
+        errors={{value: 'Value must be valid JSON'}}
+        onBlur={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Value must be valid JSON')).toBeInTheDocument();
+  });
+
+  it('should call onBlur when name field loses focus', async () => {
+    const onBlur = vi.fn();
+    const {user} = render(
+      <VariableFilterRow
+        condition={makeCondition()}
+        onChange={vi.fn()}
+        onDelete={vi.fn()}
+        isDeleteHidden={true}
+        rowIndex={0}
+        errors={{}}
+        onBlur={onBlur}
+      />,
+    );
+
+    await user.click(screen.getByTestId('variable-filter-name-test-id'));
+    await user.tab();
+
+    expect(onBlur).toHaveBeenCalledTimes(1);
+  });
+
+  it('should call onBlur when value field loses focus', async () => {
+    const onBlur = vi.fn();
+    const {user} = render(
+      <VariableFilterRow
+        condition={makeCondition({name: 'status'})}
+        onChange={vi.fn()}
+        onDelete={vi.fn()}
+        isDeleteHidden={true}
+        rowIndex={0}
+        errors={{}}
+        onBlur={onBlur}
+      />,
+    );
+
+    await user.click(screen.getByTestId('variable-filter-value-test-id'));
+    await user.tab();
+
+    expect(onBlur).toHaveBeenCalledTimes(1);
   });
 });
