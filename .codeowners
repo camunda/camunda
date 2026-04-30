@@ -245,11 +245,9 @@ mwnw*                       @camunda/monorepo-devops-team
 /operate/                   @camunda/core-features
 /operate/common/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java @camunda/core-features
 /operate/webapp/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java @camunda/core-features
-operate.Dockerfile          @camunda/core-features
 
 # Tasklist
 /tasklist/                  @camunda/core-features
-tasklist.Dockerfile         @camunda/core-features
 
 # Optimize
 /optimize/                  @camunda/core-features
@@ -290,7 +288,6 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/assign-urgency-to-issue* @camunda/core-features
 /.github/workflows/operate-e2e-tests.yml @camunda/core-features
 /.github/workflows/operate-playwright.yml @camunda/core-features
-/.github/workflows/operate-release-*.yml @camunda/core-features
 /.github/workflows/ci-operate.yml @camunda/core-features
 /.github/workflows/ci-tasklist.yml @camunda/core-features
 /.github/workflows/ci-webapp-client.yml @camunda/core-features

@@ -421,7 +421,7 @@ jobs:
 #        with:
 #          repository: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
 #          version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
-#          dockerfile: tasklist.Dockerfile
+#          dockerfile: tasklist.Dockerfile # removed in PR #52180, use camunda image instead
 #          push: true
 #          distball: ${{ steps.build-zeebe.outputs.distball }}
 #      - name: Run Tasklist backup restore Tests
@@ -489,7 +489,7 @@ jobs:
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image
-          dockerfile: tasklist.Dockerfile
+          dockerfile: camunda.Dockerfile
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -507,7 +507,7 @@ jobs:
           version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
           push: true
           distball: ${{ steps.build-backend.outputs.distball }}
-          dockerfile: tasklist.Dockerfile
+          dockerfile: camunda.Dockerfile
       - name: Run Docker tests
         run: |
           ./mvnw \
