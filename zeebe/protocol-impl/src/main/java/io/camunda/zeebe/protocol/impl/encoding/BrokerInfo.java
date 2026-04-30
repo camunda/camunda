@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.nodeIdNullValue
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionsCountNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.replicationFactorNullValue;
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLength;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.zoneHeaderLength;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.protocol.impl.Loggers;
@@ -76,12 +77,13 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private int clusterSize;
   private int replicationFactor;
   private DirectBuffer version = new UnsafeBuffer();
+  private String zone;
 
   public BrokerInfo() {
     reset();
   }
 
-  public BrokerInfo(final int nodeId, final String commandApiAddress) {
+  public BrokerInfo(final int nodeId, @Nullable final String zone, final String commandApiAddress) {
     reset();
     this.nodeId = nodeId;
     setCommandApiAddress(BufferUtil.wrapString(commandApiAddress));
@@ -94,6 +96,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     replicationFactor = replicationFactorNullValue();
     addresses.clear();
     version.wrap(0, 0);
+    zone = null;
     clearPartitions();
 
     return this;
@@ -126,11 +129,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   public @Nullable String zone() {
     // TODO: to be fixed in #52070
     return null;
-  }
-
-  public String getMemberId() {
-    // TODO: to be fixed in #52070
-    return String.valueOf(nodeId);
   }
 
   public int getPartitionsCount() {
@@ -190,6 +188,15 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   public void setVersion(final DirectBuffer buffer, final int offset, final int length) {
     version.wrap(buffer, offset, length);
+  }
+
+  public String getZone() {
+    return zone;
+  }
+
+  public BrokerInfo setZone(final String zone) {
+    this.zone = zone;
+    return this;
   }
 
   public Map<DirectBuffer, DirectBuffer> getAddresses() {
@@ -317,6 +324,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
           partitionLeaderTermsDecoder.partitionId(), partitionLeaderTermsDecoder.term());
     }
 
+    // NOTE: this is the wrong position, but for compatibility it needs to stay here, before
+    // partitionHealthCount
     if (bodyDecoder.versionLength() > 0) {
       bodyDecoder.wrapVersion(version);
     } else {
@@ -328,6 +337,14 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       partitionHealthDecoder.next();
       partitionHealthStatuses.put(
           partitionHealthDecoder.partitionId(), partitionHealthDecoder.healthStatus());
+    }
+
+    // NOTE: this is the wrong position, but for compatibility it needs to stay here, after
+    // partitionHealthCount
+    if (bodyDecoder.zoneLength() > 0) {
+      zone = bodyDecoder.zone();
+    } else {
+      bodyDecoder.skipZone();
     }
 
     assert bodyDecoder.limit() == frameEnd
@@ -348,7 +365,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
             + PartitionLeaderTermsEncoder.sbeHeaderSize()
             + PartitionHealthEncoder.sbeHeaderSize()
             + versionHeaderLength()
-            + version.capacity();
+            + version.capacity()
+            + zoneHeaderLength()
+            + (zone != null ? zone.getBytes(StandardCharsets.UTF_8).length : 0);
 
     for (final Entry<DirectBuffer, DirectBuffer> entry : addresses.entrySet()) {
       length +=
@@ -410,6 +429,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       }
     }
 
+    // NOTE: this is the wrong position, but for compatibility it needs to stay here, before
+    // partitionHealthCount
     bodyEncoder.putVersion(version, 0, version.capacity());
 
     final int partitionHealthCount = partitionHealthStatuses.size();
@@ -420,6 +441,14 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       for (final Entry<Integer, PartitionHealthStatus> entry : partitionHealthStatuses.entrySet()) {
         partitionHealthEncoder.next().partitionId(entry.getKey()).healthStatus(entry.getValue());
       }
+    }
+
+    // NOTE: this is the wrong position, but for compatibility it needs to stay here, after
+    // partitionHealthCount
+    if (zone != null) {
+      bodyEncoder.zone(zone);
+    } else {
+      bodyEncoder.putZone(new byte[0], 0, 0);
     }
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
@@ -510,6 +539,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         + partitionHealthStatuses
         + ", version="
         + BufferUtil.bufferAsString(version)
+        + ", zone="
+        + zone
         + '}';
   }
 }
