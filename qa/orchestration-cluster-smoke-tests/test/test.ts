@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+/* eslint-disable no-empty-pattern */
+
 import {
   createCamundaClient,
   type CamundaClient,
@@ -14,6 +16,12 @@ import {test as base, expect, type Cookie} from '@playwright/test';
 
 interface TestFixture {
   camunda: CamundaClient;
+  /**
+   * {@linkcode AsyncDisposableStack} that should be used to defer cleanup in tests.
+   * Reason: Using the `await using` keyword appears to not guarantee that the
+   * test waits for the cleanup to complete.
+   */
+  cleanup: AsyncDisposableStack;
 }
 
 interface WorkerFixture {
@@ -31,6 +39,11 @@ const test = base.extend<TestFixture, WorkerFixture>({
       CAMUNDA_BASIC_AUTH_PASSWORD: 'demo',
     },
   }),
+  cleanup: async ({}, use) => {
+    const stack = new AsyncDisposableStack();
+    await use(stack);
+    await stack.disposeAsync();
+  },
   page: async ({page, context, loginState}, use) => {
     await context.setStorageState({cookies: loginState.cookies, origins: []});
     await page.addInitScript((csrfToken) => {
