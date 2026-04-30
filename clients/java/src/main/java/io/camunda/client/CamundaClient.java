@@ -179,6 +179,7 @@ import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.search.request.WaitingStateSearchRequest;
 import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
@@ -1350,6 +1351,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the incident search request
    */
   IncidentSearchRequest newIncidentSearchRequest();
+
+  /**
+   * Searches for waiting states for a specific process instance.
+   *
+   * <pre>
+   * long processInstanceKey = ...;
+   *
+   * camundaClient
+   *  .newWaitingStateSearchRequest()
+   *  .filter((f) -> f.processInstanceKey(processInstanceKey))
+   *  .sort((s) -> s.elementInstanceKey().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the waiting state search request
+   */
+  WaitingStateSearchRequest newWaitingStateSearchRequest();
 
   /**
    * Gets an incident by key.
