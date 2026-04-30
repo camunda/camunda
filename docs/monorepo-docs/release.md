@@ -74,10 +74,10 @@ The C8 monorepo release process is implemented using [BPMN](https://en.wikipedia
 
 ### BPMN models
 
-The BPMN models are developed, versioned and tested in [this (internal) repository](https://github.com/camunda/zeebe-engineering-processes/tree/main?tab=readme-ov-file#release-process). BPMN models for noteworthy processes are:
+The BPMN models are developed, versioned and tested in [this (internal) repository](https://github.com/camunda/camunda-release). BPMN models for noteworthy processes are:
 
-* [Camunda Patch Release](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/patch_release.bpmn): is run for performing patch releases for versions 8.6+. Gathers the required inputs from the [release manager](#dris) and then starts “Camunda Release” process
-* [Camunda Release](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/camunda_release.bpmn): Implements a unified release process for all release type since version 8.6:
+* [Camunda Patch Release](https://github.com/camunda/camunda-release/blob/main/src/main/resources/release/patch_release.bpmn): is run for performing patch releases for versions 8.6+. Gathers the required inputs from the [release manager](#dris) and then starts “Camunda Release” process
+* [Camunda Release](https://github.com/camunda/camunda-release/blob/main/src/main/resources/release/camunda_release.bpmn): Implements a unified release process for all release type since version 8.6:
   - is started by the [release manager](#dris) with all the required inputs.
   - for non-patch releases waits for code freeze time.
   - performs the release process including artifact generation, uploads and QA, for a specific version
@@ -91,7 +91,7 @@ Resources:
 
 ### Runtime
 
-Those BPMN models are [tested and deployed from `main` via GitHub Actions](https://github.com/camunda/zeebe-engineering-processes/actions) into an (internal) [Camunda 8 SaaS cluster](https://console.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6). Resources:
+Those BPMN models are [tested and deployed from `main` via GitHub Actions](https://github.com/camunda/camunda-release/actions) into an (internal) [Camunda 8 SaaS cluster](https://console.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6). Resources:
 
 * [Camunda Release process in Operate](https://bru-2.operate.camunda.io/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6/operate)
 * [User tasks in Tasklist](https://bru-2.tasklist.camunda.io/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6/tasklist)
@@ -234,7 +234,7 @@ Calling and integrating with GitHub Actions workflows:
 Changes to the release process are done in these steps:
 
 * Implementation:
-  * Check out [this (internal) repository](https://github.com/camunda/zeebe-engineering-processes/tree/main?tab=readme-ov-file#release-process) locally
+  * Check out [this (internal) repository](https://github.com/camunda/camunda-release) locally
   * Use the [Desktop Modeler](https://camunda.com/download/modeler/) locally to modify the BPMN models
   * Adjust/extend the Java/Kotlin unit tests covering the relevant BPMN models
   * Create a Pull Request against `main` including screenshots + description to explain the change
@@ -438,13 +438,13 @@ For C8 monorepo minor releases, we enforce two distinct stages to ensure quality
 
 ## Troubleshooting
 
-### How to correlate [Git commits](https://github.com/camunda/zeebe-engineering-processes/commits) with deployed process version in C8 Operate?
+### How to correlate [Git commits](https://github.com/camunda/camunda-release/commits) with deployed process version in C8 Operate?
 
 There is currently no way to see metadata (e.g. deploy timestamp) in or [download BPMN XML for a certain version](https://github.com/camunda/camunda/issues/22005) from Operate UI.
 
 Workaround: Open a process instance in the Operate UI and use network tab of browser and look at `/xml` endpoint response after a page refresh.
 
-### I lack permissions in the (internal) [Camunda 8 SaaS cluster](https://console.cloud.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/689a796f-7efa-487f-9e44-76ca3a98c77b)?
+### I lack permissions in the (internal) [Camunda 8 SaaS cluster](https://console.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6)?
 
 Reach out via Slack to ask for the permissions.
 
