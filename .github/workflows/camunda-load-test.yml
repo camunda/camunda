@@ -37,6 +37,9 @@ on:
           - typical
           - max
           - archiver
+          - stress-500
+          - stress-750
+          - stress-1000
         default: max
       secondary-storage-type:
         description: 'Secondary database backend for Camunda Platform'
@@ -131,7 +134,7 @@ on:
         default: ""
         required: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max. If specified, this will override the load-test-load input when not set to "custom".'
+        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max, stress-500, stress-750, stress-1000. If specified, this will override the load-test-load input when not set to "custom".'
         type: string
         required: false
         default: custom

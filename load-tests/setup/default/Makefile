@@ -35,6 +35,15 @@ _scenario_platform_flags  :=
 else ifeq ($(scenario),max)
 _scenario_load_test_flags := --set starter.rate=300
 _scenario_platform_flags  := --set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yaml'
+else ifeq ($(scenario),stress-500)
+_scenario_load_test_flags := --set starter.rate=500
+_scenario_platform_flags  := --set orchestration.ioThreadCount=4 --set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-stress.yaml' -f camunda-platform-values-es-high-load.yaml
+else ifeq ($(scenario),stress-750)
+_scenario_load_test_flags := --set starter.rate=750
+_scenario_platform_flags  := --set orchestration.ioThreadCount=5 --set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-stress.yaml' -f camunda-platform-values-es-high-load.yaml
+else ifeq ($(scenario),stress-1000)
+_scenario_load_test_flags := --set starter.rate=1000
+_scenario_platform_flags  := --set orchestration.ioThreadCount=6 --set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-stress.yaml' -f camunda-platform-values-es-high-load.yaml
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags := --set starter.rate=1 --set starter.rateDuration=10m --set starter.processId=multiInstanceElements --set starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set workers.worker.replicas=0
 _scenario_platform_flags  :=
@@ -230,7 +239,11 @@ print-scenario:
 
 # Workload scenario shortcuts — each runs 'make install' with the corresponding scenario profile.
 # For stable VMs, use: make install-stable scenario=<name>
-.PHONY: latency realistic typical max archiver
+# For stress scenarios without Optimize:
+#   make stress-500 enable_optimize=false
+# For stress scenarios with more ES replicas (750+/s):
+#   make stress-750 additional_platform_configuration="--set elasticsearch.master.replicaCount=5"
+.PHONY: latency realistic typical max archiver stress-500 stress-750 stress-1000
 latency:
 	$(MAKE) install scenario=latency
 realistic:
@@ -241,6 +254,12 @@ max:
 	$(MAKE) install scenario=max
 archiver:
 	$(MAKE) install scenario=archiver
+stress-500:
+	$(MAKE) install scenario=stress-500
+stress-750:
+	$(MAKE) install scenario=stress-750
+stress-1000:
+	$(MAKE) install scenario=stress-1000
 
 .PHONY: clean
 clean:
