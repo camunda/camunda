@@ -379,7 +379,7 @@ public final class ProcessInstanceServices
         .search(
             IncidentQuery.of(
                 b ->
-                    b.filter(f -> f.treePathOperations(Operation.like("*" + treePath + "*")))
+                    b.filter(f -> f.treePathOperations(Operation.like(treePath + "*")))
                         .page(query.page())
                         .sort(query.sort())));
   }
