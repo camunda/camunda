@@ -228,16 +228,18 @@ public class ElasticsearchProcessStore implements ProcessStore {
     try {
       final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
 
-      ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, ProcessEntity.class)
-          .flatMap(searchRes -> searchRes.hits().hits().stream())
-          .map(Hit::source)
-          .forEach(
-              processEntity -> {
-                final ProcessKey groupKey =
-                    new ProcessKey(processEntity.getBpmnProcessId(), processEntity.getTenantId());
-                result.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(processEntity);
-              });
-
+      try (final var resStream =
+          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, ProcessEntity.class)) {
+        resStream
+            .flatMap(searchRes -> searchRes.hits().hits().stream())
+            .map(Hit::source)
+            .forEach(
+                processEntity -> {
+                  final ProcessKey groupKey =
+                      new ProcessKey(processEntity.getBpmnProcessId(), processEntity.getTenantId());
+                  result.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(processEntity);
+                });
+      }
       return result;
     } catch (final Exception e) {
       final String message =
@@ -439,10 +441,8 @@ public class ElasticsearchProcessStore implements ProcessStore {
                 src -> src.filter(f -> f.includes(ID, PROCESS_KEY, PROCESS_NAME, BPMN_PROCESS_ID)))
             .query(tenantAwareQuery);
 
-    try {
-      final var resStream =
-          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS);
-
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS)) {
       resStream
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
@@ -506,9 +506,8 @@ public class ElasticsearchProcessStore implements ProcessStore {
             .index(whereToSearch(listViewTemplate, ALL))
             .query(tenantAwareQuery)
             .source(s -> s.filter(f -> f.includes(TREE_PATH)));
-    try {
-      final var resStream =
-          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS);
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS)) {
       resStream
           .flatMap(res -> res.hits().hits().stream())
           .forEach(
@@ -606,12 +605,10 @@ public class ElasticsearchProcessStore implements ProcessStore {
             .query(tenantAwareQuery)
             .source(s -> s.filter(f -> f.includes(nulLSafeIncludeField)));
 
-    try {
-      return ElasticsearchUtil.scrollAllStream(
-              esClient, searchRequestBuilder, ProcessInstanceForListViewEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(
+            esClient, searchRequestBuilder, ProcessInstanceForListViewEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
 
     } catch (final ScrollException ex) {
       throw new OperateRuntimeException(
