@@ -20,9 +20,12 @@ in the package.
 
 ### Running Tests
 
-Run `npm run test` to execute the smoke test suite.
+1. Run `npm run cluster:up` to start an Orchestration Cluster with ElasticSearch.
+2. Wait a bit, until Camunda is fully started.
+3. Run `npm run test` to execute the smoke test suite.
+4. Run `npm run cluster:down` to remove the Orchestration Cluster.
 
 ### Developing Tests
 
-Run `npm run test:ui` to open Playwright's UI mode. This command reduces the
-iteration cycle when making changes and adding new tests.
+Run `npm run test:ui` instead to open Playwright's UI mode. This command reduces
+the iteration cycle when making changes and adding new tests.
