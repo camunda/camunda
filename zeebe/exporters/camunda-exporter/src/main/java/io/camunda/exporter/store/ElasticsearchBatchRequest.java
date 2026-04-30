@@ -265,7 +265,6 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     } catch (final IOException | ElasticsearchException ex) {
       if (isRequestEntityTooLarge(ex)) {
         LOGGER.error("The entities in the payload to ES are too large, cannot write batch", ex);
-      } else if (LOGGER.isTraceEnabled()) {
         logBulkFailureTrace(bulkRequest, ex);
       }
       throw new PersistenceException(
@@ -333,6 +332,9 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   private void logBulkFailureTrace(final BulkRequest bulkRequest, final Exception ex) {
+    if (!LOGGER.isTraceEnabled()) {
+      return;
+    }
     try {
       final var payloadSize =
           NdJsonSizeUtil.measureNdJsonPayloadSize(bulkRequest, esClient._jsonpMapper());
