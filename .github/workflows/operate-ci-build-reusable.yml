@@ -122,20 +122,6 @@ jobs:
           ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
-      # Build Docker image
-      - name: Build Docker image
-        uses: ./.github/actions/build-platform-docker
-        with:
-          repository: ${{ inputs.previewEnv && 'registry.camunda.cloud/team-camunda/operate' || 'registry.camunda.cloud/team-operate/camunda-operate' }}
-          version: |
-            ${{ env.IMAGE_TAG }}
-            ${{ env.CI_IMAGE_TAG }}
-            ${{ env.PR_IMAGE_TAG }}
-          push: ${{ inputs.pushDocker }}
-          platforms: ${{ inputs.pushDocker && env.DOCKER_PLATFORMS || 'linux/amd64' }}
-          dockerfile: operate.Dockerfile
-
-      #########################################################################
       # Collect information about build status for central statistics with CI Analytics
       - name: Observe build status
         if: always()
