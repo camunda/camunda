@@ -74,7 +74,7 @@ public class BackupRestoreIT extends AbstractBackupRestoreIT {
   @BeforeAll
   public static void beforeAll() {
     // Non-snapshot version
-    VersionUtil.overrideVersionForTesting("8.10.0");
+    VersionUtil.overridePrerelease();
   }
 
   @AfterAll

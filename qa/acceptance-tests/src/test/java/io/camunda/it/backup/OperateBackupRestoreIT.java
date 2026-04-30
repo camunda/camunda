@@ -58,7 +58,7 @@ public class OperateBackupRestoreIT extends AbstractBackupRestoreIT {
 
   @BeforeAll
   public static void beforeAll() {
-    VersionUtil.overrideVersionForTesting("8.10.0");
+    VersionUtil.overridePrerelease();
   }
 
   @AfterAll
