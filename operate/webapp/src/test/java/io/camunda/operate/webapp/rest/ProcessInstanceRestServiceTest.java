@@ -82,10 +82,11 @@ public class ProcessInstanceRestServiceTest {
     final String validId = "123";
     // when
     final ListViewProcessInstanceDto expectedDto = new ListViewProcessInstanceDto().setId("one id");
-    when(processInstanceReader.getProcessInstanceWithOperationsByKey(Long.valueOf(validId)))
+    final ProcessInstanceForListViewEntity entity =
+        new ProcessInstanceForListViewEntity().setKey(Long.valueOf(validId));
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(validId))).thenReturn(entity);
+    when(processInstanceReader.getProcessInstanceWithOperationsByKey(entity))
         .thenReturn(expectedDto);
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(validId)))
-        .thenReturn(new ProcessInstanceForListViewEntity());
     // then
     final ListViewProcessInstanceDto actualResult = underTest.queryProcessInstanceById(validId);
     assertThat(actualResult).isEqualTo(expectedDto);

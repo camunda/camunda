@@ -52,7 +52,12 @@ public class ProcessInstanceReader {
   public ListViewProcessInstanceDto getProcessInstanceWithOperationsByKey(Long processInstanceKey) {
     final ProcessInstanceForListViewEntity processInstance =
         processStore.getProcessInstanceListViewByKey(processInstanceKey);
+    return getProcessInstanceWithOperationsByKey(processInstance);
+  }
 
+  public ListViewProcessInstanceDto getProcessInstanceWithOperationsByKey(
+      final ProcessInstanceForListViewEntity processInstance) {
+    final Long processInstanceKey = processInstance.getKey();
     final List<ProcessInstanceReferenceDto> callHierarchy =
         createCallHierarchy(processInstance.getTreePath(), String.valueOf(processInstanceKey));
 
