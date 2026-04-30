@@ -108,7 +108,7 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/camunda/ci/github-actions SNYK_TOKEN;
+            secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
       # We need to build the Docker image (and thus the distribution) to scan it
       - name: Build Zeebe Distribution
         uses: ./.github/actions/build-zeebe
