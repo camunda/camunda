@@ -372,72 +372,72 @@ const EntityList = <D extends EntityData>({
                                 displayValue
                               );
 
-                          return (
-                            <StyledTableCell
-                              key={cellId}
-                              onClick={handleEntityClick(rowId)}
-                              $isClickable={isEntityClickable}
-                            >
-                              {index === 0 && isEntityClickable ? (
-                                <Link>{displayValue}</Link>
-                              ) : (
-                                truncatedValue
-                              )}
-                            </StyledTableCell>
-                          );
-                        })}
-                        {hasMenu && (
-                          <TableCell>
-                            {menuItems?.length > MAX_ICON_ACTIONS ? (
-                              <OverflowMenu flipped>
-                                {getVisibleMenuItems(menuItems).map(
-                                  ({
-                                    label,
-                                    onClick,
-                                    isDangerous,
-                                    disabled: disabledProp,
-                                  }) => {
-                                    const entity = index[rowId];
-                                    const disabled =
-                                      typeof disabledProp === "function"
-                                        ? entity !== undefined
-                                          ? disabledProp(entity)
-                                          : false
-                                        : disabledProp;
-
-                                    return (
-                                      <OverflowMenuItem
-                                        key={`${label}-${rowId}`}
-                                        itemText={<p>{label}</p>}
-                                        isDelete={isDangerous}
-                                        disabled={disabled}
-                                        onClick={handleMenuItemClick(
-                                          rowId,
-                                          onClick,
-                                        )}
-                                      />
-                                    );
-                                  },
+                            return (
+                              <StyledTableCell
+                                key={cellId}
+                                onClick={handleEntityClick(rowId)}
+                                $isClickable={isEntityClickable}
+                              >
+                                {index === 0 && isEntityClickable ? (
+                                  <Link>{displayValue}</Link>
+                                ) : (
+                                  truncatedValue
                                 )}
-                              </OverflowMenu>
-                            ) : (
-                              <Flex>
-                                {getVisibleMenuItems(menuItems).map(
-                                  (menuItem) => {
-                                    const {
+                              </StyledTableCell>
+                            );
+                          })}
+                          {hasMenu && (
+                            <TableCell>
+                              {menuItems?.length > MAX_ICON_ACTIONS ? (
+                                <OverflowMenu flipped>
+                                  {getVisibleMenuItems(menuItems).map(
+                                    ({
                                       label,
                                       onClick,
-                                      icon,
                                       isDangerous,
                                       disabled: disabledProp,
-                                    } = menuItem as MenuItem<D>;
-                                    const entity = index[rowId];
-                                    const disabled =
-                                      typeof disabledProp === "function"
-                                        ? entity !== undefined
-                                          ? disabledProp(entity)
-                                          : false
-                                        : disabledProp;
+                                    }) => {
+                                      const entity = index[rowId];
+                                      const disabled =
+                                        typeof disabledProp === "function"
+                                          ? entity !== undefined
+                                            ? disabledProp(entity)
+                                            : false
+                                          : disabledProp;
+
+                                      return (
+                                        <OverflowMenuItem
+                                          key={`${label}-${rowId}`}
+                                          itemText={<p>{label}</p>}
+                                          isDelete={isDangerous}
+                                          disabled={disabled}
+                                          onClick={handleMenuItemClick(
+                                            rowId,
+                                            onClick,
+                                          )}
+                                        />
+                                      );
+                                    },
+                                  )}
+                                </OverflowMenu>
+                              ) : (
+                                <Flex>
+                                  {getVisibleMenuItems(menuItems).map(
+                                    (menuItem) => {
+                                      const {
+                                        label,
+                                        onClick,
+                                        icon,
+                                        isDangerous,
+                                        disabled: disabledProp,
+                                      } = menuItem as MenuItem<D>;
+                                      const entity = index[rowId];
+                                      const disabled =
+                                        typeof disabledProp === "function"
+                                          ? entity !== undefined
+                                            ? disabledProp(entity)
+                                            : false
+                                          : disabledProp;
 
                                       const kind: ButtonKind = isDangerous
                                         ? "danger--ghost"
