@@ -120,6 +120,9 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
         """,
         newTopology.getMember(localMemberId),
         oldTopology.getMember(localMemberId));
-    springBrokerBridge.initiateShutdown(ERROR_CODE_ON_INCONSISTENT_TOPOLOGY);
+    springBrokerBridge.initiateShutdown(
+        ERROR_CODE_ON_INCONSISTENT_TOPOLOGY,
+        "Inconsistent cluster topology detected - topology was changed while broker was"
+            + " unreachable or broker encountered data loss");
   }
 }
