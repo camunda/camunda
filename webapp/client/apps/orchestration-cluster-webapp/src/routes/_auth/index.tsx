@@ -6,12 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import fs from 'node:fs/promises';
-import path, {dirname} from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {createFileRoute} from '@tanstack/react-router';
 
-const oldPath = path.join(dirname(fileURLToPath(import.meta.url)), 'dist', 'index.prod.html');
-const newPath = path.join(dirname(fileURLToPath(import.meta.url)), 'dist', 'index.html');
+export const Route = createFileRoute('/_auth/')({
+	component: App,
+	head: () => ({
+		meta: [
+			{
+				title: 'Orchestration Cluster',
+			},
+		],
+	}),
+});
 
-await fs.rename(oldPath, newPath);
-console.log('Rename complete!');
+function App() {
+	return null;
+}

@@ -13,9 +13,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ExporterConfigurationTest {
 
@@ -512,5 +518,92 @@ class ExporterConfigurationTest {
 
     assertThatThrownBy(configuration::validate)
         .hasMessageContaining("maxHistoryCleanupUsage must be between");
+  }
+
+  // ReplicationConfiguration tests
+
+  @Test
+  public void shouldBeOkWithEnabledReplicationAndValidConfig() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(true);
+    replication.setPollingInterval(Duration.ofSeconds(10));
+    replication.setMinSyncReplicas(1);
+    replication.setMaxLag(Duration.ofMinutes(5));
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error
+  }
+
+  @Test
+  public void shouldNotFailWhenReplicationDisabledWithCompletelyWrongConfig() {
+    // given - completely invalid configuration, but replication is disabled
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(false);
+    replication.setPollingInterval(Duration.ofMillis(-1000));
+    replication.setMaxLag(Duration.ofMillis(-1000));
+    configuration.setAsyncReplication(replication);
+
+    // when
+    configuration.validate();
+
+    // then - no error, pollingInterval and maxLag are only validated when replication is enabled
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidReplicationConfigurations")
+  public void shouldFailValidationForReplicationConfiguration(
+      final Consumer<ReplicationConfiguration> configurer, final String expectedMessage) {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    final ReplicationConfiguration replication = new ReplicationConfiguration();
+    configurer.accept(replication);
+    configuration.setAsyncReplication(replication);
+
+    // when / then
+    assertThatThrownBy(configuration::validate).hasMessageContaining(expectedMessage);
+  }
+
+  static Stream<Arguments> invalidReplicationConfigurations() {
+    return Stream.of(
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setPollingInterval(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.pollingInterval must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setPollingInterval(Duration.ZERO);
+                },
+            "asyncReplication.pollingInterval must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>) r -> r.setMinSyncReplicas(-1),
+            "asyncReplication.minSyncReplicas must be greater 0"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>) r -> r.setMinSyncReplicas(0),
+            "asyncReplication.minSyncReplicas must be greater 0"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setMaxLag(Duration.ofMillis(-1000));
+                },
+            "asyncReplication.maxLag must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setMaxLag(Duration.ZERO);
+                },
+            "asyncReplication.maxLag must be a positive duration"));
   }
 }

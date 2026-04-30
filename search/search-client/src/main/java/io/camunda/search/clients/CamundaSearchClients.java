@@ -187,6 +187,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public MessageSubscriptionEntity getMessageSubscription(final long key) {
+    return doGetWithReader(readers.messageSubscriptionReader(), key)
+        .orElseThrow(() -> entityByKeyNotFoundException("Message Subscription", key));
+  }
+
+  @Override
   public ClusterVariableEntity getClusterVariable(final String name, final String tenant) {
     return doGet(
             resourceAccessChecks ->

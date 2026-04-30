@@ -966,6 +966,21 @@ public class BrokerBasedPropertiesOverride {
                         .setMaxFlowNodeInsertBatchSize(
                             database.getInsertBatching().getMaxFlowNodeInsertBatchSize());
                   }
+
+                  if (database.getAsyncReplication() != null) {
+                    final var asyncReplication = database.getAsyncReplication();
+                    config.getAsyncReplication().setEnabled(asyncReplication.isEnabled());
+                    config
+                        .getAsyncReplication()
+                        .setPollingInterval(asyncReplication.getPollingInterval());
+                    config
+                        .getAsyncReplication()
+                        .setMinSyncReplicas(asyncReplication.getMinSyncReplicas());
+                    config.getAsyncReplication().setMaxLag(asyncReplication.getMaxLag());
+                    config
+                        .getAsyncReplication()
+                        .setPauseOnMaxLagExceeded(asyncReplication.isPauseOnMaxLagExceeded());
+                  }
                 })
             .toArgs());
   }

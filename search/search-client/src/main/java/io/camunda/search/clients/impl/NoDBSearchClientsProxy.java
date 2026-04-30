@@ -365,6 +365,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public MessageSubscriptionEntity getMessageSubscription(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public AuditLogEntity getAuditLog(final String id) {
     throw new NoSecondaryStorageException();
   }

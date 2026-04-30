@@ -5,20 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.exporter.rdbms.replication;
 
-import {createFileRoute} from '@tanstack/react-router';
+public interface ReplicationController extends AutoCloseable {
 
-export const Route = createFileRoute('/')({
-	component: App,
-	head: () => ({
-		meta: [
-			{
-				title: 'Orchestration Cluster',
-			},
-		],
-	}),
-});
+  void onFlush(long exporterPosition);
 
-function App() {
-	return null;
+  /**
+   * Returns {@code true} as long as the async replication is in sync, otherwise {@code false}.
+   *
+   * @return if the replication is in sync
+   */
+  default boolean isReplicationInSync() {
+    return true;
+  }
 }

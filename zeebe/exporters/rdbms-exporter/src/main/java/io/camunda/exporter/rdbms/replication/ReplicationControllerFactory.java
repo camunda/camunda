@@ -5,13 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.exporter.rdbms.replication;
 
-import fs from 'node:fs/promises';
-import path, {dirname} from 'node:path';
-import {fileURLToPath} from 'node:url';
+import io.camunda.zeebe.exporter.api.context.Controller;
 
-const oldPath = path.join(dirname(fileURLToPath(import.meta.url)), 'dist', 'index.prod.html');
-const newPath = path.join(dirname(fileURLToPath(import.meta.url)), 'dist', 'index.html');
+public interface ReplicationControllerFactory {
 
-await fs.rename(oldPath, newPath);
-console.log('Rename complete!');
+  static ReplicationControllerFactory noop() {
+    return NoopReplicationController::new;
+  }
+
+  ReplicationController createReplicationController(Controller controller);
+}

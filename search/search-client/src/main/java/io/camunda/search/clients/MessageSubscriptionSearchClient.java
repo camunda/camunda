@@ -21,5 +21,7 @@ public interface MessageSubscriptionSearchClient {
   SearchQueryResult<CorrelatedMessageSubscriptionEntity> searchCorrelatedMessageSubscriptions(
       CorrelatedMessageSubscriptionQuery query);
 
+  MessageSubscriptionEntity getMessageSubscription(long key);
+
   MessageSubscriptionSearchClient withSecurityContext(SecurityContext securityContext);
 }
