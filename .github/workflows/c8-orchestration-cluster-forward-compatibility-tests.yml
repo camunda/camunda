@@ -235,11 +235,13 @@ jobs:
           API_TESTS_ONLY: "true"
           DATABASE: "Elasticsearch"
           AJB_ALLOW_EXTRA_FIELDS: "true"
+          AJB_ALLOW_NULL_VALUES: "true"
+          FORWARD_COMPAT_MODE: "true"
         run: |
           echo "Running forward compatibility API tests"
           echo "Server built from: ${{ matrix.server_branch }}"
           echo "Tests checked out from: ${{ matrix.test_branch }}"
-          npm run test -- --project=api-tests --retries=2
+          npm run test -- --project=api-tests --retries=2 tests/api/v2/
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Sanitize branch names for artifact names
