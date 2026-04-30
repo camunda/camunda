@@ -440,7 +440,7 @@ public final class ProcessInstanceServiceTest {
     verify(incidentServices).search(incidentQueryCaptor.capture());
     final var incidentQuery = incidentQueryCaptor.getValue();
     assertThat(incidentQuery.filter().treePathOperations())
-        .containsExactly(Operation.like("*" + processInstance.treePath() + "*"));
+        .containsExactly(Operation.like(processInstance.treePath() + "*"));
     assertThat(incidentQuery.page()).isEqualTo(query.page());
     assertThat(incidentQuery.sort()).isEqualTo(query.sort());
   }
