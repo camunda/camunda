@@ -52,6 +52,8 @@ const config = defineConfig(({mode}) => ({
 		rolldownOptions: {
 			output: {
 				postBanner: '/*! licenses: /assets/vendor.LICENSE.txt */',
+				// Tanstack Router codesplitting was breaking without this flag
+				strictExecutionOrder: true,
 			},
 			input: {
 				index: mode === 'visual-regression' ? './index.html' : './index.prod.html',

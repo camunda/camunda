@@ -12,6 +12,8 @@ import playwrightPkg from '@playwright/test/package.json' with {type: 'json'};
 const BASE_URL = 'http://localhost:3003';
 const IS_CI = Boolean(process.env['CI']);
 const USE_CONTAINERIZED_BROWSER = !IS_CI && Boolean(process.env['CONTAINERIZED_BROWSER']);
+const FULL_HD_VIEWPORT = {width: 1920, height: 1080} as const;
+const TABLET_VIEWPORT = {width: 1024, height: 768} as const;
 
 const webServer: PlaywrightTestConfig['webServer'] = [
 	{
@@ -64,31 +66,70 @@ export default defineConfig({
 		{
 			name: 'visual-light',
 			testMatch: 'visual/**/*.test.ts',
-			use: {...devices['Desktop Chrome'], colorScheme: 'light'},
+			use: {
+				...devices['Desktop Chrome'],
+				colorScheme: 'light',
+				viewport: FULL_HD_VIEWPORT,
+			},
 		},
 		{
 			name: 'visual-dark',
 			testMatch: 'visual/**/*.test.ts',
-			use: {...devices['Desktop Chrome'], colorScheme: 'dark'},
+			use: {
+				...devices['Desktop Chrome'],
+				colorScheme: 'dark',
+				viewport: FULL_HD_VIEWPORT,
+			},
+		},
+		{
+			name: 'visual-light-tablet',
+			testMatch: 'visual/**/*.test.ts',
+			use: {
+				...devices['Desktop Chrome'],
+				colorScheme: 'light',
+				viewport: TABLET_VIEWPORT,
+			},
+		},
+		{
+			name: 'visual-dark-tablet',
+			testMatch: 'visual/**/*.test.ts',
+			use: {
+				...devices['Desktop Chrome'],
+				colorScheme: 'dark',
+				viewport: TABLET_VIEWPORT,
+			},
 		},
 		{
 			name: 'a11y-light',
 			testMatch: 'a11y/**/*.test.ts',
-			use: {...devices['Desktop Chrome'], colorScheme: 'light'},
+			use: {
+				...devices['Desktop Chrome'],
+				colorScheme: 'light',
+				viewport: FULL_HD_VIEWPORT,
+			},
 		},
 		{
 			name: 'a11y-dark',
 			testMatch: 'a11y/**/*.test.ts',
-			use: {...devices['Desktop Chrome'], colorScheme: 'dark'},
+			use: {
+				...devices['Desktop Chrome'],
+				colorScheme: 'dark',
+				viewport: FULL_HD_VIEWPORT,
+			},
 		},
 		{
 			name: 'integration',
 			testMatch: 'integration/**/*.test.ts',
-			use: {...devices['Desktop Chrome'], colorScheme: 'light'},
+			use: {
+				...devices['Desktop Chrome'],
+				colorScheme: 'light',
+				viewport: FULL_HD_VIEWPORT,
+			},
 		},
 	],
 	outputDir: 'test-results/',
 	use: {
+		viewport: FULL_HD_VIEWPORT,
 		baseURL: BASE_URL,
 		trace: 'retain-on-failure',
 		screenshot: 'only-on-failure',
