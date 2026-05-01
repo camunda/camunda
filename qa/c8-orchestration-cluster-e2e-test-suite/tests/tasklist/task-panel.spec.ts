@@ -31,7 +31,6 @@ test.beforeAll(async ({resetData}) => {
   await createInstances('usertask_for_scrolling_1', 1, 1);
   await createInstances('usertask_to_be_assigned', 1, 1); // this task will be seen on top since it is created last
 
-  await sleep(5000);
 });
 
 test.describe('task panel page', () => {
@@ -107,7 +106,8 @@ test.describe('task panel page', () => {
   test('scrolling', async ({page, taskPanelPage}) => {
     test.slow();
 
-    // Wait for all 200 instances to be indexed before asserting counts
+    // The initial page shows 50 tasks; polling up to 60 s acts as a conditional wait for
+    // the first-page counts to stabilise after beforeAll creates 200+ instances.
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1, {timeout: 60000});
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49, {timeout: 60000});
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0, {timeout: 60000});
