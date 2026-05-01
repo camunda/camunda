@@ -116,6 +116,20 @@ All cluster-wide endpoints follow the **same shape** behind the cluster-admin ch
 
 For 8.10, every PT shares the in-process `TopologyServices` (Strong Isolation hasn't shipped). When per-PT broker clients arrive, only the topology controller's per-PT delegation line changes — the response shape, the chain it sits behind, and the authorization model are forward-compatible. This is the only place in the identity slice where Strong Isolation will require a follow-up change, by design.
 
+### Login and logout: deliberately unchanged
+
+This slice **does not modify** the browser login or logout flow. `/login`, the OIDC picker, `/sso-callback`, RP-initiated logout, and the global `camunda-session` cookie all continue to behave exactly as they do in 8.9. The PT chain (`physicalTenantApiSecurityFilterChain`) is configured with `oauth2ResourceServer().jwt()` and **no** `oauth2Login`, **no** `formLogin`, **no** `httpBasic` — it is bearer-token only.
+
+The result is that two surfaces coexist without overlap:
+
+- **Bearer-token clients** (Java client, Connectors runtime, M2M services, gRPC once parity ships) hit `/v2/physical-tenants/{physicalTenantId}/...` directly with an IdP-issued access token. No login flow involved; the PT chain authenticates them via the per-PT converter and rejects tokens whose `iss` is not in `pt.idps`.
+- **Browser users** continue to log in through the unchanged cluster-uniform `/login` page, receive a session cookie, and consume **webapps + legacy `/v2/...` endpoints**. They cannot directly call PT-scoped endpoints from a session — those calls return 401 because no `Authorization: Bearer …` header is present. This is intentional: webapps in 8.10 remain cluster-uniform and have no UX path to PT-scoped APIs yet.
+- **Cluster admin** is stateless on both legs (claim-based JWT or HTTP BASIC against `camunda.security.initialization.users`). The browser login flow is not on this path either.
+
+The cost is a UX gap: the cluster-level login picker shows every IdP, even those not assigned to the PT a user works in. This is **not** a security gap — the PT chain rejects mismatched issuers at request time (see Decision: per-PT authentication). Closing the UX gap is the *Webapps PT routing* sibling slice's job: tenant-aware login picker at `/login/{physicalTenantId}`, `/sso-callback/{physicalTenantId}` (with the documented Microsoft Entra wildcard-redirect-URI constraint), per-PT session cookie scoping, per-PT logout, and a chosen approach for session→bearer bridging on PT API calls (webapp-side token forwarding, or an `oauth2Login` extension on the PT chain).
+
+The wiring this slice ships — `PhysicalTenantRegistry`, `PhysicalTenantJwtAuthenticationConverterFactory`, `PhysicalTenantContext` — is **forward-reused** by the webapps slice. Nothing here needs to be unwound.
+
 ### What is deliberately not in this slice
 
 - **Per-PT login chains**, tenant-aware OIDC login picker, `/sso-callback/{physicalTenantId}`, per-PT `OAuth2AuthorizedClientRepository`, per-PT session cookie scoping. The PoC referenced in the issue covers these for a future Webapps PT routing slice. Subclassing Spring's `DefaultLoginPageGeneratingFilter` (an internal that has changed shape across 5.x → 6.x) is a fragility we accept paying for once, in that follow-up, after the API-side semantics are locked.
