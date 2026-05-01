@@ -15,10 +15,11 @@ import org.springframework.stereotype.Component;
 /**
  * Resolves the set of webapp components whose UI is currently enabled in this deployment.
  *
- * <p>A component is included when neither its legacy property ({@code
- * camunda.{name}.webapp-enabled}) nor its unified property ({@code camunda.webapps.{name}.enabled})
- * is explicitly set to {@code false}. Both default to {@code true}, matching the logic in {@link
- * io.camunda.spring.utils.ConditionalOnWebappEnabled.OnWebappEnabledCondition}.
+ * <p>A component is included when none of its three gating properties are explicitly set to {@code
+ * false}. All three default to {@code true}, mirroring the property set checked by {@link
+ * io.camunda.spring.utils.ConditionalOnWebappUiEnabled.OnWebappUiEnabledCondition} (which itself
+ * extends {@link io.camunda.spring.utils.ConditionalOnWebappEnabled.OnWebappEnabledCondition} with
+ * the additional {@code ui-enabled} key).
  *
  * <p>The returned list is always sorted alphabetically so JSON snapshots are deterministic.
  */
@@ -37,13 +38,18 @@ public class ActiveComponentsResolver {
   /**
    * Returns the sorted list of enabled component names from {@link #KNOWN_COMPONENTS}.
    *
-   * <p>A component is enabled when both of the following are {@code true} (or absent, defaulting to
-   * {@code true}):
+   * <p>A component is enabled when all three of the following are {@code true} (or absent,
+   * defaulting to {@code true}):
    *
    * <ul>
    *   <li>{@code camunda.{name}.webapp-enabled} — legacy property
-   *   <li>{@code camunda.webapps.{name}.enabled} — unified config property
+   *   <li>{@code camunda.webapps.{name}.enabled} — unified backend-enabled property
+   *   <li>{@code camunda.webapps.{name}.ui-enabled} — unified UI-enabled property
    * </ul>
+   *
+   * <p>The {@code ui-enabled} check is required to keep this resolver's semantics aligned with
+   * {@link ConditionalOnWebappUiEnabled}: a deployment that disables a component's UI but leaves
+   * its backend enabled must not be reported here as having an active UI component.
    */
   public List<String> resolve() {
     return KNOWN_COMPONENTS.stream().filter(this::isEnabled).toList();
@@ -54,6 +60,8 @@ public class ActiveComponentsResolver {
         environment.getProperty("camunda." + name + ".webapp-enabled", Boolean.class, true);
     final boolean unifiedEnabled =
         environment.getProperty("camunda.webapps." + name + ".enabled", Boolean.class, true);
-    return legacyEnabled && unifiedEnabled;
+    final boolean uiEnabled =
+        environment.getProperty("camunda.webapps." + name + ".ui-enabled", Boolean.class, true);
+    return legacyEnabled && unifiedEnabled && uiEnabled;
   }
 }
