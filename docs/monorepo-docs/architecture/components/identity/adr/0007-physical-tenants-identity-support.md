@@ -8,14 +8,14 @@ Proposed
 
 Camunda 8.9 multi-tenancy is logical: all tenants share one engine and one authorization scope, so a user's role in any logical tenant applies cluster-wide. **Physical Tenants (PT)** introduce a new boundary for the 8.10 release where each tenant is an isolated execution unit within a single Orchestration Cluster — separate data, independent backup/restore, no runtime interference. The umbrella epic is [camunda/product-hub#3430 — *Strong Tenant Isolation in Camunda 8 OC (Self-Managed)*](https://github.com/camunda/product-hub/issues/3430).
 
-This ADR is scoped narrowly to the **identity (authN/authZ) slice** of that epic — the line item *"Per-Physical-Tenant authentication and authorization (incl. IDP)"* under *Scope – Milestone 1 → Security and observability*. Sibling slices of the same epic — primary/secondary storage isolation (Raft groups per PT), per-PT backup/restore, webapp PT routing (login picker, `sso-callback/{tenantId}`, per-PT session cookie), gRPC PT header parity, Connectors multi-PT, observability — are referenced where their seams matter but are **not** delivered here.
+This ADR is scoped narrowly to the **identity (authN/authZ) slice** of that epic — the line item *"Per-Physical-Tenant authentication and authorization (incl. IDP)"* under *Scope – Milestone 1 → Security and observability*. Sibling slices of the same epic — primary/secondary storage isolation (Raft groups per PT), per-PT backup/restore, webapp PT routing (login picker, `sso-callback/{physicalTenantId}`, per-PT session cookie), gRPC PT header parity, Connectors multi-PT, observability — are referenced where their seams matter but are **not** delivered here.
 
 Per the epic body, **canonical naming** is fixed: API and config use `physicalTenantId` / `physical-tenants`; Hub UX surfaces this concept as **Environment**; the existing logical-tenant `tenantId` is unchanged. This ADR uses `physicalTenantId` and `physical-tenants` throughout.
 
 The 8.10 identity contract is:
 
 - One or more cluster-level IdPs (already supported via `ProvidersConfiguration`).
-- A new top-level URL space `/v2/physical-tenants/{tenantId}/...` carries every existing per-tenant API call, scoped to one PT.
+- A new top-level URL space `/v2/physical-tenants/{physicalTenantId}/...` carries every existing per-tenant API call, scoped to one PT. The path variable name `physicalTenantId` is deliberately distinct from the existing logical-tenant `{tenantId}` so the two concepts cannot be confused at any layer (URL, code, logs).
 - A new `/v2/cluster/...` space carries cluster-wide operations (topology, backup, restore) protected by a **claim-based** cluster-admin role — no persisted role bindings, no new identity service.
 - Existing `/v2/...` paths without a PT prefix continue to work, routing to an implicit `default` PT (backwards compatibility for existing 8.9 clients).
 - Each PT owns its own roles, mapping rules, groups, and authorizations. Per-PT auth method or IdP overrides are explicitly out of scope.
@@ -31,7 +31,9 @@ A separate planning document with code skeletons, test plan, and milestone break
 
 ### Configuration shape
 
-Per-PT configuration nests under the existing security tree as `camunda.security.physical-tenants.{tenantId}` — a `Map<String, PhysicalTenantConfiguration>`. The map key **is** the tenant id; no `id` field appears inside the bound type. IdP assignments live inside each PT entry as `idps: [...]` rather than in a separate top-level `engine-idp-assignments` mapping.
+Per-PT configuration nests under the existing security tree as `camunda.security.physical-tenants.{physicalTenantId}` — a `Map<String, PhysicalTenantConfiguration>`. The map key **is** the physical tenant id; no `id` field appears inside the bound type. IdP assignments live inside each PT entry as `idps: [...]` rather than in a separate top-level `engine-idp-assignments` mapping.
+
+> **Coordination note.** Other slices of epic #3430 will need their own per-PT configuration trees for non-security concerns: per-PT secondary storage (search/secondary-storage slice — see the placeholder javadoc reference to `camunda.physical-tenants` in `search/search-client-connect/src/main/java/io/camunda/search/connect/tenant/TenantConnectConfigResolver.java`), per-PT backup repositories, per-PT BrokerClient, etc. Those are not security configuration and intentionally do not nest under `camunda.security`. The shared concept across slices is the **set of configured PT ids**; this ADR does not claim ownership of that set, only of its security-scoped attributes. A future cross-slice agreement on the canonical top-level location for non-security PT properties is an open question — see Consequences.
 
 ```yaml
 camunda:
@@ -59,7 +61,7 @@ camunda:
 
 Three substantive choices in this shape:
 
-1. **Single tree under `camunda.security`**, not a sibling `camunda.physical-tenants` and a sibling `camunda.identity.engine-idp-assignments`. Nesting keeps the existing `CamundaSecurityProperties extends SecurityConfiguration` binder authoritative — no new `@EnableConfigurationProperties` registration. It also collapses what was previously two cross-referencing trees into one self-contained one, removing a class of "PT defined here, not assigned over there" misconfigurations.
+1. **Single tree under `camunda.security`** for the identity slice. Two earlier proposals were rejected: a top-level `camunda.physical-tenants` (collides with the pre-existing javadoc placeholder in `TenantConnectConfigResolver` and would require coordinating with non-security slices before any of them ship), and a sibling `camunda.identity.engine-idp-assignments` mapping (cross-tree, easy to drift). Nesting under `camunda.security` keeps the existing `CamundaSecurityProperties extends SecurityConfiguration` binder authoritative — no new `@EnableConfigurationProperties` registration — and collapses the two security-related trees that were previously cross-referencing (PT definitions and IdP assignments) into one self-contained one, removing a class of "PT defined here, not assigned over there" misconfigurations.
 2. **`Map`, not `List`.** A list with an `id` field allows duplicate ids, requires a separate uniqueness check, and bloats the YAML with `- id:` prefixes. A map keyed by id makes duplicates structurally impossible, lets cross-references use direct lookup instead of stream-and-filter, and reads more like a registry than a sequence — which is the actual semantic.
 3. **`InitializationConfiguration` per PT, not `SecurityConfiguration` per PT.** IdPs and authentication method are cluster-level by requirement; a per-PT `authentication` block would either be silently ignored or open a footgun (PT declares OIDC while cluster runs BASIC). Each PT entry exposes only `name`, `idps`, and `initialization`. Operators get full control of *who* and *what* per PT while *how to authenticate* stays cluster-uniform. The existing `ConfiguredUser` / `ConfiguredRole` / `ConfiguredAuthorization` / `ConfiguredGroup` / `ConfiguredTenant` / `ConfiguredMappingRule` types are reused unchanged.
 
@@ -77,7 +79,7 @@ Two new `SecurityFilterChain` beans land in `WebSecurityConfig`, ordered **befor
 
 | Order | Chain | `securityMatcher` | Purpose |
 |---|---|---|---|
-| 10 | `physicalTenantApiSecurityFilterChain` | `/v2/physical-tenants/{tenantId}/**` | per-PT authN/authZ |
+| 10 | `physicalTenantApiSecurityFilterChain` | `/v2/physical-tenants/{physicalTenantId}/**` | per-PT authN/authZ |
 | 15 | `clusterAdminSecurityFilterChain` | `/v2/cluster/**` | claim-based cluster admin |
 | 20 | (existing legacy `API_PATHS`) | `/v2/**`, `/v1/**`, … | default-PT, unchanged |
 
@@ -87,10 +89,10 @@ The cluster chain runs alongside HTTP BASIC for break-glass access using `camund
 
 ### Per-PT authentication: shared decoder, per-tenant converter
 
-A `PerPhysicalTenantAuthenticationManagerResolver` extracts `tenantId` from the path and looks up (or lazily builds) one `JwtAuthenticationProvider` per PT. Each provider holds:
+A `PerPhysicalTenantAuthenticationManagerResolver` extracts `physicalTenantId` from the path and looks up (or lazily builds) one `JwtAuthenticationProvider` per PT. Each provider holds:
 
 - The **shared** existing issuer-aware `JwtDecoder`. JWT signature, `exp`, and `aud` validation are cluster-level concerns that don't change per PT, and the existing `IssuerAwareJWSKeySelector` already covers all configured IdPs. Per-PT decoders would multiply key-set fetches, JWKS caches, and discovery calls by the number of PTs for no security benefit.
-- A **per-PT** `JwtAuthenticationConverter` produced by `PhysicalTenantJwtAuthenticationConverterFactory.forTenant(tenantId)`. This converter wraps the existing `OidcTokenAuthenticationConverter` / `TokenClaimsConverter` pipeline, seeded with a `SecurityConfiguration` projection where `initialization` is replaced by the PT's `initialization`. No converter logic is duplicated.
+- A **per-PT** `JwtAuthenticationConverter` produced by `PhysicalTenantJwtAuthenticationConverterFactory.forTenant(physicalTenantId)`. This converter wraps the existing `OidcTokenAuthenticationConverter` / `TokenClaimsConverter` pipeline, seeded with a `SecurityConfiguration` projection where `initialization` is replaced by the PT's `initialization`. No converter logic is duplicated.
 
 Cross-PT token replay is rejected inside the per-PT converter: before delegating to the existing pipeline, the converter asserts `jwt.iss ∈ pt.idps()` and throws `BadJwtException` otherwise. A token issued for `default` (`idps: [default]`) presented to `risk-production` (`idps: [default, provider-a]`) succeeds; the reverse — a token from `provider-a` presented to `default` — fails. This is the highest-blast-radius security boundary in the slice and is asserted at the unit, slice, and integration test layers.
 
@@ -104,17 +106,19 @@ This decision resolves a contradiction in the source documents. The Strong Isola
 
 `ClusterAdminClaimAuthorizer` is a `Converter<Jwt, AbstractAuthenticationToken>` that grants `ROLE_CLUSTER_ADMIN` when the JWT issuer is in the configured `clusterAdmin.providers` list **and** the JWT carries the configured claim with the configured value. There is no persisted grant table, no audit trail, no token revocation primitive — those were explicitly out of scope per the issue and are documented as known gaps (see Consequences below). BASIC fallback covers break-glass via the cluster-level `initialization.users`.
 
-### `/v2/cluster/topology`: new endpoint, untouched legacy
+### Cluster-scoped controllers — uniform pattern
 
-The existing `TopologyController` (`zeebe/gateway-rest/.../controller/TopologyController.java`) is **not modified**. It continues to serve `/v1/topology` and `/v2/topology` exactly as today, satisfying both 8.9 callers and the default-PT case.
+All cluster-wide endpoints follow the **same shape** behind the cluster-admin chain: a thin controller that fans out per PT (using `PhysicalTenantRegistry.allTenantIds()`), aggregates the per-PT result into a `{ physicalTenantId → ResultOrError }` map, and surfaces per-PT failure as data rather than as a 5xx. The chain matcher (`/v2/cluster/**`) covers every such endpoint uniformly — no per-endpoint security wiring is needed.
 
-A new `ClusterTopologyController` mounts `/v2/cluster/topology` behind the cluster-admin chain. Response shape is `{ tenantId → TopologyOrError }`. Per-PT failure surfaces as data (`{ status: AVAILABLE | DEGRADED, topology?: ..., error?: ... }`), not as a 5xx — clients can render a "DEGRADED" PT in the cluster view. In legacy mode the response is `{ "default": <topology> }`, so the shape is **stable across modes** and tooling does not branch on whether PTs are configured.
+**`/v2/cluster/topology`.** The existing `TopologyController` (`zeebe/gateway-rest/.../controller/TopologyController.java`) is **not modified** — it continues to serve `/v1/topology` and `/v2/topology` exactly as today, satisfying both 8.9 callers and the default-PT case. A new `ClusterTopologyController` mounts `/v2/cluster/topology` behind the cluster-admin chain. Response shape is `{ physicalTenantId → TopologyOrError }`. In legacy mode (no PTs configured) the response is `{ "default": <topology> }`, so the shape is **stable across modes** and tooling does not branch on whether PTs are configured.
 
-For 8.10, every PT shares the in-process `TopologyServices` (Strong Isolation hasn't shipped). When per-PT broker clients arrive, only the controller's per-PT delegation line changes — the response shape, the chain it sits behind, and the authorization model are forward-compatible. This is the only place in the slice where Strong Isolation will require a follow-up change, by design.
+**`/v2/cluster/backup`.** Follows the identical pattern. The cluster-admin filter chain (`securityMatcher: /v2/cluster/**`) already covers it — no additional security wiring is needed in this slice. The backup controller (`ClusterBackupController` or equivalent name to be agreed with the backup/restore sibling slice) is delivered by that sibling slice along with the actual fan-out logic to per-PT backup repositories. The auth contract this ADR establishes — claim-based cluster admin, in-process aggregation, per-PT failure as data — is what the backup slice will inherit unchanged. The same applies to any future `/v2/cluster/*` endpoint (`/restore`, `/health`, `/list-physical-tenants` if added later).
+
+For 8.10, every PT shares the in-process `TopologyServices` (Strong Isolation hasn't shipped). When per-PT broker clients arrive, only the topology controller's per-PT delegation line changes — the response shape, the chain it sits behind, and the authorization model are forward-compatible. This is the only place in the identity slice where Strong Isolation will require a follow-up change, by design.
 
 ### What is deliberately not in this slice
 
-- **Per-PT login chains**, tenant-aware OIDC login picker, `/sso-callback/{tenantId}`, per-PT `OAuth2AuthorizedClientRepository`, per-PT session cookie scoping. The PoC referenced in the issue covers these for a future Webapps PT routing slice. Subclassing Spring's `DefaultLoginPageGeneratingFilter` (an internal that has changed shape across 5.x → 6.x) is a fragility we accept paying for once, in that follow-up, after the API-side semantics are locked.
+- **Per-PT login chains**, tenant-aware OIDC login picker, `/sso-callback/{physicalTenantId}`, per-PT `OAuth2AuthorizedClientRepository`, per-PT session cookie scoping. The PoC referenced in the issue covers these for a future Webapps PT routing slice. Subclassing Spring's `DefaultLoginPageGeneratingFilter` (an internal that has changed shape across 5.x → 6.x) is a fragility we accept paying for once, in that follow-up, after the API-side semantics are locked.
 - **gRPC `Camunda-Physical-Tenant` header handling.** REST resolves PT from the path; gRPC resolves from this canonical metadata header (fixed by the epic body). Both will share `PhysicalTenantRegistry` and `PhysicalTenantJwtAuthenticationConverterFactory` so the two protocols converge on a single source of truth — but the gRPC interceptor itself is owned by a sibling slice of the same epic.
 - **Bulk migration tooling** from 8.9 logical-tenant authorizations to 8.10 PT authorizations.
 - **Persisted cluster-admin grant store, audit, dynamic management APIs, Hub policy distribution.**
@@ -140,15 +144,16 @@ For 8.10, every PT shares the in-process `TopologyServices` (Strong Isolation ha
 - **gRPC and REST will temporarily diverge.** REST gets per-PT handling in this slice; gRPC keeps the cluster-uniform behavior until the parity slice lands. Java client users who mix REST and gRPC against the same cluster will see different authorization semantics across protocols during that window. Both slices share `PhysicalTenantRegistry` to bound the divergence to dispatch logic only.
 - **The "skip everything else" instruction was scoped narrowly.** CSRF, security headers, and the request firewall remain active on the PT chain. An interpretation that strips them would simplify the chain definition by ~10 lines but introduce a defense-in-depth regression that this ADR rejects.
 - **Per-PT topology fan-out shares the same `TopologyServices` in 8.10.** Today, every PT in `/v2/cluster/topology` returns the same topology snapshot. The shape is forward-compatible, but the values are not yet per-PT. This is the price of decoupling identity work from Strong Isolation; it goes away when the broker-client epic lands.
+- **Two PT-related config trees may coexist short-term.** This slice owns `camunda.security.physical-tenants.{physicalTenantId}` for identity attributes. Sibling slices need to attach non-security per-PT properties (secondary storage, backup repository, broker client) and will likely choose a different top-level location — the placeholder javadoc in `TenantConnectConfigResolver` already references `camunda.physical-tenants` for that purpose. A future cross-slice agreement on a unified top-level tree (e.g. `camunda.physical-tenants` for non-security and a sibling `camunda.security.physical-tenants` for security, or a single tree with `security:` and `secondary-storage:` sub-blocks) is **not** in this ADR's scope. The shared concept across slices is the **set of configured PT ids**, and the registry abstracts that set.
 
 ### Out of scope for this ADR
 
-- Tenant-aware OIDC login picker, `sso-callback/{tenantId}`, per-PT session cookie scoping (Webapps PT routing).
-- gRPC tenant header (`x-camunda-physical-tenant`) handling.
+- Tenant-aware OIDC login picker, `sso-callback/{physicalTenantId}`, per-PT session cookie scoping (Webapps PT routing).
+- gRPC tenant header (`Camunda-Physical-Tenant`) handling.
 - Per-PT `BrokerClient` and `TopologyServices` instances (Strong Isolation).
 - Migration tooling from 8.9 logical-tenant authorizations to 8.10 PT authorizations.
 - Persisted cluster-admin grant store, audit, dynamic PT/IdP management APIs, Hub policy distribution.
-- A `tenantAuthorizer.canRead(actor, tenantId)` granularity inside `/v2/cluster/topology` (cluster-admin currently sees all PTs by definition).
+- A `tenantAuthorizer.canRead(actor, physicalTenantId)` granularity inside `/v2/cluster/topology` and `/v2/cluster/backup` (cluster-admin currently sees all PTs by definition).
 - Multi-value `clusterAdmin.value` (`value: [...]`); single-value only in 8.10.
 
 ## References

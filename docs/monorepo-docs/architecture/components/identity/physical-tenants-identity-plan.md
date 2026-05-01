@@ -17,7 +17,7 @@
 Camunda 8.9 multi-tenancy is *logical*: all tenants share one engine, and a user's role in any one tenant applies to all of them. **Physical Tenants (PT)** introduce a new boundary where each tenant is a distinct team / business unit / environment with its own authorization model and IdP routing.
 
 This document covers **only the identity (authN/authZ) sub-slice** of that effort:
-- Recognise a new REST path shape `/v2/physical-tenants/{tenantId}/...` and apply per-tenant authN/authZ to it.
+- Recognise a new REST path shape `/v2/physical-tenants/{physicalTenantId}/...` and apply per-tenant authN/authZ to it.
 - Recognise `/v2/cluster/...` and apply claim-based cluster-admin authZ.
 - Add a new `/v2/cluster/topology` aggregator that preserves the existing `/v2/topology` endpoint and overlays new behavior when PTs are configured.
 
@@ -32,7 +32,7 @@ This document covers **only the identity (authN/authZ) sub-slice** of that effor
 ### 1.3 What this slice does **not** deliver
 
 - Per-PT Raft groups, broker data layout, secondary storage isolation, document-store isolation — owned by the Strong Tenant Isolation epic.
-- Per-PT login chains, tenant-aware OIDC login picker, `/sso-callback/{tenantId}`, RP-initiated logout per PT — owned by a follow-up "Webapps PT routing" slice.
+- Per-PT login chains, tenant-aware OIDC login picker, `/sso-callback/{physicalTenantId}`, RP-initiated logout per PT — owned by a follow-up "Webapps PT routing" slice.
 - gRPC `Camunda-Physical-Tenant` header handling — owned by a sibling slice of the same epic. Touch-points are documented (§13.2) so we ship a unified `PhysicalTenantContext` API the gRPC interceptor can later re-use.
 - Persisted cluster-admin grant store, audit, dynamic PT/IdP management APIs, Hub policy distribution.
 - Bulk migration tooling from existing 8.9 logical-tenant authorizations.
@@ -46,7 +46,7 @@ flowchart TB
     Req([HTTP request]) --> FCP[Spring FilterChainProxy<br/><i>matches first by securityMatcher</i>]
 
     FCP --> Unprot["<b>unprotectedPaths</b><br/>/error, /actuator/**,<br/>/swagger/**, …<br/><i>existing</i>"]
-    FCP --> PtApi["<b>physicalTenantApi · NEW</b><br/>/v2/physical-tenants/&#123;id&#125;/**<br/>per-PT authN/authZ"]
+    FCP --> PtApi["<b>physicalTenantApi · NEW</b><br/>/v2/physical-tenants/&#123;physicalTenantId&#125;/**<br/>per-PT authN/authZ"]
     FCP --> ClusterAdmin["<b>clusterAdmin · NEW</b><br/>/v2/cluster/**<br/>claim-based admin<br/>+ BASIC fallback"]
     FCP --> Legacy["<b>legacyApi</b><br/>/v2/**, /v1/**, /api/**, /mcp/**<br/>default-PT, <i>unchanged</i>"]
     FCP --> Webapp["<b>webappAuth</b><br/>/login, /operate, …<br/><i>unchanged</i>"]
@@ -76,7 +76,9 @@ Two new chains are inserted **before** the legacy `/v2/**` chain so that:
 
 ### 3.1 YAML shape
 
-All PT configuration lives under `camunda.security.physical-tenants.*`. The map key **is** the tenant ID (no separate `id` field). IdP assignments live inside each PT entry — no separate `engine-idp-assignments` mapping.
+All PT configuration lives under `camunda.security.physical-tenants.*`. The map key **is** the `physicalTenantId` (deliberately distinct from the existing logical-tenant `tenantId` so the two cannot be confused). No separate `id` field. IdP assignments live inside each PT entry — no separate `engine-idp-assignments` mapping.
+
+> **Note on coexistence with other slices.** This identity slice introduces `camunda.security.physical-tenants.*` for security configuration only. Sibling slices of epic #3430 (secondary storage, backup repositories, broker-client wiring) will need their own per-PT properties for their own concerns. The placeholder javadoc in `search/search-client-connect/.../TenantConnectConfigResolver.java` already references a non-security `camunda.physical-tenants` tree as a forward placeholder for that purpose. The shared concept across slices is the **set of physical tenant ids** — owned by `PhysicalTenantRegistry` (this slice). A future cross-slice agreement on a unified top-level location for non-security PT properties is **out of scope here** and tracked as an open question (§11).
 
 ```yaml
 camunda:
@@ -308,7 +310,7 @@ classDiagram
 
 **Location:** `security/security-core/src/main/java/io/camunda/security/configuration/PhysicalTenantConfiguration.java`
 
-**Purpose:** The bound type for each entry under `camunda.security.physical-tenants.{tenantId}`. Reuses `InitializationConfiguration` verbatim so that the existing `ConfiguredUser`/`ConfiguredRole`/`ConfiguredAuthorization`/`ConfiguredGroup`/`ConfiguredTenant`/`ConfiguredMappingRule` types are reused.
+**Purpose:** The bound type for each entry under `camunda.security.physical-tenants.{physicalTenantId}`. Reuses `InitializationConfiguration` verbatim so that the existing `ConfiguredUser`/`ConfiguredRole`/`ConfiguredAuthorization`/`ConfiguredGroup`/`ConfiguredTenant`/`ConfiguredMappingRule` types are reused.
 
 ```java
 public class PhysicalTenantConfiguration {
@@ -385,10 +387,10 @@ public class ClusterAdminConfiguration {
 public interface PhysicalTenantRegistry {
 
   /** Returns the PT config, or empty if id is unknown. Null-safe. */
-  Optional<PhysicalTenantConfiguration> findById(String tenantId);
+  Optional<PhysicalTenantConfiguration> findById(String physicalTenantId);
 
   /** IdP keys assigned to a PT. Empty if PT unknown or has no assignments. */
-  List<String> idpsForTenant(String tenantId);
+  List<String> idpsForTenant(String physicalTenantId);
 
   /** Reverse index: which PTs trust a given IdP. Empty if IdP unknown. */
   Set<String> tenantsForIdp(String idpKey);
@@ -447,7 +449,7 @@ public final class PerPhysicalTenantAuthenticationManagerResolver
     implements AuthenticationManagerResolver<HttpServletRequest> {
 
   private static final PathPatternRequestMatcher PATH =
-      PathPatternRequestMatcher.withDefaults().matcher("/v2/physical-tenants/{tenantId}/**");
+      PathPatternRequestMatcher.withDefaults().matcher("/v2/physical-tenants/{physicalTenantId}/**");
 
   private final PhysicalTenantRegistry registry;
   private final JwtDecoder sharedDecoder;                                   // existing issuer-aware decoder
@@ -460,18 +462,18 @@ public final class PerPhysicalTenantAuthenticationManagerResolver
     if (!match.isMatch()) {
       throw new OAuth2AuthenticationException(BearerTokenErrors.invalidRequest("missing tenant id"));
     }
-    final String tenantId = (String) match.getVariables().get("tenantId");
+    final String physicalTenantId = (String) match.getVariables().get("physicalTenantId");
 
-    return cache.computeIfAbsent(tenantId, this::buildManager);
+    return cache.computeIfAbsent(physicalTenantId, this::buildManager);
   }
 
-  private AuthenticationManager buildManager(final String tenantId) {
-    final PhysicalTenantConfiguration pt = registry.findById(tenantId)
+  private AuthenticationManager buildManager(final String physicalTenantId) {
+    final PhysicalTenantConfiguration pt = registry.findById(physicalTenantId)
         .orElseThrow(() -> new OAuth2AuthenticationException(
-            BearerTokenErrors.invalidToken("unknown physical tenant: " + tenantId)));
+            BearerTokenErrors.invalidToken("unknown physical tenant: " + physicalTenantId)));
 
     final var provider = new JwtAuthenticationProvider(sharedDecoder);
-    provider.setJwtAuthenticationConverter(converterFactory.forTenant(tenantId));
+    provider.setJwtAuthenticationConverter(converterFactory.forTenant(physicalTenantId));
     return provider::authenticate;
   }
 }
@@ -492,10 +494,10 @@ public final class PhysicalTenantJwtAuthenticationConverterFactory {
   private final OidcAuthenticationConfiguration globalOidc;
   private final SecurityConfiguration globalSecurity;
 
-  public Converter<Jwt, AbstractAuthenticationToken> forTenant(final String tenantId) {
+  public Converter<Jwt, AbstractAuthenticationToken> forTenant(final String physicalTenantId) {
     return jwt -> {
-      final PhysicalTenantConfiguration pt = registry.findById(tenantId)
-          .orElseThrow(() -> new BadJwtException("unknown tenant: " + tenantId));
+      final PhysicalTenantConfiguration pt = registry.findById(physicalTenantId)
+          .orElseThrow(() -> new BadJwtException("unknown physical tenant: " + physicalTenantId));
 
       // 1. Reject tokens whose issuer is not in this PT's allowed IdP set.
       assertIssuerAllowedFor(pt, jwt);
@@ -533,10 +535,10 @@ public final class PhysicalTenantJwtAuthenticationConverterFactory {
 ```java
 public final class PhysicalTenantPathExtractionFilter extends OncePerRequestFilter {
 
-  public static final String ATTR_TENANT_ID = "io.camunda.physical-tenant-id";
+  public static final String ATTR_PHYSICAL_TENANT_ID = "io.camunda.physical-tenant-id";
 
   private static final PathPatternRequestMatcher MATCHER =
-      PathPatternRequestMatcher.withDefaults().matcher("/v2/physical-tenants/{tenantId}/**");
+      PathPatternRequestMatcher.withDefaults().matcher("/v2/physical-tenants/{physicalTenantId}/**");
 
   private final PhysicalTenantRegistry registry;
 
@@ -545,12 +547,12 @@ public final class PhysicalTenantPathExtractionFilter extends OncePerRequestFilt
       throws IOException, ServletException {
     final var match = MATCHER.matcher(req);
     if (match.isMatch()) {
-      final String tenantId = (String) match.getVariables().get("tenantId");
-      if (registry.isReservedId(tenantId) || registry.findById(tenantId).isEmpty()) {
+      final String physicalTenantId = (String) match.getVariables().get("physicalTenantId");
+      if (registry.isReservedId(physicalTenantId) || registry.findById(physicalTenantId).isEmpty()) {
         res.sendError(HttpStatus.NOT_FOUND.value());
         return;
       }
-      req.setAttribute(ATTR_TENANT_ID, tenantId);
+      req.setAttribute(ATTR_PHYSICAL_TENANT_ID, physicalTenantId);
     }
     chain.doFilter(req, res);
   }
@@ -613,7 +615,7 @@ SecurityFilterChain physicalTenantApiSecurityFilterChain(
     final SecurityConfiguration securityConfiguration) throws Exception {
 
   return http
-      .securityMatcher("/v2/physical-tenants/{tenantId}/**")
+      .securityMatcher("/v2/physical-tenants/{physicalTenantId}/**")
       .addFilterBefore(pathExtractionFilter, BearerTokenAuthenticationFilter.class)
       .oauth2ResourceServer(o -> o.authenticationManagerResolver(resolver))
       .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.NEVER))
@@ -672,7 +674,7 @@ public final class ClusterTopologyController {
         .thenApply(v -> ResponseEntity.ok(toClusterTopologyResponse(perTenant)));
   }
 
-  private CompletableFuture<TopologyOrError> topologyFor(final String tenantId) {
+  private CompletableFuture<TopologyOrError> topologyFor(final String physicalTenantId) {
     // For 8.10, every PT shares the same in-process TopologyServices.
     // The shape is forward-compatible with later per-PT BrokerClient instances
     // (Strong Isolation epic) — only this method body changes then.
@@ -680,7 +682,7 @@ public final class ClusterTopologyController {
         .executeServiceMethod(topologyServices::getTopology, ResponseMapper::toTopologyResponse)
         .handle((ok, ex) -> ex == null
             ? new TopologyOrError.Ok(ok)
-            : new TopologyOrError.Failed(tenantId, ex.getMessage()));
+            : new TopologyOrError.Failed(physicalTenantId, ex.getMessage()));
   }
 }
 ```
@@ -688,7 +690,18 @@ public final class ClusterTopologyController {
 **Decisions in this controller:**
 - The existing `/v2/topology` endpoint (in `TopologyController`) is **not modified**. It remains the single-topology endpoint and continues to satisfy 8.9 callers and the default-PT case.
 - Per-PT failure is data, not a 5xx — clients can render a "DEGRADED" PT in the cluster view.
-- For 8.10 the controller delegates to the same `TopologyServices` for every PT (Strong Isolation hasn't shipped). The response shape is the forward-compatible one (`{ tenantId → topology }`), so when per-PT broker clients arrive only the `topologyFor(...)` method body changes.
+- For 8.10 the controller delegates to the same `TopologyServices` for every PT (Strong Isolation hasn't shipped). The response shape is the forward-compatible one (`{ physicalTenantId → topology }`), so when per-PT broker clients arrive only the `topologyFor(...)` method body changes.
+
+#### 4.10.1 The same pattern applies to `/v2/cluster/backup` (and any future `/v2/cluster/*`)
+
+Cluster-wide backup follows the **identical pattern** that this slice establishes for topology, and is delivered by the per-PT backup/restore sibling slice of epic #3430:
+
+- **Auth wiring is already in place.** The `clusterAdminSecurityFilterChain` matcher (`/v2/cluster/**`) covers every cluster-scoped endpoint uniformly. No new filter chain, no new resolver — adding `/v2/cluster/backup` is a controller-only addition from the security perspective.
+- **Same controller shape.** A `ClusterBackupController` will be a thin fan-out over `registry.allTenantIds()`, returning `{ physicalTenantId → BackupOrError }`. Per-PT backup repository selection (today: shared `/actuator/backupRuntime`; tomorrow: per-PT repository per the Strong Isolation epic) lives behind that controller and is owned by the backup slice.
+- **Failure surfaces as data.** A PT whose backup fails returns `{ status: DEGRADED, error: "..." }` in its slot — the cluster-wide call returns 200 if at least one PT could be processed.
+- **Backwards compatibility.** The existing `/actuator/backupRuntime` and `/actuator/backupHistory` continue to work unchanged for 8.9 callers and operators. The new `/v2/cluster/backup` is additive.
+
+**This slice does not deliver `ClusterBackupController` itself** — only the security wiring it will plug into. We document the pattern here so the backup-slice team has a clear contract: any controller they mount under `/v2/cluster/**` inherits cluster-admin authentication for free, and is expected to follow the same fan-out / per-PT-error shape that `ClusterTopologyController` establishes.
 
 ### 4.11 Files at a glance
 
@@ -718,7 +731,7 @@ public final class ClusterTopologyController {
 |---|---|---|---|
 | 0 | `unprotectedPathsSecurityFilterChain` (existing) | `UNPROTECTED_PATHS` | `/error`, `/actuator/**`, `/swagger/**`, … |
 | 5 | `unprotectedApiAuthSecurityFilterChain` (existing) | `UNPROTECTED_API_PATHS` | `/v2/license`, `/v2/setup/user`, `/v2/status`, … |
-| **10** | **`physicalTenantApiSecurityFilterChain` (NEW)** | `/v2/physical-tenants/{tenantId}/**` | per-PT JWT |
+| **10** | **`physicalTenantApiSecurityFilterChain` (NEW)** | `/v2/physical-tenants/{physicalTenantId}/**` | per-PT JWT |
 | **15** | **`clusterAdminSecurityFilterChain` (NEW)** | `/v2/cluster/**` | cluster-admin claim |
 | 20 | `httpBasicApiAuthSecurityFilterChain` / `oidcApiSecurity` (existing) | `API_PATHS` | default-PT (legacy) |
 | 30 | `*WebappAuthSecurityFilterChain` (existing) | `WEBAPP_PATHS` | webapp login |
@@ -730,7 +743,7 @@ flowchart LR
         direction LR
         O0["<b>0</b><br/>unprotectedPaths"]
         O5["<b>5</b><br/>unprotectedApi"]
-        O10["<b>10 · NEW</b><br/>physicalTenantApi<br/>/v2/physical-tenants/&#123;id&#125;/**"]
+        O10["<b>10 · NEW</b><br/>physicalTenantApi<br/>/v2/physical-tenants/&#123;physicalTenantId&#125;/**"]
         O15["<b>15 · NEW</b><br/>clusterAdmin<br/>/v2/cluster/**"]
         O20["<b>20</b><br/>legacy API<br/>/v2/**, /v1/**, /api/**, /mcp/**"]
         O30["<b>30</b><br/>webapp login"]
@@ -766,11 +779,11 @@ sequenceDiagram
     Reg-->>Path: false
     Path->>Reg: findById("risk-production")?
     Reg-->>Path: present
-    Path->>Path: request.setAttribute<br/>(ATTR_TENANT_ID, "risk-production")
+    Path->>Path: request.setAttribute<br/>(ATTR_PHYSICAL_TENANT_ID, "risk-production")
     Path-->>FCP: continue
     FCP->>BT: invoke
     BT->>Res: resolve(request)
-    Res->>Res: extract tenantId from path<br/>(cached lookup)
+    Res->>Res: extract physicalTenantId from path<br/>(cached lookup)
     Res-->>BT: JwtAuthenticationProvider<br/>for "risk-production"
     BT->>JP: authenticate(token)
     JP->>Dec: decode(token)
@@ -822,7 +835,7 @@ Claim-based, stateless. The configured triple `(providers, claim, value)` is the
 
 ### 6.3 Cross-tenant aggregator
 
-`/v2/cluster/topology` runs under `ROLE_CLUSTER_ADMIN`. Per-PT topology fan-out is in-process; visibility is the cluster-admin's by definition. When per-PT authorization granularity becomes a requirement (e.g. "cluster-admin who can only see PT-X topology"), introduce a `tenantAuthorizer.canRead(actor, tenantId)` seam in the controller — explicitly out of scope for 8.10.
+`/v2/cluster/topology` runs under `ROLE_CLUSTER_ADMIN`. Per-PT topology fan-out is in-process; visibility is the cluster-admin's by definition. When per-PT authorization granularity becomes a requirement (e.g. "cluster-admin who can only see PT-X topology"), introduce a `tenantAuthorizer.canRead(actor, physicalTenantId)` seam in the controller — explicitly out of scope for 8.10.
 
 ---
 
@@ -935,7 +948,7 @@ One module: `authentication/src/test/java/io/camunda/authentication/physicaltena
 | 4 | Reserved-ID list drift as new top-level paths land | Documented constant in `DefaultPhysicalTenantRegistry`; covered by a unit test that fails when an undocumented top-level segment is introduced. (Optional follow-up: build-time scanner.) |
 | 5 | Cluster-admin claim has no revocation/audit | Out of scope for 8.10. Documented as a known gap; follow-up ticket to evaluate a minimal grant-on-first-use record. |
 | 6 | Microsoft Entra wildcard redirect-URI limitation | N/A in this slice — login flow not modified. Risk transfers to the Webapps PT routing follow-up. |
-| 7 | `/v2/cluster/topology` shape locked in early | Mitigated by returning `{ tenantId → topology }` from day one — same shape regardless of legacy or PT mode. Per-PT body changes when Strong Isolation lands. |
+| 7 | `/v2/cluster/topology` shape locked in early | Mitigated by returning `{ physicalTenantId → topology }` from day one — same shape regardless of legacy or PT mode. Per-PT body changes when Strong Isolation lands. The same shape is expected for `/v2/cluster/backup`. |
 | 8 | Long-poll / `OAuth2AuthorizedClientRepository` cross-PT bleed | Out of scope here (no webapp login chain change). Documented as a dependency on Strong Isolation. |
 | 9 | gRPC parity drift | Touch-points listed in §13.2; `PhysicalTenantRegistry` is the single source of truth so the future gRPC interceptor reuses it. |
 
@@ -947,7 +960,8 @@ One module: `authentication/src/test/java/io/camunda/authentication/physicaltena
 2. **`MultiTenancyConfiguration` interaction.** Logical tenants live inside a PT. If an operator sets `multiTenancy.checksEnabled=true` cluster-wide, does it apply per PT? Recommend yes (no behavioural change), confirm with engine team.
 3. **Cluster-admin BASIC fallback ergonomics.** Should we warn at startup when the BASIC `cluster-admin` user keeps the default password? (Existing pattern for `demo` user — apply the same.)
 4. **`clusterAdmin.value` as a list?** Some IdPs ship multiple admin claim values. Do we accept `value: [...]` or just `value: cluster-admin`? Recommend single-value for 8.10, multi-value as a follow-up.
-5. **`/v2/cluster/topology` response schema sign-off.** Must be agreed with the API stewards before implementation.
+5. **`/v2/cluster/topology` response schema sign-off.** Must be agreed with the API stewards before implementation. The same shape (`{ physicalTenantId → ResultOrError }`) is expected to apply to `/v2/cluster/backup` (sibling slice).
+6. **Cross-slice config-tree coordination.** This slice introduces `camunda.security.physical-tenants.*` for identity. Sibling slices need their own per-PT config (secondary storage, backup repositories, broker-client wiring) — the placeholder javadoc in `TenantConnectConfigResolver` already references `camunda.physical-tenants` for non-security use. The set of physical tenant ids must remain **a single source of truth**. Options for resolution: (a) cross-slice agreement that `camunda.security.physical-tenants` and `camunda.physical-tenants` coexist as parallel trees keyed by the same set of ids (registry validates consistency); (b) a unified `camunda.physical-tenants.{id}.{security,storage,backup,...}` tree at a future epic-wide refactoring boundary. This slice ships option (a) implicitly; option (b) is a follow-up that does not block 8.10.
 
 ---
 
@@ -956,7 +970,7 @@ One module: `authentication/src/test/java/io/camunda/authentication/physicaltena
 This slice **does not** depend on, but is **forward-compatible with**:
 
 - **Strong Tenant Isolation** — per-PT Raft groups, secondary storage, document store. When this lands, only `ClusterTopologyController.topologyFor(...)` changes (it picks a per-PT `TopologyServices` from a registry-backed map instead of the shared singleton).
-- **Webapps PT routing** — `/{tenantId}/operate`, `/{tenantId}/tasklist`, tenant-aware login picker, `/sso-callback/{tenantId}`, per-PT session cookie. Reuses `PhysicalTenantRegistry`.
+- **Webapps PT routing** — `/{physicalTenantId}/operate`, `/{physicalTenantId}/tasklist`, tenant-aware login picker, `/sso-callback/{physicalTenantId}`, per-PT session cookie. Reuses `PhysicalTenantRegistry`.
 - **gRPC PT header parity** — header `Camunda-Physical-Tenant` (canonical name from the epic body), mirrors the path-based REST resolution. Reuses `PhysicalTenantRegistry` and `PhysicalTenantJwtAuthenticationConverterFactory`. Same epic, different slice.
 - **Connectors multi-PT** — `JobWorkerManager` per PT, `SecretContext.physicalTenantId`. Independent of identity wiring.
 - **Cluster Backup/Restore** — `/v2/cluster/backup`, `/v2/cluster/restore`. Plugs into the same cluster-admin chain.
@@ -971,7 +985,7 @@ Suggested to land in this slice purely as a *holder*, even if only the REST filt
 
 ```java
 public final class PhysicalTenantContext {
-  public static String currentTenantId() { /* reads request attribute */ }
+  public static String currentPhysicalTenantId() { /* reads request attribute */ }
 }
 ```
 
@@ -993,7 +1007,7 @@ return RequestExecutor.executeServiceMethod(topologyServices::getTopology, ...);
 
 // Future (Strong Isolation):
 return RequestExecutor.executeServiceMethod(
-    topologyServicesByTenant.get(tenantId)::getTopology, ...);
+    topologyServicesByPhysicalTenant.get(physicalTenantId)::getTopology, ...);
 ```
 
 ---
@@ -1026,7 +1040,7 @@ return RequestExecutor.executeServiceMethod(
 
 ### M2a — PT API filter chain (depends on M1, ~3 days, parallel with M2b)
 
-**Goal:** `/v2/physical-tenants/{tenantId}/**` authenticates and authorizes per PT.
+**Goal:** `/v2/physical-tenants/{physicalTenantId}/**` authenticates and authorizes per PT.
 
 - [ ] `PhysicalTenantPathExtractionFilter`.
 - [ ] `PerPhysicalTenantAuthenticationManagerResolver`.
@@ -1048,14 +1062,15 @@ return RequestExecutor.executeServiceMethod(
 
 ### M3 — Cluster topology aggregator (depends on M2b, ~2 days)
 
-**Goal:** `/v2/cluster/topology` returns aggregated topology shape.
+**Goal:** `/v2/cluster/topology` returns aggregated topology shape; the same pattern is reusable for `/v2/cluster/backup` (delivered by the backup sibling slice — see §4.10.1).
 
 - [ ] `ClusterTopologyController` (in-process delegation to `TopologyServices`).
-- [ ] Response schema sign-off (open question §11.5).
+- [ ] Response schema sign-off (open question §11.5) — same shape will apply to `/v2/cluster/backup`.
 - [ ] Slice tests.
 - [ ] Confirm `TopologyController` (`/v2/topology`) is untouched and still passes its existing tests.
+- [ ] Confirm the cluster-admin chain matcher (`/v2/cluster/**`) covers the backup endpoint with no further security wiring needed when the backup slice lands its controller.
 
-**Exit criteria:** legacy `/v2/topology` unchanged; new `/v2/cluster/topology` returns aggregated map; per-PT failure surfaces as data, not 5xx.
+**Exit criteria:** legacy `/v2/topology` unchanged; new `/v2/cluster/topology` returns aggregated map; per-PT failure surfaces as data, not 5xx; backup-slice team has a documented contract for plugging `/v2/cluster/backup` into the same auth chain.
 
 ### M4 — Integration tests (depends on M2a + M2b + M3, ~3 days)
 
@@ -1151,6 +1166,7 @@ gantt
 | Per-PT auth config | `InitializationConfiguration` only (no auth-method override) | IdPs and method are cluster-level by requirement. |
 | `/v2/topology` | Untouched | Existing endpoint stays; new behaviour is a sibling endpoint. |
 | `/v2/cluster/topology` | New controller | Mounted under cluster-admin chain; same shape for legacy and PT mode. |
+| `/v2/cluster/backup` | Same pattern, controller delivered by backup slice | Auth wiring is already in place via `securityMatcher: /v2/cluster/**`. Same fan-out / per-PT-error response shape. |
 | Authorization model | In-memory, read-on-request from PT `authorizations` block | Avoids the persisted-vs-in-memory contradiction. |
 | Filter-chain strategy | Two new chains, ordered before legacy `/v2/**` | Spring Security's canonical multi-tenant pattern; per-PT login chains deferred. |
 | `JwtDecoder` strategy | One shared issuer-aware decoder; per-PT *converter* | Keeps decoder cardinality at 1 regardless of PT count. |
