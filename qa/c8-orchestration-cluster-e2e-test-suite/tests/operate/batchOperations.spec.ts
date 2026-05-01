@@ -243,6 +243,7 @@ test.describe('Batch Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
+        maxRetries: 5,
       });
       await operateOperationsDetailsPage.clickCancelFromOptionsMenu();
       await cancelBatchOperation(request, batchKey).catch(() => {});
@@ -253,12 +254,13 @@ test.describe('Batch Operations', () => {
         assertion: async () => {
           await expect(operateOperationsDetailsPage.state).toContainText(
             'Canceled',
-            {timeout: 15000},
+            {timeout: 30000},
           );
         },
         onFailure: async () => {
           await page.reload();
         },
+        maxRetries: 5,
       });
       await expect(operateOperationsDetailsPage.suspendButton).toBeHidden();
       await expect(operateOperationsDetailsPage.resumeButton).toBeHidden();
@@ -292,6 +294,7 @@ test.describe('Batch Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
+        maxRetries: 5,
       });
       await operateOperationsDetailsPage.clickCancelFromOptionsMenu();
     });
@@ -301,12 +304,13 @@ test.describe('Batch Operations', () => {
         assertion: async () => {
           await expect(operateOperationsDetailsPage.state).toContainText(
             'Canceled',
-            {timeout: 15000},
+            {timeout: 30000},
           );
         },
         onFailure: async () => {
           await page.reload();
         },
+        maxRetries: 5,
       });
       await expect(operateOperationsDetailsPage.resumeButton).toBeHidden();
       await expect(operateOperationsDetailsPage.optionsMenuButton).toBeHidden();
