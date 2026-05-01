@@ -21,7 +21,7 @@ test.beforeAll(async ({resetData}) => {
     './resources/usertask_for_scrolling_2.bpmn',
     './resources/usertask_for_scrolling_3.bpmn',
   ]);
-  await sleep(100);
+  await sleep(1000);
 
   await createInstances('usertask_for_scrolling_3', 1, 1);
   await createInstances('usertask_for_scrolling_2', 1, 50);
@@ -31,7 +31,7 @@ test.beforeAll(async ({resetData}) => {
   await createInstances('usertask_for_scrolling_1', 1, 1);
   await createInstances('usertask_to_be_assigned', 1, 1); // this task will be seen on top since it is created last
 
-  await sleep(500);
+  await sleep(5000);
 });
 
 test.describe('task panel page', () => {
@@ -107,9 +107,10 @@ test.describe('task panel page', () => {
   test('scrolling', async ({page, taskPanelPage}) => {
     test.slow();
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    // Wait for all 200 instances to be indexed before asserting counts
+    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1, {timeout: 60000});
+    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49, {timeout: 60000});
+    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0, {timeout: 60000});
 
     await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
