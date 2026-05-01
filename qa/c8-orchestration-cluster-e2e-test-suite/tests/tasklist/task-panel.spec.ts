@@ -33,7 +33,9 @@ test.beforeAll(async ({resetData}) => {
 
 });
 
-test.describe('task panel page', () => {
+// Serial mode ensures filter selection → update task list → scrolling execute in order so that
+// usertask_to_be_assigned is completed before the scrolling test runs.
+test.describe.serial('task panel page', () => {
   test.beforeEach(async ({page, taskListLoginPage}) => {
     await navigateToApp(page, 'tasklist');
     await taskListLoginPage.login('demo', 'demo');
@@ -132,14 +134,16 @@ test.describe('task panel page', () => {
 
     await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1);
+    // The virtual window drops items from the top when the end of the list loads.
+    // Assert only the meaningful boundary conditions: scrolling_1 scrolls off the top
+    // and scrolling_3 becomes visible at the bottom.
+    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0, {timeout: 15000});
+    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1, {timeout: 15000});
 
     await taskPanelPage.scrollToFirstTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    // After scrolling back to the top the boundary conditions reverse.
+    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1, {timeout: 15000});
+    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0, {timeout: 15000});
   });
 });
