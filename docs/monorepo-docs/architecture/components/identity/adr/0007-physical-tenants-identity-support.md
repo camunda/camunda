@@ -116,23 +116,45 @@ All cluster-wide endpoints follow the **same shape** behind the cluster-admin ch
 
 For 8.10, every PT shares the in-process `TopologyServices` (Strong Isolation hasn't shipped). When per-PT broker clients arrive, only the topology controller's per-PT delegation line changes — the response shape, the chain it sits behind, and the authorization model are forward-compatible. This is the only place in the identity slice where Strong Isolation will require a follow-up change, by design.
 
-### Login and logout: deliberately unchanged
+### Login and logout — 🚨 DECISION PENDING (CTA) 🚨
 
-This slice **does not modify** the browser login or logout flow. `/login`, the OIDC picker, `/sso-callback`, RP-initiated logout, and the global `camunda-session` cookie all continue to behave exactly as they do in 8.9. The PT chain (`physicalTenantApiSecurityFilterChain`) is configured with `oauth2ResourceServer().jwt()` and **no** `oauth2Login`, **no** `formLogin`, **no** `httpBasic` — it is bearer-token only.
+> **This is the only open architectural decision in this ADR.** The API surface (PT-scoped JWT chain, cluster-admin chain, topology/backup pattern) is locked. Login/logout has three viable options on the table; the team must pick one before tickets for the login surface are cut.
 
-The result is that two surfaces coexist without overlap:
+PoC PR [camunda/camunda#51959](https://github.com/camunda/camunda/pull/51959) demonstrates a tenant-aware OIDC login picker that **binds the HTTP session to a chosen PT** via `?tenant=` query parameter on `/oauth2/authorization/{idpId}`. A four-perspective review (Spring Security, Java/architecture, devil's advocate, TDD) found three security defects structural to the choice of HTTP session as the binding store:
 
-- **Bearer-token clients** (Java client, Connectors runtime, M2M services, gRPC once parity ships) hit `/v2/physical-tenants/{physicalTenantId}/...` directly with an IdP-issued access token. No login flow involved; the PT chain authenticates them via the per-PT converter and rejects tokens whose `iss` is not in `pt.idps`.
-- **Browser users** continue to log in through the unchanged cluster-uniform `/login` page, receive a session cookie, and consume **webapps + legacy `/v2/...` endpoints**. They cannot directly call PT-scoped endpoints from a session — those calls return 401 because no `Authorization: Bearer …` header is present. This is intentional: webapps in 8.10 remain cluster-uniform and have no UX path to PT-scoped APIs yet.
-- **Cluster admin** is stateless on both legs (claim-based JWT or HTTP BASIC against `camunda.security.initialization.users`). The browser login flow is not on this path either.
+1. **CSRF on the binding GET.** `<img src="/oauth2/authorization/idp-x?tenant=victim-tenant">` from a third-party page pins a victim's session pre-authentication. `CsrfFilter` ignores GETs by design; the PoC adds a session side-effect to a GET.
+2. **Bearer-token bypass on webapp paths.** `oidcWebappSecurity` enables both `oauth2Login` and `oauth2ResourceServer.jwt(...)`. The PoC's enforcement filter passes `JwtAuthenticationToken` through. Anyone with a JWT can hit `/{anyPt}/operate/...` unbound.
+3. **Multi-tab race not actually defended.** The success-handler check is an authorization check (is this IdP allowed on this PT?), not a race detector. Tabs picking PTs whose IdP sets overlap leave the user authenticated to one PT but session-bound to the other.
 
-The cost is a UX gap: the cluster-level login picker shows every IdP, even those not assigned to the PT a user works in. This is **not** a security gap — the PT chain rejects mismatched issuers at request time (see Decision: per-PT authentication). Closing the UX gap is the *Webapps PT routing* sibling slice's job: tenant-aware login picker at `/login/{physicalTenantId}`, `/sso-callback/{physicalTenantId}` (with the documented Microsoft Entra wildcard-redirect-URI constraint), per-PT session cookie scoping, per-PT logout, and a chosen approach for session→bearer bridging on PT API calls (webapp-side token forwarding, or an `oauth2Login` extension on the PT chain).
+The team converged on three options. **Decision deadline: before M2c starts.** Until decided, the slice ships **Option C** (no login/logout change) — the API surface is independent and proceeds without waiting.
 
-The wiring this slice ships — `PhysicalTenantRegistry`, `PhysicalTenantJwtAuthenticationConverterFactory`, `PhysicalTenantContext` — is **forward-reused** by the webapps slice. Nothing here needs to be unwound.
+**Option A — Refined PoC: bind PT in OIDC `state`, not HTTP session.** Keep the PoC's shape (per-PT picker, single `/sso-callback`) but replace the session attribute with PT id round-tripped through Spring's existing `state` parameter (HMAC-bound, per-flow). Custom enforcement filter replaced by `authorizeHttpRequests` keyed on `PT_<id>` authority. Reject Bearer on webapp paths. Closes all three defects. Does NOT close the foundational UX limit (logout-to-switch) or the API/webapp BFF gap. Effort: ~5-7 days from PoC.
+
+**Option B — Cluster-wide session + per-request RBAC.** Drop session-tenant binding entirely. User logs in once cluster-wide; OIDC token claims carry PT memberships (`pt-memberships: [risk-production, default]`). Every request is gated by a one-line `authorizeHttpRequests` against the URL's PT and the principal's authorities. Closes all three defects PLUS multi-PT switching UX PLUS the API/webapp coexistence problem (one access token works both surfaces). Requires a customer-side IdP claim contract (PT memberships emitted as a token claim) — supported by all major enterprise IdPs but a deployment-time requirement to document. Effort: ~10-14 days; bigger upfront but kills more downstream work.
+
+**Option C — Defer (current state).** Ship 8.10 with login/logout unchanged from 8.9. Webapps remain cluster-uniform, cannot consume PT-scoped APIs. PT-aware login is a follow-up slice. Effort: zero now; ~10-15 days deferred.
+
+| Dimension | A — refined PoC | B — claim-based RBAC | C — defer |
+|---|---|---|---|
+| Resolves CSRF / Bearer bypass / race | ✅ | ✅ | n/a |
+| Multi-PT UX without logout | ❌ | ✅ | ❌ |
+| Webapp → PT API works | ⚠ needs BFF token relay | ✅ one token, both surfaces | ❌ |
+| IdP claim requirement | none | **PT memberships claim required** | none |
+| Effort delta | ~5-7 days from PoC | ~10-14 days from PoC | 0 |
+| Risk | low | medium | none |
+
+**Recommendation.** Spring Security specialist recommends **A** as a minimum bar. Devil's advocate and TDD specialist (and this ADR's author) prefer **B** because the session-binding primitive in **A** is structurally what produces the defects, and **B** is the only option that closes the API/webapp coexistence gap *inside* this identity slice rather than punting to an unbuilt webapp BFF.
+
+The decision turns on whether requiring customer IdPs to emit PT membership claims is acceptable in the 8.10 timeframe. If yes → **B**. If no but UX-correctness matters → **A**. If timeline pressure dominates → **C** (API surface still ships in 8.10 independently).
+
+The wiring this slice ships — `PhysicalTenantRegistry`, `PhysicalTenantConfiguration`, the `camunda.security.physical-tenants.*` property tree, the API-side filter chains — is forward-compatible with all three options. The decision is **purely about what runs on the OIDC webapp chain**.
+
+Once the team chooses, this section is rewritten to record the chosen design and the subsequent paragraphs ("two surfaces coexist without overlap…") are restored as the documented behavior of that option.
 
 ### What is deliberately not in this slice
 
-- **Per-PT login chains**, tenant-aware OIDC login picker, `/sso-callback/{physicalTenantId}`, per-PT `OAuth2AuthorizedClientRepository`, per-PT session cookie scoping. The PoC referenced in the issue covers these for a future Webapps PT routing slice. Subclassing Spring's `DefaultLoginPageGeneratingFilter` (an internal that has changed shape across 5.x → 6.x) is a fragility we accept paying for once, in that follow-up, after the API-side semantics are locked.
+- **Login/logout design** is **pending team decision** between Options A, B, C above. Pick one before M2c starts; the API surface ships independently regardless.
+- **Per-PT session cookie scoping** (so two browser tabs can hold sessions for different PTs simultaneously) — only relevant under Option A; explicitly excluded even from A's scope.
 - **gRPC `Camunda-Physical-Tenant` header handling.** REST resolves PT from the path; gRPC resolves from this canonical metadata header (fixed by the epic body). Both will share `PhysicalTenantRegistry` and `PhysicalTenantJwtAuthenticationConverterFactory` so the two protocols converge on a single source of truth — but the gRPC interceptor itself is owned by a sibling slice of the same epic.
 - **Bulk migration tooling** from 8.9 logical-tenant authorizations to 8.10 PT authorizations.
 - **Persisted cluster-admin grant store, audit, dynamic management APIs, Hub policy distribution.**
