@@ -627,6 +627,7 @@ public class CompactRecordLogger {
     }
 
     result.append(" ").append(value.getRetries()).append(" retries,");
+    result.append(" priority '").append(value.getPriority()).append("',");
 
     if (!StringUtils.isEmpty(value.getErrorCode())) {
       result.append(" ").append(value.getErrorCode()).append(":").append(value.getErrorMessage());

@@ -866,6 +866,7 @@ final class JsonSerializableToJsonTest {
                         "foo": "bar"
                       },
                       "retries": 3,
+                      "priority": 0,
                       "jobKind": "BPMN_ELEMENT",
                       "jobListenerEventType": "UNSPECIFIED",
                       "retryBackoff": 1002,
@@ -1031,7 +1032,8 @@ final class JsonSerializableToJsonTest {
                       .setResult(result)
                       .setTags(Set.of("tag1", "tag2"))
                       .setRootProcessInstanceKey(rootProcessInstanceKey)
-                      .setIsJobToUserTaskMigration(true);
+                      .setIsJobToUserTaskMigration(true)
+                      .setPriority(42);
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
@@ -1050,6 +1052,7 @@ final class JsonSerializableToJsonTest {
                     "foo": "bar"
                   },
                   "retries": 12,
+                  "priority": 42,
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 1003,
@@ -1127,6 +1130,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {},
                   "worker": "",
                   "retries": -1,
+                  "priority": 0,
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,
@@ -1189,6 +1193,7 @@ final class JsonSerializableToJsonTest {
                   "timeout": -1,
                   "worker": "",
                   "retries": -1,
+                  "priority": 0,
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,
