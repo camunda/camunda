@@ -88,6 +88,7 @@ CSV_DEFAULT = SCRIPT_DIR / "benchmark-results.csv"
 CSV_COLUMNS = [
     "Run",
     "Timestamp",
+    "Status",
     "Target PI/s",
     "Achieved PI/s",
     "Achieved %",
@@ -105,6 +106,7 @@ CSV_COLUMNS = [
     "ES heap",
     "Dropped req/s",
     "Max in-flight req",
+    "grafana_timestamp",
 ]
 
 # ── Node pool specs ────────────────────────────────────────────────────────────
@@ -339,6 +341,7 @@ def _promql(grafana_url: str, token: str, cookie: str, ds_uid: str, query: str, 
 def collect_metrics(grafana_url: str, token: str, cookie: str, namespace: str,
                     target_rate: int, broker_info: dict) -> dict:
     collect_time = time.time()
+    grafana_ts = datetime.utcfromtimestamp(collect_time).strftime("%Y-%m-%dT%H:%M:%SZ")
     print(f"\nQuerying Grafana for namespace={namespace} (t={collect_time:.0f}) ...")
     ds_uid = _find_prometheus_uid(grafana_url, token, cookie)
 
@@ -369,6 +372,7 @@ def collect_metrics(grafana_url: str, token: str, cookie: str, namespace: str,
         "Achieved %": achieved_pct,
         "Dropped req/s": dropped_rps,
         "Max in-flight req": max_inflight,
+        "grafana_timestamp": grafana_ts,
         **broker_info,
     }
 
@@ -516,11 +520,27 @@ def delete_namespace(namespace: str, expected_name: str) -> None:
 def write_csv(output: Path, row: dict) -> None:
     exists = output.exists()
     with open(output, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore")
         if not exists:
             writer.writeheader()
         writer.writerow(row)
-    print(f"\nResult written to {output}")
+    print(f"  [{row.get('Status', '?')}] row written → {output.name}")
+
+
+def update_csv_row(output: Path, run_name: str, updates: dict) -> None:
+    if not output.exists():
+        return
+    with open(output, newline="") as f:
+        rows = list(csv.DictReader(f))
+    for row in rows:
+        if row.get("Run") == run_name:
+            row.update(updates)
+            break
+    with open(output, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"  [{updates.get('Status', '?')}] row updated → {output.name}")
 
 
 def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie: str) -> None:
@@ -532,7 +552,8 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
     with open(csv_path, newline="") as f:
         rows = list(csv.DictReader(f))
 
-    errors = [r for r in rows if r.get("Achieved PI/s") == "GRAFANA_ERROR"]
+    errors = [r for r in rows if r.get("Achieved PI/s") == "GRAFANA_ERROR"
+              or r.get("Status") == "ERROR"]
     if not errors:
         print("No GRAFANA_ERROR rows found in CSV — nothing to recover.")
         return
@@ -557,9 +578,11 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
         except (ValueError, KeyError):
             rate = 0
 
-        # Parse the stored UTC timestamp → Unix time for the PromQL query
+        # Use grafana_timestamp (the actual collection attempt time) if available,
+        # fall back to the run start Timestamp.
         try:
-            ts_str = row["Timestamp"].rstrip("Z")
+            raw_ts = row.get("grafana_timestamp") or row.get("Timestamp", "")
+            ts_str = raw_ts.rstrip("Z")
             at_time = datetime.fromisoformat(ts_str).replace(tzinfo=timezone.utc).timestamp()
         except Exception:
             at_time = time.time()
@@ -583,20 +606,23 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
         achieved_pct = (
             f"{round(achieved / rate * 100, 1)}%" if achieved is not None and rate > 0 else "N/A"
         )
+        dropped_val = round(dropped, 3) if dropped is not None else "N/A"
+        inflight_val = round(inflight, 0) if inflight is not None else "N/A"
+        row["Status"] = "COMPLETED"
         row["Achieved PI/s"] = achieved_pis
         row["Achieved %"] = achieved_pct
-        row["Dropped req/s"] = round(dropped, 3) if dropped is not None else "N/A"
-        row["Max in-flight req"] = round(inflight, 0) if inflight is not None else "N/A"
-        print(f"  Achieved PI/s={achieved_pis}  Dropped={row['Dropped req/s']}  In-flight={row['Max in-flight req']}")
+        row["Dropped req/s"] = dropped_val
+        row["Max in-flight req"] = inflight_val
+        print(f"  Achieved PI/s={achieved_pis}  Dropped={dropped_val}  In-flight={inflight_val}")
         recovered += 1
 
     # Rewrite the CSV in-place with updated rows
     with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
 
-    print(f"\nRecovered {recovered}/{len(errors)} row(s). CSV updated: {csv_path}")
+    print(f"\nRecovered {recovered}/{len(errors)} row(s) → Status=COMPLETED. CSV updated: {csv_path}")
 
 
 # ── Trigger + parse ────────────────────────────────────────────────────────────
@@ -655,52 +681,48 @@ def run_one(rate: int, state: ResourceState, args, grafana_token: str,
     namespace = f"c8-{name}"
     print(f"\nNamespace: {namespace}")
 
+    # Write initial row immediately so the run is recorded even if the script crashes later
+    initial_row = {
+        "Run": name,
+        "Timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        "Status": "STARTED",
+        "Target PI/s": rate,
+        "Achieved PI/s": "",
+        "Achieved %": "",
+        "Dropped req/s": "",
+        "Max in-flight req": "",
+        **broker_info,
+    }
+    write_csv(args.output, initial_row)
+
     healthy = wait_for_healthy(namespace, args.collect_after, args.timeout)
 
     if not healthy:
-        row = {
-            "Run": name,
-            "Timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
-            "Target PI/s": rate,
-            "Achieved PI/s": "TIMEOUT",
-            "Achieved %": "N/A",
-            "Dropped req/s": "N/A",
-            "Max in-flight req": "N/A",
-            **broker_info,
-        }
-        write_csv(args.output, row)
+        update_csv_row(args.output, name, {"Status": "ERROR", "Achieved PI/s": "TIMEOUT"})
         delete_namespace(namespace, name)
-        return row
+        return {**initial_row, "Status": "ERROR", "Achieved PI/s": "TIMEOUT"}
 
     if not grafana_token and not grafana_cookie:
         print("WARNING: no Grafana credentials — skipping metric collection", file=sys.stderr)
-        metrics = {
-            "Achieved PI/s": "N/A", "Achieved %": "N/A",
-            "Dropped req/s": "N/A", "Max in-flight req": "N/A",
-            **broker_info,
-        }
-    else:
-        try:
-            metrics = collect_metrics(
-                args.grafana_url, grafana_token, grafana_cookie, namespace, rate, broker_info
-            )
-        except Exception as e:
-            print(f"ERROR: Grafana collection failed: {e}", file=sys.stderr)
-            print("  Namespace will still be deleted. Re-collect with:", file=sys.stderr)
-            print(f"    --collect-only {namespace} --rates {rate}", file=sys.stderr)
-            metrics = {
-                "Achieved PI/s": "GRAFANA_ERROR", "Achieved %": "N/A",
-                "Dropped req/s": "N/A", "Max in-flight req": "N/A",
-                **broker_info,
-            }
+        update_csv_row(args.output, name, {"Status": "COMPLETED"})
+        return {**initial_row, "Status": "COMPLETED"}
 
-    row = {
-        "Run": name,
-        "Timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
-        "Target PI/s": rate,
-        **metrics,
-    }
-    write_csv(args.output, row)
+    grafana_ts = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        metrics = collect_metrics(
+            args.grafana_url, grafana_token, grafana_cookie, namespace, rate, broker_info
+        )
+        update_csv_row(args.output, name, {"Status": "COMPLETED", **metrics})
+        row = {**initial_row, "Status": "COMPLETED", **metrics}
+    except Exception as e:
+        print(f"ERROR: Grafana collection failed: {e}", file=sys.stderr)
+        print(f"  Re-collect with: --collect-only {namespace} --rates {rate}", file=sys.stderr)
+        update_csv_row(args.output, name, {
+            "Status": "ERROR", "Achieved PI/s": "GRAFANA_ERROR", "grafana_timestamp": grafana_ts,
+        })
+        row = {**initial_row, "Status": "ERROR", "Achieved PI/s": "GRAFANA_ERROR",
+               "grafana_timestamp": grafana_ts}
+
     delete_namespace(namespace, name)
     return row
 
