@@ -98,6 +98,8 @@ test.describe.serial('Process Instance Migration', () => {
 
   test('Auto mapping migration', async ({
     page,
+    loginPage,
+    operateHomePage,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateProcessMigrationModePage,
@@ -135,6 +137,29 @@ test.describe.serial('Process Instance Migration', () => {
       });
     });
 
+    await test.step('Wait for target process version to be indexed in Operate', async () => {
+      // Confirm v2 is queryable in Operate before opening the migration modal so that
+      // the auto-mapping API has the target process available and can pre-select it.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateFiltersPanelPage.selectVersion(targetVersion);
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+            timeout: 10000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+          await loginPage.login('demo', 'demo');
+          await operateHomePage.clickProcessesTab();
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+        },
+        maxRetries: 5,
+      });
+      // Reset back to source version so instance selection targets v1
+      await operateFiltersPanelPage.selectVersion(sourceVersion);
+      await expect(page.getByText('10 results')).toBeVisible({timeout: 30000});
+    });
+
     await test.step('Select first 6 process instances for migration', async () => {
       await operateProcessesPage.selectProcessInstances(
         AUTO_MIGRATION_INSTANCE_COUNT,
@@ -146,20 +171,9 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify target process is preselected with auto-mapping and Complete Migration', async () => {
-      // Auto-mapping should pre-select the target process (same bpmnProcessId, higher version).
-      // If Operate's index is slow to catch up, the combobox may still be empty; select manually
-      // as a fallback so the rest of the migration flow can still be validated.
-      const combobox = operateProcessMigrationModePage.targetProcessCombobox;
-      try {
-        await expect(combobox).toHaveValue(targetBpmnProcessId, {timeout: 30000});
-      } catch {
-        console.log('Auto-mapping did not pre-select target; selecting manually');
-        await combobox.click();
-        await operateProcessMigrationModePage
-          .getOptionByName(targetBpmnProcessId)
-          .click();
-        await expect(combobox).toHaveValue(targetBpmnProcessId);
-      }
+      await expect(
+        operateProcessMigrationModePage.targetProcessCombobox,
+      ).toHaveValue(targetBpmnProcessId, {timeout: 30000});
 
       await operateProcessMigrationModePage.verifyFlowNodeMappings([
         {
