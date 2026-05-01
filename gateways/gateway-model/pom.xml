@@ -86,6 +86,24 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- snakeyaml is needed at test runtime so the EnrichSpec script (invoked via GroovyShell)
+         can load org.yaml.snakeyaml.Yaml. Managed in parent/pom.xml. -->
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Groovy 4.0.31 for Groovy test sources compiled by gmavenplus-plugin.
+         gmavenplus-plugin requires Groovy on the project (test) classpath to detect the version.
+         Not managed in parent/pom.xml, so version is pinned here. -->
+    <dependency>
+      <groupId>org.apache.groovy</groupId>
+      <artifactId>groovy</artifactId>
+      <version>4.0.31</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -334,6 +352,53 @@
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
           </usedDependencies>
         </configuration>
+      </plugin>
+
+      <!-- Registers src/test/groovy as a test source root so IDEs and surefire see the tests. -->
+      <!-- Version managed in parent/pom.xml at ${plugin.version.build-helper}. -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-groovy-test-sources</id>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <sources>
+                <source>src/test/groovy</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Compiles Groovy test sources under src/test/groovy.
+           gmavenplus-plugin is NOT managed in parent/pom.xml, so version is pinned here.
+           4.3.1 is the current stable release compatible with Groovy 4.0.x and JDK 21. -->
+      <plugin>
+        <groupId>org.codehaus.gmavenplus</groupId>
+        <artifactId>gmavenplus-plugin</artifactId>
+        <version>4.3.1</version>
+        <dependencies>
+          <!-- Same Groovy 4.0.31 already used by maven-antrun-plugin above. -->
+          <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>4.0.31</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>compile-groovy-tests</id>
+            <goals>
+              <goal>compileTests</goal>
+            </goals>
+            <phase>test-compile</phase>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
