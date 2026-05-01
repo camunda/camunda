@@ -1,0 +1,123 @@
+{{!
+Custom override of upstream JavaSpring/javaBuilder.mustache (openapi-generator v7.21.0,
+modules/openapi-generator/src/main/resources/JavaSpring/javaBuilder.mustache).
+
+Near-identical to advanced/javaBuilder.mustache (sibling). Kept as a separate file because
+the openapi-generator-maven-plugin's <templateDirectory> is per-execution: the simple-variant
+execution looks here, the advanced execution looks in advanced/. When changing the staged-builder
+emission shape, edit both files in lockstep.
+
+NOTE: Do NOT use Mustache tag syntax inside this comment block. The samskivert Mustache engine
+parses section tags even inside comment blocks, so any unclosed section tag in this comment would
+corrupt the template parse tree and cause a MustacheParseException.
+
+Three intentional differences vs advanced/javaBuilder.mustache, all caused by the simple variant
+using broader type mappings that flatten some allOf-inheritance schemas into non-extending classes:
+
+Difference 1: the x-optional-parent-vars blocks (IBuild methods, Impl fields, Impl override
+methods) are wrapped in a parent-section guard here. For flat-inlined classes (no Java extends),
+the parent vars are already in the class's own vars list — emitting them again from
+x-optional-parent-vars would produce duplicate fields and methods.
+
+Difference 2: the optional setters in IBuild/Impl use x-optional-own-vars (pre-computed by
+EnrichSpec) instead of the template-level vars-inverted-required iteration when a staged chain
+exists. In the simple variant, flat-inlined schemas may have inherited-and-required fields appear
+as own vars with required=false in the generator context (because the property was declared
+optional in an ancestor). Using x-optional-own-vars (which applies mergedRequired logic) avoids
+emitting optional setters for fields that are actually required by the child schema. The guard
+uses x-has-staged-chain (a boolean flag set by EnrichSpec alongside x-staged-chain) rather than
+iterating x-staged-chain, to avoid a cartesian product emission with x-optional-own-vars. When
+no staged chain exists, falls back to vars-inverted-required (no duplication risk). nullableAnnotation
+is stored in the extension entries (same as x-optional-parent-vars) rather than using the partial.
+
+Difference 3: the x-needs-child-ctor no-parent path in build() uses vars-iteration instead of
+x-all-ctor-args. EnrichSpec computes x-all-ctor-args in own-props-first order for child schemas,
+but the pojo ctor for flat-inlined classes (no Java parent, x-needs-child-ctor) uses the
+generator vars declaration order (parent-vars-first, own-vars-last). Using vars directly keeps
+build() args in sync with the ctor params for those flat classes. The final fallback path (no
+parent, no ctor flags) still uses x-all-ctor-args — consistent with the advanced template — since
+discriminator union types (which reach that path) have an empty x-all-ctor-args and a no-args ctor.
+
+Wholesale replacement, not an incremental diff: upstream emits a flat single-Builder where every
+setter returns the same Builder type and build() is unconditionally callable. That gives no
+compile-time required-field enforcement.
+
+This override emits a staged nested Builder. Per-required-field stage interfaces are laid out
+according to vendorExtensions.x-staged-chain (computed by the in-module Groovy preprocessor at
+src/build/groovy/EnrichSpec.groovy). Each stage method returns the next stage; only the terminal
+IBuild exposes build() and any optional setters. Skipping a required field is a return-type
+mismatch caught by javac.
+
+When bumping openapi-generator: re-fetch upstream javaBuilder.mustache at the new version. If
+upstream changed shape significantly (e.g. switched to records, changed deserialization
+annotations), re-evaluate whether our staged-builder design still composes. Update the version
+reference.
+}}
+  // ---- nested staged builder ----
+  public static final class Builder {
+
+    private Builder() {}
+
+    public static {{#vendorExtensions.x-simple-staged-chain}}{{#-first}}I{{pascalName}}{{/-first}}{{/vendorExtensions.x-simple-staged-chain}}{{^vendorExtensions.x-simple-staged-chain}}IBuild{{/vendorExtensions.x-simple-staged-chain}} builder() {
+      return new Impl();
+    }
+
+{{#vendorExtensions.x-simple-staged-chain}}
+    public interface I{{pascalName}} {
+      {{#isLast}}IBuild{{/isLast}}{{^isLast}}I{{nextStage}}{{/isLast}} {{name}}({{{nullableAnnotation}}}{{{type}}} {{name}});
+    }
+
+{{/vendorExtensions.x-simple-staged-chain}}
+    public interface IBuild {
+{{#vendorExtensions.x-has-staged-chain}}{{#vendorExtensions.x-simple-optional-own-vars}}      IBuild {{name}}({{{nullableAnnotation}}}{{{type}}} {{name}});
+{{/vendorExtensions.x-simple-optional-own-vars}}{{/vendorExtensions.x-has-staged-chain}}{{^vendorExtensions.x-has-staged-chain}}{{#vars}}{{^required}}      IBuild {{name}}({{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}});
+{{/required}}{{/vars}}{{/vendorExtensions.x-has-staged-chain}}      {{classname}} build();
+    }
+
+    static final class Impl implements
+{{#vendorExtensions.x-simple-staged-chain}}        I{{pascalName}},
+{{/vendorExtensions.x-simple-staged-chain}}        IBuild {
+
+{{#vendorExtensions.x-simple-staged-chain}}      private @org.jspecify.annotations.Nullable {{{type}}} {{name}};
+{{/vendorExtensions.x-simple-staged-chain}}
+{{#vendorExtensions.x-has-staged-chain}}{{#vendorExtensions.x-simple-optional-own-vars}}      private {{{nullableAnnotation}}}{{{type}}} {{name}};
+{{/vendorExtensions.x-simple-optional-own-vars}}{{/vendorExtensions.x-has-staged-chain}}{{^vendorExtensions.x-has-staged-chain}}{{#vars}}{{^required}}      private {{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}};
+{{/required}}{{/vars}}{{/vendorExtensions.x-has-staged-chain}}
+{{#vendorExtensions.x-simple-staged-chain}}
+      @Override
+      public {{#isLast}}IBuild{{/isLast}}{{^isLast}}I{{nextStage}}{{/isLast}} {{name}}({{{nullableAnnotation}}}{{{type}}} {{name}}) {
+        this.{{name}} = {{name}};
+        return this;
+      }
+
+{{/vendorExtensions.x-simple-staged-chain}}
+{{#vendorExtensions.x-has-staged-chain}}{{#vendorExtensions.x-simple-optional-own-vars}}
+      @Override
+      public IBuild {{name}}({{{nullableAnnotation}}}{{{type}}} {{name}}) {
+        this.{{name}} = {{name}};
+        return this;
+      }
+
+{{/vendorExtensions.x-simple-optional-own-vars}}{{/vendorExtensions.x-has-staged-chain}}{{^vendorExtensions.x-has-staged-chain}}{{#vars}}{{^required}}
+      @Override
+      public IBuild {{name}}({{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}) {
+        this.{{name}} = {{name}};
+        return this;
+      }
+
+{{/required}}{{/vars}}{{/vendorExtensions.x-has-staged-chain}}
+      @Override
+      @SuppressWarnings("NullAway") // Stage interfaces guarantee all required fields were set.
+      public {{classname}} build() {
+        return new {{classname}}(
+{{#vendorExtensions.x-java-all-args-constructor-vars}}            {{name}}{{^-last}},{{/-last}}
+{{/vendorExtensions.x-java-all-args-constructor-vars}}{{^vendorExtensions.x-java-all-args-constructor-vars}}{{#vendorExtensions.x-needs-fallback-ctor}}{{#parent}}{{#parentVars}}            {{name}}{{^-last}},{{/-last}}
+{{/parentVars}}{{/parent}}{{^parent}}{{#vars}}            {{name}}{{^-last}},{{/-last}}
+{{/vars}}{{/parent}}{{/vendorExtensions.x-needs-fallback-ctor}}{{#vendorExtensions.x-needs-child-ctor}}{{#parent}}{{#parentVars}}            {{name}},
+{{/parentVars}}{{#vars}}            {{name}}{{^-last}},{{/-last}}
+{{/vars}}{{/parent}}{{^parent}}{{#vars}}            {{name}}{{^-last}},{{/-last}}
+{{/vars}}{{/parent}}{{/vendorExtensions.x-needs-child-ctor}}{{^vendorExtensions.x-needs-fallback-ctor}}{{^vendorExtensions.x-needs-child-ctor}}{{^parent}}{{#vendorExtensions.x-all-ctor-args}}            {{name}}{{^-last}},{{/-last}}
+{{/vendorExtensions.x-all-ctor-args}}{{/parent}}{{/vendorExtensions.x-needs-child-ctor}}{{/vendorExtensions.x-needs-fallback-ctor}}{{/vendorExtensions.x-java-all-args-constructor-vars}}        );
+      }
+    }
+  }

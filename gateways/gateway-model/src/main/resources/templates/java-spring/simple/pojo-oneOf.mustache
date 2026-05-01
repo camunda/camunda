@@ -361,8 +361,8 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
     return o.toString().replace("\n", "\n    ");
   }
   {{/lombok.ToString}}
-  {{#generateBuilders}}
+  {{#generateBuilders}}{{^vendorExtensions.x-polymorphic-schema}}
   {{>javaBuilder}}{{! prevent indent}}
-  {{/generateBuilders}}
+  {{/vendorExtensions.x-polymorphic-schema}}{{/generateBuilders}}
   {{/lombok.Data}}
 }

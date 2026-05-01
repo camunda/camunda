@@ -154,7 +154,7 @@ println "[EnrichSpec] schemas: ${schemas.size()}, parents found: ${parentOf.size
 // --- Type computation ---
 
 // Type-name overrides — must mirror <typeMappings> in gateway-model/pom.xml for required-field types.
-// Tested in EnrichSpecTest for parity.
+// Tested in EnrichSpecTest for parity. These match the ADVANCED execution's typeMappings.
 def TYPE_OVERRIDES = [
   'OffsetDateTime': 'String',
   // Filter property wrapper types mapped to their supertype equivalents.
@@ -181,6 +181,67 @@ def TYPE_OVERRIDES = [
   'ResourceKey'                                                 : 'String',
   'ScopeKey'                                                    : 'String',
   'ElementInstanceKey'                                          : 'String',
+]
+
+// Type-name overrides for the SIMPLE execution — mirrors the simple execution's <typeMappings>
+// in gateway-model/pom.xml. The simple generator maps many filter-property wrapper types directly
+// to Java primitives or to simpler model classes. This map is used when computing
+// x-simple-staged-chain and x-simple-optional-own-vars so that staged-builder types in the
+// simple template match what the simple generator actually generates for each field.
+def SIMPLE_TYPE_OVERRIDES = [
+  'OffsetDateTime': 'String',
+  // Filter property wrapper types — all flattened to String in simple.
+  'AuditLogEntityKeyFilterProperty'                             : 'String',
+  'AuditLogKeyFilterProperty'                                   : 'String',
+  'BasicStringFilterProperty'                                   : 'String',
+  'DecisionDefinitionKeyFilterProperty'                         : 'String',
+  'DecisionEvaluationInstanceKeyFilterProperty'                 : 'String',
+  'DecisionEvaluationKeyFilterProperty'                         : 'String',
+  'DecisionRequirementsKeyFilterProperty'                       : 'String',
+  'DeploymentKeyFilterProperty'                                 : 'String',
+  'ElementIdFilterProperty'                                     : 'String',
+  'ElementInstanceKeyFilterProperty'                            : 'String',
+  'FormKeyFilterProperty'                                       : 'String',
+  'IntegerFilterProperty'                                       : 'Integer',
+  'JobKeyFilterProperty'                                        : 'String',
+  'MessageSubscriptionKeyFilterProperty'                        : 'String',
+  'ProcessDefinitionIdFilterProperty'                           : 'String',
+  'ProcessDefinitionKeyFilterProperty'                          : 'String',
+  'ProcessInstanceKeyFilterProperty'                            : 'String',
+  'ResourceKeyFilterProperty'                                   : 'String',
+  'ScopeKeyFilterProperty'                                      : 'String',
+  'StringFilterProperty'                                        : 'String',
+  'VariableKeyFilterProperty'                                   : 'String',
+  // DateTimeFilterProperty maps to the custom SimpleDateTimeFilterProperty class.
+  'DateTimeFilterProperty'                                      : 'SimpleDateTimeFilterProperty',
+  // Key identifier schemas that map to String in both generators.
+  'ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey': 'String',
+  'ResourceKey'                                                 : 'String',
+  'ScopeKey'                                                    : 'String',
+  'ElementInstanceKey'                                          : 'String',
+  // Enum filter properties — mapped to shared enum types in both generators.
+  'AuditLogActorTypeFilterProperty'                             : 'io.camunda.gateway.protocol.model.AuditLogActorTypeEnum',
+  'AuditLogResultFilterProperty'                                : 'io.camunda.gateway.protocol.model.AuditLogResultEnum',
+  'BatchOperationItemStateFilterProperty'                       : 'io.camunda.gateway.protocol.model.BatchOperationItemStateEnum',
+  'BatchOperationStateFilterProperty'                           : 'io.camunda.gateway.protocol.model.BatchOperationStateEnum',
+  'BatchOperationTypeFilterProperty'                            : 'io.camunda.gateway.protocol.model.BatchOperationTypeEnum',
+  'CategoryFilterProperty'                                      : 'io.camunda.gateway.protocol.model.AuditLogCategoryEnum',
+  'ClusterVariableScopeFilterProperty'                          : 'io.camunda.gateway.protocol.model.ClusterVariableScopeEnum',
+  'DecisionInstanceStateFilterProperty'                         : 'io.camunda.gateway.protocol.model.DecisionInstanceStateEnum',
+  'EntityTypeFilterProperty'                                    : 'io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum',
+  'ElementInstanceStateFilterProperty'                          : 'io.camunda.gateway.protocol.model.ElementInstanceStateEnum',
+  'IncidentErrorTypeFilterProperty'                             : 'io.camunda.gateway.protocol.model.IncidentErrorTypeEnum',
+  'IncidentStateFilterProperty'                                 : 'io.camunda.gateway.protocol.model.IncidentStateEnum',
+  'JobKindFilterProperty'                                       : 'io.camunda.gateway.protocol.model.JobKindEnum',
+  'JobListenerEventTypeFilterProperty'                          : 'io.camunda.gateway.protocol.model.JobListenerEventTypeEnum',
+  'JobStateFilterProperty'                                      : 'io.camunda.gateway.protocol.model.JobStateEnum',
+  'MessageSubscriptionStateFilterProperty'                      : 'io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum',
+  'MessageSubscriptionTypeFilterProperty'                       : 'io.camunda.gateway.protocol.model.MessageSubscriptionTypeEnum',
+  'ProcessInstanceStateFilterProperty'                          : 'io.camunda.gateway.protocol.model.ProcessInstanceStateEnum',
+  'OperationTypeFilterProperty'                                 : 'io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum',
+  'UserTaskStateFilterProperty'                                 : 'io.camunda.gateway.protocol.model.UserTaskStateEnum',
+  // Polymorphic union types that the simple generator collapses to a single concrete variant.
+  'ProcessInstanceCreationRuntimeInstruction'                   : 'ProcessInstanceCreationTerminateInstruction',
 ]
 
 // Resolve OpenAPI schema fragment to Java type. Walks $refs, primitives, arrays, maps.
@@ -279,6 +340,93 @@ javaType = { Map fragment ->
   }
 }
 
+// Variant of javaType that uses SIMPLE_TYPE_OVERRIDES instead of TYPE_OVERRIDES.
+// Additionally, for named schemas with oneOf and no primitive type, returns the schema name
+// rather than resolving into the oneOf variants — this prevents resolving union/discriminator
+// types (like SourceElementInstruction) to a specific variant (like SourceElementIdInstruction).
+// Used for computing x-simple-staged-chain and x-simple-optional-own-vars.
+def simpleJavaType
+simpleJavaType = { Map fragment ->
+  if (fragment == null) return 'Object'
+  if (fragment['$ref']) {
+    def refName = ((String) fragment['$ref']).tokenize('/').last()
+    if (SIMPLE_TYPE_OVERRIDES.containsKey(refName)) return SIMPLE_TYPE_OVERRIDES[refName]
+    def refSchema = schemas[refName]
+    if (refSchema instanceof Map) {
+      def rs = refSchema as Map
+      if (rs.enum != null) return refName
+      if (rs.type == 'object') return refName
+      if (rs.allOf != null && rs.type == null) return refName
+      // Named schemas with oneOf and no type generate a named Java class — keep the name.
+      if (rs.oneOf != null && rs.type == null) return refName
+      def resolved = simpleJavaType(rs)
+      if (resolved != 'Object') return resolved
+    }
+    return refName
+  }
+  if (fragment.allOf) {
+    def ref = fragment.allOf.find { it['$ref'] }
+    if (ref) {
+      def refName = ((String) ref['$ref']).tokenize('/').last()
+      if (SIMPLE_TYPE_OVERRIDES.containsKey(refName)) return SIMPLE_TYPE_OVERRIDES[refName]
+      def refSchema = schemas[refName]
+      if (refSchema instanceof Map) {
+        def rs = refSchema as Map
+        if (rs.enum != null) return refName
+        if (rs.type == 'object') return refName
+        if (rs.allOf != null && rs.type == null) return refName
+        if (rs.oneOf != null && rs.type == null) return refName
+        def resolved = simpleJavaType(rs)
+        if (resolved != 'Object') return resolved
+      }
+      return refName
+    }
+  }
+  if (fragment.oneOf) {
+    def ref = fragment.oneOf.find { it['$ref'] }
+    if (ref) {
+      def refName = ((String) ref['$ref']).tokenize('/').last()
+      if (SIMPLE_TYPE_OVERRIDES.containsKey(refName)) return SIMPLE_TYPE_OVERRIDES[refName]
+      def refSchema = schemas[refName]
+      if (refSchema instanceof Map) {
+        def rs = refSchema as Map
+        if (rs.enum != null) return refName
+        if (rs.type == 'object') return refName
+        if (rs.allOf != null && rs.type == null) return refName
+        if (rs.oneOf != null && rs.type == null) return refName
+        def resolved = simpleJavaType(rs)
+        if (resolved != 'Object') return resolved
+      }
+      return refName
+    }
+  }
+  switch (fragment.type) {
+    case 'string':
+      if (fragment.format == 'date-time') return SIMPLE_TYPE_OVERRIDES['OffsetDateTime'] ?: 'OffsetDateTime'
+      if (fragment.format == 'uri') return 'URI'
+      return 'String'
+    case 'integer':
+      return fragment.format == 'int64' ? 'Long' : 'Integer'
+    case 'number':
+      return fragment.format == 'float' ? 'Float' : 'Double'
+    case 'boolean':
+      return 'Boolean'
+    case 'array':
+      def collection = (fragment.uniqueItems == true) ? 'Set' : 'List'
+      return "${collection}<${simpleJavaType(fragment.items as Map)}>".toString()
+    case 'object':
+      if (fragment.additionalProperties instanceof Map) {
+        return "Map<String, ${simpleJavaType(fragment.additionalProperties as Map)}>".toString()
+      }
+      if (fragment.additionalProperties instanceof Boolean && fragment.additionalProperties) {
+        return 'Map<String, Object>'
+      }
+      return 'Object'
+    default:
+      return 'Object'
+  }
+}
+
 def pascalCase = { String s -> s ? s[0].toUpperCase() + s.substring(1) : s }
 
 // Convert an OpenAPI property name (which may contain dots, hyphens, or underscores) to a valid
@@ -327,6 +475,29 @@ def javaTypeForProperty = { Map propSchema, String javaFieldName ->
     }
   }
   return javaType(propSchema)
+}
+
+// Variant of javaTypeForProperty that uses simpleJavaType for type resolution.
+// Used when computing x-simple-staged-chain and x-simple-optional-own-vars.
+def simpleJavaTypeForProperty = { Map propSchema, String javaFieldName ->
+  if (propSchema == null) return 'Object'
+  if (propSchema.type == 'string' && propSchema.enum != null) {
+    return "${pascalName(javaFieldName)}Enum".toString()
+  }
+  if (propSchema.type == 'array' && propSchema.items instanceof Map) {
+    def items = propSchema.items as Map
+    if (items.type == 'string' && items.enum != null) {
+      return "List<${pascalName(javaFieldName)}Enum>".toString()
+    }
+    if (items['$ref']) {
+      def refName = ((String) items['$ref']).tokenize('/').last()
+      def refSchema = schemas[refName]
+      if (refSchema instanceof Map && (refSchema as Map).enum != null) {
+        return "List<${refName}>".toString()
+      }
+    }
+  }
+  return simpleJavaType(propSchema)
 }
 
 // Find the property's schema fragment by name. Walks parent chain to find inherited properties.
@@ -426,6 +597,34 @@ schemas.each { name, schema ->
       ]
     }
     schema['x-staged-chain'] = chain
+    // Boolean flag so templates can use a non-iterating guard for x-staged-chain.
+    schema['x-has-staged-chain'] = true
+
+    // --- x-simple-staged-chain ---
+    // Same structure as x-staged-chain but uses SIMPLE_TYPE_OVERRIDES for type resolution.
+    // The simple generator maps many filter-property types (e.g. StringFilterProperty → String,
+    // DateTimeFilterProperty → SimpleDateTimeFilterProperty) differently from the advanced
+    // generator. Using simpleJavaTypeForProperty here keeps staged-builder setter types in
+    // sync with the simple-variant pojo's actual field/ctor types.
+    // Used exclusively by simple/javaBuilder.mustache.
+    def simpleChain = []
+    merged.eachWithIndex { propName, idx ->
+      def propSchema = findProperty(name, propName)
+      def isLast = (idx == merged.size() - 1)
+      def nextProp = isLast ? null : merged[idx + 1]
+      def nullable = (propSchema instanceof Map) && propSchema.nullable == true
+      def javaFieldName = javaName(propName)
+      def nextJavaFieldName = nextProp ? javaName(nextProp) : null
+      simpleChain << [
+        name             : javaFieldName,
+        pascalName       : pascalName(javaFieldName),
+        type             : simpleJavaTypeForProperty(propSchema as Map, javaFieldName),
+        nullableAnnotation: nullable ? '@org.jspecify.annotations.Nullable ' : '',
+        isLast           : isLast,
+        nextStage        : nextJavaFieldName ? pascalName(nextJavaFieldName) : null,
+      ]
+    }
+    schema['x-simple-staged-chain'] = simpleChain
   }
 
   // --- x-optional-parent-vars ---
@@ -560,6 +759,130 @@ schemas.each { name, schema ->
     schema['x-all-ctor-args'] = rawArgNames.collect { propName ->
       [name: javaName((String) propName)]
     }
+  }
+
+  // --- x-optional-own-vars ---
+  // Collect optional (non-required) vars from the schema's OWN properties, in declaration order.
+  // "Own" includes: top-level properties, inline allOf object entries (not $ref), and properties
+  // from oneOf/anyOf $ref targets that the generator merges into a flat class.
+  //
+  // Used by the simple-variant javaBuilder.mustache as a type-correct replacement for the
+  // vars-inverted-required iteration. In the simple variant, flat-inlined schemas may have
+  // inherited-and-required fields appear as own vars with required=false in the generator's
+  // context (because the property was declared optional in an ancestor). This extension avoids
+  // emitting duplicate optional setters for those fields by applying the same mergedRequired
+  // logic as x-staged-chain. nullableAnnotation is pre-stored (same convention as
+  // x-optional-parent-vars) so the template doesn't need to call the nullableAnnotation partial.
+  def ownOptVars = []
+  def seenOwnNames = new LinkedHashSet<String>()
+  // Helper closure to add optional vars from a properties map.
+  def addOptVarsFromProps = { Map propsMap ->
+    propsMap.each { propName, propSchema ->
+      if (!mergedSet.contains(propName) && seenOwnNames.add(propName)) {
+        def nullable = (propSchema instanceof Map) && (propSchema as Map).nullable == true
+        def javaFieldName = javaName((String) propName)
+        ownOptVars << [
+          name             : javaFieldName,
+          type             : javaTypeForProperty(propSchema as Map, javaFieldName),
+          nullableAnnotation: nullable ? '@org.jspecify.annotations.Nullable ' : '',
+        ]
+      }
+    }
+  }
+  // 1. Top-level properties.
+  def ownTopLevelProps = schemaMap.get('properties')
+  if (ownTopLevelProps instanceof Map) addOptVarsFromProps(ownTopLevelProps as Map)
+  // 2. Inline allOf objects (non-$ref entries) — own properties expressed via allOf pattern.
+  if (schemaMap.allOf instanceof List) {
+    (schemaMap.allOf as List).each { entry ->
+      if (entry instanceof Map && !(entry as Map).containsKey('$ref')) {
+        def ep = (entry as Map).get('properties')
+        if (ep instanceof Map) addOptVarsFromProps(ep as Map)
+      }
+    }
+  }
+  // 3. oneOf / anyOf $ref targets — the simple generator merges these into a flat class;
+  //    we scan each $ref target's properties so x-optional-own-vars covers all merged vars.
+  def mergedOneOfTargets = []
+  if (schemaMap.oneOf instanceof List) mergedOneOfTargets.addAll((schemaMap.oneOf as List))
+  if (schemaMap.anyOf instanceof List) mergedOneOfTargets.addAll((schemaMap.anyOf as List))
+  mergedOneOfTargets.each { entry ->
+    if (!(entry instanceof Map)) return
+    def em = entry as Map
+    def refProps = null
+    if (em['$ref']) {
+      def refName = ((String) em['$ref']).tokenize('/').last()
+      def refSchema = schemas[refName]
+      if (refSchema instanceof Map) refProps = (refSchema as Map).get('properties')
+    }
+    if (refProps instanceof Map) addOptVarsFromProps(refProps as Map)
+  }
+  if (!ownOptVars.isEmpty()) {
+    schema['x-optional-own-vars'] = ownOptVars
+  }
+
+  // --- x-simple-optional-own-vars ---
+  // Same as x-optional-own-vars but uses simpleJavaTypeForProperty for type resolution.
+  // The simple generator maps filter-property types to String/Integer/etc., so types computed
+  // with javaTypeForProperty (which uses TYPE_OVERRIDES for advanced types) would not match the
+  // simple-variant ctor/field types. Used exclusively by simple/javaBuilder.mustache.
+  //
+  // Also includes optional properties from the allOf $ref parent chain (not just own props).
+  // For flat-inlined classes in the simple variant (no Java parent despite having an allOf $ref
+  // parent in YAML), the parent's optional props must be included so that Impl fields and
+  // IBuild optional setters cover all settable vars.
+  def simpleOwnOptVars = []
+  def seenSimpleOwnNames = new LinkedHashSet<String>()
+  def addSimpleOptVarsFromProps = { Map propsMap ->
+    propsMap.each { propName, propSchema ->
+      if (!mergedSet.contains(propName) && seenSimpleOwnNames.add(propName)) {
+        def nullable = (propSchema instanceof Map) && (propSchema as Map).nullable == true
+        def javaFieldName = javaName((String) propName)
+        simpleOwnOptVars << [
+          name             : javaFieldName,
+          type             : simpleJavaTypeForProperty(propSchema as Map, javaFieldName),
+          nullableAnnotation: nullable ? '@org.jspecify.annotations.Nullable ' : '',
+        ]
+      }
+    }
+  }
+  // 1. Top-level properties.
+  if (ownTopLevelProps instanceof Map) addSimpleOptVarsFromProps(ownTopLevelProps as Map)
+  // 2. Inline allOf objects (non-$ref entries).
+  if (schemaMap.allOf instanceof List) {
+    (schemaMap.allOf as List).each { entry ->
+      if (entry instanceof Map && !(entry as Map).containsKey('$ref')) {
+        def ep = (entry as Map).get('properties')
+        if (ep instanceof Map) addSimpleOptVarsFromProps(ep as Map)
+      }
+    }
+  }
+  // 3. Full parent chain properties — needed for flat-inlined classes in the simple variant.
+  //    When the simple generator flat-inlines a parent (no Java extends), the parent's optional
+  //    props must be in x-simple-optional-own-vars since x-optional-parent-vars is guarded by
+  //    {{#parent}} in the simple template and won't fire for flat-inlined classes.
+  //    Walk the entire parent chain (not just one level) to cover grandparent properties.
+  def allParents = parentChain((String) name)
+  allParents.each { parentName ->
+    def parentSchemaMap = schemas[parentName] as Map
+    if (parentSchemaMap == null) return
+    def parentProps = parentSchemaMap.get('properties')
+    if (parentProps instanceof Map) addSimpleOptVarsFromProps(parentProps as Map)
+  }
+  // 4. oneOf / anyOf $ref targets (same as x-optional-own-vars).
+  mergedOneOfTargets.each { entry ->
+    if (!(entry instanceof Map)) return
+    def em = entry as Map
+    def refProps = null
+    if (em['$ref']) {
+      def refName = ((String) em['$ref']).tokenize('/').last()
+      def refSchema = schemas[refName]
+      if (refSchema instanceof Map) refProps = (refSchema as Map).get('properties')
+    }
+    if (refProps instanceof Map) addSimpleOptVarsFromProps(refProps as Map)
+  }
+  if (!simpleOwnOptVars.isEmpty()) {
+    schema['x-simple-optional-own-vars'] = simpleOwnOptVars
   }
 }
 

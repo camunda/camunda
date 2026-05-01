@@ -1,7 +1,33 @@
-{{! Custom override of the upstream pojo.mustache template.
-  Diff: Removes the @Schema annotation from the class level, since it can cause issues with JSON
-  schema generation when method-level schema exists as well. The @Schema annotation is still emitted
-  for properties, which is where it is most useful.
+{{!
+Custom override of upstream JavaSpring/pojo.mustache (openapi-generator v7.21.0,
+modules/openapi-generator/src/main/resources/JavaSpring/pojo.mustache).
+
+NOTE: Do NOT use Mustache tag syntax inside this comment block. The samskivert Mustache engine
+parses section tags even inside comment blocks, so any unclosed section tag in this comment would
+corrupt the template parse tree and cause a MustacheParseException.
+
+Diffs vs upstream:
+1. Class-level @Schema annotation is omitted — it can clash with method-level @Schema during
+   JSON-schema generation. Property-level @Schema is still emitted, which is where it's most
+   useful.
+2. Inherited-property fluent setter prefixes the parameter type with the nullableAnnotation
+   partial. (Same rationale as advanced/pojo.mustache diff #1.)
+3. No no-args constructor. (Same rationale as advanced/pojo.mustache diff #2.)
+4. No required-args constructor. (Same rationale as advanced/pojo.mustache diff #3.)
+5. All-args constructor is `protected`, decorated with @JsonCreator and @JsonProperty per
+   parameter. (Same rationale as advanced/pojo.mustache diff #4.)
+6. Setters and fluent setters are emitted only for optional fields. (Same rationale as
+   advanced/pojo.mustache diff #5.)
+7. The generateBuilders/javaBuilder partial hookup is left in place from upstream; we activate
+   it via the generateBuilders config option and supply our own override of javaBuilder.mustache
+   (sibling file in this directory) that emits a nested staged Builder. (Same rationale as
+   advanced/pojo.mustache diff #6.)
+
+Cross-reference with advanced/pojo.mustache for the canonical staged-builder rationale; this
+file mirrors that variant minus the class-level @Schema annotation.
+
+When bumping openapi-generator: re-fetch upstream pojo.mustache at the new version, diff against
+this file, and re-apply each diff above. Update the version reference.
 }}
 /**
  * {{description}}{{^description}}{{classname}}{{/description}}{{#isDeprecated}}
@@ -90,62 +116,76 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
   {{/openApiNullable}}
   {{/isContainer}}
   {{/vars}}
-  {{#vendorExtensions.x-java-no-args-constructor}}
-
-  public {{classname}}() {
-    super();
-  }
-  {{/vendorExtensions.x-java-no-args-constructor}}
   {{^lombok.Data}}
-  {{^lombok.RequiredArgsConstructor}}
-  {{#generatedConstructorWithRequiredArgs}}
-  {{#hasRequired}}
-
-  /**
-   * Constructor with only required parameters{{#generateConstructorWithAllArgs}}{{^vendorExtensions.x-java-all-args-constructor}} and all parameters{{/vendorExtensions.x-java-all-args-constructor}}{{/generateConstructorWithAllArgs}}
-   */
-  public {{classname}}({{#requiredVars}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/requiredVars}}) {
-    {{#parent}}
-    super({{#parentRequiredVars}}{{name}}{{^-last}}, {{/-last}}{{/parentRequiredVars}});
-    {{/parent}}
-    {{#vars}}
-    {{#required}}
-    {{#openApiNullable}}
-    this.{{name}} = {{#isNullable}}JsonNullable.of({{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}Optional.ofNullable({{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}}{{name}}{{#isNullable}}){{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}){{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}};
-    {{/openApiNullable}}
-    {{^openApiNullable}}
-    this.{{name}} = {{name}};
-    {{/openApiNullable}}
-    {{/required}}
-    {{/vars}}
-  }
-  {{/hasRequired}}
-  {{/generatedConstructorWithRequiredArgs}}
-  {{/lombok.RequiredArgsConstructor}}
   {{#vendorExtensions.x-java-all-args-constructor}}
 
   /**
-   * Constructor with all args parameters
+   * Sole construction path. Public callers go through {{classname}}.Builder.builder(); Jackson uses
+   * this ctor via @JsonCreator; subclasses chain via super(...).
    */
-  public {{classname}}({{#vendorExtensions.x-java-all-args-constructor-vars}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/vendorExtensions.x-java-all-args-constructor-vars}}) {
+  @com.fasterxml.jackson.annotation.JsonCreator
+  protected {{classname}}({{#vendorExtensions.x-java-all-args-constructor-vars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/vendorExtensions.x-java-all-args-constructor-vars}}) {
   {{#parent}}
       super({{#parentVars}}{{name}}{{^-last}}, {{/-last}}{{/parentVars}});
   {{/parent}}
   {{#vars}}
-  {{#openApiNullable}}
-      this.{{name}} = {{#isNullable}}JsonNullable.of({{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}Optional.ofNullable({{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}}{{name}}{{#isNullable}}){{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}){{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}};
-  {{/openApiNullable}}
-  {{^openApiNullable}}
       this.{{name}} = {{name}};
-  {{/openApiNullable}}
   {{/vars}}
   }
+  {{/vendorExtensions.x-java-all-args-constructor}}
+  {{^vendorExtensions.x-java-all-args-constructor}}
+  {{#vendorExtensions.x-needs-fallback-ctor}}
+  {{#parent}}
+
+  /**
+   * Sole construction path (no own fields — delegates fully to parent).
+   * Public callers go through {{classname}}.Builder.builder(); Jackson uses
+   * this ctor via @JsonCreator; subclasses chain via super(...).
+   */
+  @com.fasterxml.jackson.annotation.JsonCreator
+  protected {{classname}}({{#parentVars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/parentVars}}) {
+      super({{#parentVars}}{{name}}{{^-last}}, {{/-last}}{{/parentVars}});
+  }
+  {{/parent}}
+  {{/vendorExtensions.x-needs-fallback-ctor}}
+  {{#vendorExtensions.x-needs-child-ctor}}
+  {{#parent}}
+
+  /**
+   * Sole construction path (parent is a root class — openapi-generator does not emit a ctor for
+   * this child; we provide one so subclasses can chain super(...) correctly).
+   * Public callers go through {{classname}}.Builder.builder(); Jackson uses
+   * this ctor via @JsonCreator; subclasses chain via super(...).
+   */
+  @com.fasterxml.jackson.annotation.JsonCreator
+  protected {{classname}}({{#parentVars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}, {{/parentVars}}{{#vars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/vars}}) {
+      super({{#parentVars}}{{name}}{{^-last}}, {{/-last}}{{/parentVars}});
+  {{#vars}}
+      this.{{name}} = {{name}};
+  {{/vars}}
+  }
+  {{/parent}}
+  {{/vendorExtensions.x-needs-child-ctor}}
+  {{^parent}}
+  {{#vars}}{{#-first}}
+
+  /**
+   * Sole construction path. Public callers go through {{classname}}.Builder.builder(); Jackson uses
+   * this ctor via @JsonCreator; subclasses chain via super(...).
+   */
+  @com.fasterxml.jackson.annotation.JsonCreator
+  protected {{classname}}({{/-first}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{#-last}}) {
+{{/-last}}{{/vars}}
+{{#vars}}      this.{{name}} = {{name}};
+{{/vars}}  {{#vars}}{{#-last}}}{{/-last}}{{/vars}}
+  {{/parent}}
   {{/vendorExtensions.x-java-all-args-constructor}}
   {{/lombok.Data}}
   {{#vars}}
   {{^lombok.Data}}
 
   {{! begin feature: fluent setter methods }}
+  {{^required}}
   public {{classname}} {{name}}({{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}) {
     {{#openApiNullable}}
     this.{{name}} = {{#isNullable}}JsonNullable.of({{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}Optional.of{{#optionalAcceptNullable}}Nullable{{/optionalAcceptNullable}}({{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}}{{name}}{{#isNullable}}){{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}){{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}};
@@ -191,6 +231,7 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
     return this;
   }
   {{/isMap}}
+  {{/required}}
   {{! end feature: fluent setter methods }}
   {{! begin feature: getter and setter }}
   {{^lombok.Getter}}
@@ -228,30 +269,16 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
   {{#swagger1AnnotationLibrary}}
   @ApiModelProperty({{#example}}example = "{{{.}}}", {{/example}}{{#required}}required = {{required}}, {{/required}}{{#isReadOnly}}readOnly = {{{isReadOnly}}}, {{/isReadOnly}}value = "{{{description}}}")
   {{/swagger1AnnotationLibrary}}
-  {{#jackson}}
-  @JsonProperty("{{baseName}}")
-  {{#withXml}}
-  @JacksonXmlProperty(localName = "{{items.xmlName}}{{^items.xmlName}}{{xmlName}}{{^xmlName}}{{baseName}}{{/xmlName}}{{/items.xmlName}}"{{#isXmlAttribute}}, isAttribute = true{{/isXmlAttribute}}{{#xmlNamespace}}, namespace = "{{.}}"{{/xmlNamespace}})
-    {{#isContainer}}
-  @JacksonXmlElementWrapper({{#isXmlWrapped}}localName = "{{xmlName}}{{^xmlName}}{{baseName}}{{/xmlName}}", {{#xmlNamespace}}namespace = "{{.}}", {{/xmlNamespace}}{{/isXmlWrapped}}useWrapping = {{isXmlWrapped}})
-    {{/isContainer}}
-  {{/withXml}}
-  {{/jackson}}
-  {{#withXml}}
-  @Xml{{#isXmlAttribute}}Attribute{{/isXmlAttribute}}{{^isXmlAttribute}}Element{{/isXmlAttribute}}(name = "{{items.xmlName}}{{^items.xmlName}}{{xmlName}}{{^xmlName}}{{baseName}}{{/xmlName}}{{/items.xmlName}}"{{#xmlNamespace}}, namespace = "{{.}}"{{/xmlNamespace}})
-    {{#isXmlWrapped}}
-  @XmlElementWrapper(name = "{{xmlName}}{{^xmlName}}{{baseName}}{{/xmlName}}"{{#xmlNamespace}}, namespace = "{{.}}"{{/xmlNamespace}})
-    {{/isXmlWrapped}}
-  {{/withXml}}
   {{#deprecated}}
   @Deprecated
   {{/deprecated}}
-  public {{>nullableAnnotation}}{{>nullableDataTypeBeanValidation}} {{getter}}() {
+{{#jackson}}{{>jackson_annotations}}{{/jackson}}{{#withXml}}{{>xmlAccessorAnnotation}}{{/withXml}}  public {{>nullableAnnotation}}{{>nullableDataTypeBeanValidation}} {{getter}}() {
     return {{name}};
   }
   {{/lombok.Getter}}
 
   {{^lombok.Setter}}
+  {{^required}}
   {{#deprecated}}
   /**
    * @deprecated
@@ -263,9 +290,10 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
   {{#deprecated}}
   @Deprecated
   {{/deprecated}}
-  public void {{setter}}({{>nullableAnnotation}}{{>nullableDataType}} {{name}}) {
+{{#jackson}}{{^vendorExtensions.x-is-jackson-optional-nullable}}{{>jackson_annotations}}{{/vendorExtensions.x-is-jackson-optional-nullable}}{{/jackson}}  public void {{setter}}({{>nullableAnnotation}}{{>nullableDataType}} {{name}}) {
     this.{{name}} = {{name}};
   }
+  {{/required}}
   {{/lombok.Setter}}
   {{/lombok.Data}}
   {{! end feature: getter and setter }}
@@ -277,7 +305,8 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
 
   {{^lombok.Setter}}
   {{! begin feature: fluent setter methods for inherited properties }}
-  public {{classname}} {{name}}({{{datatypeWithEnum}}} {{name}}) {
+  {{^required}}
+  public {{classname}} {{name}}({{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}) {
     super.{{name}}({{name}});
     return this;
   }
@@ -295,6 +324,7 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
     return this;
   }
   {{/isMap}}
+  {{/required}}
   {{/lombok.Setter}}
   {{! end feature: fluent setter methods for inherited properties }}
   {{/parentVars}}
@@ -351,11 +381,8 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
    * Convert the given object to string with each line indented by 4 spaces
    * (except the first line).
    */
-  private String toIndentedString(Object o) {
-    if (o == null) {
-      return "null";
-    }
-    return o.toString().replace("\n", "\n    ");
+  private String toIndentedString({{>nullableAnnotation}}Object o) {
+    return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
   {{/lombok.ToString}}
   {{#generateBuilders}}
