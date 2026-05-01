@@ -46,6 +46,8 @@ Namespaces carry these labels (set by `newLoadTest.sh`):
 
 ## Start a load test
 
+### Via GHA (builds image from branch)
+
 ```bash
 gh workflow run camunda-load-test.yml --repo camunda/camunda \
   --field ref=<branch> \
@@ -53,6 +55,17 @@ gh workflow run camunda-load-test.yml --repo camunda/camunda \
 ```
 
 For all available inputs see the `inputs:` block in `.github/workflows/camunda-load-test.yml`.
+
+### Via manual setup (kubectl)
+
+If you have kubectl access and want to set up a load test manually without using GitHub Actions:
+
+```bash
+cd load-tests/setup
+./newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
+```
+
+See `load-tests/setup/README.md` for complete documentation on manual setup, including prerequisites, configuration options, and deployment steps.
 
 After dispatching, find the run:
 
@@ -97,7 +110,7 @@ gh run list --workflow=camunda-load-test.yml --repo camunda/camunda \
 cat load-tests/camunda-platform-values.yaml
 cat load-tests/load-test-values.yaml
 
-# Read what's actually deployed (requires kubectl)
+# Read what's actually deployed (requires kubectl and Helm)
 helm get values <namespace> -n <namespace>
 helm get values <namespace>-test -n <namespace>
 ```
@@ -109,6 +122,8 @@ helm get values <namespace>-test -n <namespace>
 **Check kubectl first** (see Prerequisites). Then choose:
 
 ### With kubectl (direct — preferred for iterative changes)
+
+See `load-tests/setup/README.md` for full manual setup documentation.
 
 ```bash
 cd load-tests/setup
@@ -137,8 +152,11 @@ gh workflow run camunda-load-test.yml --repo camunda/camunda \
 Reuse existing image (skip Docker build):
 
 ```bash
-# Find current image tag
+# Find current image tag (via kubectl)
 kubectl get pods -n <namespace> -o jsonpath='{.items[0].spec.containers[0].image}'
+
+# Or extract from GHA summary (when kubectl unavailable)
+gh run view <run-id> --repo camunda/camunda --log | grep "Image tag"
 
 gh workflow run camunda-load-test.yml --repo camunda/camunda \
   --field ref=<branch> \
@@ -187,14 +205,6 @@ cd load-tests/setup
 
 This deletes the namespace and removes the local setup directory for it.
 
-**Without kubectl — GHA TTL cleanup:**
-
-```bash
-# WARNING: deletes ALL namespaces whose deadline-date label is ≤ today
-gh workflow run camunda-load-test-clean-up.yml --repo camunda/camunda \
-  --field date=$(date -u +%Y-%m-%d)
-```
-
 ---
 
 ## Logs
@@ -214,6 +224,11 @@ kubectl logs -n <namespace> -l app=starter --tail=100
 # Describe a pod (scheduling / resource issues)
 kubectl describe pod -n <namespace> camunda-0
 ```
+
+**For more detailed logs and metrics:**
+
+- **Stackdriver logs**: Access via GCP Console for the benchmark cluster
+- **Grafana dashboards**: See "Monitoring dashboards" section below for performance metrics
 
 ---
 
