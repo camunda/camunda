@@ -18,8 +18,8 @@ import java.util.List;
  *
  * <p>This shape is proposed as a strawman for M1 and will be refined based on Vinicius and
  * Patrick's review. Fields that are pending a unified configuration source are annotated with
- * inline comments. Operate-specific fields (e.g., {@code tasklistUrl},
- * {@code resourcePermissionsEnabled}) are deferred to M3/M4.
+ * inline comments. Operate-specific fields (e.g., {@code tasklistUrl}, {@code
+ * resourcePermissionsEnabled}) are deferred to M3/M4.
  */
 public class ClusterConfiguration {
 
@@ -44,8 +44,7 @@ public class ClusterConfiguration {
   public final boolean canLogout;
 
   /**
-   * Whether login is delegated to an OIDC provider (from {@code
-   * camunda.webapps.login-delegated}).
+   * Whether login is delegated to an OIDC provider (from {@code camunda.webapps.login-delegated}).
    */
   public final boolean isLoginDelegated;
 
@@ -56,7 +55,9 @@ public class ClusterConfiguration {
    */
   public final String contextPath;
 
-  /** Maximum HTTP request size in bytes (from {@code spring.servlet.multipart.max-request-size}). */
+  /**
+   * Maximum HTTP request size in bytes (from {@code spring.servlet.multipart.max-request-size}).
+   */
   public final long maxRequestSize;
 
   /**
@@ -95,8 +96,8 @@ public class ClusterConfiguration {
     public final String clusterId;
 
     /**
-     * Deployment stage (e.g., {@code prod}, {@code dev}). Reads {@code
-     * camunda.webapp.cloud.stage}; {@code null} when unset.
+     * Deployment stage (e.g., {@code prod}, {@code dev}). Reads {@code camunda.webapp.cloud.stage};
+     * {@code null} when unset.
      */
     public final String stage;
 

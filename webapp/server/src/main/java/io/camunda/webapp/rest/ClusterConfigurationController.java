@@ -20,13 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Exposes cluster-level configuration for the unified orchestration-cluster webapp.
  *
- * <p>This endpoint is intentionally kept at {@code /internal/cluster-configuration} rather than
- * the V2 path {@code /v2/system/configuration} (which already exists for job metrics). Relocating
- * to the V2 path requires API governance approval from CamundaX; that is tracked as a pending
- * decision in the BFF unification SKILL.md §4.
+ * <p>This endpoint is intentionally kept at {@code /internal/cluster-configuration} rather than the
+ * V2 path {@code /v2/system/configuration} (which already exists for job metrics). Relocating to
+ * the V2 path requires API governance approval from CamundaX; that is tracked as a pending decision
+ * in the BFF unification SKILL.md §4.
  *
- * <p><strong>Multi-engine forward-compatibility note:</strong> This endpoint is cluster-scoped,
- * not tenant-scoped. When {@code TenantPathFilter} lands it must add {@code
+ * <p><strong>Multi-engine forward-compatibility note:</strong> This endpoint is cluster-scoped, not
+ * tenant-scoped. When {@code TenantPathFilter} lands it must add {@code
  * /internal/cluster-configuration} to its cluster-scoped pass-through list alongside {@code
  * /v2/cluster/**} and {@code /v2/license}. The {@code contextPath} field in the response is the
  * deployment-level servlet context path only — the multi-engine tenant prefix is delivered
