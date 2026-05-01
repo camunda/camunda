@@ -78,13 +78,16 @@ class ConnectionMonitorTest {
     final var registry = new SimpleMeterRegistry();
     final var client = mock(CamundaClient.class);
 
-    // when — just construct, do not call awaitAndPrintTopology
-    new ConnectionMonitor(client, registry);
+    // when — just construct, do not call awaitAndPrintTopology.
+    // The local reference is required: Micrometer's Gauge.builder(name, obj, fn) holds a
+    // weak reference to obj, so without this binding GC could clear it and value() → NaN.
+    final var monitor = new ConnectionMonitor(client, registry);
 
     // then
     assertThat(registry.find(AppMetricsDoc.CONNECTED.getName()).gauge().value())
         .describedAs("Gauge must be registered at 0 immediately on bean creation")
         .isEqualTo(0.0);
+    assertThat(monitor).isNotNull();
   }
 
   /** Returns a completed {@link CamundaFuture} whose {@link Topology} has no brokers. */
