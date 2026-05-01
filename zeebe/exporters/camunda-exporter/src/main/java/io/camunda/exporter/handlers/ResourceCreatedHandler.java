@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.resource.DeployedResourceEntity;
 import io.camunda.zeebe.exporter.common.utils.ResourceUtils;
 import io.camunda.zeebe.protocol.record.Record;
@@ -68,7 +69,10 @@ public class ResourceCreatedHandler implements ExportHandler<DeployedResourceEnt
   }
 
   @Override
-  public void flush(final DeployedResourceEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final DeployedResourceEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.add(indexName, entity);
   }

@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.form.EmbeddedFormBatch;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -65,7 +66,10 @@ public class EmbeddedFormHandler implements ExportHandler<EmbeddedFormBatch, Pro
   }
 
   @Override
-  public void flush(final EmbeddedFormBatch entity, final BatchRequest batchRequest) {
+  public void flush(
+      final IndexLocator indexLocator,
+      final EmbeddedFormBatch entity,
+      final BatchRequest batchRequest) {
     final var forms = entity.getForms();
     Optional.ofNullable(forms).ifPresent(l -> l.forEach(f -> batchRequest.add(indexName, f)));
   }

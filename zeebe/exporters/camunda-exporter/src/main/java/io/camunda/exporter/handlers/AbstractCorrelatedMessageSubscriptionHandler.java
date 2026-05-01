@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -56,7 +57,9 @@ public abstract class AbstractCorrelatedMessageSubscriptionHandler<T extends Rec
 
   @Override
   public void flush(
-      final CorrelatedMessageSubscriptionEntity entity, final BatchRequest batchRequest) {
+      final IndexLocator indexLocator,
+      final CorrelatedMessageSubscriptionEntity entity,
+      final BatchRequest batchRequest) {
     batchRequest.add(getIndexName(), entity);
   }
 }

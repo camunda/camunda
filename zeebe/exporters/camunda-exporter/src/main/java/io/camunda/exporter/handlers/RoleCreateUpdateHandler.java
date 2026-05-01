@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -63,7 +64,8 @@ public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRe
   }
 
   @Override
-  public void flush(final RoleEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator, final RoleEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.add(indexName, entity);
   }

@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -65,7 +66,8 @@ public class UserCreatedUpdatedHandler implements ExportHandler<UserEntity, User
   }
 
   @Override
-  public void flush(final UserEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator, final UserEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.add(indexName, entity);
   }

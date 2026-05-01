@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -65,7 +66,10 @@ public class TenantEntityAddedHandler
   }
 
   @Override
-  public void flush(final TenantMemberEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final TenantMemberEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.addWithRouting(indexName, entity, entity.getJoin().parent());
   }

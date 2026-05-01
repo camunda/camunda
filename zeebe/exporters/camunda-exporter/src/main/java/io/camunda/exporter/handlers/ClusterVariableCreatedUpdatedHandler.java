@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.util.ClusterVariableUtil;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
@@ -90,7 +91,10 @@ public class ClusterVariableCreatedUpdatedHandler
   }
 
   @Override
-  public void flush(final ClusterVariableEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final ClusterVariableEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.add(indexName, entity);
   }

@@ -196,7 +196,7 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))

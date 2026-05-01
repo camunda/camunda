@@ -117,7 +117,7 @@ abstract class AbstractOperationHandlerTest<R extends RecordValue> {
         OperationTemplate.LOCK_EXPIRATION_TIME, entity.getLockExpirationTime());
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(null, entity, mockRequest);
 
     // then
     verify(mockRequest).update(indexName, entity.getId(), expectedUpdateFields);

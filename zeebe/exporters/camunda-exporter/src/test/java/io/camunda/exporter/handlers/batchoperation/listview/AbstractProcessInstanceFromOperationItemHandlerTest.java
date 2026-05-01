@@ -188,7 +188,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
     final var batchRequest = mock(BatchRequest.class);
 
     // When
-    underTest.flush(entity, batchRequest);
+    underTest.flush(null, entity, batchRequest);
 
     // Then - the ES document ID is just the processInstanceKey, extracted from the composite ID
     Mockito.verify(batchRequest)

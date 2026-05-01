@@ -87,7 +87,7 @@ public class GroupEntityAddedHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))

@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler.SnapshotTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
@@ -84,7 +85,10 @@ public class UserTaskCompletionVariableHandler
   }
 
   @Override
-  public void flush(final SnapshotTaskVariableBatch entity, final BatchRequest batchRequest) {
+  public void flush(
+      final IndexLocator indexLocator,
+      final SnapshotTaskVariableBatch entity,
+      final BatchRequest batchRequest) {
     entity.variables().forEach(v -> flushSnapshotTaskVariableEntity(v, batchRequest));
   }
 

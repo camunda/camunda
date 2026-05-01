@@ -104,7 +104,7 @@ public class ResourceDeletedHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(null, entity, mockRequest);
 
     // then
     verify(mockRequest, times(1)).delete(indexName, "42");

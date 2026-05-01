@@ -12,6 +12,7 @@ import static io.camunda.exporter.utils.ExporterUtil.map;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -93,7 +94,10 @@ public class BatchOperationCreatedHandler
   }
 
   @Override
-  public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final BatchOperationEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     // Use upsert instead of add (index) to prevent cross-partition document overwrites.
     // The CREATED event is distributed to all partitions, so each partition's exporter writes to

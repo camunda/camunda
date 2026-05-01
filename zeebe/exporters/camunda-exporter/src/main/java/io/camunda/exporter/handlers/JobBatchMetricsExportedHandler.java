@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.jobmetricsbatch.JobMetricsBatchEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -116,7 +117,10 @@ public class JobBatchMetricsExportedHandler
   }
 
   @Override
-  public void flush(final JobMetricsBatchEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final JobMetricsBatchEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.add(indexName, entity);
   }

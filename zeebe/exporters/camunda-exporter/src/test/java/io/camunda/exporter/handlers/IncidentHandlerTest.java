@@ -136,7 +136,7 @@ public class IncidentHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(incidentEntity, mockRequest);
+    underTest.flush(null, incidentEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))

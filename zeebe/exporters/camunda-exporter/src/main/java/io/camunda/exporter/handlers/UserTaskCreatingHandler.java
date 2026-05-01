@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
@@ -84,7 +85,8 @@ public class UserTaskCreatingHandler implements ExportHandler<TaskEntity, UserTa
   }
 
   @Override
-  public void flush(final TaskEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final IndexLocator indexLocator, final TaskEntity entity, final BatchRequest batchRequest) {
     final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
 
     batchRequest.addWithRouting(

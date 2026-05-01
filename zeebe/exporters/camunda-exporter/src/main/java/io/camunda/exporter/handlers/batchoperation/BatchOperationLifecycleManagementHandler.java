@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.intent.BatchOperationIntent.*;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
@@ -133,7 +134,10 @@ public class BatchOperationLifecycleManagementHandler
   }
 
   @Override
-  public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final BatchOperationEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     // Use upsertWithScript to be resilient against cross-partition ordering.
     // CANCELED, SUSPENDED, and RESUMED events are distributed to all partitions, so each

@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers.operation;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -58,7 +59,10 @@ public abstract class AbstractOperationHandler<R extends RecordValue>
   }
 
   @Override
-  public void flush(final OperationEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final OperationEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(OperationTemplate.STATE, entity.getState());
