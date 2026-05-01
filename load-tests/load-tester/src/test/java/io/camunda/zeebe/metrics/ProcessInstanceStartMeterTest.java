@@ -294,7 +294,7 @@ class ProcessInstanceStartMeterTest {
                     .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
                     .timer()
                     .count(),
-            (count) -> assertThat(count).isOne());
+            (count) -> assertThat(count).isGreaterThan(1L));
     assertThat(
             meterRegistry
                 .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())

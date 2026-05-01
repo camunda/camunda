@@ -46,6 +46,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -79,6 +80,7 @@ public class Starter implements CommandLineRunner {
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
+  private final Semaphore processStartingSemaphore;
 
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
@@ -97,6 +99,7 @@ public class Starter implements CommandLineRunner {
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
+    processStartingSemaphore = new Semaphore(starterCfg.getProcessStarterConcurrency());
   }
 
   @Override
@@ -163,12 +166,13 @@ public class Starter implements CommandLineRunner {
             Executors.newScheduledThreadPool(1),
             properties.getMonitorDataAvailabilityInterval(),
             (listOfStartedInstances) -> {
+              final var limit = Math.min(listOfStartedInstances.size(), 1000);
               final CamundaFuture<SearchResponse<ProcessInstance>> send =
                   client
                       .newProcessInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
                       .sort(ProcessInstanceSort::startDate)
-                      .page(p -> p.limit(100))
+                      .page(p -> p.limit(limit))
                       .send();
 
               return send.thenApply(
@@ -219,6 +223,16 @@ public class Starter implements CommandLineRunner {
             return;
           }
 
+          // ensure we don't have too many pending requests
+          // as this can lead to us seeing much worse availability times
+          // than expected
+          try {
+            processStartingSemaphore.acquire();
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
@@ -234,6 +248,7 @@ public class Starter implements CommandLineRunner {
             }
             requestFuture.whenComplete(
                 (noop, error) -> {
+                  processStartingSemaphore.release();
                   final long durationNanos = System.nanoTime() - startTime;
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
@@ -247,6 +262,7 @@ public class Starter implements CommandLineRunner {
                 });
           } catch (final Exception e) {
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
+            processStartingSemaphore.release();
           }
         },
         0,
