@@ -1,6 +1,7 @@
 package start
 
 import (
+	"context"
 	"errors"
 	"net"
 	"os"
@@ -8,7 +9,27 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/camunda/camunda/c8run/internal/types"
 )
+
+type stubProcessHandler struct {
+	attemptCount int
+	lastPidPath  string
+	lastName     string
+}
+
+func (s *stubProcessHandler) AttemptToStartProcess(pidPath string, processName string, startProcess func(), healthCheck func() error, stop context.CancelFunc) {
+	s.attemptCount++
+	s.lastPidPath = pidPath
+	s.lastName = processName
+}
+
+func (s *stubProcessHandler) WritePIDToFile(pidPath string, pid int) error {
+	return nil
+}
+
+func (s *stubProcessHandler) TrackProcessTree(pidPath string, rootPid int) {}
 
 func TestEnsurePortAvailable(t *testing.T) {
 	inUseListener, err := net.Listen("tcp4", ":0")
@@ -71,5 +92,59 @@ func TestResolveJavaHomeAndBinaryKeepsCustomPathWhenSymlinkResolutionFails(t *te
 
 	if resolvedBinary != expectedJavaBinary {
 		t.Fatalf("expected java binary %s, got %s", expectedJavaBinary, resolvedBinary)
+	}
+}
+
+func TestShouldSkipConnectorsStartupWhenDisabled(t *testing.T) {
+	// given
+	handler := &stubProcessHandler{}
+	startupHandler := &StartupHandler{ProcessHandler: handler}
+	state := &types.State{
+		Settings: types.C8RunSettings{
+			DisableConnectors: true,
+		},
+		ProcessInfo: types.Processes{
+			Connectors: types.Process{
+				PidPath: "connectors.process",
+			},
+		},
+	}
+
+	// when
+	startupHandler.startConnectors(context.Background(), func() {}, state, t.TempDir(), "java")
+
+	// then
+	if handler.attemptCount != 0 {
+		t.Fatalf("expected connectors startup to be skipped, but AttemptToStartProcess was called %d times", handler.attemptCount)
+	}
+}
+
+func TestShouldAttemptConnectorsStartupWhenEnabled(t *testing.T) {
+	// given
+	handler := &stubProcessHandler{}
+	startupHandler := &StartupHandler{ProcessHandler: handler}
+	state := &types.State{
+		Settings: types.C8RunSettings{
+			Port: 8080,
+		},
+		ProcessInfo: types.Processes{
+			Connectors: types.Process{
+				PidPath: "connectors.process",
+			},
+		},
+	}
+
+	// when
+	startupHandler.startConnectors(context.Background(), func() {}, state, t.TempDir(), "java")
+
+	// then
+	if handler.attemptCount != 1 {
+		t.Fatalf("expected connectors startup to be attempted once, but got %d attempts", handler.attemptCount)
+	}
+	if handler.lastPidPath != "connectors.process" {
+		t.Fatalf("expected pid path connectors.process, got %s", handler.lastPidPath)
+	}
+	if handler.lastName != "Connectors" {
+		t.Fatalf("expected process name Connectors, got %s", handler.lastName)
 	}
 }

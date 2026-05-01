@@ -71,6 +71,7 @@ Commands:
 
 Options:
   --config <path>           Use a custom Zeebe application.yaml
+  --disable-connectors      Start Camunda 8 Run without the bundled connectors runtime
   --extra-driver <path>     Copy a JDBC driver into the Camunda lib directory before startup (repeat per jar)
   --keystore <path>         Enable HTTPS with a TLS certificate (JKS format)
   --keystorePassword <pw>  Password for the provided keystore
@@ -79,6 +80,7 @@ Options:
 
 Examples:
   %[1]s start
+  %[1]s start --disable-connectors
   %[1]s start --config ./my-config.yaml
   %[1]s stop
 
@@ -170,6 +172,7 @@ func flagPassed(fs *flag.FlagSet, name string) bool {
 func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
 	startFlagSet.StringVar(&settings.Config, "config", "", "Applies the specified configuration file.")
+	startFlagSet.BoolVar(&settings.DisableConnectors, "disable-connectors", false, "Skips starting the bundled connectors runtime.")
 	startFlagSet.Var((*stringSliceFlag)(&settings.ExtraDrivers), "extra-driver", "Path to a JDBC driver jar to copy into the Camunda lib directory (repeatable).")
 	startFlagSet.BoolVar(&settings.Detached, "detached", false, "Starts Camunda Run as a detached process")
 	startFlagSet.IntVar(&settings.Port, "port", 8080, "Port to run Camunda on")

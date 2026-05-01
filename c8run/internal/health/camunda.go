@@ -142,7 +142,7 @@ func PrintStatus(settings types.C8RunSettings) error {
 		Password:             password,
 		OrchestrationAPI:     fmt.Sprintf("%s://localhost:%d/v2/", protocol, camundaPort),
 		OrchestrationMCP:     fmt.Sprintf("%s://localhost:%d/mcp/cluster", protocol, camundaPort),
-		InboundConnectorsAPI: fmt.Sprintf("http://localhost:%d/", inboundConnectorsPort),
+		InboundConnectorsAPI: inboundConnectorsEndpoint(settings),
 		ZeebeAPI:             zeebeAPIURL,
 		CamundaMetrics:       camundaMetricsURL,
 		DesktopModelerTarget: fmt.Sprintf("%s://localhost:%d/v2/", protocol, camundaPort),
@@ -156,4 +156,11 @@ func PrintStatus(settings types.C8RunSettings) error {
 		return fmt.Errorf("failed to fill endpoints template %s", err.Error())
 	}
 	return nil
+}
+
+func inboundConnectorsEndpoint(settings types.C8RunSettings) string {
+	if settings.DisableConnectors {
+		return "disabled (--disable-connectors)"
+	}
+	return fmt.Sprintf("http://localhost:%d/", inboundConnectorsPort)
 }
