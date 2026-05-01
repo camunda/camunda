@@ -64,7 +64,7 @@ class ClusterConfigurationControllerTest {
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().activeComponents).containsExactly("operate", "tasklist");
+    assertThat(response.getBody().activeComponents()).containsExactly("operate", "tasklist");
   }
 
   @Test
@@ -104,7 +104,7 @@ class ClusterConfigurationControllerTest {
 
     // then
     assertThat(body).isNotNull();
-    assertThat(body.isEnterprise).isTrue();
+    assertThat(body.isEnterprise()).isTrue();
   }
 
   @Test
@@ -119,7 +119,7 @@ class ClusterConfigurationControllerTest {
 
     // then
     assertThat(body).isNotNull();
-    assertThat(body.canLogout).isTrue();
+    assertThat(body.canLogout()).isTrue();
   }
 
   @Test
@@ -134,7 +134,7 @@ class ClusterConfigurationControllerTest {
 
     // then
     assertThat(body).isNotNull();
-    assertThat(body.canLogout).isFalse();
+    assertThat(body.canLogout()).isFalse();
   }
 
   @Test
@@ -149,7 +149,7 @@ class ClusterConfigurationControllerTest {
 
     // then
     assertThat(body).isNotNull();
-    assertThat(body.isMultiTenancyEnabled).isTrue();
+    assertThat(body.isMultiTenancyEnabled()).isTrue();
   }
 
   @Test
@@ -163,7 +163,7 @@ class ClusterConfigurationControllerTest {
 
     // then — the deployment-level servlet context path, never tenant-prefixed
     assertThat(body).isNotNull();
-    assertThat(body.contextPath).isEqualTo("/camunda");
+    assertThat(body.contextPath()).isEqualTo("/camunda");
   }
 
   @Test
@@ -177,7 +177,7 @@ class ClusterConfigurationControllerTest {
 
     // then
     assertThat(body).isNotNull();
-    assertThat(body.maxRequestSize).isEqualTo(4 * 1024 * 1024L);
+    assertThat(body.maxRequestSize()).isEqualTo(4 * 1024 * 1024L);
   }
 
   @Test
@@ -205,11 +205,11 @@ class ClusterConfigurationControllerTest {
 
     // then
     assertThat(body).isNotNull();
-    assertThat(body.cloud.organizationId).isEqualTo("org-123");
-    assertThat(body.cloud.clusterId).isEqualTo("cluster-xyz");
-    assertThat(body.cloud.stage).isEqualTo("prod");
-    assertThat(body.cloud.mixpanelToken).isEqualTo("token-abc");
-    assertThat(body.cloud.mixpanelAPIHost).isEqualTo("https://api.mixpanel.com");
+    assertThat(body.cloud().organizationId()).isEqualTo("org-123");
+    assertThat(body.cloud().clusterId()).isEqualTo("cluster-xyz");
+    assertThat(body.cloud().stage()).isEqualTo("prod");
+    assertThat(body.cloud().mixpanelToken()).isEqualTo("token-abc");
+    assertThat(body.cloud().mixpanelAPIHost()).isEqualTo("https://api.mixpanel.com");
   }
 
   @Test
@@ -225,10 +225,10 @@ class ClusterConfigurationControllerTest {
 
     // then
     assertThat(body).isNotNull();
-    assertThat(body.cloud.organizationId).isNull();
-    assertThat(body.cloud.clusterId).isNull();
-    assertThat(body.cloud.stage).isNull();
-    assertThat(body.cloud.mixpanelToken).isNull();
-    assertThat(body.cloud.mixpanelAPIHost).isNull();
+    assertThat(body.cloud().organizationId()).isNull();
+    assertThat(body.cloud().clusterId()).isNull();
+    assertThat(body.cloud().stage()).isNull();
+    assertThat(body.cloud().mixpanelToken()).isNull();
+    assertThat(body.cloud().mixpanelAPIHost()).isNull();
   }
 }
