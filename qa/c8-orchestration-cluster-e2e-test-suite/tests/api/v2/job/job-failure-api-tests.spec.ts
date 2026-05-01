@@ -100,17 +100,20 @@ test.describe('Job Fail API Tests', () => {
     });
 
     await test.step('fail the job for the second time', async () => {
-      const failAgainRes = await request.post(
-        buildUrl(`/jobs/${localState['jobKey']}/failure`),
-        {
-          headers: jsonHeaders(),
-          data: {
-            retries: 0,
-            errorMessage: 'Simulated failure',
+      // Wait a bit to ensure the first failure is processed
+      await expect(async () => {
+        const failAgainRes = await request.post(
+          buildUrl(`/jobs/${localState['jobKey']}/failure`),
+          {
+            headers: jsonHeaders(),
+            data: {
+              retries: 0,
+              errorMessage: 'Simulated failure',
+            },
           },
-        },
-      );
-      await assertStatusCode(failAgainRes, 409);
+        );
+        await assertStatusCode(failAgainRes, 409);
+      }).toPass(defaultAssertionOptions);
     });
   });
 });
