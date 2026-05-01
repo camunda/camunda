@@ -218,10 +218,6 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
-    // This test validates Mustafa's hypothesis: although the UI badge does not
-    // auto-update after clicking Suspend (FE polling bug), the suspend command
-    // does reach the engine and the state IS persisted. A manual reload should
-    // always reflect the correct SUSPENDED state.
     test.slow();
     const batchKey = await createCancellationBatch(
       request,
