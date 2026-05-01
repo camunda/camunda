@@ -185,6 +185,8 @@ With the help of such dashboards, we can observe the running load tests and vali
 
 More details about observability can also be read [here](../observability.md).
 
+For a full list of Prometheus metrics, SLO targets, and PromQL queries used to evaluate load tests, see [load-tests/docs/metrics.md](../../load-tests/docs/metrics.md).
+
 ### Test Scenarios
 
 We have different scenarios targeting different use cases and versions.
