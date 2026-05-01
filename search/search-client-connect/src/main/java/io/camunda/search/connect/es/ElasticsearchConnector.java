@@ -19,10 +19,16 @@ import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
+import io.micrometer.core.instrument.Metrics;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import org.apache.commons.io.output.CountingOutputStream;
+import org.apache.commons.io.output.NullOutputStream;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -31,6 +37,7 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.protocol.HttpContext;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,6 +141,21 @@ public final class ElasticsearchConnector {
     for (final HttpRequestInterceptor interceptor : interceptors) {
       httpAsyncClientBuilder.addInterceptorLast(interceptor);
     }
+
+    httpAsyncClientBuilder.addInterceptorLast(
+        (final HttpRequest request, final HttpContext context) -> {
+          final var requestLine = request.getRequestLine();
+          if (requestLine.getUri().contains("_bulk")
+              && request instanceof final HttpEntityEnclosingRequest entityRequest) {
+            final HttpEntity entity = entityRequest.getEntity();
+            if (entity != null && entity.isRepeatable()) {
+              final var counting = new CountingOutputStream(NullOutputStream.INSTANCE);
+              entity.writeTo(counting);
+              Metrics.summary("zeebe.elasticsearch.bulk.request.size")
+                  .record(counting.getByteCount());
+            }
+          }
+        });
 
     final var proxyConfig = configuration.getProxy();
     if (proxyConfig != null && proxyConfig.isEnabled()) {
