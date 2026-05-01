@@ -31,7 +31,7 @@ public class SimpleRequestMapper {
     if (request.getProcessDefinitionId() != null && !request.getProcessDefinitionId().isBlank()) {
       return RequestMapper.toCreateProcessInstance(
           (ProcessInstanceCreationInstruction)
-              new ProcessInstanceCreationInstructionById()
+              ProcessInstanceCreationInstructionById.Builder.builder()
                   .processDefinitionId(request.getProcessDefinitionId())
                   .processDefinitionVersion(request.getProcessDefinitionVersion())
                   .variables(request.getVariables())
@@ -45,13 +45,14 @@ public class SimpleRequestMapper {
                   .fetchVariables(request.getFetchVariables())
                   .requestTimeout(request.getRequestTimeout())
                   .tags(request.getTags())
-                  .businessId(request.getBusinessId()),
+                  .businessId(request.getBusinessId())
+                  .build(),
           multiTenancyEnabled);
     }
 
     return RequestMapper.toCreateProcessInstance(
         (ProcessInstanceCreationInstruction)
-            new ProcessInstanceCreationInstructionByKey()
+            ProcessInstanceCreationInstructionByKey.Builder.builder()
                 .processDefinitionKey(request.getProcessDefinitionKey())
                 .variables(request.getVariables())
                 .startInstructions(
@@ -64,7 +65,8 @@ public class SimpleRequestMapper {
                 .requestTimeout(request.getRequestTimeout())
                 .fetchVariables(request.getFetchVariables())
                 .tags(request.getTags())
-                .businessId(request.getBusinessId()),
+                .businessId(request.getBusinessId())
+                .build(),
         multiTenancyEnabled);
   }
 
@@ -78,12 +80,10 @@ public class SimpleRequestMapper {
     }
     return instructions.stream()
         .map(
-            instruction -> {
-              final var mapped =
-                  new io.camunda.gateway.protocol.model.ProcessInstanceCreationStartInstruction();
-              mapped.setElementId(instruction.getElementId());
-              return mapped;
-            })
+            instruction ->
+                ProcessInstanceCreationStartInstruction.Builder.builder()
+                    .elementId(instruction.getElementId())
+                    .build())
         .toList();
   }
 
@@ -98,14 +98,12 @@ public class SimpleRequestMapper {
     }
     return instructions.stream()
         .map(
-            instruction -> {
-              final var mapped =
-                  new io.camunda.gateway.protocol.model
-                      .ProcessInstanceCreationTerminateInstruction();
-              mapped.setType(instruction.getType());
-              mapped.setAfterElementId(instruction.getAfterElementId());
-              return mapped;
-            })
+            instruction ->
+                io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction
+                    .Builder.builder()
+                    .afterElementId(instruction.getAfterElementId())
+                    .type(instruction.getType())
+                    .build())
         .toList();
   }
 }

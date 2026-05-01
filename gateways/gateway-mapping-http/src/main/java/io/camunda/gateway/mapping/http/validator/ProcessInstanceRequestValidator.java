@@ -48,7 +48,10 @@ import org.springframework.http.ProblemDetail;
 public class ProcessInstanceRequestValidator {
 
   public static final ProcessInstanceMigrationBatchOperationPlan EMPTY_MIGRATION_PLAN =
-      new ProcessInstanceMigrationBatchOperationPlan();
+      ProcessInstanceMigrationBatchOperationPlan.Builder.builder()
+          .targetProcessDefinitionKey("")
+          .mappingInstructions(List.of())
+          .build();
 
   public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
       final ProcessInstanceCreationInstruction request) {

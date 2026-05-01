@@ -298,10 +298,16 @@ public class SearchQuerySortRequestMapper {
     final var requestsWithDefaultSorting = new ArrayList<>(requests);
     requestsWithDefaultSorting.addAll(
         List.of(
-            new GlobalTaskListenerSearchQuerySortRequest(FieldEnum.AFTER_NON_GLOBAL),
-            new GlobalTaskListenerSearchQuerySortRequest(FieldEnum.PRIORITY)
-                .order(SortOrderEnum.DESC),
-            new GlobalTaskListenerSearchQuerySortRequest(FieldEnum.ID)));
+            GlobalTaskListenerSearchQuerySortRequest.Builder.builder()
+                .field(FieldEnum.AFTER_NON_GLOBAL)
+                .build(),
+            GlobalTaskListenerSearchQuerySortRequest.Builder.builder()
+                .field(FieldEnum.PRIORITY)
+                .order(SortOrderEnum.DESC)
+                .build(),
+            GlobalTaskListenerSearchQuerySortRequest.Builder.builder()
+                .field(FieldEnum.ID)
+                .build()));
     return requestsWithDefaultSorting.stream()
         .map(r -> createFrom(r.getField(), r.getOrder()))
         .toList();
