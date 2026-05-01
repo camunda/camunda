@@ -96,6 +96,7 @@ Wraps `trigger-optimize-load-tests.py` with pod health monitoring, Grafana metri
 |-------------------|--------------------------|----------------------------------------------------------|
 | **Manual**        | `--rates`                | Run one or more fixed rates, collect results.            |
 | **Auto-scale**    | `--auto-scale`           | Adaptive loop: double rate on success, scale on failure. |
+| **Capacity plan** | `--capacity-plan [FILE]` | Run every row in a capacity-plan CSV.                    |
 | **Collect-only**  | `--collect-only NS`      | Query Grafana for an existing namespace, no deploy.      |
 | **Recover**       | `--recover`              | Re-query GRAFANA_ERROR rows in the CSV.                  |
 
@@ -111,6 +112,7 @@ Wraps `trigger-optimize-load-tests.py` with pod health monitoring, Grafana metri
 | `--output`        | `benchmark-results.csv` | CSV file for results (appended, never overwritten).         |
 | `--log`           | `<output>.log`          | Log file (mirrors all stdout/stderr output).                |
 | `--collect-only`  | —        | Collect metrics for a running namespace without triggering a new deployment.   |
+| `--capacity-plan` | `capacity-plan.csv` | Run every row in a capacity-plan CSV (see below).                |
 | `--recover`       | —        | Re-query Grafana for all rows with `GRAFANA_ERROR` status.                     |
 
 **Deployment**
@@ -133,6 +135,34 @@ Wraps `trigger-optimize-load-tests.py` with pod health monitoring, Grafana metri
 | `--max-rate`    | `800`   | Stop the loop when this PI/s is reached.                                        |
 | `--start-rate`  | `50`    | Start (or resume) the loop from this rate.                                      |
 | `--scale-steps` | `0`     | Pre-apply N scale-up steps before the first run. Used when resuming after crash.|
+
+### Capacity-plan mode
+
+Runs every row in a capacity-plan CSV as a sequential benchmark. Each row maps directly to a
+`ResourceState`, so resources are applied exactly as specified — no auto-scaling logic is involved.
+
+The CSV must have these columns:
+
+| Column         | Description                                      |
+|----------------|--------------------------------------------------|
+| `Status`       | Label only (`VALIDATED`, `EXTRAPOLATED`, etc.)   |
+| `rates`        | Target PI/s                                      |
+| `brokers`      | Broker pod count                                 |
+| `broker_node`  | GKE node pool (`n2-standard-4/8/16`)             |
+| `broker_cpu_m` | Broker CPU in millicores (e.g. `15000`)          |
+| `broker_mem_gi`| Broker memory in GiB (e.g. `24`)                |
+| `es_node`      | ES node pool (`n2-standard-8/16`)                |
+| `es_cpu_m`     | ES CPU in millicores                             |
+| `es_mem_gi`    | ES memory in GiB                                 |
+| `es_replicas`  | Elasticsearch node count (usually `3`)           |
+
+```bash
+# Run all entries in the default capacity-plan.csv
+python3 run-benchmark.py --capacity-plan
+
+# Run a custom plan file
+python3 run-benchmark.py --capacity-plan results/my-plan.csv
+```
 
 ### Auto-scale loop
 
@@ -192,6 +222,10 @@ immediately after trigger (`Status=STARTED`), updated to `COMPLETED` or `ERROR` 
 | `ES CPU` / `ES memory` / `ES heap` | ES resource allocation                              |
 | `Dropped req/s`    | Zeebe dropped request rate (backpressure indicator)                    |
 | `Max in-flight req`| Maximum in-flight request count                                        |
+| `ES export lag`    | Total un-exported log records across all partitions (position delta)   |
+| `ES flush p99 (s)` | p99 ES exporter flush duration in seconds                              |
+| `ES flush fail rate` | Fraction of ES flushes that failed (0.0–1.0)                         |
+| `ES disk used %`   | Average PVC fill level across Elasticsearch nodes                      |
 | `grafana_timestamp`| UTC time of the first Grafana query attempt (used for recovery)        |
 
 At the start of each run, both the CSV and the log file are backed up with a timestamp suffix

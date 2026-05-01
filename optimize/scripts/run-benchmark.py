@@ -84,6 +84,7 @@ TRIGGER_SCRIPT = SCRIPT_DIR / "trigger-optimize-load-tests.py"
 
 GRAFANA_URL_DEFAULT = "https://dashboard.benchmark.camunda.cloud"
 CSV_DEFAULT = SCRIPT_DIR / "benchmark-results.csv"
+CAPACITY_PLAN_DEFAULT = SCRIPT_DIR / "capacity-plan.csv"
 
 CSV_COLUMNS = [
     "Run",
@@ -106,6 +107,10 @@ CSV_COLUMNS = [
     "ES heap",
     "Dropped req/s",
     "Max in-flight req",
+    "ES export lag",
+    "ES flush p99 (s)",
+    "ES flush fail rate",
+    "ES disk used %",
     "grafana_timestamp",
 ]
 
@@ -354,6 +359,25 @@ def collect_metrics(grafana_url: str, token: str, cookie: str, namespace: str,
     inflight = _promql(grafana_url, token, cookie, ds_uid,
         f'max(zeebe_backpressure_inflight_requests_count{{namespace="{ns}"}})', collect_time)
 
+    export_lag = _promql(grafana_url, token, cookie, ds_uid,
+        f'sum('
+        f'max by(partition) (zeebe_log_appender_last_committed_position{{namespace="{ns}"}}) -'
+        f' max by(partition) (zeebe_exporter_last_exported_position{{namespace="{ns}",exporter="elasticsearch"}})'
+        f')',
+        collect_time)
+    es_flush_p99 = _promql(grafana_url, token, cookie, ds_uid,
+        f'histogram_quantile(0.99, sum(rate('
+        f'zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{{namespace="{ns}"}}[5m])) by (le))',
+        collect_time)
+    es_flush_fail = _promql(grafana_url, token, cookie, ds_uid,
+        f'sum(rate(zeebe_elasticsearch_exporter_failed_flush_total{{namespace="{ns}"}}[5m]))'
+        f' / sum(rate(zeebe_elasticsearch_exporter_flush_duration_seconds_count{{namespace="{ns}"}}[5m]))',
+        collect_time)
+    es_disk_pct = _promql(grafana_url, token, cookie, ds_uid,
+        f'avg(kubelet_volume_stats_used_bytes{{namespace="{ns}",persistentvolumeclaim=~".*elastic.*"}}'
+        f' / kubelet_volume_stats_capacity_bytes{{namespace="{ns}",persistentvolumeclaim=~".*elastic.*"}} * 100)',
+        collect_time)
+
     achieved_pis = round(achieved, 1) if achieved is not None else "N/A"
     achieved_pct = (
         f"{round(achieved / target_rate * 100, 1)}%"
@@ -362,16 +386,28 @@ def collect_metrics(grafana_url: str, token: str, cookie: str, namespace: str,
     )
     dropped_rps = round(dropped, 3) if dropped is not None else "N/A"
     max_inflight = round(inflight, 0) if inflight is not None else "N/A"
+    es_lag_val = int(round(export_lag)) if export_lag is not None else "N/A"
+    es_p99_val = round(es_flush_p99, 3) if es_flush_p99 is not None else "N/A"
+    es_fail_val = round(es_flush_fail, 4) if es_flush_fail is not None else "N/A"
+    es_disk_val = round(es_disk_pct, 1) if es_disk_pct is not None else "N/A"
 
     print(f"  Achieved PI/s:    {achieved_pis}")
     print(f"  Dropped req/s:    {dropped_rps}")
     print(f"  Max in-flight:    {max_inflight}")
+    print(f"  ES export lag:    {es_lag_val}")
+    print(f"  ES flush p99:     {es_p99_val}s")
+    print(f"  ES flush fail:    {es_fail_val}")
+    print(f"  ES disk used:     {es_disk_val}%")
 
     return {
         "Achieved PI/s": achieved_pis,
         "Achieved %": achieved_pct,
         "Dropped req/s": dropped_rps,
         "Max in-flight req": max_inflight,
+        "ES export lag": es_lag_val,
+        "ES flush p99 (s)": es_p99_val,
+        "ES flush fail rate": es_fail_val,
+        "ES disk used %": es_disk_val,
         "grafana_timestamp": grafana_ts,
         **broker_info,
     }
@@ -597,6 +633,24 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
             f'sum(rate(zeebe_dropped_request_count_total{{namespace="{ns}"}}[5m]))', at_time)
         inflight = _promql(grafana_url, token, cookie, ds_uid,
             f'max(zeebe_backpressure_inflight_requests_count{{namespace="{ns}"}})', at_time)
+        export_lag = _promql(grafana_url, token, cookie, ds_uid,
+            f'sum('
+            f'max by(partition) (zeebe_log_appender_last_committed_position{{namespace="{ns}"}}) -'
+            f' max by(partition) (zeebe_exporter_last_exported_position{{namespace="{ns}",exporter="elasticsearch"}})'
+            f')',
+            at_time)
+        es_flush_p99 = _promql(grafana_url, token, cookie, ds_uid,
+            f'histogram_quantile(0.99, sum(rate('
+            f'zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{{namespace="{ns}"}}[5m])) by (le))',
+            at_time)
+        es_flush_fail = _promql(grafana_url, token, cookie, ds_uid,
+            f'sum(rate(zeebe_elasticsearch_exporter_failed_flush_total{{namespace="{ns}"}}[5m]))'
+            f' / sum(rate(zeebe_elasticsearch_exporter_flush_duration_seconds_count{{namespace="{ns}"}}[5m]))',
+            at_time)
+        es_disk_pct = _promql(grafana_url, token, cookie, ds_uid,
+            f'avg(kubelet_volume_stats_used_bytes{{namespace="{ns}",persistentvolumeclaim=~".*elastic.*"}}'
+            f' / kubelet_volume_stats_capacity_bytes{{namespace="{ns}",persistentvolumeclaim=~".*elastic.*"}} * 100)',
+            at_time)
 
         if achieved is None and dropped is None and inflight is None:
             print(f"  Still no data — skipping (metrics may have expired from Prometheus)")
@@ -608,12 +662,21 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
         )
         dropped_val = round(dropped, 3) if dropped is not None else "N/A"
         inflight_val = round(inflight, 0) if inflight is not None else "N/A"
+        es_lag_val = int(round(export_lag)) if export_lag is not None else "N/A"
+        es_p99_val = round(es_flush_p99, 3) if es_flush_p99 is not None else "N/A"
+        es_fail_val = round(es_flush_fail, 4) if es_flush_fail is not None else "N/A"
+        es_disk_val = round(es_disk_pct, 1) if es_disk_pct is not None else "N/A"
         row["Status"] = "COMPLETED"
         row["Achieved PI/s"] = achieved_pis
         row["Achieved %"] = achieved_pct
         row["Dropped req/s"] = dropped_val
         row["Max in-flight req"] = inflight_val
-        print(f"  Achieved PI/s={achieved_pis}  Dropped={dropped_val}  In-flight={inflight_val}")
+        row["ES export lag"] = es_lag_val
+        row["ES flush p99 (s)"] = es_p99_val
+        row["ES flush fail rate"] = es_fail_val
+        row["ES disk used %"] = es_disk_val
+        print(f"  Achieved PI/s={achieved_pis}  Dropped={dropped_val}  In-flight={inflight_val}  "
+              f"ES lag={es_lag_val}  flush p99={es_p99_val}s  disk={es_disk_val}%")
         recovered += 1
 
     # Rewrite the CSV in-place with updated rows
@@ -623,6 +686,23 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
         writer.writerows(rows)
 
     print(f"\nRecovered {recovered}/{len(errors)} row(s) → Status=COMPLETED. CSV updated: {csv_path}")
+
+
+# ── Capacity plan ─────────────────────────────────────────────────────────────
+
+def _state_from_plan_row(row: dict) -> tuple:
+    """Parse a capacity-plan.csv row into (rate, ResourceState)."""
+    state = ResourceState(
+        broker_pool=row["broker_node"].strip(),
+        broker_cpu_m=int(row["broker_cpu_m"]),
+        broker_mem_gi=float(row["broker_mem_gi"]),
+        broker_replicas=int(row["brokers"]),
+        es_node=row["es_node"].strip(),
+        es_cpu_m=int(row["es_cpu_m"]),
+        es_mem_gi=float(row["es_mem_gi"]),
+        es_replicas=int(row.get("es_replicas", 3)),
+    )
+    return int(row["rates"]), state
 
 
 # ── Trigger + parse ────────────────────────────────────────────────────────────
@@ -746,6 +826,12 @@ def main():
                              "Defaults to <output-stem>.log next to the CSV.")
     parser.add_argument("--collect-only", metavar="NAMESPACE",
                         help="Skip deploy/monitor — collect Grafana metrics for an existing namespace")
+    parser.add_argument("--capacity-plan", nargs="?", const=str(CAPACITY_PLAN_DEFAULT),
+                        metavar="FILE",
+                        help="Run every entry in a capacity-plan CSV "
+                             f"(default: {CAPACITY_PLAN_DEFAULT.name}). "
+                             "Columns: Status, rates, brokers, broker_node, broker_cpu_m, "
+                             "broker_mem_gi, es_node, es_cpu_m, es_mem_gi, es_replicas.")
     parser.add_argument("--recover", action="store_true",
                         help="Re-query Grafana for all GRAFANA_ERROR rows in the CSV, "
                              "using each row's stored timestamp. Refresh GRAFANA_COOKIE first.")
@@ -808,6 +894,34 @@ def main():
             **metrics,
         }
         write_csv(args.output, row)
+        return
+
+    # ── capacity-plan mode ─────────────────────────────────────────────────────
+    if args.capacity_plan:
+        plan_path = Path(args.capacity_plan)
+        if not plan_path.exists():
+            print(f"ERROR: capacity plan not found: {plan_path}", file=sys.stderr)
+            sys.exit(1)
+        with open(plan_path, newline="") as f:
+            plan_rows = list(csv.DictReader(f))
+        if not plan_rows:
+            print(f"No rows in {plan_path.name}")
+            return
+        print(f"Running {len(plan_rows)} entries from {plan_path.name}\n")
+        for i, row in enumerate(plan_rows, 1):
+            try:
+                rate, state = _state_from_plan_row(row)
+            except (KeyError, ValueError) as e:
+                print(f"  Skipping row {i}: bad format ({e})", file=sys.stderr)
+                continue
+            status = row.get("Status", "")
+            print(f"\n{'#'*60}")
+            print(f"# CAPACITY PLAN [{i}/{len(plan_rows)}]: {rate} PI/s  status={status}")
+            print(f"{'#'*60}")
+            run_one(rate, state, args, grafana_token, grafana_cookie, extra)
+        print(f"\n{'#'*60}")
+        print(f"# CAPACITY PLAN complete. Results in {args.output}")
+        print(f"{'#'*60}")
         return
 
     # ── recover mode ───────────────────────────────────────────────────────────
