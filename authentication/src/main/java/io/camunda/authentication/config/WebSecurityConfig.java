@@ -194,6 +194,7 @@ public class WebSecurityConfig {
           "/operate/**",
           "/tasklist/**",
           "/webapp/**",
+          "/internal/**",
           "/",
           "/sso-callback/**",
           "/oauth2/authorization/**",
@@ -1123,7 +1124,8 @@ public class WebSecurityConfig {
                               "/tasklist/favicon.ico",
                               "/webapp/assets/**",
                               "/webapp/custom.css",
-                              "/webapp/favicon.ico")
+                              "/webapp/favicon.ico",
+                              "/internal/cluster-configuration")
                           .permitAll()
                           .anyRequest()
                           .authenticated())
