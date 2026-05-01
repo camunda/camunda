@@ -17,30 +17,7 @@ import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Exposes cluster-level configuration for the unified orchestration-cluster webapp.
- *
- * <p>This endpoint is intentionally kept at {@code /internal/cluster-configuration} rather than the
- * V2 path {@code /v2/system/configuration} (which already exists for job metrics). Relocating to
- * the V2 path requires API governance approval from CamundaX; that is tracked as a pending decision
- * in the BFF unification SKILL.md §4.
- *
- * <p><strong>Multi-engine forward-compatibility note:</strong> This endpoint is cluster-scoped, not
- * tenant-scoped. When {@code TenantPathFilter} lands it must add {@code
- * /internal/cluster-configuration} to its cluster-scoped pass-through list alongside {@code
- * /v2/cluster/**} and {@code /v2/license}. The {@code contextPath} field in the response is the
- * deployment-level servlet context path only — the multi-engine tenant prefix is delivered
- * exclusively via {@code <base href>} in the rendered shell (see BFF unification SKILL.md §9,
- * 2026-05-01 entry).
- *
- * <p><strong>Auth posture:</strong> The endpoint is reachable unauthenticated (permitted in {@code
- * WebSecurityConfig}) because the FE shell needs it at bootstrap time, before it knows whether
- * login should be delegated.
- *
- * <p><strong>Caching:</strong> {@code Cache-Control: no-store}. Values are stable across a
- * deployment lifetime but the cost of a stale response (FE makes auth-flow decisions on {@code
- * isLoginDelegated}) outweighs the caching benefit.
- */
+/** Exposes cluster-level configuration for the unified orchestration-cluster webapp. */
 @RestController
 @ConditionalOnWebappUiEnabled("tmp-webapp")
 public class ClusterConfigurationController {
