@@ -176,11 +176,7 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
-    // Skipped until useBatchOperation.ts is fixed to poll with refetchInterval.
-    // Without polling the state badge never auto-updates after a suspend/cancel
-    // mutation; this test is expected to time out at the state assertion.
-    // Re-enable once the FE fix is merged (tracks the issue in the PR description
-    // of https://github.com/camunda/camunda/pull/52029).
+    // Skipped due to 52021: camunda/camunda#52021
     test.skip(true, 'FE polling bug: useBatchOperation has no refetchInterval');
     test.slow();
     const batchKey = await createCancellationBatch(
@@ -274,8 +270,7 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
-    // Skipped until useBatchOperation.ts is fixed to poll with refetchInterval.
-    // See https://github.com/camunda/camunda/pull/52029
+    // Skipped due to 52021: camunda/camunda#52021
     test.skip(true, 'FE polling bug: useBatchOperation has no refetchInterval');
     test.slow();
     const batchKey = await createCancellationBatch(
@@ -314,8 +309,7 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
-    // Skipped until useBatchOperation.ts is fixed to poll with refetchInterval.
-    // See https://github.com/camunda/camunda/pull/52029
+    // Skipped due to 52021: camunda/camunda#52021
     test.skip(true, 'FE polling bug: useBatchOperation has no refetchInterval');
     test.slow();
     const batchKey = await createCancellationBatch(
