@@ -91,6 +91,48 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <dependencies>
+          <!-- Groovy 4.x moved to org.apache.groovy groupId; 4.0.x is the first series
+               fully compatible with JDK 21. Not managed in parent/pom.xml, so pinned here. -->
+          <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>4.0.31</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy-ant</artifactId>
+            <version>4.0.31</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy-yaml</artifactId>
+            <version>4.0.31</version>
+          </dependency>
+        </dependencies>
+        <!-- version managed in parent/pom.xml at ${plugin.version.antrun} (3.2.0) -->
+        <executions>
+          <execution>
+            <id>enrich-openapi-spec</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <target>
+                <taskdef classname="org.codehaus.groovy.ant.Groovy" classpathref="maven.plugin.classpath" name="groovy"/>
+                <groovy src="${project.basedir}/src/build/groovy/EnrichSpec.groovy">
+                  <arg value="${openapi.dir}/rest-api.yaml"/>
+                  <arg value="${project.build.directory}/openapi/enriched-rest-api.yaml"/>
+                </groovy>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
         <executions>
