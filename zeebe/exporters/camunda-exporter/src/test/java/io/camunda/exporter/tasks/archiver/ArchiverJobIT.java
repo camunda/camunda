@@ -29,6 +29,7 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -131,20 +132,20 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   }
 
   protected void store(
-      final IndexTemplateDescriptor template,
+      final IndexDescriptor indexDescriptor,
       final SearchClientAdapter client,
       final ExporterEntity<?> entity)
       throws IOException {
-    client.index(entity.getId(), template.getFullQualifiedName(), entity);
+    client.index(entity.getId(), indexDescriptor.getFullQualifiedName(), entity);
   }
 
   protected void store(
-      final IndexTemplateDescriptor template,
+      final IndexDescriptor indexDescriptor,
       final SearchClientAdapter client,
       final ExporterEntity<?> parent,
       final ExporterEntity<?> child)
       throws IOException {
-    client.index(child.getId(), parent.getId(), template.getFullQualifiedName(), child);
+    client.index(child.getId(), parent.getId(), indexDescriptor.getFullQualifiedName(), child);
   }
 
   protected void verifyMoved(
