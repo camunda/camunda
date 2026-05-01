@@ -16,9 +16,8 @@ import org.springframework.stereotype.Component;
  * Resolves the set of webapp components whose UI is currently enabled in this deployment.
  *
  * <p>A component is included when neither its legacy property ({@code
- * camunda.{name}.webapp-enabled}) nor its unified property ({@code
- * camunda.webapps.{name}.enabled}) is explicitly set to {@code false}. Both default to {@code
- * true}, matching the logic in {@link
+ * camunda.{name}.webapp-enabled}) nor its unified property ({@code camunda.webapps.{name}.enabled})
+ * is explicitly set to {@code false}. Both default to {@code true}, matching the logic in {@link
  * io.camunda.spring.utils.ConditionalOnWebappEnabled.OnWebappEnabledCondition}.
  *
  * <p>The returned list is always sorted alphabetically so JSON snapshots are deterministic.
@@ -38,8 +37,8 @@ public class ActiveComponentsResolver {
   /**
    * Returns the sorted list of enabled component names from {@link #KNOWN_COMPONENTS}.
    *
-   * <p>A component is enabled when both of the following are {@code true} (or absent, defaulting
-   * to {@code true}):
+   * <p>A component is enabled when both of the following are {@code true} (or absent, defaulting to
+   * {@code true}):
    *
    * <ul>
    *   <li>{@code camunda.{name}.webapp-enabled} — legacy property

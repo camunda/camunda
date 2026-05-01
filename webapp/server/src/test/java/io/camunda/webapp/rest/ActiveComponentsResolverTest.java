@@ -42,8 +42,7 @@ class ActiveComponentsResolverTest {
   @Test
   void shouldExcludeComponentDisabledViaLegacyKey() {
     // given
-    final var env =
-        new MockEnvironment().withProperty("camunda.admin.webapp-enabled", "false");
+    final var env = new MockEnvironment().withProperty("camunda.admin.webapp-enabled", "false");
     final var resolver = new ActiveComponentsResolver(env);
 
     // when
