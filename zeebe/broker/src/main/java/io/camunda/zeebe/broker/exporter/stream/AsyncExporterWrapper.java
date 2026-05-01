@@ -68,7 +68,12 @@ public class AsyncExporterWrapper implements Exporter {
   @Override
   public void export(final Record<?> record) {
     runner.updatePosition();
-    runner.recordQueue.add(record);
+    try {
+      runner.recordQueue.put(record);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
