@@ -18,26 +18,30 @@ export async function activateJobToObtainAValidJobKey(
   request: APIRequestContext,
   jobType: string,
 ): Promise<number> {
-  const activateRes = await request.post(buildUrl('/jobs/activation'), {
-    headers: jsonHeaders(),
-    data: {
-      type: jobType,
-      timeout: 10000,
-      maxJobsToActivate: 1,
-    },
-  });
-  await assertStatusCode(activateRes, 200);
-  await validateResponse(
-    {
-      path: '/jobs/activation',
-      method: 'POST',
-      status: '200',
-    },
-    activateRes,
-  );
-  const activateJson = await activateRes.json();
-  expect(activateJson.jobs.length).toBe(1);
-  return activateJson.jobs[0].jobKey;
+  const result: {jobKey: number} = {jobKey: 0};
+  await expect(async () => {
+    const activateRes = await request.post(buildUrl('/jobs/activation'), {
+      headers: jsonHeaders(),
+      data: {
+        type: jobType,
+        timeout: 10000,
+        maxJobsToActivate: 1,
+      },
+    });
+    await assertStatusCode(activateRes, 200);
+    await validateResponse(
+      {
+        path: '/jobs/activation',
+        method: 'POST',
+        status: '200',
+      },
+      activateRes,
+    );
+    const activateJson = await activateRes.json();
+    expect(activateJson.jobs.length).toBe(1);
+    result.jobKey = activateJson.jobs[0].jobKey;
+  }).toPass(defaultAssertionOptions);
+  return result.jobKey;
 }
 
 export async function searchJobKey(
