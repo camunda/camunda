@@ -113,7 +113,7 @@ public class ClusterVariableDeletedHandlerTest {
             .setScope(
                 io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.TENANT);
     final BatchRequest mockRequest = mock(BatchRequest.class);
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
     verify(mockRequest, times(1)).delete(indexName, inputEntity.getId());
   }
 }

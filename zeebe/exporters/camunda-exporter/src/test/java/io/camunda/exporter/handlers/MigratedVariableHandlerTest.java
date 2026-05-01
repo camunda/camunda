@@ -111,7 +111,7 @@ public class MigratedVariableHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(VariableTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
     updateFields.put(

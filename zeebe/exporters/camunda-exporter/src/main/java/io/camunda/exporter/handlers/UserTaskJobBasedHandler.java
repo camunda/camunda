@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
@@ -155,7 +156,8 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   }
 
   @Override
-  public void flush(final TaskEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final IndexLocator indexLocator, final TaskEntity entity, final BatchRequest batchRequest) {
     final var updateFields = getUpdatedFields(entity);
     final var taskEntityId = entity.getId();
     final var processInstanceKey = entity.getProcessInstanceId();

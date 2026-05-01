@@ -81,7 +81,7 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
     expectedUpdateFields.put(ERROR_MESSAGE, inputEntity.getErrorMessage());
     expectedUpdateFields.put(INCIDENT_POSITION, inputEntity.getPositionIncident());
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
         .upsertWithRouting(

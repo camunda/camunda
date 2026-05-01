@@ -279,7 +279,7 @@ class BatchOperationLifecycleManagementHandlerTest {
             .setEndDate(DateUtil.toOffsetDateTime(Instant.now().toEpochMilli()));
 
     // when
-    handler.flush(entity, batchRequest);
+    handler.flush(null, entity, batchRequest);
 
     // then
     final var paramsCaptor = ArgumentCaptor.forClass(Map.class);
@@ -313,7 +313,7 @@ class BatchOperationLifecycleManagementHandlerTest {
             .setErrors(List.of(errorEntity));
 
     // when
-    handler.flush(entity, batchRequest);
+    handler.flush(null, entity, batchRequest);
 
     // then - errors should be included in script params when present
     final var paramsCaptor = ArgumentCaptor.forClass(Map.class);

@@ -102,7 +102,7 @@ public class EmbeddedFormHandlerTest {
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(batch, mockRequest);
+    underTest.flush(null, batch, mockRequest);
 
     // then
     verify(mockRequest, times(1)).add(indexName, inputEntity);
@@ -119,7 +119,7 @@ public class EmbeddedFormHandlerTest {
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(batch, mockRequest);
+    underTest.flush(null, batch, mockRequest);
 
     // then
     verify(mockRequest, times(1)).add(indexName, firstInputEntity);
@@ -134,7 +134,7 @@ public class EmbeddedFormHandlerTest {
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
 
     // then
     verifyNoInteractions(mockRequest);

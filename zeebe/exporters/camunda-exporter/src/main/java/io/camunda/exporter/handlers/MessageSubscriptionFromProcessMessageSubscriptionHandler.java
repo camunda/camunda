@@ -11,6 +11,7 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionMetadataEntity;
@@ -111,7 +112,10 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
   }
 
   @Override
-  public void flush(final MessageSubscriptionEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final IndexLocator indexLocator,
+      final MessageSubscriptionEntity entity,
+      final BatchRequest batchRequest) {
     persistEvent(
         entity,
         MessageSubscriptionTemplate.POSITION_MESSAGE,

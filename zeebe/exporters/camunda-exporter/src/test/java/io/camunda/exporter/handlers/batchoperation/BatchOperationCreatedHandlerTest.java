@@ -217,7 +217,7 @@ class BatchOperationCreatedHandlerTest {
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(null, entity, mockRequest);
 
     // then
     verify(mockRequest, times(1))

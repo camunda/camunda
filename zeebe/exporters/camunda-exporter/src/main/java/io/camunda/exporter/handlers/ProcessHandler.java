@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
@@ -113,7 +114,10 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   }
 
   @Override
-  public void flush(final ProcessEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final IndexLocator indexLocator,
+      final ProcessEntity entity,
+      final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
   }
 

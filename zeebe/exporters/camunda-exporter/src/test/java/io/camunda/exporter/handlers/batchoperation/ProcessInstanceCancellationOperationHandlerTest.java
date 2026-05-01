@@ -226,7 +226,7 @@ class ProcessInstanceCancellationOperationHandlerTest {
     entity.setCompletedDate(OffsetDateTime.now());
     entity.setErrorMessage("error message");
     final var mockRequest = mock(BatchRequest.class);
-    handler.flush(entity, mockRequest);
+    handler.flush(null, entity, mockRequest);
     verify(mockRequest, times(1))
         .upsert(
             indexName,

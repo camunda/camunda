@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers.batchoperation.listview;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -65,7 +66,10 @@ public class ListViewFromChunkItemHandler
   }
 
   @Override
-  public void flush(final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final ProcessInstanceForListViewEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     // Extract just the processInstanceKey from the composite cache ID
     // (processInstanceKey:batchOperationKey).

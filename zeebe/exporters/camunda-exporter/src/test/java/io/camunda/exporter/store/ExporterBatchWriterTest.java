@@ -131,7 +131,7 @@ class ExporterBatchWriterTest {
 
     // then
 
-    verify(handler).flush(entity, batchRequest);
+    verify(handler).flush(null, entity, batchRequest);
     verify(batchRequest).execute(any());
     assertThat(batchWriter.getBatchSize()).isEqualTo(0);
     assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(0);
@@ -156,7 +156,7 @@ class ExporterBatchWriterTest {
     batchWriter.flush(batchRequest);
 
     // then
-    verify(handler).flush(entity, batchRequest);
+    verify(handler).flush(null, entity, batchRequest);
     verify(batchRequest).execute(any());
     assertThat(batchWriter.getBatchSize()).isEqualTo(0);
     assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(0);
