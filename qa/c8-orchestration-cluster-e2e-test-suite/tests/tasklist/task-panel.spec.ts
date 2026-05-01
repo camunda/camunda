@@ -111,9 +111,10 @@ test.describe('task panel page', () => {
     }).toPass({timeout: 5000});
   });
 
-  // TODO: This test fails in V2 mode - investigate if this is expected behavior or a bug
-  // V2 mode may have different scrolling/pagination behavior that affects task count expectations
-  test.skip('scrolling', async ({page, taskPanelPage}) => {
+  // TODO: This test is flaky and fails with inconsistent task counts (expected 49/199, got 48/151)
+  // The scrolling behavior appears to have timing issues that cause task count mismatches
+  // This needs investigation to determine if it's a test issue or product behavior change
+  test.fixme('scrolling', async ({page, taskPanelPage}) => {
     test.slow();
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
