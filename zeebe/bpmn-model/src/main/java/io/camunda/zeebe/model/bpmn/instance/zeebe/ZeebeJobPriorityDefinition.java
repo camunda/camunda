@@ -18,8 +18,18 @@ package io.camunda.zeebe.model.bpmn.instance.zeebe;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
 /**
- * Zeebe job priority for worker-activated jobs. Unbounded signed integer; default 0. Applied on
- * {@code <bpmn:process>} (process-wide default) or on a job-creating task (task-level override).
+ * Zeebe job priority for worker-activated jobs.
+ *
+ * <p>The priority value can be specified either as an integer literal in the 32-bit signed integer
+ * range, or as a FEEL expression prefixed with {@code =}. The default literal priority is {@code
+ * 0}.
+ *
+ * <p>Applied on {@code <bpmn:process>} (process-wide default) or on a job-creating task (task-level
+ * override).
+ *
+ * <p>Expression-based priorities are represented and stored as their raw string value, including
+ * the leading {@code =}, and are exposed via {@link #getPriority()} and {@link
+ * #setPriority(String)}.
  */
 public interface ZeebeJobPriorityDefinition extends BpmnModelElementInstance {
 

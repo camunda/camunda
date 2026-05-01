@@ -79,6 +79,9 @@ public class ExtensionElementDuplicationValidators {
           ExtensionElementsDuplicationValidator.verifyThat(SendTask.class)
               .hasSingleExtensionElement(
                   ZeebeLinkedResources.class, ZeebeConstants.ELEMENT_LINKED_RESOURCES),
+          ExtensionElementsDuplicationValidator.verifyThat(SendTask.class)
+              .hasSingleExtensionElement(
+                  ZeebeJobPriorityDefinition.class, ZeebeConstants.ELEMENT_JOB_PRIORITY_DEFINITION),
 
           // user task
           ExtensionElementsDuplicationValidator.verifyThat(UserTask.class)
@@ -112,6 +115,9 @@ public class ExtensionElementDuplicationValidators {
           ExtensionElementsDuplicationValidator.verifyThat(BusinessRuleTask.class)
               .hasSingleExtensionElement(
                   ZeebeCalledDecision.class, ZeebeConstants.ELEMENT_CALLED_DECISION),
+          ExtensionElementsDuplicationValidator.verifyThat(BusinessRuleTask.class)
+              .hasSingleExtensionElement(
+                  ZeebeJobPriorityDefinition.class, ZeebeConstants.ELEMENT_JOB_PRIORITY_DEFINITION),
 
           // script task
           ExtensionElementsDuplicationValidator.verifyThat(ScriptTask.class)
@@ -122,6 +128,9 @@ public class ExtensionElementDuplicationValidators {
           ExtensionElementsDuplicationValidator.verifyThat(ScriptTask.class)
               .hasSingleExtensionElement(
                   ZeebeTaskHeaders.class, ZeebeConstants.ELEMENT_TASK_HEADERS),
+          ExtensionElementsDuplicationValidator.verifyThat(ScriptTask.class)
+              .hasSingleExtensionElement(
+                  ZeebeJobPriorityDefinition.class, ZeebeConstants.ELEMENT_JOB_PRIORITY_DEFINITION),
 
           // ad-hoc subprocess
           ExtensionElementsDuplicationValidator.verifyThat(AdHocSubProcess.class)

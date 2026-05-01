@@ -109,6 +109,38 @@ class ZeebeSendTaskValidatorTest {
             "Must have either one 'zeebe:publishMessage' or one 'zeebe:taskDefinition' extension element"));
   }
 
+  @Test
+  void jobPriorityDefinitionNotAllowedWithPublishMessage() {
+    // given / when
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .sendTask("task")
+            .message(b -> b.name("message-name").zeebeCorrelationKey("correlationKey"))
+            .zeebeJobPriority("42")
+            .done();
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            SendTask.class,
+            "'zeebe:jobPriorityDefinition' is only allowed in job-worker mode ('zeebe:taskDefinition')"));
+  }
+
+  @Test
+  void jobPriorityDefinitionAllowedWithTaskDefinition() {
+    // given / when
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .sendTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("42"))
+            .done();
+
+    // then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
   private BpmnModelInstance process(final Consumer<PublishMessageBuilder> consumer) {
     return Bpmn.createExecutableProcess("process")
         .startEvent()

@@ -19,7 +19,10 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
+import io.camunda.zeebe.model.bpmn.instance.SendTask;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
@@ -115,7 +118,7 @@ public class ZeebeJobPriorityDefinitionValidationTest {
   }
 
   ////////////////////////////////////////////////////////////////////////////
-  // Task-level
+  // ServiceTask-level
   ////////////////////////////////////////////////////////////////////////////
 
   @ParameterizedTest
@@ -179,6 +182,100 @@ public class ZeebeJobPriorityDefinitionValidationTest {
     // when / then
     ProcessValidationUtil.assertThatProcessHasViolations(
         process, expect(ServiceTask.class, "Must have exactly one 'zeebe:jobPriorityDefinition'"));
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  // SendTask-level
+  ////////////////////////////////////////////////////////////////////////////
+
+  @Test
+  void shouldBeValidWithJobPriorityDefinitionOnSendTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .sendTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("42"))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void shouldRejectDuplicatedJobPriorityDefinitionOnSendTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.readModelFromStream(
+            ReflectUtil.getResourceAsStream(
+                "io/camunda/zeebe/model/bpmn/validation/ZeebeJobPriorityDefinitionValidationTest.duplicatedSendTask.bpmn"));
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(SendTask.class, "Must have exactly one 'zeebe:jobPriorityDefinition'"));
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  // BusinessRuleTask-level
+  ////////////////////////////////////////////////////////////////////////////
+
+  @Test
+  void shouldBeValidWithJobPriorityDefinitionOnBusinessRuleTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("42"))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void shouldRejectDuplicatedJobPriorityDefinitionOnBusinessRuleTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.readModelFromStream(
+            ReflectUtil.getResourceAsStream(
+                "io/camunda/zeebe/model/bpmn/validation/ZeebeJobPriorityDefinitionValidationTest.duplicatedBusinessRuleTask.bpmn"));
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(BusinessRuleTask.class, "Must have exactly one 'zeebe:jobPriorityDefinition'"));
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  // ScriptTask-level
+  ////////////////////////////////////////////////////////////////////////////
+
+  @Test
+  void shouldBeValidWithJobPriorityDefinitionOnScriptTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .scriptTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("42"))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void shouldRejectDuplicatedJobPriorityDefinitionOnScriptTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.readModelFromStream(
+            ReflectUtil.getResourceAsStream(
+                "io/camunda/zeebe/model/bpmn/validation/ZeebeJobPriorityDefinitionValidationTest.duplicatedScriptTask.bpmn"));
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(ScriptTask.class, "Must have exactly one 'zeebe:jobPriorityDefinition'"));
   }
 
   @Test
