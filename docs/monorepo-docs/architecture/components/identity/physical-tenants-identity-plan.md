@@ -1160,7 +1160,17 @@ return RequestExecutor.executeServiceMethod(
 
 ## 14. Implementation Milestones
 
-> Estimates are rough engineering days assuming one engineer per stream, with the existing test infrastructure available. Total ≈ 12-18 engineering days (≈ 3-4 calendar weeks with one engineer, or ≈ 2 weeks with two engineers running streams in parallel).
+> Estimates are rough engineering days assuming one engineer per stream, with the existing test infrastructure available.
+>
+> **The login/logout option (A / B / C) chosen in §6.4 changes the total significantly** — the milestone set forks at M2c. Use the per-option totals below.
+>
+> | Option | API surface (M0–M3) | Login surface (M2c) | Tests + docs (M4–M5) | **Total (eng-days)** |
+> |---|---|---|---|---|
+> | **A — refined PoC** | ~9 | **~5-7** | ~5 | **~19-21** |
+> | **B — claim-based RBAC** | ~9 | **~10-14** | ~6 | **~25-29** |
+> | **C — defer login** | ~9 | **0** | ~4 | **~13** |
+>
+> Calendar duration depends on engineer count — see the parallelisation map at the end of this section.
 
 ### M0 — Configuration foundation (sequential prerequisite, ~2 days)
 
@@ -1206,6 +1216,63 @@ return RequestExecutor.executeServiceMethod(
 
 **Exit criteria:** slice tests green for the cluster-admin positive and negative scenarios.
 
+### M2c — Login surface (depends on M1, parallel with M2a/M2b) — **option-dependent**
+
+> **Skip this milestone entirely under Option C.** Pick **M2c-A** or **M2c-B** based on the §6.4 decision.
+
+#### M2c-A — Refined PoC: bind PT in OIDC `state` (~5-7 engineering days)
+
+**Goal:** Browser users land on a per-PT login picker; tenant binding is HMAC-bound via OIDC `state` (not HTTP session); cross-PT URL access is rejected via `authorizeHttpRequests`. Closes the three security defects in PR #51959 (CSRF on GET, Bearer-bypass, broken multi-tab race defense).
+
+- [ ] Port the PoC's picker UI (`IdpPickerPage.tsx`) and login JSON controller, renamed and relocated per the converged design table (Java specialist's recommendation: standalone shell, not in Identity admin webapp).
+- [ ] Replace PoC's `TenantAwareOAuth2AuthorizationRequestResolver` with `state`-based binding via `DefaultOAuth2AuthorizationRequestResolver.setAuthorizationRequestCustomizer(b -> b.attributes(a -> a.put("ptId", tenantId)))`.
+- [ ] Replace PoC's `TenantBindingAuthenticationSuccessHandler` with a converter that reads `OAuth2LoginAuthenticationToken.getAuthorizationExchange().getAuthorizationRequest().getAttribute("ptId")` and grants `SimpleGrantedAuthority("PT_" + ptId)`.
+- [ ] **Delete** `TenantBindingEnforcementFilter` — replace with `authorizeHttpRequests(a -> a.requestMatchers("/{physicalTenantId}/**").access(hasUrlMatchingAuthority))` so Spring's `AuthorizationManager` runs through `ExceptionTranslationFilter`.
+- [ ] **Reject Bearer on `oidcWebappSecurity`** — `oauth2ResourceServer.jwt(...)` is removed from this chain (force JWT through `physicalTenantApiSecurityFilterChain` only). Closes the bypass.
+- [ ] Migrate properties from PoC's `camunda.identity.engine-idp-assignments` to `camunda.security.physical-tenants.{id}.idps` per ADR-0007. Drop the PoC's standalone `PhysicalTenantIdpRegistry`; consume the unified `PhysicalTenantRegistry` (M1).
+- [ ] Rename PoC's `Tenant…` classes → `PhysicalTenant…` (`PhysicalTenantAuthenticationEntryPoint`, `PhysicalTenantOAuth2AuthorizationRequestResolver`, `PhysicalTenantBindingSuccessHandler`, `PhysicalTenantLoginController`).
+- [ ] Reserved-ID alignment: registry's reserved set absorbs the webapp-side additions and all-numeric rejection from §6.4.6.
+- [ ] **Split out the PoC's `OAuth2RefreshTokenFilter` `SecurityContextLogoutHandler` fix as a separate PR** — it's an unrelated pre-existing bug.
+- [ ] Modify `oidcWebappSecurity` chain in `WebSecurityConfig.java` per the §6.4 Option A design.
+- [ ] Modify `AdminIndexController` (or new dedicated host module per Java specialist's recommendation) to serve the picker route.
+- [ ] Unit + slice tests covering the **three defect classes** the PoC didn't catch:
+  - `shouldNotBindSessionViaCsrfGetFromThirdPartyOrigin` (the `<img>`-tag attack — assert no session attribute is created on a GET without a CSRF token; with `state`-based binding this is structural).
+  - `shouldRejectBearerTokenOnWebappPathUnboundToPt` (Bearer-bypass closure).
+  - `shouldIsolateMultiTabFlowsViaState` (two concurrent flows, two different `state` values, no cross-contamination).
+- [ ] Integration test: full login flow against Keycloak Testcontainer with two PTs and three IdPs (one shared, two PT-specific) — assert picker filtering, cross-PT URL rejection (403 via `AccessDeniedException`, not `sendError`), state-based binding survives session id rotation.
+
+**Exit criteria:** unauthenticated `/risk-production/operate` redirects to picker; picker shows only the IdPs assigned to `risk-production`; selecting an IdP completes login and lands on `/risk-production/operate`; `/default/operate` from the same session returns 403; `<img>`-tag CSRF cannot pin a session pre-auth; Bearer token on `/risk-production/operate/...` is rejected (chain decision); multi-tab race scenario completes both flows without cross-contamination.
+
+#### M2c-B — Claim-based RBAC (~10-14 engineering days)
+
+**Goal:** Drop session-tenant binding entirely. PT memberships come from OIDC token claims; per-request RBAC gates URL access via `authorizeHttpRequests`. Same approach unifies API and webapp surfaces — webapps forward the OIDC access token to `/v2/physical-tenants/{id}/...` and the API converter resolves PT membership identically. Closes the three defects PLUS the multi-PT switching UX limit PLUS the API/webapp coexistence problem.
+
+- [ ] Extend `OidcAuthenticationConfiguration` with `physicalTenantsClaim` (default e.g. `pt_memberships` or reuse `groups` with a prefix) and document the claim-shape contract for customer IdPs.
+- [ ] Extend `TokenClaimsConverter` to read the configured claim and translate each PT id to a `SimpleGrantedAuthority("PT_" + ptId)`. Verify the new authorities round-trip through `OidcTokenAuthenticationConverter` for both bearer and login flows.
+- [ ] Add `authorizeHttpRequests(a -> a.requestMatchers("/{physicalTenantId}/**").access((auth, ctx) -> hasAuthority("PT_" + ctx.getVariables().get("physicalTenantId"))))` to `oidcWebappSecurity`. **No** custom enforcement filter, **no** session attribute, **no** binding handler.
+- [ ] **API/webapp BFF integration:** webapps forward `OAuth2AuthorizedClient.getAccessToken()` as `Authorization: Bearer …` on calls to `/v2/physical-tenants/{id}/...`. Wire a Spring `WebClient` filter (or equivalent for fetch-based UIs) that pulls the token from the current `OAuth2AuthenticationToken`'s authorized client.
+- [ ] Picker UX: either drop the picker entirely (let users see all assigned PTs in a webapp navbar / sidebar after cluster-uniform login) or add a thin tenant-aware picker that filters the cluster `/login` IdP list by claim-asserted memberships at render time. **Decide with product before starting.**
+- [ ] Customer IdP claim contract: write the operator documentation explaining how to emit `pt_memberships` on Keycloak / Okta / Auth0 / Microsoft Entra. Each IdP gets a recipe.
+- [ ] Migration story for 8.9 → 8.10 customers whose IdPs don't currently emit anything PT-shaped: document a ramp where a default mapping rule grants every authenticated user membership in a synthetic `default` PT (so vanilla 8.9 → 8.10 upgrades keep working).
+- [ ] Reject Bearer on webapp paths (same as Option A) OR document the alternative (accept Bearer on webapp chain too — viable under Option B because authorities are uniform).
+- [ ] Unit + slice tests:
+  - `shouldGrantPhysicalTenantAuthoritiesFromIdpClaim` (claim → authority mapping).
+  - `shouldRejectUrlPtNotInPrincipalAuthorities` (one-line `authorizeHttpRequests` enforcement).
+  - `shouldForwardAccessTokenFromOAuth2AuthorizedClientToPtApiCalls` (BFF token relay).
+- [ ] Integration test: Keycloak Testcontainer fixture with PT memberships emitted via group claim mapper. Assert: cluster-uniform login → multi-PT navigation without re-login; webapp → `/v2/physical-tenants/{id}/...` call carries forwarded token and succeeds; URL-PT not in claim → 403; logout invalidates everything.
+- [ ] Performance check: token claim parsing is on the hot path. Cache the per-token authority list (existing `OidcUserService` caching probably suffices; verify).
+
+**Exit criteria:** logged-in user with `pt_memberships=[risk-production, default]` in their token can navigate freely between `/risk-production/...` and `/default/...` without re-login; webapp JS calls to `/v2/physical-tenants/risk-production/...` succeed via forwarded access token; user without a PT in their claim hitting `/that-pt/...` gets 403; cluster-uniform login is the only login flow.
+
+#### M2c-C — Defer login surface (0 engineering days in this slice)
+
+**Goal:** Ship 8.10 identity API surface only. Browser login/logout untouched from 8.9.
+
+- [ ] Document the deferral and the dependent slice (Webapps PT routing in a future release).
+- [ ] No code changes; PR #51959 sits on its branch unmerged.
+
+**Exit criteria:** the API surface ships in 8.10; PR #51959 is referenced as input for the future webapp-routing slice; the §6.4 CTA is closed with the decision recorded.
+
 ### M3 — Cluster topology aggregator (depends on M2b, ~2 days)
 
 **Goal:** `/v2/cluster/topology` returns aggregated topology shape; the same pattern is reusable for `/v2/cluster/backup` (delivered by the backup sibling slice — see §4.10.1).
@@ -1218,28 +1285,37 @@ return RequestExecutor.executeServiceMethod(
 
 **Exit criteria:** legacy `/v2/topology` unchanged; new `/v2/cluster/topology` returns aggregated map; per-PT failure surfaces as data, not 5xx; backup-slice team has a documented contract for plugging `/v2/cluster/backup` into the same auth chain.
 
-### M4 — Integration tests (depends on M2a + M2b + M3, ~3 days)
+### M4 — Integration tests (depends on M2a + M2b + M3 [+ M2c-A or M2c-B], **option-dependent**)
 
 **Goal:** End-to-end confidence with Keycloak.
 
-- [ ] Two-realm Keycloak Testcontainer fixture.
-- [ ] PT scenarios (assigned/unassigned IdP, cross-PT replay).
-- [ ] Cluster-admin happy/sad paths.
-- [ ] One acceptance test in `qa/acceptance-tests`.
+**Effort:** ~3 days under Option C (API only); ~4 days under Option A (adds login flow tests); ~5 days under Option B (adds login flow + BFF relay + multi-PT navigation tests).
 
-**Exit criteria:** integration test suite green; cross-PT token replay rejected; acceptance test deploys and runs a process under a non-default PT.
+- [ ] Two-realm Keycloak Testcontainer fixture (shared across API and login surfaces).
+- [ ] **API scenarios (all options):** assigned/unassigned IdP, cross-PT bearer-token replay, cluster-admin happy/sad paths, topology aggregation.
+- [ ] **Webapp scenarios under Option A:** unauthenticated tenant URL → picker; picker filtering; IdP selection → callback → bound principal; cross-PT URL with same session → 403; `state`-based binding survives session id rotation; `<img>`-tag CSRF cannot pin a session.
+- [ ] **Webapp scenarios under Option B:** cluster-uniform login → multi-PT navigation without re-login; webapp → `/v2/physical-tenants/{id}/...` call via forwarded access token; URL-PT not in claim → 403; logout invalidates everything.
+- [ ] **Cross-surface (A only):** browser session and bearer-token client coexisting; webapps cannot consume PT API without explicit token-forwarding adapter.
+- [ ] **Cross-surface (B only):** webapps with forwarded access token successfully consume PT API; same authorities resolve identically on both surfaces.
+- [ ] One acceptance test in `qa/acceptance-tests` per surface in scope.
 
-### M5 — Documentation + release notes (parallel with M4, ~1 day)
+**Exit criteria:** option-appropriate integration suite green; cross-PT replay (bearer) and cross-PT navigation (browser) both rejected; acceptance tests cover at least one bearer call and (if Option A or B) one full browser login.
+
+### M5 — Documentation + release notes (parallel with M4, **option-dependent**)
 
 **Goal:** Everything operators need to upgrade to PTs.
+
+**Effort:** ~1 day under Option C; ~2 days under Option A (login picker + reserved-ID + Entra notes); ~3 days under Option B (claim contract + per-IdP recipes + 8.9 → 8.10 migration ramp).
 
 - [ ] User-facing docs for the new YAML shape (under `monorepo-docs-site/`).
 - [ ] Migration note: empty `physical-tenants` block = unchanged 8.9 behavior.
 - [ ] Cluster-admin claim-based config recipe.
 - [ ] Reserved-ID list documented.
+- [ ] **Option A only:** picker UX walkthrough; per-PT login URL pattern; Entra single-redirect-URI rationale.
+- [ ] **Option B only:** PT-membership claim contract; per-IdP recipes (Keycloak / Okta / Auth0 / Entra) showing how to emit the claim; 8.9 → 8.10 migration ramp (default-PT membership for unconfigured customers).
 - [ ] Release-note line.
 
-**Exit criteria:** docs PR ready alongside the code PR; release note in changelog.
+**Exit criteria:** docs PR ready alongside the code PR; release note in changelog reflects the chosen option.
 
 ### Parallelisation map
 
@@ -1249,56 +1325,107 @@ flowchart LR
     M1["M1 — Registry + validation<br/>~2d"]:::seq
     M2a["M2a — PT API filter chain<br/>~3d"]:::par
     M2b["M2b — Cluster-admin chain<br/>~2d"]:::par
-    M3["M3 — Cluster topology aggregator<br/>~2d"]:::seq
-    M4["M4 — Integration tests<br/>~3d"]:::par
-    M5["M5 — Documentation<br/>~1d"]:::par
+    M2cA["M2c-A — Login (state binding)<br/>~5-7d (Option A)"]:::optA
+    M2cB["M2c-B — Login (claim RBAC)<br/>~10-14d (Option B)"]:::optB
+    M2cC["M2c-C — Login deferred<br/>0d (Option C)"]:::optC
+    M3["M3 — Topology aggregator<br/>~2d"]:::seq
+    M4["M4 — Integration tests<br/>~3-5d (option-dependent)"]:::par
+    M5["M5 — Documentation<br/>~1-3d (option-dependent)"]:::par
+    Decision{"§6.4 decision<br/>A · B · C"}
     Release([Release])
 
     M0 --> M1
     M1 --> M2a
     M1 --> M2b
+    M1 --> Decision
+    Decision -->|A| M2cA
+    Decision -->|B| M2cB
+    Decision -->|C| M2cC
     M2a --> M4
     M2b --> M3
     M3 --> M4
+    M2cA --> M4
+    M2cB --> M4
+    M2cC --> M4
     M4 --> Release
     M5 --> Release
 
     classDef seq fill:#e0f2fe,stroke:#0369a1,stroke-width:2px;
     classDef par fill:#dcfce7,stroke:#16a34a,stroke-width:2px;
+    classDef optA fill:#fef3c7,stroke:#d97706,stroke-width:2px;
+    classDef optB fill:#fce7f3,stroke:#be185d,stroke-width:2px;
+    classDef optC fill:#f3f4f6,stroke:#6b7280,stroke-width:2px,stroke-dasharray: 4 2;
 ```
 
-Or as a Gantt schedule (illustrative; assumes 2 engineers and immediate hand-offs):
+Gantt schedule per option (illustrative; assumes 2 engineers for A and C, 3 engineers for B; immediate hand-offs):
 
 ```mermaid
 gantt
-    title Implementation schedule (2 engineers)
+    title Option A — Refined PoC (2 engineers, ~3 calendar weeks)
     dateFormat  YYYY-MM-DD
     axisFormat  W%V
     section Sequential
-    M0 Config foundation        :m0, 2026-05-04, 2d
-    M1 Registry + validation    :m1, after m0, 2d
-    M3 Topology aggregator      :m3, after m2b, 2d
-    section Parallel A (eng 1)
-    M2a PT API filter chain     :m2a, after m1, 3d
-    M4 Integration tests        :m4, after m3, 3d
-    section Parallel B (eng 2)
-    M2b Cluster-admin chain     :m2b, after m1, 2d
-    M5 Documentation            :m5, after m3, 1d
+    M0 Config foundation        :m0a, 2026-05-04, 2d
+    M1 Registry + validation    :m1a, after m0a, 2d
+    M3 Topology aggregator      :m3a, after m2ba, 2d
+    section Eng 1 — API
+    M2a PT API filter chain     :m2aa, after m1a, 3d
+    M4 Integration tests        :m4a, after m2cA, 4d
+    section Eng 2 — Cluster + login
+    M2b Cluster-admin chain     :m2ba, after m1a, 2d
+    M2c-A Login (state)         :m2cA, after m2ba, 7d
+    M5 Documentation            :m5a, after m3a, 2d
 ```
 
-- **M0 → M1** is the only strict sequential prefix.
-- **M2a and M2b** are independent after M1 — split between two engineers if available.
-- **M3** depends on M2b for the cluster-admin chain to gate the new endpoint.
-- **M4** is the integration-test merge point and depends on every chain being in place.
-- **M5** runs in parallel with M4 — docs only depend on the YAML shape (M0) and the user-visible behavior (which is locked by M2/M3 design).
+```mermaid
+gantt
+    title Option B — Claim-based RBAC (3 engineers, ~3-3.5 calendar weeks)
+    dateFormat  YYYY-MM-DD
+    axisFormat  W%V
+    section Sequential
+    M0 Config foundation        :m0b, 2026-05-04, 2d
+    M1 Registry + validation    :m1b, after m0b, 2d
+    M3 Topology aggregator      :m3b, after m2bb, 2d
+    section Eng 1 — API
+    M2a PT API filter chain     :m2ab, after m1b, 3d
+    M4 Integration tests        :m4b, after m2cB, 5d
+    section Eng 2 — Cluster + docs
+    M2b Cluster-admin chain     :m2bb, after m1b, 2d
+    M5 Documentation            :m5b, after m3b, 3d
+    section Eng 3 — Login
+    M2c-B Login (claim RBAC)    :m2cB, after m1b, 14d
+```
 
-### Rough total
+```mermaid
+gantt
+    title Option C — Defer login (2 engineers, ~2 calendar weeks)
+    dateFormat  YYYY-MM-DD
+    axisFormat  W%V
+    section Sequential
+    M0 Config foundation        :m0c, 2026-05-04, 2d
+    M1 Registry + validation    :m1c, after m0c, 2d
+    M3 Topology aggregator      :m3c, after m2bc, 2d
+    section Eng 1 — API
+    M2a PT API filter chain     :m2ac, after m1c, 3d
+    M4 Integration tests        :m4c, after m3c, 3d
+    section Eng 2 — Cluster + docs
+    M2b Cluster-admin chain     :m2bc, after m1c, 2d
+    M5 Documentation            :m5c, after m3c, 1d
+```
 
-| Engineers | Calendar duration |
-|---|---|
-| 1 | ~3-4 weeks |
-| 2 (parallel M2a/M2b, parallel M4/M5) | ~2 weeks |
-| 3 (additionally split M4 fixture work from M5 docs) | ~1.5 weeks |
+- **M0 → M1** is the only strict sequential prefix in all options.
+- **M2a, M2b, M2c-{A|B}** are independent after M1 — split across engineers if available.
+- **M3** depends on M2b (cluster-admin chain gates the new topology endpoint).
+- **M4** is the integration-test merge point and depends on every chain in scope being in place — its scope grows under A and B.
+- **M5** runs in parallel with M4 — its content grows under A (picker UX, Entra notes) and B (claim contract, per-IdP recipes, migration ramp).
+
+### Rough total per option
+
+| Option | 1 engineer | 2 engineers (parallel M2a/M2b/M2c, parallel M4/M5) | 3 engineers (A or B; split M2c stream) |
+|---|---|---|---|
+| **A — refined PoC** | ~5 weeks | ~3 weeks | ~2.5 weeks |
+| **B — claim-based RBAC** | ~6-7 weeks | ~3.5-4 weeks | ~3-3.5 weeks |
+| **C — defer login** | ~3 weeks | ~2 weeks | ~1.5 weeks |
 
 ---
 
