@@ -57,6 +57,12 @@ public interface JobRecordValue
   int getRetries();
 
   /**
+   * @return the priority of this job; higher values activate first. Jobs with equal priority are
+   *     ordered by key ascending (creation order). Returns 0 if no priority is set (default).
+   */
+  int getPriority();
+
+  /**
    * @return the time of backoff in milliseconds. If backoff is disabled this method returns 0
    *     (default value).
    */
