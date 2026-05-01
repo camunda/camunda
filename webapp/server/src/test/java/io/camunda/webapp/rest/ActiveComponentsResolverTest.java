@@ -53,6 +53,22 @@ class ActiveComponentsResolverTest {
   }
 
   @Test
+  void shouldExcludeComponentWhenUiIsDisabledButBackendIsEnabled() {
+    // given — backend is enabled but UI is explicitly disabled; the resolver tracks UI components,
+    // so this component must not appear in activeComponents (mirrors the property set used by
+    // ConditionalOnWebappUiEnabled)
+    final var env =
+        new MockEnvironment().withProperty("camunda.webapps.tasklist.ui-enabled", "false");
+    final var resolver = new ActiveComponentsResolver(env);
+
+    // when
+    final var result = resolver.resolve();
+
+    // then
+    assertThat(result).containsExactly("admin", "operate");
+  }
+
+  @Test
   void shouldExcludeComponentWhenBothKeysAreExplicitlyFalse() {
     // given
     final var env =
