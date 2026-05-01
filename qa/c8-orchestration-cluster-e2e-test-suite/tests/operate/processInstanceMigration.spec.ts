@@ -146,6 +146,15 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify target process is preselected with auto-mapping and Complete Migration', async () => {
+      // Wait for the target process combobox to be visible and enabled before checking its value
+      await expect(
+        operateProcessMigrationModePage.targetProcessCombobox,
+      ).toBeVisible({timeout: 10000});
+      await expect(
+        operateProcessMigrationModePage.targetProcessCombobox,
+      ).toBeEnabled({timeout: 10000});
+
+      // Now wait for the auto-populated value with extended timeout
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
       ).toHaveValue(targetBpmnProcessId, {timeout: 30000});
