@@ -36,6 +36,8 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +59,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   protected static final Logger LOGGER = LoggerFactory.getLogger(ArchiverJobIT.class);
   protected static final int PARTITION_ID = 1;
   protected static final AtomicLong ID_GENERATOR = new AtomicLong(1);
+  protected static final Instant NOW = Instant.parse("2026-05-01T10:26:00Z");
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
@@ -72,7 +75,8 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
 
   @BeforeEach
   void setup() {
-    context = new ExporterTestContext().setPartitionId(PARTITION_ID);
+    context =
+        new ExporterTestContext().setPartitionId(PARTITION_ID).setClock(InstantSource.fixed(NOW));
     exporterMetrics = new CamundaExporterMetrics(context.getMeterRegistry());
     executor = Executors.newSingleThreadExecutor();
   }
