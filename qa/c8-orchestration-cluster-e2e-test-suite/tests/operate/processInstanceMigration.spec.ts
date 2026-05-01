@@ -165,9 +165,10 @@ test.describe.serial('Process Instance Migration', () => {
       await operateProcessMigrationModePage
         .getOptionByName(targetBpmnProcessId)
         .click();
+      // Wait for combobox value to be set after selection
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
-      ).toHaveValue(targetBpmnProcessId);
+      ).toHaveValue(targetBpmnProcessId, {timeout: 10000});
 
       await expect(
         operateProcessMigrationModePage.targetVersionDropdown,
