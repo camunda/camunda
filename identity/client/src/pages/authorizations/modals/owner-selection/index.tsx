@@ -7,12 +7,12 @@
  */
 
 import { FC } from "react";
-import { searchUser } from "src/utility/api/users";
 import { searchGroups } from "src/utility/api/groups";
 import { searchMappingRule } from "src/utility/api/mapping-rules";
 import { searchRoles } from "src/utility/api/roles";
 import useTranslate from "src/utility/localization";
 import OwnerSelection from "./OwnerSelection";
+import OwnerSelectionSearch from "./OwnerSelectionSearch";
 import TextField from "src/components/form/TextField";
 import { isCamundaGroupsEnabled, isOIDC } from "src/configuration";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
@@ -77,15 +77,13 @@ const Selection: FC<SelectionProps> = ({
         );
       }
       return (
-        <OwnerSelection
-          id="userSelection"
-          onChange={onChange}
-          onBlur={onBlur}
-          searchFn={searchUser}
-          getId={(user) => user.username}
-          itemToString={(user) => user.name || user.username}
-          isEmpty={isEmpty}
-        />
+        <div onBlur={onBlur}>
+          <OwnerSelectionSearch
+            onChange={onChange}
+            ownerId={ownerId}
+            isEmpty={isEmpty}
+          />
+        </div>
       );
     case "GROUP":
       if (isCamundaGroupsEnabled) {
