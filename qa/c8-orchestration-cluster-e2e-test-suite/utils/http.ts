@@ -160,7 +160,7 @@ export async function assertNotFoundRequest(
   if (process.env.FORWARD_COMPAT_MODE === 'true') {
     // In forward-compat runs the server may use a different error message
     // format. Only verify that the detail mentions "not found".
-    expect(String(json.detail).toLowerCase()).toContain('not found');
+    expect(String(json.detail).toLowerCase()).toContain('not_found');
   } else {
     expect(json.detail).toContain(detail);
   }

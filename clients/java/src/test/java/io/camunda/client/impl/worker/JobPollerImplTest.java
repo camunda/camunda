@@ -34,22 +34,52 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.stream.Collectors;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.awaitility.Awaitility;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 public final class JobPollerImplTest extends ClientTest {
 
+  private static final String JOB_POLLER_LOGGER_NAME = "io.camunda.client.job.poller";
+
   private Consumer<ActivatedJob> jobConsumer;
   private IntConsumer doneCallback;
   private Consumer<Throwable> errorCallback;
+  private ListAppender logCapture;
 
   @Before
   public void setup() {
     jobConsumer = Mockito.spy(Consumer.class);
     doneCallback = Mockito.spy(IntConsumer.class);
     errorCallback = Mockito.spy(Consumer.class);
+
+    logCapture = new ListAppender("capture-" + JOB_POLLER_LOGGER_NAME);
+    logCapture.start();
+    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    final org.apache.logging.log4j.core.config.LoggerConfig loggerConfig =
+        new org.apache.logging.log4j.core.config.LoggerConfig(
+            JOB_POLLER_LOGGER_NAME, Level.ALL, true);
+    loggerConfig.addAppender(logCapture, null, null);
+    ctx.getConfiguration().addLogger(JOB_POLLER_LOGGER_NAME, loggerConfig);
+    ctx.updateLoggers();
+  }
+
+  @After
+  public void tearDown() {
+    if (logCapture != null) {
+      final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+      ctx.getConfiguration().removeLogger(JOB_POLLER_LOGGER_NAME);
+      ctx.updateLoggers();
+      logCapture.stop();
+    }
   }
 
   @Test
@@ -86,9 +116,18 @@ public final class JobPollerImplTest extends ClientTest {
   }
 
   @Test
-  public void shouldCallbackWhenPollFailed() {
+  public void shouldCallbackWhenPollFailedWithResourceExhausted() {
+    shouldCallbackWhenPollFailedWithStatus(Status.RESOURCE_EXHAUSTED);
+  }
+
+  @Test
+  public void shouldCallbackWhenPollFailedWithDeadlineExceeded() {
+    shouldCallbackWhenPollFailedWithStatus(Status.DEADLINE_EXCEEDED);
+  }
+
+  private void shouldCallbackWhenPollFailedWithStatus(final Status status) {
     // given
-    gatewayService.onActivateJobsRequest(new StatusRuntimeException(Status.RESOURCE_EXHAUSTED));
+    gatewayService.onActivateJobsRequest(new StatusRuntimeException(status));
 
     // when
     getJobPoller().poll(123, jobConsumer, doneCallback, errorCallback, () -> true);
@@ -101,7 +140,26 @@ public final class JobPollerImplTest extends ClientTest {
               verify(jobConsumer, never()).accept(any(ActivatedJob.class));
               verify(doneCallback, never()).accept(any(Integer.class));
               verify(errorCallback).accept(any(StatusRuntimeException.class));
+
+              assertThat(eventsAt(Level.WARN))
+                  .as("%s should not produce a WARN", status.getCode())
+                  .isEmpty();
+              assertThat(eventsAt(Level.TRACE))
+                  .as("%s should be logged at TRACE", status.getCode())
+                  .anySatisfy(
+                      e -> {
+                        assertThat(e.getMessage().getFormattedMessage())
+                            .contains("Failed to activate jobs");
+                        assertThat(e.getThrown()).isInstanceOf(StatusRuntimeException.class);
+                      });
             });
+  }
+
+  private List<LogEvent> eventsAt(final Level level) {
+    return logCapture.getEvents().stream()
+        .filter(e -> JOB_POLLER_LOGGER_NAME.equals(e.getLoggerName()))
+        .filter(e -> level.equals(e.getLevel()))
+        .collect(Collectors.toList());
   }
 
   @Test
