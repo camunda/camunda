@@ -217,6 +217,8 @@
                 <openApiNullable>false</openApiNullable>
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
                 <hideGenerationTimestamp>true</hideGenerationTimestamp>
+                <generateConstructorWithAllArgs>true</generateConstructorWithAllArgs>
+                <generateBuilders>true</generateBuilders>
               </configOptions>
             </configuration>
           </execution>
@@ -337,6 +339,8 @@
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
                 <useOneOfInterfaces>false</useOneOfInterfaces>
                 <hideGenerationTimestamp>true</hideGenerationTimestamp>
+                <generateConstructorWithAllArgs>true</generateConstructorWithAllArgs>
+                <generateBuilders>true</generateBuilders>
               </configOptions>
             </configuration>
           </execution>

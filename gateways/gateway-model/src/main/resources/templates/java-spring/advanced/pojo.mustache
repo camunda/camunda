@@ -2,21 +2,31 @@
 Custom override of upstream JavaSpring/pojo.mustache (openapi-generator v7.21.0,
 modules/openapi-generator/src/main/resources/JavaSpring/pojo.mustache).
 
-Diff vs upstream is intentionally minimal: exactly one line, the fluent setter for inherited
-("parent") properties, gets the nullableAnnotation partial inserted before the parameter
-type. This matches the emission the upstream template already does for the declared-in-class
-fluent setter. Without this fix, a subclass's fluent override erases the @Nullable annotation
-the parent's setter carries, and NullAway rejects callers passing nullable values through the
-subclass's chained builder call.
+NOTE: Do NOT use Mustache tag syntax inside this comment block. The samskivert Mustache engine
+parses section tags even inside comment blocks, so any unclosed section tag in this comment would
+corrupt the template parse tree and cause a MustacheParseException.
 
-Locate the changed setter via the marker comment a few lines down: search this file for
-"begin feature: fluent setter methods for inherited properties" — the very next line is the
-forked one, which prefixes the parameter type with the nullableAnnotation partial. The
-upstream template at the corresponding location omits that partial.
+Diffs vs upstream:
+1. Inherited-property fluent setter prefixes the parameter type with the nullableAnnotation
+   partial (marker: "begin feature: fluent setter methods for inherited properties"). Without
+   this, a subclass's fluent override erases the @Nullable the parent's setter carries, and
+   NullAway rejects callers passing nullable values through the subclass's chained builder.
+2. No no-args constructor: the x-java-no-args-constructor block is removed.
+   The @JsonCreator all-args ctor is the sole construction path.
+3. No required-args constructor: the generatedConstructorWithRequiredArgs block is removed.
+   The staged builder is the required-field gate; a separate required-only ctor would bypass it.
+4. All-args constructor visibility is protected, decorated with @JsonCreator, and each parameter
+   carries @JsonProperty(value = "...", required = true|false). Protected lets subclasses chain
+   via super(...) for allOf inheritance; external callers go through the staged builder.
+5. Setters and fluent setters are emitted only for optional fields, wrapped in inverted-required.
+   Required fields are construction-only.
+6. The generateBuilders/javaBuilder partial hookup is left in place from upstream; we activate
+   it via the generateBuilders config option and supply our own override of javaBuilder.mustache
+   (sibling file in this directory) that emits a nested staged Builder instead of upstream's flat
+   builder.
 
-When bumping openapi-generator: re-fetch the upstream pojo.mustache at the new version, diff
-against this file, and re-apply the single nullableAnnotation insertion if upstream still
-omits it. Update the version reference above.
+When bumping openapi-generator: re-fetch upstream pojo.mustache at the new version, diff against
+this file, and re-apply each diff above. Update the version reference.
 }}
 /**
  * {{description}}{{^description}}{{classname}}{{/description}}{{#isDeprecated}}
@@ -108,62 +118,76 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
   {{/openApiNullable}}
   {{/isContainer}}
   {{/vars}}
-  {{#vendorExtensions.x-java-no-args-constructor}}
-
-  public {{classname}}() {
-    super();
-  }
-  {{/vendorExtensions.x-java-no-args-constructor}}
   {{^lombok.Data}}
-  {{^lombok.RequiredArgsConstructor}}
-  {{#generatedConstructorWithRequiredArgs}}
-  {{#hasRequired}}
-
-  /**
-   * Constructor with only required parameters{{#generateConstructorWithAllArgs}}{{^vendorExtensions.x-java-all-args-constructor}} and all parameters{{/vendorExtensions.x-java-all-args-constructor}}{{/generateConstructorWithAllArgs}}
-   */
-  public {{classname}}({{#requiredVars}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/requiredVars}}) {
-    {{#parent}}
-    super({{#parentRequiredVars}}{{name}}{{^-last}}, {{/-last}}{{/parentRequiredVars}});
-    {{/parent}}
-    {{#vars}}
-    {{#required}}
-    {{#openApiNullable}}
-    this.{{name}} = {{#isNullable}}JsonNullable.of({{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}Optional.ofNullable({{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}}{{name}}{{#isNullable}}){{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}){{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}};
-    {{/openApiNullable}}
-    {{^openApiNullable}}
-    this.{{name}} = {{name}};
-    {{/openApiNullable}}
-    {{/required}}
-    {{/vars}}
-  }
-  {{/hasRequired}}
-  {{/generatedConstructorWithRequiredArgs}}
-  {{/lombok.RequiredArgsConstructor}}
   {{#vendorExtensions.x-java-all-args-constructor}}
 
   /**
-   * Constructor with all args parameters
+   * Sole construction path. Public callers go through {{classname}}.Builder.builder(); Jackson uses
+   * this ctor via @JsonCreator; subclasses chain via super(...).
    */
-  public {{classname}}({{#vendorExtensions.x-java-all-args-constructor-vars}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/vendorExtensions.x-java-all-args-constructor-vars}}) {
+  @com.fasterxml.jackson.annotation.JsonCreator
+  protected {{classname}}({{#vendorExtensions.x-java-all-args-constructor-vars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/vendorExtensions.x-java-all-args-constructor-vars}}) {
   {{#parent}}
       super({{#parentVars}}{{name}}{{^-last}}, {{/-last}}{{/parentVars}});
   {{/parent}}
   {{#vars}}
-  {{#openApiNullable}}
-      this.{{name}} = {{#isNullable}}JsonNullable.of({{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}Optional.ofNullable({{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}}{{name}}{{#isNullable}}){{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}){{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}};
-  {{/openApiNullable}}
-  {{^openApiNullable}}
       this.{{name}} = {{name}};
-  {{/openApiNullable}}
   {{/vars}}
   }
+  {{/vendorExtensions.x-java-all-args-constructor}}
+  {{^vendorExtensions.x-java-all-args-constructor}}
+  {{#vendorExtensions.x-needs-fallback-ctor}}
+  {{#parent}}
+
+  /**
+   * Sole construction path (no own fields — delegates fully to parent).
+   * Public callers go through {{classname}}.Builder.builder(); Jackson uses
+   * this ctor via @JsonCreator; subclasses chain via super(...).
+   */
+  @com.fasterxml.jackson.annotation.JsonCreator
+  protected {{classname}}({{#parentVars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/parentVars}}) {
+      super({{#parentVars}}{{name}}{{^-last}}, {{/-last}}{{/parentVars}});
+  }
+  {{/parent}}
+  {{/vendorExtensions.x-needs-fallback-ctor}}
+  {{#vendorExtensions.x-needs-child-ctor}}
+  {{#parent}}
+
+  /**
+   * Sole construction path (parent is a root class — openapi-generator does not emit a ctor for
+   * this child; we provide one so subclasses can chain super(...) correctly).
+   * Public callers go through {{classname}}.Builder.builder(); Jackson uses
+   * this ctor via @JsonCreator; subclasses chain via super(...).
+   */
+  @com.fasterxml.jackson.annotation.JsonCreator
+  protected {{classname}}({{#parentVars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}, {{/parentVars}}{{#vars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/vars}}) {
+      super({{#parentVars}}{{name}}{{^-last}}, {{/-last}}{{/parentVars}});
+  {{#vars}}
+      this.{{name}} = {{name}};
+  {{/vars}}
+  }
+  {{/parent}}
+  {{/vendorExtensions.x-needs-child-ctor}}
+  {{^parent}}
+  {{#vars}}{{#-first}}
+
+  /**
+   * Sole construction path. Public callers go through {{classname}}.Builder.builder(); Jackson uses
+   * this ctor via @JsonCreator; subclasses chain via super(...).
+   */
+  @com.fasterxml.jackson.annotation.JsonCreator
+  protected {{classname}}({{/-first}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{#-last}}) {
+{{/-last}}{{/vars}}
+{{#vars}}      this.{{name}} = {{name}};
+{{/vars}}  {{#vars}}{{#-last}}}{{/-last}}{{/vars}}
+  {{/parent}}
   {{/vendorExtensions.x-java-all-args-constructor}}
   {{/lombok.Data}}
   {{#vars}}
   {{^lombok.Data}}
 
   {{! begin feature: fluent setter methods }}
+  {{^required}}
   public {{classname}} {{name}}({{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}) {
     {{#openApiNullable}}
     this.{{name}} = {{#isNullable}}JsonNullable.of({{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}Optional.of{{#optionalAcceptNullable}}Nullable{{/optionalAcceptNullable}}({{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}}{{name}}{{#isNullable}}){{/isNullable}}{{#useOptional}}{{^required}}{{^isNullable}}{{^isContainer}}){{/isContainer}}{{/isNullable}}{{/required}}{{/useOptional}};
@@ -209,6 +233,7 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
     return this;
   }
   {{/isMap}}
+  {{/required}}
   {{! end feature: fluent setter methods }}
   {{! begin feature: getter and setter }}
   {{^lombok.Getter}}
@@ -255,6 +280,7 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
   {{/lombok.Getter}}
 
   {{^lombok.Setter}}
+  {{^required}}
   {{#deprecated}}
   /**
    * @deprecated
@@ -269,6 +295,7 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
 {{#jackson}}{{^vendorExtensions.x-is-jackson-optional-nullable}}{{>jackson_annotations}}{{/vendorExtensions.x-is-jackson-optional-nullable}}{{/jackson}}  public void {{setter}}({{>nullableAnnotation}}{{>nullableDataType}} {{name}}) {
     this.{{name}} = {{name}};
   }
+  {{/required}}
   {{/lombok.Setter}}
   {{/lombok.Data}}
   {{! end feature: getter and setter }}
@@ -280,6 +307,7 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
 
   {{^lombok.Setter}}
   {{! begin feature: fluent setter methods for inherited properties }}
+  {{^required}}
   public {{classname}} {{name}}({{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}) {
     super.{{name}}({{name}});
     return this;
@@ -298,6 +326,7 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
     return this;
   }
   {{/isMap}}
+  {{/required}}
   {{/lombok.Setter}}
   {{! end feature: fluent setter methods for inherited properties }}
   {{/parentVars}}
