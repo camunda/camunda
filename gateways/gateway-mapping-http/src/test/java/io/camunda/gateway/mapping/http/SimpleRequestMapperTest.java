@@ -111,12 +111,16 @@ class SimpleRequestMapperTest {
               .processDefinitionKey("123")
               .tenantId("tenant-a")
               .startInstructions(
-                  List.of(new ProcessInstanceCreationStartInstruction().elementId("start-element")))
+                  List.of(
+                      ProcessInstanceCreationStartInstruction.Builder.builder()
+                          .elementId("start-element")
+                          .build()))
               .runtimeInstructions(
                   List.of(
-                      new ProcessInstanceCreationTerminateInstruction()
+                      ProcessInstanceCreationTerminateInstruction.Builder.builder()
+                          .afterElementId("after-element")
                           .type("TERMINATE_PROCESS_INSTANCE")
-                          .afterElementId("after-element")));
+                          .build()));
 
       // when
       final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
@@ -138,12 +142,16 @@ class SimpleRequestMapperTest {
           new ProcessInstanceCreationInstruction()
               .processDefinitionKey("123")
               .startInstructions(
-                  List.of(new ProcessInstanceCreationStartInstruction().elementId("start-element")))
+                  List.of(
+                      ProcessInstanceCreationStartInstruction.Builder.builder()
+                          .elementId("start-element")
+                          .build()))
               .runtimeInstructions(
                   List.of(
-                      new ProcessInstanceCreationTerminateInstruction()
+                      ProcessInstanceCreationTerminateInstruction.Builder.builder()
+                          .afterElementId("after-element")
                           .type("TERMINATE_PROCESS_INSTANCE")
-                          .afterElementId("after-element")));
+                          .build()));
 
       // when
       final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
@@ -185,12 +193,16 @@ class SimpleRequestMapperTest {
           new ProcessInstanceCreationInstruction()
               .processDefinitionKey("123")
               .startInstructions(
-                  List.of(new ProcessInstanceCreationStartInstruction().elementId("start-element")))
+                  List.of(
+                      ProcessInstanceCreationStartInstruction.Builder.builder()
+                          .elementId("start-element")
+                          .build()))
               .runtimeInstructions(
                   List.of(
-                      new ProcessInstanceCreationTerminateInstruction()
+                      ProcessInstanceCreationTerminateInstruction.Builder.builder()
+                          .afterElementId("after-element")
                           .type("TERMINATE_PROCESS_INSTANCE")
-                          .afterElementId("after-element")));
+                          .build()));
 
       // when
       final Either<ProblemDetail, ProcessInstanceCreateRequest> result =

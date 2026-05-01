@@ -23,9 +23,10 @@ class MessageRequestValidatorTest {
   void shouldRejectCorrelationRequestWhenCorrelationKeyExceedsMaxLength() {
     // given
     final var request =
-        new MessageCorrelationRequest()
+        MessageCorrelationRequest.Builder.builder()
             .name("message-name")
-            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH + 1));
+            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH + 1))
+            .build();
 
     // when
     final var validationResult = validateMessageCorrelationRequest(request, MAX_NAME_FIELD_LENGTH);
@@ -41,9 +42,10 @@ class MessageRequestValidatorTest {
   void shouldRejectPublicationRequestWhenCorrelationKeyExceedsMaxLength() {
     // given
     final var request =
-        new MessagePublicationRequest()
+        MessagePublicationRequest.Builder.builder()
             .name("message-name")
-            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH + 1));
+            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH + 1))
+            .build();
 
     // when
     final var validationResult = validateMessagePublicationRequest(request, MAX_NAME_FIELD_LENGTH);
@@ -59,9 +61,10 @@ class MessageRequestValidatorTest {
   void shouldAcceptCorrelationRequestWhenCorrelationKeyAtMaxLength() {
     // given
     final var request =
-        new MessageCorrelationRequest()
+        MessageCorrelationRequest.Builder.builder()
             .name("message-name")
-            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH));
+            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH))
+            .build();
 
     // when
     final var validationResult = validateMessageCorrelationRequest(request, MAX_NAME_FIELD_LENGTH);
@@ -74,9 +77,10 @@ class MessageRequestValidatorTest {
   void shouldAcceptPublicationRequestWhenCorrelationKeyAtMaxLength() {
     // given
     final var request =
-        new MessagePublicationRequest()
+        MessagePublicationRequest.Builder.builder()
             .name("message-name")
-            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH));
+            .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH))
+            .build();
 
     // when
     final var validationResult = validateMessagePublicationRequest(request, MAX_NAME_FIELD_LENGTH);
