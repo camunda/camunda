@@ -87,7 +87,7 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
     // 1. First archive docs from dependent indices and `joinRelation={variable OR activity}`
     // from operate-list-view index (already done)
     // 2. Then archive all docs except `joinRelation=processInstance` from operate-list-view index
-    // 3. Then archive remaining docs from operate-list-view index (catch-all without filters)
+    // 3. Then archive all `joinRelation=processInstance` docs from operate-list-view index
     return archive(
             getTemplateDescriptor().getFullQualifiedName(),
             ListViewTemplate.PROCESS_INSTANCE_KEY,
@@ -102,7 +102,9 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
                     ListViewTemplate.PROCESS_INSTANCE_KEY,
                     finishDate,
                     processInstanceKeys,
-                    Map.of(),
+                    Map.of(
+                        ListViewTemplate.JOIN_RELATION,
+                        ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
                     Map.of()),
             getExecutor());
   }
