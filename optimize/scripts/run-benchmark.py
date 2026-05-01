@@ -111,6 +111,10 @@ CSV_COLUMNS = [
     "ES flush p99 (s)",
     "ES flush fail rate",
     "ES disk used %",
+    "Backpressure drop %",
+    "ES CPU throttle %",
+    "Camunda CPU throttle %",
+    "Completed PI/s",
     "grafana_timestamp",
 ]
 
@@ -344,8 +348,8 @@ def _promql(grafana_url: str, token: str, cookie: str, ds_uid: str, query: str, 
 
 
 def collect_metrics(grafana_url: str, token: str, cookie: str, namespace: str,
-                    target_rate: int, broker_info: dict) -> dict:
-    collect_time = time.time()
+                    target_rate: int, broker_info: dict, at_time: float = 0.0) -> dict:
+    collect_time = at_time if at_time else time.time()
     grafana_ts = datetime.utcfromtimestamp(collect_time).strftime("%Y-%m-%dT%H:%M:%SZ")
     print(f"\nQuerying Grafana for namespace={namespace} (t={collect_time:.0f}) ...")
     ds_uid = _find_prometheus_uid(grafana_url, token, cookie)
@@ -377,6 +381,27 @@ def collect_metrics(grafana_url: str, token: str, cookie: str, namespace: str,
         f'avg(kubelet_volume_stats_used_bytes{{namespace="{ns}",persistentvolumeclaim=~".*elastic.*"}}'
         f' / kubelet_volume_stats_capacity_bytes{{namespace="{ns}",persistentvolumeclaim=~".*elastic.*"}} * 100)',
         collect_time)
+    bp_drop_pct = _promql(grafana_url, token, cookie, ds_uid,
+        f'avg('
+        f'(sum by(partition) (rate(zeebe_dropped_request_count_total{{namespace="{ns}"}}[5m]))'
+        f' / sum by(partition) (rate(zeebe_received_request_count_total{{namespace="{ns}"}}[5m])))'
+        f' * 100)',
+        collect_time)
+    es_cpu_throttle = _promql(grafana_url, token, cookie, ds_uid,
+        f'avg('
+        f'rate(container_cpu_cfs_throttled_periods_total{{namespace="{ns}",pod=~".*elastic.*"}}[5m])'
+        f' / rate(container_cpu_cfs_periods_total{{namespace="{ns}",pod=~".*elastic.*"}}[5m])'
+        f') * 100',
+        collect_time)
+    camunda_cpu_throttle = _promql(grafana_url, token, cookie, ds_uid,
+        f'avg('
+        f'rate(container_cpu_cfs_throttled_periods_total{{namespace="{ns}",pod=~".*(orchestration|zeebe|camunda).*"}}[5m])'
+        f' / rate(container_cpu_cfs_periods_total{{namespace="{ns}",pod=~".*(orchestration|zeebe|camunda).*"}}[5m])'
+        f') * 100',
+        collect_time)
+    completed_pis = _promql(grafana_url, token, cookie, ds_uid,
+        f'sum(rate(zeebe_element_instance_events_total{{namespace="{ns}",action="completed",type="PROCESS"}}[5m]))',
+        collect_time)
 
     achieved_pis = round(achieved, 1) if achieved is not None else "N/A"
     achieved_pct = (
@@ -390,14 +415,22 @@ def collect_metrics(grafana_url: str, token: str, cookie: str, namespace: str,
     es_p99_val = round(es_flush_p99, 3) if es_flush_p99 is not None else "N/A"
     es_fail_val = round(es_flush_fail, 4) if es_flush_fail is not None else "N/A"
     es_disk_val = round(es_disk_pct, 1) if es_disk_pct is not None else "N/A"
+    bp_drop_val = round(bp_drop_pct, 2) if bp_drop_pct is not None else "N/A"
+    es_throttle_val = round(es_cpu_throttle, 1) if es_cpu_throttle is not None else "N/A"
+    camunda_throttle_val = round(camunda_cpu_throttle, 1) if camunda_cpu_throttle is not None else "N/A"
+    completed_val = round(completed_pis, 1) if completed_pis is not None else "N/A"
 
     print(f"  Achieved PI/s:    {achieved_pis}")
+    print(f"  Completed PI/s:   {completed_val}")
     print(f"  Dropped req/s:    {dropped_rps}")
+    print(f"  Backpressure drop:{bp_drop_val}%")
     print(f"  Max in-flight:    {max_inflight}")
     print(f"  ES export lag:    {es_lag_val}")
     print(f"  ES flush p99:     {es_p99_val}s")
     print(f"  ES flush fail:    {es_fail_val}")
     print(f"  ES disk used:     {es_disk_val}%")
+    print(f"  ES CPU throttle:  {es_throttle_val}%")
+    print(f"  Camunda throttle: {camunda_throttle_val}%")
 
     return {
         "Achieved PI/s": achieved_pis,
@@ -408,6 +441,10 @@ def collect_metrics(grafana_url: str, token: str, cookie: str, namespace: str,
         "ES flush p99 (s)": es_p99_val,
         "ES flush fail rate": es_fail_val,
         "ES disk used %": es_disk_val,
+        "Backpressure drop %": bp_drop_val,
+        "ES CPU throttle %": es_throttle_val,
+        "Camunda CPU throttle %": camunda_throttle_val,
+        "Completed PI/s": completed_val,
         "grafana_timestamp": grafana_ts,
         **broker_info,
     }
@@ -543,7 +580,8 @@ def delete_namespace(namespace: str, expected_name: str) -> None:
               f"refusing to delete", file=sys.stderr)
         return
 
-    print(f"\nDeleting namespace {namespace} ...")
+    deletion_ts = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    print(f"\nDeleting namespace {namespace} (last active: {deletion_ts}) ...")
     try:
         subprocess.check_call(["kubectl", "delete", "namespace", namespace])
         print(f"  Deleted.")
@@ -651,6 +689,27 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
             f'avg(kubelet_volume_stats_used_bytes{{namespace="{ns}",persistentvolumeclaim=~".*elastic.*"}}'
             f' / kubelet_volume_stats_capacity_bytes{{namespace="{ns}",persistentvolumeclaim=~".*elastic.*"}} * 100)',
             at_time)
+        bp_drop_pct = _promql(grafana_url, token, cookie, ds_uid,
+            f'avg('
+            f'(sum by(partition) (rate(zeebe_dropped_request_count_total{{namespace="{ns}"}}[5m]))'
+            f' / sum by(partition) (rate(zeebe_received_request_count_total{{namespace="{ns}"}}[5m])))'
+            f' * 100)',
+            at_time)
+        es_cpu_throttle = _promql(grafana_url, token, cookie, ds_uid,
+            f'avg('
+            f'rate(container_cpu_cfs_throttled_periods_total{{namespace="{ns}",pod=~".*elastic.*"}}[5m])'
+            f' / rate(container_cpu_cfs_periods_total{{namespace="{ns}",pod=~".*elastic.*"}}[5m])'
+            f') * 100',
+            at_time)
+        camunda_cpu_throttle = _promql(grafana_url, token, cookie, ds_uid,
+            f'avg('
+            f'rate(container_cpu_cfs_throttled_periods_total{{namespace="{ns}",pod=~".*(orchestration|zeebe|camunda).*"}}[5m])'
+            f' / rate(container_cpu_cfs_periods_total{{namespace="{ns}",pod=~".*(orchestration|zeebe|camunda).*"}}[5m])'
+            f') * 100',
+            at_time)
+        completed_pis = _promql(grafana_url, token, cookie, ds_uid,
+            f'sum(rate(zeebe_element_instance_events_total{{namespace="{ns}",action="completed",type="PROCESS"}}[5m]))',
+            at_time)
 
         if achieved is None and dropped is None and inflight is None:
             print(f"  Still no data — skipping (metrics may have expired from Prometheus)")
@@ -666,6 +725,10 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
         es_p99_val = round(es_flush_p99, 3) if es_flush_p99 is not None else "N/A"
         es_fail_val = round(es_flush_fail, 4) if es_flush_fail is not None else "N/A"
         es_disk_val = round(es_disk_pct, 1) if es_disk_pct is not None else "N/A"
+        bp_drop_val = round(bp_drop_pct, 2) if bp_drop_pct is not None else "N/A"
+        es_throttle_val = round(es_cpu_throttle, 1) if es_cpu_throttle is not None else "N/A"
+        camunda_throttle_val = round(camunda_cpu_throttle, 1) if camunda_cpu_throttle is not None else "N/A"
+        completed_val = round(completed_pis, 1) if completed_pis is not None else "N/A"
         row["Status"] = "COMPLETED"
         row["Achieved PI/s"] = achieved_pis
         row["Achieved %"] = achieved_pct
@@ -675,8 +738,14 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
         row["ES flush p99 (s)"] = es_p99_val
         row["ES flush fail rate"] = es_fail_val
         row["ES disk used %"] = es_disk_val
-        print(f"  Achieved PI/s={achieved_pis}  Dropped={dropped_val}  In-flight={inflight_val}  "
-              f"ES lag={es_lag_val}  flush p99={es_p99_val}s  disk={es_disk_val}%")
+        row["Backpressure drop %"] = bp_drop_val
+        row["ES CPU throttle %"] = es_throttle_val
+        row["Camunda CPU throttle %"] = camunda_throttle_val
+        row["Completed PI/s"] = completed_val
+        print(f"  Achieved PI/s={achieved_pis}  Completed PI/s={completed_val}  Dropped={dropped_val}  "
+              f"BP drop={bp_drop_val}%  In-flight={inflight_val}  ES lag={es_lag_val}  "
+              f"flush p99={es_p99_val}s  disk={es_disk_val}%  "
+              f"ES throttle={es_throttle_val}%  Camunda throttle={camunda_throttle_val}%")
         recovered += 1
 
     # Rewrite the CSV in-place with updated rows
@@ -686,6 +755,24 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
         writer.writerows(rows)
 
     print(f"\nRecovered {recovered}/{len(errors)} row(s) → Status=COMPLETED. CSV updated: {csv_path}")
+
+
+# ── Time helpers ──────────────────────────────────────────────────────────────
+
+def _utcnow() -> str:
+    return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _parse_at_time(value: str) -> float:
+    """Parse --at-time: Unix timestamp float or ISO 8601 UTC string. Returns 0.0 if not set."""
+    if not value:
+        return 0.0
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    ts_str = value.rstrip("Z")
+    return datetime.fromisoformat(ts_str).replace(tzinfo=timezone.utc).timestamp()
 
 
 # ── Capacity plan ─────────────────────────────────────────────────────────────
@@ -826,6 +913,11 @@ def main():
                              "Defaults to <output-stem>.log next to the CSV.")
     parser.add_argument("--collect-only", metavar="NAMESPACE",
                         help="Skip deploy/monitor — collect Grafana metrics for an existing namespace")
+    parser.add_argument("--at-time", metavar="TIME",
+                        help="Query Grafana at this UTC time instead of now. "
+                             "Accepts Unix timestamp (e.g. 1777650000) or ISO 8601 "
+                             "(e.g. 2026-05-01T16:20:00Z). Required when the namespace "
+                             "has already been deleted.")
     parser.add_argument("--capacity-plan", nargs="?", const=str(CAPACITY_PLAN_DEFAULT),
                         metavar="FILE",
                         help="Run every entry in a capacity-plan CSV "
@@ -886,7 +978,9 @@ def main():
             rate = int(args.rates.split(",")[0].strip())
         state = default_state_for_pool(args.broker_node_pool, args.brokers)
         broker_info = build_broker_info(state)
-        metrics = collect_metrics(args.grafana_url, grafana_token, grafana_cookie, namespace, rate, broker_info)
+        at_time = _parse_at_time(args.at_time)
+        metrics = collect_metrics(args.grafana_url, grafana_token, grafana_cookie, namespace, rate, broker_info,
+                                  at_time=at_time)
         row = {
             "Run": name,
             "Timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
@@ -916,7 +1010,7 @@ def main():
                 continue
             status = row.get("Status", "")
             print(f"\n{'#'*60}")
-            print(f"# CAPACITY PLAN [{i}/{len(plan_rows)}]: {rate} PI/s  status={status}")
+            print(f"# CAPACITY PLAN [{i}/{len(plan_rows)}]: {rate} PI/s  status={status}  [{_utcnow()}]")
             print(f"{'#'*60}")
             run_one(rate, state, args, grafana_token, grafana_cookie, extra)
         print(f"\n{'#'*60}")
@@ -944,11 +1038,11 @@ def main():
             pending_scale_steps = 0  # only apply to the first (resume) rate
             attempt = 0
             print(f"\n{'#'*60}")
-            print(f"# AUTO-SCALE: rate={rate} PI/s")
+            print(f"# AUTO-SCALE: rate={rate} PI/s  [{_utcnow()}]")
             print(f"{'#'*60}")
             while True:
                 attempt += 1
-                print(f"\n  [attempt {attempt}] rate={rate}  broker={state.broker_pool} "
+                print(f"\n  [attempt {attempt}] [{_utcnow()}] rate={rate}  broker={state.broker_pool} "
                       f"{state.broker_cpu_m}m/{math.ceil(state.broker_mem_gi)}Gi  "
                       f"es={state.es_node} {state.es_cpu_m}m/{math.ceil(state.es_mem_gi)}Gi")
 

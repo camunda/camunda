@@ -112,6 +112,7 @@ Wraps `trigger-optimize-load-tests.py` with pod health monitoring, Grafana metri
 | `--output`        | `benchmark-results.csv` | CSV file for results (appended, never overwritten).         |
 | `--log`           | `<output>.log`          | Log file (mirrors all stdout/stderr output).                |
 | `--collect-only`  | —        | Collect metrics for a running namespace without triggering a new deployment.   |
+| `--at-time`       | *(now)*  | Query Grafana at this UTC time. Accepts Unix timestamp or ISO 8601 (`2026-05-01T16:20:00Z`). Use with `--collect-only` when the namespace has already been deleted. |
 | `--capacity-plan` | `capacity-plan.csv` | Run every row in a capacity-plan CSV (see below).                |
 | `--recover`       | —        | Re-query Grafana for all rows with `GRAFANA_ERROR` status.                     |
 
@@ -226,6 +227,10 @@ immediately after trigger (`Status=STARTED`), updated to `COMPLETED` or `ERROR` 
 | `ES flush p99 (s)` | p99 ES exporter flush duration in seconds                              |
 | `ES flush fail rate` | Fraction of ES flushes that failed (0.0–1.0)                         |
 | `ES disk used %`   | Average PVC fill level across Elasticsearch nodes                      |
+| `Backpressure drop %` | Average per-partition backpressure drop rate as % of received requests |
+| `ES CPU throttle %` | Average CPU throttling % across Elasticsearch pods                    |
+| `Camunda CPU throttle %` | Average CPU throttling % across broker/orchestration pods         |
+| `Completed PI/s`   | Completed process instances per second                                 |
 | `grafana_timestamp`| UTC time of the first Grafana query attempt (used for recovery)        |
 
 At the start of each run, both the CSV and the log file are backed up with a timestamp suffix
@@ -258,6 +263,11 @@ python3 run-benchmark.py --auto-scale --dry-run
 
 # Collect Grafana metrics for an already-running namespace
 python3 run-benchmark.py --collect-only c8-ajanoni-05011234-noopt-typi-3b-100pis --rates 100
+
+# Collect metrics for a namespace that has already been deleted (query at the time it was active)
+python3 run-benchmark.py --collect-only c8-ajanoni-05011151-noopt-typi-12b-800pis --rates 800 \
+  --brokers 12 --broker-node-pool n2-standard-16 \
+  --at-time 2026-05-01T16:20:00Z
 
 # Resume auto-scale after a crash at 200 PI/s (first scale-up attempt)
 python3 run-benchmark.py --auto-scale --start-rate 200 --scale-steps 1

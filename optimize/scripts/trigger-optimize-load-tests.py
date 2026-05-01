@@ -17,6 +17,7 @@ import argparse
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import urllib.request
@@ -272,6 +273,20 @@ def trigger_workflow(token: str, name: str, ref: str, inputs: dict, dry_run: boo
         sys.exit(1)
 
 
+def _es_display(extra: str, es: "ESConfig") -> str:
+    """Return ES cpu/mem/heap/node display string, preferring values parsed from extra-platform-values."""
+    cpu = re.search(r'elasticsearch\.master\.resources\.requests\.cpu=(\d+)m', extra or "")
+    mem = re.search(r'elasticsearch\.master\.resources\.requests\.memory=(\d+)Gi', extra or "")
+    node = re.search(r'elasticsearch\.master\.nodeSelector\.component=benchmark-(n2-standard-\d+)', extra or "")
+
+    cpu_str = f"{cpu.group(1)}m" if cpu else _mcores(es.cpu_vcpu)
+    mem_gi = int(mem.group(1)) if mem else math.ceil(es.mem_gi)
+    heap_gi = math.ceil(min(mem_gi * 0.5, 31.0))
+    node_str = node.group(1) if node else "n2-standard-8"
+
+    return f"node={node_str}  cpu={cpu_str}  mem={mem_gi}Gi  heap={heap_gi}Gi"
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -346,7 +361,7 @@ def main():
         print(f"  Brokers:  {args.brokers} pods  partitions={args.brokers}  replication={min(3, args.brokers)}  "
               f"node={broker.name}  cpu={broker.cpu}  mem={broker.memory}  "
               f"cpu_threads={broker.cpu_threads}  io_threads={broker.io_threads}")
-        print(f"  ES nodes: {cfg.es.replicas}x  disk={cfg.es.disk_gi}Gi  (cpu/mem/heap: cluster defaults)")
+        print(f"  ES nodes: {cfg.es.replicas}x  {_es_display(args.extra_platform_values, cfg.es)}  disk={cfg.es.disk_gi}Gi")
         if args.extra_platform_values:
             print(f"  extra:    {args.extra_platform_values}")
         print(f"  platform: {platform_values}")
