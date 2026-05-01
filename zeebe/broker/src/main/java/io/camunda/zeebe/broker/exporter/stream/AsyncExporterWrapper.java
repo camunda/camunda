@@ -67,7 +67,7 @@ public class AsyncExporterWrapper implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    // runner.updatePosition();
+    runner.updatePosition();
     runner.recordQueue.add(record);
   }
 
