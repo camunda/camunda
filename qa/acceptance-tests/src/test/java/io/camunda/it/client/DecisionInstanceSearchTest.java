@@ -34,6 +34,7 @@ import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @CompatibilityTest
@@ -491,6 +492,10 @@ class DecisionInstanceSearchTest {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = "camunda.compatibility.test.version",
+      matches = "8\\.9\\.[01]",
+      disabledReason = "Validation returning 400 was introduced in 8.9.2")
   void shouldReturnBadRequestOnGetWhenIdIsInvalid() {
     final var decisionInstanceId = "invalidDecisionInstanceId";
     // when / then
@@ -503,6 +508,10 @@ class DecisionInstanceSearchTest {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = "camunda.compatibility.test.version",
+      matches = "8\\.9\\.[01]",
+      disabledReason = "Validation returning 400 was introduced in 8.9.2")
   void shouldReturn400ForInvalidDecisionInstance() {
     // when
     final var decisionInstanceId = "invalidDecisionInstanceId";
