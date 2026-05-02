@@ -46,6 +46,24 @@ paths:
         '200':
           description: OK.
 
+  # Establishes User. Required for the assignOwnerToWidget edge below to be
+  # valid: the edge's identifiedBy includes Username, which the registry
+  # declares as User's identifier, so User becomes a derived requires.
+  /valid/users:
+    post:
+      operationId: createUser
+      summary: Create a user
+      description: Establishes a User identified by username.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: User
+        identifiedBy:
+          - { in: body, name: username, semanticType: Username }
+      responses:
+        '201':
+          description: Created.
+
   # ── Valid: edge establish + edge consumer ────────────────────
   /valid/widgets/{widgetId}/owners/{username}:
     put:
@@ -259,3 +277,66 @@ paths:
       responses:
         '200':
           description: OK.
+
+  # 11. Edge with an identifiedBy semanticType that no entity in the registry
+  #     declares as an identifier. Exercises the unresolved-endpoint check
+  #     (derived-requires resolution failure).
+  /invalid/widgets/{widgetId}/mystery/{mysteryId}:
+    put:
+      operationId: assignMysteryToWidget
+      summary: Assign mystery to widget
+      description: Should fail verify-semantic-kinds-registered — MysteryId is no entity's identifier.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: mysteryId
+          in: path
+          required: true
+          description: The mystery id.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetMysteryLink
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId,  semanticType: WidgetId }
+          - { in: path, name: mysteryId, semanticType: MysteryId }
+      responses:
+        '204':
+          description: Assigned.
+
+  # 12. Edge whose identifiedBy semanticType resolves to a registered entity
+  #     (Frob), but Frob is never established by any operation. Exercises
+  #     the derived-requires orphan check — the edge implicitly requires
+  #     Frob to exist, and nothing produces it.
+  /invalid/widgets/{widgetId}/frobs/{frobId}:
+    put:
+      operationId: assignFrobToWidget
+      summary: Assign frob to widget
+      description: Should fail verify-semantic-kinds-registered — Frob is registered but never established.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: frobId
+          in: path
+          required: true
+          description: The frob id.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetFrobLink
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+          - { in: path, name: frobId,   semanticType: FrobId }
+      responses:
+        '204':
+          description: Assigned.

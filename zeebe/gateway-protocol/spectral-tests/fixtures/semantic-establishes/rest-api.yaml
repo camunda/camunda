@@ -13,6 +13,8 @@ paths:
     $ref: 'widgets.yaml#/paths/~1valid~1widgets'
   /valid/widgets/{widgetId}:
     $ref: 'widgets.yaml#/paths/~1valid~1widgets~1{widgetId}'
+  /valid/users:
+    $ref: 'widgets.yaml#/paths/~1valid~1users'
   /valid/widgets/{widgetId}/owners/{username}:
     $ref: 'widgets.yaml#/paths/~1valid~1widgets~1{widgetId}~1owners~1{username}'
   /valid/widgets/{widgetId}/owners/search:
@@ -43,3 +45,9 @@ paths:
     $ref: 'widgets.yaml#/paths/~1invalid~1unknown-requires-kind'
   /invalid/orphan-requires:
     $ref: 'widgets.yaml#/paths/~1invalid~1orphan-requires'
+
+  # ── Invalid: edge endpoint resolution / derived requires ──────
+  /invalid/widgets/{widgetId}/mystery/{mysteryId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1{widgetId}~1mystery~1{mysteryId}'
+  /invalid/widgets/{widgetId}/frobs/{frobId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1{widgetId}~1frobs~1{frobId}'

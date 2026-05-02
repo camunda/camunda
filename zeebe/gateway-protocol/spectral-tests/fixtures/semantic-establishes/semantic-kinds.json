@@ -1,9 +1,13 @@
 {
   "$comment": "Test-only registry for the semantic-establishes Spectral fixture. Loaded via SPECTRAL_SEMANTIC_KINDS_REGISTRY env var.",
   "kinds": [
-    { "name": "Widget", "shape": "entity" },
+    { "name": "Widget", "shape": "entity", "identifiers": ["WidgetId"] },
+    { "name": "User", "shape": "entity", "identifiers": ["Username"] },
     { "name": "WidgetOwnership", "shape": "edge" },
-    { "name": "OrphanedKind", "shape": "entity", "$comment": "Registered but never established in the fixture, to exercise the orphan-requires check." }
+    { "name": "OrphanedKind", "shape": "entity", "$comment": "Registered but never established in the fixture, to exercise the orphan-requires check." },
+    { "name": "Frob", "shape": "entity", "identifiers": ["FrobId"], "$comment": "Registered with an identifier but never established. Exercises the derived-requires orphan check on edge endpoints." },
+    { "name": "WidgetFrobLink", "shape": "edge", "$comment": "Edge whose endpoint Frob is unestablished — exercises derived-requires orphan." },
+    { "name": "WidgetMysteryLink", "shape": "edge", "$comment": "Edge whose endpoint semanticType resolves to no entity at all — exercises the unresolved-endpoint check." }
   ]
 }
 

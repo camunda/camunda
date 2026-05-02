@@ -13,7 +13,19 @@
     "",
     "`shape` is the default `shape:` an operation should declare on",
     "`x-semantic-establishes`. `entity` (single- or composite-key) means a",
-    "fetchable singleton; `edge` means observable only via member-list search."
+    "fetchable singleton; `edge` means observable only via member-list search.",
+    "",
+    "`identifiers` (entity kinds only) lists the semantic identifier types",
+    "that identify the entity (matching the `semanticType` values used in",
+    "`x-semantic-establishes.identifiedBy`). Edge operations whose",
+    "`identifiedBy` references one of these types implicitly require the",
+    "owning entity — the planner derives this rather than asking authors to",
+    "redundantly declare both `establishes: edge` and a sibling `requires`",
+    "for each endpoint. The Spectral rule rejects any edge whose",
+    "`identifiedBy` semanticType is not declared as the identifier of",
+    "exactly one registered entity, and the cross-reference check then",
+    "verifies the resolved endpoint kinds are actually established somewhere",
+    "in the spec."
   ],
   "kinds": []
 }
