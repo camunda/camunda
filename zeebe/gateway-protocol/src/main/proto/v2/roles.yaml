@@ -162,6 +162,10 @@ paths:
       operationId: deleteRole
       summary: Delete role
       description: Deletes the role with the given ID.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
