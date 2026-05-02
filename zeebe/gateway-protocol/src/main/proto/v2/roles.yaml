@@ -115,10 +115,10 @@ paths:
       operationId: updateRole
       summary: Update role
       description: Update a role with the given ID.
-      x-semantic-establishes:
+      x-semantic-requires:
         kind: Role
-        identifiedBy:
-          - { in: path, name: roleId, semanticType: RoleId }
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
