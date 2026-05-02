@@ -196,8 +196,9 @@ components:
           description: The password of the user.
           type: string
         username:
-          description: The username of the user.
-          type: string
+          description: The username of the new user.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
           type: string
@@ -214,7 +215,9 @@ components:
         - username
       properties:
         username:
-          $ref: 'identifiers.yaml#/components/schemas/Username'
+          description: The username of the created user.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
           nullable: true
@@ -245,7 +248,9 @@ components:
       type: object
       properties:
         username:
-          $ref: 'identifiers.yaml#/components/schemas/Username'
+          description: The username of the updated user.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
           nullable: true
@@ -263,7 +268,9 @@ components:
       type: object
       properties:
         username:
-          $ref: 'identifiers.yaml#/components/schemas/Username'
+          description: The user username.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
           nullable: true
