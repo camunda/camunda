@@ -314,6 +314,10 @@ components:
       x-semantic-provider:
         - decisionDefinitionKey
         - decisionRequirementsKey
+        - decisionDefinitionId
+        - decisionRequirementsId
+        - name
+        - version
       required:
         - decisionDefinitionId
         - decisionDefinitionKey

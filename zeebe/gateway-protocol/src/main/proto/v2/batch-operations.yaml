@@ -231,6 +231,8 @@ components:
         - batchOperationKey
         - batchOperationType
       description: The created batch operation.
+      x-semantic-provider:
+        - batchOperationKey
       type: object
       properties:
         batchOperationKey:
