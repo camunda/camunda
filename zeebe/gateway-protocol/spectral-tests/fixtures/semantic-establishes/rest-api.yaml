@@ -1,0 +1,45 @@
+# Entry point for x-semantic-establishes / x-semantic-requires rule tests.
+# Mirrors the real spec structure: paths $ref to a domain file.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — semantic-establishes
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid ─────────────────────────────────────────────────────
+  /valid/widgets:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets'
+  /valid/widgets/{widgetId}:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets~1{widgetId}'
+  /valid/widgets/{widgetId}/owners/{username}:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets~1{widgetId}~1owners~1{username}'
+  /valid/widgets/{widgetId}/owners/search:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets~1{widgetId}~1owners~1search'
+
+  # ── Invalid: shape lint ───────────────────────────────────────
+  /invalid/missing-kind:
+    $ref: 'widgets.yaml#/paths/~1invalid~1missing-kind'
+  /invalid/bad-kind-case:
+    $ref: 'widgets.yaml#/paths/~1invalid~1bad-kind-case'
+  /invalid/typoed-key:
+    $ref: 'widgets.yaml#/paths/~1invalid~1typoed-key'
+  /invalid/bad-shape-enum:
+    $ref: 'widgets.yaml#/paths/~1invalid~1bad-shape-enum'
+  /invalid/empty-identified-by:
+    $ref: 'widgets.yaml#/paths/~1invalid~1empty-identified-by'
+  /invalid/identified-by-bad-in:
+    $ref: 'widgets.yaml#/paths/~1invalid~1identified-by-bad-in'
+
+  # ── Invalid: requires shape lint ──────────────────────────────
+  /invalid/requires-missing-bind:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-missing-bind'
+
+  # ── Invalid: registry / cross-reference ───────────────────────
+  /invalid/unknown-establishes-kind:
+    $ref: 'widgets.yaml#/paths/~1invalid~1unknown-establishes-kind'
+  /invalid/unknown-requires-kind:
+    $ref: 'widgets.yaml#/paths/~1invalid~1unknown-requires-kind'
+  /invalid/orphan-requires:
+    $ref: 'widgets.yaml#/paths/~1invalid~1orphan-requires'

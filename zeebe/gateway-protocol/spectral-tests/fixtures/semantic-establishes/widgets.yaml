@@ -1,0 +1,261 @@
+# Domain file for semantic-establishes / semantic-requires test fixture.
+# Each operation exercises one named violation (or, for valid cases, the
+# happy path).
+openapi: "3.0.3"
+info:
+  title: Widgets domain (test fixture)
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid: single-key entity establish + matching consumer ───
+  /valid/widgets:
+    post:
+      operationId: createWidget
+      summary: Create a widget
+      description: Establishes a Widget identified by widgetId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  /valid/widgets/{widgetId}:
+    get:
+      operationId: getWidget
+      summary: Get a widget
+      description: Requires a Widget to exist.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: body, name: widgetId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Valid: edge establish + edge consumer ────────────────────
+  /valid/widgets/{widgetId}/owners/{username}:
+    put:
+      operationId: assignOwnerToWidget
+      summary: Assign owner to widget
+      description: Establishes a WidgetOwnership edge.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: username
+          in: path
+          required: true
+          description: The username.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetOwnership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+          - { in: path, name: username, semanticType: Username }
+      responses:
+        '204':
+          description: Assigned.
+
+  /valid/widgets/{widgetId}/owners/search:
+    post:
+      operationId: searchOwnersForWidget
+      summary: Search widget owners
+      description: Requires a WidgetOwnership to exist; binds only widgetId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: WidgetOwnership
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Invalid: shape lint (semantic-establishes-shape) ─────────
+
+  # 1. Missing required `kind`.
+  /invalid/missing-kind:
+    post:
+      operationId: missingKind
+      summary: Missing kind
+      description: Should fail semantic-establishes-shape — missing kind.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 2. kind violates PascalCase pattern.
+  /invalid/bad-kind-case:
+    post:
+      operationId: badKindCase
+      summary: Bad kind case
+      description: Should fail semantic-establishes-shape — kind not PascalCase.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 3. Typo'd top-level key — additionalProperties: false rejects it.
+  /invalid/typoed-key:
+    post:
+      operationId: typoedKey
+      summary: Typoed key
+      description: Should fail semantic-establishes-shape — `identifedBy` typo.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 4. Bad `shape` enum value.
+  /invalid/bad-shape-enum:
+    post:
+      operationId: badShapeEnum
+      summary: Bad shape enum
+      description: Should fail semantic-establishes-shape — shape not in enum.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        shape: relation
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 5. identifiedBy must have at least one item.
+  /invalid/empty-identified-by:
+    post:
+      operationId: emptyIdentifiedBy
+      summary: Empty identifiedBy
+      description: Should fail semantic-establishes-shape — empty identifiedBy.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy: []
+      responses:
+        '201':
+          description: Created.
+
+  # 6. identifiedBy item with bad `in` enum value.
+  /invalid/identified-by-bad-in:
+    post:
+      operationId: identifiedByBadIn
+      summary: identifiedBy bad in
+      description: Should fail semantic-establishes-shape — `in: cookie` not in enum.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: cookie, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # ── Invalid: requires shape lint ─────────────────────────────
+
+  # 7. Missing required `bind`.
+  /invalid/requires-missing-bind:
+    get:
+      operationId: requiresMissingBind
+      summary: Requires missing bind
+      description: Should fail semantic-requires-shape — missing bind.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+      responses:
+        '200':
+          description: OK.
+
+  # ── Invalid: registry / cross-reference ──────────────────────
+
+  # 8. Establishes a kind not in the registry.
+  /invalid/unknown-establishes-kind:
+    post:
+      operationId: unknownEstablishesKind
+      summary: Unknown establishes kind
+      description: Should fail verify-semantic-kinds-registered.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Sprocket
+        identifiedBy:
+          - { in: body, name: sprocketId, semanticType: SprocketId }
+      responses:
+        '201':
+          description: Created.
+
+  # 9. Requires a kind not in the registry.
+  /invalid/unknown-requires-kind:
+    get:
+      operationId: unknownRequiresKind
+      summary: Unknown requires kind
+      description: Should fail verify-semantic-kinds-registered.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Gizmo
+        bind:
+          gizmoId: { from: path, name: gizmoId }
+      responses:
+        '200':
+          description: OK.
+
+  # 10. Requires a kind that IS in the registry but is not established
+  #     anywhere in this spec — exercises the cross-reference check.
+  /invalid/orphan-requires:
+    get:
+      operationId: orphanRequires
+      summary: Orphan requires
+      description: Should fail verify-semantic-kinds-registered — kind in registry but never established here.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: OrphanedKind
+        bind:
+          orphanedId: { from: path, name: orphanedId }
+      responses:
+        '200':
+          description: OK.
