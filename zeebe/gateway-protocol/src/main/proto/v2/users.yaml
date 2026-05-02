@@ -9,6 +9,10 @@ paths:
       operationId: createUser
       summary: Create user
       description: Create a new user.
+      x-semantic-establishes:
+        kind: User
+        identifiedBy:
+          - { in: body, name: username, semanticType: Username }
       requestBody:
         content:
           application/json:
