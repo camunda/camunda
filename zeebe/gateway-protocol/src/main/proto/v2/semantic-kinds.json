@@ -31,7 +31,14 @@
     {
       "name": "Role",
       "shape": "entity",
+      "identifiers": ["RoleId"],
       "description": "A role entity, identified by its client-minted roleId."
+    },
+    {
+      "name": "User",
+      "shape": "entity",
+      "identifiers": ["Username"],
+      "description": "A user entity, identified by its client-minted username."
     },
     {
       "name": "RoleUserMembership",
