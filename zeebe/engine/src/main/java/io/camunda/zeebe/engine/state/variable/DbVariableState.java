@@ -31,6 +31,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -293,6 +294,14 @@ public class DbVariableState implements MutableVariableState {
   @Override
   public boolean isEmpty() {
     return variablesColumnFamily.isEmpty() && childParentColumnFamily.isEmpty();
+  }
+
+  @Override
+  public long calculateVariableStateSize() {
+    final MutableLong totalBytes = new MutableLong();
+    variablesColumnFamily.forEach(
+        (key, value) -> totalBytes.addAndGet(key.getLength() + value.getLength()));
+    return totalBytes.get();
   }
 
   @Override

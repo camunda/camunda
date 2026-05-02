@@ -294,6 +294,34 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /**
+   * Estimated total bytes occupied by live variables in the partition's RocksDB state. Updated
+   * periodically via a full scan of the VARIABLES column family.
+   */
+  VARIABLE_STATE_BYTES {
+    @Override
+    public String getDescription() {
+      return "Estimated total bytes occupied by live variables in the partition's RocksDB state. "
+          + "Computed as the sum of serialized key length and value length over all entries in "
+          + "the VARIABLES column family. Updated on a slow cadence, not on every metric scrape.";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.variable.state.bytes";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   /** Tags/label values possibly used by the engine metrics. */
