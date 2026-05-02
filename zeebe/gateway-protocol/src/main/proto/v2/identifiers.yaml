@@ -46,6 +46,7 @@ components:
       format: TenantId
       type: string
       x-semantic-type: TenantId
+      x-semantic-client-minted: true
       minLength: 1
       maxLength: 256
       pattern: ^(<default>|[A-Za-z0-9_@.+-]+)$
@@ -55,10 +56,19 @@ components:
       format: Username
       description: The unique name of a user.
       x-semantic-type: Username
+      x-semantic-client-minted: true
       type: string
       minLength: 1
       maxLength: 256
       pattern: ^(<default>|[A-Za-z0-9_@.+-]+)$
+
+    RoleId:
+      example: admin
+      description: The unique identifier of a role.
+      format: RoleId
+      type: string
+      x-semantic-type: RoleId
+      x-semantic-client-minted: true
 
     Tag:
       description: A tag. Needs to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.

@@ -27,5 +27,17 @@
     "verifies the resolved endpoint kinds are actually established somewhere",
     "in the spec."
   ],
-  "kinds": []
+  "kinds": [
+    {
+      "name": "Role",
+      "shape": "entity",
+      "description": "A role entity, identified by its client-minted roleId."
+    },
+    {
+      "name": "RoleUserMembership",
+      "shape": "edge",
+      "description": "Edge between a Role and a User, identified by the (roleId, username) tuple. Established by assignRoleToUser, observable only via searchUsersForRole."
+    }
+  ]
+
 }

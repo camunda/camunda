@@ -9,6 +9,10 @@ paths:
       operationId: createRole
       summary: Create role
       description: Create a new role.
+      x-semantic-establishes:
+        kind: Role
+        identifiedBy:
+          - { in: body, name: roleId, semanticType: RoleId }
       requestBody:
         content:
           application/json:
@@ -72,13 +76,17 @@ paths:
       operationId: getRole
       summary: Get role
       description: Get a role by its ID.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       responses:
         "200":
           description: The role is successfully returned.
@@ -107,13 +115,17 @@ paths:
       operationId: updateRole
       summary: Update role
       description: Update a role with the given ID.
+      x-semantic-establishes:
+        kind: Role
+        identifiedBy:
+          - { in: path, name: roleId, semanticType: RoleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       requestBody:
         required: true
         content:
@@ -156,7 +168,7 @@ paths:
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       responses:
         "204":
           description: The role was deleted successfully.
@@ -182,13 +194,19 @@ paths:
       operationId: assignRoleToUser
       summary: Assign a role to a user
       description: Assigns the specified role to the user. The user will inherit the authorizations associated with this role.
+      x-semantic-establishes:
+        kind: RoleUserMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: roleId,   semanticType: RoleId }
+          - { in: path, name: username, semanticType: Username }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: username
           in: path
           required: true
@@ -227,13 +245,18 @@ paths:
       operationId: unassignRoleFromUser
       summary: Unassign a role from a user
       description: Unassigns a role from a user. The user will no longer inherit the authorizations associated with this role.
+      x-semantic-requires:
+        kind: RoleUserMembership
+        bind:
+          roleId:   { from: path, name: roleId }
+          username: { from: path, name: username }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: username
           in: path
           required: true
@@ -267,13 +290,17 @@ paths:
       operationId: searchUsersForRole
       summary: Search role users
       description: Search users with assigned role.
+      x-semantic-requires:
+        kind: RoleUserMembership
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       requestBody:
         required: false
         content:
@@ -317,7 +344,7 @@ paths:
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: clientId
           in: path
           required: true
@@ -362,7 +389,7 @@ paths:
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: clientId
           in: path
           required: true
@@ -402,7 +429,7 @@ paths:
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       requestBody:
         required: false
         content:
@@ -446,7 +473,7 @@ paths:
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: groupId
           in: path
           required: true
@@ -491,7 +518,7 @@ paths:
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: groupId
           in: path
           required: true
@@ -531,7 +558,7 @@ paths:
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       requestBody:
         required: false
         content:
@@ -575,7 +602,7 @@ paths:
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: mappingRuleId
           in: path
           required: true
@@ -620,7 +647,7 @@ paths:
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
         - name: mappingRuleId
           in: path
           required: true
@@ -660,7 +687,7 @@ paths:
           required: true
           description: The role ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       requestBody:
         required: false
         content:
@@ -699,8 +726,9 @@ components:
       type: object
       properties:
         roleId:
-          type: string
           description: The ID of the new role.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/RoleId'
         name:
           type: string
           description: The display name of the new role.
@@ -716,7 +744,8 @@ components:
       properties:
         roleId:
           description: The ID of the created role.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/RoleId'
         name:
           description: The display name of the created role.
           type: string
@@ -752,8 +781,9 @@ components:
           nullable: true
           description: The description of the updated role.
         roleId:
-          type: string
           description: The ID of the updated role.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/RoleId'
       required:
         - roleId
         - name
@@ -767,8 +797,9 @@ components:
           type: string
           description: The role name.
         roleId:
-          type: string
           description: The role id.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/RoleId'
         description:
           type: string
           nullable: true
@@ -815,7 +846,8 @@ components:
       properties:
         roleId:
           description: The role ID search filters.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/RoleId'
         name:
           description: The role name search filters.
           type: string
