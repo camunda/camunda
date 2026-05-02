@@ -168,5 +168,55 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
       );
       assert.equal(v.length, 0);
     });
+
+    it('does not flag the valid edge endpoints Widget and User (both established in fixture)', () => {
+      // assignOwnerToWidget's identifiedBy contains WidgetId (→ Widget) and
+      // Username (→ User). Both entities are established by createWidget /
+      // createUser, so the derived-requires check must not fire on the
+      // valid edge.
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('assignOwnerToWidget') ||
+          e.message.includes('/valid/widgets/{widgetId}/owners/{username}'),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+  });
+
+  // ── Edge endpoint resolution + derived requires ──────────────
+
+  describe('verify-semantic-kinds-registered: edge derived requires', () => {
+    it('flags an edge identifiedBy.semanticType that no entity owns', () => {
+      const v = registryViolations.filter((e) =>
+        e.message.includes("Edge endpoint semanticType 'MysteryId'"),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+      assert.match(v[0].message, /assignMysteryToWidget|\/invalid\/widgets\/\{widgetId\}\/mystery/);
+    });
+
+    it('flags a derived requires kind that is registered but never established', () => {
+      // assignFrobToWidget's identifiedBy includes FrobId, the registry
+      // declares Frob.identifiers = ["FrobId"], but nothing in the fixture
+      // establishes Frob.
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes("Semantic kind 'Frob'") &&
+          e.message.includes('derived from x-semantic-establishes.identifiedBy'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+      assert.match(v[0].message, /no operation establishes it/);
+      assert.match(v[0].message, /FrobId/);
+    });
+
+    it('does not flag a resolved-but-established endpoint as orphan (regression: WidgetId resolves to Widget which createWidget establishes)', () => {
+      // Both invalid edge fixtures have WidgetId in their identifiedBy.
+      // Widget IS established → no orphan errors for Widget.
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes("Semantic kind 'Widget'") &&
+          e.message.includes('derived from'),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
   });
 });
