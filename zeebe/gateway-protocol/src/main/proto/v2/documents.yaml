@@ -280,6 +280,8 @@ paths:
 components:
   schemas:
     DocumentReference:
+      x-semantic-provider:
+        - documentId
       type: object
       required:
         - camunda.document.type

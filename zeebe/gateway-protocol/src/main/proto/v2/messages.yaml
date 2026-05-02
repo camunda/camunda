@@ -183,6 +183,8 @@ components:
       description: |
         The message key of the correlated message, as well as the first process instance key it
         correlated with.
+      x-semantic-provider:
+        - messageKey
       type: object
       required:
         - tenantId
@@ -237,6 +239,8 @@ components:
 
     MessagePublicationResult:
       description: The message key of the published message.
+      x-semantic-provider:
+        - messageKey
       type: object
       required:
         - tenantId

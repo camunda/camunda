@@ -9,6 +9,8 @@ package io.camunda.exporter.tasks.archiver;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.google.common.base.Stopwatch;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.zeebe.util.function.TriFunction;
 import java.net.SocketTimeoutException;
 import java.util.List;
@@ -25,8 +27,8 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 
 public class ArchiveByIdTaskSupplier<SortFieldType> {
-  private static final int MAX_RETRY_COUNT = 3;
 
+  private final HistoryConfiguration config;
   private final String sourceIdx;
   private final String destinationIdx;
   private final Function<List<SortFieldType>, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
@@ -34,6 +36,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   private final TriFunction<String, String, List<String>, CompletableFuture<Long>> reindexer;
   private final BiFunction<String, List<String>, CompletableFuture<Long>> deleter;
   private final Executor executor;
+  private final CamundaExporterMetrics metrics;
   private final Logger logger;
 
   private final AtomicReference<ArchiveDocIdsBatch<SortFieldType>> lastSearchResponse =
@@ -45,6 +48,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   private final AtomicLong totalTimeTakenMs = new AtomicLong(0);
 
   public ArchiveByIdTaskSupplier(
+      final HistoryConfiguration config,
       final String sourceIdx,
       final String destinationIdx,
       final Function<List<SortFieldType>, CompletableFuture<ArchiveDocIdsBatch<SortFieldType>>>
@@ -52,13 +56,16 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
       final TriFunction<String, String, List<String>, CompletableFuture<Long>> reindexer,
       final BiFunction<String, List<String>, CompletableFuture<Long>> deleter,
       final Executor executor,
+      final CamundaExporterMetrics metrics,
       final Logger logger) {
+    this.config = config;
     this.sourceIdx = sourceIdx;
     this.destinationIdx = destinationIdx;
     this.idsSupplier = idsSupplier;
     this.reindexer = reindexer;
     this.deleter = deleter;
     this.executor = executor;
+    this.metrics = metrics;
     this.logger = logger;
   }
 
@@ -96,18 +103,34 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                         retryCount.set(0);
                         return deletedCount;
                       })
-                  .exceptionally(
+                  .exceptionallyCompose(
                       ex -> {
                         if (isRetryableError(ex)
-                            && retryCount.incrementAndGet() < MAX_RETRY_COUNT) {
-                          logger.debug(
+                            && retryCount.incrementAndGet()
+                                < config.getArchiveByIdMaxRetryAttempts()) {
+                          metrics.recordArchiverBatchRetry();
+                          logger.trace(
                               "Encountered retryable error when archiving docs from '{}' to '{}', "
-                                  + "retrying the batch. Error: {}",
+                                  + "retrying the batch (attempt {}/{}). Error: {}",
                               sourceIdx,
                               destinationIdx,
+                              retryCount.get(),
+                              config.getArchiveByIdMaxRetryAttempts(),
                               ex.getMessage());
-                          return 0L;
+
+                          // Whilst this is crude, we exploit the fact the ES/OS visibility is
+                          // around 2 second, and incrementing delay (default=1000ms) should give a
+                          // fighting chance to complete in the next attempt. If not will fail and
+                          // the next retry should take this over the full 2-second refresh interval
+                          final int retryDelayMs =
+                              config.getArchiveByIdRetryDelayMs() * retryCount.get();
+                          return CompletableFuture.supplyAsync(
+                              () -> 0L,
+                              CompletableFuture.delayedExecutor(
+                                  retryDelayMs, TimeUnit.MILLISECONDS, executor));
                         }
+                        // reset retry count so the next batch starts with fresh retries
+                        retryCount.set(0);
                         // re-throw unexpected exceptions
                         throw ex instanceof final RuntimeException re
                             ? re
@@ -158,7 +181,8 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     if (thr != null && thr.getCause() != null) {
       return thr.getCause() instanceof SocketTimeoutException
           || thr.getCause() instanceof ElasticsearchException
-          || thr.getCause() instanceof OpenSearchException;
+          || thr.getCause() instanceof OpenSearchException
+          || thr.getCause() instanceof BatchCountMismatchException;
     }
     return false;
   }
