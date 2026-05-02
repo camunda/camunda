@@ -1,6 +1,7 @@
 'use strict';
 
 const { execSync } = require('node:child_process');
+const fs = require('node:fs');
 const path = require('node:path');
 
 const GATEWAY_PROTOCOL_DIR = path.resolve(__dirname, '..');
@@ -10,6 +11,11 @@ const FIXTURES_DIR = path.join(__dirname, 'fixtures');
 /**
  * Runs Spectral lint on a fixture's rest-api.yaml using the production ruleset.
  * Returns the parsed JSON results array.
+ *
+ * If the fixture directory contains a `semantic-kinds.json` file, it is
+ * exposed to the verifySemanticKindsRegistered function via the
+ * SPECTRAL_SEMANTIC_KINDS_REGISTRY env var so tests can use fixture-local
+ * kinds without polluting the production registry.
  */
 function lintFixture(fixtureName) {
   return lintFixtureFile(fixtureName, 'rest-api.yaml');
@@ -24,13 +30,21 @@ function lintFixture(fixtureName) {
  * Returns the parsed JSON results array.
  */
 function lintFixtureFile(fixtureName, fileName) {
-  const specFile = path.join(FIXTURES_DIR, fixtureName, fileName);
+  const fixtureDir = path.join(FIXTURES_DIR, fixtureName);
+  const specFile = path.join(fixtureDir, fileName);
   const cmd = `spectral lint "${specFile}" --ruleset "${RULESET_FILE}" --format json`;
+
+  const env = { ...process.env };
+  const fixtureRegistry = path.join(fixtureDir, 'semantic-kinds.json');
+  if (fs.existsSync(fixtureRegistry)) {
+    env.SPECTRAL_SEMANTIC_KINDS_REGISTRY = fixtureRegistry;
+  }
 
   try {
     const output = execSync(cmd, {
       encoding: 'utf8',
       cwd: GATEWAY_PROTOCOL_DIR,
+      env,
     });
     return output.trim() ? JSON.parse(output) : [];
   } catch (err) {

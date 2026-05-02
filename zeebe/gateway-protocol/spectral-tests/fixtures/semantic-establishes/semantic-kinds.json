@@ -1,0 +1,9 @@
+{
+  "$comment": "Test-only registry for the semantic-establishes Spectral fixture. Loaded via SPECTRAL_SEMANTIC_KINDS_REGISTRY env var.",
+  "kinds": [
+    { "name": "Widget", "shape": "entity" },
+    { "name": "WidgetOwnership", "shape": "edge" },
+    { "name": "OrphanedKind", "shape": "entity", "$comment": "Registered but never established in the fixture, to exercise the orphan-requires check." }
+  ]
+}
+

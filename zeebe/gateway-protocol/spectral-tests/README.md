@@ -19,9 +19,13 @@ spectral-tests/
 ├── *.test.js           # Test files (one per custom function)
 └── fixtures/
     └── <rule-name>/    # Multi-part YAML spec fixtures per rule
-        ├── rest-api.yaml       # Entry point (mirrors real spec structure)
-        ├── things.yaml         # Domain schemas with valid + invalid cases
-        └── search-models.yaml  # Shared models (allOf composition targets)
+        ├── rest-api.yaml         # Entry point (mirrors real spec structure)
+        ├── things.yaml           # Domain schemas with valid + invalid cases
+        ├── search-models.yaml    # Shared models (allOf composition targets)
+        └── semantic-kinds.json   # Optional: fixture-local semantic-kinds
+                                  # registry (auto-loaded via the
+                                  # SPECTRAL_SEMANTIC_KINDS_REGISTRY env
+                                  # var by helpers.js when present).
 ```
 
 ## Adding tests for a new rule

@@ -1,0 +1,19 @@
+{
+  "$comment": [
+    "Registry of semantic kinds used by `x-semantic-establishes` and",
+    "`x-semantic-requires` (see camunda/camunda#52272).",
+    "",
+    "Every value used as the `kind:` field of either annotation must appear",
+    "in the `kinds` array below. The Spectral rule",
+    "`verify-semantic-kinds-registered` enforces this.",
+    "",
+    "Adding a new entry: PR with the new kind plus the producer (and at least",
+    "one consumer) operation that uses it. Reviewer checks the kind name is",
+    "PascalCase, singular, and a noun (not a verb phrase).",
+    "",
+    "`shape` is the default `shape:` an operation should declare on",
+    "`x-semantic-establishes`. `entity` (single- or composite-key) means a",
+    "fetchable singleton; `edge` means observable only via member-list search."
+  ],
+  "kinds": []
+}
