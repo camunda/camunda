@@ -12,10 +12,17 @@
     "PascalCase, singular, and a noun (not a verb phrase).",
     "",
     "`shape` is the default `shape:` an operation should declare on",
-    "`x-semantic-establishes`. `entity` (single- or composite-key) means a",
-    "fetchable singleton; `edge` means observable only via member-list search.",
+    "`x-semantic-establishes`. Three values:",
+    "  • `entity` — single- or composite-key fetchable singleton.",
+    "  • `edge` — membership relationship observable only via member-list search.",
+    "  • `external-entity` (camunda/camunda#52320) — identifier minted outside",
+    "    the Camunda REST API (e.g. an OAuth ClientId minted by Console or an",
+    "    external IdP). Referenced via edge `identifiedBy` tuples only; it is",
+    "    an error to use an external kind directly in `x-semantic-establishes`",
+    "    or `x-semantic-requires`, and the producer-existence cross-reference",
+    "    is skipped for it.",
     "",
-    "`identifiers` (entity kinds only) lists the semantic identifier types",
+    "`identifiers` (entity and external-entity kinds) lists the semantic identifier types",
     "that identify the entity (matching the `semanticType` values used in",
     "`x-semantic-establishes.identifiedBy`). Edge operations whose",
     "`identifiedBy` references one of these types implicitly require the",
@@ -105,6 +112,12 @@
       "shape": "entity",
       "identifiers": ["ClusterVariableName"],
       "description": "A tenant-scoped cluster variable, identified by the (tenantId, name) tuple. Established by createTenantClusterVariable. Only ClusterVariableName is listed in 'identifiers' here because TenantId is owned by the Tenant entity and must remain single-owner for the edge-derivation rule; the Tenant requirement of tenant-scoped operations is expressed via the tenantId path parameter."
+    },
+    {
+      "name": "Client",
+      "shape": "external-entity",
+      "identifiers": ["ClientId"],
+      "description": "An OAuth client. Minted outside the Camunda REST API: by Console in SaaS, by the configured external IdP (EntraID, Keycloak, Okta, …) in Self-Managed with OIDC. Not modelled at all under Self-Managed Basic auth, where m2m apps are users instead. Referenced by the client-membership edges only — never established or fetched via this API."
     }
   ]
 
