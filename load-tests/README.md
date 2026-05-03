@@ -251,9 +251,9 @@ Results are posted to the `#reliability-testing-alerts` Slack channel.
 
 ### Weekly load tests
 
-Weekly load tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). They are automatically created every Monday and run for 4 weeks, then cleaned up by the [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This results in 12 concurrent weekly tests (three variants × four weeks).
+Weekly load tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). They are automatically created every Monday and run for 4 weeks, then cleaned up by the [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This results in several concurrent weekly tests (multiple variants × four weeks).
 
-The weekly tests cover two [realistic load](../docs/testing/reliability-testing.md#realistic-load) variants (one with Elasticsearch, one with PostgreSQL) plus the [latency test](../docs/testing/reliability-testing.md#latency-load-test).
+The weekly tests cover, for example, the [realistic load](../docs/testing/reliability-testing.md#realistic-load) variants (one with Elasticsearch, one with OpenSearch, and one with PostgreSQL) plus the [latency test](../docs/testing/reliability-testing.md#latency-load-test).
 
 **Goal:** Validating the reliability of the current main, detecting newly introduced instabilities, memory leaks, and performance degradation.
 
