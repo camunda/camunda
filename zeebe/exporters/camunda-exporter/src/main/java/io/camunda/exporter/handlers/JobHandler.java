@@ -19,6 +19,7 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_FAI
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PRIORITY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
@@ -100,6 +101,7 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
         .setWorker(recordValue.getWorker())
         .setState(record.getIntent().name())
         .setRetries(recordValue.getRetries())
+        .setPriority(recordValue.getPriority())
         .setErrorMessage(recordValue.getErrorMessage())
         .setErrorCode(recordValue.getErrorCode())
         .setCustomHeaders(recordValue.getCustomHeaders())
@@ -160,6 +162,7 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     updateFields.put(JOB_WORKER, jobEntity.getWorker());
     updateFields.put(JOB_STATE, jobEntity.getState());
     updateFields.put(RETRIES, jobEntity.getRetries());
+    updateFields.put(PRIORITY, jobEntity.getPriority());
     updateFields.put(ERROR_MESSAGE, jobEntity.getErrorMessage());
     updateFields.put(ERROR_CODE, jobEntity.getErrorCode());
     updateFields.put(TIME, jobEntity.getEndTime());

@@ -38,6 +38,7 @@ class JobEntityTransformerTest {
     when(entityValue.getJobKind()).thenReturn(JobKind.BPMN_ELEMENT.name());
     when(entityValue.getListenerEventType()).thenReturn(ListenerEventType.UNSPECIFIED.name());
     when(entityValue.getRetries()).thenReturn(3);
+    when(entityValue.getPriority()).thenReturn(0);
     when(entityValue.getBpmnProcessId()).thenReturn("process-def-1");
     when(entityValue.getProcessDefinitionKey()).thenReturn(1000L);
     when(entityValue.getProcessInstanceKey()).thenReturn(2000L);
@@ -45,6 +46,30 @@ class JobEntityTransformerTest {
     when(entityValue.getFlowNodeId()).thenReturn("element-1");
     when(entityValue.getCreationTime()).thenReturn(java.time.OffsetDateTime.now());
     when(entityValue.getLastUpdateTime()).thenReturn(java.time.OffsetDateTime.now());
+  }
+
+  @Test
+  void shouldMapPriority() {
+    // given
+    when(entityValue.getPriority()).thenReturn(75);
+
+    // when
+    final var transformed = transformer.apply(entityValue);
+
+    // then
+    assertThat(transformed.priority()).isEqualTo(75);
+  }
+
+  @Test
+  void shouldMapNullPriority() {
+    // given
+    when(entityValue.getPriority()).thenReturn(null);
+
+    // when
+    final var transformed = transformer.apply(entityValue);
+
+    // then
+    assertThat(transformed.priority()).isNull();
   }
 
   @Test
