@@ -87,6 +87,12 @@
       "name": "TenantMappingRuleMembership",
       "shape": "edge",
       "description": "Edge between a Tenant and a MappingRule, identified by the (tenantId, mappingRuleId) tuple. Established by assignMappingRuleToTenant, observable only via searchMappingRulesForTenant."
+    },
+    {
+      "name": "GlobalTaskListener",
+      "shape": "entity",
+      "identifiers": ["GlobalListenerId"],
+      "description": "A global user task listener entity, identified by its client-minted id (a GlobalListenerId)."
     }
   ]
 
