@@ -19,13 +19,15 @@ public class ProcessMetadata extends UnpackedObject {
   private final IntegerProperty versionProp = new IntegerProperty("version", -1);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
+  private final StringProperty nameProp = new StringProperty("name", "");
 
   public ProcessMetadata() {
-    super(4);
+    super(5);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(versionProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(resourceNameProp);
+        .declareProperty(resourceNameProp)
+        .declareProperty(nameProp);
   }
 
   public long getProcessDefinitionKey() {
@@ -71,6 +73,20 @@ public class ProcessMetadata extends UnpackedObject {
 
   public ProcessMetadata setResourceName(final String resourceName) {
     resourceNameProp.setValue(resourceName);
+    return this;
+  }
+
+  public DirectBuffer getName() {
+    return nameProp.getValue();
+  }
+
+  public ProcessMetadata setName(final DirectBuffer name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
+  public ProcessMetadata setName(final String name) {
+    nameProp.setValue(name);
     return this;
   }
 }

@@ -34,9 +34,10 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  private final StringProperty nameProp = new StringProperty("name", "");
 
   public ProcessRecord() {
-    super(9);
+    super(10);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
@@ -45,7 +46,8 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
         .declareProperty(resourceProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp);
+        .declareProperty(versionTagProp)
+        .declareProperty(nameProp);
   }
 
   public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
@@ -58,6 +60,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
     tenantIdProp.setValue(metadata.getTenantId());
     deploymentKeyProp.setValue(metadata.getDeploymentKey());
     versionTagProp.setValue(metadata.getVersionTag());
+    nameProp.setValue(metadata.getName());
     return this;
   }
 
@@ -92,6 +95,11 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   }
 
   @Override
+  public String getName() {
+    return BufferUtil.bufferAsString(nameProp.getValue());
+  }
+
+  @Override
   public byte[] getChecksum() {
     return BufferUtil.bufferAsArray(checksumProp.getValue());
   }
@@ -113,6 +121,16 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
 
   public ProcessRecord setChecksum(final DirectBuffer checksumBuffer) {
     checksumProp.setValue(checksumBuffer);
+    return this;
+  }
+
+  public ProcessRecord setName(final String name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
+  public ProcessRecord setName(final DirectBuffer name) {
+    nameProp.setValue(name);
     return this;
   }
 

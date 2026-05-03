@@ -209,6 +209,7 @@ final class JsonSerializableToJsonTest {
                   .batchOperationReference(5678);
 
               final String resourceName = "resource";
+              final String processName = "Test Process";
               final DirectBuffer resource = wrapString("contents");
               final String bpmnProcessId = "testProcess";
               final long processDefinitionKey = 123;
@@ -227,6 +228,7 @@ final class JsonSerializableToJsonTest {
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setKey(processDefinitionKey)
                   .setResourceName(wrapString(resourceName))
+                  .setName(wrapString(processName))
                   .setVersion(processVersion)
                   .setChecksum(checksum);
 
@@ -266,6 +268,7 @@ final class JsonSerializableToJsonTest {
                         "version": 12,
                         "bpmnProcessId": "testProcess",
                         "resourceName": "resource",
+                        "name": "Test Process",
                         "checksum": "Y2hlY2tzdW0=",
                         "processDefinitionKey": 123,
                         "duplicate": false,
@@ -357,6 +360,7 @@ final class JsonSerializableToJsonTest {
               final DirectBuffer checksum = wrapString("checksum");
               final long deploymentKey = 1234;
               final String versionTag = "v1.0";
+              final String processName = "Test Process";
               final DeploymentRecord record = new DeploymentRecord();
               record
                   .setDeploymentKey(deploymentKey)
@@ -370,6 +374,7 @@ final class JsonSerializableToJsonTest {
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setKey(processDefinitionKey)
                   .setResourceName(wrapString(resourceName))
+                  .setName(wrapString(processName))
                   .setVersion(processVersion)
                   .setChecksum(checksum)
                   .setDuplicate(true)
@@ -428,6 +433,7 @@ final class JsonSerializableToJsonTest {
                       "version": 12,
                       "processDefinitionKey": 123,
                       "resourceName": "resource",
+                      "name": "Test Process",
                       "duplicate": true,
                       "tenantId": "<default>",
                       "deploymentKey": 1234,
@@ -559,6 +565,7 @@ final class JsonSerializableToJsonTest {
                   "resource": "Y29udGVudHM=",
                   "checksum": "Y2hlY2tzdW0=",
                   "bpmnProcessId": "testProcess",
+                  "name": "",
                   "version": 12,
                   "processDefinitionKey": 123,
                   "resourceName": "resource",
@@ -598,6 +605,7 @@ final class JsonSerializableToJsonTest {
                   "resource": "Y29udGVudHM=",
                   "checksum": "Y2hlY2tzdW0=",
                   "bpmnProcessId": "testProcess",
+                  "name": "",
                   "version": 12,
                   "processDefinitionKey": 123,
                   "resourceName": "resource",
@@ -2715,6 +2723,69 @@ final class JsonSerializableToJsonTest {
                       "bpmnProcessId": "my_first_process",
                       "resourceName": "my_first_bpmn.bpmn",
                       "checksum": "c2hhMQ==",
+                      "name": "",
+                      "duplicate": false,
+                      "tenantId": "<default>",
+                      "deploymentKey": -1,
+                      "versionTag": ""
+                    }],
+                    "decisionsMetadata": [],
+                    "decisionRequirementsMetadata": [],
+                    "formMetadata": [],
+                    "resourceMetadata":[],
+                    "tenantId": "<default>",
+                    "deploymentKey": -1
+                  },
+                  "authInfo":{"format":"UNKNOWN","claims":{"claim-a": "foo"},"authData":""}
+                }
+                """
+      },
+      {
+        "CommandDistributionRecord with Process Name",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var deploymentRecord = new DeploymentRecord();
+              deploymentRecord
+                  .resources()
+                  .add()
+                  .setResourceName("my_first_bpmn.bpmn")
+                  .setResource(wrapString("This is the contents of the BPMN"));
+              deploymentRecord
+                  .processesMetadata()
+                  .add()
+                  .setKey(123)
+                  .setVersion(1)
+                  .setBpmnProcessId("my_first_process")
+                  .setResourceName("my_first_bpmn.bpmn")
+                  .setName("Test Process")
+                  .setChecksum(wrapString("sha1"));
+
+              return new CommandDistributionRecord()
+                  .setPartitionId(1)
+                  .setQueueId("totally-random-queue-id")
+                  .setValueType(ValueType.DEPLOYMENT)
+                  .setIntent(DeploymentIntent.CREATE)
+                  .setCommandValue(deploymentRecord)
+                  .setAuthInfo(new AuthInfo().setClaims(Map.of("claim-a", "foo")));
+            },
+        """
+                {
+                  "partitionId": 1,
+                  "queueId": "totally-random-queue-id",
+                  "valueType": "DEPLOYMENT",
+                  "intent": "CREATE",
+                  "commandValue": {
+                    "resources": [{
+                      "resource": "VGhpcyBpcyB0aGUgY29udGVudHMgb2YgdGhlIEJQTU4=",
+                      "resourceName": "my_first_bpmn.bpmn"
+                    }],
+                    "processesMetadata": [{
+                      "processDefinitionKey": 123,
+                      "version": 1,
+                      "bpmnProcessId": "my_first_process",
+                      "resourceName": "my_first_bpmn.bpmn",
+                      "checksum": "c2hhMQ==",
+                      "name": "Test Process",
                       "duplicate": false,
                       "tenantId": "<default>",
                       "deploymentKey": -1,
@@ -4628,6 +4699,57 @@ final class JsonSerializableToJsonTest {
       "configKey": -1
     }
     """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// ProcessRecord with Process Name
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      new Object[] {
+        "ProcessRecord with Process Name",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final String resourceName = "resource";
+              final String processName = "Test Process";
+              final DirectBuffer resource = wrapString("contents");
+              final String bpmnProcessId = "testProcess";
+              final long processDefinitionKey = 123;
+              final int processVersion = 12;
+              final DirectBuffer checksum = wrapString("checksum");
+              final long deploymentKey = 1234;
+              final String versionTag = "v1.0";
+
+              final ProcessRecord record = new ProcessRecord();
+              record
+                  .setResourceName(wrapString(resourceName))
+                  .setResource(resource)
+                  .setBpmnProcessId(wrapString(bpmnProcessId))
+                  .setKey(processDefinitionKey)
+                  .setResourceName(wrapString(resourceName))
+                  .setName(wrapString(processName))
+                  .setVersion(processVersion)
+                  .setChecksum(checksum)
+                  .setDeploymentKey(deploymentKey)
+                  .setVersionTag(versionTag);
+
+              return record;
+            },
+        """
+                {
+                  "resourceName": "resource",
+                  "resource": "Y29udGVudHM=",
+                  "checksum": "Y2hlY2tzdW0=",
+                  "bpmnProcessId": "testProcess",
+                  "version": 12,
+                  "processDefinitionKey": 123,
+                  "resourceName": "resource",
+                  "name": "Test Process",
+                  "duplicate": false,
+                  "tenantId": "<default>",
+                  "deploymentKey": 1234,
+                  "versionTag": "v1.0"
+                }
+                """
       }
     };
   }
