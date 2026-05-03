@@ -55,6 +55,17 @@
       "name": "TenantUserMembership",
       "shape": "edge",
       "description": "Edge between a Tenant and a User, identified by the (tenantId, username) tuple. Established by assignUserToTenant, observable only via searchUsersForTenant."
+    },
+    {
+      "name": "Group",
+      "shape": "entity",
+      "identifiers": ["GroupId"],
+      "description": "A group entity, identified by its client-minted groupId."
+    },
+    {
+      "name": "GroupUserMembership",
+      "shape": "edge",
+      "description": "Edge between a Group and a User, identified by the (groupId, username) tuple. Established by assignUserToGroup, observable only via searchUsersForGroup."
     }
   ]
 
