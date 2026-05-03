@@ -404,8 +404,9 @@ components:
         - value
       properties:
         name:
-          type: string
           description: The name of the cluster variable. Must be unique within its scope (global or tenant-specific).
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
         value:
           type: object
           description: The value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
@@ -451,8 +452,9 @@ components:
         - tenantId
       properties:
         name:
-          type: string
           description: The name of the cluster variable. Unique within its scope (global or tenant-specific).
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
         scope:
           $ref: '#/components/schemas/ClusterVariableScopeEnum'
         tenantId:
