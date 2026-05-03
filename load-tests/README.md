@@ -14,13 +14,13 @@ For background on goals and test variants, see the [reliability testing document
 
 ## Quick Start
 
-Prerequisites: access to the GKE benchmark cluster via [Teleport](https://camunda.teleport.sh).
-
 ### Via GitHub Actions (recommended)
 
 Trigger the [Camunda load test workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) via the UI. Select a branch, name your test, and choose a scenario.
 
 ### Via Makefile (manual)
+
+Prerequisites: access to the GKE benchmark cluster via [Teleport](https://camunda.teleport.sh).
 
 ```bash
 cd load-tests/setup
