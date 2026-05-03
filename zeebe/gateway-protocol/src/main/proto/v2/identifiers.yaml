@@ -86,6 +86,14 @@ components:
       x-semantic-type: MappingRuleId
       x-semantic-client-minted: true
 
+    ClusterVariableName:
+      example: feature-flag-checkout
+      description: The name of a cluster variable. Unique within its scope (global or tenant-specific).
+      format: ClusterVariableName
+      type: string
+      x-semantic-type: ClusterVariableName
+      x-semantic-client-minted: true
+
     Tag:
       description: A tag. Needs to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.
       example: business_key:1234

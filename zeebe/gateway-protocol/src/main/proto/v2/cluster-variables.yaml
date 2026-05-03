@@ -123,7 +123,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       responses:
         '200':
@@ -161,7 +161,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       requestBody:
         required: true
@@ -203,7 +203,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       responses:
         '204':
@@ -242,7 +242,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       responses:
         '200':
@@ -286,7 +286,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       requestBody:
         required: true
@@ -334,7 +334,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       responses:
         '204':
