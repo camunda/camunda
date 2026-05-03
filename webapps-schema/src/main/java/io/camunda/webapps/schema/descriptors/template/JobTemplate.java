@@ -32,6 +32,7 @@ public class JobTemplate extends AbstractTemplateDescriptor
   public static final String JOB_TYPE = "type";
   public static final String JOB_WORKER = "worker";
   public static final String RETRIES = "retries";
+  public static final String PRIORITY = "priority";
   public static final String JOB_STATE = "state";
   public static final String ERROR_MESSAGE = "errorMessage";
   public static final String ERROR_CODE = "errorCode";

@@ -59,7 +59,7 @@ public class JobEntityMapperTest {
     // Then
     assertThat(entity)
         .usingRecursiveComparison()
-        .ignoringFields("deadline", "endTime", "customHeaders")
+        .ignoringFields("deadline", "endTime", "customHeaders", "priority")
         .isEqualTo(jobDbModel);
 
     assertThat(entity.deadline())
