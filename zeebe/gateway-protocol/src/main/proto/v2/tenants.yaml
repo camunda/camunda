@@ -9,6 +9,10 @@ paths:
       operationId: createTenant
       summary: Create tenant
       description: Creates a new tenant.
+      x-semantic-establishes:
+        kind: Tenant
+        identifiedBy:
+          - { in: body, name: tenantId, semanticType: TenantId }
       requestBody:
         content:
           application/json:
@@ -85,6 +89,10 @@ paths:
       operationId: getTenant
       summary: Get tenant
       description: Retrieves a single tenant by tenant ID.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -122,6 +130,10 @@ paths:
       operationId: updateTenant
       summary: Update tenant
       description: Updates an existing tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -165,6 +177,10 @@ paths:
       operationId: deleteTenant
       summary: Delete tenant
       description: Deletes an existing tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -199,6 +215,12 @@ paths:
       operationId: assignUserToTenant
       summary: Assign a user to a tenant
       description: Assign a single user to a specified tenant. The user can then access tenant data and perform authorized actions.
+      x-semantic-establishes:
+        kind: TenantUserMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: tenantId, semanticType: TenantId }
+          - { in: path, name: username, semanticType: Username }
       parameters:
         - name: tenantId
           in: path
@@ -240,6 +262,11 @@ paths:
       description: |
         Unassigns the user from the specified tenant.
         The user can no longer access tenant data.
+      x-semantic-requires:
+        kind: TenantUserMembership
+        bind:
+          tenantId: { from: path, name: tenantId }
+          username: { from: path, name: username }
       parameters:
         - name: tenantId
           in: path
@@ -280,6 +307,10 @@ paths:
       operationId: searchUsersForTenant
       summary: Search users for tenant
       description: Retrieves a filtered and sorted list of users for a specified tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path

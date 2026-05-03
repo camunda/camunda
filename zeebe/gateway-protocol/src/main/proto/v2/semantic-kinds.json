@@ -44,6 +44,17 @@
       "name": "RoleUserMembership",
       "shape": "edge",
       "description": "Edge between a Role and a User, identified by the (roleId, username) tuple. Established by assignRoleToUser, observable only via searchUsersForRole."
+    },
+    {
+      "name": "Tenant",
+      "shape": "entity",
+      "identifiers": ["TenantId"],
+      "description": "A tenant entity, identified by its client-minted tenantId."
+    },
+    {
+      "name": "TenantUserMembership",
+      "shape": "edge",
+      "description": "Edge between a Tenant and a User, identified by the (tenantId, username) tuple. Established by assignUserToTenant, observable only via searchUsersForTenant."
     }
   ]
 
