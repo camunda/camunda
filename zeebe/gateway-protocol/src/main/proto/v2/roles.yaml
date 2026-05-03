@@ -600,6 +600,12 @@ paths:
       operationId: assignRoleToMappingRule
       summary: Assign a role to a mapping rule
       description: Assigns a role to a mapping rule.
+      x-semantic-establishes:
+        kind: RoleMappingRuleMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: roleId,        semanticType: RoleId }
+          - { in: path, name: mappingRuleId, semanticType: MappingRuleId }
       parameters:
         - name: roleId
           in: path
@@ -645,6 +651,11 @@ paths:
       operationId: unassignRoleFromMappingRule
       summary: Unassign a role from a mapping rule
       description: Unassigns a role from a mapping rule.
+      x-semantic-requires:
+        kind: RoleMappingRuleMembership
+        bind:
+          roleId:        { from: path, name: roleId }
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: roleId
           in: path
@@ -685,6 +696,10 @@ paths:
       operationId: searchMappingRulesForRole
       summary: Search role mapping rules
       description: Search mapping rules with assigned role.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path

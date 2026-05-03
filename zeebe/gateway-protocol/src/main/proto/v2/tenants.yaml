@@ -681,6 +681,12 @@ paths:
       operationId: assignMappingRuleToTenant
       summary: Assign a mapping rule to a tenant
       description: Assign a single mapping rule to a specified tenant.
+      x-semantic-establishes:
+        kind: TenantMappingRuleMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: tenantId,      semanticType: TenantId }
+          - { in: path, name: mappingRuleId, semanticType: MappingRuleId }
       parameters:
         - name: tenantId
           in: path
@@ -720,6 +726,11 @@ paths:
       operationId: unassignMappingRuleFromTenant
       summary: Unassign a mapping rule from a tenant
       description: Unassigns a single mapping rule from a specified tenant without deleting the rule.
+      x-semantic-requires:
+        kind: TenantMappingRuleMembership
+        bind:
+          tenantId:      { from: path, name: tenantId }
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: tenantId
           in: path
@@ -760,6 +771,10 @@ paths:
       operationId: searchMappingRulesForTenant
       summary: Search mapping rules for tenant
       description: Retrieves a filtered and sorted list of MappingRules for a specified tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path

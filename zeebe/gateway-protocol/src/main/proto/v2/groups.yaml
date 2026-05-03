@@ -478,6 +478,12 @@ paths:
       operationId: assignMappingRuleToGroup
       summary: Assign a mapping rule to a group
       description: Assigns a mapping rule to a group.
+      x-semantic-establishes:
+        kind: GroupMappingRuleMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: groupId,       semanticType: GroupId }
+          - { in: path, name: mappingRuleId, semanticType: MappingRuleId }
       parameters:
         - name: groupId
           in: path
@@ -523,6 +529,11 @@ paths:
       operationId: unassignMappingRuleFromGroup
       summary: Unassign a mapping rule from a group
       description: Unassigns a mapping rule from a group.
+      x-semantic-requires:
+        kind: GroupMappingRuleMembership
+        bind:
+          groupId:       { from: path, name: groupId }
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: groupId
           in: path
@@ -563,6 +574,10 @@ paths:
       operationId: searchMappingRulesForGroup
       summary: Search group mapping rules
       description: Search mapping rules assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path

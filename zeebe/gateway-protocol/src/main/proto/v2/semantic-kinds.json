@@ -66,6 +66,27 @@
       "name": "GroupUserMembership",
       "shape": "edge",
       "description": "Edge between a Group and a User, identified by the (groupId, username) tuple. Established by assignUserToGroup, observable only via searchUsersForGroup."
+    },
+    {
+      "name": "MappingRule",
+      "shape": "entity",
+      "identifiers": ["MappingRuleId"],
+      "description": "A mapping rule entity, identified by its client-minted mappingRuleId."
+    },
+    {
+      "name": "RoleMappingRuleMembership",
+      "shape": "edge",
+      "description": "Edge between a Role and a MappingRule, identified by the (roleId, mappingRuleId) tuple. Established by assignRoleToMappingRule, observable only via searchMappingRulesForRole."
+    },
+    {
+      "name": "GroupMappingRuleMembership",
+      "shape": "edge",
+      "description": "Edge between a Group and a MappingRule, identified by the (groupId, mappingRuleId) tuple. Established by assignMappingRuleToGroup, observable only via searchMappingRulesForGroup."
+    },
+    {
+      "name": "TenantMappingRuleMembership",
+      "shape": "edge",
+      "description": "Edge between a Tenant and a MappingRule, identified by the (tenantId, mappingRuleId) tuple. Established by assignMappingRuleToTenant, observable only via searchMappingRulesForTenant."
     }
   ]
 
