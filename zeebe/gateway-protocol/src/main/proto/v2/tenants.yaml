@@ -791,11 +791,9 @@ components:
       additionalProperties: false
       properties:
         tenantId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The unique ID for the tenant. Must be 255 characters or less. Can contain letters, numbers, [`_`, `-`, `+`, `.`, `@`].
-          minLength: 1
-          maxLength: 256
-          pattern: ^[A-Za-z0-9_@.+-]+$
         name:
           type: string
           description: The name of the tenant.
@@ -812,7 +810,9 @@ components:
         - tenantId
       properties:
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The unique identifier of the created tenant.
         name:
           type: string
           description: The name of the tenant.
@@ -844,7 +844,9 @@ components:
       type: object
       properties:
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The unique identifier of the updated tenant.
         name:
           type: string
           description: The name of the tenant.
@@ -866,7 +868,9 @@ components:
           description: The tenant name.
           example: Customer Service department
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The unique identifier of the tenant.
         description:
           type: string
           description: The tenant description.
@@ -914,7 +918,9 @@ components:
       type: object
       properties:
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The unique identifier of the tenant.
         name:
           type: string
           description: The name of the tenant.
