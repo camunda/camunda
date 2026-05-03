@@ -229,7 +229,8 @@ components:
         - $ref: '#/components/schemas/MappingRuleCreateUpdateRequest'
       properties:
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The unique ID of the mapping rule.
       required:
         - mappingRuleId
@@ -252,7 +253,8 @@ components:
           type: string
           description: The name of the mapping rule.
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The unique ID of the mapping rule.
       required:
         - claimName
@@ -296,7 +298,8 @@ components:
           type: string
           description: The name of the mapping rule.
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The ID of the mapping rule.
       required:
         - claimName
@@ -350,5 +353,6 @@ components:
           type: string
           description: The name of the mapping rule.
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The ID of the mapping rule.
