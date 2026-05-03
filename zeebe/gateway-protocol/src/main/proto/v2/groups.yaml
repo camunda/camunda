@@ -652,7 +652,8 @@ components:
       additionalProperties: false
       properties:
         groupId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
           description: The ID of the new group.
         name:
           type: string
@@ -668,8 +669,9 @@ components:
       type: object
       properties:
         groupId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
           description: The ID of the created group.
-          type: string
         name:
           description: The display name of the created group.
           type: string
@@ -698,7 +700,8 @@ components:
       type: object
       properties:
         groupId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
           description: The unique external group ID.
         name:
           type: string
@@ -720,7 +723,8 @@ components:
           type: string
           description: The group name.
         groupId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
           description: The group ID.
         description:
           type: string
