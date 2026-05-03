@@ -70,6 +70,14 @@ components:
       x-semantic-type: RoleId
       x-semantic-client-minted: true
 
+    GroupId:
+      example: engineering
+      description: The unique identifier of a group.
+      format: GroupId
+      type: string
+      x-semantic-type: GroupId
+      x-semantic-client-minted: true
+
     Tag:
       description: A tag. Needs to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.
       example: business_key:1234

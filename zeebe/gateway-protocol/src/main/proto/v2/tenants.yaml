@@ -468,7 +468,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       responses:
         "204":
           description: The group was successfully assigned to the tenant.
@@ -509,7 +509,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       responses:
         "204":
           description: The group was successfully unassigned from the tenant.
