@@ -93,6 +93,18 @@
       "shape": "entity",
       "identifiers": ["GlobalListenerId"],
       "description": "A global user task listener entity, identified by its client-minted id (a GlobalListenerId)."
+    },
+    {
+      "name": "GlobalClusterVariable",
+      "shape": "entity",
+      "identifiers": ["ClusterVariableName"],
+      "description": "A global-scoped cluster variable, identified by its client-minted name (a ClusterVariableName). Established by createGlobalClusterVariable."
+    },
+    {
+      "name": "TenantClusterVariable",
+      "shape": "entity",
+      "identifiers": ["ClusterVariableName"],
+      "description": "A tenant-scoped cluster variable, identified by the (tenantId, name) tuple. Established by createTenantClusterVariable. Only ClusterVariableName is listed in 'identifiers' here because TenantId is owned by the Tenant entity and must remain single-owner for the edge-derivation rule; the Tenant requirement of tenant-scoped operations is expressed via the tenantId path parameter."
     }
   ]
 
