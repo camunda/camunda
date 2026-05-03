@@ -331,6 +331,7 @@ public class JobIT {
             .kind(original.kind())
             .listenerEventType(original.listenerEventType())
             .retries(original.retries())
+            .priority(original.priority())
             .hasFailedWithRetriesLeft(original.hasFailedWithRetriesLeft())
             .processDefinitionId(original.processDefinitionId())
             .processDefinitionKey(original.processDefinitionKey())
@@ -357,6 +358,7 @@ public class JobIT {
     assertThat(stored.endTime())
         .isCloseTo(original.endTime(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(stored.rootProcessInstanceKey()).isEqualTo(original.rootProcessInstanceKey());
+    assertThat(stored.priority()).isEqualTo(original.priority());
   }
 
   @TestTemplate

@@ -30,6 +30,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
   private JobKind kind;
   private ListenerEventType listenerEventType;
   private Integer retries;
+  private Integer priority;
   private Boolean isDenied;
   private String deniedReason;
   private Boolean hasFailedWithRetriesLeft = false;
@@ -62,6 +63,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
       final JobKind kind,
       final ListenerEventType listenerEventType,
       final Integer retries,
+      final Integer priority,
       final Boolean isDenied,
       final String deniedReason,
       final boolean hasFailedWithRetriesLeft,
@@ -87,6 +89,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.kind = kind;
     this.listenerEventType = listenerEventType;
     this.retries = retries;
+    this.priority = priority;
     this.isDenied = isDenied;
     this.deniedReason = deniedReason;
     this.hasFailedWithRetriesLeft = hasFailedWithRetriesLeft;
@@ -128,6 +131,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
         kind,
         listenerEventType,
         retries,
+        priority,
         isDenied,
         deniedReason,
         hasFailedWithRetriesLeft,
@@ -215,6 +219,14 @@ public class JobDbModel implements Copyable<JobDbModel> {
 
   public void retries(final Integer retries) {
     this.retries = retries;
+  }
+
+  public Integer priority() {
+    return priority;
+  }
+
+  public void priority(final Integer priority) {
+    this.priority = priority;
   }
 
   public Boolean isDenied() {
@@ -375,6 +387,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
         .kind(kind)
         .listenerEventType(listenerEventType)
         .retries(retries)
+        .priority(priority)
         .isDenied(isDenied)
         .deniedReason(deniedReason)
         .hasFailedWithRetriesLeft(hasFailedWithRetriesLeft)
@@ -404,6 +417,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
     private JobKind kind;
     private ListenerEventType listenerEventType;
     private Integer retries;
+    private Integer priority;
     private Boolean isDenied;
     private String deniedReason;
     private Boolean hasFailedWithRetriesLeft = false;
@@ -455,6 +469,11 @@ public class JobDbModel implements Copyable<JobDbModel> {
 
     public Builder retries(final Integer retries) {
       this.retries = retries;
+      return this;
+    }
+
+    public Builder priority(final Integer priority) {
+      this.priority = priority;
       return this;
     }
 
@@ -563,6 +582,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
           kind,
           listenerEventType,
           retries,
+          priority,
           isDenied,
           deniedReason,
           hasFailedWithRetriesLeft,

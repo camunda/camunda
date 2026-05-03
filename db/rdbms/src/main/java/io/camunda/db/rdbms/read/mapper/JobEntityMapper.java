@@ -26,6 +26,7 @@ public class JobEntityMapper {
         .kind(JobKind.valueOf(jobDbModel.kind().name()))
         .listenerEventType(ListenerEventType.valueOf(jobDbModel.listenerEventType().name()))
         .retries(jobDbModel.retries())
+        .priority(jobDbModel.priority())
         .isDenied(jobDbModel.isDenied())
         .deniedReason(jobDbModel.deniedReason())
         .hasFailedWithRetriesLeft(jobDbModel.hasFailedWithRetriesLeft())

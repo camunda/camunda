@@ -40,6 +40,7 @@ public final class JobFixtures extends CommonFixtures {
             .endTime(NOW)
             .isDenied(false)
             .retries(1)
+            .priority(RANDOM.nextInt(-100, 101))
             .errorCode("error-code-" + generateRandomString(20))
             .deniedReason("denied-reason-" + generateRandomString(20))
             .listenerEventType(randomEnum(ListenerEventType.class))
