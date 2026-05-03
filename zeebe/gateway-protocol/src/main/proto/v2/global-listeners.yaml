@@ -9,6 +9,10 @@ paths:
       operationId: createGlobalTaskListener
       summary: Create global user task listener
       description: Create a new global user task listener.
+      x-semantic-establishes:
+        kind: GlobalTaskListener
+        identifiedBy:
+          - { in: body, name: id, semanticType: GlobalListenerId }
       requestBody:
         content:
           application/json:
@@ -48,6 +52,10 @@ paths:
       operationId: getGlobalTaskListener
       summary: Get global user task listener
       description: Get a global user task listener by its id.
+      x-semantic-requires:
+        kind: GlobalTaskListener
+        bind:
+          id: { from: path, name: id }
       parameters:
         - name: id
           in: path
@@ -83,6 +91,10 @@ paths:
       operationId: updateGlobalTaskListener
       summary: Update global user task listener
       description: Updates a global user task listener.
+      x-semantic-requires:
+        kind: GlobalTaskListener
+        bind:
+          id: { from: path, name: id }
       parameters:
         - name: id
           in: path
@@ -128,6 +140,10 @@ paths:
       operationId: deleteGlobalTaskListener
       summary: Delete global user task listener
       description: Deletes a global user task listener.
+      x-semantic-requires:
+        kind: GlobalTaskListener
+        bind:
+          id: { from: path, name: id }
       parameters:
         - name: id
           in: path
