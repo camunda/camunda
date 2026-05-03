@@ -8,6 +8,10 @@ paths:
       operationId: createGroup
       summary: Create group
       description: Create a new group.
+      x-semantic-establishes:
+        kind: Group
+        identifiedBy:
+          - { in: body, name: groupId, semanticType: GroupId }
       requestBody:
         content:
           application/json:
@@ -71,6 +75,10 @@ paths:
       operationId: getGroup
       summary: Get group
       description: Get a group by its ID.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
@@ -106,6 +114,10 @@ paths:
       operationId: updateGroup
       summary: Update group
       description: Update a group with the given ID.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
@@ -149,6 +161,10 @@ paths:
       operationId: deleteGroup
       summary: Delete group
       description: Deletes the group with the given ID.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
@@ -183,6 +199,12 @@ paths:
       description: |
         Assigns a user to a group, making the user a member of the group.
         Group members inherit the group authorizations, roles, and tenant assignments.
+      x-semantic-establishes:
+        kind: GroupUserMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: groupId,  semanticType: GroupId }
+          - { in: path, name: username, semanticType: Username }
       parameters:
         - name: groupId
           in: path
@@ -230,6 +252,11 @@ paths:
       description: |
         Unassigns a user from a group.
         The user is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
+      x-semantic-requires:
+        kind: GroupUserMembership
+        bind:
+          groupId:  { from: path, name: groupId }
+          username: { from: path, name: username }
       parameters:
         - name: groupId
           in: path
@@ -270,6 +297,10 @@ paths:
       operationId: searchUsersForGroup
       summary: Search group users
       description: Search users assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
