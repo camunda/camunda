@@ -99,4 +99,15 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_job_priority_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}JOB" columnName="PRIORITY"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}JOB">
+      <column name="PRIORITY" type="INTEGER"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

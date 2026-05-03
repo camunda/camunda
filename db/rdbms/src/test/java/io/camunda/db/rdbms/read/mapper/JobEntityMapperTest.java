@@ -35,6 +35,7 @@ public class JobEntityMapperTest {
             .kind(JobKind.BPMN_ELEMENT)
             .listenerEventType(ListenerEventType.START)
             .retries(3)
+            .priority(5)
             .isDenied(true)
             .deniedReason("testDeniedReason")
             .hasFailedWithRetriesLeft(false)
@@ -59,7 +60,7 @@ public class JobEntityMapperTest {
     // Then
     assertThat(entity)
         .usingRecursiveComparison()
-        .ignoringFields("deadline", "endTime", "customHeaders", "priority")
+        .ignoringFields("deadline", "endTime", "customHeaders")
         .isEqualTo(jobDbModel);
 
     assertThat(entity.deadline())
@@ -81,6 +82,7 @@ public class JobEntityMapperTest {
             .kind(JobKind.BPMN_ELEMENT)
             .listenerEventType(ListenerEventType.START)
             .retries(0)
+            .priority(null)
             .isDenied(false)
             .deniedReason(null)
             .hasFailedWithRetriesLeft(false)

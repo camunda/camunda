@@ -74,6 +74,7 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
             .worker(value.getWorker())
             .state(JobState.valueOf(record.getIntent().name()))
             .retries(value.getRetries())
+            .priority(value.getPriority())
             .errorMessage(value.getErrorMessage())
             .errorCode(value.getErrorCode())
             .customHeaders(value.getCustomHeaders())
