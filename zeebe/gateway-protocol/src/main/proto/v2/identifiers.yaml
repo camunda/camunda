@@ -86,6 +86,19 @@ components:
       x-semantic-type: MappingRuleId
       x-semantic-client-minted: true
 
+    ClientId:
+      example: my-application
+      description: |
+        The unique identifier of an OAuth client.
+        Minted outside the Camunda REST API: in SaaS by Console, in Self-Managed
+        with OIDC by the external identity provider (e.g. EntraID, Keycloak,
+        Okta). In Self-Managed with Basic authentication, machine-to-machine
+        applications are modelled as users instead — see the user identifier.
+      format: ClientId
+      type: string
+      x-semantic-type: ClientId
+      x-semantic-client-minted: true
+
     ClusterVariableName:
       example: feature-flag-checkout
       description: The name of a cluster variable. Unique within its scope (global or tenant-specific).

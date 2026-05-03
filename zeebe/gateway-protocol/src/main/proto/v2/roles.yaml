@@ -354,7 +354,7 @@ paths:
           required: true
           description: The client ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The role was assigned successfully to the client.
@@ -399,7 +399,7 @@ paths:
           required: true
           description: The client ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The role was unassigned successfully from the client.

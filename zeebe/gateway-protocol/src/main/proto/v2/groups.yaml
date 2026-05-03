@@ -359,7 +359,7 @@ paths:
           required: true
           description: The client ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The client was assigned successfully to the group.
@@ -406,7 +406,7 @@ paths:
           required: true
           description: The client ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The client was unassigned successfully from the group.
