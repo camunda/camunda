@@ -78,6 +78,14 @@ components:
       x-semantic-type: GroupId
       x-semantic-client-minted: true
 
+    MappingRuleId:
+      example: my-mapping-rule
+      description: The unique identifier of a mapping rule.
+      format: MappingRuleId
+      type: string
+      x-semantic-type: MappingRuleId
+      x-semantic-client-minted: true
+
     Tag:
       description: A tag. Needs to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.
       example: business_key:1234
