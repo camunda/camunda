@@ -355,7 +355,7 @@ paths:
           required: true
           description: The unique identifier of the application.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The client was successfully assigned to the tenant.
@@ -396,7 +396,7 @@ paths:
           required: true
           description: The unique identifier of the application.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The client was successfully unassigned from the tenant.
