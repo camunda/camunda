@@ -51,3 +51,11 @@ paths:
     $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1{widgetId}~1mystery~1{mysteryId}'
   /invalid/widgets/{widgetId}/frobs/{frobId}:
     $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1{widgetId}~1frobs~1{frobId}'
+
+  # ── External entity (camunda/camunda#52320) ──────────────────
+  /valid/widgets/{widgetId}/external-things/{externalThingId}:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets~1{widgetId}~1external-things~1{externalThingId}'
+  /invalid/external-things:
+    $ref: 'widgets.yaml#/paths/~1invalid~1external-things'
+  /invalid/external-things/{externalThingId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1external-things~1{externalThingId}'

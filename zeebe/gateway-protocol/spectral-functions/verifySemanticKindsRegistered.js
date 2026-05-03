@@ -20,6 +20,12 @@
 //      having to redundantly write `x-semantic-requires` next to every edge
 //      establishment.
 //
+//   Special case for `shape: external-entity` registry entries (camunda/camunda#52320):
+//   the producer-existence check is skipped, and any operation that tries
+//   to `establishes` or `requires` an external entity directly is rejected
+//   — external entities are *referenced* through edge `identifiedBy`
+//   tuples only.
+//
 // The orphan check in the other direction (`establishes` with no consumer)
 // is intentionally not enforced — many producers are legitimately useful
 // without a consumer in this spec (e.g. setup/admin operations).
@@ -74,6 +80,11 @@ function loadRegistry() {
   const doc = JSON.parse(raw);
   const kinds = Array.isArray(doc.kinds) ? doc.kinds : [];
   const names = new Set();
+  // Names of kinds whose `shape` is `external-entity`. Such entities are
+  // referenced via edge `identifiedBy` tuples only — the cross-reference
+  // check skips them, and the operation-walk below rejects any direct
+  // `establishes`/`requires` against them.
+  const externalNames = new Set();
   // semanticType (string) -> array of entity kind names that declare it as an
   // identifier. Single-owner is the well-formed case; multi-owner is a
   // registry config error and surfaces as an error against the first edge
@@ -83,23 +94,26 @@ function loadRegistry() {
     const name = typeof entry === 'string' ? entry : entry?.name;
     if (typeof name !== 'string' || name.length === 0) continue;
     names.add(name);
-    if (entry && typeof entry === 'object' && Array.isArray(entry.identifiers)) {
-      for (const id of entry.identifiers) {
-        if (typeof id !== 'string' || id.length === 0) continue;
-        const existing = identifierToKinds.get(id);
-        if (existing) existing.push(name);
-        else identifierToKinds.set(id, [name]);
+    if (entry && typeof entry === 'object') {
+      if (entry.shape === 'external-entity') externalNames.add(name);
+      if (Array.isArray(entry.identifiers)) {
+        for (const id of entry.identifiers) {
+          if (typeof id !== 'string' || id.length === 0) continue;
+          const existing = identifierToKinds.get(id);
+          if (existing) existing.push(name);
+          else identifierToKinds.set(id, [name]);
+        }
       }
     }
   }
-  cachedRegistry = { names, identifierToKinds };
+  cachedRegistry = { names, identifierToKinds, externalNames };
   cachedFor = file;
   return cachedRegistry;
 }
 
 module.exports = (input, _opts, _context) => {
   const errors = [];
-  const { names: registry, identifierToKinds } = loadRegistry();
+  const { names: registry, identifierToKinds, externalNames } = loadRegistry();
 
   const paths = input?.paths;
   if (!paths || typeof paths !== 'object') return errors;
@@ -120,6 +134,11 @@ module.exports = (input, _opts, _context) => {
         if (!registry.has(est.kind)) {
           errors.push({
             message: `Unknown semantic kind '${est.kind}' on ${method.toUpperCase()} ${pathKey} (x-semantic-establishes). Add it to zeebe/gateway-protocol/src/main/proto/v2/semantic-kinds.json or fix the typo.`,
+            path: ['paths', pathKey, method, 'x-semantic-establishes', 'kind'],
+          });
+        } else if (externalNames.has(est.kind)) {
+          errors.push({
+            message: `Semantic kind '${est.kind}' is registered as 'shape: external-entity' and cannot be established. External entities are minted outside the Camunda REST API and may only be referenced via membership-edge identifiedBy tuples.`,
             path: ['paths', pathKey, method, 'x-semantic-establishes', 'kind'],
           });
         }
@@ -189,6 +208,11 @@ module.exports = (input, _opts, _context) => {
             message: `Unknown semantic kind '${req.kind}' on ${method.toUpperCase()} ${pathKey} (x-semantic-requires). Add it to zeebe/gateway-protocol/src/main/proto/v2/semantic-kinds.json or fix the typo.`,
             path: ['paths', pathKey, method, 'x-semantic-requires', 'kind'],
           });
+        } else if (externalNames.has(req.kind)) {
+          errors.push({
+            message: `Semantic kind '${req.kind}' is registered as 'shape: external-entity' and cannot be required directly. External entities have no producer in this API; reference them via a membership edge instead.`,
+            path: ['paths', pathKey, method, 'x-semantic-requires', 'kind'],
+          });
         }
       }
     }
@@ -196,9 +220,12 @@ module.exports = (input, _opts, _context) => {
 
   // Cross-reference: every required kind must be established somewhere.
   // Skip kinds that already failed the registry check — the message above
-  // is the actionable one.
+  // is the actionable one. Skip external entities — by definition they
+  // have no producer in this API, and the direct-reject above already
+  // catches anyone trying to require one with x-semantic-requires.
   for (const r of required) {
     if (!registry.has(r.kind)) continue;
+    if (externalNames.has(r.kind)) continue;
     if (established.has(r.kind)) continue;
     if (r.source === 'edge-endpoint') {
       errors.push({

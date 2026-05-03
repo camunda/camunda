@@ -219,4 +219,43 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
       assert.equal(v.length, 0, JSON.stringify(v, null, 2));
     });
   });
+
+  // ── External entities (camunda/camunda#52320) ────────────────
+
+  describe('verify-semantic-kinds-registered: external entities', () => {
+    it('does not flag the valid edge whose endpoint resolves to an external entity', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('assignExternalThingToWidget') ||
+          e.message.includes('/valid/widgets/{widgetId}/external-things'),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+
+    it('does not flag ExternalThing as an orphan derived requires (external entities have no producer)', () => {
+      const v = registryViolations.filter((e) =>
+        e.message.includes("Semantic kind 'ExternalThing'") &&
+        e.message.includes('derived from'),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+
+    it('flags a direct x-semantic-establishes against an external entity', () => {
+      const v = registryViolations.filter((e) =>
+        e.message.includes("Semantic kind 'ExternalThing'") &&
+        e.message.includes('cannot be established'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+      assert.match(v[0].message, /external-entity/);
+    });
+
+    it('flags a direct x-semantic-requires against an external entity', () => {
+      const v = registryViolations.filter((e) =>
+        e.message.includes("Semantic kind 'ExternalThing'") &&
+        e.message.includes('cannot be required directly'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+      assert.match(v[0].message, /external-entity/);
+    });
+  });
 });

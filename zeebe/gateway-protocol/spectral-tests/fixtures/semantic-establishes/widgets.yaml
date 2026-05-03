@@ -340,3 +340,80 @@ paths:
       responses:
         '204':
           description: Assigned.
+
+  # 13. Edge whose endpoint resolves to an external-entity (ExternalThing).
+  #     The cross-reference check must NOT report ExternalThing as an
+  #     orphan, because external entities have no producer by definition
+  #     (camunda/camunda#52320).
+  /valid/widgets/{widgetId}/external-things/{externalThingId}:
+    put:
+      operationId: assignExternalThingToWidget
+      summary: Assign external thing to widget
+      description: Should pass — ExternalThing is an external-entity, no producer required.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: externalThingId
+          in: path
+          required: true
+          description: The external thing id.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetExternalLink
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId,        semanticType: WidgetId }
+          - { in: path, name: externalThingId, semanticType: ExternalThingId }
+      responses:
+        '204':
+          description: Assigned.
+
+  # 14. Operation that tries to `establishes` an external entity directly.
+  #     Should fail — external entities have no API producer (camunda/camunda#52320).
+  /invalid/external-things:
+    post:
+      operationId: createExternalThingDirectly
+      summary: Create an external thing
+      description: Should fail — ExternalThing is shape:external-entity and cannot be established.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: ExternalThing
+        identifiedBy:
+          - { in: body, name: id, semanticType: ExternalThingId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '201':
+          description: Created.
+
+  # 15. Operation that tries to `requires` an external entity directly.
+  #     Should fail — external entities are referenced via edges only.
+  /invalid/external-things/{externalThingId}:
+    get:
+      operationId: getExternalThingDirectly
+      summary: Get an external thing
+      description: Should fail — ExternalThing is shape:external-entity and cannot be required directly.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: externalThingId
+          in: path
+          required: true
+          description: The external thing id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: ExternalThing
+        bind:
+          externalThingId: { from: path, name: externalThingId }
+      responses:
+        '200':
+          description: OK.

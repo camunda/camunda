@@ -7,7 +7,9 @@
     { "name": "OrphanedKind", "shape": "entity", "$comment": "Registered but never established in the fixture, to exercise the orphan-requires check." },
     { "name": "Frob", "shape": "entity", "identifiers": ["FrobId"], "$comment": "Registered with an identifier but never established. Exercises the derived-requires orphan check on edge endpoints." },
     { "name": "WidgetFrobLink", "shape": "edge", "$comment": "Edge whose endpoint Frob is unestablished — exercises derived-requires orphan." },
-    { "name": "WidgetMysteryLink", "shape": "edge", "$comment": "Edge whose endpoint semanticType resolves to no entity at all — exercises the unresolved-endpoint check." }
+    { "name": "WidgetMysteryLink", "shape": "edge", "$comment": "Edge whose endpoint semanticType resolves to no entity at all — exercises the unresolved-endpoint check." },
+    { "name": "ExternalThing", "shape": "external-entity", "identifiers": ["ExternalThingId"], "$comment": "External entity (camunda/camunda#52320). Has no producer in the fixture spec; the cross-reference check must skip it." },
+    { "name": "WidgetExternalLink", "shape": "edge", "$comment": "Edge from Widget to ExternalThing — establishes correctly without needing an ExternalThing producer." }
   ]
 }
 
