@@ -163,7 +163,7 @@ The release load test workflow acts as an abstraction layer between the release 
 graph TD
     subgraph "Callers"
         BPMN["Release Process<br/>(BPMN)"]
-        SCHEDULE["Scheduled Smoke Tests<br/>(daily 04:00 UTC)"]
+        SCHEDULE["Scheduled Smoke Tests<br/>(weekdays 02:00 UTC)"]
     end
 
     subgraph "Abstraction Layer — camunda-release-load-test.yaml"
@@ -235,7 +235,7 @@ Example values from a past release:
 
 #### Scheduled smoke tests
 
-The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) runs daily at 04:00 UTC to validate that release load tests can be created for all active stable branches (8.6, 8.7, 8.8, 8.9) and main. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
+The [scheduled release load test workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-scheduled-release-load-tests.yml) runs on weekdays at 02:00 UTC to validate that release load tests can be created for the currently active stable branches (`stable/8.7`, `stable/8.8`, `stable/8.9`) and `main`. Each branch's load test is created by calling the release load test workflow on that branch (`@stable/8.x`), ensuring the correct infrastructure files are used.
 
 After deployment, each load test is verified by the [verify-and-cleanup workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-verify-and-cleanup-load-test.yml), which:
 
