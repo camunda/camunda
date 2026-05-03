@@ -692,7 +692,11 @@ public final class CamundaClientBuilderImpl
         value -> maxHttpConnections(Integer.parseInt(value)), MAX_HTTP_CONNECTIONS);
     applyEnvironmentValueIfNotNull(this::defaultTenantId, DEFAULT_TENANT_ID_VAR);
     applyEnvironmentValueIfNotNull(
-        value -> defaultJobWorkerTenantIds(Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
+        value ->
+            defaultJobWorkerTenantIds(
+                value.isEmpty()
+                    ? Collections.emptyList()
+                    : Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR))),
         DEFAULT_JOB_WORKER_TENANT_IDS_VAR);
     applyEnvironmentValueIfNotNull(
         value -> defaultJobWorkerTenantFilter(TenantFilter.from(value)),

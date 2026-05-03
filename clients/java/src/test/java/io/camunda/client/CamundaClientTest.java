@@ -1061,6 +1061,35 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
+  @CsvSource({
+    DEFAULT_JOB_WORKER_TENANT_IDS_VAR + "," + DEFAULT_JOB_WORKER_TENANT_IDS,
+  })
+  public void shouldSetEmptyDefaultJobWorkerTenantIdsFromEmptyStringInEnvVarAndProperty(
+      final String envName, final String propertyName) {
+    // given — empty string in environment variable
+    Environment.system().put(envName, "");
+    final CamundaClientBuilderImpl builderEnv = new CamundaClientBuilderImpl();
+
+    // when
+    builderEnv.build();
+
+    // then — environment variable path should return empty list
+    assertThat(builderEnv.getDefaultJobWorkerTenantIds()).isEmpty();
+
+    // given — empty string in property
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, "");
+    final CamundaClientBuilderImpl builderProp = new CamundaClientBuilderImpl();
+    builderProp.withProperties(properties);
+
+    // when
+    builderProp.build();
+
+    // then — property path should also return empty list
+    assertThat(builderProp.getDefaultJobWorkerTenantIds()).isEmpty();
+  }
+
+  @ParameterizedTest
   @ValueSource(strings = {DEFAULT_JOB_WORKER_TENANT_IDS})
   public void shouldNotSetDefaultJobWorkerTenantIdsFromPropertyWithCloudClientBuilder(
       final String propertyName) {
