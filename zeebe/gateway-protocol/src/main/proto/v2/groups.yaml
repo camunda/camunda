@@ -490,7 +490,7 @@ paths:
           required: true
           description: The mapping rule ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The mapping rule was assigned successfully to the group.
@@ -535,7 +535,7 @@ paths:
           required: true
           description: The mapping rule ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The mapping rule was unassigned successfully from the group.

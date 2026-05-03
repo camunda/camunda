@@ -56,7 +56,7 @@ paths:
           required: true
           description: The ID of the mapping rule to update.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       requestBody:
         content:
           application/json:
@@ -104,7 +104,7 @@ paths:
           required: true
           description: The ID of the mapping rule to delete.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The mapping rule was deleted successfully.
@@ -135,7 +135,7 @@ paths:
           required: true
           description: The ID of the mapping rule to get.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "200":
           description: The mapping rule was returned successfully.

@@ -693,7 +693,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The mapping rule was successfully assigned to the tenant.
@@ -732,7 +732,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The mapping rule was successfully unassigned from the tenant.
