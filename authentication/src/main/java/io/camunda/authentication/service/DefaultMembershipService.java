@@ -10,12 +10,16 @@ package io.camunda.authentication.service;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
+import io.camunda.security.configuration.MembershipCacheConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -23,6 +27,8 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -46,6 +52,8 @@ public class DefaultMembershipService implements MembershipService {
   private final GroupServices groupServices;
   private final OidcGroupsLoader oidcGroupsLoader;
   private final boolean isGroupsClaimConfigured;
+  private final Cache<String, CamundaAuthentication> cache;
+  private final MembershipCacheConfiguration cacheConfig;
 
   public DefaultMembershipService(
       final MappingRuleServices mappingRuleServices,
@@ -61,6 +69,20 @@ public class DefaultMembershipService implements MembershipService {
         new OidcGroupsLoader(securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
     isGroupsClaimConfigured =
         securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
+
+    final var oidcConfig = securityConfiguration.getAuthentication().getOidc();
+    final var rawCacheConfig = oidcConfig != null ? oidcConfig.getMembershipCache() : null;
+    cacheConfig = rawCacheConfig != null ? rawCacheConfig : new MembershipCacheConfiguration();
+
+    if (cacheConfig.isEnabled()) {
+      cache =
+          Caffeine.newBuilder()
+              .maximumSize(cacheConfig.getMaxSize())
+              .expireAfter(new MembershipEntryExpiry(cacheConfig.getTtl()))
+              .build();
+    } else {
+      cache = null;
+    }
   }
 
   @Override
@@ -69,6 +91,19 @@ public class DefaultMembershipService implements MembershipService {
       final String principalId,
       final PrincipalType principalType)
       throws OAuth2AuthenticationException {
+    if (cache != null) {
+      final String key = cacheKey(tokenClaims, principalId, principalType);
+      if (key != null) {
+        return cache.get(key, k -> doResolveMemberships(tokenClaims, principalId, principalType));
+      }
+    }
+    return doResolveMemberships(tokenClaims, principalId, principalType);
+  }
+
+  private CamundaAuthentication doResolveMemberships(
+      final Map<String, Object> tokenClaims,
+      final String principalId,
+      final PrincipalType principalType) {
     final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
 
     ownerTypeToIds.put(
@@ -134,5 +169,103 @@ public class DefaultMembershipService implements MembershipService {
               .tenants(tenants)
               .claims(tokenClaims);
         });
+  }
+
+  /**
+   * Derives a stable cache key from token claims + principal. Uses {@code jti} when available
+   * (globally unique per token); falls back to {@code iss + sub + iat + exp} otherwise. Returns
+   * {@code null} when not enough claims are present to build a safe key — callers must bypass the
+   * cache in that case.
+   */
+  private static String cacheKey(
+      final Map<String, Object> tokenClaims,
+      final String principalId,
+      final PrincipalType principalType) {
+    final Object iss = tokenClaims.get("iss");
+    if (!(iss instanceof final String issuer) || issuer.isBlank()) {
+      return null;
+    }
+    final String principal = principalType.name() + ":" + principalId;
+    final Object jti = tokenClaims.get("jti");
+    if (jti instanceof final String s && !s.isBlank()) {
+      return "jti:" + issuer + ":" + s + ":" + principal;
+    }
+    final Object sub = tokenClaims.get("sub");
+    final Long iat = epochSecond(tokenClaims.get("iat"));
+    final Long exp = epochSecond(tokenClaims.get("exp"));
+    if (sub instanceof String && iat != null && exp != null) {
+      return "sie:" + issuer + ":" + sub + ":" + iat + ":" + exp + ":" + principal;
+    }
+    return null;
+  }
+
+  private static Long epochSecond(final Object value) {
+    if (value instanceof final Instant i) {
+      return i.getEpochSecond();
+    }
+    if (value instanceof final Number n) {
+      return n.longValue();
+    }
+    return null;
+  }
+
+  private static Instant tokenExpiry(final Map<String, Object> tokenClaims) {
+    final Object exp = tokenClaims.get("exp");
+    if (exp instanceof final Instant i) {
+      return i;
+    }
+    if (exp instanceof final Number n) {
+      return Instant.ofEpochSecond(n.longValue());
+    }
+    return null;
+  }
+
+  private static final class MembershipEntryExpiry
+      implements Expiry<String, CamundaAuthentication> {
+    private final Duration configuredTtl;
+
+    MembershipEntryExpiry(final Duration configuredTtl) {
+      this.configuredTtl = configuredTtl;
+    }
+
+    @Override
+    public long expireAfterCreate(
+        final String key, final CamundaAuthentication value, final long currentTime) {
+      return ttlNanos(value);
+    }
+
+    @Override
+    public long expireAfterUpdate(
+        final String key,
+        final CamundaAuthentication value,
+        final long currentTime,
+        final long currentDuration) {
+      return ttlNanos(value);
+    }
+
+    @Override
+    public long expireAfterRead(
+        final String key,
+        final CamundaAuthentication value,
+        final long currentTime,
+        final long currentDuration) {
+      return currentDuration;
+    }
+
+    private long ttlNanos(final CamundaAuthentication value) {
+      final Instant tokenExp = tokenExpiry(value.claims());
+      if (tokenExp == null) {
+        return configuredTtl.toNanos();
+      }
+      final Duration untilExp = Duration.between(Instant.now(), tokenExp);
+      final Duration effective =
+          untilExp.isNegative() || untilExp.isZero() || untilExp.compareTo(configuredTtl) < 0
+              ? untilExp
+              : configuredTtl;
+      if (effective.isNegative() || effective.isZero()) {
+        return 0L;
+      }
+      return effective.toNanos();
+    }
   }
 }

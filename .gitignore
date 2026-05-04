@@ -83,3 +83,5 @@ cmd/renovate/renovate*/
 .c8dev
 /output/
 scripts/codeowners-utils/output/
+
+**/test-results

@@ -61,6 +61,8 @@ public class OidcAuthenticationConfiguration {
   private OidcUserInfoAugmentationConfiguration userInfoAugmentation =
       new OidcUserInfoAugmentationConfiguration();
 
+  private MembershipCacheConfiguration membershipCache = new MembershipCacheConfiguration();
+
   @PostConstruct
   public void validate() {
     assertionConfiguration.validate();
@@ -295,6 +297,14 @@ public class OidcAuthenticationConfiguration {
   public void setUserInfoAugmentation(
       final OidcUserInfoAugmentationConfiguration userInfoAugmentation) {
     this.userInfoAugmentation = userInfoAugmentation;
+  }
+
+  public MembershipCacheConfiguration getMembershipCache() {
+    return membershipCache;
+  }
+
+  public void setMembershipCache(final MembershipCacheConfiguration membershipCache) {
+    this.membershipCache = membershipCache;
   }
 
   public boolean isSet() {
