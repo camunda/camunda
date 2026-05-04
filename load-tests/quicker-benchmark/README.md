@@ -47,17 +47,23 @@ The cluster runs a kube-prometheus-stack install in `monitoring/`, but the CI Te
 does not grant `pods/portforward` on that namespace — only on test namespaces. So instead
 of querying the central Prometheus from CI, the workflow:
 
-1. Calls [`./.github/actions/await-load-test`](../../.github/actions/await-load-test/action.yml)
-   to wait for `app=camunda-platform` and load-test client pods to be Ready (with
-   retry-on-NotFound so pod reschedules don't kill the wait), then to confirm a client
-   has reported `app_connected ≥ 1` against the gateway. This absorbs the ~7-min platform
-   startup.
+1. Waits for `app=camunda-platform` and `app.kubernetes.io/component=zeebe-client` pods
+   to be Ready via `kubectl wait` (absorbs the ~7-min platform startup). Gateway
+   connectivity is implicitly verified by the run-finished poll below — the gauge can
+   only flip if the starter actually connected and ran for `duration_limit` seconds.
 2. Port-forwards the **starter pod** and reads `/metrics` for the run-finished gauge and
    the instance counter.
 3. Port-forwards each **camunda broker pod** in turn and reads `/actuator/prometheus`
    for `zeebe_element_instance_events_total`, `zeebe_dropped_request_count_total`, and
    `zeebe_received_request_count_total`. Per-broker counters only count partitions that
    broker leads, so all three scrapes are summed in an inline `awk` step.
+
+> Sidenote: the shared `./.github/actions/await-load-test` composite would normally do
+> step 1 for us (with pod-reschedule retries and a gateway-connectivity check), but it
+> has a `pipefail` issue — its first scrape during Spring actuator startup returns curl
+> exit 52, which kills the step before any retry. Daily/weekly tests don't trip it
+> because they reach the action later in their boot sequence. We're tracking a
+> standalone fix; for now we use `kubectl wait` directly.
 
 ## What the comment shows
 
@@ -99,7 +105,7 @@ don't, leave the baseline alone.
 
 - Trigger workflow: [.github/workflows/camunda-quicker-pr-load-test.yaml](../../.github/workflows/camunda-quicker-pr-load-test.yaml)
 - Reusable deploy: [.github/workflows/camunda-load-test.yml](../../.github/workflows/camunda-load-test.yml) (called with `scenario: 'max'` + `--set starter.durationLimit`)
-- Readiness: [.github/actions/await-load-test/action.yml](../../.github/actions/await-load-test/action.yml)
+- Readiness: inline `kubectl wait` in the workflow (we don't use [`.github/actions/await-load-test`](../../.github/actions/await-load-test/action.yml) — see the note in *How metrics are collected* above)
 - Starter duration logic: [load-tests/load-tester/src/main/java/io/camunda/zeebe/starter/Starter.java](../load-tester/src/main/java/io/camunda/zeebe/starter/Starter.java) (`createContinuationCondition`)
 - Starter counter + run-finished gauge: [StarterCounterMetricsDoc.java](../load-tester/src/main/java/io/camunda/zeebe/metrics/StarterCounterMetricsDoc.java)
 
