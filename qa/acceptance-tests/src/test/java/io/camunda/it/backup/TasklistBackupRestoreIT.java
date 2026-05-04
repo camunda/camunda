@@ -10,7 +10,7 @@ package io.camunda.it.backup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
-import io.camunda.it.backup.data.OperateDataGenerator;
+import io.camunda.it.backup.data.TasklistDataGenerator;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -35,11 +35,21 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+/**
+ * This test is on purpose no {@link io.camunda.qa.util.multidb.MultiDbTest}, as we have special
+ * requirements on ES and OS, and need direct access.
+ *
+ * <ul>
+ *   <li>We need to configure ES/OS to allow local repositories.
+ *   <li>We need to create snapshot repositories with specific ES/OS clients.
+ *   <li>We need to create snapshots of the Zeebe exporter indices.
+ * </ul>
+ */
 @Testcontainers
 @ZeebeIntegration
-public class OperateBackupRestoreIT extends AbstractBackupRestoreIT {
-  private static final String REPOSITORY_NAME = "operate-test-repository";
-  private static final String INDEX_PREFIX = "operate-backup-restore";
+public class TasklistBackupRestoreIT extends AbstractBackupRestoreIT {
+  private static final String REPOSITORY_NAME = "tasklist-test-repository";
+  private static final String INDEX_PREFIX = "tasklist-backup-restore";
   private static final long BACKUP_ID = 123L;
   private static final Duration CLIENT_TIMEOUT = Duration.ofSeconds(5);
 
@@ -54,7 +64,7 @@ public class OperateBackupRestoreIT extends AbstractBackupRestoreIT {
   final ContainerLogsDumper logsWatcher =
       new ContainerLogsDumper(() -> Map.of("azurite", AZURITE_CONTAINER));
 
-  private OperateDataGenerator generator;
+  private TasklistDataGenerator generator;
 
   @BeforeAll
   public static void beforeAll() {
@@ -77,7 +87,7 @@ public class OperateBackupRestoreIT extends AbstractBackupRestoreIT {
 
   @ParameterizedTest
   @MethodSource("sources")
-  void shouldRestoreOperateHistoryToTheBackedUpState(final DatabaseType databaseType)
+  void shouldRestoreTasklistHistoryToTheBackedUpState(final DatabaseType databaseType)
       throws Exception {
     // given
     setup(databaseType);
@@ -87,7 +97,7 @@ public class OperateBackupRestoreIT extends AbstractBackupRestoreIT {
     generator.assertData();
 
     exportingActuator.softPause();
-    final List<String> historySnapshots = takeHistoryBackup(BACKUP_ID, "Webapps backup completed");
+    final List<String> historySnapshots = takeHistoryBackup(BACKUP_ID, "Tasklist backup completed");
     takeZeebeBackup(BACKUP_ID, REPOSITORY_NAME);
     exportingActuator.resume();
 
@@ -98,7 +108,7 @@ public class OperateBackupRestoreIT extends AbstractBackupRestoreIT {
     testStandaloneApplication.stop();
     webappsDBClient.deleteAllIndices(INDEX_PREFIX);
 
-    Awaitility.await("history indices should be deleted")
+    Awaitility.await("tasklist indices should be deleted")
         .untilAsserted(() -> assertThat(webappsDBClient.cat(INDEX_PREFIX)).isEmpty());
 
     webappsDBClient.restore(REPOSITORY_NAME, historySnapshots);
@@ -122,6 +132,6 @@ public class OperateBackupRestoreIT extends AbstractBackupRestoreIT {
             CLIENT_TIMEOUT,
             AZURITE_CONTAINER,
             EXECUTOR);
-    generator = new OperateDataGenerator(camundaClient);
+    generator = new TasklistDataGenerator(camundaClient);
   }
 }
