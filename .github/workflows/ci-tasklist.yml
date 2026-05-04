@@ -378,7 +378,7 @@ jobs:
 #        with:
 #          repository: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
 #          version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
-#          dockerfile: tasklist.Dockerfile
+#          dockerfile: tasklist.Dockerfile # removed in PR #52180, use camunda image instead
 #          push: true
 #          distball: ${{ steps.build-zeebe.outputs.distball }}
 #      - name: Run Tasklist backup restore Tests
