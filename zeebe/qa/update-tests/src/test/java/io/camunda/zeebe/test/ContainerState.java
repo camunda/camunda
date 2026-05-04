@@ -66,6 +66,9 @@ final class ContainerState implements AutoCloseable {
 
   public static final int PARTITION_COUNT = 2;
 
+  /** Mount path of the broker's data folder inside the legacy container image. */
+  private static final String BROKER_DATA_PATH_IN_CONTAINER = "/usr/local/camunda/data";
+
   private static final RetryPolicy<Void> CONTAINER_START_RETRY_POLICY =
       new RetryPolicy<Void>().withMaxRetries(5).withBackoff(3, 30, ChronoUnit.SECONDS);
   private static final Pattern DOUBLE_NEWLINE = Pattern.compile("\n\n");
@@ -236,7 +239,7 @@ final class ContainerState implements AutoCloseable {
     if (useOldGateway) {
       startNewBrokerWithLegacyGateway();
     } else {
-      newBroker.start();
+      newBroker.start().awaitCompleteTopology(1, PARTITION_COUNT, 1, Duration.ofSeconds(30));
       client = newBroker.newClientBuilder().preferRestOverGrpc(false).build();
     }
 
@@ -244,37 +247,46 @@ final class ContainerState implements AutoCloseable {
   }
 
   private void startNewBrokerWithLegacyGateway() {
-    // The legacy gateway container needs to dial the in-process broker. Make the broker advertise
-    // itself as host.testcontainers.internal so the container can reach it through the
-    // Testcontainers SSH-forward sidecar.
-    final var clusterPort = newBroker.mappedPort(TestZeebePort.CLUSTER);
+    // Bridge container ↔ in-process gossip both ways:
+    //   • Gateway → broker: broker advertises host.testcontainers.internal for both its
+    //     cluster-API (gossip) and command-API ports, and Testcontainers exposes both through
+    //     the SSH-forward sidecar so the gateway container can reach them.
+    //   • Broker → gateway: pin the gateway container's cluster-API port to a known host port
+    //     and have the gateway advertise localhost:<thatPort>, which the host-side broker can dial.
+    final var brokerClusterPort = newBroker.mappedPort(TestZeebePort.CLUSTER);
+    final var brokerCommandPort = newBroker.mappedPort(TestZeebePort.COMMAND);
     newBroker.withClusterConfig(
         c -> {
           c.getNetwork().setAdvertisedHost("host.testcontainers.internal");
-          c.getNetwork().getInternalApi().setAdvertisedPort(clusterPort);
+          c.getNetwork().getInternalApi().setAdvertisedPort(brokerClusterPort);
+          c.getNetwork().getCommandApi().setAdvertisedPort(brokerCommandPort);
         });
-    Testcontainers.exposeHostPorts(clusterPort);
+    Testcontainers.exposeHostPorts(brokerClusterPort, brokerCommandPort);
     newBroker.start();
 
-    final var brokerContactPoint = "host.testcontainers.internal:" + clusterPort;
+    final var gatewayHostPort =
+        io.camunda.zeebe.test.util.socket.SocketUtil.getNextAddress().getPort();
+    final var brokerContactPoint = "host.testcontainers.internal:" + brokerClusterPort;
     oldGateway =
         new GatewayContainer(PREVIOUS_VERSION)
             .withUnifiedConfig(
                 cfg -> {
                   cfg.getCluster().setInitialContactPoints(List.of(brokerContactPoint));
+                  cfg.getCluster().getNetwork().setHost("0.0.0.0");
+                  // Make the gateway reachable from the host-side broker via
+                  // localhost:<gatewayHostPort>. The container's port 26502 is pinned to that host
+                  // port below.
+                  cfg.getCluster().getNetwork().setAdvertisedHost("localhost");
+                  cfg.getCluster().getNetwork().getInternalApi().setAdvertisedPort(gatewayHostPort);
                   cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
                 })
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
             .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
             .withEnv(UNPROTECTED_API_ENV_VAR, "true")
             .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
-            // Pre-8.10 gateway image: Unified config does not yet drive the gateway
-            .withEnv("ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", brokerContactPoint)
-            .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", "0.0.0.0")
-            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
-            .withNetwork(network);
-    oldGateway.withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", oldGateway.getInternalHost());
-    oldGateway.withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", oldGateway.getInternalHost());
+            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT));
+    // Pin the gateway container's cluster API port so the host-side broker can dial it back.
+    oldGateway.setPortBindings(List.of(gatewayHostPort + ":26502"));
 
     Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> oldGateway.self().start());
 
@@ -291,20 +303,25 @@ final class ContainerState implements AutoCloseable {
     }
     try {
       inProcessDataDir = Files.createTempDirectory("update-test-data");
-      // The broker resolves data.directory ("data") relative to its working directory. The volume
-      // root holds the data directory's contents directly (mount path was
-      // /usr/local/camunda/data), so extract under <workingDir>/data so paths line up.
-      final Path dataSubdir = Files.createDirectory(inProcessDataDir.resolve("data"));
-      volume.extract(dataSubdir);
+      // CamundaVolume.extract spawns a tiny container with the volume mounted at
+      // /usr/local/camunda/data and tars the requested path. By default it tars /tmp, which only
+      // contains the archive itself; ask it to tar the volume mount path instead. BusyBox tar
+      // strips the leading slash, so entries land at <extractRoot>/usr/local/camunda/data/...
+      // The broker resolves data.directory ("data") against its working directory, so picking
+      // /usr/local/camunda as the working directory makes the broker read from the right place.
+      volume.extract(
+          inProcessDataDir, builder -> builder.withContainerPath(BROKER_DATA_PATH_IN_CONTAINER));
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to extract volume to host directory", e);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       LangUtil.rethrowUnchecked(e);
     }
-    volume.close();
+    // The Docker volume is still referenced by the (stopped) old broker container at this point;
+    // attempting to remove it now would race the container teardown. Drop the reference and let
+    // the Testcontainers reaper clean it up at JVM shutdown.
     volume = null;
-    return inProcessDataDir;
+    return inProcessDataDir.resolve("usr/local/camunda");
   }
 
   public PartitionsActuator getPartitionsActuator() {
@@ -318,6 +335,11 @@ final class ContainerState implements AutoCloseable {
     }
     if (oldGateway != null) {
       log("Gateway", oldGateway.getLogs());
+    }
+    if (newBroker != null) {
+      final var records = RecordingExporter.getRecords();
+      LOG.error("RecordingExporter captured {} records", records.size());
+      records.forEach(r -> LOG.error("  {}", r.toJson()));
     }
   }
 
@@ -350,8 +372,10 @@ final class ContainerState implements AutoCloseable {
           .orElse(null);
     }
     if (newBroker != null) {
+      // Record#toString() truncates the JSON to 1024 chars (CopiedRecord), which can elide fields
+      // we look for (e.g. JOB records carry "elementId" near the tail). Use toJson() instead.
       return RecordingExporter.getRecords().stream()
-          .map(Record::toString)
+          .map(Record::toJson)
           .filter(s -> Arrays.stream(pieces).allMatch(s::contains))
           .findFirst()
           .orElse(null);
