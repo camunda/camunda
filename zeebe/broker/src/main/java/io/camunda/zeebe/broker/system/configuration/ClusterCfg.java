@@ -12,6 +12,8 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -31,8 +33,21 @@ public final class ClusterCfg implements ConfigurationEntry {
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
   public static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
 
-  private static final String NODE_ID_ERROR_MSG =
-      "Node id %s needs to be non negative and smaller then cluster size %s.";
+  private static final String ZONE_SCHEME_ERROR_MSG =
+      "Broker has zone '%s' configured but partitioning scheme is %s; set scheme to REGION_AWARE.";
+  private static final String ZONE_NOT_FOUND_ERROR_MSG =
+      "Broker zone '%s' is not defined in the zoneAware partitioning configuration. "
+          + "Configured zones: %s.";
+  private static final String NODE_ID_ZONE_ERROR_MSG =
+      "Node id %d is out of range for zone '%s' (numberOfBrokers=%d). "
+          + "nodeId must be in [0, numberOfBrokers).";
+  private static final String BROKER_SUM_ERROR_MSG =
+      "Sum of numberOfBrokers across all zones (%d) must equal clusterSize (%d).";
+  private static final String REPLICA_SUM_ERROR_MSG =
+      "Sum of numberOfReplicas across all zones (%d) must equal replicationFactor (%d).";
+  private static final String REPLICAS_EXCEED_BROKERS_ERROR_MSG =
+      "Zone '%s' has numberOfReplicas (%d) > numberOfBrokers (%d). "
+          + "Two replicas of the same partition cannot reside on one broker.";
   private static final String REPLICATION_FACTOR_ERROR_MSG =
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
 
@@ -52,6 +67,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private List<Integer> partitionIds;
 
   private Integer nodeId = 0;
+
   // TODO add javaDoc
   private Long nodeVersion = 0L;
 
@@ -77,8 +93,12 @@ public final class ClusterCfg implements ConfigurationEntry {
       throw new IllegalArgumentException("Partition count must not be smaller than 1.");
     }
 
-    if (nodeId < 0) {
-      throw new IllegalArgumentException("Node id must be positive");
+    if (zone != null && !zone.isBlank()) {
+      validateZoneAwareConfig(globalConfig);
+    } else {
+      if (nodeId < 0) {
+        throw new IllegalArgumentException("Node id must be positive");
+      }
     }
 
     if (replicationFactor < 1 || replicationFactor > clusterSize) {
@@ -104,6 +124,57 @@ public final class ClusterCfg implements ConfigurationEntry {
               "electionTimeout %s must be greater than heartbeatInterval %s",
               electionTimeout, heartbeatInterval));
     }
+  }
+
+  private void validateZoneAwareConfig(final BrokerCfg globalConfig) {
+    final var partitioningCfg = globalConfig.getExperimental().getPartitioning();
+
+    if (partitioningCfg.getScheme() != Scheme.REGION_AWARE) {
+      throw new IllegalArgumentException(
+          String.format(ZONE_SCHEME_ERROR_MSG, zone, partitioningCfg.getScheme()));
+    }
+
+    final ZoneAwareCfg zoneAwareCfg = partitioningCfg.getZoneAware();
+    final var zones = zoneAwareCfg.getRegions();
+
+    if (!zones.containsKey(zone)) {
+      throw new IllegalArgumentException(
+          String.format(ZONE_NOT_FOUND_ERROR_MSG, zone, zones.keySet()));
+    }
+
+    final var zoneCfg = zones.get(zone);
+    if (nodeId < 0 || nodeId >= zoneCfg.getNumberOfBrokers()) {
+      throw new IllegalArgumentException(
+          String.format(NODE_ID_ZONE_ERROR_MSG, nodeId, zone, zoneCfg.getNumberOfBrokers()));
+    }
+
+    final int totalBrokers = zones.values().stream().mapToInt(r -> r.getNumberOfBrokers()).sum();
+    if (totalBrokers != clusterSize) {
+      throw new IllegalArgumentException(
+          String.format(BROKER_SUM_ERROR_MSG, totalBrokers, clusterSize));
+    }
+
+    final int totalReplicas = zones.values().stream().mapToInt(r -> r.getNumberOfReplicas()).sum();
+    if (totalReplicas != replicationFactor) {
+      throw new IllegalArgumentException(
+          String.format(REPLICA_SUM_ERROR_MSG, totalReplicas, replicationFactor));
+    }
+
+    zones.forEach(
+        (zoneName, cfg) -> {
+          if (cfg.getNumberOfReplicas() > cfg.getNumberOfBrokers()) {
+            throw new IllegalArgumentException(
+                String.format(
+                    REPLICAS_EXCEED_BROKERS_ERROR_MSG,
+                    zoneName,
+                    cfg.getNumberOfReplicas(),
+                    cfg.getNumberOfBrokers()));
+          }
+          if (cfg.getNumberOfBrokers() < 1 || cfg.getNumberOfReplicas() < 1) {
+            throw new IllegalArgumentException(
+                String.format("Zone '%s' must have at least 1 broker and 1 replica.", zoneName));
+          }
+        });
   }
 
   private void initPartitionIds() {

@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +35,7 @@ public final class PartitioningCfg {
 
   private Scheme scheme = DEFAULT_SCHEME;
   private List<FixedPartitionCfg> fixed = new ArrayList<>();
+  private ZoneAwareCfg zoneAware = new ZoneAwareCfg();
 
   public Scheme getScheme() {
     return scheme;
@@ -51,8 +53,23 @@ public final class PartitioningCfg {
     this.fixed = fixed;
   }
 
+  public ZoneAwareCfg getZoneAware() {
+    return zoneAware;
+  }
+
+  public void setZoneAware(final ZoneAwareCfg ZoneAware) {
+    zoneAware = ZoneAware;
+  }
+
   @Override
   public String toString() {
-    return "PartitioningCfg{" + "scheme=" + scheme + ", fixed=" + fixed + '}';
+    return "PartitioningCfg{"
+        + "scheme="
+        + scheme
+        + ", fixed="
+        + fixed
+        + ", zoneAware="
+        + zoneAware
+        + '}';
   }
 }
