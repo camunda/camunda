@@ -69,13 +69,24 @@ abstract class McpServerAuthenticationTest extends McpServerTest {
   }
 
   @Test
-  void registersAllExpectedTools() {
+  void registersExpectedClusterTools() {
     try (final McpSyncClient mcpClient =
         createMcpClient("cluster", testInstance(), createMcpClientRequestCustomizer())) {
       final ListToolsResult listToolsResult = mcpClient.listTools();
       assertThat(listToolsResult.tools())
           .extracting(Tool::name)
           .contains("getClusterStatus", "getTopology");
+    }
+  }
+
+  @Test
+  void registersExpectedProcessesTools() {
+    try (final McpSyncClient mcpClient =
+        createMcpClient("processes", testInstance(), createMcpClientRequestCustomizer())) {
+      final ListToolsResult listToolsResult = mcpClient.listTools();
+      assertThat(listToolsResult.tools())
+          .extracting(Tool::name)
+          .contains("getProcessInstance", "searchIncidents", "searchVariables");
     }
   }
 
