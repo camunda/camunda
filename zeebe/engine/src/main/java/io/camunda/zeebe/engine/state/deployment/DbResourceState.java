@@ -242,6 +242,12 @@ public class DbResourceState implements MutableResourceState {
   }
 
   @Override
+  public void markRpaReexportMigrationAsRan() {
+    rpaReexportMigrationKey.wrapString(RPA_REEXPORT_MIGRATION_KEY_VALUE);
+    rpaReexportMigrationColumnFamily.upsert(rpaReexportMigrationKey, DbNil.INSTANCE);
+  }
+
+  @Override
   public Optional<PersistedResource> findLatestResourceById(
       final String resourceId, final String tenantId) {
     return getResourceFromCache(tenantId, resourceId);
@@ -291,12 +297,6 @@ public class DbResourceState implements MutableResourceState {
   }
 
   @Override
-  public void clearCache() {
-    resourcesByTenantIdAndIdCache.invalidateAll();
-    versionManager.clear();
-  }
-
-  @Override
   public void visitResourcesByKey(
       final String tenantId,
       final long startResourceKey,
@@ -310,6 +310,12 @@ public class DbResourceState implements MutableResourceState {
         (key, value) -> {
           return visitor.test(value);
         });
+  }
+
+  @Override
+  public void clearCache() {
+    resourcesByTenantIdAndIdCache.invalidateAll();
+    versionManager.clear();
   }
 
   private PersistedResource getPersistedResourceById(final String resourceId, final String tenantId)
