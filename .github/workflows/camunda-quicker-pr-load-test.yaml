@@ -41,15 +41,10 @@ defaults:
 env:
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
-  # Default test duration in seconds. The starter takes ~7min to boot the platform; 10min
-  # gives ~3min of usable load. Override per-run via workflow_dispatch input.
+  # Default test duration in seconds. The platform takes ~7min to come up; 10min leaves a
+  # short but usable load window. Override per-run via workflow_dispatch input.
   DEFAULT_DURATION_SECONDS: '600'
   LABEL_NAME: 'quicker-benchmark'
-  # The cluster runs a single kube-prometheus-stack install in `monitoring/`. Hard-coded
-  # because the service has no `app.kubernetes.io/name=prometheus` label and discovery
-  # via standard selectors does not find it.
-  PROM_NS: 'monitoring'
-  PROM_SVC: 'kube-prometheus-stack-prometheus'
 
 jobs:
   sanitize-branch-name:
@@ -154,38 +149,45 @@ jobs:
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER }}
 
-      - name: Port-forward Prometheus
-        run: |
-          kubectl -n "${PROM_NS}" port-forward "svc/${PROM_SVC}" 9090:9090 \
-            >/tmp/pf.log 2>&1 &
-          echo $! > /tmp/pf.pid
-          for i in 1 2 3 4 5 6 7 8 9 10; do
-            if curl -sf http://localhost:9090/-/ready >/dev/null; then
-              break
-            fi
-            sleep 2
-          done
-          curl -sf http://localhost:9090/-/ready
+      # The CI Teleport role grants pods/portforward in test namespaces but NOT in the
+      # `monitoring` namespace, so we cannot tunnel to the cluster Prometheus. Instead we
+      # scrape each pod's own metrics endpoint directly from the runner.
 
-      - name: Wait for starter run-finished gauge
+      - name: Wait for starter run-finished
         id: wait-starter
         run: |
-          # The starter pod stays Running after creation ends (Spring's WebFlux server keeps
-          # the JVM alive), so we cannot use kubectl wait on pod phase. Instead, the starter
-          # exposes `starter_run_finished` (gauge) which flips to 1 when the creation loop
-          # exits. We poll Prometheus for it. Budget: duration + ~7min platform bring-up
-          # + 3min scrape headroom.
-          q() {
-            curl -sf --get http://localhost:9090/api/v1/query \
-              --data-urlencode "query=$1" \
-              | jq -r '.data.result[0].value[1] // "0"'
-          }
+          # Open a long-lived port-forward to the starter pod. kubectl port-forward will
+          # itself wait for the pod to become Ready, so the platform's ~7min boot is
+          # absorbed here. Once running, poll /metrics for `starter_run_finished == 1`.
+          #
+          # The starter exposes /metrics (the load-tester remaps /actuator/prometheus to
+          # /metrics so Grafana scrape configs match Zeebe's convention).
+          starter_pod=$(kubectl -n "$NAMESPACE" get pod -l app=starter \
+            -o jsonpath='{.items[0].metadata.name}')
+          if [[ -z "$starter_pod" ]]; then
+            echo "::error::No starter pod found in $NAMESPACE"
+            exit 1
+          fi
+          echo "starter-pod=${starter_pod}" >> "$GITHUB_OUTPUT"
+
+          kubectl -n "$NAMESPACE" port-forward "pod/$starter_pod" 9601:9600 \
+            >/tmp/pf-starter.log 2>&1 &
+          echo $! > /tmp/pf-starter.pid
+
+          # Wait for the port-forward to bind (gives the pod time to become Ready).
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:9601/metrics >/dev/null 2>&1; then break; fi
+            sleep 5
+          done
+
           deadline_seconds=$((DURATION_SECONDS + 600))
           end=$(( $(date +%s) + deadline_seconds ))
           finished=0
           while [[ $(date +%s) -lt $end ]]; do
-            finished=$(q "max(starter_run_finished{namespace=\"$NAMESPACE\"})")
-            if [[ "$finished" == "1" ]]; then
+            val=$(curl -sf http://localhost:9601/metrics 2>/dev/null \
+              | awk '/^starter_run_finished[ {]/ {print $NF; exit}')
+            if [[ "$val" == "1.0" || "$val" == "1" ]]; then
+              finished=1
               break
             fi
             sleep 30
@@ -206,49 +208,60 @@ jobs:
             | tr ' ' '\n' | awk '{s+=$1} END {print s+0}')
           echo "count=${rc:-0}" >> "$GITHUB_OUTPUT"
 
-      - name: Scrape metrics
-        id: scrape
+      - name: Scrape starter metrics
         run: |
-          # Helper: query an instant value at "now" and emit just the scalar.
-          q() {
-            curl -sf --get http://localhost:9090/api/v1/query \
-              --data-urlencode "query=$1" \
-              | jq -r '.data.result[0].value[1] // "NaN"'
-          }
-          # increase() over the run window handles starter counter resets (a pod restart
-          # zeroes the counter; Prometheus reconciles and we still get the cumulative total).
-          # The +60s gives a small buffer for clock skew and scrape interval.
-          window="$((DURATION_SECONDS + 60))s"
+          # The starter port-forward from the wait step is still alive on :9601.
+          curl -sf http://localhost:9601/metrics > /tmp/starter.prom
 
-          instances_started=$(q "sum(increase(starter_process_instances_started_total{namespace=\"$NAMESPACE\"}[$window]))")
-          response_p50=$(q "histogram_quantile(0.5, sum by (le) (rate(starter_response_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$window])))")
-          response_p99=$(q "histogram_quantile(0.99, sum by (le) (rate(starter_response_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$window])))")
-          dataavail_p50=$(q "histogram_quantile(0.5, sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$window])))")
-          dataavail_p99=$(q "histogram_quantile(0.99, sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$window])))")
-          # Average completed-process rate over the run, from engine-side metrics.
-          completed_pi_rate=$(q "sum(rate(zeebe_element_instance_events_total{namespace=\"$NAMESPACE\", action=\"completed\", type=\"PROCESS\"}[$window]))")
-          # Total completed PIs in the window (mirrors the starter count for sanity).
-          completed_pi_total=$(q "sum(increase(zeebe_element_instance_events_total{namespace=\"$NAMESPACE\", action=\"completed\", type=\"PROCESS\"}[$window]))")
-          # Backpressure as a percentage: dropped / received over the window.
-          backpressure_pct=$(q "(sum(rate(zeebe_dropped_request_count_total{namespace=\"$NAMESPACE\"}[$window])) / sum(rate(zeebe_received_request_count_total{namespace=\"$NAMESPACE\"}[$window]))) * 100")
-
-          {
-            echo "instances-started=${instances_started}"
-            echo "response-p50-seconds=${response_p50}"
-            echo "response-p99-seconds=${response_p99}"
-            echo "dataavail-p50-seconds=${dataavail_p50}"
-            echo "dataavail-p99-seconds=${dataavail_p99}"
-            echo "completed-pi-rate=${completed_pi_rate}"
-            echo "completed-pi-total=${completed_pi_total}"
-            echo "backpressure-pct=${backpressure_pct}"
-          } | tee -a "$GITHUB_OUTPUT"
-
-      - name: Stop port-forward
+      - name: Stop starter port-forward
         if: always()
         run: |
-          if [[ -f /tmp/pf.pid ]]; then
-            kill "$(cat /tmp/pf.pid)" 2>/dev/null || true
+          if [[ -f /tmp/pf-starter.pid ]]; then
+            kill "$(cat /tmp/pf-starter.pid)" 2>/dev/null || true
           fi
+
+      - name: Scrape camunda broker metrics (all 3)
+        run: |
+          # Each broker pod exposes /actuator/prometheus on port 9600. Per-broker counters
+          # only count their own partitions, so we scrape all three and aggregate later.
+          mkdir -p /tmp/camunda-prom
+          # Selector verified against the camunda-platform Helm chart: the broker pods
+          # carry app.kubernetes.io/component=zeebe-broker. Older charts may use
+          # `app.kubernetes.io/component=orchestration`; we fall back if the primary
+          # selector returns nothing.
+          mapfile -t pods < <(kubectl -n "$NAMESPACE" get pods \
+            -l app.kubernetes.io/component=zeebe-broker \
+            -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n')
+          if [[ ${#pods[@]} -eq 0 ]]; then
+            mapfile -t pods < <(kubectl -n "$NAMESPACE" get pods \
+              -l app.kubernetes.io/component=orchestration \
+              -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n')
+          fi
+          echo "Scraping ${#pods[@]} broker pod(s): ${pods[*]}"
+          local_port=9700
+          for p in "${pods[@]}"; do
+            [[ -z "$p" ]] && continue
+            kubectl -n "$NAMESPACE" port-forward "pod/$p" "$local_port:9600" >/tmp/pf-$p.log 2>&1 &
+            pid=$!
+            for i in $(seq 1 15); do
+              if curl -sf "http://localhost:$local_port/actuator/prometheus" >/dev/null 2>&1; then break; fi
+              sleep 2
+            done
+            curl -sf "http://localhost:$local_port/actuator/prometheus" > "/tmp/camunda-prom/$p.prom" \
+              || echo "::warning::Failed to scrape $p"
+            kill $pid 2>/dev/null || true
+            wait $pid 2>/dev/null || true
+            local_port=$((local_port + 1))
+          done
+
+      - name: Aggregate metrics
+        id: scrape
+        run: |
+          python3 .github/scripts/aggregate-quicker-metrics.py \
+            --starter /tmp/starter.prom \
+            --camunda-dir /tmp/camunda-prom \
+            --duration "${DURATION_SECONDS}" \
+            >> "$GITHUB_OUTPUT"
 
       - name: Install js-yaml
         if: always()

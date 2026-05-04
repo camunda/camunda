@@ -25,15 +25,31 @@ can coexist on the same PR.
 
 Spring Boot's WebFlux server keeps the starter JVM alive after the creation loop ends, so
 the pod stays `Running`. Instead of waiting on pod phase, the workflow polls the
-`starter_run_finished` gauge in the central Prometheus
-(`monitoring/kube-prometheus-stack-prometheus`) — the starter flips it to `1` when the
-loop exits.
+`starter_run_finished` gauge directly off the starter pod's `/metrics` endpoint — the
+starter flips it to `1` when the loop exits.
 
 If k8s restarts the starter pod mid-run (OOM, node failure, etc.), the new pod runs another
 full `duration-limit` from scratch — total wall-clock time exceeds what the comment header
 says, and submitted-instance counts double-count the restart window. The workflow surfaces
 a ⚠️ warning with the restart count when this happens; we don't try to recover. For the
 10-minute default this is rare enough to accept.
+
+## How metrics are collected
+
+The cluster runs a kube-prometheus-stack install in `monitoring/`, but the CI Teleport role
+does not grant `pods/portforward` on that namespace — only on test namespaces. So instead
+of querying the central Prometheus from CI, the workflow:
+
+1. Port-forwards the **starter pod** and reads `/metrics` for the run-finished gauge,
+   instance counter, and starter latency histograms.
+2. Port-forwards each **camunda broker pod** in turn and reads `/actuator/prometheus`
+   for `zeebe_element_instance_events_total`, `zeebe_dropped_request_count_total`, and
+   `zeebe_received_request_count_total`. Per-broker counters only count their own
+   partitions, so all three are scraped and the Python aggregator
+   (`.github/scripts/aggregate-quicker-metrics.py`) sums them.
+3. Computes histogram quantiles locally using Prometheus's same algorithm (find the bucket
+   where cumulative count ≥ q × total, linearly interpolate). Cumulative bucket counts
+   equal "all observations during the run" because each pod is fresh per test.
 
 ## What the comment shows
 
