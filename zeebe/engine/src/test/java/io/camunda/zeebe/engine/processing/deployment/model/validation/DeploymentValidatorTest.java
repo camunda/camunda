@@ -686,6 +686,64 @@ class DeploymentValidatorTest {
     return elements;
   }
 
+  @Test
+  void shouldRejectMissingLinkedFormResourceWithDeploymentBinding() {
+    // given
+    final var deployment = new DeploymentRecord();
+    final var elements = bpmnContextWithLinkedFormResource("my-form");
+
+    // when
+    final var result = validator.validateMetadata(deployment, List.of(elements));
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft().getMessage())
+        .contains("Expected to find form with id 'my-form' in current deployment, but not found.");
+  }
+
+  @Test
+  void shouldAcceptLinkedFormResourcePresentInDeployment() {
+    // given
+    final var deployment = new DeploymentRecord();
+    deployment
+        .formMetadata()
+        .add()
+        .setFormId("my-form")
+        .setResourceName("my-form.form")
+        .setVersion(1)
+        .setFormKey(1)
+        .setChecksum(DUMMY_CHECKSUM);
+    final var elements = bpmnContextWithLinkedFormResource("my-form");
+
+    // when
+    final var result = validator.validateMetadata(deployment, List.of(elements));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+  }
+
+  private BpmnElementsWithDeploymentBinding bpmnContextWithLinkedFormResource(final String formId) {
+    final var model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId(formId)
+                                    .resourceType("form")
+                                    .bindingType(ZeebeBindingType.deployment))
+                        .zeebeJobType("demo"))
+            .endEvent()
+            .done();
+    final var elements = new BpmnElementsWithDeploymentBinding("test-process.bpmn");
+    model.getDefinitions().getChildElementsByType(Process.class).stream()
+        .filter(Process::isExecutable)
+        .forEach(elements::addFromProcess);
+    return elements;
+  }
+
   private BpmnElementsWithDeploymentBinding bpmnContextWithLinkedResource(final String resourceId) {
     final var model =
         Bpmn.createExecutableProcess("process")
