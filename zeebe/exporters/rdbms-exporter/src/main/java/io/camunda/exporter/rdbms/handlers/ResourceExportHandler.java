@@ -43,7 +43,8 @@ public class ResourceExportHandler implements RdbmsExportHandler<Resource> {
   @Override
   public void export(final Record<Resource> record) {
     switch (record.getIntent()) {
-      case ResourceIntent.CREATED -> deployedResourceWriter.create(map(record));
+      case ResourceIntent.CREATED, ResourceIntent.REEXPORTED ->
+          deployedResourceWriter.create(map(record));
       case ResourceIntent.DELETED ->
           deployedResourceWriter.delete(record.getValue().getResourceKey());
       default -> LOG.warn("Unexpected intent {} for resource record", record.getIntent());
