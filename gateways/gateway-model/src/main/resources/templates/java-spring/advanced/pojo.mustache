@@ -131,7 +131,7 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
       super({{#parentVars}}{{name}}{{^-last}}, {{/-last}}{{/parentVars}});
   {{/parent}}
   {{#vars}}
-      this.{{name}} = {{#defaultValue}}{{name}} != null ? {{name}} : {{{defaultValue}}}{{/defaultValue}}{{^defaultValue}}{{name}}{{/defaultValue}};
+      if ({{name}} != null) this.{{name}} = {{name}};
   {{/vars}}
   }
   {{/vendorExtensions.x-java-all-args-constructor}}
@@ -163,7 +163,7 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
   protected {{classname}}({{#parentVars}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}"){{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}, {{/parentVars}}{{#vars}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}"){{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/vars}}) {
       super({{#parentVars}}{{name}}{{^-last}}, {{/-last}}{{/parentVars}});
   {{#vars}}
-      this.{{name}} = {{#defaultValue}}{{name}} != null ? {{name}} : {{{defaultValue}}}{{/defaultValue}}{{^defaultValue}}{{name}}{{/defaultValue}};
+      if ({{name}} != null) this.{{name}} = {{name}};
   {{/vars}}
   }
   {{/parent}}
