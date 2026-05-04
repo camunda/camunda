@@ -558,6 +558,52 @@ public final class BusinessRuleTaskTest {
   }
 
   @Test
+  public void shouldCallLatestDecisionVersionWithVersionTagForBindingTypeVersionTagExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V1)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                t ->
+                    t.zeebeCalledDecisionIdExpression("decisionIdVariable")
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTagExpression("myversiontag")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V1_NEW)
+            .deploy();
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V2).deploy();
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final var deployedDecisionV1New = deployment.getValue().getDecisionsMetadata().getFirst();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.ofEntries(
+                    Map.entry("decisionIdVariable", "jedi_or_sith"),
+                    Map.entry("lightsaberColor", "blue"),
+                    Map.entry("myversiontag", "v1.0")))
+            .create();
+
+    // then
+    final var decisionEvaluationRecord =
+        RecordingExporter.decisionEvaluationRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(decisionEvaluationRecord.getValue())
+        .hasDecisionId("jedi_or_sith")
+        .hasDecisionKey(deployedDecisionV1New.getDecisionKey())
+        .hasDecisionVersion(deployedDecisionV1New.getVersion());
+  }
+
+  @Test
   public void shouldCallDecisionWithDecisionIdExpression() {
     // given
     ENGINE
