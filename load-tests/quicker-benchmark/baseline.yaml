@@ -40,22 +40,6 @@ metrics:
     expected: 150
     tolerance-percent: 20
 
-  # Submit→ack latency observed by the starter.
-  starter-response-latency-p50-ms:
-    expected: 15
-    tolerance-percent: 50
-  starter-response-latency-p99-ms:
-    expected: 100
-    tolerance-percent: 50
-
-  # Time from instance create to the instance being queryable in the secondary store.
-  starter-data-availability-latency-p50-ms:
-    expected: 800
-    tolerance-percent: 30
-  starter-data-availability-latency-p99-ms:
-    expected: 3000
-    tolerance-percent: 30
-
   # Percentage of submitted requests rejected by broker backpressure.
   backpressure-percent:
     expected: 0

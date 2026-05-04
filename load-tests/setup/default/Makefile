@@ -15,19 +15,12 @@ additional_platform_configuration ?=
 # See the load test README for example values and guidance.
 additional_load_test_configuration ?=
 
-# Duration (in seconds) for finite-duration scenarios such as `quicker`. The starter exits
-# cleanly after this many seconds. Default 10min — the platform takes ~7min to come up,
-# leaving ~3min of usable load. Override per-invocation via `make ... duration_limit=1800`.
-duration_limit ?= 600
-
 helm_chart_platform := camunda-platform-helm/charts/$(helm_chart)
 helm_chart_load_tests := camunda-load-tests/camunda-load-tests
 
 # Scenario: controls the workload profile for the load test.
-# Options: latency, realistic, typical, max, quicker, archiver
+# Options: latency, realistic, typical, max, archiver
 # Use named targets (make max) or pass directly: make install scenario=max
-# `quicker` runs the `max` workload but exits after `duration_limit` seconds (default 1h),
-# producing a finite, comparable benchmark for PR-triggered runs.
 scenario ?=
 
 ifeq ($(scenario),latency)
@@ -41,9 +34,6 @@ _scenario_load_test_flags := --set starter.rate=50 --set workers.worker.replicas
 _scenario_platform_flags  :=
 else ifeq ($(scenario),max)
 _scenario_load_test_flags := --set starter.rate=300
-_scenario_platform_flags  := --set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yaml'
-else ifeq ($(scenario),quicker)
-_scenario_load_test_flags := --set starter.rate=300 --set starter.durationLimit=$(duration_limit)
 _scenario_platform_flags  := --set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yaml'
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags := --set starter.rate=1 --set starter.rateDuration=10m --set starter.processId=multiInstanceElements --set starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set workers.worker.replicas=0
@@ -240,7 +230,7 @@ print-scenario:
 
 # Workload scenario shortcuts — each runs 'make install' with the corresponding scenario profile.
 # For stable VMs, use: make install-stable scenario=<name>
-.PHONY: latency realistic typical max quicker archiver
+.PHONY: latency realistic typical max archiver
 latency:
 	$(MAKE) install scenario=latency
 realistic:
@@ -249,8 +239,6 @@ typical:
 	$(MAKE) install scenario=typical
 max:
 	$(MAKE) install scenario=max
-quicker:
-	$(MAKE) install scenario=quicker
 archiver:
 	$(MAKE) install scenario=archiver
 

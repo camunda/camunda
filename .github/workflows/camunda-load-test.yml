@@ -36,7 +36,6 @@ on:
           - realistic
           - typical
           - max
-          - quicker
           - archiver
         default: max
       secondary-storage-type:
@@ -132,7 +131,7 @@ on:
         default: ""
         required: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max, quicker, archiver. If specified, this will override the load-test-load input when not set to "custom".'
+        description: 'Choose the variant of workload to use for the load test. Options: custom, latency, realistic, typical, max. If specified, this will override the load-test-load input when not set to "custom".'
         type: string
         required: false
         default: custom
