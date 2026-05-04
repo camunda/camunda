@@ -1,7 +1,9 @@
 {
 	"extends": "./tsconfig.base.json",
 	"include": ["src/**/*"],
+	"exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/vitest-modules/**/*"],
 	"compilerOptions": {
+		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.browser.tsbuildinfo",
 		"jsx": "react-jsx",
 		"module": "ESNext",
 		"moduleResolution": "bundler",
