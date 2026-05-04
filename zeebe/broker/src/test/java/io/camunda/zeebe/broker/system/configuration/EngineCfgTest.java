@@ -67,6 +67,8 @@ final class EngineCfgTest {
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(5));
     assertThat(configuration.isBusinessIdUniquenessEnabled())
         .isEqualTo(EngineConfiguration.DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED);
+    assertThat(configuration.isEnableRpaReexportMigration())
+        .isEqualTo(EngineConfiguration.DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION);
   }
 
   @Test
@@ -105,6 +107,7 @@ final class EngineCfgTest {
         taskListeners.get(1), "test2", new String[] {"assigning", "canceling"}, "2", true);
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(2));
     assertThat(configuration.isBusinessIdUniquenessEnabled()).isTrue();
+    assertThat(configuration.isEnableRpaReexportMigration()).isFalse();
   }
 
   void assertListenerCfg(
