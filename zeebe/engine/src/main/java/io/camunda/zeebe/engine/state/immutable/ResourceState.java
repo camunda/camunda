@@ -79,8 +79,8 @@ public interface ResourceState {
    * @param tenantId the tenant id of the resources to iterate over. Caution! This will iterate past
    *     this tenant into other tenants.
    * @param startResourceKey the resource key to start iterating from (inclusive)
-   * @param visitor called for each resource found at or after the start key; return {@code false} to
-   *     stop iteration early, {@code true} to continue
+   * @param visitor called for each resource found at or after the start key; return {@code false}
+   *     to stop iteration early, {@code true} to continue
    */
   void visitResourcesByKey(
       final String tenantId, long startResourceKey, Predicate<PersistedResource> visitor);
