@@ -102,7 +102,7 @@ final class ZeebeRocksDbFactoryTest {
             ColumnFamilyOptions::writeBufferSize,
             ColumnFamilyOptions::compactionPriority,
             ColumnFamilyOptions::numLevels)
-        .containsExactly(16_901_492L, CompactionPriority.OldestSmallestSeqFirst, 4);
+        .containsExactly(16_901_490L, CompactionPriority.OldestSmallestSeqFirst, 4);
 
     // then - user options should override defaults
     assertThat(customOptions)
@@ -274,7 +274,7 @@ final class ZeebeRocksDbFactoryTest {
     assertThat(columnFamilyOptions.memtablePrefixBloomSizeRatio()).isEqualTo(0.15);
     assertThat(columnFamilyOptions.minWriteBufferNumberToMerge()).isEqualTo(3);
     assertThat(columnFamilyOptions.maxWriteBufferNumber()).isEqualTo(6);
-    assertThat(columnFamilyOptions.writeBufferSize()).isEqualTo(50_704_475L);
+    assertThat(columnFamilyOptions.writeBufferSize()).isEqualTo(50_704_474L);
     assertThat(columnFamilyOptions.compactionPriority())
         .isEqualTo(CompactionPriority.OldestSmallestSeqFirst);
     assertThat(columnFamilyOptions.compactionStyle()).isEqualTo(org.rocksdb.CompactionStyle.LEVEL);
