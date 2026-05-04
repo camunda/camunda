@@ -25,6 +25,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @CompatibilityTest
@@ -261,6 +262,11 @@ public class ProcessInstanceStatisticsTest {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = "camunda.compatibility.test.version",
+      matches = "8\\.9\\.[01]",
+      disabledReason =
+          "Multi-instance body incident statistics was introduced in 8.9.2 (see #51251)")
   void shouldGetIncidentStatisticsForMultiInstanceBodyWithInvalidInputCollection() {
     // given
     final var processModel =
