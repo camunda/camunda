@@ -143,6 +143,40 @@ class JobWorkerBuilderImplTest {
   }
 
   @Test
+  void shouldThrowErrorIfStreamInactivityTimeoutIsZero() {
+    // given / when
+    assertThatThrownBy(
+            () ->
+                jobWorkerBuilder
+                    .jobType("some-type")
+                    .handler(mock())
+                    .streamEnabled(true)
+                    .streamInactivityTimeout(Duration.ZERO)
+                    .open())
+        // then
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("streamInactivityTimeout");
+  }
+
+  @Test
+  void shouldThrowErrorIfStreamInactivityTimeoutNotLessThanStreamTimeout() {
+    // given / when
+    assertThatThrownBy(
+            () ->
+                jobWorkerBuilder
+                    .jobType("some-type")
+                    .handler(mock())
+                    .streamEnabled(true)
+                    .streamTimeout(Duration.ofMinutes(5))
+                    .streamInactivityTimeout(Duration.ofMinutes(5))
+                    .open())
+        // then
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("streamInactivityTimeout")
+        .hasMessageContaining("streamTimeout");
+  }
+
+  @Test
   void shouldNotSetRequestTimeoutOnStreamCommand() {
     // given
     final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);

@@ -58,6 +58,18 @@ final class MicrometerJobWorkerMetricsTest {
         .has(hasCount(3));
   }
 
+  @Test
+  void shouldCountStreamInactivityRecreations() {
+    // when
+    metrics.streamInactivityRecreated();
+    metrics.streamInactivityRecreated();
+
+    // then
+    Assertions.assertThat(meterRegistry).has(hasCounter(Names.STREAM_INACTIVITY_RECREATED, tags));
+    Assertions.assertThat(meterRegistry.counter(Names.STREAM_INACTIVITY_RECREATED.asString(), tags))
+        .has(hasCount(2));
+  }
+
   private Condition<MeterRegistry> hasCounter(final Names name, final Iterable<Tag> tags) {
     return VerboseCondition.verboseCondition(
         registry -> registry.find(name.asString()).tags(tags).counter() != null,

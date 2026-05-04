@@ -23,6 +23,7 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MAX_JOBS_ACTIVE;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_STREAM_ENABLED;
+import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAM_INACTIVITY_TIMEOUT;
 import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAM_TIMEOUT;
 
 import io.camunda.client.api.command.enums.TenantFilter;
@@ -100,6 +101,13 @@ public class CamundaClientJobWorkerProperties {
   private Duration streamTimeout;
 
   /**
+   * If streaming is enabled, sets the maximum duration the worker will wait without receiving any
+   * job on the open stream before cancelling and recreating it. The timer is reset every time a job
+   * is received. Must be strictly less than {@code streamTimeout} when both are set.
+   */
+  private Duration streamInactivityTimeout;
+
+  /**
    * The maximum number of retries before automatic responses (complete, fail, bpmn error) for jobs
    * are no longer attempted.
    */
@@ -138,6 +146,7 @@ public class CamundaClientJobWorkerProperties {
       forceFetchAllVariables = DEFAULT_FORCE_FETCH_ALL_VARIABLES;
       maxRetries = DEFAULT_MAX_RETRIES;
       streamTimeout = DEFAULT_STREAM_TIMEOUT;
+      streamInactivityTimeout = DEFAULT_STREAM_INACTIVITY_TIMEOUT;
     }
   }
 
@@ -251,6 +260,14 @@ public class CamundaClientJobWorkerProperties {
 
   public void setStreamTimeout(final Duration streamTimeout) {
     this.streamTimeout = streamTimeout;
+  }
+
+  public Duration getStreamInactivityTimeout() {
+    return streamInactivityTimeout;
+  }
+
+  public void setStreamInactivityTimeout(final Duration streamInactivityTimeout) {
+    this.streamInactivityTimeout = streamInactivityTimeout;
   }
 
   public Integer getMaxRetries() {
