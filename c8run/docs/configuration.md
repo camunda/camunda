@@ -4,14 +4,16 @@
 
 C8Run always loads `configuration/application.yaml` first via `--spring.config.additional-location`, then appends the user-provided `--config` file or directory last. Spring Boot resolves conflicts in favour of the last-loaded source, so user config always wins.
 
-If `--config` points to a directory, a trailing slash is added automatically so Spring Boot loads all YAML files inside it. If it points to a file, no slash is added. This directory-detection logic exists in both `cmd/c8run/main.go` and `internal/shutdown/shutdownhandler.go` — changes to one must be mirrored in the other.
+If `--config` points to a directory, a trailing slash is added automatically so Spring Boot loads all YAML files inside it. If it points to a file, no slash is added. This directory-detection logic lives in `cmd/c8run/main.go` for startup config path building.
+
+The shutdown handler (`internal/shutdown/shutdownhandler.go`) also handles directory config paths, but for a different purpose: it reads config files directly to determine the active RDBMS URL. When given a directory path it resolves `application.yaml` inside it. These are parallel concerns — a change to one does not mechanically require a change to the other, but both must agree on how a directory config path maps to a file.
 
 ## JAVA_HOME Resolution Fallback Chain
 
 `resolveJavaHomeAndBinary` in `internal/start/startuphandler.go` resolves the Java binary through a chain of fallbacks:
 
 1. **`JAVA_HOME` env var set + symlink resolves** → use it directly
-2. **`JAVA_HOME` env var set + symlink resolution fails** → retry by calling `getJavaHome()` (runs `java -XshowSettings:all` to extract the home path from output)
+2. **`JAVA_HOME` env var set + symlink resolution fails** → retry by calling `getJavaHome()` (runs the bundled `JavaHome` class via `exec.Command(javaBinary, "JavaHome")`, which prints `System.getProperty("java.home")`)
 3. **`JAVA_HOME` empty or still invalid** → `exec.LookPath("java")` to find the binary, then walk two directories up (`filepath.Dir(filepath.Dir(path))`) to derive `JAVA_HOME` from `bin/java`
 4. **Walk finds no matching binary** → build a hardcoded path as last resort
 
@@ -21,7 +23,7 @@ Changes to this chain must ensure all four fallback paths still produce a valid 
 
 `shouldDeleteDataDir` in `internal/shutdown/shutdownhandler.go` controls whether the H2 data directory is deleted on stop. Deletion only occurs when all of the following are true:
 
-1. `SecondaryStorageType` is `"rdbms"` or empty (empty defaults to rdbms)
+1. `SecondaryStorageType` is explicitly `"rdbms"` — an empty value skips deletion entirely
 2. The active RDBMS URL resolves to an in-memory H2 connection (`jdbc:h2:mem`)
 
 The RDBMS URL is resolved in this precedence order (first match wins):

@@ -74,7 +74,7 @@ go test -v ./...
 
 ## Toolchain
 
-Go minimum: `1.24` (from `go.mod`). Toolchain: `go1.26.2`.
+Go minimum: `1.25` (from `go.mod`). Toolchain: `go1.26.2`.
 
 Verify with:
 
@@ -110,7 +110,7 @@ go version
 
 - Branches: `issueId-description` (e.g., `52119-add-agents-md`)
 - Commit format: Conventional Commits — `<type>: <description>` in present tense, under 120 characters
-- Valid types: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `build`, `ci`, `chore`, `perf`, `deps`
+- Valid types: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `build`, `ci`, `perf`, `deps`
 - No scope required
 
 ## Additional Agent Context
