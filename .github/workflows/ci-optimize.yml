@@ -208,7 +208,7 @@ jobs:
     name: "E2E Cloud"
     if: inputs.runFeTests
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       TEST_OWNER: Core Features
