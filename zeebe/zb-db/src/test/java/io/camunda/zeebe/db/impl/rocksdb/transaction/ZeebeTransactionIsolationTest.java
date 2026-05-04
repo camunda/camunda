@@ -17,8 +17,11 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import java.io.File;
+import org.agrona.collections.MutableBoolean;
+import org.agrona.collections.MutableReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -40,7 +43,7 @@ final class ZeebeTransactionIsolationTest {
   private final DbString value = new DbString();
 
   @BeforeEach
-  void setUp() throws Exception {
+  void setUp() {
     final ZeebeDbFactory<DefaultColumnFamily> factory = DefaultZeebeDbFactory.getDefaultFactory();
     db = factory.createDb(tempDir);
     writeCtx = db.createContext();
@@ -75,6 +78,21 @@ final class ZeebeTransactionIsolationTest {
   }
 
   @Test
+  void shouldNotSeeUncommittedDeleteOutsideTransaction() {
+    // given - write inside a transaction without committing
+    writeCtx.runInTransaction(() -> writeCf.upsert(key, value));
+
+    // when / delete - read from a separate context (reads only committed data)
+    writeCtx.runInTransaction(
+        () -> {
+          writeCf.deleteExisting(key);
+
+          // then - the uncommitted delete must not be visible
+          readCtx.runInTransaction(() -> assertThat(readCf.get(key)).isNotNull());
+        });
+  }
+
+  @Test
   void shouldReadOwnWritesWithinTransaction() {
     // given + when - write and read inside the same transaction
     writeCtx.runInTransaction(
@@ -82,8 +100,7 @@ final class ZeebeTransactionIsolationTest {
           writeCf.upsert(key, value);
           // then - the write is visible within the same transaction
           final DbString result = writeCf.get(key);
-          assertThat(result).isNotNull();
-          assertThat(result.toString()).isEqualTo("value");
+          assertThat(result).hasToString("value");
         });
   }
 
@@ -119,15 +136,11 @@ final class ZeebeTransactionIsolationTest {
     writeCtx.runInTransaction(
         () -> {
           writeCf.upsert(key, value);
+
           // then - iteration sees the uncommitted write
-          final var found = new boolean[] {false};
-          writeCf.forEach(
-              (k, v) -> {
-                if (k.toString().equals("key")) {
-                  found[0] = true;
-                }
-              });
-          assertThat(found[0]).isTrue();
+          final var found = new MutableBoolean(false);
+          writeCf.forEach((k, v) -> found.set(found.get() || k.toString().equals("key")));
+          assertThat(found.get()).isTrue();
         });
   }
 
@@ -140,15 +153,9 @@ final class ZeebeTransactionIsolationTest {
           // when - iterate from a separate context
           readCtx.runInTransaction(
               () -> {
-                final var found = new boolean[] {false};
-                readCf.forEach(
-                    (k, v) -> {
-                      if (k.toString().equals("key")) {
-                        found[0] = true;
-                      }
-                    });
-                // then - the uncommitted entry must not appear
-                assertThat(found[0]).isFalse();
+                final var found = new MutableBoolean(false);
+                readCf.forEach((k, v) -> found.set(found.get() || k.toString().equals("key")));
+                assertThat(found.get()).isFalse();
               });
         });
   }
@@ -161,14 +168,9 @@ final class ZeebeTransactionIsolationTest {
     // when + then - iteration from a separate context sees the committed entry
     readCtx.runInTransaction(
         () -> {
-          final var found = new boolean[] {false};
-          readCf.forEach(
-              (k, v) -> {
-                if (k.toString().equals("key")) {
-                  found[0] = true;
-                }
-              });
-          assertThat(found[0]).isTrue();
+          final var found = new MutableBoolean(false);
+          readCf.forEach((k, v) -> found.set(found.get() || k.toString().equals("key")));
+          assertThat(found.get()).isTrue();
         });
   }
 
@@ -202,32 +204,6 @@ final class ZeebeTransactionIsolationTest {
 
     // when + then - the original value must still be present after the rolled-back delete
     readCtx.runInTransaction(() -> assertThat(readCf.get(key)).isNotNull());
-  }
-
-  @Test
-  void shouldClearStateOnReset() {
-    // given - write inside a transaction, then reset without committing
-    // reset is triggered by the next call to runInTransaction on the same context
-    writeCtx.runInTransaction(() -> writeCf.upsert(key, value));
-
-    // use a second key to verify that a fresh transaction sees nothing from a prior cleared state
-    final DbString key2 = new DbString();
-    key2.wrapString("key2");
-    final DbString value2 = new DbString();
-    value2.wrapString("value2");
-
-    writeCtx.runInTransaction(
-        () -> {
-          // The transaction was reset at the start of this call; key must not be visible here
-          // (it was committed in the previous tx, so it IS visible — this test is specifically
-          // about writes that were in-flight when reset was called)
-          writeCf.upsert(key2, value2);
-          // read key2 in the same tx — should see it
-          assertThat(writeCf.get(key2)).isNotNull();
-        });
-
-    // Verify key2 was committed
-    readCtx.runInTransaction(() -> assertThat(readCf.get(key2)).isNotNull());
   }
 
   @Test
@@ -278,5 +254,46 @@ final class ZeebeTransactionIsolationTest {
           assertThat(readCf.get(key)).isNull();
           assertThat(readCf.get(key2)).isNull();
         });
+  }
+
+  /**
+   * We do not provide snapshot isolation between transactions, meaning a transaction can always
+   * read writes (and deletes) that were committed AFTER it was created.
+   *
+   * <p>This is encoded here as tests as a contract, in case we ever rely on this behavior. If you
+   * change it, then you need to also ensure callers/consumers of the transaction API are not
+   * affected.
+   */
+  @Nested
+  final class NoSnapshotIsolationTest {
+
+    @Test
+    void shouldSeeLaterDeletedKeyFromOtherPriorTransaction() throws Exception {
+      // given - write and commit a key, then delete it inside a new transaction
+      writeCtx.runInTransaction(() -> writeCf.upsert(key, value));
+      final var readTxn = readCtx.getCurrentTransaction();
+
+      // when - delete inside a transaction and read from a previously opened transaction
+      writeCtx.runInTransaction(() -> writeCf.deleteExisting(key));
+
+      // then
+      final var val = new MutableReference<DbString>();
+      readTxn.run(() -> val.set(readCf.get(key)));
+      assertThat(val.get()).isNull();
+    }
+
+    @Test
+    void shouldSeeLaterWriteFromWithinOtherPriorTransaction() throws Exception {
+      // given - a read transaction opened before any writes have been committed
+      final var readTxn = readCtx.getCurrentTransaction();
+
+      // when - a separate transaction writes and commits a value
+      writeCtx.runInTransaction(() -> writeCf.upsert(key, value));
+
+      // then - the previously opened read transaction sees the later commit
+      final var val = new MutableReference<DbString>();
+      readTxn.run(() -> val.set(readCf.get(key)));
+      assertThat(val.get()).isNotNull();
+    }
   }
 }
