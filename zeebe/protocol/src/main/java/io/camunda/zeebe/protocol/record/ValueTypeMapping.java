@@ -124,7 +124,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
@@ -141,6 +140,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRec
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
+import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.util.Collections;
