@@ -30,9 +30,9 @@ public class ResourceReexportStartProcessor
 
   @Override
   public void processRecord(final TypedRecord<ResourceReexportRecord> command) {
-    commandWriter.appendFollowUpCommand(
-        command.getKey(), ResourceReexportIntent.REEXPORT, new ResourceReexportRecord());
     stateWriter.appendFollowUpEvent(
         command.getKey(), ResourceReexportIntent.STARTED, command.getValue());
+    commandWriter.appendFollowUpCommand(
+        command.getKey(), ResourceReexportIntent.REEXPORT, new ResourceReexportRecord());
   }
 }
