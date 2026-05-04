@@ -8,13 +8,14 @@
 package io.camunda.zeebe.util;
 
 import java.text.CharacterIterator;
+import java.text.DecimalFormat;
 import java.text.StringCharacterIterator;
-import java.util.Locale;
 
 public final class ByteValue {
   private static final int CONVERSION_FACTOR_KB = 1024;
   private static final int CONVERSION_FACTOR_MB = CONVERSION_FACTOR_KB * 1024;
   private static final int CONVERSION_FACTOR_GB = CONVERSION_FACTOR_MB * 1024;
+  private static final DecimalFormat decimalFormat = new DecimalFormat("#.#");
 
   /**
    * Converts the {@code value} kilobytes into bytes
@@ -51,7 +52,7 @@ public final class ByteValue {
       throw new IllegalArgumentException("Value must be >= 0");
     }
     if (bytes < 1024) {
-      return bytes + " B";
+      return bytes + "B";
     }
     long value = bytes;
     final CharacterIterator ci = new StringCharacterIterator("KMGTPE");
@@ -60,6 +61,6 @@ public final class ByteValue {
       ci.next();
     }
     value *= Long.signum(bytes);
-    return String.format(Locale.US, "%.1f %cB", value / 1024.0, ci.current());
+    return decimalFormat.format(value / 1024.0) + ci.current() + "iB";
   }
 }
