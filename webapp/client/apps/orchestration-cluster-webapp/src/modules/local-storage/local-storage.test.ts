@@ -8,6 +8,7 @@
 
 import {storeStateLocally, getStateLocally, clearStateLocally} from './local-storage';
 import {it} from '#/vitest-modules/test-extend';
+import {beforeEach, describe, expect} from 'vitest';
 
 const KEY_NAME = 'theme';
 const VALID_THEME_VALUES = ['light', 'dark', 'system'] as const;

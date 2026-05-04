@@ -13,6 +13,7 @@ import {useEffect, useState} from 'react';
 import {render} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
+import {describe, expect} from 'vitest';
 
 const mockDataEndpoint = createEndpointMock({
 	endpoint: '/api/data',

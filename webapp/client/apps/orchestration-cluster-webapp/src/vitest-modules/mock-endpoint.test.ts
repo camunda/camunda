@@ -10,6 +10,7 @@ import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {createEndpointMock} from '#/shared-test-modules/mock-endpoint';
 import {it} from './test-extend';
+import {describe, expect} from 'vitest';
 
 const mockDataEndpoint = createEndpointMock({
 	endpoint: '/api/data',
