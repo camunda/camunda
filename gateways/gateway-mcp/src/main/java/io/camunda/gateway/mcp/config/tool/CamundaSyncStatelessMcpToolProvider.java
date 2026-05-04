@@ -22,10 +22,12 @@ import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.annotation.McpTool;
@@ -80,7 +82,8 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
    * @return the filtered list of stateless tool specifications
    */
   public List<SyncToolSpecification> getToolSpecifications(
-      final Predicate<CamundaMcpTool> annotationFilter) {
+      @NonNull final Predicate<CamundaMcpTool> annotationFilter) {
+    Objects.requireNonNull(annotationFilter, "annotationFilter must not be null");
     final List<SyncToolSpecification> toolSpecs =
         toolObjects.stream()
             .map(
