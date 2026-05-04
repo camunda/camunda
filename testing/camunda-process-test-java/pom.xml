@@ -198,7 +198,27 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <!-- We run integration tests with failsafe -->
+            <exclude>**/*IT.class</exclude>
+            <!-- Exclude nested classes of IT classes (compiled as OuterIT$NestedClass.class) -->
+            <exclude>**/*IT$*.class</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <includes>
+            <!-- Run all IT classes and their nested classes as integration tests -->
+            <include>**/*IT.class</include>
+            <include>**/*IT$*.class</include>
+          </includes>
+        </configuration>
       </plugin>
 
       <!-- Coverage frontend build with frontend-maven-plugin -->
