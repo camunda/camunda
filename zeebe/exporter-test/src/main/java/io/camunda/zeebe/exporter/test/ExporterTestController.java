@@ -80,8 +80,8 @@ public final class ExporterTestController implements Controller {
   }
 
   @Override
-  public boolean requestReplay(final long fromPosition) {
-    this.position.set(fromPosition - 1);
+  public boolean requestReplay(final long lastExportedPosition) {
+    position.set(lastExportedPosition);
     exporterMetadata.set(Optional.empty());
     return true;
   }
