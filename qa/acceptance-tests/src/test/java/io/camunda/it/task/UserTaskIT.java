@@ -15,6 +15,8 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.qa.util.auth.GroupDefinition;
+import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -34,6 +36,10 @@ import org.junit.jupiter.api.Test;
 public class UserTaskIT {
 
   private static CamundaClient client;
+
+  private static final String GROUP_ID = "demoGroup";
+
+  @GroupDefinition private static final TestGroup GROUP_1 = new TestGroup(GROUP_ID, GROUP_ID);
 
   @Test
   void shouldExportUserTask() {
