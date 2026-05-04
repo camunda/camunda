@@ -32,7 +32,7 @@ reference.
 
     private Builder() {}
 
-    public static {{#vendorExtensions.x-staged-chain}}{{#-first}}I{{pascalName}}{{/-first}}{{/vendorExtensions.x-staged-chain}}{{^vendorExtensions.x-staged-chain}}IBuild{{/vendorExtensions.x-staged-chain}} builder() {
+    public static {{#vendorExtensions.x-staged-chain}}{{#-first}}I{{pascalName}}{{/-first}}{{/vendorExtensions.x-staged-chain}}{{^vendorExtensions.x-staged-chain}}IBuild{{/vendorExtensions.x-staged-chain}} create() {
       return new Impl();
     }
 

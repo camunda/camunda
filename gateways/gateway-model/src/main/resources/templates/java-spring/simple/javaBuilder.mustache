@@ -58,7 +58,7 @@ reference.
 
     private Builder() {}
 
-    public static {{#vendorExtensions.x-simple-staged-chain}}{{#-first}}I{{pascalName}}{{/-first}}{{/vendorExtensions.x-simple-staged-chain}}{{^vendorExtensions.x-simple-staged-chain}}IBuild{{/vendorExtensions.x-simple-staged-chain}} builder() {
+    public static {{#vendorExtensions.x-simple-staged-chain}}{{#-first}}I{{pascalName}}{{/-first}}{{/vendorExtensions.x-simple-staged-chain}}{{^vendorExtensions.x-simple-staged-chain}}IBuild{{/vendorExtensions.x-simple-staged-chain}} create() {
       return new Impl();
     }
 

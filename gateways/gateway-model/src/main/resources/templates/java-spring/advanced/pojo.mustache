@@ -387,6 +387,18 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
   {{/lombok.ToString}}
+  {{^vendorExtensions.x-staged-chain}}
+
+  /**
+   * Convenience factory for schemas with no required fields. Equivalent to
+   * {@code {{classname}}.Builder.create().build()} but omits the staged-builder ceremony for
+   * the common case where there is nothing to enforce. Optional fields can still be set after
+   * via the fluent setters: {@code {{classname}}.empty().someOptional(value)}.
+   */
+  public static {{classname}} empty() {
+    return Builder.create().build();
+  }
+  {{/vendorExtensions.x-staged-chain}}
   {{#generateBuilders}}
   {{>javaBuilder}}{{! prevent indent}}
   {{/generateBuilders}}
