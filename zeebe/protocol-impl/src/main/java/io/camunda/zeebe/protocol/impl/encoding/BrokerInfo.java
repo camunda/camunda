@@ -41,6 +41,7 @@ import java.util.Base64.Encoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
@@ -48,9 +49,11 @@ import java.util.function.ObjLongConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
+@NullMarked
 public final class BrokerInfo implements BufferReader, BufferWriter {
 
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
@@ -78,7 +81,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private int clusterSize;
   private int replicationFactor;
   private DirectBuffer version = new UnsafeBuffer();
-  private String zone;
+  private @Nullable String zone;
 
   public BrokerInfo() {
     reset();
@@ -196,11 +199,11 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     version.wrap(buffer, offset, length);
   }
 
-  public String getZone() {
+  public @Nullable String getZone() {
     return zone;
   }
 
-  public BrokerInfo setZone(final String zone) {
+  public BrokerInfo setZone(@Nullable final String zone) {
     this.zone = zone;
     return this;
   }
@@ -214,7 +217,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return this;
   }
 
-  public String getCommandApiAddress() {
+  public @Nullable String getCommandApiAddress() {
     final DirectBuffer buffer = addresses.get(COMMAND_API_NAME);
     if (buffer != null) {
       return BufferUtil.bufferAsString(buffer);
@@ -451,7 +454,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
-  public static BrokerInfo fromProperties(final Properties properties) {
+  public static @Nullable BrokerInfo fromProperties(final Properties properties) {
     final String property = properties.getProperty(BROKER_INFO_PROPERTY_NAME);
     if (property != null) {
       return readFromString(property);
@@ -498,7 +501,11 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
           partitionConsumer.accept(partition);
           switch (role) {
             case LEADER:
-              leaderPartitionConsumer.accept(partition, partitionLeaderTerms.get(partition));
+              final var term =
+                  Objects.requireNonNull(
+                      partitionLeaderTerms.get(partition),
+                      "missing term for partition " + partition);
+              leaderPartitionConsumer.accept(partition, term);
               break;
             case FOLLOWER:
               followerPartitionsConsumer.accept(partition);
@@ -512,10 +519,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         });
   }
 
-  public BrokerInfo consumePartitionsHealth(
+  public void consumePartitionsHealth(
       final BiConsumer<Integer, PartitionHealthStatus> partitionConsumer) {
     partitionHealthStatuses.forEach(partitionConsumer);
-    return this;
   }
 
   @Override
