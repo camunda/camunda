@@ -124,12 +124,12 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
    * this ctor via @JsonCreator; subclasses chain via super(...).
    */
   @com.fasterxml.jackson.annotation.JsonCreator
-  protected {{classname}}({{#vendorExtensions.x-java-all-args-constructor-vars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/vendorExtensions.x-java-all-args-constructor-vars}}) {
+  protected {{classname}}({{#vendorExtensions.x-java-all-args-constructor-vars}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}"){{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/vendorExtensions.x-java-all-args-constructor-vars}}) {
   {{#parent}}
       super({{#parentVars}}{{name}}{{^-last}}, {{/-last}}{{/parentVars}});
   {{/parent}}
   {{#vars}}
-      this.{{name}} = {{name}};
+      this.{{name}} = {{#defaultValue}}{{name}} != null ? {{name}} : {{{defaultValue}}}{{/defaultValue}}{{^defaultValue}}{{name}}{{/defaultValue}};
   {{/vars}}
   }
   {{/vendorExtensions.x-java-all-args-constructor}}
@@ -143,7 +143,7 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
    * this ctor via @JsonCreator; subclasses chain via super(...).
    */
   @com.fasterxml.jackson.annotation.JsonCreator
-  protected {{classname}}({{#parentVars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/parentVars}}) {
+  protected {{classname}}({{#parentVars}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}"){{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/parentVars}}) {
       super({{#parentVars}}{{name}}{{^-last}}, {{/-last}}{{/parentVars}});
   }
   {{/parent}}
@@ -158,10 +158,10 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
    * this ctor via @JsonCreator; subclasses chain via super(...).
    */
   @com.fasterxml.jackson.annotation.JsonCreator
-  protected {{classname}}({{#parentVars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}, {{/parentVars}}{{#vars}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/vars}}) {
+  protected {{classname}}({{#parentVars}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}"){{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}, {{/parentVars}}{{#vars}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}"){{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{/vars}}) {
       super({{#parentVars}}{{name}}{{^-last}}, {{/-last}}{{/parentVars}});
   {{#vars}}
-      this.{{name}} = {{name}};
+      this.{{name}} = {{#defaultValue}}{{name}} != null ? {{name}} : {{{defaultValue}}}{{/defaultValue}}{{^defaultValue}}{{name}}{{/defaultValue}};
   {{/vars}}
   }
   {{/parent}}
@@ -174,7 +174,7 @@ public {{>sealed}}class {{classname}}{{#parent}} extends {{{parent}}}{{/parent}}
    * this ctor via @JsonCreator; subclasses chain via super(...).
    */
   @com.fasterxml.jackson.annotation.JsonCreator
-  protected {{classname}}({{/-first}}{{#required}}@com.fasterxml.jackson.annotation.JsonProperty(value = "{{baseName}}", required = true) {{/required}}{{^required}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}") {{/required}}{{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{#-last}}) {
+  protected {{classname}}({{/-first}}@com.fasterxml.jackson.annotation.JsonProperty("{{baseName}}"){{>nullableAnnotation}}{{{datatypeWithEnum}}} {{name}}{{^-last}}, {{/-last}}{{#-last}}) {
 {{/-last}}{{/vars}}
 {{#vars}}      this.{{name}} = {{name}};
 {{/vars}}  {{#vars}}{{#-last}}}{{/-last}}{{/vars}}
