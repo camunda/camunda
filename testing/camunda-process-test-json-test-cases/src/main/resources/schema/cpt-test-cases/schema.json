@@ -1079,27 +1079,7 @@
         },
         "satisfiesJudge": {
           "description": "A judge-based assertion that evaluates the variable against a semantic expectation.",
-          "type": "object",
-          "properties": {
-            "expectation": {
-              "description": "The semantic expectation for the variable value.",
-              "type": "string"
-            },
-            "threshold": {
-              "description": "The score threshold at or above which the judge assertion passes. Must be between 0.0 and 1.0; higher values are stricter. Overrides the preconfigured threshold. Optional; defaults to the preconfigured JudgeConfig threshold (0.5 unless otherwise configured) when omitted.",
-              "type": "number",
-              "minimum": 0.0,
-              "maximum": 1.0
-            },
-            "customPrompt": {
-              "description": "A custom prompt for the judge evaluation. Overrides the preconfigured custom prompt. Optional.",
-              "type": "string"
-            }
-          },
-          "required": [
-            "expectation"
-          ],
-          "additionalProperties": false
+          "$ref": "#/definitions/JudgeAssertion"
         }
       },
       "required": [
@@ -1325,6 +1305,30 @@
         "type",
         "processInstanceSelector",
         "variables"
+      ],
+      "additionalProperties": false
+    },
+    "JudgeAssertion": {
+      "description": "A judge-based assertion that evaluates a value against a semantic expectation using an LLM judge.",
+      "type": "object",
+      "properties": {
+        "expectation": {
+          "description": "The semantic expectation for the value.",
+          "type": "string"
+        },
+        "threshold": {
+          "description": "The score threshold at or above which the judge assertion passes. Must be between 0.0 and 1.0; higher values are stricter. Overrides the preconfigured threshold. Optional; defaults to the preconfigured JudgeConfig threshold (0.5 unless otherwise configured) when omitted.",
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "customPrompt": {
+          "description": "A custom prompt for the judge evaluation. Overrides the preconfigured custom prompt. Optional.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expectation"
       ],
       "additionalProperties": false
     }
