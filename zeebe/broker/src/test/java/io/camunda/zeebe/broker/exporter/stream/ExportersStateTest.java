@@ -276,4 +276,16 @@ public final class ExportersStateTest {
     // when/then
     assertThat(state.getHighestPosition()).isEqualTo(Long.MIN_VALUE);
   }
+
+  @Test
+  public void shouldNormalizePersistedZeroPositionToNotFound() {
+    // given - simulates a cluster that hit the historical bug from #52257
+    state.setPosition("corrupted", 0L);
+    state.setPosition("healthy", 5L);
+
+    // when/then
+    assertThat(state.getPosition("corrupted")).isEqualTo(ExportersState.VALUE_NOT_FOUND);
+    assertThat(state.getPosition("healthy")).isEqualTo(5L);
+    assertThat(state.getLowestPosition()).isEqualTo(-1L);
+  }
 }
