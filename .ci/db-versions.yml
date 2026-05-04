@@ -1,0 +1,59 @@
+# Database versions
+#
+# Single source of truth for all database versions tested in CI and deployed to SaaS.
+# Versions are specified as Docker image tags. Earlier versions *must* be listed before
+# later versions so that the last entry in each list resolves to the newest supported minor.
+#
+# ── How to use this file in CI workflows ────────────────────────────────────────
+#   CI workflows read versions from this file via the reusable action:
+#     .github/actions/read-db-versions
+#
+# ── SaaS version ────────────────────────────────────────────────────────────────
+#   The `saas` field under elasticsearch identifies which version is recommended to be deployed to
+#   SaaS environments. It must always reference one of the listed es8 versions via
+#   a YAML anchor so that the SaaS version cannot drift from what is tested in CI.
+# ────────────────────────────────────────────────────────────────────────────────
+
+elasticsearch:
+  es8:
+    - &saas "8.19.13"
+  es9:
+    - "9.2.0"
+    - "9.3.0"
+  saas: *saas
+
+opensearch:
+  os2:
+    - "2.19.4"
+  os3:
+    - "3.4.0"
+    - "3.5.0"
+
+# ── RDBMS databases ─────────────────────────────────────────────────────────────
+# Each entry is a Docker image tag representing one supported major version.
+# All listed versions are actively tested in CI.
+# See: .github/workflows/zeebe-rdbms-integration-tests.yml
+
+postgresql:
+  - "14-alpine"
+  - "15-alpine"
+  - "16-alpine"
+  - "17-alpine"
+  - "18-alpine"
+
+mysql:
+  - "8.4"
+
+mariadb:
+  - "10.11"
+  - "11.4"
+  - "11.8"
+
+mssql:
+  - "2019-latest"
+  - "2022-latest"
+  - "2025-latest"
+
+oracle:
+  - "21-slim-faststart"
+  - "23-slim-faststart"
