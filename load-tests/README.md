@@ -47,6 +47,7 @@ graph TD
 
     subgraph "Event Triggers"
         PR["camunda-pr-load-test.yaml<br/><i>PR label: benchmark</i>"]
+        QUICKER["camunda-quicker-pr-load-test.yaml<br/><i>PR label: quicker-benchmark</i>"]
         ADHOC["Manual workflow_dispatch"]
     end
 
@@ -73,6 +74,7 @@ graph TD
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
     PR -- "after 15min wait" --> PROFILE
+    QUICKER -- "scenario: quicker<br/>~1h finite run + PR comment" --> CORE
     ADHOC --> CORE
     ADHOC --> RELEASE
 
@@ -296,6 +298,8 @@ On top of the previous scenarios, we support running ad-hoc load tests. They can
 It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
 
 This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
+
+For a **finite** (default 1h) run that posts a comparable, baseline-checked metrics table back as a PR comment and auto-cleans the namespace, use the [**quicker-benchmark**](https://github.com/camunda/camunda/labels/quicker-benchmark) label instead. See [`quicker-benchmark/`](quicker-benchmark/README.md) for details.
 
 #### Trigger Camunda load test GitHub Workflow
 

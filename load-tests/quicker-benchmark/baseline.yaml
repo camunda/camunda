@@ -1,0 +1,43 @@
+# Static baseline for the `quicker` load-test scenario, consumed by
+# `.github/workflows/camunda-quicker-pr-load-test.yaml` to render the PR comment.
+#
+# These numbers are PLACEHOLDERS. Before treating the comparison as authoritative,
+# populate them from one or two clean runs of the workflow on `main` and update
+# this file via PR. See the README in this directory for the update procedure.
+#
+# Each metric:
+#   expected         the target value
+#   tolerance-percent the +/- band that counts as ✅ in the PR comment
+#                    (defaults to 10% in the renderer if omitted)
+#
+# Direction (higher-is-better vs lower-is-better) is hard-coded per metric in the
+# renderer — throughput/instances/engine rate go up; latencies and backpressure go down.
+
+scenario: quicker
+duration-seconds: 3600
+
+metrics:
+  process-instances-started:
+    expected: 1080000          # 300 PI/s × 3600 s
+    tolerance-percent: 10
+  throughput-per-second:
+    expected: 300
+    tolerance-percent: 10
+  starter-response-latency-p50-ms:
+    expected: 15
+    tolerance-percent: 25
+  starter-response-latency-p99-ms:
+    expected: 50
+    tolerance-percent: 25
+  starter-data-availability-latency-p50-ms:
+    expected: 800
+    tolerance-percent: 25
+  starter-data-availability-latency-p99-ms:
+    expected: 2000
+    tolerance-percent: 25
+  zeebe-record-rate-per-sec:
+    expected: 5000
+    tolerance-percent: 20
+  backpressure-total:
+    expected: 0
+    tolerance-percent: 0       # any backpressure beyond zero is flagged

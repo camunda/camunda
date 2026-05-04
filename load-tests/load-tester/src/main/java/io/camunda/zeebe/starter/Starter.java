@@ -22,6 +22,7 @@ import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
+import io.camunda.zeebe.metrics.StarterCounterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.read.DataReadMeter;
 import io.camunda.zeebe.read.DataReadMeterQueryProvider;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PreDestroy;
@@ -81,6 +83,7 @@ public class Starter implements CommandLineRunner {
       new AtomicReference<>(Instant.now());
 
   private Timer responseLatencyTimer;
+  private Counter processInstancesStartedCounter;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
@@ -105,6 +108,11 @@ public class Starter implements CommandLineRunner {
 
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
+
+    processInstancesStartedCounter =
+        Counter.builder(StarterCounterMetricsDoc.PROCESS_INSTANCES_STARTED.getName())
+            .description(StarterCounterMetricsDoc.PROCESS_INSTANCES_STARTED.getDescription())
+            .register(registry);
 
     if (properties.isMonitorDataAvailability()) {
       setupDataAvailabilityMeter();
@@ -131,7 +139,9 @@ public class Starter implements CommandLineRunner {
       LOG.error("Awaiting of count down latch was interrupted.", e);
     }
 
-    LOG.info("Starter finished");
+    LOG.info(
+        "Starter finished. Total process instance start requests submitted: {}",
+        processInstancesStartedCounter == null ? 0 : (long) processInstancesStartedCounter.count());
     scheduledTask.cancel(true);
     shutdown();
   }
@@ -222,6 +232,7 @@ public class Starter implements CommandLineRunner {
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
+            processInstancesStartedCounter.increment();
 
             final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;

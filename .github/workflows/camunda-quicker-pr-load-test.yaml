@@ -1,0 +1,466 @@
+# description: Creates a finite (default 1h) load test when a PR is labeled with
+#              'quicker-benchmark'. Deploys with scenario 'quicker', awaits the starter
+#              pod to finish, scrapes Prometheus for throughput + latency + engine metrics,
+#              compares against a static baseline, and posts a results table as a PR
+#              comment. Auto-cleans up the namespace once results are posted (or on label
+#              removal / PR close).
+# calls: camunda-load-test.yml (scenario: quicker)
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda Pull Request Quicker Benchmark
+on:
+  pull_request:
+    types:
+      - labeled
+      - unlabeled
+      - synchronize
+      - closed
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref (branch, tag or commit SHA) to benchmark'
+        required: true
+        type: string
+      duration-seconds:
+        description: 'Test duration in seconds (overrides the default 3600)'
+        required: false
+        type: string
+        default: '3600'
+      pr-number:
+        description: 'PR number to comment on (optional). When empty, only writes a job summary.'
+        required: false
+        type: string
+        default: ''
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+  DEFAULT_DURATION_SECONDS: '3600'
+  LABEL_NAME: 'quicker-benchmark'
+
+jobs:
+  sanitize-branch-name:
+    name: Sanitize Branch Name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'quicker-benchmark') ||
+      (github.event.action == 'unlabeled' && github.event.label.name == 'quicker-benchmark') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark')) ||
+      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark'))
+    outputs:
+      sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
+      pr-number: ${{ steps.compute-namespace.outputs.pr-number }}
+      duration-seconds: ${{ steps.compute-namespace.outputs.duration-seconds }}
+      ref: ${{ steps.compute-namespace.outputs.ref }}
+    steps:
+      - id: sanitize-author
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ github.event_name == 'workflow_dispatch' && github.actor || github.event.pull_request.user.login }}
+          max_length: 10
+      - id: compute-namespace
+        name: Compute namespace, PR number, duration, and ref
+        run: |
+          # Namespace is distinct from the existing 'benchmark' label (c8-...-pr-...) so both
+          # labels can coexist on the same PR if ever needed.
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            pr_number="${{ inputs.pr-number }}"
+            ref="${{ inputs.ref }}"
+            duration="${{ inputs.duration-seconds }}"
+            # Fall back to the run id when no PR number is given so the namespace is unique.
+            id_suffix="${pr_number:-run-${{ github.run_id }}}"
+          else
+            pr_number="${{ github.event.pull_request.number }}"
+            ref="${{ github.event.pull_request.head.ref }}"
+            duration="${DEFAULT_DURATION_SECONDS}"
+            id_suffix="$pr_number"
+          fi
+          echo "namespace=c8-${{ steps.sanitize-author.outputs.branch_name }}-quicker-pr-${id_suffix}" >> "$GITHUB_OUTPUT"
+          echo "pr-number=${pr_number}" >> "$GITHUB_OUTPUT"
+          echo "duration-seconds=${duration:-${DEFAULT_DURATION_SECONDS}}" >> "$GITHUB_OUTPUT"
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  create-benchmark:
+    name: Quicker Benchmark
+    needs: sanitize-branch-name
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'quicker-benchmark') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark'))
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      ref: ${{ needs.sanitize-branch-name.outputs.ref }}
+      scenario: 'quicker'
+      # Override the Makefile default (3600s) when a custom duration was provided via dispatch.
+      # Helm honours the last `--set` for a given key, so this wins over the scenario default.
+      load-test-load: --set starter.durationLimit=${{ needs.sanitize-branch-name.outputs.duration-seconds }}
+
+  collect-metrics:
+    name: Collect metrics & post results
+    needs: [sanitize-branch-name, create-benchmark]
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'quicker-benchmark') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark'))
+    runs-on: ubuntu-latest
+    # Test runs for `duration-seconds` and we want headroom for stabilisation + scrape.
+    timeout-minutes: 90
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      pull-requests: 'write'
+    env:
+      NAMESPACE: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      DURATION_SECONDS: ${{ needs.sanitize-branch-name.outputs.duration-seconds }}
+      PR_NUMBER: ${{ needs.sanitize-branch-name.outputs.pr-number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
+      - name: Wait for starter pod to finish
+        id: wait-starter
+        run: |
+          # The starter exits cleanly once duration_limit elapses; the pod transitions to
+          # Succeeded (or Failed). We give the test its full configured runtime plus a 10-min
+          # buffer for image pull / cluster bring-up / drain.
+          buffer=600
+          deadline=$((DURATION_SECONDS + buffer))
+          echo "Waiting up to ${deadline}s for starter pod in ns=${NAMESPACE} to reach a terminal phase..."
+          # The starter has app=starter on the pod template in the camunda-load-tests chart.
+          # Poll its .status.phase until it leaves Pending/Running.
+          end=$(( $(date +%s) + deadline ))
+          phase=""
+          while [[ $(date +%s) -lt $end ]]; do
+            phase=$(kubectl -n "$NAMESPACE" get pod -l app=starter \
+              -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "")
+            if [[ "$phase" == "Succeeded" || "$phase" == "Failed" ]]; then
+              break
+            fi
+            sleep 30
+          done
+          echo "starter-phase=${phase}" >> "$GITHUB_OUTPUT"
+          if [[ "$phase" != "Succeeded" && "$phase" != "Failed" ]]; then
+            echo "::warning::Starter pod did not reach a terminal phase in time (phase=${phase:-unknown}). Continuing to scrape what's available."
+          fi
+
+      - name: Discover Prometheus service
+        id: prom
+        run: |
+          # The cluster runs a kube-prometheus-stack; the Prometheus Service is selectable by
+          # its standard label. Pick the first match across namespaces.
+          read -r prom_ns prom_svc <<<"$(kubectl get svc -A -l app.kubernetes.io/name=prometheus \
+            -o jsonpath='{.items[0].metadata.namespace} {.items[0].metadata.name}' 2>/dev/null || echo '')"
+          if [[ -z "$prom_ns" || -z "$prom_svc" ]]; then
+            echo "::warning::Could not discover a Prometheus service. Metrics collection will be skipped."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "namespace=${prom_ns}" >> "$GITHUB_OUTPUT"
+          echo "service=${prom_svc}" >> "$GITHUB_OUTPUT"
+
+      - name: Port-forward Prometheus
+        if: steps.prom.outputs.found == 'true'
+        run: |
+          kubectl -n "${{ steps.prom.outputs.namespace }}" port-forward \
+            "svc/${{ steps.prom.outputs.service }}" 9090:9090 >/tmp/pf.log 2>&1 &
+          echo $! > /tmp/pf.pid
+          # Give the port-forward a moment, then sanity-check.
+          for i in 1 2 3 4 5; do
+            if curl -sf http://localhost:9090/-/ready >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl -sf http://localhost:9090/-/ready || {
+            echo "::warning::Prometheus is not ready on localhost:9090 (port-forward log follows)"
+            cat /tmp/pf.log || true
+            exit 0
+          }
+
+      - name: Scrape metrics
+        id: scrape
+        if: steps.prom.outputs.found == 'true'
+        run: |
+          # Helper: query an instant value at "now" and emit just the scalar.
+          q() {
+            curl -sf --get http://localhost:9090/api/v1/query --data-urlencode "query=$1" \
+              | jq -r '.data.result[0].value[1] // "NaN"'
+          }
+          # We aggregate across pods/labels for each metric.
+          instances_started=$(q 'sum(starter_process_instances_started_total)')
+          response_p50=$(q 'histogram_quantile(0.5, sum by (le) (rate(starter_response_latency_seconds_bucket[10m])))')
+          response_p99=$(q 'histogram_quantile(0.99, sum by (le) (rate(starter_response_latency_seconds_bucket[10m])))')
+          dataavail_p50=$(q 'histogram_quantile(0.5, sum by (le) (rate(starter_data_availability_latency_seconds_bucket[10m])))')
+          dataavail_p99=$(q 'histogram_quantile(0.99, sum by (le) (rate(starter_data_availability_latency_seconds_bucket[10m])))')
+          # Engine-side. zeebe_stream_processor_records_total is the standard processor metric.
+          engine_record_rate=$(q 'sum(rate(zeebe_stream_processor_records_total[5m]))')
+          # Backpressure rejections (any non-zero indicates the broker shedding load).
+          backpressure_total=$(q 'sum(zeebe_dropped_request_total)')
+
+          {
+            echo "instances-started=${instances_started}"
+            echo "response-p50-seconds=${response_p50}"
+            echo "response-p99-seconds=${response_p99}"
+            echo "dataavail-p50-seconds=${dataavail_p50}"
+            echo "dataavail-p99-seconds=${dataavail_p99}"
+            echo "engine-record-rate=${engine_record_rate}"
+            echo "backpressure-total=${backpressure_total}"
+          } | tee -a "$GITHUB_OUTPUT"
+
+      - name: Stop port-forward
+        if: always() && steps.prom.outputs.found == 'true'
+        run: |
+          if [[ -f /tmp/pf.pid ]]; then
+            kill "$(cat /tmp/pf.pid)" 2>/dev/null || true
+          fi
+
+      - name: Install js-yaml
+        if: always()
+        run: npm install --no-save js-yaml@4.1.0
+
+      - name: Render and post results
+        if: always()
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          INSTANCES_STARTED: ${{ steps.scrape.outputs.instances-started }}
+          RESPONSE_P50: ${{ steps.scrape.outputs.response-p50-seconds }}
+          RESPONSE_P99: ${{ steps.scrape.outputs.response-p99-seconds }}
+          DATAAVAIL_P50: ${{ steps.scrape.outputs.dataavail-p50-seconds }}
+          DATAAVAIL_P99: ${{ steps.scrape.outputs.dataavail-p99-seconds }}
+          ENGINE_RECORD_RATE: ${{ steps.scrape.outputs.engine-record-rate }}
+          BACKPRESSURE_TOTAL: ${{ steps.scrape.outputs.backpressure-total }}
+          STARTER_PHASE: ${{ steps.wait-starter.outputs.starter-phase }}
+          PR_NUMBER: ${{ needs.sanitize-branch-name.outputs.pr-number }}
+        with:
+          script: |
+            const fs = require('fs');
+            const yaml = require('js-yaml');
+
+            const baseline = yaml.load(
+              fs.readFileSync('load-tests/quicker-benchmark/baseline.yaml', 'utf8')
+            );
+            const m = baseline.metrics || {};
+
+            const num = (v) => {
+              const n = Number(v);
+              return Number.isFinite(n) ? n : null;
+            };
+            const fmt = (v, digits = 2) => v == null ? 'n/a' : v.toFixed(digits);
+            const sToMs = (v) => v == null ? null : v * 1000;
+
+            const instances = num(process.env.INSTANCES_STARTED);
+            const responseP50Ms = sToMs(num(process.env.RESPONSE_P50));
+            const responseP99Ms = sToMs(num(process.env.RESPONSE_P99));
+            const dataP50Ms = sToMs(num(process.env.DATAAVAIL_P50));
+            const dataP99Ms = sToMs(num(process.env.DATAAVAIL_P99));
+            const engineRate = num(process.env.ENGINE_RECORD_RATE);
+            const backpressure = num(process.env.BACKPRESSURE_TOTAL);
+            const durationSeconds = ${{ needs.sanitize-branch-name.outputs.duration-seconds }};
+            const throughput = instances != null && durationSeconds > 0
+              ? instances / durationSeconds
+              : null;
+
+            // For each metric: lower-is-better unless `higher-is-better: true` in baseline.
+            // tolerance-percent defines the ✅/⚠️ band.
+            const verdict = (current, expected, tolerance, higherIsBetter) => {
+              if (current == null || expected == null) return '❔';
+              const diff = ((current - expected) / expected) * 100;
+              const within = Math.abs(diff) <= (tolerance ?? 10);
+              if (within) return '✅';
+              const better = higherIsBetter ? diff > 0 : diff < 0;
+              return better ? '✅' : '⚠️';
+            };
+            const delta = (current, expected) => {
+              if (current == null || expected == null) return 'n/a';
+              const diff = ((current - expected) / expected) * 100;
+              const sign = diff >= 0 ? '+' : '';
+              return `${sign}${diff.toFixed(1)}%`;
+            };
+
+            const rows = [
+              {
+                label: 'Process instances started',
+                current: instances == null ? 'n/a' : instances.toLocaleString(),
+                spec: m['process-instances-started'],
+                value: instances,
+                higherIsBetter: true,
+              },
+              {
+                label: 'Throughput (PI/s, avg)',
+                current: throughput == null ? 'n/a' : fmt(throughput, 1),
+                spec: m['throughput-per-second'],
+                value: throughput,
+                higherIsBetter: true,
+              },
+              {
+                label: 'Starter response p50 (ms)',
+                current: fmt(responseP50Ms, 1),
+                spec: m['starter-response-latency-p50-ms'],
+                value: responseP50Ms,
+                higherIsBetter: false,
+              },
+              {
+                label: 'Starter response p99 (ms)',
+                current: fmt(responseP99Ms, 1),
+                spec: m['starter-response-latency-p99-ms'],
+                value: responseP99Ms,
+                higherIsBetter: false,
+              },
+              {
+                label: 'Data availability p50 (ms)',
+                current: fmt(dataP50Ms, 0),
+                spec: m['starter-data-availability-latency-p50-ms'],
+                value: dataP50Ms,
+                higherIsBetter: false,
+              },
+              {
+                label: 'Data availability p99 (ms)',
+                current: fmt(dataP99Ms, 0),
+                spec: m['starter-data-availability-latency-p99-ms'],
+                value: dataP99Ms,
+                higherIsBetter: false,
+              },
+              {
+                label: 'Engine record rate (records/s)',
+                current: fmt(engineRate, 0),
+                spec: m['zeebe-record-rate-per-sec'],
+                value: engineRate,
+                higherIsBetter: true,
+              },
+              {
+                label: 'Backpressure rejections (total)',
+                current: backpressure == null ? 'n/a' : backpressure.toLocaleString(),
+                spec: m['backpressure-total'],
+                value: backpressure,
+                higherIsBetter: false,
+              },
+            ];
+
+            const tableLines = [
+              '| Metric | Current | Baseline | Tolerance | Δ | |',
+              '|---|---:|---:|---:|---:|:---:|',
+            ];
+            for (const r of rows) {
+              const expected = r.spec?.expected;
+              const tolerance = r.spec?.['tolerance-percent'];
+              const expectedStr = expected == null ? 'n/a' : expected.toLocaleString();
+              const tolStr = tolerance == null ? 'n/a' : `±${tolerance}%`;
+              tableLines.push(
+                `| ${r.label} | ${r.current} | ${expectedStr} | ${tolStr} | ${delta(r.value, expected)} | ${verdict(r.value, expected, tolerance, r.higherIsBetter)} |`
+              );
+            }
+
+            const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ env.NAMESPACE }}`;
+            const body = [
+              '## ⏱️ Quicker Benchmark Results',
+              '',
+              `Scenario: \`quicker\` · Duration: ${durationSeconds}s · Namespace: \`${{ env.NAMESPACE }}\` · Starter phase: \`${process.env.STARTER_PHASE || 'unknown'}\``,
+              '',
+              ...tableLines,
+              '',
+              `📊 [Grafana dashboard](${dashboard}) · 🔁 [Workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+              '',
+              '_Baseline lives at `load-tests/quicker-benchmark/baseline.yaml`. ⚠️ flags only fire on the regression side — improvements outside tolerance still show ✅._',
+            ].join('\n');
+
+            // Always write to the job summary so workflow_dispatch users without a PR see the table.
+            await core.summary.addRaw(body).write();
+
+            const prNumber = parseInt(process.env.PR_NUMBER || '0', 10);
+            if (prNumber > 0) {
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  delete-benchmark:
+    name: Quicker Benchmark Cleanup
+    needs: [sanitize-branch-name, collect-metrics]
+    # Run after results are posted (success or failure), and also on label-removal / PR-close
+    # so abandoned tests don't leak namespaces. `if: always()` lets it fire when collect-metrics
+    # fails too.
+    if: >
+      always() && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.action == 'labeled' && github.event.label.name == 'quicker-benchmark') ||
+        (github.event.action == 'unlabeled' && github.event.label.name == 'quicker-benchmark') ||
+        (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark')) ||
+        (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark'))
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
+      - name: Delete benchmark namespace
+        run: |
+          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}" --ignore-not-found=true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
