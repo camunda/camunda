@@ -31,7 +31,6 @@ public record ProcessDefinitionInstanceVersionStatisticsAggregation(
       "activeInstancesWithoutIncidentCount";
   public static final String AGGREGATION_NAME_VERSION_CARDINALITY = "versionCardinality";
   public static final String AGG_MAX_PROCESS_DEFINITION_KEY = "maxProcessDefinitionKey";
-  public static final String AGG_MAX_PROCESS_NAME = "maxProcessName";
   public static final String AGG_MAX_PROCESS_VERSION = "maxProcessVersion";
   public static final String AGGREGATION_FIELD_PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String AGGREGATION_FIELD_PROCESS_DEFINITION_NAME = "processDefinitionName";

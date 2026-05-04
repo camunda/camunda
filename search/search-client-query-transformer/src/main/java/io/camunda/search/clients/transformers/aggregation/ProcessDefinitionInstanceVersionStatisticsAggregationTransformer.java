@@ -18,7 +18,6 @@ import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStat
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_VERSION_CARDINALITY;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_TERMS_SIZE;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGG_MAX_PROCESS_DEFINITION_KEY;
-import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGG_MAX_PROCESS_NAME;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGG_MAX_PROCESS_VERSION;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.PROCESS_DEFINITION_AND_TENANT_KEY;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.bucketSort;
@@ -43,6 +42,7 @@ import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.Objects;
 
 public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
     implements AggregationTransformer<ProcessDefinitionInstanceVersionStatisticsAggregation> {
@@ -86,8 +86,6 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
     final var maxProcessDefinitionKeyAgg =
         max().name(AGG_MAX_PROCESS_DEFINITION_KEY).field(PROCESS_KEY).build();
 
-    final var maxProcessNameAgg = max().name(AGG_MAX_PROCESS_NAME).field(PROCESS_NAME).build();
-
     final var maxProcessVersionAgg =
         max().name(AGG_MAX_PROCESS_VERSION).field(PROCESS_VERSION).build();
 
@@ -106,7 +104,6 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
                 totalWithIncidentsAgg,
                 totalWithoutIncidentsAgg,
                 maxProcessDefinitionKeyAgg,
-                maxProcessNameAgg,
                 maxProcessVersionAgg,
                 bucketSort)
             .build();
@@ -128,14 +125,19 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
                         AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT + "._count";
                     case AGGREGATION_FIELD_PROCESS_DEFINITION_KEY ->
                         AGG_MAX_PROCESS_DEFINITION_KEY + ".value";
-                    case AGGREGATION_FIELD_PROCESS_DEFINITION_NAME ->
-                        AGG_MAX_PROCESS_NAME + ".value";
                     case AGGREGATION_NAME_PROCESS_DEFINITION_VERSION ->
                         AGG_MAX_PROCESS_VERSION + ".value";
+                    // processDefinitionName is a keyword field; max() does not support keyword
+                    // types in ES/OS. Name-based ordering is applied in Java after fetching
+                    // results.
+                    case AGGREGATION_FIELD_PROCESS_DEFINITION_NAME -> null;
                     default -> ordering.field() + "._count";
                   };
-              return new FieldSorting(bucketSortField, ordering.order());
+              return bucketSortField != null
+                  ? new FieldSorting(bucketSortField, ordering.order())
+                  : null;
             })
+        .filter(Objects::nonNull)
         .toList();
   }
 }

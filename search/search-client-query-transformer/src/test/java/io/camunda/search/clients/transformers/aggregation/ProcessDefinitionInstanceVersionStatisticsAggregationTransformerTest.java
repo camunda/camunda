@@ -18,7 +18,6 @@ import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStat
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_VERSION_CARDINALITY;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_TERMS_SIZE;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGG_MAX_PROCESS_DEFINITION_KEY;
-import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGG_MAX_PROCESS_NAME;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGG_MAX_PROCESS_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,6 +76,8 @@ final class ProcessDefinitionInstanceVersionStatisticsAggregationTransformerTest
               assertThat(byVersionTenant.size()).isEqualTo(AGGREGATION_TERMS_SIZE);
 
               // Verify all expected sub-aggregation names are present
+              // Note: maxProcessName is absent — processName is a keyword field that max() does not
+              // support in ES/OS; name sorting is handled in Java after fetching results.
               assertThat(byVersionTenant.getAggregations())
                   .extracting(SearchAggregator::getName)
                   .containsExactlyInAnyOrder(
@@ -84,18 +85,15 @@ final class ProcessDefinitionInstanceVersionStatisticsAggregationTransformerTest
                       AGGREGATION_NAME_TOTAL_WITH_INCIDENT,
                       AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT,
                       AGG_MAX_PROCESS_DEFINITION_KEY,
-                      AGG_MAX_PROCESS_NAME,
                       AGG_MAX_PROCESS_VERSION,
                       AGGREGATION_NAME_PAGE);
 
-              // Verify the three max sub-aggregations are present and use the correct types
+              // Verify the two max sub-aggregations (numeric fields only)
               assertThat(byVersionTenant.getAggregations())
                   .filteredOn(a -> a instanceof SearchMaxAggregator)
                   .extracting(SearchAggregator::getName)
                   .containsExactlyInAnyOrder(
-                      AGG_MAX_PROCESS_DEFINITION_KEY,
-                      AGG_MAX_PROCESS_NAME,
-                      AGG_MAX_PROCESS_VERSION);
+                      AGG_MAX_PROCESS_DEFINITION_KEY, AGG_MAX_PROCESS_VERSION);
             });
   }
 
@@ -148,7 +146,8 @@ final class ProcessDefinitionInstanceVersionStatisticsAggregationTransformerTest
             SearchBucketSortAggregator.class,
             bucketSort -> {
               final var sortings = bucketSort.sorting();
-              assertThat(sortings).hasSize(6);
+              // processDefinitionName is excluded from bucket_sort (keyword field; handled in Java)
+              assertThat(sortings).hasSize(5);
 
               // _key (processDefinitionId after conversion) maps to the bucket key directly
               assertThat(sortings.get(0))
@@ -163,28 +162,22 @@ final class ProcessDefinitionInstanceVersionStatisticsAggregationTransformerTest
                           AGG_MAX_PROCESS_DEFINITION_KEY + ".value",
                           io.camunda.search.sort.SortOrder.ASC));
 
-              // processDefinitionName maps to maxProcessName.value
-              assertThat(sortings.get(2))
-                  .isEqualTo(
-                      new FieldSorting(
-                          AGG_MAX_PROCESS_NAME + ".value", io.camunda.search.sort.SortOrder.ASC));
-
               // processDefinitionVersion maps to maxProcessVersion.value
-              assertThat(sortings.get(3))
+              assertThat(sortings.get(2))
                   .isEqualTo(
                       new FieldSorting(
                           AGG_MAX_PROCESS_VERSION + ".value",
                           io.camunda.search.sort.SortOrder.ASC));
 
               // activeInstancesWithIncidentCount maps to ._count on the filter sub-agg
-              assertThat(sortings.get(4))
+              assertThat(sortings.get(3))
                   .isEqualTo(
                       new FieldSorting(
                           AGGREGATION_NAME_TOTAL_WITH_INCIDENT + "._count",
                           io.camunda.search.sort.SortOrder.DESC));
 
               // activeInstancesWithoutIncidentCount maps to ._count on the filter sub-agg
-              assertThat(sortings.get(5))
+              assertThat(sortings.get(4))
                   .isEqualTo(
                       new FieldSorting(
                           AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT + "._count",
