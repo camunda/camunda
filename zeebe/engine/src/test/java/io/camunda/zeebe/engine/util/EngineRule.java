@@ -139,6 +139,7 @@ public final class EngineRule extends ExternalResource {
         // identity setup is disabled by default so we can have deterministic writes
         // if you need it enabled, use #withIdentitySetup
         cfg.setEnableIdentitySetup(false);
+        cfg.setEnableRpaReexportMigration(false);
       };
   private SearchClientsProxy searchClientsProxy;
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
