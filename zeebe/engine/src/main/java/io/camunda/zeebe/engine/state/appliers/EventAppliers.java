@@ -586,6 +586,7 @@ public final class EventAppliers implements EventApplier {
     register(ResourceIntent.CREATED, new ResourceCreatedApplier(state.getResourceState()));
     register(ResourceIntent.DELETED, new ResourceDeletedApplier(state.getResourceState()));
     register(ResourceIntent.FETCHED, NOOP_EVENT_APPLIER);
+    register(ResourceIntent.REEXPORTED, NOOP_EVENT_APPLIER);
   }
 
   private void registerUserTaskAppliers(final MutableProcessingState state) {
