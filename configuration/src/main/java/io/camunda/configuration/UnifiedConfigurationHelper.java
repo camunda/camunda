@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.exporter.config.ExporterConfiguration;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -429,10 +430,11 @@ public class UnifiedConfigurationHelper {
 
     // simple types
     if (generics.length == 0) {
-      final String strValue = environment.getProperty(legacyProperty);
+      final String strValue = getEnvironmentProperty(legacyProperty);
       if (strValue != null) {
         return (T) CONVERSION_SERVICE.convert(strValue, rawClass);
       }
+
       return null;
     }
 
@@ -465,6 +467,26 @@ public class UnifiedConfigurationHelper {
     throw new IllegalArgumentException("Unsupported type: " + expectedType);
   }
 
+  private static String getEnvironmentProperty(final String legacyProperty) {
+    final var kebabKey = toDottedKebabCase(legacyProperty);
+    final var strValue = environment.getProperty(legacyProperty);
+    final var kebabValue = environment.getProperty(kebabKey);
+
+    if (strValue != null && kebabValue != null && !strValue.equals(kebabValue)) {
+      LOGGER.warn(
+          "Legacy property is set via two equivalent keys with conflicting values:"
+              + " '{}' = '{}' and '{}' = '{}'. '{}' will be used."
+              + " Remove one of the two keys to resolve the ambiguity.",
+          legacyProperty,
+          strValue,
+          kebabKey,
+          kebabValue,
+          legacyProperty);
+    }
+
+    return strValue != null ? strValue : kebabValue;
+  }
+
   private static boolean environmentContainsProperty(
       final String property, final ResolvableType expectedType) {
     if (isPropertyCollection(expectedType)) {
@@ -472,7 +494,8 @@ public class UnifiedConfigurationHelper {
     } else if (isPropertyMap(expectedType)) {
       return !getMapFromEnvironment(property).isEmpty();
     } else {
-      return environment.containsProperty(property);
+      return environment.containsProperty(property)
+          || environment.containsProperty(toDottedKebabCase(property));
     }
   }
 
@@ -481,12 +504,36 @@ public class UnifiedConfigurationHelper {
         && Collection.class.isAssignableFrom(expectedType.resolve());
   }
 
+  private static String toDottedKebabCase(final String camelCaseProperty) {
+    return Arrays.stream(camelCaseProperty.split("\\."))
+        .map(s -> s.replaceAll("([a-z])([A-Z])", "$1-$2").toLowerCase())
+        .collect(Collectors.joining("."));
+  }
+
   private static Collection getCollectionFromEnvironment(final String property) {
-    final ConfigurationPropertyName normalizedProperty =
-        ConfigurationPropertyName.adapt(property, '.');
-    return Binder.get(environment)
-        .bind(normalizedProperty.toString(), Collection.class)
-        .orElse(Collections.emptyList());
+    final var kebabKey = toDottedKebabCase(property);
+    final var adaptedKey = ConfigurationPropertyName.adapt(property, '.').toString();
+    final var binder = Binder.get(environment);
+    final var kebabResult = binder.bind(kebabKey, Collection.class);
+    final var adaptedResult = binder.bind(adaptedKey, Collection.class);
+
+    if (kebabResult.isBound()
+        && adaptedResult.isBound()
+        && !Objects.equals(kebabResult.get(), adaptedResult.get())) {
+      LOGGER.warn(
+          "Legacy property is set via two equivalent keys with conflicting values:"
+              + " '{}' = '{}' and '{}' = '{}'. '{}' will be used."
+              + " Remove one of the two keys to resolve the ambiguity.",
+          kebabKey,
+          kebabResult.get(),
+          adaptedKey,
+          adaptedResult.get(),
+          kebabKey);
+    }
+
+    return kebabResult.isBound()
+        ? kebabResult.get()
+        : adaptedResult.orElse(Collections.emptyList());
   }
 
   private static boolean isPropertyMap(final ResolvableType expectedType) {
