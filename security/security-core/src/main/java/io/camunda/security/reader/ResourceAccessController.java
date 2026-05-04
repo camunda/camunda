@@ -49,7 +49,7 @@ public interface ResourceAccessController {
    */
   boolean supports(SecurityContext securityContext);
 
-  /** Returns true if the given {@link CamundaAuthentication authentication} is anonymous. * */
+  /** Returns true if the given {@link CamundaAuthentication authentication} is anonymous. */
   default boolean isAnonymousAuthentication(final CamundaAuthentication authentication) {
     return authentication.isAnonymous();
   }
