@@ -56,6 +56,8 @@ import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
+import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProcessor;
+import io.camunda.zeebe.engine.processing.resource.ResourceReexportStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.RpaReexportMigrator;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
@@ -83,6 +85,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -657,6 +660,14 @@ public final class EngineProcessors {
     typedRecordProcessors.withListener(
         new RpaReexportMigrator(
             config.isEnableRpaReexportMigration(), processingState.getResourceState()));
+    typedRecordProcessors.onCommand(
+        ValueType.RESOURCE_REEXPORT,
+        ResourceReexportIntent.START,
+        new ResourceReexportStartProcessor(writers));
+    typedRecordProcessors.onCommand(
+        ValueType.RESOURCE_REEXPORT,
+        ResourceReexportIntent.REEXPORT,
+        new ResourceReexportReexportProcessor(writers, processingState));
   }
 
   private static void addSignalBroadcastProcessors(
