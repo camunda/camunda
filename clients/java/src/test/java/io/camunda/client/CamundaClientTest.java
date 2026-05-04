@@ -1071,10 +1071,10 @@ public final class CamundaClientTest {
     final CamundaClientBuilderImpl builderEnv = new CamundaClientBuilderImpl();
 
     // when
-    builderEnv.build();
-
-    // then — environment variable path should return empty list
-    assertThat(builderEnv.getDefaultJobWorkerTenantIds()).isEmpty();
+    try (final CamundaClient clientEnv = builderEnv.build()) {
+      // then — environment variable path should return empty list
+      assertThat(builderEnv.getDefaultJobWorkerTenantIds()).isEmpty();
+    }
 
     // given — empty string in property
     final Properties properties = new Properties();
@@ -1083,10 +1083,10 @@ public final class CamundaClientTest {
     builderProp.withProperties(properties);
 
     // when
-    builderProp.build();
-
-    // then — property path should also return empty list
-    assertThat(builderProp.getDefaultJobWorkerTenantIds()).isEmpty();
+    try (final CamundaClient clientProp = builderProp.build()) {
+      // then — property path should also return empty list
+      assertThat(builderProp.getDefaultJobWorkerTenantIds()).isEmpty();
+    }
   }
 
   @ParameterizedTest
