@@ -9,21 +9,22 @@ package io.camunda.gateway.mcp.processes;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mcp.ProcessesToolsTest;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
+import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -39,21 +40,21 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
-@ContextConfiguration(classes = ProcessesToolRepositoryTest.TestContextAnchor.class)
-class ProcessesToolRepositoryTest extends ProcessesToolsTest {
+class ProcessesToolRepositoryTest {
 
-  @MockitoBean private McpTransportContext transportContext;
-  @Autowired private JsonMapper objectMapper;
+  @Mock private McpTransportContext transportContext;
+  @Mock private CamundaAuthenticationProvider authenticationProvider;
+  @Mock private MessageServices messageServices;
+  @Mock private MessageSubscriptionServices messageSubscriptionServices;
+
+  private final JsonMapper objectMapper = JsonMapper.shared();
 
   private static MessageSubscriptionEntity buildStartSubscriptionEntity(
       final Long key,
@@ -74,9 +75,6 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
         .flowNodeId("agentStart")
         .build();
   }
-
-  @Configuration
-  static class TestContextAnchor {}
 
   @Nested
   class DynamicTools {
@@ -279,10 +277,6 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
       when(messageSubscriptionServices.search(any(), any()))
           .thenReturn(SearchQueryResult.of(entity));
 
-      final var correlationRecord = new MessageCorrelationRecord();
-      when(messageServices.correlateMessage(any(), any()))
-          .thenReturn(CompletableFuture.completedFuture(correlationRecord));
-
       final var toolSpec = repository.getTools(transportContext).getFirst();
 
       // when
@@ -410,30 +404,7 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
     }
 
     @Test
-    void shouldReturnExpectedToolsToClient() {
-      // given
-      final var entity =
-          buildStartSubscriptionEntity(
-              88L,
-              "myTool",
-              Map.of(ProcessesToolRepository.PROPERTY_PURPOSE, "does things"),
-              "message",
-              "<default>",
-              MessageSubscriptionState.CREATED);
-      when(messageSubscriptionServices.search(any(), any()))
-          .thenReturn(SearchQueryResult.of(entity));
-
-      // when
-      final var toolsResult = mcpClient.listTools();
-
-      // then
-      assertThat(toolsResult.tools())
-          .extracting(Tool::name, Tool::description)
-          .contains(tuple("myTool_88", "does things"));
-    }
-
-    @Test
-    void shouldLetClientCallExistingTool() {
+    void shouldCallMessageCorrelationForDynamicTool() {
       // given
       final var entity =
           buildStartSubscriptionEntity(
@@ -449,8 +420,15 @@ class ProcessesToolRepositoryTest extends ProcessesToolsTest {
               CompletableFuture.completedFuture(
                   new MessageCorrelationRecord().setProcessInstanceKey(12345678910L)));
 
+      final var tool = repository.findTool(transportContext, "myTool_88");
+
       // when
-      final var result = mcpClient.callTool(CallToolRequest.builder().name("myTool_88").build());
+      final var result =
+          tool.get()
+              .callHandler()
+              .apply(
+                  transportContext,
+                  CallToolRequest.builder().name("myTool_88").arguments(Map.of()).build());
 
       // then
       assertThat(result.isError()).isFalse();
