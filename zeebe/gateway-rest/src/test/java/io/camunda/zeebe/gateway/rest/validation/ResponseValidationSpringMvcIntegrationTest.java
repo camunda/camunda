@@ -32,28 +32,48 @@ class ResponseValidationSpringMvcIntegrationTest {
   @RestController
   static class TestResponseValidationController {
 
+    /**
+     * Creates a {@link LicenseResponse} with arbitrary field values via reflection, bypassing the
+     * protected constructor and staged builder. This lets the controller intentionally return
+     * invalid/incomplete responses to verify downstream validation logic.
+     */
+    @SuppressWarnings("NullAway")
+    private static LicenseResponse licenseResponseViaReflection(
+        final Boolean validLicense,
+        final String licenseType,
+        final Boolean isCommercial,
+        final String expiresAt) {
+      try {
+        final var ctor =
+            LicenseResponse.class.getDeclaredConstructor(
+                Boolean.class, String.class, Boolean.class, String.class);
+        ctor.setAccessible(true);
+        return ctor.newInstance(validLicense, licenseType, isCommercial, expiresAt);
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
     @GetMapping("/v2/test/response-validation/valid")
     public LicenseResponse validResponse() {
-      return new LicenseResponse()
+      return LicenseResponse.Builder.builder()
           .validLicense(true)
           .licenseType("saas")
           .isCommercial(true)
-          .expiresAt("2025-12-31T23:59:59Z");
+          .expiresAt("2025-12-31T23:59:59Z")
+          .build();
     }
 
     @GetMapping("/v2/test/response-validation/invalid")
     public LicenseResponse invalidResponse() {
-      // Missing licenseType (violates @NotNull)
-      return new LicenseResponse()
-          .validLicense(true)
-          .isCommercial(true)
-          .expiresAt("2025-12-31T23:59:59Z");
+      // Missing licenseType (violates @NotNull) — use reflection to bypass protected constructor
+      return licenseResponseViaReflection(true, null, true, "2025-12-31T23:59:59Z");
     }
 
     @GetMapping("/v2/test/response-validation/all-null")
     public LicenseResponse allNullResponse() {
-      // All required fields null
-      return new LicenseResponse();
+      // All required fields null — use reflection to bypass protected constructor
+      return licenseResponseViaReflection(null, null, null, null);
     }
 
     @GetMapping("/v2/test/response-validation/null-body")

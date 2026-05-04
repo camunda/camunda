@@ -26,8 +26,6 @@ public class AuditLogCategoryFilterPropertyDeserializer
 
   @Override
   protected CategoryFilterProperty createFromImplicitValue(final AuditLogCategoryEnum value) {
-    final var filter = new AdvancedCategoryFilter();
-    filter.set$Eq(value);
-    return filter;
+    return AdvancedCategoryFilter.Builder.builder().$eq(value).build();
   }
 }

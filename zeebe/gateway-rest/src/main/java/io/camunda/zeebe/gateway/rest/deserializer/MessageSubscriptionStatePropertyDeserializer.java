@@ -28,8 +28,6 @@ public class MessageSubscriptionStatePropertyDeserializer
   @Override
   protected MessageSubscriptionStateFilterProperty createFromImplicitValue(
       final MessageSubscriptionStateEnum value) {
-    final var filter = new AdvancedMessageSubscriptionStateFilter();
-    filter.set$Eq(value);
-    return filter;
+    return AdvancedMessageSubscriptionStateFilter.Builder.builder().$eq(value).build();
   }
 }

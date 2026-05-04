@@ -26,8 +26,6 @@ public class AuditLogResultFilterPropertyDeserializer
 
   @Override
   protected AuditLogResultFilterProperty createFromImplicitValue(final AuditLogResultEnum value) {
-    final var filter = new AdvancedResultFilter();
-    filter.set$Eq(value);
-    return filter;
+    return AdvancedResultFilter.Builder.builder().$eq(value).build();
   }
 }

@@ -25,8 +25,6 @@ public class IntegerFilterPropertyDeserializer
 
   @Override
   protected IntegerFilterProperty createFromImplicitValue(final Integer value) {
-    final var filter = new AdvancedIntegerFilter();
-    filter.set$Eq(value);
-    return filter;
+    return AdvancedIntegerFilter.Builder.builder().$eq(value).build();
   }
 }

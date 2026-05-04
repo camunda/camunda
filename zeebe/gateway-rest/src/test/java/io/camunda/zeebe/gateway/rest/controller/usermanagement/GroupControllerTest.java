@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,7 +85,11 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
+              GroupCreateRequest.Builder.builder()
+                  .groupId(groupId)
+                  .name(groupName)
+                  .description(description)
+                  .build())
           .exchange()
           .expectStatus()
           .isForbidden()
@@ -106,7 +111,8 @@ public class GroupControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
+          .bodyValue(
+              GroupUpdateRequest.Builder.builder().name(groupName).description(description).build())
           .exchange()
           .expectStatus()
           .isForbidden()
@@ -247,7 +253,11 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
+              GroupCreateRequest.Builder.builder()
+                  .groupId(groupId)
+                  .name(groupName)
+                  .description(description)
+                  .build())
           .exchange()
           .expectStatus()
           .isCreated();
@@ -264,7 +274,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("").groupId("groupId"))
+          .bodyValue(GroupCreateRequest.Builder.builder().groupId("groupId").name("").build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -293,7 +303,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name"))
+          .bodyValue(Map.of("name", "name"))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -322,7 +332,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name").groupId(""))
+          .bodyValue(GroupCreateRequest.Builder.builder().groupId("").name("name").build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -354,7 +364,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name").groupId(groupId))
+          .bodyValue(GroupCreateRequest.Builder.builder().groupId(groupId).name("name").build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -389,7 +399,7 @@ public class GroupControllerTest {
           .uri(GROUP_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupCreateRequest().name("name").groupId(groupId))
+          .bodyValue(GroupCreateRequest.Builder.builder().groupId(groupId).name("name").build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -430,7 +440,8 @@ public class GroupControllerTest {
           .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
+          .bodyValue(
+              GroupUpdateRequest.Builder.builder().name(groupName).description(description).build())
           .exchange()
           .expectStatus()
           .isOk()
@@ -473,7 +484,8 @@ public class GroupControllerTest {
           .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
+          .bodyValue(
+              GroupUpdateRequest.Builder.builder().name(groupName).description(description).build())
           .exchange()
           .expectStatus()
           .isOk()
@@ -507,7 +519,11 @@ public class GroupControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(emptyGroupName).description("description"))
+          .bodyValue(
+              GroupUpdateRequest.Builder.builder()
+                  .name(emptyGroupName)
+                  .description("description")
+                  .build())
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -545,7 +561,8 @@ public class GroupControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(name).description(description))
+          .bodyValue(
+              GroupUpdateRequest.Builder.builder().name(name).description(description).build())
           .exchange()
           .expectStatus()
           .isOk()
@@ -584,7 +601,8 @@ public class GroupControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
+          .bodyValue(
+              GroupUpdateRequest.Builder.builder().name(groupName).description(description).build())
           .exchange()
           .expectStatus()
           .isNotFound();
@@ -604,7 +622,11 @@ public class GroupControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name("updatedName").description("description"))
+          .bodyValue(
+              GroupUpdateRequest.Builder.builder()
+                  .name("updatedName")
+                  .description("description")
+                  .build())
           .exchange()
           .expectStatus()
           .isBadRequest()

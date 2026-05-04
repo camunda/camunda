@@ -27,8 +27,6 @@ public class BatchOperatioItemStateFilterPropertyDeserializer
   @Override
   protected BatchOperationItemStateFilterProperty createFromImplicitValue(
       final BatchOperationItemStateEnum value) {
-    final var filter = new AdvancedBatchOperationItemStateFilter();
-    filter.set$Eq(value);
-    return filter;
+    return AdvancedBatchOperationItemStateFilter.Builder.builder().$eq(value).build();
   }
 }

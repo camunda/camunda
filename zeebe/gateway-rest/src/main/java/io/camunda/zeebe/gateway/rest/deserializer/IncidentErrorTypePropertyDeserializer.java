@@ -27,8 +27,6 @@ public class IncidentErrorTypePropertyDeserializer
   @Override
   protected IncidentErrorTypeFilterProperty createFromImplicitValue(
       final IncidentErrorTypeEnum value) {
-    final var filter = new AdvancedIncidentErrorTypeFilter();
-    filter.set$Eq(value);
-    return filter;
+    return AdvancedIncidentErrorTypeFilter.Builder.builder().$eq(value).build();
   }
 }

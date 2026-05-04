@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -106,10 +107,11 @@ public class TenantControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new TenantCreateRequest()
+              TenantCreateRequest.Builder.builder()
+                  .tenantId(id)
                   .name(tenantName)
                   .description(tenantDescription)
-                  .tenantId(id))
+                  .build())
           .exchange()
           .expectStatus()
           .isCreated();
@@ -141,10 +143,11 @@ public class TenantControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new TenantCreateRequest()
-                  .name(tenantName)
+              TenantCreateRequest.Builder.builder()
                   .tenantId(tenantId)
-                  .description(tenantDescription))
+                  .name(tenantName)
+                  .description(tenantDescription)
+                  .build())
           .exchange()
           .expectStatus()
           .isCreated()
@@ -177,7 +180,7 @@ public class TenantControllerTest {
           .uri(TENANT_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantCreateRequest().name(tenantName))
+          .bodyValue(Map.of("name", tenantName))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -208,7 +211,8 @@ public class TenantControllerTest {
     void shouldRejectTenantCreationWithIllegalCharactersInId(final String id) {
       // given
       final var tenantName = "Tenant Name";
-      final var request = new TenantCreateRequest().tenantId(id).name(tenantName);
+      final var request =
+          TenantCreateRequest.Builder.builder().tenantId(id).name(tenantName).build();
 
       // when
       webClient
@@ -241,7 +245,8 @@ public class TenantControllerTest {
     void shouldRejectTenantWithTooLongId() {
       // given
       final var id = "x".repeat(257);
-      final var request = new TenantCreateRequest().tenantId(id).name("Tenant name");
+      final var request =
+          TenantCreateRequest.Builder.builder().tenantId(id).name("Tenant name").build();
 
       // when
       webClient
@@ -291,7 +296,11 @@ public class TenantControllerTest {
           .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
+          .bodyValue(
+              TenantUpdateRequest.Builder.builder()
+                  .name(tenantName)
+                  .description(tenantDescription)
+                  .build())
           .exchange()
           .expectStatus()
           .isOk()
@@ -326,7 +335,7 @@ public class TenantControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequest().description(tenantDescription))
+          .bodyValue(Map.of("description", tenantDescription))
           .exchange()
           .expectStatus()
           .isBadRequest()
@@ -367,7 +376,11 @@ public class TenantControllerTest {
           .uri(path)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequest().name(tenantName).description(tenantDescription))
+          .bodyValue(
+              TenantUpdateRequest.Builder.builder()
+                  .name(tenantName)
+                  .description(tenantDescription)
+                  .build())
           .exchange()
           .expectStatus()
           .isNotFound();

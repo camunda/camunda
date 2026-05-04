@@ -32,14 +32,12 @@ public class LicenseController {
 
   @CamundaGetMapping(path = "/license")
   public LicenseResponse get() {
-    final LicenseResponse response = new LicenseResponse();
-    response.setValidLicense(managementServices.isCamundaLicenseValid());
-    response.setLicenseType(managementServices.getCamundaLicenseType().getName());
-    response.setIsCommercial(managementServices.isCommercialCamundaLicense());
     final OffsetDateTime expirationDate = managementServices.getCamundaLicenseExpiresAt();
-    response.setExpiresAt(
-        expirationDate == null ? null : DATE_TIME_FORMATTER.format(expirationDate));
-
-    return response;
+    return LicenseResponse.Builder.builder()
+        .validLicense(managementServices.isCamundaLicenseValid())
+        .licenseType(managementServices.getCamundaLicenseType().getName())
+        .isCommercial(managementServices.isCommercialCamundaLicense())
+        .expiresAt(expirationDate == null ? null : DATE_TIME_FORMATTER.format(expirationDate))
+        .build();
   }
 }

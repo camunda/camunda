@@ -115,13 +115,14 @@ public class UserTaskTools {
         return performUnassignment(userTaskKey);
       } else {
         // merge assignee root param with potential assignment options
-        UserTaskAssignmentRequest request = new UserTaskAssignmentRequest().assignee(assignee);
+        final UserTaskAssignmentRequest.Builder.IBuild builder =
+            UserTaskAssignmentRequest.Builder.builder().assignee(assignee);
         if (assignmentOptions != null) {
-          request =
-              request
-                  .allowOverride(assignmentOptions.getAllowOverride())
-                  .action(assignmentOptions.getAction());
+          builder
+              .allowOverride(assignmentOptions.getAllowOverride())
+              .action(assignmentOptions.getAction());
         }
+        final UserTaskAssignmentRequest request = builder.build();
 
         return performAssignment(userTaskKey, request);
       }

@@ -315,8 +315,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                                      "outputId": "3",
                                      "outputName": "name3",
                                      "outputValue": "value3",
-                                     "ruleId": null,
-                                     "ruleIndex": null
+                                     "ruleId": "ruleId2",
+                                     "ruleIndex": 2
                                  }
                              ]
                          },
@@ -328,15 +328,15 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                                      "outputId": "1",
                                      "outputName": "name1",
                                      "outputValue": "value1",
-                                     "ruleId": null,
-                                     "ruleIndex": null
+                                     "ruleId": "ruleId1",
+                                     "ruleIndex": 1
                                  },
                                  {
                                      "outputId": "2",
                                      "outputName": "name2",
                                      "outputValue": "value2",
-                                     "ruleId": null,
-                                     "ruleIndex": null
+                                     "ruleId": "ruleId1",
+                                     "ruleIndex": 1
                                  }
                              ]
                          }

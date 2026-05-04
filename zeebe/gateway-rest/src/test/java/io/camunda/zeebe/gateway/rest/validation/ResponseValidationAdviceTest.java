@@ -65,6 +65,33 @@ class ResponseValidationAdviceTest {
   }
 
   /**
+   * Helper to create a {@link LicenseResponse} with arbitrary field values via reflection,
+   * bypassing the protected constructor and staged builder. This lets tests intentionally create
+   * invalid/incomplete responses to verify validation logic.
+   *
+   * @param validLicense value for the {@code validLicense} field (may be {@code null})
+   * @param licenseType value for the {@code licenseType} field (may be {@code null})
+   * @param isCommercial value for the {@code isCommercial} field (may be {@code null})
+   * @param expiresAt value for the {@code expiresAt} field (may be {@code null})
+   */
+  @SuppressWarnings("NullAway")
+  private static LicenseResponse licenseResponseViaReflection(
+      final Boolean validLicense,
+      final String licenseType,
+      final Boolean isCommercial,
+      final String expiresAt) {
+    try {
+      final var ctor =
+          LicenseResponse.class.getDeclaredConstructor(
+              Boolean.class, String.class, Boolean.class, String.class);
+      ctor.setAccessible(true);
+      return ctor.newInstance(validLicense, licenseType, isCommercial, expiresAt);
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
    * Helper to invoke beforeBodyWrite with mock request/response objects. The MethodParameter,
    * MediaType, and converter type are not used by the advice logic.
    */
@@ -107,11 +134,12 @@ class ResponseValidationAdviceTest {
     void shouldPassThroughValidDto() {
       // given — all required fields set
       final LicenseResponse validResponse =
-          new LicenseResponse()
+          LicenseResponse.Builder.builder()
               .validLicense(true)
               .licenseType("saas")
               .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
+              .expiresAt("2025-12-31T23:59:59Z")
+              .build();
 
       // when
       final Object result = callBeforeBodyWrite(validResponse);
@@ -140,10 +168,7 @@ class ResponseValidationAdviceTest {
     void shouldThrowWhenRequiredFieldIsNull() {
       // given — validLicense is null (violates @NotNull)
       final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .licenseType("saas")
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
+          licenseResponseViaReflection(null, "saas", true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -153,8 +178,8 @@ class ResponseValidationAdviceTest {
 
     @Test
     void shouldThrowWhenMultipleRequiredFieldsAreNull() {
-      // given — all required fields are null (empty DTO)
-      final LicenseResponse invalidResponse = new LicenseResponse();
+      // given — all required fields are null
+      final LicenseResponse invalidResponse = licenseResponseViaReflection(null, null, null, null);
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -170,13 +195,9 @@ class ResponseValidationAdviceTest {
 
     @Test
     void shouldIncludePropertyPathInViolationMessage() {
-      // given
+      // given — licenseType is null
       final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .validLicense(true)
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
-      // licenseType is null
+          licenseResponseViaReflection(true, null, true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -189,10 +210,7 @@ class ResponseValidationAdviceTest {
     void shouldIncludeInvalidValueInViolationMessage() {
       // given — licenseType is null
       final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .validLicense(true)
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
+          licenseResponseViaReflection(true, null, true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
@@ -208,10 +226,7 @@ class ResponseValidationAdviceTest {
     void shouldExposeViolationsInException() {
       // given — only licenseType is null
       final LicenseResponse invalidResponse =
-          new LicenseResponse()
-              .validLicense(true)
-              .isCommercial(true)
-              .expiresAt("2025-12-31T23:59:59Z");
+          licenseResponseViaReflection(true, null, true, "2025-12-31T23:59:59Z");
 
       // when / then
       assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))

@@ -105,46 +105,55 @@ class ClusterToolsTest extends OperationalToolsTest {
       // given
       final var version = VersionUtil.getVersion();
       final var expectedResponse =
-          new TopologyResponse()
-              .clusterId("cluster-id")
-              .gatewayVersion(version)
+          TopologyResponse.Builder.builder()
+              .brokers(
+                  List.of(
+                      BrokerInfo.Builder.builder()
+                          .nodeId(0)
+                          .host("localhost")
+                          .port(26501)
+                          .partitions(
+                              List.of(
+                                  Partition.Builder.builder()
+                                      .partitionId(1)
+                                      .role(RoleEnum.LEADER)
+                                      .health(HealthEnum.HEALTHY)
+                                      .build()))
+                          .version(version)
+                          .build(),
+                      BrokerInfo.Builder.builder()
+                          .nodeId(1)
+                          .host("localhost")
+                          .port(26502)
+                          .partitions(
+                              List.of(
+                                  Partition.Builder.builder()
+                                      .partitionId(1)
+                                      .role(RoleEnum.FOLLOWER)
+                                      .health(HealthEnum.HEALTHY)
+                                      .build()))
+                          .version(version)
+                          .build(),
+                      BrokerInfo.Builder.builder()
+                          .nodeId(2)
+                          .host("localhost")
+                          .port(26503)
+                          .partitions(
+                              List.of(
+                                  Partition.Builder.builder()
+                                      .partitionId(1)
+                                      .role(RoleEnum.INACTIVE)
+                                      .health(HealthEnum.UNHEALTHY)
+                                      .build()))
+                          .version(version)
+                          .build()))
               .clusterSize(3)
               .partitionsCount(1)
               .replicationFactor(3)
+              .gatewayVersion(version)
               .lastCompletedChangeId("1")
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(0)
-                      .host("localhost")
-                      .port(26501)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.HEALTHY)
-                              .role(RoleEnum.LEADER)))
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(1)
-                      .host("localhost")
-                      .port(26502)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.HEALTHY)
-                              .role(RoleEnum.FOLLOWER)))
-              .addBrokersItem(
-                  new BrokerInfo()
-                      .nodeId(2)
-                      .host("localhost")
-                      .port(26503)
-                      .version(version)
-                      .addPartitionsItem(
-                          new Partition()
-                              .partitionId(1)
-                              .health(HealthEnum.UNHEALTHY)
-                              .role(RoleEnum.INACTIVE)));
+              .clusterId("cluster-id")
+              .build();
       final var topologyResponse =
           new Topology(
               List.of(

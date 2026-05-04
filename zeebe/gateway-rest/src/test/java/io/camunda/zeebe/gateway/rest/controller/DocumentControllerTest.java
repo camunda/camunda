@@ -154,10 +154,12 @@ public class DocumentControllerTest extends RestControllerTest {
                     new DocumentMetadataModel(
                         contentType.toString(), filename, timestamp, 0L, null, null, Map.of()))));
 
-    final var metadataToSend = new DocumentMetadata();
-    metadataToSend.setContentType(contentType.toString());
-    metadataToSend.setFileName(filename);
-    metadataToSend.setExpiresAt(timestamp.toString());
+    final var metadataToSend =
+        DocumentMetadata.Builder.builder()
+            .contentType(contentType.toString())
+            .fileName(filename)
+            .expiresAt(timestamp.toString())
+            .build();
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
     multipartBodyBuilder.part("file", content).contentType(contentType).filename(filename);
@@ -246,21 +248,23 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             om.writeValueAsString(
-                new DocumentMetadata()
+                DocumentMetadata.Builder.builder()
                     .contentType(contentType.toString())
                     .fileName(filename1)
                     .expiresAt(timestamp.toString())
-                    .processInstanceKey("123")));
+                    .processInstanceKey("123")
+                    .build()));
     multipartBodyBuilder
         .part("files", content2)
         .header(
             "X-Document-Metadata",
             om.writeValueAsString(
-                new DocumentMetadata()
+                DocumentMetadata.Builder.builder()
                     .contentType(contentType.toString())
                     .fileName(filename2)
                     .expiresAt(timestamp.toString())
-                    .processInstanceKey("123")));
+                    .processInstanceKey("123")
+                    .build()));
 
     // when/then
     webClient
@@ -467,9 +471,11 @@ public class DocumentControllerTest extends RestControllerTest {
     final var content = new byte[] {1, 2, 3};
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
 
-    final var metadata = new DocumentMetadata();
-    metadata.setFileName("file.txt");
-    metadata.setProcessDefinitionId("9invalid");
+    final var metadata =
+        DocumentMetadata.Builder.builder()
+            .fileName("file.txt")
+            .processDefinitionId("9invalid")
+            .build();
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
     multipartBodyBuilder.part("file", content).contentType(contentType).filename("file.txt");
@@ -509,7 +515,10 @@ public class DocumentControllerTest extends RestControllerTest {
 
     final var mapper = new ObjectMapper();
     final var meta1 =
-        new DocumentMetadata().contentType(contentType.toString()).fileName(filename1);
+        DocumentMetadata.Builder.builder()
+            .contentType(contentType.toString())
+            .fileName(filename1)
+            .build();
     // Provide single-element JSON array to simulate mismatch
     multipartBodyBuilder
         .part("metadataList", mapper.writeValueAsString(List.of(meta1)))
@@ -563,16 +572,18 @@ public class DocumentControllerTest extends RestControllerTest {
     final var mapper = new ObjectMapper();
     final var metadataList =
         List.of(
-            new DocumentMetadata()
+            DocumentMetadata.Builder.builder()
                 .contentType(contentType.toString())
                 .fileName(filename1)
                 .expiresAt(timestamp.toString())
-                .processInstanceKey("123"),
-            new DocumentMetadata()
+                .processInstanceKey("123")
+                .build(),
+            DocumentMetadata.Builder.builder()
                 .contentType(contentType.toString())
                 .fileName(filename2)
                 .expiresAt(timestamp.toString())
-                .processInstanceKey("123"));
+                .processInstanceKey("123")
+                .build());
     multipartBodyBuilder
         .part("metadataList", mapper.writeValueAsString(metadataList))
         .contentType(MediaType.APPLICATION_JSON);
@@ -631,10 +642,11 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             mapper.writeValueAsString(
-                new DocumentMetadata()
+                DocumentMetadata.Builder.builder()
                     .contentType(contentType.toString())
                     .fileName("IGNORED-" + filename1)
-                    .processInstanceKey("999")));
+                    .processInstanceKey("999")
+                    .build()));
     multipartBodyBuilder
         .part("files", content2)
         .filename(filename2)
@@ -642,22 +654,25 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             mapper.writeValueAsString(
-                new DocumentMetadata()
+                DocumentMetadata.Builder.builder()
                     .contentType(contentType.toString())
                     .fileName("IGNORED-" + filename2)
-                    .processInstanceKey("999")));
+                    .processInstanceKey("999")
+                    .build()));
 
     // Preferred metadataList (processInstanceKey 123, original file names)
     final var metadataList =
         List.of(
-            new DocumentMetadata()
+            DocumentMetadata.Builder.builder()
                 .contentType(contentType.toString())
                 .fileName(filename1)
-                .processInstanceKey("123"),
-            new DocumentMetadata()
+                .processInstanceKey("123")
+                .build(),
+            DocumentMetadata.Builder.builder()
                 .contentType(contentType.toString())
                 .fileName(filename2)
-                .processInstanceKey("123"));
+                .processInstanceKey("123")
+                .build());
     multipartBodyBuilder
         .part("metadataList", mapper.writeValueAsString(metadataList))
         .contentType(MediaType.APPLICATION_JSON);
@@ -750,9 +765,11 @@ public class DocumentControllerTest extends RestControllerTest {
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
     final var mapper = new ObjectMapper();
 
-    final var metadata = new DocumentMetadata();
-    metadata.setFileName("file.txt");
-    metadata.setProcessDefinitionId("9invalid");
+    final var metadata =
+        DocumentMetadata.Builder.builder()
+            .fileName("file.txt")
+            .processDefinitionId("9invalid")
+            .build();
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
     multipartBodyBuilder.part("files", content).contentType(contentType).filename("file.txt");
