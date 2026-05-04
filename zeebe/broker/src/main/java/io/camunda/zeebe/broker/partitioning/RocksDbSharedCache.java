@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
+import io.camunda.zeebe.util.ByteValue;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.lang.management.ManagementFactory;
 import org.slf4j.Logger;
@@ -22,7 +23,7 @@ public class RocksDbSharedCache {
   public static final double ADVICE_MAX_MEMORY_FRACTION = 0.5;
   private static final Logger LOGGER = LoggerFactory.getLogger(RocksDbSharedCache.class);
 
-  public static long getSharedCacheSize(
+  public static long getRocksDbMemoryLimit(
       final BrokerCfg brokerCfg, final MeterRegistry meterRegistry, final int partitionsPerBroker) {
     final var rocksdbCfg = brokerCfg.getExperimental().getRocksdb();
     final long rocksDbMemoryLimit = getMemoryLimitBytes(rocksdbCfg, partitionsPerBroker);
@@ -34,17 +35,14 @@ public class RocksDbSharedCache {
     try (final SharedRocksDbResources rocksDbResources =
         new SharedRocksDbResources(rocksDbMemoryLimit)) {
       LOGGER.info(
-          "Allocating {} bytes ({} MB) for RocksDB memory Limit (with {} MB cache size), with memory allocation strategy: {}. "
-              + "Total system memory: {} bytes ({} MB). Partitions per broker: {}",
-          rocksDbResources.getMemoryLimit(),
-          rocksDbResources.getMemoryLimit() / (1024 * 1024),
-          rocksDbResources.getBlockCacheSize() / (1024 * 1024),
-          memoryAllocationStrategy,
-          totalMemorySize,
-          totalMemorySize / (1024 * 1024),
+          "Memory allocation strategy `{}` allocated {} for RocksDB, with up to {} reserved for write buffers. Total system memory: {}. Partitions per broker: {}",
+          memoryAllocationStrategy.name(),
+          ByteValue.prettyPrint(rocksDbResources.getMemoryLimit()),
+          ByteValue.prettyPrint(rocksDbResources.getWriteBufferLimit()),
+          ByteValue.prettyPrint(totalMemorySize),
           partitionsPerBroker);
 
-      return rocksDbResources.getBlockCacheSize();
+      return rocksDbResources.getMemoryLimit();
     }
   }
 
