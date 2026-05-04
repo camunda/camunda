@@ -166,6 +166,77 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.9"
 
+  /element-instances/{elementInstanceKey}/inspection:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - Element instance
+      operationId: getElementInstanceInspection
+      summary: Get element instance inspection
+      description: Returns element instance inspection with wait state information.
+      parameters:
+        - name: elementInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the element instance.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+      responses:
+        "200":
+          description: The element instance inspection is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElementInstanceInspectionResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            The element instance with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
+  /element-instances/inspection/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Element instance
+      operationId: searchElementInstanceInspections
+      summary: Search element instance inspections
+      description: Search for element instance inspections with wait state information.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElementInstanceInspectionSearchQuery'
+      responses:
+        "200":
+          description: The element instance inspection search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElementInstanceInspectionSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
   /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
     post:
       x-eventually-consistent: false
@@ -539,3 +610,90 @@ components:
           additionalProperties: true
       required:
         - elementId
+
+    ElementInstanceInspectionResult:
+      type: object
+      required:
+        - elementInstanceKey
+        - elementId
+        - elementType
+        - waitStates
+      properties:
+        elementInstanceKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+          description: The assigned key of the element instance.
+        elementId:
+          description: The element ID for this element instance.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
+        elementType:
+          description: Type of element.
+          type: string
+        waitStates:
+          description: List of wait states for this element instance.
+          type: array
+          items:
+            $ref: '#/components/schemas/WaitState'
+
+    WaitState:
+      type: object
+      required:
+        - type
+        - details
+      properties:
+        type:
+          description: The type of wait state.
+          type: string
+        details:
+          description: Details specific to the wait state type.
+          allOf:
+            - $ref: '#/components/schemas/WaitStateDetails'
+
+    WaitStateDetails:
+      type: object
+      properties:
+        jobKey:
+          description: The job key (for JOB wait states).
+          type: string
+        jobType:
+          description: The job type (for JOB wait states).
+          type: string
+        jobKind:
+          description: The job kind (for JOB wait states).
+          type: string
+
+    ElementInstanceInspectionSearchQuery:
+      description: Element instance inspection search request.
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        filter:
+          description: The element instance inspection filter.
+          allOf:
+            - $ref: '#/components/schemas/ElementInstanceInspectionFilter'
+
+    ElementInstanceInspectionFilter:
+      description: Element instance inspection filter.
+      type: object
+      properties:
+        elementInstanceKeys:
+          description: List of element instance keys to inspect.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+
+    ElementInstanceInspectionSearchQueryResult:
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching element instance inspections.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementInstanceInspectionResult'
