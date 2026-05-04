@@ -32,8 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractResourceAccessController implements ResourceAccessController {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(AbstractResourceAccessController.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractResourceAccessController.class);
 
   protected abstract ResourceAccessProvider getResourceAccessProvider();
 
