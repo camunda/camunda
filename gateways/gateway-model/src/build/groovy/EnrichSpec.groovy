@@ -267,6 +267,10 @@ javaType = { Map fragment ->
       // Exception: schemas with allOf AND a primitive type (e.g. string keys with allOf:LongKey)
       // resolve to the primitive type via the switch case below, not to their schema name.
       if (rs.allOf != null && rs.type == null) return refName
+      // Named schemas with oneOf and no primitive type generate a named Java class — keep the
+      // schema name. Without this guard, the recursion below would resolve to the first oneOf
+      // member (e.g. SearchQueryPageRequest -> LimitPagination), narrowing the field type.
+      if (rs.oneOf != null && rs.type == null) return refName
       def resolved = javaType(rs)
       // For primitive types (string, int, etc.) without enum, resolve to the Java primitive.
       if (resolved != 'Object') return resolved
@@ -286,6 +290,7 @@ javaType = { Map fragment ->
         if (rs.enum != null) return refName
         if (rs.type == 'object') return refName
         if (rs.allOf != null && rs.type == null) return refName
+        if (rs.oneOf != null && rs.type == null) return refName
         def resolved = javaType(rs)
         if (resolved != 'Object') return resolved
       }
@@ -304,6 +309,7 @@ javaType = { Map fragment ->
         if (rs.enum != null) return refName
         if (rs.type == 'object') return refName
         if (rs.allOf != null && rs.type == null) return refName
+        if (rs.oneOf != null && rs.type == null) return refName
         def resolved = javaType(rs)
         if (resolved != 'Object') return resolved
       }
