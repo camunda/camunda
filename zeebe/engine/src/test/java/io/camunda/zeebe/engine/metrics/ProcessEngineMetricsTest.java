@@ -257,6 +257,115 @@ public class ProcessEngineMetricsTest {
     assertThat(activeRootProcessInstanceGauge()).isNotNull().isEqualTo(4);
   }
 
+  @Test
+  public void shouldTrackActiveTenantGaugeForDefaultTenant() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then
+    assertThat(activeTenantCountGauge())
+        .describedAs("Expected one distinct tenant after one root process instance")
+        .isOne();
+  }
+
+  @Test
+  public void shouldNotIncreaseTenantCountForSameTenant() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .deploy();
+
+    // when - two process instances for the same (default) tenant
+    final long pi1 = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long pi2 = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(pi2)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then: gauge should still be 1 — same tenant seen twice
+    assertThat(activeTenantCountGauge())
+        .describedAs("Expected gauge to stay at 1 for repeated activations of the same tenant")
+        .isOne();
+  }
+
+  @Test
+  public void shouldCountDistinctTenants() {
+    // given
+    final String tenant1 = "tenant-a";
+    final String tenant2 = "tenant-b";
+    engine
+        .deployment()
+        .withTenantId(tenant1)
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .deploy();
+    engine
+        .deployment()
+        .withTenantId(tenant2)
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .deploy();
+
+    // when
+    final long pi1 =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenant1).create();
+    final long pi2 =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenant2).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(pi1)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(pi2)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then
+    assertThat(activeTenantCountGauge())
+        .describedAs("Expected gauge to reflect two distinct tenants")
+        .isEqualTo(2);
+  }
+
+  @Test
+  public void shouldNotCountSubProcessActivationsAsTenants() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess("sub", sub -> sub.embeddedSubProcess().startEvent().endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then: sub-process activation should not inflate the count
+    assertThat(activeTenantCountGauge())
+        .describedAs("Sub-process activations should not increment the tenant count")
+        .isOne();
+  }
+
   private void awaitUserTaskActivated(final long processInstanceKey) {
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -319,5 +428,9 @@ public class ProcessEngineMetricsTest {
         .tag("partition", "1")
         .counter()
         .count();
+  }
+
+  private Double activeTenantCountGauge() {
+    return engine.getMeterRegistry().get("zeebe.active.tenants.count").gauge().value();
   }
 }
