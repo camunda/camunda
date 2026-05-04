@@ -91,7 +91,7 @@ public class RocksDBSnapshotCopyTest {
                     (key, keyOffset, keyLen, value, valueOffset, valueLen) -> {
                       final byte[] toValue;
                       try {
-                        toValue = toCf.get(toTx, key, keyOffset, keyLen);
+                        toValue = toCf.get(toTx, key, keyLen);
                       } catch (final Exception e) {
                         throw new RuntimeException(e);
                       }
@@ -181,7 +181,7 @@ public class RocksDBSnapshotCopyTest {
 
                 final var value = new byte[random.nextInt(64 * 1024)];
                 random.nextBytes(value);
-                transactionalColumnFamily.put(ctx, key, 0, key.length, value, 0, value.length);
+                transactionalColumnFamily.put(ctx, key, key.length, value, value.length);
                 if (cf.partitionScope() == ColumnFamilyScope.GLOBAL) {
                   expectedRowsPerCF.compute(cf, (k, v) -> v + 1);
                 }
