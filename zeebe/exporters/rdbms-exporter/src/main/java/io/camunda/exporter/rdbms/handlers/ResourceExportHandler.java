@@ -25,7 +25,7 @@ public class ResourceExportHandler implements RdbmsExportHandler<Resource> {
   private static final Logger LOG = LoggerFactory.getLogger(ResourceExportHandler.class);
 
   private static final Set<ResourceIntent> EXPORTABLE_INTENTS =
-      Set.of(ResourceIntent.CREATED, ResourceIntent.DELETED);
+      Set.of(ResourceIntent.CREATED, ResourceIntent.DELETED, ResourceIntent.REEXPORTED);
 
   private final DeployedResourceWriter deployedResourceWriter;
 
