@@ -71,11 +71,12 @@ final class ExporterBulkConsistencyIT {
   private static final String ELEMENT_ID = "serviceTask";
   private static final String ERROR_MESSAGE = "an error occurred";
 
-  @RegisterExtension private static final SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension
+  private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
   @RegisterExtension
-  private static final CamundaExporterITTemplateExtension templateExtension =
-      new CamundaExporterITTemplateExtension(searchDB);
+  private static final CamundaExporterITTemplateExtension TEMPLATE_EXTENSION =
+      new CamundaExporterITTemplateExtension(SEARCH_DB);
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
@@ -84,9 +85,9 @@ final class ExporterBulkConsistencyIT {
     final var openSearchAwsInstanceUrl =
         Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
-      searchDB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+      SEARCH_DB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
     }
-    searchDB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+    SEARCH_DB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
   }
 
   @TestTemplate
