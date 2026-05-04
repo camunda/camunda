@@ -875,6 +875,7 @@ public class WebSecurityConfig {
       final var additionalJwkSetUrisByIssuer =
           buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
 
+      final JwtDecoder delegate;
       if (clientRegistrations.size() == 1) {
         final var clientRegistration = clientRegistrations.getFirst();
         final var additionalUris =
@@ -883,21 +884,25 @@ public class WebSecurityConfig {
         LOG.info(
             "Create Access Token JWT Decoder for OIDC Provider: {}",
             clientRegistration.getRegistrationId());
-        return new SupplierJwtDecoder(
-            () ->
-                oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
-                    clientRegistration, additionalUris));
+        delegate =
+            new SupplierJwtDecoder(
+                () ->
+                    oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
+                        clientRegistration, additionalUris));
       } else {
         LOG.info(
             "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
             clientRegistrations.stream()
                 .map(ClientRegistration::getRegistrationId)
                 .collect(Collectors.joining(", ")));
-        return new SupplierJwtDecoder(
-            () ->
-                oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
-                    clientRegistrations, additionalJwkSetUrisByIssuer));
+        delegate =
+            new SupplierJwtDecoder(
+                () ->
+                    oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
+                        clientRegistrations, additionalJwkSetUrisByIssuer));
       }
+      LOG.info("Wrapping JWT decoder with CachingJwtDecoder");
+      return new CachingJwtDecoder(delegate);
     }
 
     private Map<String, List<String>> buildAdditionalJwkSetUrisByIssuer(
