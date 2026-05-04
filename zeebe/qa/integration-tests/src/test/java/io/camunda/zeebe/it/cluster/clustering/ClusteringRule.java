@@ -115,6 +115,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 
+/**
+ * @deprecated Do not use this class in new tests. It is a JUnit 4 {@link
+ *     org.junit.rules.ExternalResource} that wires up an embedded cluster manually, which is
+ *     fragile and hard to maintain. New tests should use the {@code @ZeebeIntegration} JUnit 5
+ *     extension together with {@link io.camunda.zeebe.qa.util.cluster.TestCluster}, which provides
+ *     the same multi-broker/multi-partition capabilities with a cleaner lifecycle and better
+ *     isolation.
+ */
+@Deprecated
 public class ClusteringRule extends ExternalResource {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusteringRule.class);
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
