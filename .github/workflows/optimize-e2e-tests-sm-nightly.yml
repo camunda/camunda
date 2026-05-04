@@ -27,6 +27,9 @@ permissions:
 jobs:
   e2e-full:
     name: "E2E Self-Managed (Full + Visual)"
+    permissions:
+      contents: read
+      id-token: write # for authenticating with GCP
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
