@@ -16,8 +16,9 @@ additional_platform_configuration ?=
 additional_load_test_configuration ?=
 
 # Duration (in seconds) for finite-duration scenarios such as `quicker`. The starter exits
-# cleanly after this many seconds. Default 1h.
-duration_limit ?= 3600
+# cleanly after this many seconds. Default 10min — the platform takes ~7min to come up,
+# leaving ~3min of usable load. Override per-invocation via `make ... duration_limit=1800`.
+duration_limit ?= 600
 
 helm_chart_platform := camunda-platform-helm/charts/$(helm_chart)
 helm_chart_load_tests := camunda-load-tests/camunda-load-tests

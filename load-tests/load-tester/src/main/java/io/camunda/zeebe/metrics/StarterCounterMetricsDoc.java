@@ -33,5 +33,29 @@ public enum StarterCounterMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.COUNTER;
     }
+  },
+
+  /**
+   * Set to 1 when the starter has finished its instance-creation loop (either because the
+   * configured duration-limit elapsed or because it was otherwise stopped). Stays at 0 while the
+   * starter is actively creating instances. Lets external watchers (e.g. the quicker load test
+   * workflow) detect completion without relying on pod phase — Spring Boot's WebFlux server keeps
+   * the JVM alive after the CommandLineRunner returns, so the pod stays Running.
+   */
+  RUN_FINISHED {
+    @Override
+    public String getDescription() {
+      return "1 once the starter has finished its instance-creation loop, 0 otherwise.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.run.finished";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
   }
 }

@@ -1,9 +1,9 @@
-# description: Creates a finite (default 1h) load test when a PR is labeled with
+# description: Creates a finite (default 10min) load test when a PR is labeled with
 #              'quicker-benchmark'. Deploys with scenario 'quicker', awaits the starter
-#              pod to finish, scrapes Prometheus for throughput + latency + engine metrics,
-#              compares against a static baseline, and posts a results table as a PR
-#              comment. Auto-cleans up the namespace once results are posted (or on label
-#              removal / PR close).
+#              run-finished gauge in Prometheus, scrapes throughput + latency + engine
+#              metrics, compares against a static baseline, and posts a results table as
+#              a PR comment. Auto-cleans up the namespace once results are posted (or on
+#              label removal / PR close).
 # calls: camunda-load-test.yml (scenario: quicker)
 # type: CI
 # owner: @camunda/reliability-testing
@@ -22,10 +22,10 @@ on:
         required: true
         type: string
       duration-seconds:
-        description: 'Test duration in seconds (overrides the default 3600)'
+        description: 'Test duration in seconds (overrides the default 600)'
         required: false
         type: string
-        default: '3600'
+        default: '600'
       pr-number:
         description: 'PR number to comment on (optional). When empty, only writes a job summary.'
         required: false
@@ -41,8 +41,15 @@ defaults:
 env:
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
-  DEFAULT_DURATION_SECONDS: '3600'
+  # Default test duration in seconds. The starter takes ~7min to boot the platform; 10min
+  # gives ~3min of usable load. Override per-run via workflow_dispatch input.
+  DEFAULT_DURATION_SECONDS: '600'
   LABEL_NAME: 'quicker-benchmark'
+  # The cluster runs a single kube-prometheus-stack install in `monitoring/`. Hard-coded
+  # because the service has no `app.kubernetes.io/name=prometheus` label and discovery
+  # via standard selectors does not find it.
+  PROM_NS: 'monitoring'
+  PROM_SVC: 'kube-prometheus-stack-prometheus'
 
 jobs:
   sanitize-branch-name:
@@ -76,7 +83,6 @@ jobs:
             pr_number="${{ inputs.pr-number }}"
             ref="${{ inputs.ref }}"
             duration="${{ inputs.duration-seconds }}"
-            # Fall back to the run id when no PR number is given so the namespace is unique.
             id_suffix="${pr_number:-run-${{ github.run_id }}}"
           else
             pr_number="${{ github.event.pull_request.number }}"
@@ -111,8 +117,8 @@ jobs:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       ref: ${{ needs.sanitize-branch-name.outputs.ref }}
       scenario: 'quicker'
-      # Override the Makefile default (3600s) when a custom duration was provided via dispatch.
-      # Helm honours the last `--set` for a given key, so this wins over the scenario default.
+      # Override the Makefile default. Helm honours the last `--set` for a given key, so this
+      # wins over the scenario default in load-tests/setup/default/Makefile.
       load-test-load: --set starter.durationLimit=${{ needs.sanitize-branch-name.outputs.duration-seconds }}
 
   collect-metrics:
@@ -123,8 +129,8 @@ jobs:
       (github.event.action == 'labeled' && github.event.label.name == 'quicker-benchmark') ||
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark'))
     runs-on: ubuntu-latest
-    # Test runs for `duration-seconds` and we want headroom for stabilisation + scrape.
-    timeout-minutes: 90
+    # Test runs for `duration-seconds` and we want headroom for platform bring-up + scrape.
+    timeout-minutes: 30
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -148,86 +154,83 @@ jobs:
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER }}
 
-      - name: Wait for starter pod to finish
-        id: wait-starter
-        run: |
-          # The starter exits cleanly once duration_limit elapses; the pod transitions to
-          # Succeeded (or Failed). We give the test its full configured runtime plus a 10-min
-          # buffer for image pull / cluster bring-up / drain.
-          buffer=600
-          deadline=$((DURATION_SECONDS + buffer))
-          echo "Waiting up to ${deadline}s for starter pod in ns=${NAMESPACE} to reach a terminal phase..."
-          # The starter has app=starter on the pod template in the camunda-load-tests chart.
-          # Poll its .status.phase until it leaves Pending/Running.
-          end=$(( $(date +%s) + deadline ))
-          phase=""
-          while [[ $(date +%s) -lt $end ]]; do
-            phase=$(kubectl -n "$NAMESPACE" get pod -l app=starter \
-              -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "")
-            if [[ "$phase" == "Succeeded" || "$phase" == "Failed" ]]; then
-              break
-            fi
-            sleep 30
-          done
-          echo "starter-phase=${phase}" >> "$GITHUB_OUTPUT"
-          if [[ "$phase" != "Succeeded" && "$phase" != "Failed" ]]; then
-            echo "::warning::Starter pod did not reach a terminal phase in time (phase=${phase:-unknown}). Continuing to scrape what's available."
-          fi
-
-      - name: Discover Prometheus service
-        id: prom
-        run: |
-          # The cluster runs a kube-prometheus-stack; the Prometheus Service is selectable by
-          # its standard label. Pick the first match across namespaces.
-          read -r prom_ns prom_svc <<<"$(kubectl get svc -A -l app.kubernetes.io/name=prometheus \
-            -o jsonpath='{.items[0].metadata.namespace} {.items[0].metadata.name}' 2>/dev/null || echo '')"
-          if [[ -z "$prom_ns" || -z "$prom_svc" ]]; then
-            echo "::warning::Could not discover a Prometheus service. Metrics collection will be skipped."
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "found=true" >> "$GITHUB_OUTPUT"
-          echo "namespace=${prom_ns}" >> "$GITHUB_OUTPUT"
-          echo "service=${prom_svc}" >> "$GITHUB_OUTPUT"
-
       - name: Port-forward Prometheus
-        if: steps.prom.outputs.found == 'true'
         run: |
-          kubectl -n "${{ steps.prom.outputs.namespace }}" port-forward \
-            "svc/${{ steps.prom.outputs.service }}" 9090:9090 >/tmp/pf.log 2>&1 &
+          kubectl -n "${PROM_NS}" port-forward "svc/${PROM_SVC}" 9090:9090 \
+            >/tmp/pf.log 2>&1 &
           echo $! > /tmp/pf.pid
-          # Give the port-forward a moment, then sanity-check.
-          for i in 1 2 3 4 5; do
+          for i in 1 2 3 4 5 6 7 8 9 10; do
             if curl -sf http://localhost:9090/-/ready >/dev/null; then
               break
             fi
             sleep 2
           done
-          curl -sf http://localhost:9090/-/ready || {
-            echo "::warning::Prometheus is not ready on localhost:9090 (port-forward log follows)"
-            cat /tmp/pf.log || true
-            exit 0
+          curl -sf http://localhost:9090/-/ready
+
+      - name: Wait for starter run-finished gauge
+        id: wait-starter
+        run: |
+          # The starter pod stays Running after creation ends (Spring's WebFlux server keeps
+          # the JVM alive), so we cannot use kubectl wait on pod phase. Instead, the starter
+          # exposes `starter_run_finished` (gauge) which flips to 1 when the creation loop
+          # exits. We poll Prometheus for it. Budget: duration + ~7min platform bring-up
+          # + 3min scrape headroom.
+          q() {
+            curl -sf --get http://localhost:9090/api/v1/query \
+              --data-urlencode "query=$1" \
+              | jq -r '.data.result[0].value[1] // "0"'
           }
+          deadline_seconds=$((DURATION_SECONDS + 600))
+          end=$(( $(date +%s) + deadline_seconds ))
+          finished=0
+          while [[ $(date +%s) -lt $end ]]; do
+            finished=$(q "max(starter_run_finished{namespace=\"$NAMESPACE\"})")
+            if [[ "$finished" == "1" ]]; then
+              break
+            fi
+            sleep 30
+          done
+          echo "finished=${finished}" >> "$GITHUB_OUTPUT"
+          if [[ "$finished" != "1" ]]; then
+            echo "::warning::Starter did not flip starter_run_finished=1 within ${deadline_seconds}s. Continuing to scrape what's available."
+          fi
+
+      - name: Read starter pod restart count
+        id: restarts
+        run: |
+          # If the starter was restarted by k8s mid-run, the actual elapsed wall-clock time
+          # exceeds DURATION_SECONDS (the new pod runs another full duration_limit). Surface
+          # the count so the comment can warn — we don't try to recover.
+          rc=$(kubectl -n "$NAMESPACE" get pod -l app=starter \
+            -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}' 2>/dev/null \
+            | tr ' ' '\n' | awk '{s+=$1} END {print s+0}')
+          echo "count=${rc:-0}" >> "$GITHUB_OUTPUT"
 
       - name: Scrape metrics
         id: scrape
-        if: steps.prom.outputs.found == 'true'
         run: |
           # Helper: query an instant value at "now" and emit just the scalar.
           q() {
-            curl -sf --get http://localhost:9090/api/v1/query --data-urlencode "query=$1" \
+            curl -sf --get http://localhost:9090/api/v1/query \
+              --data-urlencode "query=$1" \
               | jq -r '.data.result[0].value[1] // "NaN"'
           }
-          # We aggregate across pods/labels for each metric.
-          instances_started=$(q 'sum(starter_process_instances_started_total)')
-          response_p50=$(q 'histogram_quantile(0.5, sum by (le) (rate(starter_response_latency_seconds_bucket[10m])))')
-          response_p99=$(q 'histogram_quantile(0.99, sum by (le) (rate(starter_response_latency_seconds_bucket[10m])))')
-          dataavail_p50=$(q 'histogram_quantile(0.5, sum by (le) (rate(starter_data_availability_latency_seconds_bucket[10m])))')
-          dataavail_p99=$(q 'histogram_quantile(0.99, sum by (le) (rate(starter_data_availability_latency_seconds_bucket[10m])))')
-          # Engine-side. zeebe_stream_processor_records_total is the standard processor metric.
-          engine_record_rate=$(q 'sum(rate(zeebe_stream_processor_records_total[5m]))')
-          # Backpressure rejections (any non-zero indicates the broker shedding load).
-          backpressure_total=$(q 'sum(zeebe_dropped_request_total)')
+          # increase() over the run window handles starter counter resets (a pod restart
+          # zeroes the counter; Prometheus reconciles and we still get the cumulative total).
+          # The +60s gives a small buffer for clock skew and scrape interval.
+          window="$((DURATION_SECONDS + 60))s"
+
+          instances_started=$(q "sum(increase(starter_process_instances_started_total{namespace=\"$NAMESPACE\"}[$window]))")
+          response_p50=$(q "histogram_quantile(0.5, sum by (le) (rate(starter_response_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$window])))")
+          response_p99=$(q "histogram_quantile(0.99, sum by (le) (rate(starter_response_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$window])))")
+          dataavail_p50=$(q "histogram_quantile(0.5, sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$window])))")
+          dataavail_p99=$(q "histogram_quantile(0.99, sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=\"$NAMESPACE\"}[$window])))")
+          # Average completed-process rate over the run, from engine-side metrics.
+          completed_pi_rate=$(q "sum(rate(zeebe_element_instance_events_total{namespace=\"$NAMESPACE\", action=\"completed\", type=\"PROCESS\"}[$window]))")
+          # Total completed PIs in the window (mirrors the starter count for sanity).
+          completed_pi_total=$(q "sum(increase(zeebe_element_instance_events_total{namespace=\"$NAMESPACE\", action=\"completed\", type=\"PROCESS\"}[$window]))")
+          # Backpressure as a percentage: dropped / received over the window.
+          backpressure_pct=$(q "(sum(rate(zeebe_dropped_request_count_total{namespace=\"$NAMESPACE\"}[$window])) / sum(rate(zeebe_received_request_count_total{namespace=\"$NAMESPACE\"}[$window]))) * 100")
 
           {
             echo "instances-started=${instances_started}"
@@ -235,12 +238,13 @@ jobs:
             echo "response-p99-seconds=${response_p99}"
             echo "dataavail-p50-seconds=${dataavail_p50}"
             echo "dataavail-p99-seconds=${dataavail_p99}"
-            echo "engine-record-rate=${engine_record_rate}"
-            echo "backpressure-total=${backpressure_total}"
+            echo "completed-pi-rate=${completed_pi_rate}"
+            echo "completed-pi-total=${completed_pi_total}"
+            echo "backpressure-pct=${backpressure_pct}"
           } | tee -a "$GITHUB_OUTPUT"
 
       - name: Stop port-forward
-        if: always() && steps.prom.outputs.found == 'true'
+        if: always()
         run: |
           if [[ -f /tmp/pf.pid ]]; then
             kill "$(cat /tmp/pf.pid)" 2>/dev/null || true
@@ -259,9 +263,11 @@ jobs:
           RESPONSE_P99: ${{ steps.scrape.outputs.response-p99-seconds }}
           DATAAVAIL_P50: ${{ steps.scrape.outputs.dataavail-p50-seconds }}
           DATAAVAIL_P99: ${{ steps.scrape.outputs.dataavail-p99-seconds }}
-          ENGINE_RECORD_RATE: ${{ steps.scrape.outputs.engine-record-rate }}
-          BACKPRESSURE_TOTAL: ${{ steps.scrape.outputs.backpressure-total }}
-          STARTER_PHASE: ${{ steps.wait-starter.outputs.starter-phase }}
+          COMPLETED_PI_RATE: ${{ steps.scrape.outputs.completed-pi-rate }}
+          COMPLETED_PI_TOTAL: ${{ steps.scrape.outputs.completed-pi-total }}
+          BACKPRESSURE_PCT: ${{ steps.scrape.outputs.backpressure-pct }}
+          STARTER_FINISHED: ${{ steps.wait-starter.outputs.finished }}
+          RESTART_COUNT: ${{ steps.restarts.outputs.count }}
           PR_NUMBER: ${{ needs.sanitize-branch-name.outputs.pr-number }}
         with:
           script: |
@@ -285,17 +291,25 @@ jobs:
             const responseP99Ms = sToMs(num(process.env.RESPONSE_P99));
             const dataP50Ms = sToMs(num(process.env.DATAAVAIL_P50));
             const dataP99Ms = sToMs(num(process.env.DATAAVAIL_P99));
-            const engineRate = num(process.env.ENGINE_RECORD_RATE);
-            const backpressure = num(process.env.BACKPRESSURE_TOTAL);
+            const completedPiRate = num(process.env.COMPLETED_PI_RATE);
+            const completedPiTotal = num(process.env.COMPLETED_PI_TOTAL);
+            const backpressurePct = num(process.env.BACKPRESSURE_PCT);
+            const restartCount = num(process.env.RESTART_COUNT) || 0;
+            const finishedFlag = process.env.STARTER_FINISHED === '1';
             const durationSeconds = ${{ needs.sanitize-branch-name.outputs.duration-seconds }};
             const throughput = instances != null && durationSeconds > 0
               ? instances / durationSeconds
               : null;
 
-            // For each metric: lower-is-better unless `higher-is-better: true` in baseline.
-            // tolerance-percent defines the ✅/⚠️ band.
+            // For each metric: lower-is-better unless higher-is-better is true.
             const verdict = (current, expected, tolerance, higherIsBetter) => {
               if (current == null || expected == null) return '❔';
+              if (expected === 0) {
+                // baseline of 0 => any nonzero is a regression for lower-is-better metrics
+                if (!higherIsBetter && current === 0) return '✅';
+                if (!higherIsBetter && current > 0) return '⚠️';
+                return current > 0 ? '✅' : '❔';
+              }
               const diff = ((current - expected) / expected) * 100;
               const within = Math.abs(diff) <= (tolerance ?? 10);
               if (within) return '✅';
@@ -304,6 +318,7 @@ jobs:
             };
             const delta = (current, expected) => {
               if (current == null || expected == null) return 'n/a';
+              if (expected === 0) return current === 0 ? '0' : '+∞';
               const diff = ((current - expected) / expected) * 100;
               const sign = diff >= 0 ? '+' : '';
               return `${sign}${diff.toFixed(1)}%`;
@@ -311,17 +326,31 @@ jobs:
 
             const rows = [
               {
-                label: 'Process instances started',
-                current: instances == null ? 'n/a' : instances.toLocaleString(),
+                label: 'Process instances started (starter)',
+                current: instances == null ? 'n/a' : Math.round(instances).toLocaleString(),
                 spec: m['process-instances-started'],
                 value: instances,
                 higherIsBetter: true,
               },
               {
-                label: 'Throughput (PI/s, avg)',
+                label: 'Process instances completed (engine)',
+                current: completedPiTotal == null ? 'n/a' : Math.round(completedPiTotal).toLocaleString(),
+                spec: m['process-instances-completed'],
+                value: completedPiTotal,
+                higherIsBetter: true,
+              },
+              {
+                label: 'Throughput, avg (PI/s)',
                 current: throughput == null ? 'n/a' : fmt(throughput, 1),
                 spec: m['throughput-per-second'],
                 value: throughput,
+                higherIsBetter: true,
+              },
+              {
+                label: 'Completed PI rate, avg (PI/s)',
+                current: fmt(completedPiRate, 1),
+                spec: m['completed-pi-rate-per-second'],
+                value: completedPiRate,
                 higherIsBetter: true,
               },
               {
@@ -353,17 +382,10 @@ jobs:
                 higherIsBetter: false,
               },
               {
-                label: 'Engine record rate (records/s)',
-                current: fmt(engineRate, 0),
-                spec: m['zeebe-record-rate-per-sec'],
-                value: engineRate,
-                higherIsBetter: true,
-              },
-              {
-                label: 'Backpressure rejections (total)',
-                current: backpressure == null ? 'n/a' : backpressure.toLocaleString(),
-                spec: m['backpressure-total'],
-                value: backpressure,
+                label: 'Backpressure (% of received requests)',
+                current: backpressurePct == null ? 'n/a' : fmt(backpressurePct, 2) + '%',
+                spec: m['backpressure-percent'],
+                value: backpressurePct,
                 higherIsBetter: false,
               },
             ];
@@ -382,11 +404,20 @@ jobs:
               );
             }
 
+            const warnings = [];
+            if (!finishedFlag) {
+              warnings.push('⚠️ Starter never reported `starter_run_finished=1`. Numbers may reflect a partial run.');
+            }
+            if (restartCount > 0) {
+              warnings.push(`⚠️ Starter pod restarted **${restartCount}** time(s). Wall-clock runtime exceeds the configured ${durationSeconds}s — the comparison against the baseline is no longer apples-to-apples.`);
+            }
+
             const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ env.NAMESPACE }}`;
             const body = [
               '## ⏱️ Quicker Benchmark Results',
               '',
-              `Scenario: \`quicker\` · Duration: ${durationSeconds}s · Namespace: \`${{ env.NAMESPACE }}\` · Starter phase: \`${process.env.STARTER_PHASE || 'unknown'}\``,
+              `Scenario: \`quicker\` · Duration: ${durationSeconds}s · Namespace: \`${{ env.NAMESPACE }}\``,
+              ...(warnings.length ? ['', ...warnings] : []),
               '',
               ...tableLines,
               '',
@@ -395,7 +426,6 @@ jobs:
               '_Baseline lives at `load-tests/quicker-benchmark/baseline.yaml`. ⚠️ flags only fire on the regression side — improvements outside tolerance still show ✅._',
             ].join('\n');
 
-            // Always write to the job summary so workflow_dispatch users without a PR see the table.
             await core.summary.addRaw(body).write();
 
             const prNumber = parseInt(process.env.PR_NUMBER || '0', 10);

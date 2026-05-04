@@ -1,32 +1,49 @@
 # Quicker Benchmark
 
 A finite, label-triggered load test that gives PR authors a comparable performance signal
-within ~1 hour, posted as a comment on the PR.
+within ~10 minutes, posted as a comment on the PR.
 
 Compared to the existing `benchmark` label (indefinite max load + flamegraphs), the
 `quicker-benchmark` label runs the same `max` workload but stops cleanly after a configured
-duration, scrapes Prometheus for throughput + latency + engine-side metrics, and posts a
-table comparing the run against a static baseline.
+duration, scrapes the cluster Prometheus for throughput + latency + engine-side metrics,
+and posts a table comparing the run against a static baseline.
+
+The platform takes ~7min to come up; the default 10min duration leaves ~3min of usable
+load. Bump `duration-seconds` via `workflow_dispatch` for longer runs.
 
 ## Triggering
 
 | Trigger |                                                                                               How                                                                                                |
 |---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | On a PR | Apply the `quicker-benchmark` label. Removing the label tears the namespace down.                                                                                                                |
-| Ad-hoc  | Run the `Camunda Pull Request Quicker Benchmark` workflow via `workflow_dispatch`. Optional inputs: `duration-seconds` (default 3600), `pr-number` (when set, the comment is posted on that PR). |
+| Ad-hoc  | Run the `Camunda Pull Request Quicker Benchmark` workflow via `workflow_dispatch`. Optional inputs: `duration-seconds` (default 600), `pr-number` (when set, the comment is posted on that PR). |
 
 The two labels (`benchmark` and `quicker-benchmark`) deploy to **separate namespaces** and
 can coexist on the same PR.
+
+## How completion is detected
+
+Spring Boot's WebFlux server keeps the starter JVM alive after the creation loop ends, so
+the pod stays `Running`. Instead of waiting on pod phase, the workflow polls the
+`starter_run_finished` gauge in the central Prometheus
+(`monitoring/kube-prometheus-stack-prometheus`) — the starter flips it to `1` when the
+loop exits.
+
+If k8s restarts the starter pod mid-run (OOM, node failure, etc.), the new pod runs another
+full `duration-limit` from scratch — total wall-clock time exceeds what the comment header
+says, and submitted-instance counts double-count the restart window. The workflow surfaces
+a ⚠️ warning with the restart count when this happens; we don't try to recover. For the
+10-minute default this is rare enough to accept.
 
 ## What the comment shows
 
 A table of current vs baseline for:
 
-- Process instances started (and average throughput PI/s)
+- Process instances submitted by the starter and average submission throughput (PI/s)
+- Process instances completed end-to-end by the engine and average completion rate (PI/s)
 - Starter response latency p50/p99 — request submit → engine ack
-- Starter data availability latency p50/p99 — engine ack → instance queryable
-- Zeebe record processing rate
-- Backpressure rejection total
+- Starter data availability latency p50/p99 — engine ack → instance queryable in secondary store
+- Backpressure as % of received requests (`dropped / received` over the run)
 
 Each row is annotated:
 - ✅ within the configured tolerance (or beyond it on the *better* side)

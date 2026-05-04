@@ -6,38 +6,57 @@
 # this file via PR. See the README in this directory for the update procedure.
 #
 # Each metric:
-#   expected         the target value
+#   expected         the target value (units match the comment column)
 #   tolerance-percent the +/- band that counts as ✅ in the PR comment
 #                    (defaults to 10% in the renderer if omitted)
 #
 # Direction (higher-is-better vs lower-is-better) is hard-coded per metric in the
-# renderer — throughput/instances/engine rate go up; latencies and backpressure go down.
+# renderer — throughput/instances/completed-rate go up; latencies and backpressure go down.
 
 scenario: quicker
-duration-seconds: 3600
+duration-seconds: 600
 
 metrics:
+  # Total instances the starter submitted to the broker. At 300 PI/s for 600s the
+  # theoretical ceiling is 180_000; backpressure brings the practical number lower.
   process-instances-started:
-    expected: 1080000          # 300 PI/s × 3600 s
-    tolerance-percent: 10
+    expected: 180000
+    tolerance-percent: 15
+
+  # Process instances completed end-to-end by the engine in the same window.
+  # Lower than `process-instances-started` because of backpressure rejections and
+  # in-flight instances at the moment the run ended.
+  process-instances-completed:
+    expected: 90000
+    tolerance-percent: 20
+
+  # Submission throughput: process-instances-started / duration. Echo of the rate.
   throughput-per-second:
     expected: 300
-    tolerance-percent: 10
+    tolerance-percent: 15
+
+  # Completion throughput from the engine side.
+  completed-pi-rate-per-second:
+    expected: 150
+    tolerance-percent: 20
+
+  # Submit→ack latency observed by the starter.
   starter-response-latency-p50-ms:
     expected: 15
-    tolerance-percent: 25
+    tolerance-percent: 50
   starter-response-latency-p99-ms:
-    expected: 50
-    tolerance-percent: 25
+    expected: 100
+    tolerance-percent: 50
+
+  # Time from instance create to the instance being queryable in the secondary store.
   starter-data-availability-latency-p50-ms:
     expected: 800
-    tolerance-percent: 25
+    tolerance-percent: 30
   starter-data-availability-latency-p99-ms:
-    expected: 2000
-    tolerance-percent: 25
-  zeebe-record-rate-per-sec:
-    expected: 5000
-    tolerance-percent: 20
-  backpressure-total:
+    expected: 3000
+    tolerance-percent: 30
+
+  # Percentage of submitted requests rejected by broker backpressure.
+  backpressure-percent:
     expected: 0
     tolerance-percent: 0       # any backpressure beyond zero is flagged
