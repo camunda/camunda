@@ -459,6 +459,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     if (state.getPosition(exporterId) < exporterState.position()) {
       state.setExporterState(exporterId, exporterState.position(), exporterState.metadata());
+      metrics.setLastUpdatedExportedPosition(exporterId, exporterState.position());
     }
   }
 
