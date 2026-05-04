@@ -475,12 +475,10 @@ public class UnifiedConfigurationHelper {
     if (strValue != null && kebabValue != null && !strValue.equals(kebabValue)) {
       LOGGER.warn(
           "Legacy property is set via two equivalent keys with conflicting values:"
-              + " '{}' = '{}' and '{}' = '{}'. '{}' will be used."
+              + " '{}' and '{}' differ. '{}' will be used."
               + " Remove one of the two keys to resolve the ambiguity.",
           legacyProperty,
-          strValue,
           kebabKey,
-          kebabValue,
           legacyProperty);
     }
 
@@ -522,12 +520,10 @@ public class UnifiedConfigurationHelper {
         && !Objects.equals(kebabResult.get(), adaptedResult.get())) {
       LOGGER.warn(
           "Legacy property is set via two equivalent keys with conflicting values:"
-              + " '{}' = '{}' and '{}' = '{}'. '{}' will be used."
+              + " '{}' and '{}' differ. '{}' will be used."
               + " Remove one of the two keys to resolve the ambiguity.",
           kebabKey,
-          kebabResult.get(),
           adaptedKey,
-          adaptedResult.get(),
           kebabKey);
     }
 
