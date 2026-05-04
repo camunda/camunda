@@ -107,6 +107,80 @@ public class LinkedResourceDeploymentBindingTest {
   }
 
   @Test
+  public void shouldRejectDeploymentIfLinkedFormResourceNotIncluded() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("process-linked-form-missing")
+            .startEvent()
+            .serviceTask(
+                "serviceTask",
+                builder ->
+                    builder
+                        .zeebeLinkedResources(
+                            l ->
+                                l.resourceId("my-form")
+                                    .resourceType("form")
+                                    .bindingType(ZeebeBindingType.deployment))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejectedDeployment =
+        engine.deployment().withXmlResource("process.bpmn", process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Expected to find form with id 'my-form' in current deployment, but not found.");
+  }
+
+  @Test
+  public void shouldDeploySuccessfullyIfLinkedFormResourceIncluded() {
+    // given
+    final var form =
+        """
+        {
+          "id": "my-form",
+          "components": []
+        }
+        """;
+    final var process =
+        Bpmn.createExecutableProcess("process-linked-form-success")
+            .startEvent()
+            .serviceTask(
+                "serviceTask",
+                builder ->
+                    builder
+                        .zeebeLinkedResources(
+                            l ->
+                                l.resourceId("my-form")
+                                    .resourceType("form")
+                                    .bindingType(ZeebeBindingType.deployment))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    // when
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource("process.bpmn", process)
+            .withJsonResource(form.getBytes(UTF_8), "my-form.form")
+            .deploy();
+
+    // then
+    Assertions.assertThat(deployment)
+        .hasRecordType(RecordType.EVENT)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasIntent(DeploymentIntent.CREATED);
+  }
+
+  @Test
   public void shouldRejectIfLinkedResourceIdNotFoundInDeployment() {
     // given - a BPMN process referencing a resource ID that is not in the deployment
     final var process =
