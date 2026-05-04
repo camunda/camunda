@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 
 public class DbResourceState implements MutableResourceState {
 
@@ -293,6 +294,22 @@ public class DbResourceState implements MutableResourceState {
   public void clearCache() {
     resourcesByTenantIdAndIdCache.invalidateAll();
     versionManager.clear();
+  }
+
+  @Override
+  public void visitResourcesByKey(
+      final String tenantId,
+      final long startResourceKey,
+      final Predicate<PersistedResource> visitor) {
+    // Use an empty tenant prefix so the start key sorts before all real tenant entries,
+    // ensuring the iteration covers resources across all tenants.
+    tenantIdKey.wrapString(tenantId);
+    dbResourceKey.wrapLong(startResourceKey);
+    resourcesByKey.whileTrue(
+        tenantAwareResourceKey,
+        (key, value) -> {
+          return visitor.test(value);
+        });
   }
 
   private PersistedResource getPersistedResourceById(final String resourceId, final String tenantId)
