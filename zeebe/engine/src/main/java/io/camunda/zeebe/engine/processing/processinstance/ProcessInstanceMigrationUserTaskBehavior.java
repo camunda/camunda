@@ -135,7 +135,6 @@ public class ProcessInstanceMigrationUserTaskBehavior {
         context,
         userTaskProperties,
         targetElementId,
-        targetProcessDefinition,
         processInstanceKey);
 
     final var userTaskRecord =
@@ -145,11 +144,9 @@ public class ProcessInstanceMigrationUserTaskBehavior {
             userTaskProperties,
             targetUserTask.getId(),
             getCustomHeaders(customHeaders),
-            targetProcessDefinition,
             elementInstance);
 
-    assignUser(
-        userTaskProperties, userTaskRecord, context, targetProperties, targetProcessDefinition);
+    assignUser(userTaskProperties, userTaskRecord, context, targetProperties);
 
     job.setIsJobToUserTaskMigration(true);
     // Cancel previous job worker job
@@ -237,8 +234,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       final UserTaskRecord userTaskRecord,
       final BpmnElementContextImpl context,
       final io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties
-          targetProperties,
-      final DeployedProcess targetProcessDefinition) {
+          targetProperties) {
 
     if (targetProperties.getAssignee() != null) {
       userTaskBehavior
@@ -263,7 +259,6 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       final UserTaskProperties userTaskProperties,
       final DirectBuffer id,
       final Map<String, String> taskHeaders,
-      final DeployedProcess targetProcessDefinition,
       final ElementInstance elementInstance) {
 
     userTaskBehavior
@@ -285,7 +280,6 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       final BpmnElementContextImpl context,
       final UserTaskProperties userTaskProperties,
       final String targetElementId,
-      final DeployedProcess targetProcessDefinition,
       final long processInstanceKey) {
     final String jobFormKey = customHeaders.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
     final Expression workerFormId = sourceElement.getJobWorkerProperties().getFormId();
