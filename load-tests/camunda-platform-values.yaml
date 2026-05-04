@@ -87,9 +87,13 @@ optimize:
     limits:
       cpu: 2
       memory: 4Gi
+
   # Optimize reads historyCleanup only from environment-config.yaml (its custom config loader),
-  # not from application.yml via spring.config.import. We therefore override the full
-  # environment-config.yaml via `configuration` so the cleanup block is in the correct file.
+  # not from application.yml via spring.config.import.
+  # To provide a different/additional configuration from the default configuration, we therefore
+  # have to override the full environment-config.yaml via `configuration` and repeat the default
+  # configuration: to see the differences compared to the default one, see the marker in the
+  # configuration itself.
   # ES host/port use Optimize's ${VAR:default} placeholder syntax so they stay dynamic at
   # runtime (the deployment sets OPTIMIZE_ELASTICSEARCH_HOST / OPTIMIZE_ELASTICSEARCH_HTTP_PORT).
   configuration: |
@@ -120,7 +124,8 @@ optimize:
       audience: "optimize-api"
       jwtSetUri: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
 
-    ## Configure Optimize data cleanup
+    ## Changed from the default configuration
+    # Configure and enable the process data cleanup
     historyCleanup:
       cronTrigger: '*/30 * * * *'
       ttl: 'P1D'
