@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
@@ -101,6 +102,7 @@ public class ResourceDeletionDeleteProcessor
   private final FormState formState;
   private final ResourceState resourceState;
   private final TenantState tenantState;
+  private final ProcessDefinitionMetrics processDefinitionMetrics;
 
   public ResourceDeletionDeleteProcessor(
       final Writers writers,
@@ -108,7 +110,8 @@ public class ResourceDeletionDeleteProcessor
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
       final BpmnBehaviors bpmnBehaviors,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     responseWriter = writers.response();
@@ -130,6 +133,7 @@ public class ResourceDeletionDeleteProcessor
     formState = processingState.getFormState();
     resourceState = processingState.getResourceState();
     tenantState = processingState.getTenantState();
+    this.processDefinitionMetrics = processDefinitionMetrics;
   }
 
   @Override
@@ -390,6 +394,7 @@ public class ResourceDeletionDeleteProcessor
         deleteProcessInstanceHistory(process.getKey(), eventKey, command.getValue());
       }
       stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
+      processDefinitionMetrics.processDefinitionDeleted(process.getKey());
     } else {
       throw new ActiveProcessInstancesException(process.getKey());
     }
