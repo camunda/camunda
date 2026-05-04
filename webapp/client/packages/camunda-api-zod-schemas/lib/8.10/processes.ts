@@ -32,6 +32,7 @@ const processInstanceSchema = z.object({
 	parentElementInstanceKey: z.string().nullable(),
 	rootProcessInstanceKey: z.string().nullable(),
 	tags: z.array(z.string()),
+	businessId: z.string().nullable(),
 });
 type ProcessInstance = z.infer<typeof processInstanceSchema>;
 

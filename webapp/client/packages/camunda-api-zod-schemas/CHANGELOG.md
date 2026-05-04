@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.61
+
+### 🚀 Enhancements
+
+- Add `businessId` property to process-instance schema ([#52097](https://github.com/camunda/camunda/issues/52097))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.60
 
 ### 🩹 Fixes

@@ -74,6 +74,7 @@ const queryProcessInstancesFilterSchema = z
 		elementId: advancedStringFilterSchema,
 		hasElementInstanceIncident: z.boolean(),
 		incidentErrorHashCode: advancedIntegerFilterSchema,
+		businessId: advancedStringFilterSchema,
 		tags: z
 			.array(
 				z
@@ -101,6 +102,7 @@ const queryProcessInstancesRequestBodySchema = getQueryRequestBodySchema({
 		'state',
 		'hasIncident',
 		'tenantId',
+		'businessId',
 	] as const,
 	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
 });
@@ -128,6 +130,7 @@ const createProcessInstanceRequestBodySchema = z.object({
 	awaitCompletion: z.boolean().optional(),
 	fetchVariables: z.array(z.string()).optional(),
 	requestTimeout: z.number().optional(),
+	businessId: z.string().min(1).max(256).optional(),
 	...processInstanceSchema
 		.pick({
 			processDefinitionId: true,
@@ -148,6 +151,7 @@ const createProcessInstanceResponseBodySchema = z.object({
 		tenantId: true,
 		processDefinitionKey: true,
 		processInstanceKey: true,
+		businessId: true,
 	}).shape,
 });
 
