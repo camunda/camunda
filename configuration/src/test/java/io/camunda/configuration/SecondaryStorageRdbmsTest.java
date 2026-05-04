@@ -282,4 +282,56 @@ public class SecondaryStorageRdbmsTest {
       assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(PASSWORD);
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=rdbms",
+        "camunda.data.secondary-storage.rdbms.exporters.primary.url=jdbc:postgresql://db1:5432/camunda",
+        "camunda.data.secondary-storage.rdbms.exporters.primary.username=user1",
+        "camunda.data.secondary-storage.rdbms.exporters.primary.password=pass1",
+        "camunda.data.secondary-storage.rdbms.exporters.secondary.url=jdbc:postgresql://db2:5432/camunda",
+        "camunda.data.secondary-storage.rdbms.exporters.secondary.username=user2",
+        "camunda.data.secondary-storage.rdbms.exporters.secondary.password=pass2",
+        "camunda.data.secondary-storage.rdbms.queueSize=500",
+      })
+  class WithMultipleExportersConfigured {
+
+    final BrokerBasedProperties brokerBasedProperties;
+
+    WithMultipleExportersConfigured(@Autowired final BrokerBasedProperties brokerBasedProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+    }
+
+    @Test
+    void testMultipleExportersRegisteredInBrokerConfig() {
+      // The "rdbms" single-exporter should NOT be present when using multiple exporters
+      assertThat(brokerBasedProperties.getRdbmsExporter()).isNull();
+
+      // Instead, "rdbms-primary" and "rdbms-secondary" should be registered
+      final var primaryExporter = brokerBasedProperties.getExporterByName("rdbms-primary");
+      assertThat(primaryExporter).isNotNull();
+      assertThat(primaryExporter.getClassName())
+          .isEqualTo("io.camunda.exporter.rdbms.RdbmsExporter");
+
+      final var secondaryExporter = brokerBasedProperties.getExporterByName("rdbms-secondary");
+      assertThat(secondaryExporter).isNotNull();
+      assertThat(secondaryExporter.getClassName())
+          .isEqualTo("io.camunda.exporter.rdbms.RdbmsExporter");
+    }
+
+    @Test
+    void testMultipleExportersInheritSharedSettings() {
+      // Both exporters should inherit queueSize=500 from the parent Rdbms config
+      final var primaryExporter = brokerBasedProperties.getExporterByName("rdbms-primary");
+      assertThat(primaryExporter).isNotNull();
+      final Map<String, Object> primaryArgs = primaryExporter.getArgs();
+      assertThat(primaryArgs).containsEntry("queueSize", 500);
+
+      final var secondaryExporter = brokerBasedProperties.getExporterByName("rdbms-secondary");
+      assertThat(secondaryExporter).isNotNull();
+      final Map<String, Object> secondaryArgs = secondaryExporter.getArgs();
+      assertThat(secondaryArgs).containsEntry("queueSize", 500);
+    }
+  }
 }

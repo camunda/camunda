@@ -36,4 +36,8 @@ public class BrokerBasedProperties extends BrokerCfg {
   public ExporterCfg getRdbmsExporter() {
     return getExporters().get("rdbms");
   }
+
+  public ExporterCfg getExporterByName(final String exporterName) {
+    return getExporters().get(exporterName);
+  }
 }

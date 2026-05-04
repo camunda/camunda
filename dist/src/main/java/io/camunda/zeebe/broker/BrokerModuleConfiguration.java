@@ -18,6 +18,7 @@ import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptorProvider;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
@@ -110,10 +112,20 @@ public class BrokerModuleConfiguration implements CloseableSilently {
 
   @Bean
   public ExporterRepository exporterRepository(
-      @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors) {
-    if (exporterDescriptors != null && !exporterDescriptors.isEmpty()) {
+      @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors,
+      @Autowired(required = false)
+          final List<ExporterDescriptorProvider> exporterDescriptorProviders) {
+    final List<ExporterDescriptor> all = new ArrayList<>();
+    if (exporterDescriptors != null) {
+      all.addAll(exporterDescriptors);
+    }
+    if (exporterDescriptorProviders != null) {
+      exporterDescriptorProviders.forEach(
+          provider -> all.addAll(provider.getExporterDescriptors()));
+    }
+    if (!all.isEmpty()) {
       LOGGER.info("Create ExporterRepository with predefined exporter descriptors.");
-      return new ExporterRepository(exporterDescriptors);
+      return new ExporterRepository(all);
     } else {
       return new ExporterRepository();
     }

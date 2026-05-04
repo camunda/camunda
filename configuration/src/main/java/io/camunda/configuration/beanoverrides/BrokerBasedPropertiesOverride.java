@@ -901,12 +901,63 @@ public class BrokerBasedPropertiesOverride {
 
     /* Load exporter config map */
 
-    var exporter = override.getRdbmsExporter();
+    if (database.getExporters().isEmpty()) {
+      // Single exporter (backwards-compatible)
+      populateSingleRdbmsExporter(override, RDBMS_EXPORTER_NAME, database);
+    } else {
+      // Multiple exporters: one per entry in the exporters map
+      for (final Map.Entry<String, Rdbms> entry : database.getExporters().entrySet()) {
+        final String exporterName = RDBMS_EXPORTER_NAME + "-" + entry.getKey();
+        final Rdbms exporterConfig = mergeRdbmsConfig(entry.getValue(), database);
+        populateSingleRdbmsExporter(override, exporterName, exporterConfig);
+      }
+    }
+  }
+
+  /**
+   * Merges exporter-specific config with the parent Rdbms config. Each exporter entry provides its
+   * own URL and credentials (data source), while all operational settings (queueSize,
+   * flushInterval, etc.) are inherited from the parent Rdbms configuration.
+   *
+   * <p>This design allows configuring multiple independent data sources while sharing all other
+   * settings uniformly across exporters. The URL/credentials are required per-exporter entry.
+   */
+  private Rdbms mergeRdbmsConfig(final Rdbms specific, final Rdbms parent) {
+    final Rdbms merged = new Rdbms();
+
+    // URL/credentials always from the specific exporter config (data source is per-exporter)
+    merged.setUrl(specific.getUrl());
+    merged.setUsername(specific.getUsername());
+    merged.setPassword(specific.getPassword());
+
+    // All operational settings are inherited from the parent Rdbms configuration
+    merged.setAutoDdl(parent.getAutoDdl());
+    merged.setPrefix(parent.getPrefix());
+    merged.setFlushInterval(parent.getFlushInterval());
+    merged.setQueueSize(parent.getQueueSize());
+    merged.setQueueMemoryLimit(parent.getQueueMemoryLimit());
+    merged.setMaxVarcharFieldLength(parent.getMaxVarcharFieldLength());
+    merged.setDdlLockWaitTimeout(parent.getDdlLockWaitTimeout());
+    merged.setExportBatchOperationItemsOnCreation(parent.isExportBatchOperationItemsOnCreation());
+    merged.setBatchOperationItemInsertBlockSize(parent.getBatchOperationItemInsertBlockSize());
+    merged.setProcessCache(parent.getProcessCache());
+    merged.setBatchOperationCache(parent.getBatchOperationCache());
+    merged.setHistory(parent.getHistory());
+    merged.setInsertBatching(parent.getInsertBatching());
+    merged.setQuery(parent.getQuery());
+    merged.setMetrics(parent.getMetrics());
+
+    return merged;
+  }
+
+  private void populateSingleRdbmsExporter(
+      final BrokerBasedProperties override, final String exporterName, final Rdbms database) {
+    var exporter = override.getExporters().get(exporterName);
     if (exporter == null) {
       exporter = new ExporterCfg();
       exporter.setClassName(RDBMS_EXPORTER_CLASS_NAME);
       exporter.setArgs(new LinkedHashMap<>());
-      override.getExporters().put(RDBMS_EXPORTER_NAME, exporter);
+      override.getExporters().put(exporterName, exporter);
     }
 
     /* Override config map values */
