@@ -167,62 +167,71 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final boolean includeContent,
       final String resourceTypeFilter) {
     if (secondaryStorageEnabled) {
-      final var securityContext =
-          securityContextProvider.provideSecurityContext(
-              authentication,
-              withAuthorization(RESOURCE_READ_AUTHORIZATION, DeployedResourceEntity::resourceId));
-      return CompletableFuture.supplyAsync(
-          () -> {
-            try {
-              final var client = deployedResourceSearchClient.withSecurityContext(securityContext);
-              final DeployedResourceEntity entity =
-                  includeContent
-                      ? client.getDeployedResource(resourceKey)
-                      : client.getDeployedResourceMetadata(resourceKey);
+      return fetchFromSecondaryStorage(
+          resourceKey, authentication, includeContent, resourceTypeFilter);
+    }
+    return fetchFromBroker(resourceKey, authentication, includeContent, resourceTypeFilter);
+  }
 
-              // Filter by resource type if specified
-              if (resourceTypeFilter != null
-                  && !resourceTypeFilter.equalsIgnoreCase(entity.resourceType())) {
-                throw resourceNotFoundException(resourceKey);
+  private CompletableFuture<DeployedResourceEntity> fetchFromSecondaryStorage(
+      final long resourceKey,
+      final CamundaAuthentication authentication,
+      final boolean includeContent,
+      final String resourceTypeFilter) {
+    final var securityContext =
+        securityContextProvider.provideSecurityContext(
+            authentication,
+            withAuthorization(RESOURCE_READ_AUTHORIZATION, DeployedResourceEntity::resourceId));
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            final var client = deployedResourceSearchClient.withSecurityContext(securityContext);
+            final DeployedResourceEntity entity =
+                includeContent
+                    ? client.getDeployedResource(resourceKey)
+                    : client.getDeployedResourceMetadata(resourceKey);
+            validateResourceType(entity.resourceType(), resourceTypeFilter, resourceKey);
+            return entity;
+          } catch (final CamundaSearchException cse) {
+            throw ErrorMapper.mapSearchError(cse);
+          }
+        },
+        executorProvider.getExecutor());
+  }
+
+  private CompletableFuture<DeployedResourceEntity> fetchFromBroker(
+      final long resourceKey,
+      final CamundaAuthentication authentication,
+      final boolean includeContent,
+      final String resourceTypeFilter) {
+    return sendBrokerRequest(
+            new BrokerFetchResourceRequest().setResourceKey(resourceKey), authentication)
+        .handle(
+            (record, error) -> {
+              if (error != null) {
+                // Normalize error message to match secondary storage format
+                throw mapResourceNotFoundError(error, resourceKey);
               }
-
+              final DeployedResourceEntity entity =
+                  new DeployedResourceEntity(
+                      record.getResourceKey(),
+                      record.getResourceId(),
+                      record.getResourceName(),
+                      ResourceUtils.deriveResourceType(record.getResourceName()),
+                      record.getVersion(),
+                      record.getVersionTag(),
+                      record.getDeploymentKey(),
+                      record.getTenantId(),
+                      includeContent ? record.getResourceProp() : null);
+              validateResourceType(entity.resourceType(), resourceTypeFilter, resourceKey);
               return entity;
-            } catch (final CamundaSearchException cse) {
-              throw ErrorMapper.mapSearchError(cse);
-            }
-          },
-          executorProvider.getExecutor());
-    } else {
-      return sendBrokerRequest(
-              new BrokerFetchResourceRequest().setResourceKey(resourceKey), authentication)
-          .handle(
-              (record, error) -> {
-                if (error != null) {
-                  // Normalize error message to match secondary storage format
-                  throw mapResourceNotFoundError(error, resourceKey);
-                }
+            });
+  }
 
-                final DeployedResourceEntity entity =
-                    new DeployedResourceEntity(
-                        record.getResourceKey(),
-                        record.getResourceId(),
-                        record.getResourceName(),
-                        ResourceUtils.deriveResourceType(record.getResourceName()),
-                        record.getVersion(),
-                        record.getVersionTag(),
-                        record.getDeploymentKey(),
-                        record.getTenantId(),
-                        includeContent ? record.getResourceProp() : null);
-
-                // Filter by resource type if specified
-                if (resourceTypeFilter != null
-                    && entity.resourceType() != null
-                    && !resourceTypeFilter.equalsIgnoreCase(entity.resourceType())) {
-                  throw resourceNotFoundException(resourceKey);
-                }
-
-                return entity;
-              });
+  private void validateResourceType(
+      final String entityResourceType, final String resourceTypeFilter, final long resourceKey) {
+    if (resourceTypeFilter != null && !resourceTypeFilter.equalsIgnoreCase(entityResourceType)) {
+      throw resourceNotFoundException(resourceKey);
     }
   }
 

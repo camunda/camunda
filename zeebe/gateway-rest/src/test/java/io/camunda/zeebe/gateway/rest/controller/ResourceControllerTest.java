@@ -614,8 +614,11 @@ public class ResourceControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isOk()
-        .expectBody()
-        .json(content, JsonCompareMode.STRICT);
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .expectBody(byte[].class)
+        .consumeWith(
+            response -> assertThat(response.getResponseBody()).isEqualTo(content.getBytes()));
   }
 
   @Test

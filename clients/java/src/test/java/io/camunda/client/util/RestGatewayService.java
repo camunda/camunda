@@ -548,4 +548,12 @@ public class RestGatewayService {
             WireMock.get(RestGatewayPaths.getResourceContentUrl(String.valueOf(resourceKey)))
                 .willReturn(WireMock.okJson(response)));
   }
+
+  public void onResourceContentBinaryGetRequest(final long resourceKey, final String response) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(RestGatewayPaths.getResourceContentBinaryUrl(String.valueOf(resourceKey)))
+                .willReturn(WireMock.okForContentType("application/octet-stream", response)));
+  }
 }
