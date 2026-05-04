@@ -179,6 +179,7 @@ public class RdbmsExporterWrapper implements Exporter {
           ValueType.TENANT, new TenantExportHandler(rdbmsWriters.getTenantWriter()));
       builder.withHandler(ValueType.ROLE, new RoleExportHandler(rdbmsWriters.getRoleWriter()));
       builder.withHandler(ValueType.USER, new UserExportHandler(rdbmsWriters.getUserWriter()));
+      builder.withHandler(ValueType.GROUP, new GroupExportHandler(rdbmsWriters.getGroupWriter()));
       builder.withHandler(
           ValueType.AUTHORIZATION,
           new AuthorizationExportHandler(rdbmsWriters.getAuthorizationWriter()));
@@ -193,12 +194,19 @@ public class RdbmsExporterWrapper implements Exporter {
               rdbmsWriters.getDecisionRequirementsWriter(),
               cacheRegistry.decisionRequirementsCache()));
       builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriters.getFormWriter()));
+      builder.withHandler(
+          ValueType.CLUSTER_VARIABLE,
+          new ClusterVariableExportHandler(rdbmsWriters.getClusterVariableWriter()));
+      builder.withHandler(
+          ValueType.GLOBAL_LISTENER,
+          new GlobalListenerExportHandler(rdbmsWriters.getGlobalListenerWriter()));
+      builder.withHandler(
+          ValueType.RESOURCE, new ResourceExportHandler(rdbmsWriters.getResourceWriter()));
     }
 
     builder.withHandler(
         ValueType.DECISION_EVALUATION,
         new DecisionInstanceExportHandler(rdbmsWriters.getDecisionInstanceWriter()));
-    builder.withHandler(ValueType.GROUP, new GroupExportHandler(rdbmsWriters.getGroupWriter()));
     builder.withHandler(
         ValueType.INCIDENT,
         new IncidentExportHandler(
@@ -226,9 +234,6 @@ public class RdbmsExporterWrapper implements Exporter {
             rdbmsWriters.getErrorMessageSize()));
     builder.withHandler(
         ValueType.VARIABLE, new VariableExportHandler(rdbmsWriters.getVariableWriter()));
-    builder.withHandler(
-        ValueType.CLUSTER_VARIABLE,
-        new ClusterVariableExportHandler(rdbmsWriters.getClusterVariableWriter()));
     builder.withHandler(
         ValueType.USER_TASK,
         new UserTaskExportHandler(rdbmsWriters.getUserTaskWriter(), cacheRegistry.processCache()));
@@ -262,11 +267,6 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.JOB_METRICS_BATCH,
         new JobMetricsBatchExportHandler(rdbmsWriters.getJobMetricsBatchWriter()));
-    builder.withHandler(
-        ValueType.GLOBAL_LISTENER,
-        new GlobalListenerExportHandler(rdbmsWriters.getGlobalListenerWriter()));
-    builder.withHandler(
-        ValueType.RESOURCE, new ResourceExportHandler(rdbmsWriters.getResourceWriter()));
 
     if (config.getAuditLog().isEnabled()) {
       registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);
