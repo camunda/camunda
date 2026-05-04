@@ -31,15 +31,23 @@ can coexist on the same PR.
 ## How completion is detected
 
 Spring Boot's WebFlux server keeps the starter JVM alive after the creation loop ends, so
-the pod stays `Running`. Instead of waiting on pod phase, the workflow polls the
-`starter_run_finished` gauge directly off the starter pod's `/metrics` endpoint — the
-starter flips it to `1` when the loop exits.
+the pod stays `Running`. Instead of waiting on pod phase, the workflow:
 
-If k8s restarts the starter pod mid-run (OOM, node failure, etc.), the new pod runs another
-full `duration-limit` from scratch — total wall-clock time exceeds what the comment header
-says, and submitted-instance counts double-count the restart window. The workflow surfaces
-a ⚠️ warning with the restart count when this happens; we don't try to recover. For the
-10-minute default this is rare enough to accept.
+1. Sleeps for `duration-seconds` once the platform is ready — the starter is configured
+   with `--set starter.durationLimit=$duration_seconds`, so the gauge can't flip earlier
+   anyway. This avoids burning kubectl/curl traffic during the run.
+2. After the sleep, polls the `starter_run_finished` gauge directly off the starter pod's
+   `/metrics` endpoint — the starter flips it to `1` when the loop exits. Each iteration
+   re-resolves the pod by label and opens a fresh short-lived port-forward, so a k8s
+   restart of the starter pod (OOM, eviction, manual delete) doesn't strand us on a dead
+   pod name. Polling deadline is `duration-seconds + 300s` — enough to absorb one full
+   restart's worth of extra runtime.
+
+If k8s restarts the starter pod mid-run, the new pod runs another full `duration-limit`
+from scratch — total wall-clock time exceeds what the comment header says, and submitted-
+instance counts double-count the restart window. The workflow surfaces a ⚠️ warning with
+the restart count when this happens; we don't try to recover. For the 10-minute default
+this is rare enough to accept.
 
 ## How metrics are collected
 
@@ -47,10 +55,11 @@ The cluster runs a kube-prometheus-stack install in `monitoring/`, but the CI Te
 does not grant `pods/portforward` on that namespace — only on test namespaces. So instead
 of querying the central Prometheus from CI, the workflow:
 
-1. Waits for `app=camunda-platform` and `app.kubernetes.io/component=zeebe-client` pods
-   to be Ready via `kubectl wait` (absorbs the ~7-min platform startup). Gateway
-   connectivity is implicitly verified by the run-finished poll below — the gauge can
-   only flip if the starter actually connected and ran for `duration_limit` seconds.
+1. Calls the shared [`./.github/actions/await-load-test`](../../.github/actions/await-load-test/action.yml)
+   composite. It waits for `app=camunda-platform` and
+   `app.kubernetes.io/component=zeebe-client` pods to be Ready (with pod-reschedule
+   retries) and then verifies gateway connectivity via the `clients` service's
+   `app_connected` metric.
 2. Port-forwards the **starter pod** and reads `/metrics` for the run-finished gauge and
    the instance counter.
 3. Port-forwards each **camunda broker pod** in turn and reads `/actuator/prometheus`
@@ -58,12 +67,11 @@ of querying the central Prometheus from CI, the workflow:
    `zeebe_received_request_count_total`. Per-broker counters only count partitions that
    broker leads, so all three scrapes are summed in an inline `awk` step.
 
-> Sidenote: the shared `./.github/actions/await-load-test` composite would normally do
-> step 1 for us (with pod-reschedule retries and a gateway-connectivity check), but it
-> has a `pipefail` issue — its first scrape during Spring actuator startup returns curl
-> exit 52, which kills the step before any retry. Daily/weekly tests don't trip it
-> because they reach the action later in their boot sequence. We're tracking a
-> standalone fix; for now we use `kubectl wait` directly.
+> Sidenote: the shared `await-load-test` composite has a known `pipefail` issue — its
+> first scrape during Spring actuator startup can return curl exit 52, which kills the
+> step before its retry loop iterates. Daily/weekly tests don't trip it because they
+> reach the action later in their boot sequence. We're tracking a standalone fix; if it
+> bites a cold deploy here, the readiness step fails cleanly and a relabel/resync re-runs.
 
 ## What the comment shows
 
@@ -105,7 +113,7 @@ don't, leave the baseline alone.
 
 - Trigger workflow: [.github/workflows/camunda-quicker-pr-load-test.yaml](../../.github/workflows/camunda-quicker-pr-load-test.yaml)
 - Reusable deploy: [.github/workflows/camunda-load-test.yml](../../.github/workflows/camunda-load-test.yml) (called with `scenario: 'max'` + `--set starter.durationLimit`)
-- Readiness: inline `kubectl wait` in the workflow (we don't use [`.github/actions/await-load-test`](../../.github/actions/await-load-test/action.yml) — see the note in *How metrics are collected* above)
+- Readiness: [`./.github/actions/await-load-test`](../../.github/actions/await-load-test/action.yml) (pod-reschedule retries + gateway-connectivity check)
 - Starter duration logic: [load-tests/load-tester/src/main/java/io/camunda/zeebe/starter/Starter.java](../load-tester/src/main/java/io/camunda/zeebe/starter/Starter.java) (`createContinuationCondition`)
 - Starter counter + run-finished gauge: [StarterCounterMetricsDoc.java](../load-tester/src/main/java/io/camunda/zeebe/metrics/StarterCounterMetricsDoc.java)
 

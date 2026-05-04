@@ -1,9 +1,10 @@
 # description: Creates a finite (default 10min) load test when a PR is labeled with
-#              'quicker-benchmark'. Deploys with scenario 'quicker', awaits the starter
-#              run-finished gauge in Prometheus, scrapes throughput + latency + engine
-#              metrics, compares against a static baseline, and posts a results table as
-#              a PR comment. Auto-cleans up the namespace once results are posted (or on
-#              label removal / PR close).
+#              'quicker-benchmark'. Deploys via the reusable camunda-load-test workflow
+#              (scenario: max + starter.durationLimit override), waits for the run to
+#              complete, scrapes throughput + engine metrics from each pod, compares
+#              against a static baseline, and posts a results table as a PR comment.
+#              Auto-cleans up the namespace once results are posted (or on label removal
+#              / PR close).
 # calls: camunda-load-test.yml (scenario: max + starter.durationLimit override)
 # type: CI
 # owner: @camunda/reliability-testing
@@ -165,75 +166,76 @@ jobs:
 
       # The CI Teleport role grants pods/portforward in test namespaces but NOT in the
       # `monitoring` namespace, so we cannot tunnel to the cluster Prometheus. Instead we
-      # scrape each pod's own metrics endpoint directly from the runner.
-      #
-      # We previously used the shared `./.github/actions/await-load-test` composite, but
-      # it has a pipefail-related bug: its `count=$(curl -s ... | grep | awk | cut)`
-      # propagates curl's exit 52 ("empty reply") on the first scrape attempt, which the
-      # Spring actuator reliably gives during startup. Workflows that hit await-load-test
-      # later in their boot sequence don't trip it; we do. Using `kubectl wait` directly
-      # sidesteps it. Gateway connectivity is implicitly verified later by our own
-      # `starter_run_finished` poll (the gauge can only flip if the starter actually
-      # connected to the broker and ran for `duration_limit` seconds).
+      # scrape each pod's own metrics endpoint directly from the runner once the platform
+      # and load-test client are ready.
 
-      - name: Wait for camunda platform pods to be Ready
-        run: |
-          kubectl -n "$NAMESPACE" wait --for=condition=ready pod \
-            -l app=camunda-platform --timeout=900s
+      - name: Verify platform & load-test client are ready
+        uses: ./.github/actions/await-load-test
+        with:
+          namespace: ${{ env.NAMESPACE }}
 
-      - name: Wait for load-test client pods to be Ready
+      - name: Wait for benchmark duration to elapse
         run: |
-          kubectl -n "$NAMESPACE" wait --for=condition=ready pod \
-            -l app.kubernetes.io/component=zeebe-client --timeout=300s
+          # The starter is configured with --set starter.durationLimit=$DURATION_SECONDS,
+          # so it can't flip the run-finished gauge before then. Sleep through that window
+          # rather than burn kubectl/curl traffic actively polling for it.
+          echo "Sleeping ${DURATION_SECONDS}s for the benchmark run to complete..."
+          sleep "$DURATION_SECONDS"
 
       - name: Wait for starter run-finished
         id: wait-starter
         run: |
+          # Post-sleep poll for the `starter_run_finished` gauge.
+          #
           # The starter exposes /metrics (the load-tester remaps /actuator/prometheus to
           # /metrics so Grafana scrape configs match Zeebe's convention).
-          starter_pod=$(kubectl -n "$NAMESPACE" get pod -l app=starter \
-            -o jsonpath='{.items[0].metadata.name}')
-          if [[ -z "$starter_pod" ]]; then
-            echo "::error::No starter pod found in $NAMESPACE"
-            exit 1
-          fi
-          echo "starter-pod=${starter_pod}" >> "$GITHUB_OUTPUT"
+          #
+          # We deliberately do NOT hold a long-lived port-forward. If the starter pod gets
+          # restarted or rescheduled (k8s eviction, manual `kubectl delete pod`, deployment
+          # update from a manual change, etc.), kubectl port-forward dies and won't reconnect
+          # to the replacement pod — leaving us polling a dead local port until deadline.
+          # Resolve the current pod by label and open a fresh port-forward each iteration.
+          # Cost: ~3s extra per 15s loop, trade for resilience.
+          poll_starter() {
+            # Echoes raw /metrics body (or empty on failure). Does not throw under pipefail.
+            local pod local_port=9601
+            pod=$(kubectl -n "$NAMESPACE" get pod -l app=starter \
+              -o jsonpath='{.items[0].metadata.name}' 2>/dev/null) || true
+            if [[ -z "$pod" ]]; then return 0; fi
+            kubectl -n "$NAMESPACE" port-forward "pod/$pod" "$local_port:9600" \
+              >/tmp/pf-starter.log 2>&1 &
+            local pid=$!
+            local out=""
+            for _ in 1 2 3; do
+              sleep 1
+              if out=$(curl -sf "http://localhost:$local_port/metrics" 2>/dev/null) && [[ -n "$out" ]]; then break; fi
+            done
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            printf '%s' "$out"
+          }
 
-          kubectl -n "$NAMESPACE" port-forward "pod/$starter_pod" 9601:9600 \
-            >/tmp/pf-starter.log 2>&1 &
-          echo $! > /tmp/pf-starter.pid
-
-          # Bind window. curl wrapped to absorb transient failures — pods can be Ready
-          # via readiness probe before Spring's actuator binds to :9600, which yields
-          # curl exit 52 ("empty reply") that pipefail would otherwise surface.
-          bound=0
-          for _ in $(seq 1 12); do
-            if out=$(curl -sf http://localhost:9601/metrics 2>/dev/null) && [[ -n "$out" ]]; then
-              bound=1; break
-            fi
-            sleep 5
-          done
-          if [[ "$bound" != "1" ]]; then
-            echo "::warning::Starter /metrics never returned data after 60s — proceeding anyway"
-          fi
-
-          deadline_seconds=$((DURATION_SECONDS + 600))
+          # Generous enough to absorb ONE full restart's worth of extra runtime.
+          # Multi-restart cases get surfaced via the restart-count warning in the comment.
+          deadline_seconds=$((DURATION_SECONDS + 300))
           end=$(( $(date +%s) + deadline_seconds ))
           finished=0
           while [[ $(date +%s) -lt $end ]]; do
-            # Two-step: capture the curl output (tolerate failures) before piping to awk,
-            # so a transient curl 52/connection-refused doesn't blow up the polling loop.
-            out=$(curl -sf http://localhost:9601/metrics 2>/dev/null) || out=""
+            out=$(poll_starter)
             val=$(printf '%s\n' "$out" | awk '/^starter_run_finished[ {]/ {print $NF; exit}')
             if [[ "$val" == "1.0" || "$val" == "1" ]]; then
               finished=1
+              # Save the last-known scrape so the next step can re-use it without another
+              # port-forward round-trip.
+              printf '%s' "$out" > /tmp/starter.prom
               break
             fi
-            sleep 30
+            sleep 15
           done
           echo "finished=${finished}" >> "$GITHUB_OUTPUT"
           if [[ "$finished" != "1" ]]; then
-            echo "::warning::Starter did not flip starter_run_finished=1 within ${deadline_seconds}s. Continuing to scrape what's available."
+            echo "::warning::Starter did not flip starter_run_finished=1 within ${deadline_seconds}s after the duration window. Continuing to scrape what's available."
+            : > /tmp/starter.prom  # ensure file exists for the aggregator
           fi
 
       - name: Read starter pod restart count
@@ -246,22 +248,6 @@ jobs:
             -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}' 2>/dev/null \
             | tr ' ' '\n' | awk '{s+=$1} END {print s+0}')
           echo "count=${rc:-0}" >> "$GITHUB_OUTPUT"
-
-      - name: Scrape starter metrics
-        run: |
-          # The starter port-forward from the wait step is still alive on :9601.
-          # Tolerate failure: an empty /tmp/starter.prom just means the aggregator emits
-          # zeros for the starter-side metrics, which the comment renderer flags as n/a.
-          curl -sf http://localhost:9601/metrics > /tmp/starter.prom \
-            || echo "::warning::Failed to scrape starter /metrics; continuing with empty file"
-          touch /tmp/starter.prom
-
-      - name: Stop starter port-forward
-        if: always()
-        run: |
-          if [[ -f /tmp/pf-starter.pid ]]; then
-            kill "$(cat /tmp/pf-starter.pid)" 2>/dev/null || true
-          fi
 
       - name: Scrape camunda broker metrics (all 3)
         run: |
