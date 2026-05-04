@@ -47,9 +47,11 @@ Vendor detection from the JDBC URL prefix:
 |---|---|---|
 | `jdbc:oracle:*` | Oracle | Yes — searches for `ojdbc*.jar` |
 | `jdbc:mysql:*` | MySQL | Yes — searches for `mysql-connector*.jar` |
-| `jdbc:postgresql:*` | PostgreSQL | No — requires `--extra-driver` |
-| `jdbc:mariadb:*` | MariaDB | No — requires `--extra-driver` |
-| `jdbc:sqlserver:*` | SQL Server | No — requires `--extra-driver` |
+| `jdbc:postgresql:*` | PostgreSQL | No — not auto-detected; provide `--extra-driver` if needed |
+| `jdbc:mariadb:*` | MariaDB | No — not auto-detected; provide `--extra-driver` if needed |
+| `jdbc:sqlserver:*` | SQL Server | No — not auto-detected; provide `--extra-driver` if needed |
+
+C8Run only fails early for missing drivers it explicitly validates during detection (currently Oracle/MySQL). For PostgreSQL, MariaDB, and SQL Server, a missing driver may only surface later at runtime.
 
 If `CAMUNDA_VERSION` is not set when driver detection runs, the function cannot resolve the lib directory and will fail if a driver is needed.
 
