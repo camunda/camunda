@@ -1,0 +1,140 @@
+# description: Nightly full E2E run for Optimize in Self-Managed mode, including visual regression tests
+# test location: /optimize/client/e2e/sm-tests
+# type: CI
+# owner: @camunda/core-features
+name: Optimize E2E Self-Managed (Nightly)
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+permissions:
+  contents: read
+  id-token: write # for authenticating with GCP
+
+jobs:
+  e2e-full:
+    name: "E2E Self-Managed (Full + Visual)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TEST_TYPE: E2E
+      TEST_OWNER: Core Features
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
+        with:
+          work-dir: ./optimize
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          harbor: true
+          maven-cache-key-modifier: optimize-e2e-nightly
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
+
+      - name: Start frontend
+        working-directory: ./optimize/client
+        run: yarn start &
+
+      - name: Start services (Zeebe, Keycloak, Identity, Operate and Elasticsearch)
+        uses: ./.github/actions/compose
+        with:
+          compose_file: optimize/client/docker-compose.yml
+          project_name: e2e
+          additional_flags: "--profile self-managed"
+
+      - name: Build backend
+        run: ./mvnw -T1C clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
+
+      - name: Create backend logs file
+        run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
+
+      - name: Start backend
+        working-directory: ./optimize/client
+        run: |
+          yarn run start-backend ci &> ./build/backendLogs.log &
+
+      - name: Wait for import to complete
+        run: |
+          while : ; do
+            count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
+            if [[ $count -eq 49 ]]; then
+              echo "Import Completed"
+              break
+            fi
+            echo "Index has $count entities. Waiting for 49..."
+            sleep 10
+          done
+
+      - name: Wait for frontend to start
+        run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
+
+      - name: Run full tests
+        working-directory: ./optimize/client
+        run: yarn run e2e:ci:sm:nightly:headless
+
+      - name: Run visual tests
+        working-directory: ./optimize/client
+        run: |
+          yarn run e2e:visual
+          yarn run e2e:visual:compare
+
+      - name: Upload logs
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: always()
+        with:
+          name: optimize-e2e-nightly-logs
+          path: ./optimize/client/build/*.log
+
+      - name: Upload diff images as artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: always()
+        with:
+          name: visual-regression-report
+          path: ./optimize/client/e2e/screenshots/
+
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: optimize-e2e-nightly-docker-logs
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
