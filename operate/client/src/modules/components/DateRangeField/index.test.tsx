@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {fireEvent, render, screen} from 'modules/testing-library';
 import {
   applyDateRange,
   pickDateTimeRange,
@@ -173,5 +173,27 @@ describe('Date Range Field', () => {
 
     vi.clearAllTimers();
     vi.useRealTimers();
+  });
+
+  it('should close the date picker calendar when a scroll event occurs', async () => {
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByLabelText('Start Date Range'));
+
+    // Open the flatpickr calendar by clicking the From date input
+    await user.click(screen.getByLabelText('From date'));
+
+    // Verify the calendar is open
+    expect(
+      document.querySelector('.flatpickr-calendar.open'),
+    ).toBeInTheDocument();
+
+    // Trigger a scroll event (simulating filter panel scroll)
+    fireEvent.scroll(document);
+
+    // Verify the calendar is closed
+    expect(
+      document.querySelector('.flatpickr-calendar.open'),
+    ).not.toBeInTheDocument();
   });
 });
