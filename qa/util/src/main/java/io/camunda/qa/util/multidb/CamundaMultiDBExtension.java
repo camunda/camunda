@@ -354,55 +354,101 @@ public class CamundaMultiDBExtension
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
         setupHelper = new OpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
-      case RDBMS_H2 ->
-          multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
-              "sa",
-              "",
-              "org.h2.Driver");
-      case RDBMS_POSTGRES ->
-          multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:postgresql:camunda",
-              "camunda",
-              "camunda",
-              "org.postgresql.Driver");
-      case RDBMS_MARIADB ->
-          multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:mariadb://localhost:3306/camunda",
-              "camunda",
-              "camunda",
-              "org.mariadb.jdbc.Driver");
-      case RDBMS_MYSQL ->
-          multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:mysql://localhost:3306/camunda",
-              "camunda",
-              "camunda",
-              "com.mysql.cj.jdbc.Driver");
-      case RDBMS_ORACLE ->
-          multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:oracle:thin:@localhost:1521/FREEPDB1",
-              "camunda",
-              "camunda",
-              "oracle.jdbc.OracleDriver");
-      case RDBMS_MSSQL ->
-          multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:sqlserver://localhost:1433;Encrypt=false",
-              "sa",
-              "Camunda#8_demo",
-              "com.microsoft.sqlserver.jdbc.SQLServerDriver");
-      case RDBMS_AURORA ->
-          multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              System.getProperty(TEST_INTEGRATION_AURORA_AWS_URL),
-              System.getProperty(TEST_INTEGRATION_AURORA_AWS_USERNAME),
-              System.getProperty(TEST_INTEGRATION_AURORA_AWS_PASSWORD),
-              "software.amazon.jdbc.Driver");
+      case RDBMS_H2 -> {
+        final String h2Url =
+            "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
+        final String tablePrefix = MultiDbConfigurator.generateTablePrefix();
+        initRdbmsSchema("h2", h2Url, "sa", "", tablePrefix);
+        multiDbConfigurator.configureRDBMSSupport(
+            isHistoryRelatedTest, h2Url, "sa", "", "org.h2.Driver", tablePrefix, false);
+      }
+      case RDBMS_POSTGRES -> {
+        final String tablePrefix = MultiDbConfigurator.generateTablePrefix();
+        initRdbmsSchema("postgresql", "jdbc:postgresql:camunda", "camunda", "camunda", tablePrefix);
+        multiDbConfigurator.configureRDBMSSupport(
+            isHistoryRelatedTest,
+            "jdbc:postgresql:camunda",
+            "camunda",
+            "camunda",
+            "org.postgresql.Driver",
+            tablePrefix,
+            false);
+      }
+      case RDBMS_MARIADB -> {
+        final String tablePrefix = MultiDbConfigurator.generateTablePrefix();
+        initRdbmsSchema(
+            "mariadb", "jdbc:mariadb://localhost:3306/camunda", "camunda", "camunda", tablePrefix);
+        multiDbConfigurator.configureRDBMSSupport(
+            isHistoryRelatedTest,
+            "jdbc:mariadb://localhost:3306/camunda",
+            "camunda",
+            "camunda",
+            "org.mariadb.jdbc.Driver",
+            tablePrefix,
+            false);
+      }
+      case RDBMS_MYSQL -> {
+        final String tablePrefix = MultiDbConfigurator.generateTablePrefix();
+        initRdbmsSchema(
+            "mysql", "jdbc:mysql://localhost:3306/camunda", "camunda", "camunda", tablePrefix);
+        multiDbConfigurator.configureRDBMSSupport(
+            isHistoryRelatedTest,
+            "jdbc:mysql://localhost:3306/camunda",
+            "camunda",
+            "camunda",
+            "com.mysql.cj.jdbc.Driver",
+            tablePrefix,
+            false);
+      }
+      case RDBMS_ORACLE -> {
+        final String tablePrefix = MultiDbConfigurator.generateTablePrefix();
+        initRdbmsSchema(
+            "oracle",
+            "jdbc:oracle:thin:@localhost:1521/FREEPDB1",
+            "camunda",
+            "camunda",
+            tablePrefix);
+        multiDbConfigurator.configureRDBMSSupport(
+            isHistoryRelatedTest,
+            "jdbc:oracle:thin:@localhost:1521/FREEPDB1",
+            "camunda",
+            "camunda",
+            "oracle.jdbc.OracleDriver",
+            tablePrefix,
+            false);
+      }
+      case RDBMS_MSSQL -> {
+        final String tablePrefix = MultiDbConfigurator.generateTablePrefix();
+        initRdbmsSchema(
+            "mssql",
+            "jdbc:sqlserver://localhost:1433;Encrypt=false",
+            "sa",
+            "Camunda#8_demo",
+            tablePrefix);
+        multiDbConfigurator.configureRDBMSSupport(
+            isHistoryRelatedTest,
+            "jdbc:sqlserver://localhost:1433;Encrypt=false",
+            "sa",
+            "Camunda#8_demo",
+            "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+            tablePrefix,
+            false);
+      }
+      case RDBMS_AURORA -> {
+        final String auroraUrl = System.getProperty(TEST_INTEGRATION_AURORA_AWS_URL);
+        final String auroraUser = System.getProperty(TEST_INTEGRATION_AURORA_AWS_USERNAME);
+        final String auroraPassword = System.getProperty(TEST_INTEGRATION_AURORA_AWS_PASSWORD);
+        final String tablePrefix = MultiDbConfigurator.generateTablePrefix();
+        initRdbmsSchema("postgresql", auroraUrl, auroraUser, auroraPassword, tablePrefix);
+        multiDbConfigurator.configureRDBMSSupport(
+            isHistoryRelatedTest,
+            auroraUrl,
+            auroraUser,
+            auroraPassword,
+            "software.amazon.jdbc.Driver",
+            tablePrefix,
+            false);
+      }
       case AWS_OS -> {
         final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
         multiDbConfigurator.configureAWSOpenSearchSupport(
@@ -609,6 +655,25 @@ public class CamundaMultiDBExtension
       final var realm = keycloak.realm(CamundaMultiDBExtension.KEYCLOAK_REALM);
       realm.clients().create(clientRepresentation).close();
       realm.users().create(userRepresentation).close();
+    }
+  }
+
+  /**
+   * Generates the full DDL for the given RDBMS database type and executes it directly over JDBC,
+   * bypassing Liquibase and its precondition evaluation. This is the fast-path schema
+   * initialization used for all {@code @MultiDbTest} RDBMS test classes.
+   */
+  private void initRdbmsSchema(
+      final String databaseType,
+      final String jdbcUrl,
+      final String username,
+      final String password,
+      final String tablePrefix) {
+    try {
+      new RdbmsSchemaInitializer(databaseType, jdbcUrl, username, password)
+          .initializeSchema(tablePrefix);
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to initialize " + databaseType + " schema for tests", e);
     }
   }
 
