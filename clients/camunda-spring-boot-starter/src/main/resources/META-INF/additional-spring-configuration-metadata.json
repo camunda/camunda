@@ -235,6 +235,38 @@
       "defaultValue": false
     },
     {
+      "name": "camunda.client.keep-alive",
+      "defaultValue": "PT45S"
+    },
+    {
+      "name": "camunda.client.worker.override",
+      "defaultValue": {}
+    },
+    {
+      "name": "camunda.client.auth.proactive-token-refresh-threshold",
+      "defaultValue": "PT30S"
+    },
+    {
+      "name": "camunda.client.auth.token-fetch-max-retries",
+      "defaultValue": 5
+    },
+    {
+      "name": "camunda.client.auth.token-fetch-initial-backoff",
+      "defaultValue": "PT1S"
+    },
+    {
+      "name": "camunda.client.auth.token-fetch-backoff-multiplier",
+      "defaultValue": 2.0
+    },
+    {
+      "name": "camunda.client.auth.token-fetch-retryable-status-codes",
+      "defaultValue": [404, 429, 500, 502, 503, 504]
+    },
+    {
+      "name": "camunda.client.auth.token-fetch-non-retryable-cooldown",
+      "defaultValue": "PT5M"
+    },
+    {
       "name": "common.auth-url",
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",
