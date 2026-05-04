@@ -16,8 +16,10 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum ResourceReexportIntent implements Intent {
-  REEXPORT(0),
-  REEXPORTED(1);
+  START(0),
+  STARTED(1),
+  REEXPORT(2),
+  FINISHED(3);
 
   private final short value;
 
@@ -37,7 +39,8 @@ public enum ResourceReexportIntent implements Intent {
   @Override
   public boolean isEvent() {
     switch (this) {
-      case REEXPORTED:
+      case STARTED:
+      case FINISHED:
         return true;
       default:
         return false;
@@ -47,9 +50,13 @@ public enum ResourceReexportIntent implements Intent {
   public static Intent from(final short value) {
     switch (value) {
       case 0:
-        return REEXPORT;
+        return START;
       case 1:
-        return REEXPORTED;
+        return STARTED;
+      case 2:
+        return REEXPORT;
+      case 3:
+        return FINISHED;
       default:
         return Intent.UNKNOWN;
     }
