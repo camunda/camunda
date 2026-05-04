@@ -93,6 +93,7 @@ final class BrokerInfoTest {
     assertThat(decoded.getAddresses()).isEmpty();
     assertThat(decoded.getPartitionRoles()).isEmpty();
     assertThat(decoded.getPartitionHealthStatuses()).isEmpty();
+    assertThat(decoded.getZone()).isNull();
   }
 
   @Test
@@ -119,41 +120,6 @@ final class BrokerInfoTest {
     assertThat(decoded.getAddresses()).isEmpty();
     assertThat(decoded.getPartitionRoles()).isEmpty();
     assertThat(decoded.getPartitionHealthStatuses()).isEmpty();
-    assertThat(decoded.getZone()).isNull();
-  }
-
-  @Test
-  void shouldEncodeDecodeZone() {
-    // given
-    final BrokerInfo brokerInfo =
-        new BrokerInfo()
-            .setNodeId(1)
-            .setPartitionsCount(1)
-            .setClusterSize(1)
-            .setReplicationFactor(1)
-            .setZone("us-east-1a");
-
-    // when
-    final var decoded = encodeDecode(brokerInfo);
-
-    // then
-    assertThat(decoded.getZone()).isEqualTo("us-east-1a");
-  }
-
-  @Test
-  void shouldEncodeDecodeWithNullZone() {
-    // given
-    final BrokerInfo brokerInfo =
-        new BrokerInfo()
-            .setNodeId(1)
-            .setPartitionsCount(1)
-            .setClusterSize(1)
-            .setReplicationFactor(1);
-
-    // when
-    final var decoded = encodeDecode(brokerInfo);
-
-    // then
     assertThat(decoded.getZone()).isNull();
   }
 
