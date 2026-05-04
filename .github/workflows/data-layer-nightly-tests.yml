@@ -107,7 +107,9 @@ jobs:
     name: Notify on failure
     runs-on: ubuntu-latest
     needs: [nightly-tests]
-    if: failure() && false # Set to false to disable notification for now, enable when needed
+    if: |
+      failure() &&
+      github.event_name == 'schedule'
     timeout-minutes: 5
     permissions: {}
     steps:
