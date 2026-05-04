@@ -47,7 +47,9 @@ public class ResourceReexportReexportProcessor
 
     resourceState.visitResourcesByKey(
         value.getTenantId(),
-        value.getResourceKey(),
+        // We already reexported the key inside the command. We need to ensure we
+        // continue with the next one.
+        value.getResourceKey() + 1,
         resource -> {
           if (!BufferUtil.bufferAsString(resource.getResourceName()).endsWith(RPA_FILE_EXTENSION)) {
             return true; // We should only reexport RPA resources.
