@@ -116,6 +116,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.FormGetRequest;
 import io.camunda.client.api.fetch.GlobalTaskListenerGetRequest;
 import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
@@ -913,6 +914,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get the Form of process definition
    */
   ProcessDefinitionGetFormRequest newProcessDefinitionGetFormRequest(long processDefinitionKey);
+
+  /**
+   * Gets a Form by key.
+   *
+   * <pre>
+   * long formKey = ...;
+   *
+   * camundaClient
+   *  .newFormGetRequest(formKey)
+   *  .send();
+   * </pre>
+   *
+   * @param formKey the key of the form
+   * @return a builder for the request to get a form
+   */
+  FormGetRequest newFormGetRequest(long formKey);
 
   /**
    * Executes a search request to query process definitions.

@@ -127,6 +127,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.FormGetRequest;
 import io.camunda.client.api.fetch.GlobalTaskListenerGetRequest;
 import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
@@ -304,6 +305,7 @@ import io.camunda.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DocumentContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ElementInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.FormGetRequestImpl;
 import io.camunda.client.impl.fetch.GlobalTaskListenerGetRequestImpl;
 import io.camunda.client.impl.fetch.GloballyScopedClusterVariableGetRequestImpl;
 import io.camunda.client.impl.fetch.GroupGetRequestImpl;
@@ -915,6 +917,11 @@ public final class CamundaClientImpl implements CamundaClient {
   public ProcessDefinitionGetFormRequest newProcessDefinitionGetFormRequest(
       final long processDefinitionKey) {
     return new ProcessDefinitionGetFormRequestImpl(httpClient, processDefinitionKey);
+  }
+
+  @Override
+  public FormGetRequest newFormGetRequest(final long formKey) {
+    return new FormGetRequestImpl(httpClient, formKey);
   }
 
   @Override
