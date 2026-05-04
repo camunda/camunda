@@ -24,9 +24,11 @@ import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.util.PhysicalTenantResolver;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -113,5 +115,17 @@ public class PhysicalTenantSearchClientReadersConfiguration {
     return new CamundaSearchClients(
         physicalTenantSearchClientReaders,
         new ResourceAccessDelegatingController(resourceAccessControllers));
+  }
+
+  /**
+   * Exposes the configured physical tenants to the REST layer so that {@code
+   * /v2/physical-tenants/{physicalTenantId}/...} requests with an unknown id are rejected with HTTP
+   * 404 before reaching any controller.
+   */
+  @Bean
+  public PhysicalTenantResolver physicalTenantResolver(
+      final TenantConnectConfigResolver tenantConnectConfigResolver) {
+    final Set<String> known = Set.copyOf(tenantConnectConfigResolver.tenantConfigs().keySet());
+    return known::contains;
   }
 }
