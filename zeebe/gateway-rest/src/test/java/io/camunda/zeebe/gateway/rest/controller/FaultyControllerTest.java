@@ -11,8 +11,11 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.service.IncidentServices;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -28,6 +31,11 @@ public class FaultyControllerTest extends RestControllerTest {
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean ProcessInstanceServices processInstanceServices;
+  // ProcessInstanceController also depends on these for the /search.csv export endpoint;
+  // the context fails to load without mocks even when this test only exercises another route.
+  @MockitoBean IncidentServices incidentServices;
+  @MockitoBean VariableServices variableServices;
+  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
 
   @BeforeEach
   void setupServices() {

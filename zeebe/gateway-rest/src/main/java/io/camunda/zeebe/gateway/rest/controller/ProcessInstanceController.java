@@ -9,6 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -27,10 +29,18 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperati
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
+import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.VariableQuery;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.service.IncidentServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
@@ -38,34 +48,64 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOpe
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
+import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @CamundaRestController
 @RequestMapping("/v2/process-instances")
 public class ProcessInstanceController {
 
+  static final String EXPORT_TRUNCATED_HEADER = "X-Camunda-Export-Truncated";
+  private static final String CSV_CONTENT_TYPE = "text/csv; charset=UTF-8";
+  private static final DateTimeFormatter FILENAME_TIMESTAMP =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss'Z'").withZone(ZoneOffset.UTC);
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceController.class);
+  private static final ObjectMapper EXPORT_JSON = new ObjectMapper();
+
   private final ProcessInstanceServices processInstanceServices;
+  private final IncidentServices incidentServices;
+  private final VariableServices variableServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final GatewayRestConfiguration gatewayRestConfiguration;
 
   public ProcessInstanceController(
       final ProcessInstanceServices processInstanceServices,
+      final IncidentServices incidentServices,
+      final VariableServices variableServices,
       final MultiTenancyConfiguration multiTenancyCfg,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     this.processInstanceServices = processInstanceServices;
+    this.incidentServices = incidentServices;
+    this.variableServices = variableServices;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
+    this.gatewayRestConfiguration = gatewayRestConfiguration;
   }
 
   @CamundaPostMapping
@@ -117,6 +157,23 @@ public class ProcessInstanceController {
       @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toProcessInstanceQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  /**
+   * Streams the process-instance set matching {@code query} as a UTF-8 CSV file. Designed for
+   * business reporting (Excel, Power BI, BO) — the request body is identical to {@code /search} so
+   * clients reuse their existing filter/sort code. Pagination is server-driven; the {@code
+   * page.limit} field on the request body is ignored. The hard row cap is configurable via {@code
+   * camunda.rest.process-instance-export.max-rows}; when reached, the response body still contains
+   * a complete CSV but the {@code X-Camunda-Export-Truncated: true} header is set so clients can
+   * surface a refine-your-filter hint.
+   */
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/search.csv", produces = "text/csv")
+  public ResponseEntity<StreamingResponseBody> exportProcessInstancesCsv(
+      @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
+    return SearchQueryRequestMapper.toProcessInstanceQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::exportCsv);
   }
 
   @RequiresSecondaryStorage
@@ -254,6 +311,145 @@ public class ProcessInstanceController {
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<StreamingResponseBody> exportCsv(final ProcessInstanceQuery query) {
+    final var auth = authenticationProvider.getCamundaAuthentication();
+    final var exportCfg = gatewayRestConfiguration.getProcessInstanceExport();
+    final int maxRows = exportCfg.getMaxRows();
+    final int pageSize = exportCfg.getPageSize();
+    final boolean tenantColumn = multiTenancyCfg.isChecksEnabled();
+
+    // Probe total upfront so the truncation header can be set before the response body starts
+    // streaming. HTTP headers cannot be added once StreamingResponseBody has begun writing.
+    final boolean truncated;
+    try {
+      final var probe =
+          processInstanceServices.search(
+              new ProcessInstanceQuery(
+                  query.filter(),
+                  query.sort(),
+                  SearchQueryPage.NO_ENTITIES_QUERY,
+                  query.resultConfig()),
+              auth);
+      truncated = probe.hasMoreTotalItems() || probe.total() > maxRows;
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+
+    final String filename =
+        "process-instances-" + FILENAME_TIMESTAMP.format(Instant.now()) + ".csv";
+    final StreamingResponseBody body =
+        out -> {
+          try (var writer = ProcessInstanceCsvWriter.open(out, tenantColumn)) {
+            writer.writeHeader();
+            processInstanceServices.streamSearch(
+                query, auth, page -> writeEnrichedPage(writer, page, auth), maxRows, pageSize);
+          }
+        };
+
+    final var builder =
+        ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_TYPE, CSV_CONTENT_TYPE)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"");
+    if (truncated) {
+      builder.header(EXPORT_TRUNCATED_HEADER, "true");
+    }
+    return builder.body(body);
+  }
+
+  private void writeEnrichedPage(
+      final ProcessInstanceCsvWriter writer,
+      final List<ProcessInstanceEntity> page,
+      final CamundaAuthentication auth) {
+    final List<Long> keys = page.stream().map(ProcessInstanceEntity::processInstanceKey).toList();
+    final Map<Long, String> incidentMessages = fetchActiveIncidentMessages(keys, auth);
+    final Map<Long, String> variablesJson = fetchVariablesAsJson(keys, auth);
+    for (final var entity : page) {
+      final Long key = entity.processInstanceKey();
+      writer.writeRow(
+          entity, incidentMessages.getOrDefault(key, ""), variablesJson.getOrDefault(key, ""));
+    }
+  }
+
+  private Map<Long, String> fetchActiveIncidentMessages(
+      final List<Long> keys, final CamundaAuthentication auth) {
+    if (keys.isEmpty()) {
+      return Map.of();
+    }
+    try {
+      final var result =
+          incidentServices.search(
+              IncidentQuery.of(
+                  b ->
+                      b.filter(
+                              f ->
+                                  f.processInstanceKeyOperations(Operation.in(keys))
+                                      .states(IncidentState.ACTIVE.name()))
+                          .unlimited()),
+              auth);
+      // Multiple incidents per instance are possible — surface the most recent one's message.
+      return result.items().stream()
+          .sorted(Comparator.comparing(IncidentEntity::creationTime).reversed())
+          .collect(
+              Collectors.toMap(
+                  IncidentEntity::processInstanceKey,
+                  IncidentEntity::errorMessage,
+                  (first, ignored) -> first));
+    } catch (final Exception e) {
+      // Don't fail the whole export if the user lacks INCIDENT_READ or the search hiccups —
+      // the row just gets a blank Incident Message column.
+      LOG.warn(
+          "Could not enrich CSV export with incident messages for {} process instance(s); leaving the column blank.",
+          keys.size(),
+          e);
+      return Map.of();
+    }
+  }
+
+  private Map<Long, String> fetchVariablesAsJson(
+      final List<Long> keys, final CamundaAuthentication auth) {
+    if (keys.isEmpty()) {
+      return Map.of();
+    }
+    try {
+      final var result =
+          variableServices.search(
+              VariableQuery.of(
+                  b ->
+                      b.filter(f -> f.processInstanceKeyOperations(Operation.in(keys)))
+                          .unlimited()),
+              auth);
+      final Map<Long, ObjectNode> grouped = new HashMap<>();
+      for (final var v : result.items()) {
+        final var node =
+            grouped.computeIfAbsent(v.processInstanceKey(), k -> EXPORT_JSON.createObjectNode());
+        // value may be a truncated preview — prefer fullValue so the export contains complete
+        // data even for large variables.
+        final String resolved =
+            (Boolean.TRUE.equals(v.isPreview()) && v.fullValue() != null)
+                ? v.fullValue()
+                : v.value();
+        try {
+          node.set(v.name(), EXPORT_JSON.readTree(resolved));
+        } catch (final Exception parseError) {
+          // Camunda variables are stored as JSON, but defensively fall back to a string cell
+          // when a value is somehow malformed.
+          node.put(v.name(), resolved);
+        }
+      }
+      final Map<Long, String> out = new HashMap<>(grouped.size());
+      for (final var entry : grouped.entrySet()) {
+        out.put(entry.getKey(), entry.getValue().toString());
+      }
+      return out;
+    } catch (final Exception e) {
+      LOG.warn(
+          "Could not enrich CSV export with variables for {} process instance(s); leaving the column blank.",
+          keys.size(),
+          e);
+      return Map.of();
     }
   }
 

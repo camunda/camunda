@@ -142,6 +142,63 @@ public final class ProcessInstanceServiceTest {
   }
 
   @Test
+  public void shouldStreamProcessInstancesUntilExhausted() {
+    // given — a single page of results that is shorter than the requested batch size, signalling
+    // the matching set is fully drained.
+    final var entityA =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 1L)
+            .create();
+    final var entityB =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 2L)
+            .create();
+    when(processInstanceSearchClient.searchProcessInstances(any()))
+        .thenReturn(
+            SearchQueryResult.<ProcessInstanceEntity>of(
+                b -> b.total(2).items(List.of(entityA, entityB))));
+
+    final ProcessInstanceQuery query = SearchQueryBuilders.processInstanceSearchQuery().build();
+    final List<ProcessInstanceEntity> emitted = new ArrayList<>();
+
+    // when
+    final boolean truncated =
+        services.streamSearch(
+            query, authentication, emitted::addAll, /* maxRows= */ 1000, /* pageSize= */ 100);
+
+    // then
+    assertThat(truncated).isFalse();
+    assertThat(emitted).containsExactly(entityA, entityB);
+  }
+
+  @Test
+  public void shouldStopStreamAtMaxRowsCap() {
+    // given — every page is full and exposes a cursor, so the only thing that stops the loop is
+    // hitting the configured cap.
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 99L)
+            .create();
+    when(processInstanceSearchClient.searchProcessInstances(any()))
+        .thenAnswer(
+            invocation ->
+                SearchQueryResult.<ProcessInstanceEntity>of(
+                    b -> b.total(1000).items(List.of(entity, entity)).endCursor("next")));
+
+    final ProcessInstanceQuery query = SearchQueryBuilders.processInstanceSearchQuery().build();
+    final List<ProcessInstanceEntity> emitted = new ArrayList<>();
+
+    // when — cap is 4, page size is 2 → exactly two iterations before the cap is reached
+    final boolean truncated =
+        services.streamSearch(
+            query, authentication, emitted::addAll, /* maxRows= */ 4, /* pageSize= */ 2);
+
+    // then
+    assertThat(truncated).isTrue();
+    assertThat(emitted).hasSize(4);
+  }
+
+  @Test
   public void shouldReturnProcessInstanceSequenceFlows() {
     // given
     final SearchQueryResult<SequenceFlowEntity> result =

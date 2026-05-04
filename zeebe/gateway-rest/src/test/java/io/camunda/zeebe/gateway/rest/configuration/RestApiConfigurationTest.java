@@ -14,10 +14,13 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.service.IncidentServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.Topology;
+import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +33,11 @@ abstract class RestApiConfigurationTest extends RestControllerTest {
 
   @MockitoBean MultiTenancyConfiguration multiTenancyConfiguration;
   @MockitoBean ProcessInstanceServices processInstanceServices;
+  // ProcessInstanceController also depends on these for the /search.csv export endpoint;
+  // the context fails to load without mocks even when this test only exercises /search.
+  @MockitoBean IncidentServices incidentServices;
+  @MockitoBean VariableServices variableServices;
+  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
   @MockitoBean TopologyServices topologyServices;
 
   @BeforeEach

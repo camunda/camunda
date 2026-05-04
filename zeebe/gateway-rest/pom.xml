@@ -262,6 +262,19 @@
       <scope>provided</scope>
     </dependency>
 
+    <!-- CSV writer for /v2/process-instances/search.csv -->
+    <dependency>
+      <groupId>com.opencsv</groupId>
+      <artifactId>opencsv</artifactId>
+      <version>5.12.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
     <!-- test dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>

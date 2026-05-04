@@ -23,6 +23,7 @@ import type {
   BatchOperationType,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {ExportButton} from './ExportButton';
 import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation, useSearchParams} from 'react-router-dom';
@@ -114,7 +115,9 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
           title="Process Instances"
           count={totalCount}
           hasMoreTotalItems={hasMoreTotalItems}
-        />
+        >
+          <ExportButton totalCount={totalCount} />
+        </PanelHeader>
         <Toolbar
           selectedInstancesCount={processInstancesSelectionStore.selectedCount}
         />

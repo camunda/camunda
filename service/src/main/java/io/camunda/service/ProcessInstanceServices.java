@@ -24,6 +24,7 @@ import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -72,6 +73,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -191,6 +193,53 @@ public final class ProcessInstanceServices
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn,
       final CamundaAuthentication authentication) {
     return search(processInstanceSearchQuery(fn), authentication);
+  }
+
+  /**
+   * Streams pages of process-instance results matching {@code query} into {@code pageSink}, paging
+   * via the result's end-cursor. Stops when the matching set is exhausted or {@code maxRows} have
+   * been emitted (whichever comes first). The query's own page parameters are ignored — pagination
+   * is driven by this method. The page consumer receives each batch as a list so callers can run
+   * batch-level enrichment (e.g. fetch incidents/variables in bulk per page).
+   *
+   * @return {@code true} if the cap was reached with results still pending (truncated), {@code
+   *     false} if the matching set was fully streamed.
+   */
+  public boolean streamSearch(
+      final ProcessInstanceQuery query,
+      final CamundaAuthentication authentication,
+      final Consumer<List<ProcessInstanceEntity>> pageSink,
+      final int maxRows,
+      final int pageSize) {
+    String afterCursor = null;
+    int emitted = 0;
+    while (emitted < maxRows) {
+      final int remaining = maxRows - emitted;
+      final int batchSize = Math.min(pageSize, remaining);
+      final String cursor = afterCursor;
+      final var pagedQuery =
+          new ProcessInstanceQuery(
+              query.filter(),
+              query.sort(),
+              SearchQueryPage.of(b -> b.from(0).size(batchSize).after(cursor)),
+              query.resultConfig());
+      final var result = search(pagedQuery, authentication);
+      final var items = result.items();
+      if (items.isEmpty()) {
+        return false;
+      }
+      pageSink.accept(items);
+      emitted += items.size();
+      if (items.size() < batchSize || result.endCursor() == null) {
+        return false;
+      }
+      afterCursor = result.endCursor();
+    }
+    // Capped at maxRows with a cursor still available — caller may have more matches than were
+    // streamed. Note: in the rare case where the matching set is exactly maxRows and a non-null
+    // cursor is still returned, we may report truncated=true even though no more items exist; that
+    // is an acceptable false positive (user just sees a "refine your filter" hint).
+    return true;
   }
 
   public List<ProcessFlowNodeStatisticsEntity> elementStatistics(
