@@ -135,7 +135,7 @@ class ProcessInstanceRequestValidatorTest {
             .build();
     final var request =
         ProcessInstanceMigrationBatchOperationRequest.Builder.create()
-            .filter(ProcessInstanceFilter.empty())
+            .filter(ProcessInstanceFilter.Builder.create().build())
             .migrationPlan(migrationPlan)
             .build();
 
@@ -162,7 +162,7 @@ class ProcessInstanceRequestValidatorTest {
             .build();
     final var request =
         ProcessInstanceMigrationBatchOperationRequest.Builder.create()
-            .filter(ProcessInstanceFilter.empty())
+            .filter(ProcessInstanceFilter.Builder.create().build())
             .migrationPlan(migrationPlan)
             .build();
 

@@ -75,8 +75,6 @@ class RequestMapperTest {
   @Test
   void shouldReturnProblemDetailForInvalidInput() {
     // given
-    // Use empty strings to trigger the "are required" validation (staged builder enforces non-null,
-    // but the validator checks isEmpty() to detect missing values)
     final var mappingInstruction =
         MigrateProcessInstanceMappingInstruction.Builder.create()
             .sourceElementId("")
@@ -87,7 +85,7 @@ class RequestMapperTest {
             .targetProcessDefinitionKey("123")
             .mappingInstructions(List.of(mappingInstruction))
             .build();
-    final var filter = ProcessInstanceFilter.empty();
+    final var filter = ProcessInstanceFilter.Builder.create().build();
     final var batchOperationRequest =
         ProcessInstanceMigrationBatchOperationRequest.Builder.create()
             .filter(filter)

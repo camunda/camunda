@@ -392,7 +392,9 @@ public class RequestMapper {
       for (int i = 0; i < parts.size(); i++) {
         final Part part = parts.get(i);
         final DocumentMetadata metadata =
-            metadataList.get(i) == null ? DocumentMetadata.empty() : metadataList.get(i);
+            metadataList.get(i) == null
+                ? DocumentMetadata.Builder.create().build()
+                : metadataList.get(i);
         final InputStream inputStream;
         try {
           inputStream = part.getInputStream();
@@ -423,7 +425,7 @@ public class RequestMapper {
                                     throw new RuntimeException(e);
                                   }
                                 })
-                            .orElse(DocumentMetadata.empty())));
+                            .orElse(DocumentMetadata.Builder.create().build())));
 
     final ProblemDetail validationErrors =
         metadataMap.values().stream()

@@ -53,7 +53,8 @@ public class GlobalListenerMapper {
         () -> {
           final var record = new GlobalListenerRecord();
           // Ensure basic data for a task listener request is set
-          fillDataFromGlobalTaskListenerRequest(record, GlobalTaskListenerBase.empty());
+          fillDataFromGlobalTaskListenerRequest(
+              record, GlobalTaskListenerBase.Builder.create().build());
           // Add ID from the actual request
           record.setId(id);
           return record;
@@ -80,7 +81,8 @@ public class GlobalListenerMapper {
         () -> {
           final var record = new GlobalListenerRecord();
           // Ensure basic data for a task listener request is set
-          fillDataFromGlobalTaskListenerRequest(record, GlobalTaskListenerBase.empty());
+          fillDataFromGlobalTaskListenerRequest(
+              record, GlobalTaskListenerBase.Builder.create().build());
           // Add ID from the actual request
           record.setId(id);
           return record;

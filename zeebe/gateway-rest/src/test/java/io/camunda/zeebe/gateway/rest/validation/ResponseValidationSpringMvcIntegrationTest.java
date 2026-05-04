@@ -32,11 +32,6 @@ class ResponseValidationSpringMvcIntegrationTest {
   @RestController
   static class TestResponseValidationController {
 
-    /**
-     * Creates a {@link LicenseResponse} with arbitrary field values via reflection, bypassing the
-     * protected constructor and staged builder. This lets the controller intentionally return
-     * invalid/incomplete responses to verify downstream validation logic.
-     */
     @SuppressWarnings("NullAway")
     private static LicenseResponse licenseResponseViaReflection(
         final Boolean validLicense,
@@ -66,13 +61,11 @@ class ResponseValidationSpringMvcIntegrationTest {
 
     @GetMapping("/v2/test/response-validation/invalid")
     public LicenseResponse invalidResponse() {
-      // Missing licenseType (violates @NotNull) — use reflection to bypass protected constructor
       return licenseResponseViaReflection(true, null, true, "2025-12-31T23:59:59Z");
     }
 
     @GetMapping("/v2/test/response-validation/all-null")
     public LicenseResponse allNullResponse() {
-      // All required fields null — use reflection to bypass protected constructor
       return licenseResponseViaReflection(null, null, null, null);
     }
 

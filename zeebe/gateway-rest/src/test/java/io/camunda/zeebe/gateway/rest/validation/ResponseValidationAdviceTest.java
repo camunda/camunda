@@ -64,16 +64,6 @@ class ResponseValidationAdviceTest {
     assertThat(advice.supports(null, null)).isTrue();
   }
 
-  /**
-   * Helper to create a {@link LicenseResponse} with arbitrary field values via reflection,
-   * bypassing the protected constructor and staged builder. This lets tests intentionally create
-   * invalid/incomplete responses to verify validation logic.
-   *
-   * @param validLicense value for the {@code validLicense} field (may be {@code null})
-   * @param licenseType value for the {@code licenseType} field (may be {@code null})
-   * @param isCommercial value for the {@code isCommercial} field (may be {@code null})
-   * @param expiresAt value for the {@code expiresAt} field (may be {@code null})
-   */
   @SuppressWarnings("NullAway")
   private static LicenseResponse licenseResponseViaReflection(
       final Boolean validLicense,
@@ -132,7 +122,7 @@ class ResponseValidationAdviceTest {
 
     @Test
     void shouldPassThroughValidDto() {
-      // given — all required fields set
+      // given
       final LicenseResponse validResponse =
           LicenseResponse.Builder.create()
               .validLicense(true)
@@ -178,7 +168,7 @@ class ResponseValidationAdviceTest {
 
     @Test
     void shouldThrowWhenMultipleRequiredFieldsAreNull() {
-      // given — all required fields are null
+      // given
       final LicenseResponse invalidResponse = licenseResponseViaReflection(null, null, null, null);
 
       // when / then
