@@ -6,9 +6,9 @@
 		"module": "ESNext",
 		"moduleResolution": "bundler",
 		"paths": {
-			"#/pw-modules/*": ["./playwright/pw-modules/*"],
+			"#/pw-modules/*": ["./test/pw-modules/*"],
 			"#/shared-test-modules/*": ["./shared-test-modules/*"]
 		}
 	},
-	"include": ["vite.config.ts", "playwright.config.ts", "playwright/**/*.ts", "shared-test-modules/**/*.ts"]
+	"include": ["vite.config.ts", "playwright.config.ts", "test/**/*.ts", "shared-test-modules/**/*.ts"]
 }
