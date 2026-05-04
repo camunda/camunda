@@ -17,11 +17,18 @@ import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.CamundaContainer.GatewayContainer;
 import io.camunda.container.ZeebeTopologyWaitStrategy;
 import io.camunda.container.volume.CamundaVolume;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.test.testcontainers.RemoteDebugger;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VersionUtil;
-import java.net.URI;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -35,14 +42,30 @@ import org.agrona.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.unit.DataSize;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.ContainerFetchException;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
+/**
+ * Test fixture used by update tests. Runs the previous version as a Docker container; runs the
+ * current version directly via Spring Boot ({@link TestStandaloneBroker}). The two are mutually
+ * exclusive: at any given time the state is backed by either an old broker container or an
+ * in-process current broker, never both.
+ *
+ * <p>Data is handed over from the old container to the in-process broker by extracting the Docker
+ * volume to a host directory and pointing the in-process broker at it via {@link
+ * TestStandaloneBroker#withWorkingDirectory(Path)}.
+ *
+ * <p>An optional legacy {@link GatewayContainer} can be paired with the in-process broker; the
+ * broker advertises itself as {@code host.testcontainers.internal} and the gateway dials back via
+ * {@link Testcontainers#exposeHostPorts(int...)}.
+ */
 final class ContainerState implements AutoCloseable {
 
   public static final int PARTITION_COUNT = 2;
+
   private static final RetryPolicy<Void> CONTAINER_START_RETRY_POLICY =
       new RetryPolicy<Void>().withMaxRetries(5).withBackoff(3, 30, ChronoUnit.SECONDS);
   private static final Pattern DOUBLE_NEWLINE = Pattern.compile("\n\n");
@@ -50,8 +73,6 @@ final class ContainerState implements AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(ContainerState.class);
   private static final DockerImageName PREVIOUS_VERSION =
       DockerImageName.parse("camunda/camunda").withTag(VersionUtil.getPreviousVersion());
-  private static final DockerImageName CURRENT_VERSION =
-      ZeebeTestContainerDefaults.defaultTestImage();
 
   static {
     CONTAINER_START_RETRY_POLICY
@@ -66,33 +87,39 @@ final class ContainerState implements AutoCloseable {
             });
   }
 
-  private final CamundaVolume volume = CamundaVolume.newVolume();
+  /** Volume backing the old container's data folder; null once it has been extracted/closed. */
+  private CamundaVolume volume;
+
+  /** Host directory holding extracted data for the in-process broker; null when not in use. */
+  private Path inProcessDataDir;
 
   private Network network = Network.SHARED;
-  private BrokerContainer broker;
-  private GatewayContainer gateway;
+
+  // mutually exclusive
+  private BrokerContainer oldBroker;
+  private TestStandaloneBroker newBroker;
+
+  /** Optional legacy gateway container; only valid alongside an in-process new broker. */
+  private GatewayContainer oldGateway;
+
   private CamundaClient client;
   private PartitionsActuator partitionsActuator;
-
-  private DockerImageName brokerImage;
-  private DockerImageName gatewayImage;
-  private boolean withRemoteDebugging;
-
+  private boolean useNewBroker;
+  private boolean useOldGateway;
   private String withUser;
-  private String withVersionOverride;
 
   CamundaClient client() {
     return client;
   }
 
   ContainerState withOldBroker() {
-    broker(PREVIOUS_VERSION);
+    useNewBroker = false;
     return this;
   }
 
   ContainerState withNewBroker() {
-    withVersionOverride(VersionUtil.getVersion().replace("-SNAPSHOT", ""));
-    return broker(CURRENT_VERSION);
+    useNewBroker = true;
+    return this;
   }
 
   ContainerState withNetwork(final Network network) {
@@ -101,7 +128,7 @@ final class ContainerState implements AutoCloseable {
   }
 
   ContainerState withOldGateway() {
-    gatewayImage = PREVIOUS_VERSION;
+    useOldGateway = true;
     return this;
   }
 
@@ -110,24 +137,24 @@ final class ContainerState implements AutoCloseable {
     return this;
   }
 
-  ContainerState withVersionOverride(final String version) {
-    withVersionOverride = version;
-    return this;
-  }
-
-  private ContainerState broker(final DockerImageName image) {
-    brokerImage = image;
-    return this;
-  }
-
   public void start(final boolean enableDebug) {
     start(enableDebug, false);
   }
 
   public void start(final boolean enableDebug, final boolean withRemoteDebugging) {
-    final URI grpcAddress;
-    broker =
-        new BrokerContainer(brokerImage)
+    if (useNewBroker) {
+      startNewBroker();
+    } else {
+      startOldBroker(enableDebug, withRemoteDebugging);
+    }
+  }
+
+  private void startOldBroker(final boolean enableDebug, final boolean withRemoteDebugging) {
+    if (volume == null) {
+      volume = CamundaVolume.newVolume();
+    }
+    oldBroker =
+        new BrokerContainer(PREVIOUS_VERSION)
             .withUnifiedConfig(
                 cfg -> {
                   cfg.getCluster().setPartitionCount(PARTITION_COUNT);
@@ -141,81 +168,143 @@ final class ContainerState implements AutoCloseable {
                   cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
                 })
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+            .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
+            .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
+            .withEnv("CAMUNDA_REST_ENABLED", "false")
+            .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
             .withCamundaData(volume)
             .withNetwork(network);
-    this.withRemoteDebugging = withRemoteDebugging;
-
-    if (brokerImage.equals(PREVIOUS_VERSION)) {
-      broker
-          .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
-          .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
-          .withEnv("CAMUNDA_REST_ENABLED", "false")
-          .withEnv(CREATE_SCHEMA_ENV_VAR, "false");
-    }
 
     if (withRemoteDebugging) {
-      RemoteDebugger.configureContainer(broker);
+      RemoteDebugger.configureContainer(oldBroker);
       LOG.info("================================================");
       LOG.info("About to start broker....");
       LOG.info(
           "The broker will wait for a debugger to connect to it at port "
               + RemoteDebugger.DEFAULT_REMOTE_DEBUGGER_PORT
               + ". It will wait for "
-              + RemoteDebugger.DEFAULT_START_TIMEOUT.toString());
+              + RemoteDebugger.DEFAULT_START_TIMEOUT);
       LOG.info("================================================");
     }
-
     if (enableDebug) {
-      broker = broker.withEnv("ZEEBE_DEBUG", "true");
+      oldBroker.withEnv("ZEEBE_DEBUG", "true");
     }
-
     if (!Strings.isEmpty(withUser)) {
-      broker.withCreateContainerCmdModifier(
-          createContainerCmd -> createContainerCmd.withUser(withUser));
+      oldBroker.withCreateContainerCmdModifier(c -> c.withUser(withUser));
     }
 
-    if (!Strings.isEmpty(withVersionOverride)) {
-      broker.withEnv(VersionUtil.VERSION_OVERRIDE_ENV_NAME, withVersionOverride);
-    }
-
-    Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.self().start());
-
-    if (gatewayImage == null) {
-      grpcAddress = broker.getGrpcAddress();
-    } else {
-      gateway =
-          new GatewayContainer(gatewayImage)
-              .withUnifiedConfig(
-                  cfg -> {
-                    cfg.getCluster()
-                        .setInitialContactPoints(List.of(broker.getInternalClusterAddress()));
-                    cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
-                  })
-              .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-              .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
-              .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-              .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
-              .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
-              .withNetwork(network);
-
-      if (gatewayImage.equals(PREVIOUS_VERSION)) {
-        // Gateway configuration is not part of the Unified config yet in 8.8.x
-        gateway
-            .withEnv(
-                "ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", broker.getInternalClusterAddress())
-            .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", "0.0.0.0")
-            .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", gateway.getInternalHost())
-            .withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", gateway.getInternalHost());
-      }
-
-      Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> gateway.self().start());
-      grpcAddress = gateway.getGrpcAddress();
-    }
+    Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> oldBroker.self().start());
 
     client =
-        CamundaClient.newClientBuilder().grpcAddress(grpcAddress).preferRestOverGrpc(false).build();
-    partitionsActuator = PartitionsActuator.of(broker);
+        CamundaClient.newClientBuilder()
+            .grpcAddress(oldBroker.getGrpcAddress())
+            .preferRestOverGrpc(false)
+            .build();
+    partitionsActuator = PartitionsActuator.of(oldBroker);
+  }
+
+  private void startNewBroker() {
+    // The current version reports "X.Y.Z-SNAPSHOT" by default; this trips
+    // VersionCompatibilityCheck (pre-release versions are rejected). Override to the release form.
+    VersionUtil.overrideVersionForTesting(VersionUtil.getVersion().replace("-SNAPSHOT", ""));
+
+    // RecordingExporter is global static state; clear records left from a previous scenario.
+    RecordingExporter.reset();
+
+    final Path workingDir = handoverFromVolumeIfPresent();
+
+    newBroker =
+        new TestStandaloneBroker()
+            .withRecordingExporter(true)
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getCluster().setPartitionCount(PARTITION_COUNT);
+                  cfg.getData().getPrimaryStorage().getLogStream().setLogIndexDensity(1);
+                  cfg.getData().setSnapshotPeriod(Duration.ofMinutes(1));
+                  cfg.getData()
+                      .getPrimaryStorage()
+                      .getLogStream()
+                      .setLogSegmentSize(DataSize.ofMegabytes(64));
+                  cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(128));
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                });
+    if (workingDir != null) {
+      newBroker.withWorkingDirectory(workingDir);
+    }
+
+    if (useOldGateway) {
+      startNewBrokerWithLegacyGateway();
+    } else {
+      newBroker.start();
+      client = newBroker.newClientBuilder().preferRestOverGrpc(false).build();
+    }
+
+    partitionsActuator = PartitionsActuator.of(newBroker);
+  }
+
+  private void startNewBrokerWithLegacyGateway() {
+    // The legacy gateway container needs to dial the in-process broker. Make the broker advertise
+    // itself as host.testcontainers.internal so the container can reach it through the
+    // Testcontainers SSH-forward sidecar.
+    final var clusterPort = newBroker.mappedPort(TestZeebePort.CLUSTER);
+    newBroker.withClusterConfig(
+        c -> {
+          c.getNetwork().setAdvertisedHost("host.testcontainers.internal");
+          c.getNetwork().getInternalApi().setAdvertisedPort(clusterPort);
+        });
+    Testcontainers.exposeHostPorts(clusterPort);
+    newBroker.start();
+
+    final var brokerContactPoint = "host.testcontainers.internal:" + clusterPort;
+    oldGateway =
+        new GatewayContainer(PREVIOUS_VERSION)
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getCluster().setInitialContactPoints(List.of(brokerContactPoint));
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                })
+            .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+            .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+            .withEnv(UNPROTECTED_API_ENV_VAR, "true")
+            .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
+            // Pre-8.10 gateway image: Unified config does not yet drive the gateway
+            .withEnv("ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", brokerContactPoint)
+            .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", "0.0.0.0")
+            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
+            .withNetwork(network);
+    oldGateway.withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", oldGateway.getInternalHost());
+    oldGateway.withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", oldGateway.getInternalHost());
+
+    Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> oldGateway.self().start());
+
+    client =
+        CamundaClient.newClientBuilder()
+            .grpcAddress(oldGateway.getGrpcAddress())
+            .preferRestOverGrpc(false)
+            .build();
+  }
+
+  private Path handoverFromVolumeIfPresent() {
+    if (volume == null) {
+      return null;
+    }
+    try {
+      inProcessDataDir = Files.createTempDirectory("update-test-data");
+      // The broker resolves data.directory ("data") relative to its working directory. The volume
+      // root holds the data directory's contents directly (mount path was
+      // /usr/local/camunda/data), so extract under <workingDir>/data so paths line up.
+      final Path dataSubdir = Files.createDirectory(inProcessDataDir.resolve("data"));
+      volume.extract(dataSubdir);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to extract volume to host directory", e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LangUtil.rethrowUnchecked(e);
+    }
+    volume.close();
+    volume = null;
+    return inProcessDataDir;
   }
 
   public PartitionsActuator getPartitionsActuator() {
@@ -224,22 +313,11 @@ final class ContainerState implements AutoCloseable {
 
   @SuppressWarnings("java:S2925") // allow Thread.sleep usage in test if remote debugging is enabled
   public void onFailure() {
-    if (broker != null) {
-      log("Broker", broker.getLogs());
+    if (oldBroker != null) {
+      log("Broker", oldBroker.getLogs());
     }
-
-    if (gateway != null) {
-      log("Gateway", gateway.getLogs());
-    }
-
-    if (withRemoteDebugging) {
-      try {
-        LOG.info("Blocking for an hour to allow analysis with remote debugging");
-        Thread.sleep(Duration.ofHours(1).toMillis());
-      } catch (final InterruptedException e) {
-        Thread.currentThread().interrupt();
-        LangUtil.rethrowUnchecked(e);
-      }
+    if (oldGateway != null) {
+      log("Gateway", oldGateway.getLogs());
     }
   }
 
@@ -253,35 +331,43 @@ final class ContainerState implements AutoCloseable {
   }
 
   /**
-   * @return true if a record was found the element with the specified intent. Otherwise, returns
-   *     false
+   * Returns true if any record produced by the active broker contains all the given substrings in
+   * its JSON form. For the old container this scans the broker logs; for the in-process current
+   * broker this scans records captured by the {@link RecordingExporter}.
+   *
+   * <p>Both backends produce identical JSON via {@code Record#toString()}, so callers can match on
+   * the same strings (e.g. {@code "\"intent\":\"CREATED\""}, {@code "\"valueType\":\"INCIDENT\""}).
    */
+  public boolean hasLogContaining(final String... pieces) {
+    return getLogContaining(pieces) != null;
+  }
+
+  public String getLogContaining(final String... pieces) {
+    if (oldBroker != null) {
+      return Arrays.stream(oldBroker.getLogs().split("\n"))
+          .filter(line -> Arrays.stream(pieces).allMatch(line::contains))
+          .findFirst()
+          .orElse(null);
+    }
+    if (newBroker != null) {
+      return RecordingExporter.getRecords().stream()
+          .map(Record::toString)
+          .filter(s -> Arrays.stream(pieces).allMatch(s::contains))
+          .findFirst()
+          .orElse(null);
+    }
+    return null;
+  }
+
   public boolean hasElementInState(final String elementId, final String intent) {
     return hasLogContaining(
         String.format("\"elementId\":\"%s\"", elementId),
         String.format("\"intent\":\"%s\"", intent));
   }
 
-  /**
-   * @return true if the message was found in the specified intent. Otherwise, returns false
-   */
   public boolean hasMessageInState(final String name, final String intent) {
     return hasLogContaining(
         String.format("\"name\":\"%s\"", name), String.format("\"intent\":\"%s\"", intent));
-  }
-
-  // returns true if it finds a line that contains every piece.
-  boolean hasLogContaining(final String... pieces) {
-    return getLogContaining(pieces) != null;
-  }
-
-  public String getLogContaining(final String... pieces) {
-    final String[] lines = broker.getLogs().split("\n");
-
-    return Arrays.stream(lines)
-        .filter(line -> Arrays.stream(pieces).allMatch(line::contains))
-        .findFirst()
-        .orElse(null);
   }
 
   public long getIncidentKey() {
@@ -303,25 +389,36 @@ final class ContainerState implements AutoCloseable {
     return incidentKey;
   }
 
-  /** Close all opened resources. */
+  /** Closes the active broker and any associated resources. Safe to call repeatedly. */
   @Override
   public void close() {
     if (client != null) {
       client.close();
       client = null;
     }
-
-    if (gateway != null) {
-      gateway.shutdownGracefully(CLOSE_TIMEOUT);
-      gateway = null;
+    if (oldGateway != null) {
+      oldGateway.shutdownGracefully(CLOSE_TIMEOUT);
+      oldGateway = null;
     }
-
-    if (broker != null) {
-      broker.shutdownGracefully(CLOSE_TIMEOUT);
-      broker = null;
+    if (oldBroker != null) {
+      oldBroker.shutdownGracefully(CLOSE_TIMEOUT);
+      oldBroker = null;
     }
-
-    brokerImage = null;
-    gatewayImage = null;
+    if (newBroker != null) {
+      newBroker.close();
+      newBroker = null;
+      VersionUtil.resetVersionForTesting();
+      RecordingExporter.reset();
+    }
+    if (inProcessDataDir != null) {
+      try {
+        FileUtil.deleteFolder(inProcessDataDir);
+      } catch (final IOException e) {
+        LOG.warn("Failed to delete in-process data directory {}", inProcessDataDir, e);
+      }
+      inProcessDataDir = null;
+    }
+    partitionsActuator = null;
+    useOldGateway = false;
   }
 }
