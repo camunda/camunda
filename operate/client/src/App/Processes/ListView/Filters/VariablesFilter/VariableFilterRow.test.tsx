@@ -7,37 +7,54 @@
  */
 
 import {render, screen} from 'modules/testing-library';
+import {Form} from 'react-final-form';
+import arrayMutators from 'final-form-arrays';
+import {FieldArray} from 'react-final-form-arrays';
 import {VariableFilterRow} from './VariableFilterRow';
 import type {DraftCondition} from './constants';
 
-const makeCondition = (
-  overrides: Partial<DraftCondition> = {},
-): DraftCondition => ({
-  id: 'test-id',
-  name: '',
-  operator: 'equals',
-  value: '',
-  ...overrides,
-});
+type RowFormValues = {conditions: DraftCondition[]};
 
-let defaultRowProps: {errors: object; onBlur: () => void};
+const renderRow = (
+  condition: Partial<DraftCondition> = {},
+  props: {onDelete?: () => void; isDeleteHidden?: boolean} = {},
+) => {
+  const draft: DraftCondition = {
+    id: 'test-id',
+    name: '',
+    operator: 'equals',
+    value: '',
+    ...condition,
+  };
 
-beforeEach(() => {
-  defaultRowProps = {errors: {}, onBlur: vi.fn()};
-});
+  return render(
+    <Form<RowFormValues>
+      onSubmit={vi.fn()}
+      initialValues={{conditions: [draft]}}
+      mutators={{...arrayMutators}}
+    >
+      {() => (
+        <FieldArray name="conditions">
+          {({fields}) =>
+            fields.map((fieldName, index) => (
+              <VariableFilterRow
+                key={fieldName}
+                fieldName={fieldName}
+                rowIndex={index}
+                onDelete={props.onDelete ?? vi.fn()}
+                isDeleteHidden={props.isDeleteHidden ?? true}
+              />
+            ))
+          }
+        </FieldArray>
+      )}
+    </Form>,
+  );
+};
 
 describe('<VariableFilterRow />', () => {
   it('should render name and value inputs and operator dropdown', () => {
-    render(
-      <VariableFilterRow
-        condition={makeCondition()}
-        onChange={vi.fn()}
-        onDelete={vi.fn()}
-        isDeleteHidden={true}
-        rowIndex={0}
-        {...defaultRowProps}
-      />,
-    );
+    renderRow();
 
     expect(
       screen.getByTestId('variable-filter-name-test-id'),
@@ -51,16 +68,7 @@ describe('<VariableFilterRow />', () => {
   });
 
   it('should hide value field when operator does not require value', () => {
-    render(
-      <VariableFilterRow
-        condition={makeCondition({operator: 'exists'})}
-        onChange={vi.fn()}
-        onDelete={vi.fn()}
-        isDeleteHidden={true}
-        rowIndex={0}
-        {...defaultRowProps}
-      />,
-    );
+    renderRow({operator: 'exists'});
 
     expect(
       screen.queryByTestId('variable-filter-value-test-id'),
@@ -68,16 +76,7 @@ describe('<VariableFilterRow />', () => {
   });
 
   it('should visually hide delete button when isDeleteHidden is true', () => {
-    render(
-      <VariableFilterRow
-        condition={makeCondition()}
-        onChange={vi.fn()}
-        onDelete={vi.fn()}
-        isDeleteHidden={true}
-        rowIndex={0}
-        {...defaultRowProps}
-      />,
-    );
+    renderRow({}, {isDeleteHidden: true});
 
     expect(screen.getByTestId('delete-variable-filter-test-id')).toHaveStyle({
       visibility: 'hidden',
@@ -85,151 +84,59 @@ describe('<VariableFilterRow />', () => {
   });
 
   it('should show delete button when isDeleteHidden is false', () => {
-    render(
-      <VariableFilterRow
-        condition={makeCondition()}
-        onChange={vi.fn()}
-        onDelete={vi.fn()}
-        isDeleteHidden={false}
-        rowIndex={0}
-        {...defaultRowProps}
-      />,
-    );
+    renderRow({}, {isDeleteHidden: false});
 
     expect(screen.getByTestId('delete-variable-filter-test-id')).toHaveStyle({
       visibility: 'visible',
     });
   });
 
-  it('should call onChange with updated name when name input changes', async () => {
-    const onChange = vi.fn();
-    const {user} = render(
-      <VariableFilterRow
-        condition={makeCondition()}
-        onChange={onChange}
-        onDelete={vi.fn()}
-        isDeleteHidden={true}
-        rowIndex={0}
-        {...defaultRowProps}
-      />,
-    );
+  it('should update name input when user types', async () => {
+    const {user} = renderRow();
 
     await user.type(screen.getByTestId('variable-filter-name-test-id'), 'x');
 
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({name: 'x'}));
+    expect(screen.getByTestId('variable-filter-name-test-id')).toHaveValue('x');
   });
 
-  it('should call onChange with updated value when value input changes', async () => {
-    const onChange = vi.fn();
-    const {user} = render(
-      <VariableFilterRow
-        condition={makeCondition({name: 'status'})}
-        onChange={onChange}
-        onDelete={vi.fn()}
-        isDeleteHidden={true}
-        rowIndex={0}
-        {...defaultRowProps}
-      />,
-    );
+  it('should update value input when user types', async () => {
+    const {user} = renderRow({name: 'status'});
 
     await user.type(screen.getByTestId('variable-filter-value-test-id'), 'v');
 
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({value: 'v'}),
+    expect(screen.getByTestId('variable-filter-value-test-id')).toHaveValue(
+      'v',
     );
   });
 
   it('should call onDelete when delete button is clicked', async () => {
     const onDelete = vi.fn();
-    const {user} = render(
-      <VariableFilterRow
-        condition={makeCondition()}
-        onChange={vi.fn()}
-        onDelete={onDelete}
-        isDeleteHidden={false}
-        rowIndex={0}
-        {...defaultRowProps}
-      />,
-    );
+    const {user} = renderRow({}, {onDelete, isDeleteHidden: false});
 
     await user.click(screen.getByTestId('delete-variable-filter-test-id'));
 
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
-  it('should show name error when name error is provided', () => {
-    render(
-      <VariableFilterRow
-        condition={makeCondition()}
-        onChange={vi.fn()}
-        onDelete={vi.fn()}
-        isDeleteHidden={true}
-        rowIndex={0}
-        errors={{name: 'Variable name is required'}}
-        onBlur={vi.fn()}
-      />,
-    );
+  it('should hide value field after switching to exists operator', async () => {
+    const {user} = renderRow();
 
-    expect(screen.getByText('Variable name is required')).toBeInTheDocument();
-    expect(screen.getByTestId('variable-filter-name-test-id')).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('exists'));
+
+    expect(
+      screen.queryByTestId('variable-filter-value-test-id'),
+    ).not.toBeInTheDocument();
   });
 
-  it('should show value error when value error is provided', () => {
-    render(
-      <VariableFilterRow
-        condition={makeCondition({name: 'status'})}
-        onChange={vi.fn()}
-        onDelete={vi.fn()}
-        isDeleteHidden={true}
-        rowIndex={0}
-        errors={{value: 'Value must be valid JSON'}}
-        onBlur={vi.fn()}
-      />,
-    );
+  it('should show value field after switching back from exists to equals', async () => {
+    const {user} = renderRow({operator: 'exists'});
 
-    expect(screen.getByText('Value must be valid JSON')).toBeInTheDocument();
-  });
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('equals'));
 
-  it('should call onBlur when name field loses focus', async () => {
-    const onBlur = vi.fn();
-    const {user} = render(
-      <VariableFilterRow
-        condition={makeCondition()}
-        onChange={vi.fn()}
-        onDelete={vi.fn()}
-        isDeleteHidden={true}
-        rowIndex={0}
-        errors={{}}
-        onBlur={onBlur}
-      />,
-    );
-
-    await user.click(screen.getByTestId('variable-filter-name-test-id'));
-    await user.tab();
-
-    expect(onBlur).toHaveBeenCalledTimes(1);
-  });
-
-  it('should call onBlur when value field loses focus', async () => {
-    const onBlur = vi.fn();
-    const {user} = render(
-      <VariableFilterRow
-        condition={makeCondition({name: 'status'})}
-        onChange={vi.fn()}
-        onDelete={vi.fn()}
-        isDeleteHidden={true}
-        rowIndex={0}
-        errors={{}}
-        onBlur={onBlur}
-      />,
-    );
-
-    await user.click(screen.getByTestId('variable-filter-value-test-id'));
-    await user.tab();
-
-    expect(onBlur).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByTestId('variable-filter-value-test-id'),
+    ).toBeInTheDocument();
   });
 });

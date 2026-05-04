@@ -10,29 +10,19 @@ import {useState} from 'react';
 import {Dropdown, TextInput} from '@carbon/react';
 import {Close, Maximize} from '@carbon/react/icons';
 import {createPortal} from 'react-dom';
+import {useField} from 'react-final-form';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {IconTextInput} from 'modules/components/IconInput';
+import {useFieldError} from 'modules/hooks/useFieldError';
 import type {VariableFilterOperator} from 'modules/stores/variableFilter';
-import {
-  type DraftCondition,
-  type RowErrors,
-  VARIABLE_FILTER_OPERATORS,
-} from './constants';
-import {
-  FilterRow,
-  ConditionDropdownContainer,
-  ValueFieldContainer,
-  DeleteButton,
-} from './styled';
+import {VARIABLE_FILTER_OPERATORS} from './constants';
+import {FilterRow, ValueFieldContainer, DeleteButton} from './styled';
 
 type Props = {
-  condition: DraftCondition;
-  onChange: (condition: DraftCondition) => void;
+  fieldName: string;
   onDelete: () => void;
   isDeleteHidden: boolean;
   rowIndex: number;
-  errors: RowErrors;
-  onBlur: () => void;
 };
 
 const getValuePlaceholder = (operator: VariableFilterOperator): string => {
@@ -47,95 +37,95 @@ const getValuePlaceholder = (operator: VariableFilterOperator): string => {
 };
 
 const VariableFilterRow: React.FC<Props> = ({
-  condition,
-  onChange,
+  fieldName,
   onDelete,
   isDeleteHidden,
   rowIndex,
-  errors,
-  onBlur,
 }) => {
   const [isJsonEditorOpen, setIsJsonEditorOpen] = useState(false);
 
+  const {input: nameInput} = useField<string>(`${fieldName}.name`, {
+    subscription: {value: true},
+  });
+  const {input: operatorInput} = useField<VariableFilterOperator>(
+    `${fieldName}.operator`,
+    {subscription: {value: true}},
+  );
+  const {input: valueInput} = useField<string>(`${fieldName}.value`, {
+    subscription: {value: true},
+  });
+  const {input: idInput} = useField<string>(`${fieldName}.id`, {
+    subscription: {value: true},
+  });
+
+  const nameError = useFieldError(`${fieldName}.name`);
+  const valueError = useFieldError(`${fieldName}.value`);
+
   const selectedOperator = VARIABLE_FILTER_OPERATORS.find(
-    (op) => op.id === condition.operator,
+    (op) => op.id === operatorInput.value,
   );
   const isValueRequired = selectedOperator?.requiresValue ?? true;
-
-  const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onChange({...condition, name: event.target.value});
-  };
 
   const handleOperatorChange = (
     selectedItem: (typeof VARIABLE_FILTER_OPERATORS)[number] | null,
   ) => {
     const newOperator: VariableFilterOperator = selectedItem?.id ?? 'equals';
     const requiresValue = selectedItem?.requiresValue ?? true;
-    onChange({
-      ...condition,
-      operator: newOperator,
-      value: requiresValue ? condition.value : '',
-    });
+    operatorInput.onChange(newOperator);
+    if (!requiresValue) {
+      valueInput.onChange('');
+    }
   };
 
-  const handleValueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onChange({...condition, value: event.target.value});
-  };
-
-  const handleJsonEditorApply = (value: string | undefined) => {
-    onChange({...condition, value: value ?? ''});
-    setIsJsonEditorOpen(false);
-  };
+  const fieldId = idInput.value;
 
   return (
     <>
       <FilterRow>
         <TextInput
-          id={`variable-name-${condition.id}`}
+          id={`variable-name-${fieldId}`}
           labelText="Name"
           hideLabel
           placeholder="Variable name"
-          value={condition.name}
-          onChange={handleNameChange}
-          onBlur={onBlur}
-          invalid={!!errors.name}
-          invalidText={errors.name}
+          value={nameInput.value}
+          onChange={nameInput.onChange}
+          onBlur={nameInput.onBlur}
+          invalid={nameError !== undefined}
+          invalidText={nameError}
           size="sm"
           autoComplete="off"
-          data-testid={`variable-filter-name-${condition.id}`}
+          data-testid={`variable-filter-name-${fieldId}`}
         />
-        <ConditionDropdownContainer>
-          <Dropdown
-            id={`variable-operator-${condition.id}`}
-            titleText="Operator"
-            hideLabel
-            label="Select condition"
-            items={VARIABLE_FILTER_OPERATORS}
-            itemToString={(item) => item?.label ?? ''}
-            selectedItem={selectedOperator ?? null}
-            onChange={({selectedItem}) => handleOperatorChange(selectedItem)}
-            size="sm"
-            direction={rowIndex < 2 ? 'bottom' : 'top'}
-            data-testid={`variable-filter-operator-${condition.id}`}
-          />
-        </ConditionDropdownContainer>
+        <Dropdown
+          id={`variable-operator-${fieldId}`}
+          titleText="Operator"
+          hideLabel
+          label="Select condition"
+          items={VARIABLE_FILTER_OPERATORS}
+          itemToString={(item) => item?.label ?? ''}
+          selectedItem={selectedOperator ?? null}
+          onChange={({selectedItem}) => handleOperatorChange(selectedItem)}
+          size="sm"
+          direction={rowIndex < 2 ? 'bottom' : 'top'}
+          data-testid={`variable-filter-operator-${fieldId}`}
+        />
         <ValueFieldContainer>
           {isValueRequired && (
             <IconTextInput
-              id={`variable-value-${condition.id}`}
+              id={`variable-value-${fieldId}`}
               labelText="Value"
               hideLabel
-              placeholder={getValuePlaceholder(condition.operator)}
-              value={condition.value}
-              onChange={handleValueChange}
-              onBlur={onBlur}
-              invalid={!!errors.value}
-              invalidText={errors.value}
+              placeholder={getValuePlaceholder(operatorInput.value)}
+              value={valueInput.value}
+              onChange={valueInput.onChange}
+              onBlur={valueInput.onBlur}
+              invalid={valueError !== undefined}
+              invalidText={valueError}
               size="sm"
               Icon={Maximize}
               buttonLabel="Open JSON editor"
               onIconClick={() => setIsJsonEditorOpen(true)}
-              data-testid={`variable-filter-value-${condition.id}`}
+              data-testid={`variable-filter-value-${fieldId}`}
             />
           )}
         </ValueFieldContainer>
@@ -145,7 +135,7 @@ const VariableFilterRow: React.FC<Props> = ({
           label="Remove condition"
           align="top-right"
           onClick={onDelete}
-          data-testid={`delete-variable-filter-${condition.id}`}
+          data-testid={`delete-variable-filter-${fieldId}`}
           $hidden={isDeleteHidden}
         >
           <Close />
@@ -157,9 +147,12 @@ const VariableFilterRow: React.FC<Props> = ({
           <JSONEditorModal
             isVisible={isJsonEditorOpen}
             title="Edit Variable Value"
-            value={condition.value}
+            value={valueInput.value}
             onClose={() => setIsJsonEditorOpen(false)}
-            onApply={handleJsonEditorApply}
+            onApply={(value) => {
+              valueInput.onChange(value ?? '');
+              setIsJsonEditorOpen(false);
+            }}
           />,
           document.body,
         )}

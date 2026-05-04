@@ -28,10 +28,6 @@ const FilterRow = styled.div`
   align-items: start;
 `;
 
-const ConditionDropdownContainer = styled.div`
-  width: 170px;
-`;
-
 const ValueFieldContainer = styled.div`
   position: relative;
 `;
@@ -55,7 +51,6 @@ export {
   Modal,
   Description,
   FilterRow,
-  ConditionDropdownContainer,
   ValueFieldContainer,
   DeleteButton,
   ConditionList,

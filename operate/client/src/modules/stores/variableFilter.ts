@@ -23,11 +23,21 @@ type VariableFilterOperator =
   | 'exists'
   | 'doesNotExist';
 
-type VariableCondition = {
+type VariableConditionWithValue = {
   name: string;
-  operator: VariableFilterOperator;
+  operator: 'equals' | 'notEqual' | 'contains' | 'oneOf';
   value: string;
 };
+
+type VariableConditionWithoutValue = {
+  name: string;
+  operator: 'exists' | 'doesNotExist';
+  value: '';
+};
+
+type VariableCondition =
+  | VariableConditionWithValue
+  | VariableConditionWithoutValue;
 
 type State = {
   variable?: Variable;
@@ -61,9 +71,7 @@ class VariableFilter {
   }
 
   reset = () => {
-    this.state.variable = DEFAULT_STATE.variable;
-    this.state.isInMultipleMode = DEFAULT_STATE.isInMultipleMode;
-    this.state.conditions = DEFAULT_STATE.conditions;
+    this.state = {...DEFAULT_STATE};
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
   };
 

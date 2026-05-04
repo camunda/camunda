@@ -51,6 +51,16 @@ const validateCondition = (condition: DraftCondition): RowErrors => {
   ) {
     if (!condition.value.trim()) {
       errors.value = 'Value is required';
+    } else if (condition.operator === 'oneOf') {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(condition.value);
+      } catch {
+        // handled below
+      }
+      if (!Array.isArray(parsed)) {
+        errors.value = 'Value must be a JSON array (e.g. ["val1", "val2"])';
+      }
     } else if (
       condition.operator !== 'contains' &&
       !isValidJSON(condition.value)

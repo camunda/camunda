@@ -240,7 +240,7 @@ describe('<VariableFilterModal />', () => {
     expect(onApply).toHaveBeenCalledOnce();
   });
 
-  it('should clear error on blur after correcting the field', async () => {
+  it('should clear error when user starts typing after a failed submit', async () => {
     const {user} = renderModal();
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
@@ -250,14 +250,13 @@ describe('<VariableFilterModal />', () => {
       screen.getAllByPlaceholderText('Variable name')[0]!,
       'myVar',
     );
-    await user.tab();
 
     expect(
       screen.queryByText('Variable name is required'),
     ).not.toBeInTheDocument();
   });
 
-  it('should not re-validate on blur if row was never submitted with an error', async () => {
+  it('should not show errors before a submit attempt', async () => {
     const {user} = renderModal();
 
     await user.click(screen.getAllByPlaceholderText('Variable name')[0]!);
