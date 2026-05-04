@@ -29,7 +29,6 @@ import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.partitioning.RocksDbSharedCache;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
@@ -692,7 +691,7 @@ public final class SystemContext {
   }
 
   private void validateRocksDbConfig(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
-    RocksDbSharedCache.validateRocksDbMemory(rocksdbCfg, partitionsCount);
+    rocksdbCfg.validateRocksDbMemory(partitionsCount);
   }
 
   private void validateBackupSchedulerConfig(final BackupCfg backupSchedulerCfg) {

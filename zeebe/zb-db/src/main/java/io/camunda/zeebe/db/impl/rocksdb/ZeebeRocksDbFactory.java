@@ -11,6 +11,9 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbMemory.PerPartition;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbMemory.RuntimeInfo;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbMemory.Shared;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbOptions;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.EnumValue;
@@ -32,26 +35,23 @@ import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.DBOptions;
 import org.rocksdb.DataBlockIndexType;
 import org.rocksdb.IndexType;
-import org.rocksdb.LRUCache;
 import org.rocksdb.Options;
 import org.rocksdb.RateLimiter;
-import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Statistics;
 import org.rocksdb.StatsLevel;
 import org.rocksdb.TableFormatConfig;
-import org.rocksdb.WriteBufferManager;
 
 public final class ZeebeRocksDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDbFactory<ColumnFamilyType> {
 
-  private final SharedRocksDbResources sharedRocksDbResources;
   private final RocksDbConfiguration rocksDbConfiguration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration metrics;
   private final Supplier<MeterRegistry> meterRegistryFactory;
   private final int partitionCount;
+  private final RocksDbMemory rocksDbMemory;
 
   @VisibleForTesting
   public ZeebeRocksDbFactory(
@@ -65,7 +65,7 @@ public final class ZeebeRocksDbFactory<
         consistencyChecksSettings,
         metricsConfiguration,
         meterRegistryFactory,
-        new SharedRocksDbResources(rocksDbConfiguration.getMemoryLimit()),
+        RocksDbMemory.of(rocksDbConfiguration, new RuntimeInfo(3)),
         3);
   }
 
@@ -74,13 +74,13 @@ public final class ZeebeRocksDbFactory<
       final ConsistencyChecksSettings consistencyChecksSettings,
       final AccessMetricsConfiguration metricsConfiguration,
       final Supplier<MeterRegistry> meterRegistryFactory,
-      final SharedRocksDbResources sharedRocksDbResources,
+      final RocksDbMemory rocksDbMemory,
       final int partitionCount) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
     metrics = metricsConfiguration;
     this.meterRegistryFactory = Objects.requireNonNull(meterRegistryFactory);
-    this.sharedRocksDbResources = Objects.requireNonNull(sharedRocksDbResources);
+    this.rocksDbMemory = Objects.requireNonNull(rocksDbMemory);
     this.partitionCount = partitionCount;
   }
 
@@ -169,8 +169,11 @@ public final class ZeebeRocksDbFactory<
             // keep 1 hour of logs - completely arbitrary. we should keep what we think would be
             // a good balance between useful for performance and small for replication
             .setLogFileTimeToRoll(Duration.ofMinutes(30).toSeconds())
-            .setKeepLogFileNum(2)
-            .setWriteBufferManager(sharedRocksDbResources.getSharedWbm());
+            .setKeepLogFileNum(2);
+
+    if (rocksDbMemory instanceof final Shared sharedMemory) {
+      dbOptions.setWriteBufferManager(sharedMemory.getSharedWriteBufferManager());
+    }
 
     // limit I/O writes
     if (rocksDbConfiguration.getIoRateBytesPerSecond() > 0) {
@@ -203,9 +206,7 @@ public final class ZeebeRocksDbFactory<
    * @return configured ColumnFamilyOptions with merged user and default settings
    */
   public ColumnFamilyOptions createColumnFamilyOptions(final List<AutoCloseable> closeables) {
-
-    final var memoryConfig = calculateMemoryConfiguration();
-    final var options = createDefaultColumnFamilyOptionsAsProperties(memoryConfig);
+    final var options = createDefaultColumnFamilyOptionsAsProperties(rocksDbMemory);
     // Overwrite with user-provided options
     options.putAll(rocksDbConfiguration.getColumnFamilyOptions());
 
@@ -221,35 +222,9 @@ public final class ZeebeRocksDbFactory<
     }
 
     // Apply configuration that cannot be set via Properties
-    final var tableConfig = createTableFormatConfig(closeables);
+    final var tableConfig = createTableFormatConfig(closeables, rocksDbMemory);
     columnFamilyOptions.setTableFormatConfig(tableConfig);
     return columnFamilyOptions;
-  }
-
-  /**
-   * Calculates memory configuration values based on the RocksDB configuration. This method
-   * centralizes memory calculations to avoid duplication.
-   */
-  MemoryConfiguration calculateMemoryConfiguration() {
-    // RocksDB clamps memtable_prefix_bloom_size_ratio to [0, 0.25]; 0.15 is our current guess and a
-    // candidate for tuning. Prefix seek must be fast, so we trade some memtable budget for a per-
-    // memtable bloom filter that lets us skip prefixes.
-    final var memtablePrefixFilterMemory = 0.15;
-
-    // The prefix bloom is included in the memtable's WriteBufferManager accounting, so we shrink
-    // write_buffer_size by the same fraction. Otherwise WBM would force flushes before each
-    // memtable reaches its configured size.
-    final var memtableBudget = sharedRocksDbResources.getWriteBufferLimit() / partitionCount;
-    final var maxMemtableSize =
-        (long)
-            (memtableBudget
-                / rocksDbConfiguration.getMaxWriteBufferNumber()
-                * (1 - memtablePrefixFilterMemory));
-
-    return new MemoryConfiguration(
-        maxMemtableSize,
-        memtablePrefixFilterMemory,
-        rocksDbConfiguration.getMaxWriteBufferNumber());
   }
 
   /**
@@ -257,7 +232,7 @@ public final class ZeebeRocksDbFactory<
    * calls from createDefaultColumnFamilyOptions to their corresponding Properties keys based on
    * RocksDB's options format.
    */
-  Properties createDefaultColumnFamilyOptionsAsProperties(final MemoryConfiguration memoryConfig) {
+  Properties createDefaultColumnFamilyOptionsAsProperties(final RocksDbMemory memory) {
     final var props = new Properties();
 
     if (rocksDbConfiguration.isSstPartitioningEnabled()) {
@@ -268,9 +243,10 @@ public final class ZeebeRocksDbFactory<
 
     // to extract our column family type (used as prefix) and seek faster
     props.setProperty("prefix_extractor", "rocksdb.FixedPrefix." + Long.BYTES);
+    final var memtablePrefixFilterMemory = 0.15;
     props.setProperty(
         "memtable_prefix_bloom_size_ratio",
-        RocksDbOptionsFormatter.format(memoryConfig.memtablePrefixFilterMemory()));
+        RocksDbOptionsFormatter.format(memtablePrefixFilterMemory));
 
     // memtables
     // merge at least 3 memtables per L0 file, otherwise all memtables are flushed as individual
@@ -279,11 +255,20 @@ public final class ZeebeRocksDbFactory<
     props.setProperty(
         "min_write_buffer_number_to_merge",
         RocksDbOptionsFormatter.format(rocksDbConfiguration.getMinWriteBufferNumberToMerge()));
-    props.setProperty(
-        "max_write_buffer_number",
-        RocksDbOptionsFormatter.format(memoryConfig.maxConcurrentMemtableCount));
-    props.setProperty(
-        "write_buffer_size", RocksDbOptionsFormatter.format(memoryConfig.memtableMemory));
+    final var maxWriteBuffers = rocksDbConfiguration.getMaxWriteBufferNumber();
+    props.setProperty("max_write_buffer_number", RocksDbOptionsFormatter.format(maxWriteBuffers));
+
+    final var writeBufferBudgetPerPartition =
+        switch (memory) {
+          case final PerPartition perPartition -> perPartition.getWriteBufferBudget();
+          case final Shared shared -> shared.getWriteBufferBudget() / partitionCount;
+        };
+    final var writeBufferSize =
+        Math.round(
+            ((double) writeBufferBudgetPerPartition / maxWriteBuffers)
+                * (1 - memtablePrefixFilterMemory));
+
+    props.setProperty("write_buffer_size", RocksDbOptionsFormatter.format(writeBufferSize));
 
     // compaction
     props.setProperty("level_compaction_dynamic_level_bytes", RocksDbOptionsFormatter.format(true));
@@ -292,15 +277,12 @@ public final class ZeebeRocksDbFactory<
 
     // L-0 means immediately flushed memtables
     props.setProperty(
-        "level0_file_num_compaction_trigger",
-        RocksDbOptionsFormatter.format(memoryConfig.maxConcurrentMemtableCount));
+        "level0_file_num_compaction_trigger", RocksDbOptionsFormatter.format(maxWriteBuffers));
     props.setProperty(
         "level0_slowdown_writes_trigger",
-        RocksDbOptionsFormatter.format(
-            memoryConfig.maxConcurrentMemtableCount
-                + (memoryConfig.maxConcurrentMemtableCount / 2)));
+        RocksDbOptionsFormatter.format(maxWriteBuffers + (maxWriteBuffers / 2)));
     props.setProperty(
-        "level0_stop_writes_trigger", String.valueOf(memoryConfig.maxConcurrentMemtableCount * 2));
+        "level0_stop_writes_trigger", RocksDbOptionsFormatter.format(maxWriteBuffers * 2));
 
     // configure 4 levels: L1 = 32mb, L2 = 320mb, L3 = 3.2Gb, L4 >= 3.2Gb
     // level 1 and 2 are uncompressed, level 3 and above are compressed using a CPU-cheap
@@ -328,12 +310,23 @@ public final class ZeebeRocksDbFactory<
     return props;
   }
 
-  private TableFormatConfig createTableFormatConfig(final List<AutoCloseable> closeables) {
+  private TableFormatConfig createTableFormatConfig(
+      final List<AutoCloseable> closeables, final RocksDbMemory memory) {
     final var filter = new BloomFilter(10, false);
     closeables.add(filter);
 
+    final var blockCache =
+        switch (memory) {
+          case final Shared shared -> shared.getSharedCache();
+          case final PerPartition perPartition -> {
+            final var newCache = perPartition.createNewCache();
+            closeables.add(newCache);
+            yield newCache;
+          }
+        };
+
     return new BlockBasedTableConfig()
-        .setBlockCache(sharedRocksDbResources.getSharedCache())
+        .setBlockCache(blockCache)
         // increasing block size means reducing memory usage, but increasing read iops
         .setBlockSize(32 * 1024L)
         // full and partitioned filters use a more efficient bloom filter implementation when
@@ -359,69 +352,4 @@ public final class ZeebeRocksDbFactory<
         // it as a two-tiered index
         .setWholeKeyFiltering(true);
   }
-
-  public static final class SharedRocksDbResources implements AutoCloseable {
-    private static final double MEMTABLE_RATIO = 2 / 3.0;
-
-    static {
-      RocksDB.loadLibrary();
-    }
-
-    private LRUCache sharedCache;
-    private WriteBufferManager sharedWbm;
-    private long memoryLimit;
-    private long writeBufferLimit;
-
-    public SharedRocksDbResources() {}
-
-    public SharedRocksDbResources(final long cacheSize) {
-      allocate(cacheSize);
-    }
-
-    public void allocate(final long memoryLimit) {
-      if (isInitialized()) {
-        close();
-      }
-      writeBufferLimit = (long) (memoryLimit * MEMTABLE_RATIO);
-      this.memoryLimit = memoryLimit;
-      // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM
-      // limit, with headroom for memtable bloom/filter overhead. write_buffer_size is calculated in
-      // zeebeRocksDBFactory.
-      sharedCache = new LRUCache(memoryLimit, 8, false, 0.15);
-      sharedWbm = new WriteBufferManager(writeBufferLimit, sharedCache);
-    }
-
-    public boolean isInitialized() {
-      return sharedCache != null && sharedWbm != null;
-    }
-
-    public LRUCache getSharedCache() {
-      return sharedCache;
-    }
-
-    public WriteBufferManager getSharedWbm() {
-      return sharedWbm;
-    }
-
-    public long getMemoryLimit() {
-      return memoryLimit;
-    }
-
-    public long getWriteBufferLimit() {
-      return writeBufferLimit;
-    }
-
-    @Override
-    public void close() {
-      if (isInitialized()) {
-        CloseHelper.closeAll(sharedCache, sharedWbm);
-        sharedCache = null;
-        sharedWbm = null;
-      }
-    }
-  }
-
-  /** Holds calculated memory configuration values to avoid duplication. */
-  private record MemoryConfiguration(
-      long memtableMemory, double memtablePrefixFilterMemory, int maxConcurrentMemtableCount) {}
 }
