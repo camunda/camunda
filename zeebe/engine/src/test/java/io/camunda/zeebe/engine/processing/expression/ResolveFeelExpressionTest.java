@@ -748,7 +748,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=myVar")
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .resolve();
 
     // then
@@ -790,7 +790,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=elemVar")
-            .withElementInstanceKey(elementInstanceKey)
+            .withScopeKey(elementInstanceKey)
             .resolve();
 
     // then
@@ -837,7 +837,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=catchVar")
-            .withElementInstanceKey(elementInstanceKey)
+            .withScopeKey(elementInstanceKey)
             .resolve();
 
     // then
@@ -885,7 +885,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=boundaryVar")
-            .withElementInstanceKey(elementInstanceKey)
+            .withScopeKey(elementInstanceKey)
             .resolve();
 
     // then
@@ -913,11 +913,7 @@ public class ResolveFeelExpressionTest {
 
     // when
     final var record =
-        ENGINE_RULE
-            .expression()
-            .withExpression("=1")
-            .withProcessInstanceKey(processInstanceKey)
-            .resolve();
+        ENGINE_RULE.expression().withExpression("=1").withScopeKey(processInstanceKey).resolve();
 
     // then
     Assertions.assertThat(record)
@@ -950,11 +946,7 @@ public class ResolveFeelExpressionTest {
 
     // when
     final var record =
-        ENGINE_RULE
-            .expression()
-            .withExpression("=1")
-            .withElementInstanceKey(elementInstanceKey)
-            .resolve();
+        ENGINE_RULE.expression().withExpression("=1").withScopeKey(elementInstanceKey).resolve();
 
     // then
     Assertions.assertThat(record)
@@ -970,7 +962,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=1")
-            .withProcessInstanceKey(999999L)
+            .withScopeKey(999999L)
             .expectRejection()
             .resolve();
 
@@ -988,7 +980,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=1")
-            .withElementInstanceKey(999999L)
+            .withScopeKey(999999L)
             .expectRejection()
             .resolve();
 
@@ -1024,7 +1016,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=score")
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .withVariables(Map.of("score", 99))
             .resolve();
 
@@ -1077,7 +1069,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=score")
-            .withElementInstanceKey(elementInstanceKey)
+            .withScopeKey(elementInstanceKey)
             .resolve();
 
     // then - element-scope variable shadows the process-scope one
@@ -1114,7 +1106,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=score")
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .resolve();
 
     // then - process instance variable wins over cluster variable
@@ -1145,7 +1137,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=1")
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .withTenantId("wrong-tenant")
             .expectRejection()
             .resolve();
