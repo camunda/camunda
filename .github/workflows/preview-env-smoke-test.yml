@@ -192,9 +192,9 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/qa/ci/e2e-tests DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;
-            secret/data/products/qa/ci/e2e-tests DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
-            secret/data/products/qa/ci/e2e-tests DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD;
+            secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;
+            secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
+            secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD;
 
       - name: Run Smoke Tests
         working-directory: e2e-tests
