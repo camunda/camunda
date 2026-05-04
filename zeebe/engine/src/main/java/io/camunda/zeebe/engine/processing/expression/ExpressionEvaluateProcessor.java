@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.ResolvedInstance;
 import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.ValidatedCommand;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -65,34 +66,73 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
     // Infer the tenant from the resolved instance so downstream auth and variable
     // resolution always operate against the instance's owning tenant. Done here
     // (in the processor) rather than in the validator to keep validation side effect free.
-    validated.resolvedTenantId().ifPresent(validated.record()::setTenantId);
+    validated
+        .resolvedInstance()
+        .map(ResolvedInstance::tenantId)
+        .ifPresent(validated.record()::setTenantId);
     return validated;
-  }
-
-  private Either<Rejection, ValidatedCommand> authorize(
-      final TypedRecord<ExpressionRecord> command, final ValidatedCommand validated) {
-    return isAuthorized(command, validated.record()).map(ignored -> validated);
   }
 
   private Either<Rejection, ExpressionRecord> evaluate(final ValidatedCommand validated) {
     return expressionBehavior.resolveExpression(validated.expression(), validated.record());
   }
 
-  private Either<Rejection, ExpressionRecord> isAuthorized(
-      final TypedRecord<ExpressionRecord> command, final ExpressionRecord record) {
-    final var tenantId = record.getTenantId();
-    final var authRequestBuilder =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.EXPRESSION)
-            .permissionType(PermissionType.EVALUATE);
+  private Either<Rejection, ValidatedCommand> authorize(
+      final TypedRecord<ExpressionRecord> command, final ValidatedCommand validated) {
+    final var tenantId = validated.record().getTenantId();
 
+    return checkCanEvaluateExpression(command, tenantId)
+        .flatMap(__ -> checkCanReadInstanceIfScoped(command, validated, tenantId))
+        .map(__ -> validated);
+  }
+
+  private Either<Rejection, Void> checkCanEvaluateExpression(
+      final TypedRecord<ExpressionRecord> command, final String tenantId) {
+    return checkAuthorized(
+        withTenantIfPresent(
+                AuthorizationRequest.builder()
+                    .command(command)
+                    .resourceType(AuthorizationResourceType.EXPRESSION)
+                    .permissionType(PermissionType.EVALUATE),
+                tenantId)
+            .build());
+  }
+
+  private Either<Rejection, Void> checkCanReadInstanceIfScoped(
+      final TypedRecord<ExpressionRecord> command,
+      final ValidatedCommand validated,
+      final String tenantId) {
+    return validated
+        .resolvedInstance()
+        .map(instance -> checkCanReadProcessInstance(command, tenantId, instance.bpmnProcessId()))
+        .orElseGet(() -> Either.right(null));
+  }
+
+  private Either<Rejection, Void> checkCanReadProcessInstance(
+      final TypedRecord<ExpressionRecord> command,
+      final String tenantId,
+      final String bpmnProcessId) {
+    return checkAuthorized(
+        withTenantIfPresent(
+                AuthorizationRequest.builder()
+                    .command(command)
+                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .permissionType(PermissionType.READ_PROCESS_INSTANCE)
+                    .addResourceId(bpmnProcessId),
+                tenantId)
+            .build());
+  }
+
+  private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
+    return authCheckBehavior.isAuthorizedOrInternalCommand(request).map(__ -> null);
+  }
+
+  private static AuthorizationRequest.Builder withTenantIfPresent(
+      final AuthorizationRequest.Builder builder, final String tenantId) {
     if (tenantId != null && !tenantId.isEmpty()) {
-      authRequestBuilder.tenantId(tenantId);
+      builder.tenantId(tenantId);
     }
-
-    final var authRequest = authRequestBuilder.build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).map(unused -> record);
+    return builder;
   }
 
   private void rejectCommand(
