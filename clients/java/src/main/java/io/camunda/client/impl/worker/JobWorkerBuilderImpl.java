@@ -48,6 +48,7 @@ public final class JobWorkerBuilderImpl
   public static final BackoffSupplier DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().maxDelay(Duration.ofMinutes(1).toMillis()).build();
   public static final Duration DEFAULT_STREAM_TIMEOUT = Duration.ofHours(8);
+  public static final Duration DEFAULT_STREAM_INACTIVITY_TIMEOUT = Duration.ofMinutes(10);
   private final JobClient jobClient;
   private final ScheduledExecutorService scheduledExecutor;
   private final ExecutorService jobHandlingExecutor;
@@ -67,6 +68,7 @@ public final class JobWorkerBuilderImpl
   private BackoffSupplier streamNoJobsBackoffSupplier;
   private boolean enableStreaming;
   private Duration streamTimeout;
+  private Duration streamInactivityTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
   private JobExceptionHandler jobExceptionHandler;
 
@@ -94,6 +96,7 @@ public final class JobWorkerBuilderImpl
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamNoJobsBackoffSupplier = DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER;
     streamTimeout = DEFAULT_STREAM_TIMEOUT;
+    streamInactivityTimeout = DEFAULT_STREAM_INACTIVITY_TIMEOUT;
   }
 
   @Override
@@ -180,6 +183,12 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 streamInactivityTimeout(final Duration timeout) {
+    streamInactivityTimeout = timeout;
+    return this;
+  }
+
+  @Override
   public JobWorkerBuilderStep3 metrics(final JobWorkerMetrics metrics) {
     this.metrics = metrics == null ? JobWorkerMetrics.noop() : metrics;
     return this;
@@ -225,6 +234,17 @@ public final class JobWorkerBuilderImpl
       if (streamTimeout != null) {
         ensurePositive("streamTimeout", streamTimeout);
       }
+      if (streamInactivityTimeout != null) {
+        ensurePositive("streamInactivityTimeout", streamInactivityTimeout);
+        if (streamTimeout != null && streamInactivityTimeout.compareTo(streamTimeout) >= 0) {
+          throw new IllegalArgumentException(
+              "streamInactivityTimeout ("
+                  + streamInactivityTimeout
+                  + ") must be strictly less than streamTimeout ("
+                  + streamTimeout
+                  + ")");
+        }
+      }
 
       jobStreamer =
           new JobStreamerImpl(
@@ -236,8 +256,11 @@ public final class JobWorkerBuilderImpl
               getTenantIds(),
               tenantFilter,
               streamTimeout,
+              streamInactivityTimeout,
               backoffSupplier,
-              scheduledExecutor);
+              scheduledExecutor,
+              System::nanoTime,
+              metrics);
       jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();

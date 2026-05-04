@@ -108,6 +108,9 @@ public class JobWorkerFactory {
     if (canBeSetToBuilder(jobWorkerValue.getStreamTimeout(), this::isValidDuration)) {
       builder.streamTimeout(jobWorkerValue.getStreamTimeout().value());
     }
+    if (canBeSetToBuilder(jobWorkerValue.getStreamInactivityTimeout(), this::isValidDuration)) {
+      builder.streamInactivityTimeout(jobWorkerValue.getStreamInactivityTimeout().value());
+    }
     return builder.open();
   }
 

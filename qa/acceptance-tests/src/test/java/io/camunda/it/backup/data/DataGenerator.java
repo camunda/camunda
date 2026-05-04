@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.backup;
+package io.camunda.it.backup.data;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

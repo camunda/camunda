@@ -580,11 +580,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup-store-azure</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-commons</artifactId>
       <scope>test</scope>

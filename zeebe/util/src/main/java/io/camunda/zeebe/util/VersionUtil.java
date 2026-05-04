@@ -83,15 +83,17 @@ public final class VersionUtil {
   }
 
   /**
-   * Overrides the cached version with the given value. This is intended for testing only, to allow
-   * setting a specific version without relying on environment variables or properties files.
+   * Overrides the cached version by extracting only the major, minor and patch version. This is
+   * intended for testing only.
    *
    * <p>Call {@link #resetVersionForTesting()} to clear the override and allow the version to be
    * re-read from the normal sources.
    */
-  @VisibleForTesting("Allow tests to override the version without setting env vars")
-  public static void overrideVersionForTesting(final String versionOverride) {
-    version = versionOverride;
+  @VisibleForTesting("Allow tests to override the version to a non-prerelease version")
+  public static void overridePrerelease() {
+    final SemanticVersion semanticVersion = getSemanticVersion().orElseThrow();
+    version =
+        semanticVersion.major() + "." + semanticVersion.minor() + "." + semanticVersion.patch();
     versionLowerCase = null;
   }
 

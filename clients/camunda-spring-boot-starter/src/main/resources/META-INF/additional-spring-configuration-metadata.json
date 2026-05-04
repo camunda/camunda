@@ -171,6 +171,10 @@
       "defaultValue": "PT8H"
     },
     {
+      "name": "camunda.client.worker.defaults.stream-inactivity-timeout",
+      "defaultValue": "PT10M"
+    },
+    {
       "name": "camunda.client.auth.connect-timeout",
       "defaultValue": "PT5S"
     },
