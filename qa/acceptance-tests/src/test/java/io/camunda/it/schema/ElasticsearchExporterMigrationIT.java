@@ -46,14 +46,14 @@ class ElasticsearchExporterMigrationIT {
   private static final String HTTP_PREFIX = "http://";
   private static final String ES_NETWORK_ALIAS = "test-elasticsearch";
 
-  private static Network network;
-  private static ElasticsearchContainer esContainer;
-  private static RestClientTransport transport;
-  private static ElasticsearchClient esClient;
-  private static RestClient restClient;
-  private static ExporterMigrationTestHelper testHelper;
-
   @TempDir private static Path dataDir;
+
+  private Network network;
+  private ElasticsearchContainer esContainer;
+  private RestClientTransport transport;
+  private ElasticsearchClient esClient;
+  private RestClient restClient;
+  private ExporterMigrationTestHelper testHelper;
 
   @BeforeEach
   void setUp() {
@@ -108,7 +108,7 @@ class ElasticsearchExporterMigrationIT {
 
   @ParameterizedTest(name = "Migrate from {0} to current version")
   @MethodSource("io.camunda.it.schema.ExporterMigrationTestHelper#fetchAllPatchesFromPreviousMinor")
-  @Tag("nightly")
+  @Tag("dl-nightly")
   @Timeout(value = 10, unit = TimeUnit.MINUTES)
   void shouldCompleteUpgradeWithBacklogAndExportAllRecordsAgainstReleasePatches(
       final String version) throws Exception {

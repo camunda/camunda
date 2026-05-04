@@ -673,7 +673,7 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
-          <excludedGroups>rdbms, multi-db-test, compatibility-test, nightly</excludedGroups>
+          <excludedGroups>rdbms, multi-db-test, compatibility-test, nightly, dl-nightly</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
@@ -699,6 +699,22 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>dl-nightly</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration combine.self="override">
+              <groups>dl-nightly</groups>
+              <excludedGroups/>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>rdbms</id>
       <build>
