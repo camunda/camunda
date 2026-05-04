@@ -53,6 +53,7 @@ graph TD
     subgraph "Reusable Workflows"
         RELEASE["camunda-release-load-test.yaml<br/><i>workflow_call</i>"]
         CORE["camunda-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        ECS["camunda-ecs-weekly-load-test.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
     end
@@ -69,6 +70,7 @@ graph TD
     SCHEDULED -- "verify + delete namespace" --> VERIFY
     DAILY -- "scenario: max" --> CORE
     WEEKLY -- "4 parallel calls:<br/>typical, realistic,<br/>rdbms-realistic, latency" --> CORE
+    WEEKLY -- "ECS" --> ECS
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE

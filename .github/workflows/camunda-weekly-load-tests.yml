@@ -244,10 +244,27 @@ jobs:
       reuse-tag: ${{ needs.test-data.outputs.image-tag }}
       scenario: latency
 
+  setup-ecs-benchmark:
+    name: ECS Weekly Benchmark
+    needs:
+      - test-data
+      - build-camunda-image
+      - build-load-test-images
+    if: |
+      always() &&
+      needs.test-data.result == 'success' &&
+      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
+    uses: ./.github/workflows/camunda-ecs-weekly-load-test.yml
+    secrets: inherit
+    with:
+      image_tag: ${{ needs.test-data.outputs.image-tag }}
+      environment: prod
+
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ build-camunda-image, build-load-test-images, setup-rdbms-realistic-load-test, setup-opensearch-realistic-load-test, setup-realistic-test, setup-latency-test ]
+    needs: [ build-camunda-image, build-load-test-images, setup-rdbms-realistic-load-test, setup-opensearch-realistic-load-test, setup-realistic-test, setup-latency-test, setup-ecs-benchmark ]
     if: failure()
     timeout-minutes: 5
     permissions: { }
