@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing.resource;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceReexportRecord;
+import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import org.slf4j.Logger;
@@ -55,7 +57,8 @@ public final class RpaReexportMigrator implements StreamProcessorLifecycleAware 
         .runAtAsync(
             0L,
             (taskResultBuilder) -> {
-              //              taskResultBuilder.appendCommandRecord(); TODO: append command
+              taskResultBuilder.appendCommandRecord(
+                  ResourceReexportIntent.START, new ResourceReexportRecord());
               return taskResultBuilder.build();
             });
   }
