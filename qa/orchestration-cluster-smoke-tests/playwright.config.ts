@@ -20,7 +20,7 @@ const ciReporters: ReporterDescription[] = [
   ['dot'],
   ['github'],
   ['html', {outputFolder: `${REPORTS_BASE_DIR}/html`}],
-  ['junit', {outputFile: `${REPORTS_BASE_DIR}/results.xml`}],
+  ['junit', {outputFile: `${REPORTS_BASE_DIR}/TEST-smoke.xml`}],
 ];
 
 export default defineConfig({
