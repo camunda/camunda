@@ -15,7 +15,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ResourceState;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceReexportRecord;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -57,7 +59,7 @@ public class ResourceReexportReexportProcessor
 
     if (foundResource.get() != null) {
       final var resource = foundResource.get();
-      // TODO recreate resource record and write reexport event.
+      reexportResource(resource);
       commandWriter.appendFollowUpCommand(
           command.getKey(),
           ResourceReexportIntent.REEXPORT,
@@ -68,5 +70,21 @@ public class ResourceReexportReexportProcessor
       stateWriter.appendFollowUpEvent(
           command.getKey(), ResourceReexportIntent.FINISHED, command.getValue());
     }
+  }
+
+  private void reexportResource(final PersistedResource resource) {
+    final var resourceRecord =
+        new ResourceRecord()
+            .setResourceId(resource.getResourceId())
+            .setVersion(resource.getVersion())
+            .setResourceKey(resource.getResourceKey())
+            .setChecksum(resource.getChecksum())
+            .setResourceName(resource.getResourceName())
+            .setTenantId(resource.getTenantId())
+            .setDeploymentKey(resource.getDeploymentKey())
+            .setVersionTag(resource.getVersionTag())
+            .setResource(BufferUtil.wrapString(resource.getResource()));
+    stateWriter.appendFollowUpEvent(
+        resource.getResourceKey(), ResourceIntent.REEXPORTED, resourceRecord);
   }
 }
