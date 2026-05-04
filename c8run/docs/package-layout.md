@@ -45,4 +45,4 @@ Then run from `c8run/`:
 ./package.sh
 ```
 
-The script builds the `packager` binary and runs `./packager package`. The output is a `camunda8-run-*.tar.gz` (Linux/macOS) or `.zip` (Windows) archive ready for distribution.
+The script builds the `packager` binary and runs `./packager package`. The output is a `camunda8-run-*.tar.gz` (Linux) or `.zip` (macOS/Windows) archive ready for distribution.

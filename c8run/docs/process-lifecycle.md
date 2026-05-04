@@ -24,7 +24,7 @@ The health check only runs if the process is confirmed running. An unhealthy run
 
 ## Signal Handling
 
-C8Run listens for `SIGKILL`, `SIGINT`, and `SIGTERM`. On receiving a signal, `ShutdownProcesses` is called and the main goroutine waits for the shutdown WaitGroup before exiting.
+C8Run registers handlers for `SIGINT` and `SIGTERM` (and `os.Interrupt`). On receiving a signal, `ShutdownProcesses` is called and the main goroutine waits for the shutdown WaitGroup before exiting. `SIGKILL` cannot be caught by any process and bypasses the graceful shutdown path entirely.
 
 Graceful shutdown flow:
 1. Signal received → `ShutdownProcesses` called

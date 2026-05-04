@@ -10,7 +10,7 @@ Always load `configuration/application.yaml` first, then append the user-provide
 
 ## H2 Secondary Storage
 
-H2 is the default secondary storage for C8Run. It is supported for local development convenience only — not for production workloads. The H2 data directory lives inside `camunda-data/` and is cleaned up by `./c8run stop` when the `--remove-data` flag is used.
+H2 is the default secondary storage for C8Run. It is supported for local development convenience only — not for production workloads. On stop, C8Run automatically deletes the H2 data directory when the active RDBMS URL is in-memory H2 (`jdbc:h2:mem`). File-based H2 and other storage types are not cleaned up. See [Configuration — H2 Data Directory Cleanup](configuration.md#h2-data-directory-cleanup) for the full decision logic.
 
 ## Connectors Launcher Compatibility
 
@@ -32,7 +32,7 @@ Do not change this version gate without verifying both launcher paths still work
 
 The `--port` flag changes the main web/REST port. If the user did not set `CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS`, Connectors defaults to the selected Camunda port.
 
-**Connectors health port is always `8086`** — it is hardcoded and not affected by `--port`. When `--docker` mode is used, the main port flag is ignored entirely and fixed ports are used; a warning is logged if `--port` was provided.
+**Connectors health port is always `8086`** — it is hardcoded and not affected by `--port`.
 
 ## Health Check Timeout
 
@@ -40,11 +40,14 @@ Startup health checks use 24 retries with a 14-second delay between attempts (~5
 
 ## Startup URL and Quickstart Marker
 
-On the first run of C8Run 8.9.0+, the browser opens the Camunda quickstart docs URL instead of Operate. After that first run, a marker file is written to `~/.config/camunda/c8run/.c8run-quickstart-seen` and subsequent runs open Operate directly.
+On the first run of C8Run 8.9.0+, the browser opens the Camunda quickstart docs URL instead of Operate. After that first run, a marker file is written and subsequent runs open Operate directly.
 
-If the user config directory cannot be resolved, the marker is stored in the C8Run base directory instead.
+The marker path is resolved in this order:
+1. `os.UserConfigDir()` — platform-specific (`~/Library/Application Support` on macOS, `%AppData%` on Windows, `~/.config` on Linux)
+2. `~/.config/camunda/c8run/` — home-dir fallback if `UserConfigDir` fails
+3. C8Run base directory — last resort if home dir is also unavailable
 
-To force the quickstart URL to appear again, delete the marker file.
+To force the quickstart URL to appear again, delete the marker file from whichever location was resolved.
 
 ## Connectors Startup
 
