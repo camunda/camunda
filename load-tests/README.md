@@ -47,6 +47,7 @@ graph TD
 
     subgraph "Event Triggers"
         PR["camunda-pr-load-test.yaml<br/><i>PR label: benchmark</i>"]
+        SMOKE["camunda-smoke-load-test.yml<br/><i>push to main/stable/**<br/>on load-test paths</i>"]
         ADHOC["Manual workflow_dispatch"]
     end
 
@@ -73,6 +74,8 @@ graph TD
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
     PR -- "after 15min wait" --> PROFILE
+    SMOKE -- "scenario: realistic" --> CORE
+    SMOKE -- "verify + delete namespace" --> VERIFY
     ADHOC --> CORE
     ADHOC --> RELEASE
 
