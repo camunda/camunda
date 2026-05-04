@@ -101,7 +101,9 @@ public class JobCommandPreconditionValidator {
   private Either<Rejection, JobRecord> checkJobExists(final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
     final var storedJob =
-        jobState.getJob(jobKey, authorizationCheckBehavior.getAuthorizedTenantIds(command));
+        authorizationCheckBehavior.shouldSkipAllChecks()
+            ? jobState.getJob(jobKey)
+            : jobState.getJob(jobKey, authorizationCheckBehavior.getAuthorizedTenantIds(command));
 
     if (storedJob == null) {
       return Either.left(
