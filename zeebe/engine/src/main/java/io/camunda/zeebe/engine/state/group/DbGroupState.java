@@ -82,7 +82,13 @@ public class DbGroupState implements MutableGroupState {
     forEachGroup(
         (id, group) -> {
           if (value.equals(group.getName())) {
-            matchingGroups.add(group);
+            // Create a copy of the group to avoid reusing the same object reference
+            final var groupCopy = new PersistedGroup();
+            groupCopy.setGroupKey(group.getGroupKey());
+            groupCopy.setGroupId(group.getGroupId());
+            groupCopy.setDescription(group.getDescription());
+            groupCopy.setName(group.getName());
+            matchingGroups.add(groupCopy);
           }
           return true; // Continue iteration
         });

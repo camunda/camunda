@@ -135,4 +135,135 @@ public class GroupStateTest {
     // then
     assertThat(group1).isNotSameAs(group2);
   }
+
+  @Test
+  void shouldIterateOverAllGroups() {
+    // given
+    final var group1 = new GroupRecord().setGroupId("1").setName("group1");
+    final var group2 = new GroupRecord().setGroupId("2").setName("group2");
+    final var group3 = new GroupRecord().setGroupId("3").setName("group3");
+    groupState.create(group1);
+    groupState.create(group2);
+    groupState.create(group3);
+
+    // when
+    final var visitedGroups = new java.util.ArrayList<String>();
+    groupState.forEachGroup(
+        (id, group) -> {
+          visitedGroups.add(id);
+          return true;
+        });
+
+    // then
+    assertThat(visitedGroups).containsExactlyInAnyOrder("1", "2", "3");
+  }
+
+  @Test
+  void shouldStopIterationWhenCallbackReturnsFalse() {
+    // given
+    final var group1 = new GroupRecord().setGroupId("1").setName("group1");
+    final var group2 = new GroupRecord().setGroupId("2").setName("group2");
+    final var group3 = new GroupRecord().setGroupId("3").setName("group3");
+    groupState.create(group1);
+    groupState.create(group2);
+    groupState.create(group3);
+
+    // when
+    final var visitedGroups = new java.util.ArrayList<String>();
+    groupState.forEachGroup(
+        (id, group) -> {
+          visitedGroups.add(id);
+          return visitedGroups.size() < 2;
+        });
+
+    // then
+    assertThat(visitedGroups).hasSize(2);
+  }
+
+  @Test
+  void shouldFindGroupById() {
+    // given
+    final var groupId = "test-id";
+    final var groupName = "test-name";
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
+    groupState.create(groupRecord);
+
+    // when
+    final var result = groupState.findByIdOrName(groupId);
+
+    // then
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getGroupId()).isEqualTo(groupId);
+    assertThat(result.get(0).getName()).isEqualTo(groupName);
+  }
+
+  @Test
+  void shouldFindGroupByName() {
+    // given
+    final var groupId = "test-id";
+    final var groupName = "test-name";
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
+    groupState.create(groupRecord);
+
+    // when
+    final var result = groupState.findByIdOrName(groupName);
+
+    // then
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getGroupId()).isEqualTo(groupId);
+    assertThat(result.get(0).getName()).isEqualTo(groupName);
+  }
+
+  @Test
+  void shouldFindMultipleGroupsWithSameName() {
+    // given
+    final var sharedName = "shared-name";
+    final var group1 = new GroupRecord().setGroupId("id1").setName(sharedName);
+    final var group2 = new GroupRecord().setGroupId("id2").setName(sharedName);
+    final var group3 = new GroupRecord().setGroupId("id3").setName("different-name");
+    groupState.create(group1);
+    groupState.create(group2);
+    groupState.create(group3);
+
+    // when
+    final var result = groupState.findByIdOrName(sharedName);
+
+    // then
+    assertThat(result).hasSize(2);
+    assertThat(result)
+        .extracting(PersistedGroup::getGroupId)
+        .containsExactlyInAnyOrder("id1", "id2");
+    assertThat(result).allMatch(group -> group.getName().equals(sharedName));
+  }
+
+  @Test
+  void shouldReturnEmptyListWhenGroupNotFound() {
+    // given
+    final var groupRecord = new GroupRecord().setGroupId("existing-id").setName("existing-name");
+    groupState.create(groupRecord);
+
+    // when
+    final var result = groupState.findByIdOrName("non-existent");
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldPrioritizeIdOverNameInFindByIdOrName() {
+    // given
+    final var groupId = "same-value";
+    final var group1 = new GroupRecord().setGroupId(groupId).setName("name1");
+    final var group2 = new GroupRecord().setGroupId("id2").setName(groupId);
+    groupState.create(group1);
+    groupState.create(group2);
+
+    // when
+    final var result = groupState.findByIdOrName(groupId);
+
+    // then
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0).getGroupId()).isEqualTo(groupId);
+    assertThat(result.get(0).getName()).isEqualTo("name1");
+  }
 }
