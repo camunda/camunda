@@ -82,6 +82,7 @@ final class ExporterContainer implements Controller {
   private void initPosition() {
     position = exportersState.getPosition(getId());
     lastUnacknowledgedPosition = position;
+    lastAcknowledgedPosition = position;
     if (position == ExportersState.VALUE_NOT_FOUND) {
       exportersState.setPosition(getId(), -1L);
     }
