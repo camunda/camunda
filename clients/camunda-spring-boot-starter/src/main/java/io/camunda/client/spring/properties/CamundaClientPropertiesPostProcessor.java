@@ -27,10 +27,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.logging.Log;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.boot.env.YamlPropertySourceLoader;
-import org.springframework.boot.logging.DeferredLog;
 import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
@@ -56,10 +56,10 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
         Set.of("camunda.client.auth.client-id", "camunda.client.auth.client-secret"));
   }
 
-  private final DeferredLog log;
+  private final Log log;
 
   public CamundaClientPropertiesPostProcessor(final DeferredLogFactory deferredLogFactory) {
-    log = (DeferredLog) deferredLogFactory.getLog(getClass());
+    log = deferredLogFactory.getLog(getClass());
   }
 
   @Override
