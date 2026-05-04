@@ -36,7 +36,6 @@ jobs:
       TEST_OWNER: Core Features
       TEST_PRODUCT: Orchestration Cluster
       TEST_TYPE: Smoke
-      RESOLVED_DOCKER_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
     defaults:
       run:
         working-directory: qa/orchestration-cluster-smoke-tests
@@ -59,10 +58,51 @@ jobs:
       - name: Lint smoke tests
         run: npm run lint
 
+      - name: Setup Camunda build
+        uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+
+      - name: Build Operate frontend
+        uses: ./.github/actions/build-frontend
+        id: build-operate-fe
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+
+      - name: Build Tasklist frontend
+        uses: ./.github/actions/build-frontend
+        id: build-tasklist-fe
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+
+      - name: Build Zeebe and Camunda Platform
+        uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -DskipQaBuild=true -PskipFrontendBuild
+
+      - name: Build Camunda Docker image
+        uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          repository: camunda/camunda
+          version: |
+            ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+            ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: linux/amd64
+          dockerfile: camunda.Dockerfile
+
       - name: Resolve Camunda Docker image
         run: |
-          echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${RESOLVED_DOCKER_TAG}" >> "$GITHUB_ENV"
-          echo "Using CAMUNDA_DOCKER_IMAGE=camunda/camunda:${RESOLVED_DOCKER_TAG}"
+          echo "CAMUNDA_DOCKER_IMAGE=${{ steps.build-camunda-docker.outputs.image }}" >> "$GITHUB_ENV"
+          echo "Using CAMUNDA_DOCKER_IMAGE=${{ steps.build-camunda-docker.outputs.image }}"
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
