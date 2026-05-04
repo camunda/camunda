@@ -66,6 +66,9 @@
           "$ref": "#/definitions/AssertUserTaskInstruction"
         },
         {
+          "$ref": "#/definitions/AssertVariableInstruction"
+        },
+        {
           "$ref": "#/definitions/AssertVariablesInstruction"
         },
         {
@@ -1053,6 +1056,40 @@
       ],
       "additionalProperties": false
     },
+    "AssertVariableInstruction": {
+      "description": "An instruction to assert a process variable.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_VARIABLE"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the element for local variables. Optional.",
+          "$ref": "#/definitions/ElementSelector"
+        },
+        "variableName": {
+          "description": "The name of the variable to evaluate.",
+          "type": "string"
+        },
+        "satisfiesJudge": {
+          "description": "A judge-based assertion that evaluates the variable against a semantic expectation.",
+          "$ref": "#/definitions/JudgeAssertion"
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "variableName",
+        "satisfiesJudge"
+      ],
+      "additionalProperties": false
+    },
     "AssertVariablesInstruction": {
       "description": "An instruction to assert the variables of a process instance.",
       "type": "object",
@@ -1268,6 +1305,30 @@
         "type",
         "processInstanceSelector",
         "variables"
+      ],
+      "additionalProperties": false
+    },
+    "JudgeAssertion": {
+      "description": "A judge-based assertion that evaluates a value against a semantic expectation using an LLM judge.",
+      "type": "object",
+      "properties": {
+        "expectation": {
+          "description": "The semantic expectation for the value.",
+          "type": "string"
+        },
+        "threshold": {
+          "description": "The score threshold at or above which the judge assertion passes. Must be between 0.0 and 1.0; higher values are stricter. Overrides the preconfigured threshold. Optional; defaults to the preconfigured JudgeConfig threshold (0.5 unless otherwise configured) when omitted.",
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "customPrompt": {
+          "description": "A custom prompt for the judge evaluation. Overrides the preconfigured custom prompt. Optional.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expectation"
       ],
       "additionalProperties": false
     }
