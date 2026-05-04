@@ -1,23 +1,28 @@
 {
 	"compilerOptions": {
-		"target": "ES2022",
+		/* Language and Environment */
+		"target": "ESNext",
 		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"skipLibCheck": true,
+		"jsx": "react-jsx",
+		"noEmit": true,
+
+		/* Modules and Constraints */
 		"verbatimModuleSyntax": true,
 		"isolatedModules": true,
 		"noUncheckedSideEffectImports": true,
 		"erasableSyntaxOnly": true,
-		"noEmit": true,
-		"skipLibCheck": true,
+
+		/* Type Checking */
 		"strict": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
 		"noImplicitOverride": true,
 		"noImplicitReturns": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noPropertyAccessFromIndexSignature": true,
 		"noUncheckedIndexedAccess": true,
 		"allowUnreachableCode": false,
-		"noPropertyAccessFromIndexSignature": true,
-		"allowJs": false,
-		"exactOptionalPropertyTypes": true
+		"allowJs": true
 	}
 }

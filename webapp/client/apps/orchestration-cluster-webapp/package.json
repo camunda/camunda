@@ -4,20 +4,27 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev --port 3000",
+		"preview": "vite preview",
 		"build": "vite build && node ./renameProdIndex.mjs",
-		"typecheck": "tsc -p tsconfig.browser.json",
-		"extract-sbom": "vite build --mode sbom"
+		"build:visual-regression": "vite build --mode visual-regression",
+		"typecheck": "tsc -p tsconfig.browser.json && tsc -p tsconfig.vitest.json && tsc -p tsconfig.node.json",
+		"extract-sbom": "vite build --mode sbom",
+		"test:unit": "vitest",
+		"test:unit:ui": "vitest --browser.headless=false",
+		"test:a11y": "playwright test --project=a11y-light --project=a11y-dark",
+		"test:visual": "cross-env CONTAINERIZED_BROWSER=true playwright test --project=visual-light --project=visual-dark --project=visual-light-tablet --project=visual-dark-tablet",
+		"test:integration": "playwright test --project=integration"
 	},
 	"dependencies": {
 		"@camunda/camunda-api-zod-schemas": "0.0.60",
 		"@camunda/camunda-composite-components": "0.23.1",
-		"mixpanel-browser": "2.78.0",
 		"@carbon/react": "1.106.0",
 		"@tanstack/react-query": "5.100.5",
 		"@tanstack/react-query-devtools": "5.100.5",
 		"@tanstack/react-router": "1.168.25",
 		"@tanstack/react-router-devtools": "1.166.13",
 		"@tanstack/router-plugin": "1.167.28",
+		"mixpanel-browser": "2.78.0",
 		"mobx": "6.15.0",
 		"mobx-react-lite": "4.1.1",
 		"react": "19.2.5",
@@ -26,20 +33,22 @@
 		"zod": "4.3.6"
 	},
 	"devDependencies": {
+		"@axe-core/playwright": "4.11.2",
+		"@msw/playwright": "0.6.7",
+		"@playwright/test": "1.59.1",
 		"@tanstack/devtools-vite": "0.6.0",
 		"@tanstack/react-devtools": "0.10.2",
 		"@types/node": "25.6.0",
 		"@types/react": "19.2.14",
 		"@types/react-dom": "19.2.3",
 		"@vitejs/plugin-react": "6.0.1",
+		"@vitest/browser-playwright": "4.1.5",
+		"cross-env": "10.1.0",
+		"msw": "2.13.6",
 		"rollup-plugin-sbom": "3.1.0",
 		"typescript": "6.0.3",
-		"vite": "8.0.10"
-	},
-	"pnpm": {
-		"onlyBuiltDependencies": [
-			"esbuild",
-			"lightningcss"
-		]
+		"vite": "8.0.10",
+		"vitest": "4.1.5",
+		"vitest-browser-react": "2.2.0"
 	}
 }
