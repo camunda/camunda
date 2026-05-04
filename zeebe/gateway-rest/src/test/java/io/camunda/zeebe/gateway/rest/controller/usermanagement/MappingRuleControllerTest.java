@@ -57,7 +57,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
     // given
     final var dto = validCreateMappingRuleRuleDTO();
     final var request =
-        MappingRuleCreateRequest.Builder.builder()
+        MappingRuleCreateRequest.Builder.create()
             .claimName(dto.claimName())
             .claimValue(dto.claimValue())
             .name(dto.name())

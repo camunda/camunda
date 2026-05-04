@@ -1401,7 +1401,7 @@ public class JobControllerTest extends RestControllerTest {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
               future.complete(
                   ResponseEntity.ok()
-                      .body(JobActivationResult.Builder.builder().jobs(List.of()).build()));
+                      .body(JobActivationResult.Builder.create().jobs(List.of()).build()));
               return mockObserver;
             });
 
@@ -1451,7 +1451,7 @@ public class JobControllerTest extends RestControllerTest {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
               future.complete(
                   ResponseEntity.ok()
-                      .body(JobActivationResult.Builder.builder().jobs(List.of()).build()));
+                      .body(JobActivationResult.Builder.create().jobs(List.of()).build()));
               return mockObserver;
             });
 
@@ -1503,7 +1503,7 @@ public class JobControllerTest extends RestControllerTest {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
               future.complete(
                   ResponseEntity.ok()
-                      .body(JobActivationResult.Builder.builder().jobs(List.of()).build()));
+                      .body(JobActivationResult.Builder.create().jobs(List.of()).build()));
               return mockObserver;
             });
 

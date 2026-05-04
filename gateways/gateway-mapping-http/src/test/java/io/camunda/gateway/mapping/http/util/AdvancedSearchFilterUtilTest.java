@@ -95,7 +95,7 @@ class AdvancedSearchFilterUtilTest {
     // (package-private) to avoid IllegalAccessException.
     final var builderClass = Class.forName(fClass.getName() + "$Builder");
     final var iBuildClass = Class.forName(fClass.getName() + "$Builder$IBuild");
-    final var builderMethod = builderClass.getDeclaredMethod("builder");
+    final var builderMethod = builderClass.getDeclaredMethod("create");
     final var iBuild = builderMethod.invoke(null);
     final var buildMethod = iBuildClass.getMethod("build");
     return fClass.cast(buildMethod.invoke(iBuild));
@@ -251,7 +251,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldMapToStringOperationsFromInteger() {
     // given
-    final var filter = AdvancedIntegerFilter.Builder.builder().build();
+    final var filter = AdvancedIntegerFilter.empty();
     filter.set$Eq(10);
 
     // when
@@ -265,7 +265,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldMapToStringOperationsWithConverter() {
     // given
-    final var filter = BasicStringFilter.Builder.builder().build();
+    final var filter = BasicStringFilter.empty();
     filter.set$Eq("ACTIVE");
     final var errors = new ArrayList<String>();
 
@@ -283,7 +283,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldCollectErrorForInvalidKeyValue() {
     // given
-    final var filter = BasicStringFilter.Builder.builder().build();
+    final var filter = BasicStringFilter.empty();
     filter.set$Eq("abc");
     final var errors = new ArrayList<String>();
 
@@ -300,7 +300,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldCollectErrorForInvalidDateValue() {
     // given
-    final var filter = AdvancedDateTimeFilter.Builder.builder().build();
+    final var filter = AdvancedDateTimeFilter.empty();
     filter.set$Eq("not-a-date");
     final var errors = new ArrayList<String>();
 
@@ -317,9 +317,9 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldCollectMultipleErrors() {
     // given
-    final var filter1 = BasicStringFilter.Builder.builder().build();
+    final var filter1 = BasicStringFilter.empty();
     filter1.set$Eq("abc");
-    final var filter2 = AdvancedDateTimeFilter.Builder.builder().build();
+    final var filter2 = AdvancedDateTimeFilter.empty();
     filter2.set$Eq("not-a-date");
     final var errors = new ArrayList<String>();
 
@@ -338,7 +338,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldHandleExistsOperationInTypedMethods() {
     // given
-    final var filter = BasicStringFilter.Builder.builder().build();
+    final var filter = BasicStringFilter.empty();
     filter.set$Exists(true);
     final var errors = new ArrayList<String>();
 
@@ -353,7 +353,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldCollectErrorForNonIntegerValue() {
     // given — BasicStringFilter has String fields, simulating a type mismatch
-    final var filter = BasicStringFilter.Builder.builder().build();
+    final var filter = BasicStringFilter.empty();
     filter.set$Eq("notAnInteger");
     final var errors = new ArrayList<String>();
 
@@ -370,7 +370,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldCollectErrorWhenConverterThrows() {
     // given
-    final var filter = BasicStringFilter.Builder.builder().build();
+    final var filter = BasicStringFilter.empty();
     filter.set$Eq("badValue");
     final var errors = new ArrayList<String>();
     final CustomConverter<String> failingConverter =
@@ -400,7 +400,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldSkipInvalidValuesInListForKeyOperations() {
     // given
-    final var filter = BasicStringFilter.Builder.builder().build();
+    final var filter = BasicStringFilter.empty();
     filter.set$In(List.of("abc", "def"));
     final var errors = new ArrayList<String>();
 
@@ -415,7 +415,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldHandleNullElementInListForStringOperations() {
     // given
-    final var filter = BasicStringFilter.Builder.builder().build();
+    final var filter = BasicStringFilter.empty();
     filter.set$In(nullableList("a", null, "b"));
 
     // when
@@ -428,7 +428,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldHandleNullElementInListForKeyOperations() {
     // given
-    final var filter = BasicStringFilter.Builder.builder().build();
+    final var filter = BasicStringFilter.empty();
     filter.set$In(nullableList("123", null));
     final var errors = new ArrayList<String>();
 
@@ -442,7 +442,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldHandleNullElementInListForIntegerOperations() {
     // given
-    final var filter = AdvancedIntegerFilter.Builder.builder().build();
+    final var filter = AdvancedIntegerFilter.empty();
     filter.set$In(nullableList(1, null, 2));
     final var errors = new ArrayList<String>();
 

@@ -241,7 +241,7 @@ public final class SearchQueryResponseMapper {
                       key -> {
                         final UsageMetricStatisticsEntityTenant stats = tenants1.get(key);
                         final UsageMetricTUStatisticsEntityTenant tuStats = tenants2.get(key);
-                        return UsageMetricsResponseItem.Builder.builder()
+                        return UsageMetricsResponseItem.Builder.create()
                             .processInstances(stats != null ? stats.rpi() : 0L)
                             .decisionInstances(stats != null ? stats.edi() : 0L)
                             .assignees(tuStats != null ? tuStats.tu() : 0L)
@@ -251,7 +251,7 @@ public final class SearchQueryResponseMapper {
       mergedTenants = Map.of();
     }
 
-    return UsageMetricsResponse.Builder.builder()
+    return UsageMetricsResponse.Builder.create()
         .processInstances(statistics.totalRpi())
         .decisionInstances(statistics.totalEdi())
         .assignees(tuStatistics.totalTu())
@@ -263,7 +263,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessDefinitionSearchQueryResult toProcessDefinitionSearchQueryResponse(
       final SearchQueryResult<ProcessDefinitionEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return ProcessDefinitionSearchQueryResult.Builder.builder()
+    return ProcessDefinitionSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -275,7 +275,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessDefinitionElementStatisticsQueryResult
       toProcessDefinitionElementStatisticsResult(
           final List<ProcessFlowNodeStatisticsEntity> result) {
-    return ProcessDefinitionElementStatisticsQueryResult.Builder.builder()
+    return ProcessDefinitionElementStatisticsQueryResult.Builder.create()
         .items(
             result.stream()
                 .map(SearchQueryResponseMapper::toProcessElementStatisticsResult)
@@ -285,7 +285,7 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessInstanceElementStatisticsQueryResult
       toProcessInstanceElementStatisticsResult(final List<ProcessFlowNodeStatisticsEntity> result) {
-    return ProcessInstanceElementStatisticsQueryResult.Builder.builder()
+    return ProcessInstanceElementStatisticsQueryResult.Builder.create()
         .items(
             result.stream()
                 .map(SearchQueryResponseMapper::toProcessElementStatisticsResult)
@@ -295,7 +295,7 @@ public final class SearchQueryResponseMapper {
 
   private static ProcessElementStatisticsResult toProcessElementStatisticsResult(
       final ProcessFlowNodeStatisticsEntity result) {
-    return ProcessElementStatisticsResult.Builder.builder()
+    return ProcessElementStatisticsResult.Builder.create()
         .active(result.active())
         .canceled(result.canceled())
         .completed(result.completed())
@@ -308,7 +308,7 @@ public final class SearchQueryResponseMapper {
       toProcessInstanceStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return ProcessDefinitionInstanceStatisticsQueryResult.Builder.builder()
+    return ProcessDefinitionInstanceStatisticsQueryResult.Builder.create()
         .page(page)
         .items(
             result.items().stream()
@@ -321,7 +321,7 @@ public final class SearchQueryResponseMapper {
       toProcessInstanceVersionStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return ProcessDefinitionInstanceVersionStatisticsQueryResult.Builder.builder()
+    return ProcessDefinitionInstanceVersionStatisticsQueryResult.Builder.create()
         .page(page)
         .items(
             result.items().stream()
@@ -332,7 +332,7 @@ public final class SearchQueryResponseMapper {
 
   private static ProcessDefinitionInstanceStatisticsResult toProcessInstanceStatisticsResult(
       final ProcessDefinitionInstanceStatisticsEntity result) {
-    return ProcessDefinitionInstanceStatisticsResult.Builder.builder()
+    return ProcessDefinitionInstanceStatisticsResult.Builder.create()
         .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
         .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount())
         .hasMultipleVersions(result.hasMultipleVersions())
@@ -347,7 +347,7 @@ public final class SearchQueryResponseMapper {
           final ProcessDefinitionInstanceVersionStatisticsEntity result) {
     // `processDefinitionVersion` is null on exporter cache miss (version enrichment path).
     // Fall back to -1 rather than 500; caller can treat it as "unknown version".
-    return ProcessDefinitionInstanceVersionStatisticsResult.Builder.builder()
+    return ProcessDefinitionInstanceVersionStatisticsResult.Builder.create()
         .processDefinitionId(result.processDefinitionId())
         .processDefinitionKey(keyToString(result.processDefinitionKey()))
         .tenantId(result.tenantId())
@@ -362,7 +362,7 @@ public final class SearchQueryResponseMapper {
       toIncidentProcessInstanceStatisticsByErrorResult(
           final SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return IncidentProcessInstanceStatisticsByErrorQueryResult.Builder.builder()
+    return IncidentProcessInstanceStatisticsByErrorQueryResult.Builder.create()
         .page(page)
         .items(
             result.items().stream()
@@ -376,7 +376,7 @@ public final class SearchQueryResponseMapper {
           final IncidentProcessInstanceStatisticsByErrorEntity result) {
     // `errorMessage` is null when the incident aggregation has no representative message (e.g.
     // rows with no message columns populated in the source incidents). Fall back to empty string.
-    return IncidentProcessInstanceStatisticsByErrorResult.Builder.builder()
+    return IncidentProcessInstanceStatisticsByErrorResult.Builder.create()
         .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount())
         .errorHashCode(result.errorHashCode())
         .errorMessage(requireNonNullElse(result.errorMessage(), ""))
@@ -387,7 +387,7 @@ public final class SearchQueryResponseMapper {
       toIncidentProcessInstanceStatisticsByDefinitionQueryResult(
           final SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return IncidentProcessInstanceStatisticsByDefinitionQueryResult.Builder.builder()
+    return IncidentProcessInstanceStatisticsByDefinitionQueryResult.Builder.create()
         .page(page)
         .items(
             result.items().stream()
@@ -403,7 +403,7 @@ public final class SearchQueryResponseMapper {
           final IncidentProcessInstanceStatisticsByDefinitionEntity result) {
     // Process-definition fields are null on exporter cache miss (enrichment path). Fall back to
     // spec-compliant sentinels rather than 500 so partial statistics rows can still be returned.
-    return IncidentProcessInstanceStatisticsByDefinitionResult.Builder.builder()
+    return IncidentProcessInstanceStatisticsByDefinitionResult.Builder.create()
         .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount())
         .processDefinitionId(requireNonNullElse(result.processDefinitionId(), ""))
         .processDefinitionKey(keyToString(result.processDefinitionKey()))
@@ -415,7 +415,7 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessInstanceSequenceFlowsQueryResult toSequenceFlowsResult(
       final List<SequenceFlowEntity> result) {
-    return ProcessInstanceSequenceFlowsQueryResult.Builder.builder()
+    return ProcessInstanceSequenceFlowsQueryResult.Builder.create()
         .items(
             result.stream()
                 .map(SearchQueryResponseMapper::toProcessInstanceSequenceFlowResult)
@@ -425,7 +425,7 @@ public final class SearchQueryResponseMapper {
 
   private static ProcessInstanceSequenceFlowResult toProcessInstanceSequenceFlowResult(
       final SequenceFlowEntity result) {
-    return ProcessInstanceSequenceFlowResult.Builder.builder()
+    return ProcessInstanceSequenceFlowResult.Builder.create()
         .rootProcessInstanceKey(keyToStringOrNull(result.rootProcessInstanceKey()))
         .elementId(result.flowNodeId())
         .processDefinitionId(result.processDefinitionId())
@@ -439,7 +439,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessInstanceSearchQueryResult toProcessInstanceSearchQueryResponse(
       final SearchQueryResult<ProcessInstanceEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return ProcessInstanceSearchQueryResult.Builder.builder()
+    return ProcessInstanceSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -451,7 +451,7 @@ public final class SearchQueryResponseMapper {
   public static JobSearchQueryResult toJobSearchQueryResponse(
       final SearchQueryResult<JobEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return JobSearchQueryResult.Builder.builder()
+    return JobSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -463,7 +463,7 @@ public final class SearchQueryResponseMapper {
   public static RoleSearchQueryResult toRoleSearchQueryResponse(
       final SearchQueryResult<RoleEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return RoleSearchQueryResult.Builder.builder()
+    return RoleSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of))
@@ -472,7 +472,7 @@ public final class SearchQueryResponseMapper {
 
   public static RoleGroupSearchResult toRoleGroupSearchQueryResponse(
       final SearchQueryResult<RoleMemberEntity> result) {
-    return RoleGroupSearchResult.Builder.builder()
+    return RoleGroupSearchResult.Builder.create()
         .page(toSearchQueryPageResponse(result))
         .items(
             ofNullable(result.items())
@@ -483,7 +483,7 @@ public final class SearchQueryResponseMapper {
 
   public static RoleUserSearchResult toRoleUserSearchQueryResponse(
       final SearchQueryResult<RoleMemberEntity> result) {
-    return RoleUserSearchResult.Builder.builder()
+    return RoleUserSearchResult.Builder.create()
         .page(toSearchQueryPageResponse(result))
         .items(
             ofNullable(result.items())
@@ -494,7 +494,7 @@ public final class SearchQueryResponseMapper {
 
   public static RoleClientSearchResult toRoleClientSearchQueryResponse(
       final SearchQueryResult<RoleMemberEntity> result) {
-    return RoleClientSearchResult.Builder.builder()
+    return RoleClientSearchResult.Builder.create()
         .page(toSearchQueryPageResponse(result))
         .items(
             ofNullable(result.items())
@@ -506,7 +506,7 @@ public final class SearchQueryResponseMapper {
   public static GroupSearchQueryResult toGroupSearchQueryResponse(
       final SearchQueryResult<GroupEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return GroupSearchQueryResult.Builder.builder()
+    return GroupSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items()).map(SearchQueryResponseMapper::toGroups).orElseGet(List::of))
@@ -516,7 +516,7 @@ public final class SearchQueryResponseMapper {
   public static GroupUserSearchResult toGroupUserSearchQueryResponse(
       final SearchQueryResult<GroupMemberEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return GroupUserSearchResult.Builder.builder()
+    return GroupUserSearchResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -528,7 +528,7 @@ public final class SearchQueryResponseMapper {
   public static GroupClientSearchResult toGroupClientSearchQueryResponse(
       final SearchQueryResult<GroupMemberEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return GroupClientSearchResult.Builder.builder()
+    return GroupClientSearchResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -540,7 +540,7 @@ public final class SearchQueryResponseMapper {
   public static TenantSearchQueryResult toTenantSearchQueryResponse(
       final SearchQueryResult<TenantEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return TenantSearchQueryResult.Builder.builder()
+    return TenantSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -551,7 +551,7 @@ public final class SearchQueryResponseMapper {
 
   public static TenantGroupSearchResult toTenantGroupSearchQueryResponse(
       final SearchQueryResult<TenantMemberEntity> result) {
-    return TenantGroupSearchResult.Builder.builder()
+    return TenantGroupSearchResult.Builder.create()
         .page(toSearchQueryPageResponse(result))
         .items(
             ofNullable(result.items())
@@ -562,7 +562,7 @@ public final class SearchQueryResponseMapper {
 
   public static TenantUserSearchResult toTenantUserSearchQueryResponse(
       final SearchQueryResult<TenantMemberEntity> result) {
-    return TenantUserSearchResult.Builder.builder()
+    return TenantUserSearchResult.Builder.create()
         .page(toSearchQueryPageResponse(result))
         .items(
             ofNullable(result.items())
@@ -573,7 +573,7 @@ public final class SearchQueryResponseMapper {
 
   public static TenantClientSearchResult toTenantClientSearchQueryResponse(
       final SearchQueryResult<TenantMemberEntity> result) {
-    return TenantClientSearchResult.Builder.builder()
+    return TenantClientSearchResult.Builder.create()
         .page(toSearchQueryPageResponse(result))
         .items(
             ofNullable(result.items())
@@ -585,7 +585,7 @@ public final class SearchQueryResponseMapper {
   public static MappingRuleSearchQueryResult toMappingRuleSearchQueryResponse(
       final SearchQueryResult<MappingRuleEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return MappingRuleSearchQueryResult.Builder.builder()
+    return MappingRuleSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -597,7 +597,7 @@ public final class SearchQueryResponseMapper {
   public static DecisionDefinitionSearchQueryResult toDecisionDefinitionSearchQueryResponse(
       final SearchQueryResult<DecisionDefinitionEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return DecisionDefinitionSearchQueryResult.Builder.builder()
+    return DecisionDefinitionSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -609,7 +609,7 @@ public final class SearchQueryResponseMapper {
   public static DecisionRequirementsSearchQueryResult toDecisionRequirementsSearchQueryResponse(
       final SearchQueryResult<DecisionRequirementsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return DecisionRequirementsSearchQueryResult.Builder.builder()
+    return DecisionRequirementsSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -621,7 +621,7 @@ public final class SearchQueryResponseMapper {
   public static ElementInstanceSearchQueryResult toElementInstanceSearchQueryResponse(
       final SearchQueryResult<FlowNodeInstanceEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return ElementInstanceSearchQueryResult.Builder.builder()
+    return ElementInstanceSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -633,7 +633,7 @@ public final class SearchQueryResponseMapper {
   public static DecisionInstanceSearchQueryResult toDecisionInstanceSearchQueryResponse(
       final SearchQueryResult<DecisionInstanceEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return DecisionInstanceSearchQueryResult.Builder.builder()
+    return DecisionInstanceSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -645,7 +645,7 @@ public final class SearchQueryResponseMapper {
   public static UserTaskSearchQueryResult toUserTaskSearchQueryResponse(
       final SearchQueryResult<UserTaskEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return UserTaskSearchQueryResult.Builder.builder()
+    return UserTaskSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -656,7 +656,7 @@ public final class SearchQueryResponseMapper {
 
   public static UserSearchResult toUserSearchQueryResponse(
       final SearchQueryResult<UserEntity> result) {
-    return UserSearchResult.Builder.builder()
+    return UserSearchResult.Builder.create()
         .page(toSearchQueryPageResponse(result))
         .items(
             ofNullable(result.items())
@@ -668,7 +668,7 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationSearchQueryResult toBatchOperationSearchQueryResult(
       final SearchQueryResult<BatchOperationEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return BatchOperationSearchQueryResult.Builder.builder()
+    return BatchOperationSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -680,7 +680,7 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
       final SearchQueryResult<BatchOperationItemEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return BatchOperationItemSearchQueryResult.Builder.builder()
+    return BatchOperationItemSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -692,7 +692,7 @@ public final class SearchQueryResponseMapper {
   public static IncidentSearchQueryResult toIncidentSearchQueryResponse(
       final SearchQueryResult<IncidentEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return IncidentSearchQueryResult.Builder.builder()
+    return IncidentSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -704,7 +704,7 @@ public final class SearchQueryResponseMapper {
   public static MessageSubscriptionSearchQueryResult toMessageSubscriptionSearchQueryResponse(
       final SearchQueryResult<MessageSubscriptionEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return MessageSubscriptionSearchQueryResult.Builder.builder()
+    return MessageSubscriptionSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -717,7 +717,7 @@ public final class SearchQueryResponseMapper {
       toCorrelatedMessageSubscriptionSearchQueryResponse(
           final SearchQueryResult<CorrelatedMessageSubscriptionEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return CorrelatedMessageSubscriptionSearchQueryResult.Builder.builder()
+    return CorrelatedMessageSubscriptionSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -729,7 +729,7 @@ public final class SearchQueryResponseMapper {
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
 
-    return SearchQueryPageResponse.Builder.builder()
+    return SearchQueryPageResponse.Builder.create()
         .totalItems(result.total())
         .hasMoreTotalItems(result.hasMoreTotalItems())
         .startCursor(result.startCursor())
@@ -743,7 +743,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ProcessDefinitionResult toProcessDefinition(final ProcessDefinitionEntity entity) {
-    return ProcessDefinitionResult.Builder.builder()
+    return ProcessDefinitionResult.Builder.create()
         .processDefinitionKey(
             requireNonNull(
                 keyToStringOrNull(entity.processDefinitionKey()), "processDefinitionKey"))
@@ -767,7 +767,7 @@ public final class SearchQueryResponseMapper {
   }
 
   private static JobSearchResult toJob(final JobEntity job) {
-    return JobSearchResult.Builder.builder()
+    return JobSearchResult.Builder.create()
         .customHeaders(job.customHeaders())
         .elementId(job.elementId())
         .elementInstanceKey(keyToString(job.elementInstanceKey()))
@@ -801,7 +801,7 @@ public final class SearchQueryResponseMapper {
     // this mapper, but the contract has to admit the null so we fall back to spec-compliant
     // sentinels here. Tracked: #51999. state and startDate are nullable for record-ordering
     // reasons (see entity).
-    return ProcessInstanceResult.Builder.builder()
+    return ProcessInstanceResult.Builder.create()
         .processDefinitionId(requireNonNullElse(p.processDefinitionId(), ""))
         .processDefinitionName(p.processDefinitionName())
         .processDefinitionVersion(requireNonNullElse(p.processDefinitionVersion(), -1))
@@ -829,7 +829,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
-    return BatchOperationResponse.Builder.builder()
+    return BatchOperationResponse.Builder.create()
         .batchOperationKey(entity.batchOperationKey())
         .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
         .state(BatchOperationStateEnum.fromValue(entity.state().name()))
@@ -857,9 +857,9 @@ public final class SearchQueryResponseMapper {
 
   public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
       final List<BatchOperationItemEntity> batchOperations) {
-    return BatchOperationItemSearchQueryResult.Builder.builder()
+    return BatchOperationItemSearchQueryResult.Builder.create()
         .page(
-            SearchQueryPageResponse.Builder.builder()
+            SearchQueryPageResponse.Builder.create()
                 .totalItems((long) batchOperations.size())
                 .hasMoreTotalItems(false)
                 .startCursor(null)
@@ -879,7 +879,7 @@ public final class SearchQueryResponseMapper {
 
   public static BatchOperationItemResponse toBatchOperationItem(
       final BatchOperationItemEntity entity) {
-    return BatchOperationItemResponse.Builder.builder()
+    return BatchOperationItemResponse.Builder.create()
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .batchOperationKey(entity.batchOperationKey())
         .errorMessage(entity.errorMessage())
@@ -895,7 +895,7 @@ public final class SearchQueryResponseMapper {
 
   private static BatchOperationError toBatchOperationError(
       final BatchOperationErrorEntity batchOperationErrorEntity) {
-    return BatchOperationError.Builder.builder()
+    return BatchOperationError.Builder.create()
         .message(batchOperationErrorEntity.message())
         .partitionId(batchOperationErrorEntity.partitionId())
         .type(TypeEnum.fromValue(batchOperationErrorEntity.type()))
@@ -907,7 +907,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static RoleResult toRole(final RoleEntity roleEntity) {
-    return RoleResult.Builder.builder()
+    return RoleResult.Builder.create()
         .roleId(roleEntity.roleId())
         .name(roleEntity.name())
         .description(roleEntity.description())
@@ -919,7 +919,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static GroupResult toGroup(final GroupEntity groupEntity) {
-    return GroupResult.Builder.builder()
+    return GroupResult.Builder.create()
         .name(groupEntity.name())
         .groupId(groupEntity.groupId())
         .description(groupEntity.description())
@@ -931,7 +931,7 @@ public final class SearchQueryResponseMapper {
   }
 
   private static GroupUserResult toGroupUser(final GroupMemberEntity groupMember) {
-    return GroupUserResult.Builder.builder().username(groupMember.id()).build();
+    return GroupUserResult.Builder.create().username(groupMember.id()).build();
   }
 
   private static List<GroupClientResult> toGroupClients(
@@ -940,7 +940,7 @@ public final class SearchQueryResponseMapper {
   }
 
   private static GroupClientResult toGroupClient(final GroupMemberEntity groupMember) {
-    return GroupClientResult.Builder.builder().clientId(groupMember.id()).build();
+    return GroupClientResult.Builder.create().clientId(groupMember.id()).build();
   }
 
   private static List<TenantResult> toTenants(final List<TenantEntity> tenants) {
@@ -948,7 +948,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static TenantResult toTenant(final TenantEntity tenantEntity) {
-    return TenantResult.Builder.builder()
+    return TenantResult.Builder.create()
         .tenantId(tenantEntity.tenantId())
         .name(tenantEntity.name())
         .description(tenantEntity.description())
@@ -968,15 +968,15 @@ public final class SearchQueryResponseMapper {
   }
 
   private static TenantGroupResult toTenantGroup(final TenantMemberEntity tenantMember) {
-    return TenantGroupResult.Builder.builder().groupId(tenantMember.id()).build();
+    return TenantGroupResult.Builder.create().groupId(tenantMember.id()).build();
   }
 
   private static TenantUserResult toTenantUser(final TenantMemberEntity tenantMember) {
-    return TenantUserResult.Builder.builder().username(tenantMember.id()).build();
+    return TenantUserResult.Builder.create().username(tenantMember.id()).build();
   }
 
   private static TenantClientResult toTenantClient(final TenantMemberEntity tenantMember) {
-    return TenantClientResult.Builder.builder().clientId(tenantMember.id()).build();
+    return TenantClientResult.Builder.create().clientId(tenantMember.id()).build();
   }
 
   private static List<RoleGroupResult> toRoleGroups(final List<RoleMemberEntity> members) {
@@ -992,15 +992,15 @@ public final class SearchQueryResponseMapper {
   }
 
   private static RoleGroupResult toRoleGroup(final RoleMemberEntity roleMember) {
-    return RoleGroupResult.Builder.builder().groupId(roleMember.id()).build();
+    return RoleGroupResult.Builder.create().groupId(roleMember.id()).build();
   }
 
   private static RoleUserResult toRoleUser(final RoleMemberEntity roleMember) {
-    return RoleUserResult.Builder.builder().username(roleMember.id()).build();
+    return RoleUserResult.Builder.create().username(roleMember.id()).build();
   }
 
   private static RoleClientResult toRoleClient(final RoleMemberEntity roleMember) {
-    return RoleClientResult.Builder.builder().clientId(roleMember.id()).build();
+    return RoleClientResult.Builder.create().clientId(roleMember.id()).build();
   }
 
   private static List<MappingRuleResult> toMappingRules(
@@ -1009,7 +1009,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static MappingRuleResult toMappingRule(final MappingRuleEntity mappingRuleEntity) {
-    return MappingRuleResult.Builder.builder()
+    return MappingRuleResult.Builder.create()
         .claimName(mappingRuleEntity.claimName())
         .claimValue(mappingRuleEntity.claimValue())
         .name(mappingRuleEntity.name())
@@ -1038,7 +1038,7 @@ public final class SearchQueryResponseMapper {
     // is populated asynchronously by IncidentUpdateTask. `startDate` is only written on
     // AI_START_STATES intents and is absent on docs first created by a later intent. Per 8.8
     // policy we fall back to spec-compliant sentinels rather than 500 on rare transient gaps.
-    return ElementInstanceResult.Builder.builder()
+    return ElementInstanceResult.Builder.create()
         .processDefinitionId(instance.processDefinitionId())
         .startDate(requireNonNullElse(formatDateOrNull(instance.startDate()), EPOCH_DATE_SENTINEL))
         .elementId(instance.flowNodeId())
@@ -1057,7 +1057,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static DecisionDefinitionResult toDecisionDefinition(final DecisionDefinitionEntity d) {
-    return DecisionDefinitionResult.Builder.builder()
+    return DecisionDefinitionResult.Builder.create()
         .decisionDefinitionId(d.decisionDefinitionId())
         .decisionDefinitionKey(keyToString(d.decisionDefinitionKey()))
         .decisionRequirementsId(d.decisionRequirementsId())
@@ -1072,7 +1072,7 @@ public final class SearchQueryResponseMapper {
 
   public static DecisionRequirementsResult toDecisionRequirements(
       final DecisionRequirementsEntity d) {
-    return DecisionRequirementsResult.Builder.builder()
+    return DecisionRequirementsResult.Builder.create()
         .decisionRequirementsId(d.decisionRequirementsId())
         .decisionRequirementsKey(keyToString(d.decisionRequirementsKey()))
         .decisionRequirementsName(d.name())
@@ -1096,7 +1096,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static IncidentResult toIncident(final IncidentEntity t) {
-    return IncidentResult.Builder.builder()
+    return IncidentResult.Builder.create()
         .incidentKey(keyToString(t.incidentKey()))
         .processDefinitionKey(keyToString(t.processDefinitionKey()))
         .processInstanceKey(keyToString(t.processInstanceKey()))
@@ -1130,7 +1130,7 @@ public final class SearchQueryResponseMapper {
 
   private static MessageSubscriptionResult toMessageSubscription(
       final MessageSubscriptionEntity messageSubscription) {
-    return MessageSubscriptionResult.Builder.builder()
+    return MessageSubscriptionResult.Builder.create()
         .rootProcessInstanceKey(keyToStringOrNull(messageSubscription.rootProcessInstanceKey()))
         .correlationKey(messageSubscription.correlationKey())
         .elementId(messageSubscription.flowNodeId())
@@ -1169,7 +1169,7 @@ public final class SearchQueryResponseMapper {
 
   private static CorrelatedMessageSubscriptionResult toCorrelatedMessageSubscription(
       final CorrelatedMessageSubscriptionEntity correlatedMessageSubscription) {
-    return CorrelatedMessageSubscriptionResult.Builder.builder()
+    return CorrelatedMessageSubscriptionResult.Builder.create()
         .correlationKey(correlatedMessageSubscription.correlationKey())
         .correlationTime(formatDate(correlatedMessageSubscription.correlationTime()))
         .elementId(correlatedMessageSubscription.flowNodeId())
@@ -1188,7 +1188,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static UserTaskResult toUserTask(final UserTaskEntity t) {
-    return UserTaskResult.Builder.builder()
+    return UserTaskResult.Builder.create()
         .tenantId(t.tenantId())
         .userTaskKey(keyToString(t.userTaskKey()))
         .name(t.name())
@@ -1219,7 +1219,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static FormResult toFormItem(final FormEntity f) {
-    return FormResult.Builder.builder()
+    return FormResult.Builder.create()
         .tenantId(f.tenantId())
         .formId(f.formId())
         .schema(f.schema())
@@ -1233,7 +1233,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static UserResult toUser(final UserEntity user) {
-    return UserResult.Builder.builder()
+    return UserResult.Builder.create()
         .username(user.username())
         .name(user.name())
         .email(user.email())
@@ -1241,7 +1241,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static CamundaUserResult toCamundaUser(final CamundaUserDTO camundaUser) {
-    return CamundaUserResult.Builder.builder()
+    return CamundaUserResult.Builder.create()
         .authorizedComponents(camundaUser.authorizedComponents())
         .tenants(toTenants(camundaUser.tenants()))
         .groups(camundaUser.groups())
@@ -1274,7 +1274,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static DecisionInstanceResult toDecisionInstance(final DecisionInstanceEntity entity) {
-    return DecisionInstanceResult.Builder.builder()
+    return DecisionInstanceResult.Builder.create()
         .decisionDefinitionId(entity.decisionDefinitionId())
         .decisionDefinitionKey(keyToString(entity.decisionDefinitionKey()))
         .decisionDefinitionName(entity.decisionDefinitionName())
@@ -1300,7 +1300,7 @@ public final class SearchQueryResponseMapper {
 
   public static DecisionInstanceGetQueryResult toDecisionInstanceGetQueryResponse(
       final DecisionInstanceEntity entity) {
-    return DecisionInstanceGetQueryResult.Builder.builder()
+    return DecisionInstanceGetQueryResult.Builder.create()
         .decisionDefinitionId(entity.decisionDefinitionId())
         .decisionDefinitionKey(keyToString(entity.decisionDefinitionKey()))
         .decisionDefinitionName(entity.decisionDefinitionName())
@@ -1335,7 +1335,7 @@ public final class SearchQueryResponseMapper {
     return decisionInstanceInputEntities.stream()
         .map(
             input ->
-                EvaluatedDecisionInputItem.Builder.builder()
+                EvaluatedDecisionInputItem.Builder.create()
                     .inputId(requireNonNull(input.inputId(), "inputId"))
                     .inputName(requireNonNull(input.inputName(), "inputName"))
                     .inputValue(requireNonNull(input.inputValue(), "inputValue"))
@@ -1358,12 +1358,12 @@ public final class SearchQueryResponseMapper {
             entry -> {
               final var ruleIdentifier = entry.getKey();
               final var outputs = entry.getValue();
-              return MatchedDecisionRuleItem.Builder.builder()
+              return MatchedDecisionRuleItem.Builder.create()
                   .evaluatedOutputs(
                       outputs.stream()
                           .map(
                               output ->
-                                  EvaluatedDecisionOutputItem.Builder.builder()
+                                  EvaluatedDecisionOutputItem.Builder.create()
                                       .ruleId(ruleIdentifier.ruleId())
                                       .ruleIndex(ruleIdentifier.ruleIndex())
                                       .outputId(requireNonNull(output.outputId(), "outputId"))
@@ -1402,7 +1402,7 @@ public final class SearchQueryResponseMapper {
   public static VariableSearchQueryResult toVariableSearchQueryResponse(
       final SearchQueryResult<VariableEntity> result, final boolean truncateValues) {
     final var page = toSearchQueryPageResponse(result);
-    return VariableSearchQueryResult.Builder.builder()
+    return VariableSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -1418,7 +1418,7 @@ public final class SearchQueryResponseMapper {
 
   private static VariableSearchResult toVariable(
       final VariableEntity variableEntity, final boolean truncateValues) {
-    return VariableSearchResult.Builder.builder()
+    return VariableSearchResult.Builder.create()
         .name(variableEntity.name())
         .processInstanceKey(keyToString(variableEntity.processInstanceKey()))
         .tenantId(variableEntity.tenantId())
@@ -1431,7 +1431,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static VariableResult toVariableItem(final VariableEntity variableEntity) {
-    return VariableResult.Builder.builder()
+    return VariableResult.Builder.create()
         .name(variableEntity.name())
         .processInstanceKey(keyToString(variableEntity.processInstanceKey()))
         .tenantId(variableEntity.tenantId())
@@ -1451,7 +1451,7 @@ public final class SearchQueryResponseMapper {
   public static ClusterVariableSearchQueryResult toClusterVariableSearchQueryResponse(
       final SearchQueryResult<ClusterVariableEntity> result, final boolean truncateValues) {
     final var page = toSearchQueryPageResponse(result);
-    return ClusterVariableSearchQueryResult.Builder.builder()
+    return ClusterVariableSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -1482,7 +1482,7 @@ public final class SearchQueryResponseMapper {
         clusterVariableEntity.scope() == io.camunda.search.entities.ClusterVariableScope.TENANT
             ? clusterVariableEntity.tenantId()
             : null;
-    return ClusterVariableSearchResult.Builder.builder()
+    return ClusterVariableSearchResult.Builder.create()
         .name(clusterVariableEntity.name())
         .scope(scope)
         .tenantId(tenantId)
@@ -1508,7 +1508,7 @@ public final class SearchQueryResponseMapper {
         clusterVariableEntity.scope() == io.camunda.search.entities.ClusterVariableScope.TENANT
             ? clusterVariableEntity.tenantId()
             : null;
-    return ClusterVariableResult.Builder.builder()
+    return ClusterVariableResult.Builder.create()
         .name(clusterVariableEntity.name())
         .scope(scope)
         .tenantId(tenantId)
@@ -1525,7 +1525,7 @@ public final class SearchQueryResponseMapper {
 
   public static AuthorizationSearchResult toAuthorizationSearchQueryResponse(
       final SearchQueryResult<AuthorizationEntity> result) {
-    return AuthorizationSearchResult.Builder.builder()
+    return AuthorizationSearchResult.Builder.create()
         .page(toSearchQueryPageResponse(result))
         .items(
             ofNullable(result.items())
@@ -1540,7 +1540,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static AuthorizationResult toAuthorization(final AuthorizationEntity authorization) {
-    return AuthorizationResult.Builder.builder()
+    return AuthorizationResult.Builder.create()
         .ownerId(authorization.ownerId())
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
@@ -1558,7 +1558,7 @@ public final class SearchQueryResponseMapper {
 
   public static AuditLogSearchQueryResult toAuditLogSearchQueryResponse(
       final SearchQueryResult<AuditLogEntity> result) {
-    return AuditLogSearchQueryResult.Builder.builder()
+    return AuditLogSearchQueryResult.Builder.create()
         .page(toSearchQueryPageResponse(result))
         .items(toAuditLogs(result.items()))
         .build();
@@ -1569,7 +1569,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
-    return AuditLogResult.Builder.builder()
+    return AuditLogResult.Builder.create()
         .auditLogKey(auditLog.auditLogKey())
         .entityKey(auditLog.entityKey())
         .entityType(AuditLogEntityTypeEnum.fromValue(auditLog.entityType().name()))
@@ -1633,7 +1633,7 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessInstanceCallHierarchyEntry toProcessInstanceCallHierarchyEntry(
       final ProcessInstanceEntity processInstanceEntity) {
-    return ProcessInstanceCallHierarchyEntry.Builder.builder()
+    return ProcessInstanceCallHierarchyEntry.Builder.create()
         .processInstanceKey(
             requireNonNull(
                 keyToStringOrNull(processInstanceEntity.processInstanceKey()),
@@ -1657,7 +1657,7 @@ public final class SearchQueryResponseMapper {
     return entities.stream()
         .map(
             e ->
-                ProcessDefinitionMessageSubscriptionStatisticsResult.Builder.builder()
+                ProcessDefinitionMessageSubscriptionStatisticsResult.Builder.create()
                     .activeSubscriptions(e.activeSubscriptions())
                     .processDefinitionId(e.processDefinitionId())
                     .processDefinitionKey(keyToString(e.processDefinitionKey()))
@@ -1672,7 +1672,7 @@ public final class SearchQueryResponseMapper {
       toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
           final SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return ProcessDefinitionMessageSubscriptionStatisticsQueryResult.Builder.builder()
+    return ProcessDefinitionMessageSubscriptionStatisticsQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -1686,9 +1686,8 @@ public final class SearchQueryResponseMapper {
   public static GlobalJobStatisticsQueryResult toGlobalJobStatisticsQueryResult(
       final GlobalJobStatisticsEntity entity) {
     if (entity == null) {
-      final StatusMetric zero =
-          StatusMetric.Builder.builder().count(0L).lastUpdatedAt(null).build();
-      return GlobalJobStatisticsQueryResult.Builder.builder()
+      final StatusMetric zero = StatusMetric.Builder.create().count(0L).lastUpdatedAt(null).build();
+      return GlobalJobStatisticsQueryResult.Builder.create()
           .created(zero)
           .completed(zero)
           .failed(zero)
@@ -1696,7 +1695,7 @@ public final class SearchQueryResponseMapper {
           .build();
     }
 
-    return GlobalJobStatisticsQueryResult.Builder.builder()
+    return GlobalJobStatisticsQueryResult.Builder.create()
         .created(toStatusMetric(entity.created()))
         .completed(toStatusMetric(entity.completed()))
         .failed(toStatusMetric(entity.failed()))
@@ -1707,7 +1706,7 @@ public final class SearchQueryResponseMapper {
   public static JobTypeStatisticsQueryResult toJobTypeStatisticsQueryResult(
       final SearchQueryResult<JobTypeStatisticsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return JobTypeStatisticsQueryResult.Builder.builder()
+    return JobTypeStatisticsQueryResult.Builder.create()
         .page(page)
         .items(
             result.items().stream()
@@ -1718,9 +1717,9 @@ public final class SearchQueryResponseMapper {
 
   private static JobTypeStatisticsItem toJobTypeStatisticsItem(
       final JobTypeStatisticsEntity entity) {
-    final StatusMetric zero = StatusMetric.Builder.builder().count(0L).lastUpdatedAt(null).build();
+    final StatusMetric zero = StatusMetric.Builder.create().count(0L).lastUpdatedAt(null).build();
     if (entity == null) {
-      return JobTypeStatisticsItem.Builder.builder()
+      return JobTypeStatisticsItem.Builder.create()
           .jobType("")
           .created(zero)
           .completed(zero)
@@ -1729,7 +1728,7 @@ public final class SearchQueryResponseMapper {
           .build();
     }
 
-    return JobTypeStatisticsItem.Builder.builder()
+    return JobTypeStatisticsItem.Builder.create()
         .jobType(entity.jobType())
         .created(toStatusMetric(entity.created()))
         .completed(toStatusMetric(entity.completed()))
@@ -1741,7 +1740,7 @@ public final class SearchQueryResponseMapper {
   public static JobWorkerStatisticsQueryResult toJobWorkerStatisticsQueryResult(
       final SearchQueryResult<JobWorkerStatisticsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return JobWorkerStatisticsQueryResult.Builder.builder()
+    return JobWorkerStatisticsQueryResult.Builder.create()
         .page(page)
         .items(
             result.items().stream()
@@ -1752,9 +1751,9 @@ public final class SearchQueryResponseMapper {
 
   private static JobWorkerStatisticsItem toJobWorkerStatisticsItem(
       final JobWorkerStatisticsEntity entity) {
-    final StatusMetric zero = StatusMetric.Builder.builder().count(0L).lastUpdatedAt(null).build();
+    final StatusMetric zero = StatusMetric.Builder.create().count(0L).lastUpdatedAt(null).build();
     if (entity == null) {
-      return JobWorkerStatisticsItem.Builder.builder()
+      return JobWorkerStatisticsItem.Builder.create()
           .worker("")
           .created(zero)
           .completed(zero)
@@ -1762,7 +1761,7 @@ public final class SearchQueryResponseMapper {
           .build();
     }
 
-    return JobWorkerStatisticsItem.Builder.builder()
+    return JobWorkerStatisticsItem.Builder.create()
         .worker(entity.worker())
         .created(toStatusMetric(entity.created()))
         .completed(toStatusMetric(entity.completed()))
@@ -1773,7 +1772,7 @@ public final class SearchQueryResponseMapper {
   public static JobTimeSeriesStatisticsQueryResult toJobTimeSeriesStatisticsQueryResult(
       final SearchQueryResult<JobTimeSeriesStatisticsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return JobTimeSeriesStatisticsQueryResult.Builder.builder()
+    return JobTimeSeriesStatisticsQueryResult.Builder.create()
         .page(page)
         .items(
             result.items().stream()
@@ -1784,9 +1783,9 @@ public final class SearchQueryResponseMapper {
 
   private static JobTimeSeriesStatisticsItem toJobTimeSeriesStatisticsItem(
       final JobTimeSeriesStatisticsEntity entity) {
-    final StatusMetric zero = StatusMetric.Builder.builder().count(0L).lastUpdatedAt(null).build();
+    final StatusMetric zero = StatusMetric.Builder.create().count(0L).lastUpdatedAt(null).build();
     if (entity == null) {
-      return JobTimeSeriesStatisticsItem.Builder.builder()
+      return JobTimeSeriesStatisticsItem.Builder.create()
           .time(EPOCH_DATE_SENTINEL)
           .created(zero)
           .completed(zero)
@@ -1794,7 +1793,7 @@ public final class SearchQueryResponseMapper {
           .build();
     }
 
-    return JobTimeSeriesStatisticsItem.Builder.builder()
+    return JobTimeSeriesStatisticsItem.Builder.create()
         .time(formatDate(entity.time()))
         .created(toStatusMetric(entity.created()))
         .completed(toStatusMetric(entity.completed()))
@@ -1805,7 +1804,7 @@ public final class SearchQueryResponseMapper {
   public static JobErrorStatisticsQueryResult toJobErrorStatisticsQueryResult(
       final SearchQueryResult<JobErrorStatisticsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return JobErrorStatisticsQueryResult.Builder.builder()
+    return JobErrorStatisticsQueryResult.Builder.create()
         .page(page)
         .items(
             result.items().stream()
@@ -1817,14 +1816,14 @@ public final class SearchQueryResponseMapper {
   private static JobErrorStatisticsItem toJobErrorStatisticsItem(
       final JobErrorStatisticsEntity entity) {
     if (entity == null) {
-      return JobErrorStatisticsItem.Builder.builder()
+      return JobErrorStatisticsItem.Builder.create()
           .errorCode("")
           .errorMessage("")
           .workers(0)
           .build();
     }
 
-    return JobErrorStatisticsItem.Builder.builder()
+    return JobErrorStatisticsItem.Builder.create()
         .errorCode(ofNullable(entity.errorCode()).orElse(""))
         .errorMessage(ofNullable(entity.errorMessage()).orElse(""))
         .workers(entity.workers())
@@ -1833,9 +1832,9 @@ public final class SearchQueryResponseMapper {
 
   private static StatusMetric toStatusMetric(final GlobalJobStatisticsEntity.StatusMetric metric) {
     if (metric == null) {
-      return StatusMetric.Builder.builder().count(0L).lastUpdatedAt(null).build();
+      return StatusMetric.Builder.create().count(0L).lastUpdatedAt(null).build();
     }
-    return StatusMetric.Builder.builder()
+    return StatusMetric.Builder.create()
         .count(metric.count())
         .lastUpdatedAt(formatDateOrNull(metric.lastUpdatedAt()))
         .build();
@@ -1844,7 +1843,7 @@ public final class SearchQueryResponseMapper {
   public static GlobalTaskListenerSearchQueryResult toGlobalTaskListenerSearchQueryResponse(
       final SearchQueryResult<GlobalListenerEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return GlobalTaskListenerSearchQueryResult.Builder.builder()
+    return GlobalTaskListenerSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -1859,7 +1858,7 @@ public final class SearchQueryResponseMapper {
 
   public static GlobalTaskListenerResult toGlobalTaskListenerResult(
       final GlobalListenerEntity entity) {
-    return GlobalTaskListenerResult.Builder.builder()
+    return GlobalTaskListenerResult.Builder.create()
         .id(entity.listenerId())
         .type(entity.type())
         .retries(entity.retries())

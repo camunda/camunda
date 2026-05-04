@@ -27,6 +27,6 @@ public class MessageSubscriptionTypePropertyDeserializer
   @Override
   protected MessageSubscriptionTypeFilterProperty createFromImplicitValue(
       final MessageSubscriptionTypeEnum value) {
-    return AdvancedMessageSubscriptionTypeFilter.Builder.builder().$eq(value).build();
+    return AdvancedMessageSubscriptionTypeFilter.Builder.create().$eq(value).build();
   }
 }

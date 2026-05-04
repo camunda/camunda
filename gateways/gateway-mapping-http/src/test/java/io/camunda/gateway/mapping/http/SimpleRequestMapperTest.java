@@ -112,12 +112,12 @@ class SimpleRequestMapperTest {
               .tenantId("tenant-a")
               .startInstructions(
                   List.of(
-                      ProcessInstanceCreationStartInstruction.Builder.builder()
+                      ProcessInstanceCreationStartInstruction.Builder.create()
                           .elementId("start-element")
                           .build()))
               .runtimeInstructions(
                   List.of(
-                      ProcessInstanceCreationTerminateInstruction.Builder.builder()
+                      ProcessInstanceCreationTerminateInstruction.Builder.create()
                           .afterElementId("after-element")
                           .type("TERMINATE_PROCESS_INSTANCE")
                           .build()));
@@ -143,12 +143,12 @@ class SimpleRequestMapperTest {
               .processDefinitionKey("123")
               .startInstructions(
                   List.of(
-                      ProcessInstanceCreationStartInstruction.Builder.builder()
+                      ProcessInstanceCreationStartInstruction.Builder.create()
                           .elementId("start-element")
                           .build()))
               .runtimeInstructions(
                   List.of(
-                      ProcessInstanceCreationTerminateInstruction.Builder.builder()
+                      ProcessInstanceCreationTerminateInstruction.Builder.create()
                           .afterElementId("after-element")
                           .type("TERMINATE_PROCESS_INSTANCE")
                           .build()));
@@ -194,12 +194,12 @@ class SimpleRequestMapperTest {
               .processDefinitionKey("123")
               .startInstructions(
                   List.of(
-                      ProcessInstanceCreationStartInstruction.Builder.builder()
+                      ProcessInstanceCreationStartInstruction.Builder.create()
                           .elementId("start-element")
                           .build()))
               .runtimeInstructions(
                   List.of(
-                      ProcessInstanceCreationTerminateInstruction.Builder.builder()
+                      ProcessInstanceCreationTerminateInstruction.Builder.create()
                           .afterElementId("after-element")
                           .type("TERMINATE_PROCESS_INSTANCE")
                           .build()));

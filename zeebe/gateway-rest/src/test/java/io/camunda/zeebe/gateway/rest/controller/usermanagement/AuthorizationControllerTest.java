@@ -88,7 +88,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .isCreated()
         .expectBody(AuthorizationCreateResult.class)
         .isEqualTo(
-            AuthorizationCreateResult.Builder.builder()
+            AuthorizationCreateResult.Builder.create()
                 .authorizationKey(String.valueOf(authorizationKey))
                 .build());
 
@@ -325,7 +325,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     return Stream.of(
         Arguments.of(
             // Id request
-            AuthorizationIdBasedRequest.Builder.builder()
+            AuthorizationIdBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
@@ -342,7 +342,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Id (ANY) request
-            AuthorizationIdBasedRequest.Builder.builder()
+            AuthorizationIdBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("*")
@@ -359,7 +359,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Property request
-            AuthorizationPropertyBasedRequest.Builder.builder()
+            AuthorizationPropertyBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourcePropertyName("assignee")
@@ -383,7 +383,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     return Stream.of(
         Arguments.of(
             // Id request
-            AuthorizationIdBasedRequest.Builder.builder()
+            AuthorizationIdBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("resourceId")
@@ -401,7 +401,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Id (ANY) request
-            AuthorizationIdBasedRequest.Builder.builder()
+            AuthorizationIdBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourceId("*")
@@ -419,7 +419,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 permissions)),
         Arguments.of(
             // Property request
-            AuthorizationPropertyBasedRequest.Builder.builder()
+            AuthorizationPropertyBasedRequest.Builder.create()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
                 .resourcePropertyName("assignee")

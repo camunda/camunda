@@ -155,7 +155,7 @@ public class DocumentControllerTest extends RestControllerTest {
                         contentType.toString(), filename, timestamp, 0L, null, null, Map.of()))));
 
     final var metadataToSend =
-        DocumentMetadata.Builder.builder()
+        DocumentMetadata.Builder.create()
             .contentType(contentType.toString())
             .fileName(filename)
             .expiresAt(timestamp.toString())
@@ -248,7 +248,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             om.writeValueAsString(
-                DocumentMetadata.Builder.builder()
+                DocumentMetadata.Builder.create()
                     .contentType(contentType.toString())
                     .fileName(filename1)
                     .expiresAt(timestamp.toString())
@@ -259,7 +259,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             om.writeValueAsString(
-                DocumentMetadata.Builder.builder()
+                DocumentMetadata.Builder.create()
                     .contentType(contentType.toString())
                     .fileName(filename2)
                     .expiresAt(timestamp.toString())
@@ -472,7 +472,7 @@ public class DocumentControllerTest extends RestControllerTest {
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
 
     final var metadata =
-        DocumentMetadata.Builder.builder()
+        DocumentMetadata.Builder.create()
             .fileName("file.txt")
             .processDefinitionId("9invalid")
             .build();
@@ -515,7 +515,7 @@ public class DocumentControllerTest extends RestControllerTest {
 
     final var mapper = new ObjectMapper();
     final var meta1 =
-        DocumentMetadata.Builder.builder()
+        DocumentMetadata.Builder.create()
             .contentType(contentType.toString())
             .fileName(filename1)
             .build();
@@ -572,13 +572,13 @@ public class DocumentControllerTest extends RestControllerTest {
     final var mapper = new ObjectMapper();
     final var metadataList =
         List.of(
-            DocumentMetadata.Builder.builder()
+            DocumentMetadata.Builder.create()
                 .contentType(contentType.toString())
                 .fileName(filename1)
                 .expiresAt(timestamp.toString())
                 .processInstanceKey("123")
                 .build(),
-            DocumentMetadata.Builder.builder()
+            DocumentMetadata.Builder.create()
                 .contentType(contentType.toString())
                 .fileName(filename2)
                 .expiresAt(timestamp.toString())
@@ -642,7 +642,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             mapper.writeValueAsString(
-                DocumentMetadata.Builder.builder()
+                DocumentMetadata.Builder.create()
                     .contentType(contentType.toString())
                     .fileName("IGNORED-" + filename1)
                     .processInstanceKey("999")
@@ -654,7 +654,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .header(
             "X-Document-Metadata",
             mapper.writeValueAsString(
-                DocumentMetadata.Builder.builder()
+                DocumentMetadata.Builder.create()
                     .contentType(contentType.toString())
                     .fileName("IGNORED-" + filename2)
                     .processInstanceKey("999")
@@ -663,12 +663,12 @@ public class DocumentControllerTest extends RestControllerTest {
     // Preferred metadataList (processInstanceKey 123, original file names)
     final var metadataList =
         List.of(
-            DocumentMetadata.Builder.builder()
+            DocumentMetadata.Builder.create()
                 .contentType(contentType.toString())
                 .fileName(filename1)
                 .processInstanceKey("123")
                 .build(),
-            DocumentMetadata.Builder.builder()
+            DocumentMetadata.Builder.create()
                 .contentType(contentType.toString())
                 .fileName(filename2)
                 .processInstanceKey("123")
@@ -766,7 +766,7 @@ public class DocumentControllerTest extends RestControllerTest {
     final var mapper = new ObjectMapper();
 
     final var metadata =
-        DocumentMetadata.Builder.builder()
+        DocumentMetadata.Builder.create()
             .fileName("file.txt")
             .processDefinitionId("9invalid")
             .build();

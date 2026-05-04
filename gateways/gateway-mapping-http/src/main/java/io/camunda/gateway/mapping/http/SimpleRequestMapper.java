@@ -31,7 +31,7 @@ public class SimpleRequestMapper {
     if (request.getProcessDefinitionId() != null && !request.getProcessDefinitionId().isBlank()) {
       return RequestMapper.toCreateProcessInstance(
           (ProcessInstanceCreationInstruction)
-              ProcessInstanceCreationInstructionById.Builder.builder()
+              ProcessInstanceCreationInstructionById.Builder.create()
                   .processDefinitionId(request.getProcessDefinitionId())
                   .processDefinitionVersion(request.getProcessDefinitionVersion())
                   .variables(request.getVariables())
@@ -52,7 +52,7 @@ public class SimpleRequestMapper {
 
     return RequestMapper.toCreateProcessInstance(
         (ProcessInstanceCreationInstruction)
-            ProcessInstanceCreationInstructionByKey.Builder.builder()
+            ProcessInstanceCreationInstructionByKey.Builder.create()
                 .processDefinitionKey(request.getProcessDefinitionKey())
                 .variables(request.getVariables())
                 .startInstructions(
@@ -81,7 +81,7 @@ public class SimpleRequestMapper {
     return instructions.stream()
         .map(
             instruction ->
-                ProcessInstanceCreationStartInstruction.Builder.builder()
+                ProcessInstanceCreationStartInstruction.Builder.create()
                     .elementId(instruction.getElementId())
                     .build())
         .toList();
@@ -100,7 +100,7 @@ public class SimpleRequestMapper {
         .map(
             instruction ->
                 io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction
-                    .Builder.builder()
+                    .Builder.create()
                     .afterElementId(instruction.getAfterElementId())
                     .type(instruction.getType())
                     .build())

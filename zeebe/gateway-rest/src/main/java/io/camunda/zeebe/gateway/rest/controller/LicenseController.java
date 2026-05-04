@@ -33,7 +33,7 @@ public class LicenseController {
   @CamundaGetMapping(path = "/license")
   public LicenseResponse get() {
     final OffsetDateTime expirationDate = managementServices.getCamundaLicenseExpiresAt();
-    return LicenseResponse.Builder.builder()
+    return LicenseResponse.Builder.create()
         .validLicense(managementServices.isCamundaLicenseValid())
         .licenseType(managementServices.getCamundaLicenseType().getName())
         .isCommercial(managementServices.isCommercialCamundaLicense())

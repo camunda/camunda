@@ -54,7 +54,7 @@ public class SimpleSearchQueryMapper {
   public static io.camunda.gateway.protocol.model.SearchQueryPageRequest toPageRequest(
       final @Nullable SearchQueryPageRequest page) {
     if (page == null) {
-      return LimitPagination.Builder.builder().build();
+      return LimitPagination.empty();
     }
     // validate fields
     if (isEmpty(page.getLimit())
@@ -81,20 +81,20 @@ public class SimpleSearchQueryMapper {
     // create page request
     final var before = page.getBefore();
     if (!isEmpty(before)) {
-      return CursorBackwardPagination.Builder.builder()
+      return CursorBackwardPagination.Builder.create()
           .before(before)
           .limit(page.getLimit())
           .build();
     }
     final var after = page.getAfter();
     if (!isEmpty(after)) {
-      return CursorForwardPagination.Builder.builder().after(after).limit(page.getLimit()).build();
+      return CursorForwardPagination.Builder.create().after(after).limit(page.getLimit()).build();
     }
     final var from = page.getFrom();
     if (!isEmpty(from)) {
-      return OffsetPagination.Builder.builder().from(from).limit(page.getLimit()).build();
+      return OffsetPagination.Builder.create().from(from).limit(page.getLimit()).build();
     }
-    return LimitPagination.Builder.builder().limit(page.getLimit()).build();
+    return LimitPagination.Builder.create().limit(page.getLimit()).build();
   }
 
   private static boolean isEmpty(final @Nullable Object value) {
@@ -109,14 +109,13 @@ public class SimpleSearchQueryMapper {
 
   public static io.camunda.gateway.protocol.model.IncidentFilter toIncidentFilter(
       final @Nullable IncidentFilter filter) {
-    final var filterModel =
-        io.camunda.gateway.protocol.model.IncidentFilter.Builder.builder().build();
+    final var filterModel = io.camunda.gateway.protocol.model.IncidentFilter.empty();
     if (filter != null) {
       ofNullable(filter.getProcessDefinitionId())
           .map(SimpleSearchQueryMapper::getStringFilter)
           .ifPresent(filterModel::processDefinitionId);
       ofNullable(filter.getErrorType())
-          .map(e -> AdvancedIncidentErrorTypeFilter.Builder.builder().$eq(e).build())
+          .map(e -> AdvancedIncidentErrorTypeFilter.Builder.create().$eq(e).build())
           .ifPresent(filterModel::errorType);
       ofNullable(filter.getErrorMessage())
           .map(SimpleSearchQueryMapper::getStringFilter)
@@ -128,7 +127,7 @@ public class SimpleSearchQueryMapper {
           .map(SimpleSearchQueryMapper::getDateTimeFilter)
           .ifPresent(filterModel::creationTime);
       ofNullable(filter.getState())
-          .map(s -> AdvancedIncidentStateFilter.Builder.builder().$eq(s).build())
+          .map(s -> AdvancedIncidentStateFilter.Builder.create().$eq(s).build())
           .ifPresent(filterModel::state);
       ofNullable(filter.getTenantId())
           .map(SimpleSearchQueryMapper::getStringFilter)
@@ -154,8 +153,7 @@ public class SimpleSearchQueryMapper {
 
   public static io.camunda.gateway.protocol.model.ProcessInstanceFilter toProcessInstanceFilter(
       final io.camunda.gateway.protocol.model.simple.@Nullable ProcessInstanceFilter filter) {
-    final var filterModel =
-        io.camunda.gateway.protocol.model.ProcessInstanceFilter.Builder.builder().build();
+    final var filterModel = io.camunda.gateway.protocol.model.ProcessInstanceFilter.empty();
     if (filter != null) {
       mapProcessInstanceFilterFields(filter, filterModel);
       ofNullable(filter.get$Or())
@@ -166,8 +164,7 @@ public class SimpleSearchQueryMapper {
                       orGroups.stream()
                           .map(
                               fields -> {
-                                final var mapped =
-                                    ProcessInstanceFilterFields.Builder.builder().build();
+                                final var mapped = ProcessInstanceFilterFields.empty();
                                 mapProcessInstanceFilterFields(fields, mapped);
                                 return mapped;
                               })
@@ -192,7 +189,7 @@ public class SimpleSearchQueryMapper {
         .map(SimpleSearchQueryMapper::getDateTimeFilter)
         .ifPresent(target::endDate);
     ofNullable(source.getState())
-        .map(state -> AdvancedProcessInstanceStateFilter.Builder.builder().$eq(state).build())
+        .map(state -> AdvancedProcessInstanceStateFilter.Builder.create().$eq(state).build())
         .ifPresent(target::state);
 
     ofNullable(source.getHasIncident()).ifPresent(target::hasIncident);
@@ -227,7 +224,7 @@ public class SimpleSearchQueryMapper {
         .ifPresent(target::errorMessage);
     ofNullable(source.getHasRetriesLeft()).ifPresent(target::hasRetriesLeft);
     ofNullable(source.getElementInstanceState())
-        .map(state -> AdvancedElementInstanceStateFilter.Builder.builder().$eq(state).build())
+        .map(state -> AdvancedElementInstanceStateFilter.Builder.create().$eq(state).build())
         .ifPresent(target::elementInstanceState);
     ofNullable(source.getElementId())
         .map(SimpleSearchQueryMapper::getStringFilter)
@@ -261,11 +258,11 @@ public class SimpleSearchQueryMapper {
       toProcessInstanceFilterFields(
           final io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter source) {
     if (source == null) {
-      return io.camunda.gateway.protocol.model.simple.ProcessInstanceFilterFields.Builder.builder()
+      return io.camunda.gateway.protocol.model.simple.ProcessInstanceFilterFields.Builder.create()
           .build();
     }
     final var fields =
-        io.camunda.gateway.protocol.model.simple.ProcessInstanceFilterFields.Builder.builder()
+        io.camunda.gateway.protocol.model.simple.ProcessInstanceFilterFields.Builder.create()
             .build();
 
     fields
@@ -298,8 +295,7 @@ public class SimpleSearchQueryMapper {
 
   public static io.camunda.gateway.protocol.model.ProcessDefinitionFilter toProcessDefinitionFilter(
       final io.camunda.gateway.protocol.model.simple.@Nullable ProcessDefinitionFilter filter) {
-    final var filterModel =
-        io.camunda.gateway.protocol.model.ProcessDefinitionFilter.Builder.builder().build();
+    final var filterModel = io.camunda.gateway.protocol.model.ProcessDefinitionFilter.empty();
     if (filter != null) {
       ofNullable(filter.getName())
           .map(SimpleSearchQueryMapper::getStringFilter)
@@ -320,8 +316,7 @@ public class SimpleSearchQueryMapper {
 
   public static io.camunda.gateway.protocol.model.VariableFilter toVariableFilter(
       final io.camunda.gateway.protocol.model.simple.@Nullable VariableFilter filter) {
-    final var filterModel =
-        io.camunda.gateway.protocol.model.VariableFilter.Builder.builder().build();
+    final var filterModel = io.camunda.gateway.protocol.model.VariableFilter.empty();
     if (filter != null) {
       ofNullable(filter.getName())
           .map(SimpleSearchQueryMapper::getStringFilter)
@@ -346,13 +341,12 @@ public class SimpleSearchQueryMapper {
 
   public static io.camunda.gateway.protocol.model.UserTaskFilter toUserTaskFilter(
       final io.camunda.gateway.protocol.model.simple.@Nullable UserTaskFilter filter) {
-    final var filterModel =
-        io.camunda.gateway.protocol.model.UserTaskFilter.Builder.builder().build();
+    final var filterModel = io.camunda.gateway.protocol.model.UserTaskFilter.empty();
     if (filter != null) {
       ofNullable(filter.getState())
           .map(
               s ->
-                  io.camunda.gateway.protocol.model.AdvancedUserTaskStateFilter.Builder.builder()
+                  io.camunda.gateway.protocol.model.AdvancedUserTaskStateFilter.Builder.create()
                       .$eq(s)
                       .build())
           .ifPresent(filterModel::state);
@@ -412,10 +406,10 @@ public class SimpleSearchQueryMapper {
   public static io.camunda.gateway.protocol.model.UserTaskVariableFilter toUserTaskVariableFilter(
       final io.camunda.gateway.protocol.model.simple.@Nullable UserTaskVariableFilter simple) {
     if (simple == null) {
-      return io.camunda.gateway.protocol.model.UserTaskVariableFilter.Builder.builder().build();
+      return io.camunda.gateway.protocol.model.UserTaskVariableFilter.empty();
     }
 
-    return io.camunda.gateway.protocol.model.UserTaskVariableFilter.Builder.builder()
+    return io.camunda.gateway.protocol.model.UserTaskVariableFilter.Builder.create()
         .name(getStringFilter(simple.getName()))
         .build();
   }
@@ -425,7 +419,7 @@ public class SimpleSearchQueryMapper {
     if (simple == null) {
       return null;
     }
-    return OffsetPagination.Builder.builder()
+    return OffsetPagination.Builder.create()
         .from(simple.getFrom())
         .limit(simple.getLimit())
         .build();
@@ -440,9 +434,9 @@ public class SimpleSearchQueryMapper {
     return variableFilters.stream()
         .map(
             simpleVar ->
-                VariableValueFilterProperty.Builder.builder()
+                VariableValueFilterProperty.Builder.create()
                     .name(simpleVar.getName())
-                    .value(AdvancedStringFilter.Builder.builder().$eq(simpleVar.getValue()).build())
+                    .value(AdvancedStringFilter.Builder.create().$eq(simpleVar.getValue()).build())
                     .build())
         .toList();
   }
@@ -452,18 +446,18 @@ public class SimpleSearchQueryMapper {
   // Until that's fixed at the template level, guard the .$eq(value) call when the value is null
   // by returning the empty filter instance instead of passing null through. Tracked as cleanup.
   private static StringFilterProperty getStringFilter(final @Nullable String value) {
-    final var builder = AdvancedStringFilter.Builder.builder();
+    final var builder = AdvancedStringFilter.Builder.create();
     return value == null ? builder.build() : builder.$eq(value).build();
   }
 
   private static BasicStringFilterProperty getBasicStringFilter(final @Nullable String value) {
-    final var builder = BasicStringFilter.Builder.builder();
+    final var builder = BasicStringFilter.Builder.create();
     return value == null ? builder.build() : builder.$eq(value).build();
   }
 
   private static io.camunda.gateway.protocol.model.IntegerFilterProperty getIntegerFilter(
       final @Nullable Integer value) {
-    final var builder = AdvancedIntegerFilter.Builder.builder();
+    final var builder = AdvancedIntegerFilter.Builder.create();
     return value == null ? builder.build() : builder.$eq(value).build();
   }
 
@@ -474,7 +468,7 @@ public class SimpleSearchQueryMapper {
             && (value.to() == null || value.to().isBlank())) {
       return null;
     }
-    final var filterModel = AdvancedDateTimeFilter.Builder.builder().build();
+    final var filterModel = AdvancedDateTimeFilter.empty();
     if (value.from() != null && !value.from().isBlank()) {
       filterModel.$gte(value.from());
     }

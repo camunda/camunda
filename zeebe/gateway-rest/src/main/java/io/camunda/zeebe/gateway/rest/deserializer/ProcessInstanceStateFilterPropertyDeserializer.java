@@ -27,6 +27,6 @@ public class ProcessInstanceStateFilterPropertyDeserializer
   @Override
   protected ProcessInstanceStateFilterProperty createFromImplicitValue(
       final ProcessInstanceStateEnum value) {
-    return AdvancedProcessInstanceStateFilter.Builder.builder().$eq(value).build();
+    return AdvancedProcessInstanceStateFilter.Builder.create().$eq(value).build();
   }
 }

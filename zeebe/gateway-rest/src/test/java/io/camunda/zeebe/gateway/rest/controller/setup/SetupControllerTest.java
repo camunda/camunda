@@ -387,7 +387,7 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   private UserRequest validUserWithPasswordRequest() {
-    return UserRequest.Builder.builder()
+    return UserRequest.Builder.create()
         .username("foo")
         .password("zabraboof")
         .name("Foo Bar")

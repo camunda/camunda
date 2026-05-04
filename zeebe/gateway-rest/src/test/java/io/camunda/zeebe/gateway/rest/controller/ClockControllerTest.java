@@ -54,7 +54,7 @@ public class ClockControllerTest extends RestControllerTest {
   void pinClockShouldReturnNoContent() {
     // given
     final long timestamp = 2693098555055L;
-    final var request = ClockPinRequest.Builder.builder().timestamp(timestamp).build();
+    final var request = ClockPinRequest.Builder.create().timestamp(timestamp).build();
     final var clockRecord = new ClockRecord().pinAt(timestamp);
 
     when(clockServices.pinClock(eq(timestamp), any()))
@@ -78,7 +78,7 @@ public class ClockControllerTest extends RestControllerTest {
     return Stream.of(
         of(Map.of(), "No timestamp provided."),
         of(
-            ClockPinRequest.Builder.builder().timestamp(-1L).build(),
+            ClockPinRequest.Builder.create().timestamp(-1L).build(),
             "The value for timestamp is '-1' but must be not negative."));
   }
 

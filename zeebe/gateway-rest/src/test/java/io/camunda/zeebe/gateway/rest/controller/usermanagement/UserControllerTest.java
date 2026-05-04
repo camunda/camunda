@@ -402,7 +402,7 @@ public class UserControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              UserUpdateRequest.Builder.builder()
+              UserUpdateRequest.Builder.create()
                   .name(user.name())
                   .email(user.email())
                   .password(user.password())
@@ -419,7 +419,7 @@ public class UserControllerTest {
     }
 
     private UserRequest validUserWithPasswordRequest() {
-      return UserRequest.Builder.builder()
+      return UserRequest.Builder.create()
           .username("foo")
           .password("zabraboof")
           .name("Foo Bar")
@@ -493,7 +493,7 @@ public class UserControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              UserUpdateRequest.Builder.builder()
+              UserUpdateRequest.Builder.create()
                   .name(user.name())
                   .email(user.email())
                   .password(user.password())

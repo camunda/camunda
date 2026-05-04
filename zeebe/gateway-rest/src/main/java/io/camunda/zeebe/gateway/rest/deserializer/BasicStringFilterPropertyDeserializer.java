@@ -25,6 +25,6 @@ public class BasicStringFilterPropertyDeserializer
 
   @Override
   protected BasicStringFilterProperty createFromImplicitValue(final String value) {
-    return BasicStringFilter.Builder.builder().$eq(value).build();
+    return BasicStringFilter.Builder.create().$eq(value).build();
   }
 }

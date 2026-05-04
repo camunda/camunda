@@ -116,7 +116,7 @@ public class UserTaskTools {
       } else {
         // merge assignee root param with potential assignment options
         final UserTaskAssignmentRequest.Builder.IBuild builder =
-            UserTaskAssignmentRequest.Builder.builder().assignee(assignee);
+            UserTaskAssignmentRequest.Builder.create().assignee(assignee);
         if (assignmentOptions != null) {
           builder
               .allowOverride(assignmentOptions.getAllowOverride())

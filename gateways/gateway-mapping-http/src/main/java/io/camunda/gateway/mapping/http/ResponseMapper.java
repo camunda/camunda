@@ -202,7 +202,7 @@ public final class ResponseMapper {
     }
 
     final io.camunda.gateway.protocol.model.JobActivationResult response =
-        io.camunda.gateway.protocol.model.JobActivationResult.Builder.builder()
+        io.camunda.gateway.protocol.model.JobActivationResult.Builder.create()
             .jobs(responseJobs)
             .build();
 
@@ -212,7 +212,7 @@ public final class ResponseMapper {
   private static ActivatedJobResult toActivatedJob(final long jobKey, final JobRecord job) {
     // rootProcessInstanceKey is only set for process instances created after version 8.9
     final long rootProcessInstanceKey = job.getRootProcessInstanceKey();
-    return ActivatedJobResult.Builder.builder()
+    return ActivatedJobResult.Builder.create()
         .type(job.getType())
         .processDefinitionId(job.getBpmnProcessId())
         .processDefinitionVersion(job.getProcessDefinitionVersion())
@@ -243,7 +243,7 @@ public final class ResponseMapper {
     }
 
     final var headers = job.getCustomHeaders();
-    return UserTaskProperties.Builder.builder()
+    return UserTaskProperties.Builder.create()
         .candidateGroups(
             mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)))
         .candidateUsers(
@@ -287,7 +287,7 @@ public final class ResponseMapper {
 
   public static MessageCorrelationResult toMessageCorrelationResponse(
       final MessageCorrelationRecord brokerResponse) {
-    return MessageCorrelationResult.Builder.builder()
+    return MessageCorrelationResult.Builder.create()
         .tenantId(brokerResponse.getTenantId())
         .messageKey(keyToString(brokerResponse.getMessageKey()))
         .processInstanceKey(keyToString(brokerResponse.getProcessInstanceKey()))
@@ -315,7 +315,7 @@ public final class ResponseMapper {
             documentResponse.ifRightOrLeft(
                 reference -> createdDocuments.add(toDocumentReference(reference)),
                 error -> failedDocuments.add(toDocumentCreationFailure(error))));
-    return DocumentCreationBatchResponse.Builder.builder()
+    return DocumentCreationBatchResponse.Builder.create()
         .failedDocuments(failedDocuments)
         .createdDocuments(createdDocuments)
         .build();
@@ -324,7 +324,7 @@ public final class ResponseMapper {
   public static DocumentReference toDocumentReference(final DocumentReferenceResponse response) {
     final var internalMetadata = response.metadata();
     final var externalMetadata =
-        DocumentMetadataResponse.Builder.builder()
+        DocumentMetadataResponse.Builder.create()
             .fileName(internalMetadata.fileName())
             .expiresAt(
                 Optional.ofNullable(internalMetadata.expiresAt())
@@ -337,7 +337,7 @@ public final class ResponseMapper {
             .processDefinitionId(internalMetadata.processDefinitionId())
             .processInstanceKey(keyToStringOrNull(internalMetadata.processInstanceKey()))
             .build();
-    return DocumentReference.Builder.builder()
+    return DocumentReference.Builder.create()
         .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
         .storeId(response.storeId())
         .documentId(response.documentId())
@@ -349,7 +349,7 @@ public final class ResponseMapper {
   private static DocumentCreationFailureDetail toDocumentCreationFailure(
       final DocumentErrorResponse error) {
     final var defaultProblemDetail = mapDocumentErrorToProblem(error.error());
-    return DocumentCreationFailureDetail.Builder.builder()
+    return DocumentCreationFailureDetail.Builder.create()
         .detail(requireNonNull(defaultProblemDetail.getDetail(), "detail"))
         .fileName(error.request().metadata().fileName())
         .status(defaultProblemDetail.getStatus())
@@ -365,7 +365,7 @@ public final class ResponseMapper {
 
   public static io.camunda.gateway.protocol.model.DocumentLink toDocumentLinkResponse(
       final DocumentLink documentLink) {
-    return io.camunda.gateway.protocol.model.DocumentLink.Builder.builder()
+    return io.camunda.gateway.protocol.model.DocumentLink.Builder.create()
         .url(documentLink.link())
         .expiresAt(documentLink.expiresAt().toString())
         .build();
@@ -379,7 +379,7 @@ public final class ResponseMapper {
         buildDeployedDecisionRequirements(brokerResponse.decisionRequirementsMetadata()));
     deployments.addAll(buildDeployedForms(brokerResponse.formMetadata()));
     deployments.addAll(buildDeployedResources(brokerResponse.resourceMetadata()));
-    return DeploymentResult.Builder.builder()
+    return DeploymentResult.Builder.create()
         .deploymentKey(keyToString(brokerResponse.getDeploymentKey()))
         .tenantId(brokerResponse.getTenantId())
         .deployments(deployments)
@@ -391,7 +391,7 @@ public final class ResponseMapper {
     final BatchOperationCreatedResult batchOperation;
     if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() > 0) {
       batchOperation =
-          BatchOperationCreatedResult.Builder.builder()
+          BatchOperationCreatedResult.Builder.create()
               .batchOperationKey(keyToString(brokerResponse.getBatchOperationKey()))
               .batchOperationType(
                   BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()))
@@ -399,14 +399,14 @@ public final class ResponseMapper {
     } else {
       batchOperation = null;
     }
-    return DeleteResourceResponse.Builder.builder()
+    return DeleteResourceResponse.Builder.create()
         .resourceKey(keyToString(brokerResponse.getResourceKey()))
         .batchOperation(batchOperation)
         .build();
   }
 
   public static ResourceResult toGetResourceResponse(final ResourceRecord resourceRecord) {
-    return ResourceResult.Builder.builder()
+    return ResourceResult.Builder.create()
         .resourceName(resourceRecord.getResourceName())
         .version(resourceRecord.getVersion())
         .versionTag(emptyToNull(resourceRecord.getVersionTag()))
@@ -418,7 +418,7 @@ public final class ResponseMapper {
 
   public static ResourceResult toGetResourceResponse(
       final DeployedResourceEntity deployedResourceEntity) {
-    return ResourceResult.Builder.builder()
+    return ResourceResult.Builder.create()
         .resourceName(deployedResourceEntity.resourceName())
         .version(deployedResourceEntity.version())
         .versionTag(emptyToNull(deployedResourceEntity.versionTag()))
@@ -435,7 +435,7 @@ public final class ResponseMapper {
 
   public static MessagePublicationResult toMessagePublicationResponse(
       final BrokerResponse<MessageRecord> brokerResponse) {
-    return MessagePublicationResult.Builder.builder()
+    return MessagePublicationResult.Builder.create()
         .tenantId(brokerResponse.getResponse().getTenantId())
         .messageKey(keyToString(brokerResponse.getKey()))
         .build();
@@ -446,12 +446,12 @@ public final class ResponseMapper {
     return formMetadataRecords.stream()
         .map(
             form ->
-                DeploymentMetadataResult.Builder.builder()
+                DeploymentMetadataResult.Builder.create()
                     .processDefinition(null)
                     .decisionDefinition(null)
                     .decisionRequirements(null)
                     .form(
-                        DeploymentFormResult.Builder.builder()
+                        DeploymentFormResult.Builder.create()
                             .formId(form.getFormId())
                             .formKey(keyToString(form.getFormKey()))
                             .resourceName(form.getResourceName())
@@ -468,13 +468,13 @@ public final class ResponseMapper {
     return resourceMetadataRecords.stream()
         .map(
             resource ->
-                DeploymentMetadataResult.Builder.builder()
+                DeploymentMetadataResult.Builder.create()
                     .processDefinition(null)
                     .decisionDefinition(null)
                     .decisionRequirements(null)
                     .form(null)
                     .resource(
-                        DeploymentResourceResult.Builder.builder()
+                        DeploymentResourceResult.Builder.create()
                             .resourceId(resource.getResourceId())
                             .resourceKey(keyToString(resource.getResourceKey()))
                             .resourceName(resource.getResourceName())
@@ -490,11 +490,11 @@ public final class ResponseMapper {
     return decisionRequirementsMetadataRecords.stream()
         .map(
             decisionRequirement ->
-                DeploymentMetadataResult.Builder.builder()
+                DeploymentMetadataResult.Builder.create()
                     .processDefinition(null)
                     .decisionDefinition(null)
                     .decisionRequirements(
-                        DeploymentDecisionRequirementsResult.Builder.builder()
+                        DeploymentDecisionRequirementsResult.Builder.create()
                             .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
                             .decisionRequirementsKey(
                                 keyToString(decisionRequirement.getDecisionRequirementsKey()))
@@ -515,10 +515,10 @@ public final class ResponseMapper {
     return decisionRecords.stream()
         .map(
             decision ->
-                DeploymentMetadataResult.Builder.builder()
+                DeploymentMetadataResult.Builder.create()
                     .processDefinition(null)
                     .decisionDefinition(
-                        DeploymentDecisionResult.Builder.builder()
+                        DeploymentDecisionResult.Builder.create()
                             .decisionDefinitionId(decision.getDecisionId())
                             .decisionDefinitionKey(keyToString(decision.getDecisionKey()))
                             .decisionRequirementsId(decision.getDecisionRequirementsId())
@@ -540,9 +540,9 @@ public final class ResponseMapper {
     return processesMetadata.stream()
         .map(
             process ->
-                DeploymentMetadataResult.Builder.builder()
+                DeploymentMetadataResult.Builder.create()
                     .processDefinition(
-                        DeploymentProcessResult.Builder.builder()
+                        DeploymentProcessResult.Builder.create()
                             .processDefinitionId(process.getBpmnProcessId())
                             .processDefinitionVersion(process.getVersion())
                             .resourceName(process.getResourceName())
@@ -592,7 +592,7 @@ public final class ResponseMapper {
       final @Nullable Map<String, Object> variables,
       final @Nullable Set<String> tags,
       final String businessId) {
-    return CreateProcessInstanceResult.Builder.builder()
+    return CreateProcessInstanceResult.Builder.create()
         .processDefinitionId(bpmnProcessId)
         .processDefinitionKey(keyToString(processDefinitionKey))
         .processDefinitionVersion(version)
@@ -608,7 +608,7 @@ public final class ResponseMapper {
 
   public static BatchOperationCreatedResult toBatchOperationCreatedWithResultResponse(
       final BatchOperationCreationRecord brokerResponse) {
-    return BatchOperationCreatedResult.Builder.builder()
+    return BatchOperationCreatedResult.Builder.create()
         .batchOperationKey(keyToString(brokerResponse.getBatchOperationKey()))
         .batchOperationType(
             BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()))
@@ -617,7 +617,7 @@ public final class ResponseMapper {
 
   public static SignalBroadcastResult toSignalBroadcastResponse(
       final BrokerResponse<SignalRecord> brokerResponse) {
-    return SignalBroadcastResult.Builder.builder()
+    return SignalBroadcastResult.Builder.create()
         .tenantId(brokerResponse.getResponse().getTenantId())
         .signalKey(keyToString(brokerResponse.getKey()))
         .build();
@@ -630,13 +630,13 @@ public final class ResponseMapper {
         response.getStartedProcessInstances().stream()
             .map(
                 instance ->
-                    ProcessInstanceReference.Builder.builder()
+                    ProcessInstanceReference.Builder.create()
                         .processDefinitionKey(keyToString(instance.getProcessDefinitionKey()))
                         .processInstanceKey(keyToString(instance.getProcessInstanceKey()))
                         .build())
             .toList();
 
-    return EvaluateConditionalResult.Builder.builder()
+    return EvaluateConditionalResult.Builder.create()
         .processInstances(processInstances)
         .conditionalEvaluationKey(keyToString(brokerResponse.getKey()))
         .tenantId(response.getTenantId())
@@ -645,13 +645,13 @@ public final class ResponseMapper {
 
   public static AuthorizationCreateResult toAuthorizationCreateResponse(
       final AuthorizationRecord authorizationRecord) {
-    return AuthorizationCreateResult.Builder.builder()
+    return AuthorizationCreateResult.Builder.create()
         .authorizationKey(keyToString(authorizationRecord.getAuthorizationKey()))
         .build();
   }
 
   public static UserCreateResult toUserCreateResponse(final UserRecord userRecord) {
-    return UserCreateResult.Builder.builder()
+    return UserCreateResult.Builder.create()
         .username(userRecord.getUsername())
         .name(userRecord.getName())
         .email(userRecord.getEmail())
@@ -659,7 +659,7 @@ public final class ResponseMapper {
   }
 
   public static UserUpdateResult toUserUpdateResponse(final UserRecord userRecord) {
-    return UserUpdateResult.Builder.builder()
+    return UserUpdateResult.Builder.create()
         .username(userRecord.getUsername())
         .name(userRecord.getName())
         .email(userRecord.getEmail())
@@ -667,7 +667,7 @@ public final class ResponseMapper {
   }
 
   public static RoleCreateResult toRoleCreateResponse(final RoleRecord roleRecord) {
-    return RoleCreateResult.Builder.builder()
+    return RoleCreateResult.Builder.create()
         .roleId(roleRecord.getRoleId())
         .name(roleRecord.getName())
         .description(roleRecord.getDescription())
@@ -675,7 +675,7 @@ public final class ResponseMapper {
   }
 
   public static RoleUpdateResult toRoleUpdateResponse(final RoleRecord roleRecord) {
-    return RoleUpdateResult.Builder.builder()
+    return RoleUpdateResult.Builder.create()
         .roleId(roleRecord.getRoleId())
         .name(roleRecord.getName())
         .description(roleRecord.getDescription())
@@ -683,7 +683,7 @@ public final class ResponseMapper {
   }
 
   public static GroupCreateResult toGroupCreateResponse(final GroupRecord groupRecord) {
-    return GroupCreateResult.Builder.builder()
+    return GroupCreateResult.Builder.create()
         .groupId(groupRecord.getGroupId())
         .name(groupRecord.getName())
         .description(groupRecord.getDescription())
@@ -691,7 +691,7 @@ public final class ResponseMapper {
   }
 
   public static GroupUpdateResult toGroupUpdateResponse(final GroupRecord groupRecord) {
-    return GroupUpdateResult.Builder.builder()
+    return GroupUpdateResult.Builder.create()
         .groupId(groupRecord.getGroupId())
         .name(groupRecord.getName())
         .description(groupRecord.getDescription())
@@ -699,7 +699,7 @@ public final class ResponseMapper {
   }
 
   public static TenantCreateResult toTenantCreateResponse(final TenantRecord record) {
-    return TenantCreateResult.Builder.builder()
+    return TenantCreateResult.Builder.create()
         .tenantId(record.getTenantId())
         .name(record.getName())
         .description(record.getDescription())
@@ -707,7 +707,7 @@ public final class ResponseMapper {
   }
 
   public static TenantUpdateResult toTenantUpdateResponse(final TenantRecord record) {
-    return TenantUpdateResult.Builder.builder()
+    return TenantUpdateResult.Builder.create()
         .tenantId(record.getTenantId())
         .name(record.getName())
         .description(record.getDescription())
@@ -716,7 +716,7 @@ public final class ResponseMapper {
 
   public static MappingRuleCreateResult toMappingRuleCreateResponse(
       final MappingRuleRecord record) {
-    return MappingRuleCreateResult.Builder.builder()
+    return MappingRuleCreateResult.Builder.create()
         .claimName(record.getClaimName())
         .claimValue(record.getClaimValue())
         .name(record.getName())
@@ -726,7 +726,7 @@ public final class ResponseMapper {
 
   public static MappingRuleUpdateResult toMappingRuleUpdateResponse(
       final MappingRuleRecord record) {
-    return MappingRuleUpdateResult.Builder.builder()
+    return MappingRuleUpdateResult.Builder.create()
         .claimName(record.getClaimName())
         .claimValue(record.getClaimValue())
         .name(record.getName())
@@ -738,7 +738,7 @@ public final class ResponseMapper {
       final BrokerResponse<DecisionEvaluationRecord> brokerResponse) {
     final var decisionEvaluationRecord = brokerResponse.getResponse();
     final var evaluatedDecisions = buildEvaluatedDecisions(decisionEvaluationRecord);
-    return EvaluateDecisionResult.Builder.builder()
+    return EvaluateDecisionResult.Builder.create()
         .decisionDefinitionId(decisionEvaluationRecord.getDecisionId())
         .decisionDefinitionKey(keyToString(decisionEvaluationRecord.getDecisionKey()))
         .decisionDefinitionName(decisionEvaluationRecord.getDecisionName())
@@ -762,7 +762,7 @@ public final class ResponseMapper {
     return decisionEvaluationRecord.getEvaluatedDecisions().stream()
         .map(
             evaluatedDecision ->
-                EvaluatedDecisionResult.Builder.builder()
+                EvaluatedDecisionResult.Builder.create()
                     .decisionDefinitionType(evaluatedDecision.getDecisionType())
                     .evaluatedInputs(buildEvaluatedInputs(evaluatedDecision.getEvaluatedInputs()))
                     .matchedRules(buildMatchedRules(evaluatedDecision.getMatchedRules()))
@@ -783,7 +783,7 @@ public final class ResponseMapper {
     return matchedRuleValues.stream()
         .map(
             matchedRuleValue ->
-                MatchedDecisionRuleItem.Builder.builder()
+                MatchedDecisionRuleItem.Builder.create()
                     .evaluatedOutputs(
                         buildEvaluatedOutputs(
                             matchedRuleValue.getEvaluatedOutputs(),
@@ -802,7 +802,7 @@ public final class ResponseMapper {
     return evaluatedOutputs.stream()
         .map(
             evaluatedOutput ->
-                EvaluatedDecisionOutputItem.Builder.builder()
+                EvaluatedDecisionOutputItem.Builder.create()
                     .ruleId(ruleId)
                     .ruleIndex(ruleIndex)
                     .outputId(evaluatedOutput.getOutputId())
@@ -817,7 +817,7 @@ public final class ResponseMapper {
     return inputValues.stream()
         .map(
             evaluatedInputValue ->
-                EvaluatedDecisionInputItem.Builder.builder()
+                EvaluatedDecisionInputItem.Builder.create()
                     .inputId(evaluatedInputValue.getInputId())
                     .inputName(evaluatedInputValue.getInputName())
                     .inputValue(evaluatedInputValue.getInputValue())
@@ -833,7 +833,7 @@ public final class ResponseMapper {
             : ClusterVariableScopeEnum.GLOBAL;
     final String tenantId =
         clusterVariableRecord.isTenantScoped() ? clusterVariableRecord.getTenantId() : null;
-    return ClusterVariableResult.Builder.builder()
+    return ClusterVariableResult.Builder.create()
         .name(clusterVariableRecord.getName())
         .scope(scope)
         .tenantId(tenantId)
@@ -843,21 +843,21 @@ public final class ResponseMapper {
 
   public static ExpressionEvaluationResult toExpressionEvaluationResult(
       final ExpressionRecord expressionRecord) {
-    return ExpressionEvaluationResult.Builder.builder()
+    return ExpressionEvaluationResult.Builder.create()
         .expression(expressionRecord.getExpression())
         .result(expressionRecord.getResultValue())
         .warnings(
             expressionRecord.getWarnings().stream()
                 .map(
                     warning ->
-                        ExpressionEvaluationWarningItem.Builder.builder().message(warning).build())
+                        ExpressionEvaluationWarningItem.Builder.create().message(warning).build())
                 .toList())
         .build();
   }
 
   public static TopologyResponse toTopologyResponse(final Topology topology) {
     final var brokers = topology.brokers().stream().map(ResponseMapper::toBrokerInfo).toList();
-    return TopologyResponse.Builder.builder()
+    return TopologyResponse.Builder.create()
         .brokers(brokers)
         .clusterSize(topology.clusterSize())
         .partitionsCount(topology.partitionsCount())
@@ -870,7 +870,7 @@ public final class ResponseMapper {
 
   private static BrokerInfo toBrokerInfo(final Broker broker) {
     final var partitions = buildPartitions(broker.partitions());
-    return BrokerInfo.Builder.builder()
+    return BrokerInfo.Builder.create()
         .nodeId(broker.nodeId())
         .host(broker.host())
         .port(broker.port())
@@ -884,7 +884,7 @@ public final class ResponseMapper {
     return partitions.stream()
         .map(
             partition ->
-                io.camunda.gateway.protocol.model.Partition.Builder.builder()
+                io.camunda.gateway.protocol.model.Partition.Builder.create()
                     .partitionId(partition.partitionId())
                     .role(EnumUtil.convert(partition.role(), RoleEnum.class))
                     .health(EnumUtil.convert(partition.health(), HealthEnum.class))

@@ -26,6 +26,6 @@ public class UserTaskStateFilterPropertyDeserializer
 
   @Override
   protected UserTaskStateFilterProperty createFromImplicitValue(final UserTaskStateEnum value) {
-    return AdvancedUserTaskStateFilter.Builder.builder().$eq(value).build();
+    return AdvancedUserTaskStateFilter.Builder.create().$eq(value).build();
   }
 }

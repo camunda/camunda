@@ -56,7 +56,7 @@ class ResponseValidationSpringMvcIntegrationTest {
 
     @GetMapping("/v2/test/response-validation/valid")
     public LicenseResponse validResponse() {
-      return LicenseResponse.Builder.builder()
+      return LicenseResponse.Builder.create()
           .validLicense(true)
           .licenseType("saas")
           .isCommercial(true)

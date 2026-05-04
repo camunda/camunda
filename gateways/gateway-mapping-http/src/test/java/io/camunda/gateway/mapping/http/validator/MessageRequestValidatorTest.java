@@ -23,7 +23,7 @@ class MessageRequestValidatorTest {
   void shouldRejectCorrelationRequestWhenCorrelationKeyExceedsMaxLength() {
     // given
     final var request =
-        MessageCorrelationRequest.Builder.builder()
+        MessageCorrelationRequest.Builder.create()
             .name("message-name")
             .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH + 1))
             .build();
@@ -42,7 +42,7 @@ class MessageRequestValidatorTest {
   void shouldRejectPublicationRequestWhenCorrelationKeyExceedsMaxLength() {
     // given
     final var request =
-        MessagePublicationRequest.Builder.builder()
+        MessagePublicationRequest.Builder.create()
             .name("message-name")
             .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH + 1))
             .build();
@@ -61,7 +61,7 @@ class MessageRequestValidatorTest {
   void shouldAcceptCorrelationRequestWhenCorrelationKeyAtMaxLength() {
     // given
     final var request =
-        MessageCorrelationRequest.Builder.builder()
+        MessageCorrelationRequest.Builder.create()
             .name("message-name")
             .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH))
             .build();
@@ -77,7 +77,7 @@ class MessageRequestValidatorTest {
   void shouldAcceptPublicationRequestWhenCorrelationKeyAtMaxLength() {
     // given
     final var request =
-        MessagePublicationRequest.Builder.builder()
+        MessagePublicationRequest.Builder.create()
             .name("message-name")
             .correlationKey("a".repeat(MAX_NAME_FIELD_LENGTH))
             .build();

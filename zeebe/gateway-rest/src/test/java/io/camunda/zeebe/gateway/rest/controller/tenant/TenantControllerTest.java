@@ -107,7 +107,7 @@ public class TenantControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              TenantCreateRequest.Builder.builder()
+              TenantCreateRequest.Builder.create()
                   .tenantId(id)
                   .name(tenantName)
                   .description(tenantDescription)
@@ -143,7 +143,7 @@ public class TenantControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              TenantCreateRequest.Builder.builder()
+              TenantCreateRequest.Builder.create()
                   .tenantId(tenantId)
                   .name(tenantName)
                   .description(tenantDescription)
@@ -212,7 +212,7 @@ public class TenantControllerTest {
       // given
       final var tenantName = "Tenant Name";
       final var request =
-          TenantCreateRequest.Builder.builder().tenantId(id).name(tenantName).build();
+          TenantCreateRequest.Builder.create().tenantId(id).name(tenantName).build();
 
       // when
       webClient
@@ -246,7 +246,7 @@ public class TenantControllerTest {
       // given
       final var id = "x".repeat(257);
       final var request =
-          TenantCreateRequest.Builder.builder().tenantId(id).name("Tenant name").build();
+          TenantCreateRequest.Builder.create().tenantId(id).name("Tenant name").build();
 
       // when
       webClient
@@ -297,7 +297,7 @@ public class TenantControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              TenantUpdateRequest.Builder.builder()
+              TenantUpdateRequest.Builder.create()
                   .name(tenantName)
                   .description(tenantDescription)
                   .build())
@@ -377,7 +377,7 @@ public class TenantControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              TenantUpdateRequest.Builder.builder()
+              TenantUpdateRequest.Builder.create()
                   .name(tenantName)
                   .description(tenantDescription)
                   .build())

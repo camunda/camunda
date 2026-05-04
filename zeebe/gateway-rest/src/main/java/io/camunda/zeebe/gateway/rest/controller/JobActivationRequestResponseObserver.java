@@ -30,7 +30,7 @@ public class JobActivationRequestResponseObserver implements ResponseObserver<Jo
 
   @Override
   public void onCompleted() {
-    result.complete(ResponseEntity.ok(JobActivationResult.Builder.builder().jobs(jobs).build()));
+    result.complete(ResponseEntity.ok(JobActivationResult.Builder.create().jobs(jobs).build()));
   }
 
   @Override

@@ -27,6 +27,6 @@ public class AuditLogOperationTypeFilterPropertyDeserializer
   @Override
   protected OperationTypeFilterProperty createFromImplicitValue(
       final AuditLogOperationTypeEnum value) {
-    return AdvancedOperationTypeFilter.Builder.builder().$eq(value).build();
+    return AdvancedOperationTypeFilter.Builder.create().$eq(value).build();
   }
 }

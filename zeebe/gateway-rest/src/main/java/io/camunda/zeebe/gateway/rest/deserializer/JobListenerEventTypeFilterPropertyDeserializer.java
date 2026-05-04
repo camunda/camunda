@@ -27,6 +27,6 @@ public class JobListenerEventTypeFilterPropertyDeserializer
   @Override
   protected AdvancedJobListenerEventTypeFilter createFromImplicitValue(
       final JobListenerEventTypeEnum value) {
-    return AdvancedJobListenerEventTypeFilter.Builder.builder().$eq(value).build();
+    return AdvancedJobListenerEventTypeFilter.Builder.create().$eq(value).build();
   }
 }

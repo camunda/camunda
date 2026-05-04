@@ -29,7 +29,7 @@ class StagedBuilderRoundtripIT {
   void allRequired_roundtripsViaStagedBuilderAndJackson() throws Exception {
     // given
     final var item =
-        UsageMetricsResponseItem.Builder.builder()
+        UsageMetricsResponseItem.Builder.create()
             .processInstances(10L)
             .decisionInstances(20L)
             .assignees(30L)
@@ -48,7 +48,7 @@ class StagedBuilderRoundtripIT {
   void inheritance_roundtripsThroughMergedChain() throws Exception {
     // given
     final var inner =
-        UsageMetricsResponseItem.Builder.builder()
+        UsageMetricsResponseItem.Builder.create()
             .processInstances(1L)
             .decisionInstances(2L)
             .assignees(3L)
@@ -57,7 +57,7 @@ class StagedBuilderRoundtripIT {
     // UsageMetricsResponse chain order (per spec required: [tenants, activeTenants]):
     //   processInstances → decisionInstances → assignees → tenants → activeTenants
     final var response =
-        UsageMetricsResponse.Builder.builder()
+        UsageMetricsResponse.Builder.create()
             .processInstances(100L)
             .decisionInstances(200L)
             .assignees(300L)

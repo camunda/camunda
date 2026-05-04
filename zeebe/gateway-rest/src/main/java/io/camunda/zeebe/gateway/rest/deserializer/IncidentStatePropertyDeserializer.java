@@ -26,6 +26,6 @@ public class IncidentStatePropertyDeserializer
 
   @Override
   protected IncidentStateFilterProperty createFromImplicitValue(final IncidentStateEnum value) {
-    return AdvancedIncidentStateFilter.Builder.builder().$eq(value).build();
+    return AdvancedIncidentStateFilter.Builder.create().$eq(value).build();
   }
 }

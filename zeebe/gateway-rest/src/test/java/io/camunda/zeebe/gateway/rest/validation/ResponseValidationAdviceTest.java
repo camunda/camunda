@@ -134,7 +134,7 @@ class ResponseValidationAdviceTest {
     void shouldPassThroughValidDto() {
       // given — all required fields set
       final LicenseResponse validResponse =
-          LicenseResponse.Builder.builder()
+          LicenseResponse.Builder.create()
               .validLicense(true)
               .licenseType("saas")
               .isCommercial(true)

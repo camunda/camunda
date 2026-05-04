@@ -60,7 +60,7 @@ public class SystemController {
   public ResponseEntity<SystemConfigurationResponse> getSystemConfiguration() {
     final JobMetricsConfiguration jobMetricsCfg = gatewayRestConfiguration.getJobMetrics();
     final var jobMetricsResponse =
-        JobMetricsConfigurationResponse.Builder.builder()
+        JobMetricsConfigurationResponse.Builder.create()
             .enabled(jobMetricsCfg.isEnabled())
             .exportInterval(jobMetricsCfg.getExportInterval().toString())
             .maxWorkerNameLength(jobMetricsCfg.getMaxWorkerNameLength())
@@ -69,7 +69,7 @@ public class SystemController {
             .maxUniqueKeys(jobMetricsCfg.getMaxUniqueKeys())
             .build();
     return ResponseEntity.ok(
-        SystemConfigurationResponse.Builder.builder().jobMetrics(jobMetricsResponse).build());
+        SystemConfigurationResponse.Builder.create().jobMetrics(jobMetricsResponse).build());
   }
 
   private ResponseEntity<UsageMetricsResponse> getMetrics(final UsageMetricsQuery query) {

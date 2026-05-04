@@ -27,6 +27,6 @@ public class DecisionInstanceStateFilterPropertyDeserializer
   @Override
   protected DecisionInstanceStateFilterProperty createFromImplicitValue(
       final DecisionInstanceStateEnum value) {
-    return AdvancedDecisionInstanceStateFilter.Builder.builder().$eq(value).build();
+    return AdvancedDecisionInstanceStateFilter.Builder.create().$eq(value).build();
   }
 }

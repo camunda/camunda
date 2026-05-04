@@ -105,42 +105,42 @@ class ClusterToolsTest extends OperationalToolsTest {
       // given
       final var version = VersionUtil.getVersion();
       final var expectedResponse =
-          TopologyResponse.Builder.builder()
+          TopologyResponse.Builder.create()
               .brokers(
                   List.of(
-                      BrokerInfo.Builder.builder()
+                      BrokerInfo.Builder.create()
                           .nodeId(0)
                           .host("localhost")
                           .port(26501)
                           .partitions(
                               List.of(
-                                  Partition.Builder.builder()
+                                  Partition.Builder.create()
                                       .partitionId(1)
                                       .role(RoleEnum.LEADER)
                                       .health(HealthEnum.HEALTHY)
                                       .build()))
                           .version(version)
                           .build(),
-                      BrokerInfo.Builder.builder()
+                      BrokerInfo.Builder.create()
                           .nodeId(1)
                           .host("localhost")
                           .port(26502)
                           .partitions(
                               List.of(
-                                  Partition.Builder.builder()
+                                  Partition.Builder.create()
                                       .partitionId(1)
                                       .role(RoleEnum.FOLLOWER)
                                       .health(HealthEnum.HEALTHY)
                                       .build()))
                           .version(version)
                           .build(),
-                      BrokerInfo.Builder.builder()
+                      BrokerInfo.Builder.create()
                           .nodeId(2)
                           .host("localhost")
                           .port(26503)
                           .partitions(
                               List.of(
-                                  Partition.Builder.builder()
+                                  Partition.Builder.create()
                                       .partitionId(1)
                                       .role(RoleEnum.INACTIVE)
                                       .health(HealthEnum.UNHEALTHY)

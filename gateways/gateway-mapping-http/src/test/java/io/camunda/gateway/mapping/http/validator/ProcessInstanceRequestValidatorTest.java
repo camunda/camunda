@@ -29,7 +29,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should accept valid processDefinitionKey format")
   void shouldAcceptValidProcessDefinitionKey() {
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey("123456789")
             .build();
 
@@ -43,7 +43,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should accept valid tags")
   void shouldAcceptValidTags() {
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey("123456789")
             .build();
     request.setTags(Set.of("valid-tag", "another-tag"));
@@ -58,7 +58,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should reject invalid tags")
   void shouldRejectInvalidTags() {
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey("123456789")
             .build();
     request.setTags(Set.of("1 invalid-tag", "another-tag"));
@@ -76,7 +76,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should reject too many tags")
   void shouldRejectTooManyTags() {
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey("123456789")
             .build();
     request.setTags(Set.of("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"));
@@ -95,7 +95,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should reject invalid processDefinitionKey formats")
   void shouldRejectInvalidProcessDefinitionKey(final String invalidKey) {
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey(invalidKey)
             .build();
 
@@ -115,7 +115,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should accept null processDefinitionKey when processDefinitionId is provided")
   void shouldAcceptNullProcessDefinitionKeyWhenIdProvided() {
     final var request =
-        ProcessInstanceCreationInstructionById.Builder.builder()
+        ProcessInstanceCreationInstructionById.Builder.create()
             .processDefinitionId("process-id")
             .build();
 
@@ -129,13 +129,13 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should accept valid targetProcessDefinitionKey format in migration request")
   void shouldAcceptValidTargetProcessDefinitionKey() {
     final var migrationPlan =
-        ProcessInstanceMigrationBatchOperationPlan.Builder.builder()
+        ProcessInstanceMigrationBatchOperationPlan.Builder.create()
             .targetProcessDefinitionKey("987654321")
             .mappingInstructions(java.util.List.of())
             .build();
     final var request =
-        ProcessInstanceMigrationBatchOperationRequest.Builder.builder()
-            .filter(ProcessInstanceFilter.Builder.builder().build())
+        ProcessInstanceMigrationBatchOperationRequest.Builder.create()
+            .filter(ProcessInstanceFilter.empty())
             .migrationPlan(migrationPlan)
             .build();
 
@@ -156,13 +156,13 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should reject invalid targetProcessDefinitionKey formats in migration request")
   void shouldRejectInvalidTargetProcessDefinitionKey(final String invalidKey) {
     final var migrationPlan =
-        ProcessInstanceMigrationBatchOperationPlan.Builder.builder()
+        ProcessInstanceMigrationBatchOperationPlan.Builder.create()
             .targetProcessDefinitionKey(invalidKey)
             .mappingInstructions(java.util.List.of())
             .build();
     final var request =
-        ProcessInstanceMigrationBatchOperationRequest.Builder.builder()
-            .filter(ProcessInstanceFilter.Builder.builder().build())
+        ProcessInstanceMigrationBatchOperationRequest.Builder.create()
+            .filter(ProcessInstanceFilter.empty())
             .migrationPlan(migrationPlan)
             .build();
 
@@ -184,7 +184,7 @@ class ProcessInstanceRequestValidatorTest {
   void shouldHandleEdgeCaseLongValues() {
     // Test with maximum Long value
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey(String.valueOf(Long.MAX_VALUE))
             .build();
 
@@ -199,7 +199,7 @@ class ProcessInstanceRequestValidatorTest {
   void shouldRejectLongValuesTooLarge() {
     // Create a number larger than Long.MAX_VALUE
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey("99999999999999999999999999999")
             .build();
 
@@ -219,7 +219,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should accept zero as valid Long value")
   void shouldAcceptZeroAsValidLong() {
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder().processDefinitionKey("0").build();
+        ProcessInstanceCreationInstructionByKey.Builder.create().processDefinitionKey("0").build();
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
@@ -231,7 +231,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should accept negative Long values")
   void shouldAcceptNegativeLongValues() {
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey("-123456789")
             .build();
 
@@ -245,7 +245,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should reject businessId exceeding max length when creating by key")
   void shouldRejectBusinessIdExceedingMaxLengthByKey() {
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey("123456789")
             .build();
     request.setBusinessId("a".repeat(257));
@@ -263,7 +263,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should reject businessId exceeding max length when creating by id")
   void shouldRejectBusinessIdExceedingMaxLengthById() {
     final var request =
-        ProcessInstanceCreationInstructionById.Builder.builder()
+        ProcessInstanceCreationInstructionById.Builder.create()
             .processDefinitionId("process-id")
             .build();
     request.setBusinessId("a".repeat(257));
@@ -298,7 +298,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should accept businessId with exactly max length")
   void shouldAcceptBusinessIdWithMaxLength() {
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey("123456789")
             .build();
     request.setBusinessId("a".repeat(256));
@@ -313,7 +313,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should accept null businessId")
   void shouldAcceptNullBusinessId() {
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey("123456789")
             .build();
     request.setBusinessId(null);
@@ -328,7 +328,7 @@ class ProcessInstanceRequestValidatorTest {
   @DisplayName("Should accept empty businessId")
   void shouldAcceptEmptyBusinessId() {
     final var request =
-        ProcessInstanceCreationInstructionByKey.Builder.builder()
+        ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey("123456789")
             .build();
     request.setBusinessId("");

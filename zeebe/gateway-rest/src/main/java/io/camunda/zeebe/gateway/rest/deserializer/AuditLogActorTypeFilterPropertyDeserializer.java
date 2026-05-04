@@ -27,6 +27,6 @@ public class AuditLogActorTypeFilterPropertyDeserializer
   @Override
   protected AuditLogActorTypeFilterProperty createFromImplicitValue(
       final AuditLogActorTypeEnum value) {
-    return AdvancedActorTypeFilter.Builder.builder().$eq(value).build();
+    return AdvancedActorTypeFilter.Builder.create().$eq(value).build();
   }
 }

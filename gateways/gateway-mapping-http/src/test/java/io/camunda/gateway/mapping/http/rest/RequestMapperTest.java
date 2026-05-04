@@ -35,21 +35,21 @@ class RequestMapperTest {
   void shouldMapToProcessInstanceMigrationBatchOperationRequest() {
     // given
     final var mappingInstruction =
-        MigrateProcessInstanceMappingInstruction.Builder.builder()
+        MigrateProcessInstanceMappingInstruction.Builder.create()
             .sourceElementId("source1")
             .targetElementId("target1")
             .build();
     final var migrationPlan =
-        ProcessInstanceMigrationBatchOperationPlan.Builder.builder()
+        ProcessInstanceMigrationBatchOperationPlan.Builder.create()
             .targetProcessDefinitionKey("123")
             .mappingInstructions(List.of(mappingInstruction))
             .build();
     final var filter =
-        ProcessInstanceFilter.Builder.builder()
-            .processDefinitionId(AdvancedStringFilter.Builder.builder().$like("process").build())
+        ProcessInstanceFilter.Builder.create()
+            .processDefinitionId(AdvancedStringFilter.Builder.create().$like("process").build())
             .build();
     final var batchOperationInstruction =
-        ProcessInstanceMigrationBatchOperationRequest.Builder.builder()
+        ProcessInstanceMigrationBatchOperationRequest.Builder.create()
             .filter(filter)
             .migrationPlan(migrationPlan)
             .build();
@@ -78,18 +78,18 @@ class RequestMapperTest {
     // Use empty strings to trigger the "are required" validation (staged builder enforces non-null,
     // but the validator checks isEmpty() to detect missing values)
     final var mappingInstruction =
-        MigrateProcessInstanceMappingInstruction.Builder.builder()
+        MigrateProcessInstanceMappingInstruction.Builder.create()
             .sourceElementId("")
             .targetElementId("")
             .build();
     final var migrationPlan =
-        ProcessInstanceMigrationBatchOperationPlan.Builder.builder()
+        ProcessInstanceMigrationBatchOperationPlan.Builder.create()
             .targetProcessDefinitionKey("123")
             .mappingInstructions(List.of(mappingInstruction))
             .build();
-    final var filter = ProcessInstanceFilter.Builder.builder().build();
+    final var filter = ProcessInstanceFilter.empty();
     final var batchOperationRequest =
-        ProcessInstanceMigrationBatchOperationRequest.Builder.builder()
+        ProcessInstanceMigrationBatchOperationRequest.Builder.create()
             .filter(filter)
             .migrationPlan(migrationPlan)
             .build();
@@ -109,16 +109,16 @@ class RequestMapperTest {
   void shouldMapProcessInstanceModifyBatchOperationRequest() {
     // given
     final var moveInstruction =
-        ProcessInstanceModificationMoveBatchOperationInstruction.Builder.builder()
+        ProcessInstanceModificationMoveBatchOperationInstruction.Builder.create()
             .sourceElementId("source1")
             .targetElementId("target1")
             .build();
     final var filter =
-        ProcessInstanceFilter.Builder.builder()
-            .processDefinitionId(AdvancedStringFilter.Builder.builder().$like("process").build())
+        ProcessInstanceFilter.Builder.create()
+            .processDefinitionId(AdvancedStringFilter.Builder.create().$like("process").build())
             .build();
     final var modificationRequest =
-        ProcessInstanceModificationBatchOperationRequest.Builder.builder()
+        ProcessInstanceModificationBatchOperationRequest.Builder.create()
             .filter(filter)
             .moveInstructions(List.of(moveInstruction))
             .build();
@@ -149,16 +149,16 @@ class RequestMapperTest {
     // given
     // Use empty targetElementId to trigger "No targetElementId provided." validation
     final var moveInstruction =
-        ProcessInstanceModificationMoveBatchOperationInstruction.Builder.builder()
+        ProcessInstanceModificationMoveBatchOperationInstruction.Builder.create()
             .sourceElementId("source1")
             .targetElementId("")
             .build();
     final var filter =
-        ProcessInstanceFilter.Builder.builder()
-            .processDefinitionId(AdvancedStringFilter.Builder.builder().$like("process").build())
+        ProcessInstanceFilter.Builder.create()
+            .processDefinitionId(AdvancedStringFilter.Builder.create().$like("process").build())
             .build();
     final var modificationRequest =
-        ProcessInstanceModificationBatchOperationRequest.Builder.builder()
+        ProcessInstanceModificationBatchOperationRequest.Builder.create()
             .filter(filter)
             .moveInstructions(List.of(moveInstruction))
             .build();
@@ -198,7 +198,7 @@ class RequestMapperTest {
       // given
       final long resourceKey = 67890L;
       final var deleteRequest =
-          DeleteResourceRequest.Builder.builder().operationReference(999L).build();
+          DeleteResourceRequest.Builder.create().operationReference(999L).build();
 
       // when
       final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
@@ -215,7 +215,7 @@ class RequestMapperTest {
     void shouldMapResourceDeletionWithDeleteHistory() {
       // given
       final long resourceKey = 11111L;
-      final var deleteRequest = DeleteResourceRequest.Builder.builder().deleteHistory(true).build();
+      final var deleteRequest = DeleteResourceRequest.Builder.create().deleteHistory(true).build();
 
       // when
       final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
@@ -233,7 +233,7 @@ class RequestMapperTest {
       // given
       final long resourceKey = 22222L;
       final var deleteRequest =
-          DeleteResourceRequest.Builder.builder()
+          DeleteResourceRequest.Builder.create()
               .operationReference(555L)
               .deleteHistory(true)
               .build();
@@ -253,8 +253,7 @@ class RequestMapperTest {
     void shouldMapResourceDeletionWithDeleteHistoryFalse() {
       // given
       final long resourceKey = 33333L;
-      final var deleteRequest =
-          DeleteResourceRequest.Builder.builder().deleteHistory(false).build();
+      final var deleteRequest = DeleteResourceRequest.Builder.create().deleteHistory(false).build();
 
       // when
       final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
@@ -272,7 +271,7 @@ class RequestMapperTest {
       // given
       final long resourceKey = 44444L;
       final var deleteRequest =
-          DeleteResourceRequest.Builder.builder().operationReference(0L).build();
+          DeleteResourceRequest.Builder.create().operationReference(0L).build();
 
       // when
       final var result = RequestMapper.toResourceDeletion(resourceKey, deleteRequest);
@@ -293,7 +292,7 @@ class RequestMapperTest {
     void shouldMapJobActivationWithProvidedTenantFilterAndTenantIds() {
       // given
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -316,7 +315,7 @@ class RequestMapperTest {
     void shouldMapJobActivationWithAssignedTenantFilterAndNoTenantIds() {
       // given
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("test-job")
               .timeout(3000L)
               .maxJobsToActivate(5)
@@ -340,7 +339,7 @@ class RequestMapperTest {
     void shouldIgnoreTenantIdsWhenAssignedTenantFilterIsUsed() {
       // given
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("test-job")
               .timeout(3000L)
               .maxJobsToActivate(5)
@@ -365,7 +364,7 @@ class RequestMapperTest {
     void shouldRejectProvidedFilterWithoutTenantIdsWhenMultiTenancyEnabled() {
       // given
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -386,7 +385,7 @@ class RequestMapperTest {
     void shouldDefaultToProvidedTenantFilterWhenNotSpecified() {
       // given
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -409,7 +408,7 @@ class RequestMapperTest {
     void shouldMapJobActivationWithDefaultTenantWhenMultiTenancyDisabled() {
       // given
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("test-job")
               .timeout(3000L)
               .maxJobsToActivate(5)
@@ -433,7 +432,7 @@ class RequestMapperTest {
     void shouldRejectNonDefaultTenantIdWhenMultiTenancyDisabled() {
       // given - tenant ID provided when multi-tenancy is disabled
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -454,7 +453,7 @@ class RequestMapperTest {
     void shouldMapJobActivationWithAllFields() {
       // given
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("complex-job")
               .timeout(10000L)
               .maxJobsToActivate(15)
@@ -483,7 +482,7 @@ class RequestMapperTest {
     void shouldRejectJobActivationWithInvalidType() {
       // given - request with empty type
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -504,7 +503,7 @@ class RequestMapperTest {
     void shouldRejectJobActivationWithInvalidMaxJobsToActivate() {
       // given - request with invalid maxJobsToActivate
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(0)
@@ -525,7 +524,7 @@ class RequestMapperTest {
     void shouldRejectJobActivationWithInvalidTimeout() {
       // given - request with invalid timeout
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("test-job")
               .timeout(0L)
               .maxJobsToActivate(10)
@@ -546,7 +545,7 @@ class RequestMapperTest {
     void shouldMapJobActivationWithMultipleTenantIds() {
       // given
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)
@@ -567,7 +566,7 @@ class RequestMapperTest {
     void shouldRejectAssignedTenantFilterWhenMultiTenancyDisabled() {
       // given
       final var request =
-          JobActivationRequest.Builder.builder()
+          JobActivationRequest.Builder.create()
               .type("test-job")
               .timeout(5000L)
               .maxJobsToActivate(10)

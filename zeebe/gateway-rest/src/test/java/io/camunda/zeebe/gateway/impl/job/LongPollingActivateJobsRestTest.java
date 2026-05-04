@@ -419,7 +419,7 @@ public class LongPollingActivateJobsRestTest {
   void shouldUseRequestSpecificTimeout() {
     final long requestTimeout = 1000;
     final JobActivationRequest request =
-        JobActivationRequest.Builder.builder()
+        JobActivationRequest.Builder.create()
             .type(TYPE)
             .timeout(requestTimeout * 2)
             .maxJobsToActivate(1)
@@ -443,7 +443,7 @@ public class LongPollingActivateJobsRestTest {
     final long requestTimeout = 50000;
     final InflightActivateJobsRequest<JobActivationResult> shortRequest =
         toInflightActivateJobsRequest(
-            JobActivationRequest.Builder.builder()
+            JobActivationRequest.Builder.create()
                 .type(TYPE)
                 .timeout(requestTimeout * 2)
                 .maxJobsToActivate(1)
@@ -453,7 +453,7 @@ public class LongPollingActivateJobsRestTest {
     final long longTimeout = 100000;
     final InflightActivateJobsRequest<JobActivationResult> longRequest =
         toInflightActivateJobsRequest(
-            JobActivationRequest.Builder.builder()
+            JobActivationRequest.Builder.create()
                 .type(TYPE)
                 .timeout(longTimeout * 2)
                 .maxJobsToActivate(1)
@@ -483,7 +483,7 @@ public class LongPollingActivateJobsRestTest {
     // given
     final InflightActivateJobsRequest<JobActivationResult> request =
         toInflightActivateJobsRequest(
-            JobActivationRequest.Builder.builder()
+            JobActivationRequest.Builder.create()
                 .type(TYPE)
                 .timeout(PROBE_TIMEOUT)
                 .maxJobsToActivate(1)
@@ -508,7 +508,7 @@ public class LongPollingActivateJobsRestTest {
     // a request with timeout
     final InflightActivateJobsRequest<JobActivationResult> request =
         toInflightActivateJobsRequest(
-            JobActivationRequest.Builder.builder()
+            JobActivationRequest.Builder.create()
                 .type(TYPE)
                 .timeout(1000L)
                 .maxJobsToActivate(15)
@@ -573,7 +573,7 @@ public class LongPollingActivateJobsRestTest {
     // given
     final InflightActivateJobsRequest<JobActivationResult> request =
         toInflightActivateJobsRequest(
-            JobActivationRequest.Builder.builder()
+            JobActivationRequest.Builder.create()
                 .type(TYPE)
                 .timeout(1000L)
                 .maxJobsToActivate(15)
@@ -633,7 +633,7 @@ public class LongPollingActivateJobsRestTest {
     // given
     final InflightActivateJobsRequest<JobActivationResult> request =
         toInflightActivateJobsRequest(
-            JobActivationRequest.Builder.builder()
+            JobActivationRequest.Builder.create()
                 .type(TYPE)
                 .timeout(1000L)
                 .maxJobsToActivate(15)
@@ -814,7 +814,7 @@ public class LongPollingActivateJobsRestTest {
     // given
     final InflightActivateJobsRequest<JobActivationResult> request =
         toInflightActivateJobsRequest(
-            JobActivationRequest.Builder.builder()
+            JobActivationRequest.Builder.create()
                 .type(TYPE)
                 .timeout(PROBE_TIMEOUT)
                 .maxJobsToActivate(1)
@@ -866,7 +866,7 @@ public class LongPollingActivateJobsRestTest {
     final var request =
         spy(
             toInflightActivateJobsRequest(
-                JobActivationRequest.Builder.builder()
+                JobActivationRequest.Builder.create()
                     .type(TYPE)
                     .timeout(1000L)
                     .maxJobsToActivate(3 * MAX_JOBS_TO_ACTIVATE)
@@ -891,7 +891,7 @@ public class LongPollingActivateJobsRestTest {
     // given
     final var request =
         toInflightActivateJobsRequest(
-            JobActivationRequest.Builder.builder()
+            JobActivationRequest.Builder.create()
                 .type(TYPE)
                 .timeout(1000L)
                 .maxJobsToActivate(3 * MAX_JOBS_TO_ACTIVATE)
@@ -955,7 +955,7 @@ public class LongPollingActivateJobsRestTest {
     final var request =
         spy(
             toInflightActivateJobsRequest(
-                JobActivationRequest.Builder.builder()
+                JobActivationRequest.Builder.create()
                     .type(TYPE)
                     .timeout(1000L)
                     .maxJobsToActivate(3 * MAX_JOBS_TO_ACTIVATE)
@@ -991,7 +991,7 @@ public class LongPollingActivateJobsRestTest {
     // given
     final var request =
         toInflightActivateJobsRequest(
-            JobActivationRequest.Builder.builder()
+            JobActivationRequest.Builder.create()
                 .type(TYPE)
                 .timeout(1000L)
                 .maxJobsToActivate(3 * MAX_JOBS_TO_ACTIVATE)
@@ -1030,7 +1030,7 @@ public class LongPollingActivateJobsRestTest {
     final var activatedJobRef = new AtomicReference<ActivatedJobResult>();
     activateJobsStub.addAvailableJobs(TYPE, 1);
     final var restRequest =
-        JobActivationRequest.Builder.builder()
+        JobActivationRequest.Builder.create()
             .type(TYPE)
             .timeout(1000L)
             .maxJobsToActivate(MAX_JOBS_TO_ACTIVATE)
@@ -1112,7 +1112,7 @@ public class LongPollingActivateJobsRestTest {
   private InflightActivateJobsRequest<JobActivationResult> getLongPollingJobActivationRequest(
       final String jobType, final int maxJobsToActivate) {
     return toInflightActivateJobsRequest(
-        JobActivationRequest.Builder.builder()
+        JobActivationRequest.Builder.create()
             .type(jobType)
             .timeout(1L)
             .maxJobsToActivate(maxJobsToActivate)
@@ -1176,7 +1176,7 @@ public class LongPollingActivateJobsRestTest {
     }
 
     public JobActivationResult getResponse() {
-      return JobActivationResult.Builder.builder().jobs(jobs).build();
+      return JobActivationResult.Builder.create().jobs(jobs).build();
     }
 
     public CompletableFuture<ResponseEntity<Object>> getResult() {

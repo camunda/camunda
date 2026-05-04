@@ -27,6 +27,6 @@ public class ClusterVariableScopeFilterPropertyDeserializer
   @Override
   protected ClusterVariableScopeFilterProperty createFromImplicitValue(
       final ClusterVariableScopeEnum value) {
-    return AdvancedClusterVariableScopeFilter.Builder.builder().$eq(value).build();
+    return AdvancedClusterVariableScopeFilter.Builder.create().$eq(value).build();
   }
 }

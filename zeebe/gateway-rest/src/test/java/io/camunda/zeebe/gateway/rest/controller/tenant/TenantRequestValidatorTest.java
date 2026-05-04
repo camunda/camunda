@@ -36,7 +36,7 @@ public class TenantRequestValidatorTest {
   void shouldPassTenantIdForCreateRequest(final String tenantId) {
     // given
     final TenantCreateRequest request =
-        TenantCreateRequest.Builder.builder()
+        TenantCreateRequest.Builder.create()
             .tenantId(tenantId)
             .name("New tenant")
             .description("A new tenant for testing")
@@ -68,7 +68,7 @@ public class TenantRequestValidatorTest {
   void shouldFailTenantIdForCreateRequest(final String tenantId, final String errorMessage) {
     // given
     final TenantCreateRequest request =
-        TenantCreateRequest.Builder.builder()
+        TenantCreateRequest.Builder.create()
             .tenantId(tenantId)
             .name("New tenant")
             .description("A new tenant for testing")

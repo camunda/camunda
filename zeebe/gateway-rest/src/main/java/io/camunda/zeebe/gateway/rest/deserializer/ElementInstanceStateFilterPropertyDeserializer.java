@@ -27,6 +27,6 @@ public class ElementInstanceStateFilterPropertyDeserializer
   @Override
   protected ElementInstanceStateFilterProperty createFromImplicitValue(
       final ElementInstanceStateEnum value) {
-    return AdvancedElementInstanceStateFilter.Builder.builder().$eq(value).build();
+    return AdvancedElementInstanceStateFilter.Builder.create().$eq(value).build();
   }
 }

@@ -25,6 +25,6 @@ public class DateTimeFilterPropertyDeserializer
 
   @Override
   protected DateTimeFilterProperty createFromImplicitValue(final String value) {
-    return AdvancedDateTimeFilter.Builder.builder().$eq(value).build();
+    return AdvancedDateTimeFilter.Builder.create().$eq(value).build();
   }
 }

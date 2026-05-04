@@ -26,6 +26,6 @@ public class JobKindFilterPropertyDeserializer
 
   @Override
   protected JobKindFilterProperty createFromImplicitValue(final JobKindEnum value) {
-    return AdvancedJobKindFilter.Builder.builder().$eq(value).build();
+    return AdvancedJobKindFilter.Builder.create().$eq(value).build();
   }
 }
