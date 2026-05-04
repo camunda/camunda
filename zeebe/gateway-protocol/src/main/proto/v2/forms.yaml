@@ -1,0 +1,39 @@
+paths:
+  /forms/{formKey}:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - Form
+      operationId: getFormByKey
+      summary: Get form by key
+      description: |
+        Get a form by its unique form key.
+      parameters:
+        - name: formKey
+          in: path
+          required: true
+          description: The form key.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/FormKey'
+      responses:
+        "200":
+          description: The form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: 'form-models.yaml#/components/schemas/FormResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.9"

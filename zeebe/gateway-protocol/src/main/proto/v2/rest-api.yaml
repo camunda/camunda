@@ -40,6 +40,7 @@ tags:
   - name: Document
   - name: Element instance
   - name: Expression
+  - name: Form
   - name: Global listener
   - name: Group
   - name: Incident
@@ -177,6 +178,10 @@ paths:
   # Expression endpoints
   /expression/evaluation:
     $ref: 'expression.yaml#/paths/~1expression~1evaluation'
+
+  # Form endpoints
+  /forms/{formKey}:
+    $ref: 'forms.yaml#/paths/~1forms~1{formKey}'
 
   # Global listeners endpoints
   /global-task-listeners:
