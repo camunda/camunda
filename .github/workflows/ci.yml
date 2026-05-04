@@ -60,6 +60,7 @@ jobs:
       rdbms-integration-tests: ${{steps.filter.outputs.rdbms-integration-tests}}
       renovate-config-changes: ${{ steps.filter.outputs.renovate-config-changes }}
       webapp-client-changes: ${{ steps.filter.outputs.webapp-client-changes }}
+      orchestration-cluster-smoke-tests: ${{ steps.filter.outputs.orchestration-cluster-smoke-tests }}
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
       c8-e2e-test-suite-changes: ${{ steps.filter.outputs.c8-e2e-test-suite-changes }}
     runs-on: ubuntu-latest
@@ -1530,6 +1531,15 @@ jobs:
     secrets: inherit
     permissions: { }
 
+  # TODO: Enable when we are willing to run these tests on every PR.
+  # orchestration-cluster-smoke-tests:
+  #   if: needs.detect-changes.outputs.orchestration-cluster-smoke-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
+  #   name: "Orchestration Cluster / [Smoke] UI"
+  #   needs: [ detect-changes ]
+  #   uses: ./.github/workflows/ci-orchestration-cluster-smoke-tests.yml
+  #   secrets: inherit
+  #   permissions: { }
+
   c8-e2e-test-suite:
     if: needs.detect-changes.outputs.c8-e2e-test-suite-changes == 'true'
     name: "Lint / C8 E2E Test Suite"
@@ -1739,6 +1749,7 @@ jobs:
       - junit-vintage-check
       - maven-spotless-linter
       - openapi-lint
+      - orchestration-cluster-smoke-tests
       - operate-ci
       - optimize-ci
       - protobuf-checks
