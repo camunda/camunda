@@ -91,8 +91,12 @@ CSV_COLUMNS = [
     "Timestamp",
     "Status",
     "Target PI/s",
-    "Achieved PI/s",
-    "Achieved %",
+    "Activated PI/s",
+    "Activated PI %",
+    "Completed PI/s",
+    "Backpressure drop %",
+    "ES CPU throttle %",
+    "Camunda CPU throttle %",
     "Broker replicas",
     "Broker node",
     "Broker CPU",
@@ -111,10 +115,6 @@ CSV_COLUMNS = [
     "ES flush p99 (s)",
     "ES flush fail rate",
     "ES disk used %",
-    "Backpressure drop %",
-    "ES CPU throttle %",
-    "Camunda CPU throttle %",
-    "Completed PI/s",
     "grafana_timestamp",
 ]
 
@@ -420,7 +420,7 @@ def collect_metrics(grafana_url: str, token: str, cookie: str, namespace: str,
     camunda_throttle_val = round(camunda_cpu_throttle, 1) if camunda_cpu_throttle is not None else "N/A"
     completed_val = round(completed_pis, 1) if completed_pis is not None else "N/A"
 
-    print(f"  Achieved PI/s:    {achieved_pis}")
+    print(f"  Activated PI/s:   {achieved_pis}")
     print(f"  Completed PI/s:   {completed_val}")
     print(f"  Dropped req/s:    {dropped_rps}")
     print(f"  Backpressure drop:{bp_drop_val}%")
@@ -433,8 +433,8 @@ def collect_metrics(grafana_url: str, token: str, cookie: str, namespace: str,
     print(f"  Camunda throttle: {camunda_throttle_val}%")
 
     return {
-        "Achieved PI/s": achieved_pis,
-        "Achieved %": achieved_pct,
+        "Activated PI/s": achieved_pis,
+        "Activated PI %": achieved_pct,
         "Dropped req/s": dropped_rps,
         "Max in-flight req": max_inflight,
         "ES export lag": es_lag_val,
@@ -618,7 +618,7 @@ def update_csv_row(output: Path, run_name: str, updates: dict) -> None:
 
 
 def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie: str) -> None:
-    """Re-query Grafana for every row with Achieved PI/s = GRAFANA_ERROR, using the row's timestamp."""
+    """Re-query Grafana for every row with Activated PI/s = GRAFANA_ERROR, using the row's timestamp."""
     if not csv_path.exists():
         print(f"ERROR: {csv_path} not found", file=sys.stderr)
         return
@@ -626,7 +626,7 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
     with open(csv_path, newline="") as f:
         rows = list(csv.DictReader(f))
 
-    errors = [r for r in rows if r.get("Achieved PI/s") == "GRAFANA_ERROR"
+    errors = [r for r in rows if r.get("Activated PI/s") == "GRAFANA_ERROR"
               or r.get("Status") == "ERROR"]
     if not errors:
         print("No GRAFANA_ERROR rows found in CSV — nothing to recover.")
@@ -642,7 +642,7 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
 
     recovered = 0
     for row in rows:
-        if row.get("Achieved PI/s") != "GRAFANA_ERROR":
+        if row.get("Activated PI/s") != "GRAFANA_ERROR":
             continue
 
         name = row["Run"]
@@ -730,8 +730,8 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
         camunda_throttle_val = round(camunda_cpu_throttle, 1) if camunda_cpu_throttle is not None else "N/A"
         completed_val = round(completed_pis, 1) if completed_pis is not None else "N/A"
         row["Status"] = "COMPLETED"
-        row["Achieved PI/s"] = achieved_pis
-        row["Achieved %"] = achieved_pct
+        row["Activated PI/s"] = achieved_pis
+        row["Activated PI %"] = achieved_pct
         row["Dropped req/s"] = dropped_val
         row["Max in-flight req"] = inflight_val
         row["ES export lag"] = es_lag_val
@@ -742,7 +742,7 @@ def recover_grafana_errors(csv_path: Path, grafana_url: str, token: str, cookie:
         row["ES CPU throttle %"] = es_throttle_val
         row["Camunda CPU throttle %"] = camunda_throttle_val
         row["Completed PI/s"] = completed_val
-        print(f"  Achieved PI/s={achieved_pis}  Completed PI/s={completed_val}  Dropped={dropped_val}  "
+        print(f"  Activated PI/s={achieved_pis}  Completed PI/s={completed_val}  Dropped={dropped_val}  "
               f"BP drop={bp_drop_val}%  In-flight={inflight_val}  ES lag={es_lag_val}  "
               f"flush p99={es_p99_val}s  disk={es_disk_val}%  "
               f"ES throttle={es_throttle_val}%  Camunda throttle={camunda_throttle_val}%")
@@ -843,7 +843,7 @@ def run_one(rate: int, state: ResourceState, args, grafana_token: str,
 
     if args.dry_run:
         print(f"\n[DRY-RUN] Would monitor namespace=c8-<name> at {rate} PI/s.")
-        return {"Achieved PI/s": None}
+        return {"Activated PI/s": None}
 
     namespace = f"c8-{name}"
     print(f"\nNamespace: {namespace}")
@@ -854,8 +854,8 @@ def run_one(rate: int, state: ResourceState, args, grafana_token: str,
         "Timestamp": datetime.utcnow().isoformat(timespec="seconds") + "Z",
         "Status": "STARTED",
         "Target PI/s": rate,
-        "Achieved PI/s": "",
-        "Achieved %": "",
+        "Activated PI/s": "",
+        "Activated PI %": "",
         "Dropped req/s": "",
         "Max in-flight req": "",
         **broker_info,
@@ -865,9 +865,9 @@ def run_one(rate: int, state: ResourceState, args, grafana_token: str,
     healthy = wait_for_healthy(namespace, args.collect_after, args.timeout)
 
     if not healthy:
-        update_csv_row(args.output, name, {"Status": "ERROR", "Achieved PI/s": "TIMEOUT"})
+        update_csv_row(args.output, name, {"Status": "ERROR", "Activated PI/s": "TIMEOUT"})
         delete_namespace(namespace, name)
-        return {**initial_row, "Status": "ERROR", "Achieved PI/s": "TIMEOUT"}
+        return {**initial_row, "Status": "ERROR", "Activated PI/s": "TIMEOUT"}
 
     if not grafana_token and not grafana_cookie:
         print("WARNING: no Grafana credentials — skipping metric collection", file=sys.stderr)
@@ -885,9 +885,9 @@ def run_one(rate: int, state: ResourceState, args, grafana_token: str,
         print(f"ERROR: Grafana collection failed: {e}", file=sys.stderr)
         print(f"  Re-collect with: --collect-only {namespace} --rates {rate}", file=sys.stderr)
         update_csv_row(args.output, name, {
-            "Status": "ERROR", "Achieved PI/s": "GRAFANA_ERROR", "grafana_timestamp": grafana_ts,
+            "Status": "ERROR", "Activated PI/s": "GRAFANA_ERROR", "grafana_timestamp": grafana_ts,
         })
-        row = {**initial_row, "Status": "ERROR", "Achieved PI/s": "GRAFANA_ERROR",
+        row = {**initial_row, "Status": "ERROR", "Activated PI/s": "GRAFANA_ERROR",
                "grafana_timestamp": grafana_ts}
 
     delete_namespace(namespace, name)
@@ -1048,7 +1048,7 @@ def main():
 
                 row = run_one(rate, state, args, grafana_token, grafana_cookie, extra)
 
-                achieved = row.get("Achieved PI/s")
+                achieved = row.get("Activated PI/s")
                 if args.dry_run:
                     break
 
