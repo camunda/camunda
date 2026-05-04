@@ -15,6 +15,7 @@ public class LinkedResource {
   private String linkName;
   private ZeebeBindingType bindingType;
   private String versionTag;
+  private String variableName;
 
   public String getResourceId() {
     return resourceId;
@@ -40,12 +41,12 @@ public class LinkedResource {
     this.linkName = linkName;
   }
 
-  public void setBindingType(final ZeebeBindingType bindingType) {
-    this.bindingType = bindingType;
-  }
-
   public ZeebeBindingType getBindingType() {
     return bindingType;
+  }
+
+  public void setBindingType(final ZeebeBindingType bindingType) {
+    this.bindingType = bindingType;
   }
 
   public String getVersionTag() {
@@ -54,5 +55,13 @@ public class LinkedResource {
 
   public void setVersionTag(final String versionTag) {
     this.versionTag = versionTag;
+  }
+
+  public String getVariableName() {
+    return variableName;
+  }
+
+  public void setVariableName(final String variableName) {
+    this.variableName = variableName;
   }
 }

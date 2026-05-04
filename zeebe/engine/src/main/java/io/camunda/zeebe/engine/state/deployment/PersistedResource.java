@@ -96,6 +96,10 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     return bufferAsString(resourceProp.getValue());
   }
 
+  public DirectBuffer getResourceBuffer() {
+    return resourceProp.getValue();
+  }
+
   public void wrap(final ResourceRecord record) {
     resourceIdProp.setValue(record.getResourceId());
     versionProp.setValue(record.getVersion());

@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscrip
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnLinkedResourceBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -34,6 +35,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   private final BpmnJobBehavior jobBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnLinkedResourceBehavior linkedResourceBehavior;
 
   public JobWorkerTaskProcessor(
       final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
@@ -44,6 +46,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     jobBehavior = behaviors.jobBehavior();
     stateBehavior = behaviors.stateBehavior();
     compensationSubscriptionBehaviour = behaviors.compensationSubscriptionBehaviour();
+    linkedResourceBehavior = behaviors.linkedResourceBehavior();
   }
 
   @Override
@@ -63,6 +66,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     return jobBehavior
         .evaluateJobExpressions(element.getJobWorkerProperties(), context)
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
+        .flatMap(j -> linkedResourceBehavior.createVariables(context, j).map(ok -> j))
         .thenDo(
             jobProperties -> {
               jobBehavior.createNewJob(context, element, jobProperties);

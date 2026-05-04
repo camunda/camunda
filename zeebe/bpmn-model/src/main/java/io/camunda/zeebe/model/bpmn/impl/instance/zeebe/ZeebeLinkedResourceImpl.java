@@ -32,6 +32,7 @@ public class ZeebeLinkedResourceImpl extends BpmnModelElementInstanceImpl
   private static Attribute<String> resourceTypeAttribute;
   private static Attribute<String> versionTagAttribute;
   private static Attribute<String> linkNameAttribute;
+  private static Attribute<String> variableNameAttribute;
 
   public ZeebeLinkedResourceImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -72,6 +73,12 @@ public class ZeebeLinkedResourceImpl extends BpmnModelElementInstanceImpl
     linkNameAttribute =
         typeBuilder
             .stringAttribute(ZeebeConstants.ATTRIBUTE_LINK_NAME)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
+    variableNameAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_LINK_VARIABLE_NAME)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 
@@ -126,5 +133,15 @@ public class ZeebeLinkedResourceImpl extends BpmnModelElementInstanceImpl
   @Override
   public void setLinkName(final String linkName) {
     linkNameAttribute.setValue(this, linkName);
+  }
+
+  @Override
+  public String getVariableName() {
+    return variableNameAttribute.getValue(this);
+  }
+
+  @Override
+  public void setVariableName(final String variableName) {
+    variableNameAttribute.setValue(this, variableName);
   }
 }
