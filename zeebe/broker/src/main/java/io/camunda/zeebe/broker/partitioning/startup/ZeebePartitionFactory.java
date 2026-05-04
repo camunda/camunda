@@ -231,7 +231,8 @@ public final class ZeebePartitionFactory {
     final int partitionsPerBroker =
         getPartitionsPerBroker(clusterConfigurationService, localMemberId, brokerCfg);
     sharedRocksDbResources.allocate(
-        RocksDbSharedCache.getSharedCacheSize(brokerCfg, brokerMeterRegistry, partitionsPerBroker));
+        RocksDbSharedCache.getRocksDbMemoryLimit(
+            brokerCfg, brokerMeterRegistry, partitionsPerBroker));
   }
 
   /**

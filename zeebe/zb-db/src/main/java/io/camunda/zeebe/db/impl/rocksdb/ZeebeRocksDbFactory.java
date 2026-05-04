@@ -231,33 +231,25 @@ public final class ZeebeRocksDbFactory<
    * centralizes memory calculations to avoid duplication.
    */
   MemoryConfiguration calculateMemoryConfiguration() {
-    final var totalMemoryBudgetPerPartition =
-        sharedRocksDbResources.getMemoryLimit() / partitionCount;
-
-    // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
-    // and filters into the block cache, so we don't need to account for more memory there
-    final var blockCacheMemoryPerPartition =
-        sharedRocksDbResources.getBlockCacheSize() / partitionCount;
-    // flushing the memtables is done asynchronously, so there may be multiple memtables in memory,
-    // although only a single one is writable. once we have too many memtables, writes will stop.
-    // since prefix iteration is our bread n butter, we will build an additional filter for each
-    // memtable which takes a bit of memory which must be accounted for from the memtable's memory
-    final var maxConcurrentMemtableCount = rocksDbConfiguration.getMaxWriteBufferNumber();
-    // this is a current guess and candidate for further tuning
-    // values can be between 0 and 0.25 (anything higher gets clamped to 0.25), we randomly picked
-    // 0.15
-    // prefix seek must be fast, so we allocate some extra memory of a single memtable budget to
-    // create
-    // a filter for each memtable, allowing us to skip the prefixes if possible
+    // RocksDB clamps memtable_prefix_bloom_size_ratio to [0, 0.25]; 0.15 is our current guess and a
+    // candidate for tuning. Prefix seek must be fast, so we trade some memtable budget for a per-
+    // memtable bloom filter that lets us skip prefixes.
     final var memtablePrefixFilterMemory = 0.15;
-    final var memtableMemory =
-        Math.round(
-            ((totalMemoryBudgetPerPartition - blockCacheMemoryPerPartition)
-                    / (double) maxConcurrentMemtableCount)
+
+    // The prefix bloom is included in the memtable's WriteBufferManager accounting, so we shrink
+    // write_buffer_size by the same fraction. Otherwise WBM would force flushes before each
+    // memtable reaches its configured size.
+    final var memtableBudget = sharedRocksDbResources.getWriteBufferLimit() / partitionCount;
+    final var maxMemtableSize =
+        (long)
+            (memtableBudget
+                / rocksDbConfiguration.getMaxWriteBufferNumber()
                 * (1 - memtablePrefixFilterMemory));
 
     return new MemoryConfiguration(
-        memtableMemory, memtablePrefixFilterMemory, maxConcurrentMemtableCount);
+        maxMemtableSize,
+        memtablePrefixFilterMemory,
+        rocksDbConfiguration.getMaxWriteBufferNumber());
   }
 
   /**
@@ -369,15 +361,7 @@ public final class ZeebeRocksDbFactory<
   }
 
   public static final class SharedRocksDbResources implements AutoCloseable {
-
-    // memoryLimit represents the total memory budget we expect RocksDB to use on this node.
-    // We follow the recommended heuristic where roughly 1/3 of that total budget is assigned to
-    // the block cache (cacheSize). This ratio can be tuned if needed.
-    // When sizing memoryLimit, remember that RocksDB's total memory footprint includes block
-    // cache, index and bloom filters, memtables, and blocks pinned by iterators. See:
-    // https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning#block-cache-size
-    // https://github.com/facebook/rocksdb/wiki/Memory-usage-in-RocksDB
-    private static final long CACHE_RATIO_OF_MEMORY_LIMIT = 3;
+    private static final double MEMTABLE_RATIO = 2 / 3.0;
 
     static {
       RocksDB.loadLibrary();
@@ -386,7 +370,7 @@ public final class ZeebeRocksDbFactory<
     private LRUCache sharedCache;
     private WriteBufferManager sharedWbm;
     private long memoryLimit;
-    private long blockCacheSize;
+    private long writeBufferLimit;
 
     public SharedRocksDbResources() {}
 
@@ -398,14 +382,13 @@ public final class ZeebeRocksDbFactory<
       if (isInitialized()) {
         close();
       }
+      writeBufferLimit = (long) (memoryLimit * MEMTABLE_RATIO);
+      this.memoryLimit = memoryLimit;
       // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM
       // limit, with headroom for memtable bloom/filter overhead. write_buffer_size is calculated in
       // zeebeRocksDBFactory.
-      final long blockCacheSize = memoryLimit / CACHE_RATIO_OF_MEMORY_LIMIT;
-      sharedCache = new LRUCache(blockCacheSize, 8, false, 0.15);
-      sharedWbm = new WriteBufferManager(blockCacheSize / 4, sharedCache);
-      this.memoryLimit = memoryLimit;
-      this.blockCacheSize = blockCacheSize;
+      sharedCache = new LRUCache(memoryLimit, 8, false, 0.15);
+      sharedWbm = new WriteBufferManager(writeBufferLimit, sharedCache);
     }
 
     public boolean isInitialized() {
@@ -424,8 +407,8 @@ public final class ZeebeRocksDbFactory<
       return memoryLimit;
     }
 
-    public long getBlockCacheSize() {
-      return blockCacheSize;
+    public long getWriteBufferLimit() {
+      return writeBufferLimit;
     }
 
     @Override
