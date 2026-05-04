@@ -87,9 +87,11 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     reset();
   }
 
-  public BrokerInfo(final int nodeId, final String commandApiAddress) {
+  public BrokerInfo(
+      final int nodeId, @Nullable final String zone, final String commandApiAddress) {
     reset();
     this.nodeId = nodeId;
+    this.zone = zone;
     setCommandApiAddress(BufferUtil.wrapString(commandApiAddress));
   }
 
@@ -118,6 +120,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     partitionHealthStatuses.remove(partitionId);
   }
 
+  @Deprecated
   public int getNodeId() {
     if (nodeIdNullValue() == nodeId) {
       throw new IllegalStateException("nodeId is not set");
@@ -131,14 +134,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public @Nullable String zone() {
-    // TODO: to be fixed in #52070
-    return null;
+    return zone;
   }
 
-  public String getMemberId() {
-    // TODO: to be fixed in #52070
-    return String.valueOf(nodeId);
-  }
 
   public int getPartitionsCount() {
     if (partitionsCountNullValue() == partitionsCount) {
@@ -451,6 +449,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     } else {
       bodyEncoder.putZone(EMPTY_BYTE_ARRAY, 0, 0);
     }
+
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 

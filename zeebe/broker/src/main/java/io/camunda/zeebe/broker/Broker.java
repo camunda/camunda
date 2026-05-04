@@ -148,6 +148,7 @@ public final class Broker implements AutoCloseable {
     final BrokerInfo result =
         new BrokerInfo(
             clusterCfg.getNodeId(),
+            clusterCfg.getZone(),
             NetUtil.toSocketAddressString(
                 brokerCfg.getNetwork().getCommandApi().getAdvertisedAddress()));
 
@@ -161,11 +162,6 @@ public final class Broker implements AutoCloseable {
     final String version = VersionUtil.getVersion();
     if (version != null && !version.isBlank()) {
       result.setVersion(version);
-    }
-
-    final String zone = clusterCfg.getZone();
-    if (zone != null && !zone.isBlank()) {
-      result.setZone(zone);
     }
 
     return result;
