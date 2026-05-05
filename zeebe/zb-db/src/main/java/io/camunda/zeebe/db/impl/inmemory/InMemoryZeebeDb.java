@@ -27,6 +27,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.function.BiConsumer;
 
 /**
  * A pure in-memory implementation of {@link ZeebeDb}. All data is stored in a {@link
@@ -136,5 +137,9 @@ public class InMemoryZeebeDb<
 
   boolean isClosed() {
     return closed;
+  }
+
+  public void forEachCommittedEntry(final BiConsumer<byte[], DbValue> consumer) {
+    committedData.forEach(consumer);
   }
 }

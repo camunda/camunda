@@ -8,7 +8,6 @@
 package io.camunda.zeebe.db.impl.layered;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
@@ -49,22 +48,19 @@ final class LayeredZeebeDbReadThroughTest {
   }
 
   @Test
-  void shouldRejectReusingColumnFamilyWithDifferentKeyOrValueTypes(final @TempDir File path)
+  void shouldAllowDifferentTypedViewsForSameColumnFamily(final @TempDir File path)
       throws Exception {
     try (final var layeredDb = openLayeredDb(path)) {
       final var context = layeredDb.createContext();
 
-      layeredDb.createColumnFamily(
-          DefaultColumnFamily.DEFAULT, context, new DbLong(), new DbLong());
+      final var first =
+          layeredDb.createColumnFamily(
+              DefaultColumnFamily.DEFAULT, context, new DbLong(), new DbLong());
+      final var second =
+          layeredDb.createColumnFamily(
+              DefaultColumnFamily.DEFAULT, context, new DbLong(), new DbString());
 
-      assertThatThrownBy(
-              () ->
-                  layeredDb.createColumnFamily(
-                      DefaultColumnFamily.DEFAULT, context, new DbLong(), new DbString()))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining(DefaultColumnFamily.DEFAULT.name())
-          .hasMessageContaining(DbLong.class.getName())
-          .hasMessageContaining(DbString.class.getName());
+      assertThat(second).isNotSameAs(first);
     }
   }
 

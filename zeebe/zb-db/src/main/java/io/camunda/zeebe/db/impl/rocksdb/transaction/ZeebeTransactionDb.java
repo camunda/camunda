@@ -226,6 +226,15 @@ public class ZeebeTransactionDb<
     metricExporter.exportMetrics(optimisticTransactionDB);
   }
 
+  public void rawPut(final ZeebeTransaction transaction, final byte[] rawKey, final byte[] rawValue)
+      throws Exception {
+    transaction.put(defaultNativeHandle, rawKey, 0, rawKey.length, rawValue, 0, rawValue.length);
+  }
+
+  public void rawDelete(final ZeebeTransaction transaction, final byte[] rawKey) throws Exception {
+    transaction.delete(defaultNativeHandle, rawKey, rawKey.length);
+  }
+
   @Override
   public Transaction renewTransaction(final Transaction oldTransaction) {
     return optimisticTransactionDB.beginTransaction(defaultWriteOptions, oldTransaction);

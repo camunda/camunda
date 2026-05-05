@@ -147,11 +147,11 @@ public final class EngineRule extends ExternalResource {
   private Optional<RoutingState> initialRoutingState = Optional.empty();
 
   private EngineRule(final int partitionCount) {
-    this(partitionCount, null, DefaultZeebeDbFactory.inMemoryFactory());
+    this(partitionCount, null, DefaultZeebeDbFactory.layeredFactory());
   }
 
   private EngineRule(final int partitionCount, final ListLogStorage sharedStorage) {
-    this(partitionCount, sharedStorage, DefaultZeebeDbFactory.inMemoryFactory());
+    this(partitionCount, sharedStorage, DefaultZeebeDbFactory.layeredFactory());
   }
 
   private EngineRule(
