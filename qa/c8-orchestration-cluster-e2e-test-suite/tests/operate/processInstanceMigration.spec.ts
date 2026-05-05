@@ -145,8 +145,18 @@ test.describe.serial('Process Instance Migration', () => {
         .poll(() => operateFiltersPanelPage.processVersionFilter.innerText())
         .toBe(sourceVersion);
 
-      await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+            timeout: 30000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+          await sleep(1000);
+          await operateFiltersPanelPage.selectVersion(sourceVersion);
+        },
       });
     });
 
