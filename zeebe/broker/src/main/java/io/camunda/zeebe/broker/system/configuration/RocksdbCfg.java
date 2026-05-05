@@ -9,16 +9,23 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import static io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
 
+import com.sun.management.OperatingSystemMXBean;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
+import java.lang.management.ManagementFactory;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.unit.DataSize;
 
 public final class RocksdbCfg implements ConfigurationEntry {
+  public static final long MINIMUM_PARTITION_MEMORY_LIMIT = 32 * 1024 * 1024L;
+  public static final double ADVICE_MAX_MEMORY_FRACTION = 0.5;
+  private static final Logger LOGGER = LoggerFactory.getLogger(RocksdbCfg.class);
 
   private Properties columnFamilyOptions;
   private boolean enableStatistics = RocksDbConfiguration.DEFAULT_STATISTICS_ENABLED;
@@ -45,6 +52,119 @@ public final class RocksdbCfg implements ConfigurationEntry {
       // Since (some of) the columnFamilyOptions may have been provided as environment variables,
       // we must do some transformations on the entries of this properties object.
       columnFamilyOptions = initColumnFamilyOptions(columnFamilyOptions);
+    }
+  }
+
+  long getMemoryLimitBytes(final int partitionsPerBrokerCount) {
+
+    return switch (getMemoryAllocationStrategy()) {
+      case BROKER -> getMemoryLimit().toBytes();
+      case FRACTION -> getFixedMemoryPercentage(getMemoryFraction());
+      // in case of PARTITION or null, we allocate per partition
+      default -> getMemoryLimit().toBytes() * partitionsPerBrokerCount;
+    };
+  }
+
+  private static long getFixedMemoryPercentage(final double memoryFraction) {
+    // get total memory from the OS bean.
+    final long totalMemorySize =
+        ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
+    return Math.round(totalMemorySize * memoryFraction);
+  }
+
+  public void validateRocksDbMemory(final int partitionsPerBrokerCount) {
+    final long blockCacheBytes = getMemoryLimitBytes(partitionsPerBrokerCount);
+
+    final long totalMemorySize =
+        ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
+
+    if (getMemoryAllocationStrategy() == MemoryAllocationStrategy.FRACTION) {
+      // check that memoryFraction is between 0 and 1 and warn if it is too high
+      warnIfTooHighFraction();
+    } else {
+      // for strategies other than FRACTION which are static sizes, we check if maxMemoryFraction is
+      // correctly set, and if so, we validate the allocated memory does not go above the threshold.
+      validateMaxMemoryFraction(totalMemorySize, blockCacheBytes);
+      // validate that the allocated memory does not exceed total system memory.
+      validateMemoryDoesNotExceedSystemMemory(
+          totalMemorySize, blockCacheBytes, partitionsPerBrokerCount);
+    }
+
+    // validate that each partition has at least the minimum required memory
+    if (blockCacheBytes / partitionsPerBrokerCount < MINIMUM_PARTITION_MEMORY_LIMIT) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
+              MINIMUM_PARTITION_MEMORY_LIMIT, blockCacheBytes / partitionsPerBrokerCount));
+    }
+  }
+
+  private void validateMaxMemoryFraction(final long totalMemorySize, final long blockCacheBytes) {
+    final double maxMemoryFraction = getMaxMemoryFraction();
+    if (maxMemoryFraction == -1) {
+      LOGGER.debug(
+          "Max Memory check for RocksDB is disabled. This can be configured setting CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MAXMEMORYFRACTION with a value between 0 and 1 to set the max fraction that RocksDB can take of total RAM memory.");
+      return;
+    }
+
+    if (maxMemoryFraction <= 0 || maxMemoryFraction > 1.0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the maxMemoryFraction for RocksDB to be between 0 and 1 (exclusive of 0) or -1 (disabled), but was %s.",
+              maxMemoryFraction));
+    }
+
+    final long maxRocksDbMem = (long) (totalMemorySize * maxMemoryFraction);
+
+    if (blockCacheBytes > maxRocksDbMem
+        && getMemoryAllocationStrategy() != MemoryAllocationStrategy.FRACTION) {
+      // this check does not apply for FRACTION strategy as it is calculated
+      // based on available memory
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the allocated memory for RocksDB to be below or "
+                  + "equal %.2f %% of ram memory, but was %.2f %%.",
+              maxMemoryFraction * 100, ((double) blockCacheBytes / totalMemorySize * 100)));
+    }
+  }
+
+  void validateMemoryDoesNotExceedSystemMemory(
+      final long totalMemorySize, final long blockCacheBytes, final int partitionsCount) {
+    if (blockCacheBytes > totalMemorySize) {
+      final String configHint =
+          switch (memoryAllocationStrategy) {
+            case BROKER, PARTITION ->
+                "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT.";
+            case FRACTION ->
+                throw new IllegalStateException(
+                    "Unexpected value: FRACTION should be within [0,1]");
+          };
+      throw new IllegalArgumentException(
+          String.format(
+              "Requested RocksDB memory (%d bytes / %d MB) exceeds total system memory (%d bytes / %d MB). "
+                  + "Memory allocation strategy: %s. Partitions count: %d. %s",
+              blockCacheBytes,
+              blockCacheBytes / (1024 * 1024),
+              totalMemorySize,
+              totalMemorySize / (1024 * 1024),
+              getMemoryAllocationStrategy(),
+              partitionsCount,
+              configHint));
+    }
+  }
+
+  private void warnIfTooHighFraction() {
+    if (memoryFraction <= 0.0 || memoryFraction >= 1.0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the memoryFraction for RocksDB FRACTION memory allocation strategy to be between 0 and 1, but was %s.",
+              memoryFraction));
+    }
+
+    if (memoryFraction >= ADVICE_MAX_MEMORY_FRACTION) {
+      LOGGER.warn(
+          "The configured memoryFraction for RocksDB is set to {}, which is quite high and may lead to out of memory issues for the broker.",
+          memoryFraction);
     }
   }
 
@@ -171,7 +291,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         .setIoRateBytesPerSecond(ioRateBytesPerSecond)
         .setWalDisabled(disableWal)
         .setSstPartitioningEnabled(enableSstPartitioning)
-        .setMemoryAllocationStrategy(memoryAllocationStrategy);
+        .setMemoryAllocationStrategy(memoryAllocationStrategy)
+        .setMemoryFraction(memoryFraction);
   }
 
   @Override
