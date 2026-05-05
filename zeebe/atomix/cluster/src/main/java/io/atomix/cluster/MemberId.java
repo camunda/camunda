@@ -33,6 +33,7 @@ public class MemberId extends NodeId {
   /** Null when the member is not zone aware */
   private final @Nullable String zone;
 
+  // id must be created in the factory method as it's a required argument of the super constructor
   private MemberId(final @Nullable String zone, final @Nullable Integer nodeIdx, final String id) {
     super(id);
     this.nodeIdx = validateNodeIdx(nodeIdx);
@@ -54,6 +55,8 @@ public class MemberId extends NodeId {
       throw new IllegalArgumentException(
           "Expected id to be of the form $zone/$id or $id, but got " + id);
     }
+    validateZone(zone);
+    validateNodeIdx(nodeIdx);
   }
 
   /**
@@ -112,7 +115,7 @@ public class MemberId extends NodeId {
 
   private static @Nullable String validateZone(final @Nullable String zone) {
     if (zone != null && zone.isBlank()) {
-      throw new IllegalArgumentException("Expected zone to be non-empty, but got " + zone);
+      throw new IllegalArgumentException("Expected zone to be non-empty, but was empty");
     }
     return zone != null ? zone.strip() : null;
   }
