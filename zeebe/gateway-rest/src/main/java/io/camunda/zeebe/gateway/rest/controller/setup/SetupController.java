@@ -12,7 +12,7 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.UserMapper;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.UserRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.validation.IdentifierValidator;

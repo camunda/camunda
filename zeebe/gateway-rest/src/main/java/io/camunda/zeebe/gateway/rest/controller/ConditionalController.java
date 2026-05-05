@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;

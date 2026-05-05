@@ -15,7 +15,7 @@ import io.camunda.gateway.protocol.model.JobMetricsConfigurationResponse;
 import io.camunda.gateway.protocol.model.SystemConfigurationResponse;
 import io.camunda.gateway.protocol.model.UsageMetricsResponse;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;

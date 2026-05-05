@@ -15,7 +15,7 @@ import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import io.camunda.gateway.protocol.model.ResourceSearchQuery;
 import io.camunda.gateway.protocol.model.ResourceSearchQueryResult;
 import io.camunda.search.query.DeployedResourceQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;

@@ -9,6 +9,9 @@ package io.camunda.zeebe.protocol.impl.encoding;
 
 import static io.camunda.zeebe.util.StringUtil.getBytes;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -21,6 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -52,8 +56,6 @@ public final class MsgPackConverter {
       new TypeReference<>() {};
   private static final TypeReference<HashMap<String, String>> STRING_MAP_TYPE_REFERENCE =
       new TypeReference<>() {};
-  private static final TypeReference<HashMap<String, Number>> NUMBER_MAP_TYPE_REFERENCE =
-      new TypeReference<>() {};
   private static final TypeReference<HashMap<String, Long>> LONG_MAP_TYPE_REFERENCE =
       new TypeReference<>() {};
   private static final TypeReference<HashMap<String, Set<Long>>> SET_LONG_MAP_TYPE_REFERENCE =
@@ -74,8 +76,11 @@ public final class MsgPackConverter {
           .setReuseResourceInGenerator(false)
           .setReuseResourceInParser(false)
           .setStreamReadConstraints(JSON_STREAM_CONSTRAINTS);
+
   private static final ObjectMapper MESSSAGE_PACK_OBJECT_MAPPER =
-      new ObjectMapper(MESSAGE_PACK_FACTORY).registerModule(new JavaTimeModule());
+      new ObjectMapper(MESSAGE_PACK_FACTORY)
+          .registerModule(new JavaTimeModule())
+          .addMixIn(CamundaAuthentication.class, CamundaAuthenticationMixin.class);
   private static final JsonFactory JSON_FACTORY =
       new MappingJsonFactory()
           .configure(Feature.ALLOW_SINGLE_QUOTES, true)
@@ -179,10 +184,6 @@ public final class MsgPackConverter {
     return convertToMap(STRING_MAP_TYPE_REFERENCE, buffer);
   }
 
-  public static Map<String, Number> convertToNumberMap(final DirectBuffer buffer) {
-    return convertToMap(NUMBER_MAP_TYPE_REFERENCE, buffer);
-  }
-
   public static Map<String, Long> convertToLongMap(final DirectBuffer buffer) {
     return convertToMap(LONG_MAP_TYPE_REFERENCE, buffer);
   }
@@ -196,7 +197,7 @@ public final class MsgPackConverter {
     return convertToMap(PERMISSION_MAP_TYPE_REFERENCE, buffer);
   }
 
-  private static <T extends Object, U extends Object> Map<U, T> convertToMap(
+  private static <T, U> Map<U, T> convertToMap(
       final TypeReference<HashMap<U, T>> typeRef, final DirectBuffer buffer) {
     final byte[] msgpackBytes = BufferUtil.bufferAsArray(buffer);
 
@@ -248,5 +249,35 @@ public final class MsgPackConverter {
     } catch (final IOException e) {
       throw new RuntimeException("Failed to deserialize MessagePack to Map", e);
     }
+  }
+
+  // We serialize the CamundaAuthentication as JSON for batch operations.
+  // To NOT have JsonProperty Annotations on the CamundaAuthentication record, use a mixin.
+  @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+  @JsonIgnoreProperties({"anonymous"})
+  private abstract static class CamundaAuthenticationMixin {
+    @JsonProperty("authenticated_username")
+    abstract String authenticatedUsername();
+
+    @JsonProperty("authenticated_client_id")
+    abstract String authenticatedClientId();
+
+    @JsonProperty("anonymous_user")
+    abstract boolean anonymousUser();
+
+    @JsonProperty("authenticated_group_ids")
+    abstract java.util.List<String> authenticatedGroupIds();
+
+    @JsonProperty("authenticated_role_ids")
+    abstract java.util.List<String> authenticatedRoleIds();
+
+    @JsonProperty("authenticated_tenant_ids")
+    abstract java.util.List<String> authenticatedTenantIds();
+
+    @JsonProperty("authenticated_mapping_rule_ids")
+    abstract java.util.List<String> authenticatedMappingRuleIds();
+
+    @JsonProperty("claims")
+    abstract java.util.Map<String, Object> claims();
   }
 }

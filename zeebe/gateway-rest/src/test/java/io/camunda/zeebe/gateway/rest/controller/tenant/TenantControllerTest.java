@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.gateway.protocol.model.TenantUpdateRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices;

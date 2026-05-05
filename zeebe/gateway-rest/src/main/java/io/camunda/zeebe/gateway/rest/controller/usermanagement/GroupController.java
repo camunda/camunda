@@ -32,7 +32,7 @@ import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices;

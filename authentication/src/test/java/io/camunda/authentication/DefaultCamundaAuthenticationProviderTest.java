@@ -8,17 +8,16 @@
 package io.camunda.authentication;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationConverter;
-import io.camunda.security.auth.CamundaAuthenticationHolder;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.context.CamundaAuthenticationHolder;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -97,12 +96,6 @@ public class DefaultCamundaAuthenticationProviderTest {
     assertThat(actualAuthentication).isNotNull();
     assertThat(actualAuthentication).isEqualTo(expectedAuthentication);
     verify(holder, times(0)).set(eq(expectedAuthentication));
-  }
-
-  @Test
-  void shouldFailToConvertWithUsernameAndClientId() {
-    assertThatExceptionOfType(IllegalArgumentException.class)
-        .isThrownBy(() -> CamundaAuthentication.of(b -> b.user("foo").clientId("bar")));
   }
 
   @Test
