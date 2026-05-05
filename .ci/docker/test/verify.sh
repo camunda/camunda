@@ -44,7 +44,7 @@ if [ -z "${DATE}" ]; then
 fi
 
 if [ -z "${DOCKERFILENAME}" ]; then
-  echo >&2 "No DOCKERFILENAME was given; make sure to pass an name for the corresponding Dockerfile, like 'Dockerfile' or 'operate.Dockerfile'"
+  echo >&2 "No DOCKERFILENAME was given; make sure to pass an name for the corresponding Dockerfile, like 'Dockerfile' or 'optimize.Dockerfile'"
   exit 1
 fi
 

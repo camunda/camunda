@@ -20,6 +20,6 @@
 
   <properties>
     <version.tasklist.docker.current>SNAPSHOT</version.tasklist.docker.current>
-    <version.tasklist.docker.repo>camunda/tasklist</version.tasklist.docker.repo>
+    <version.tasklist.docker.repo>camunda/camunda</version.tasklist.docker.repo>
   </properties>
 </project>

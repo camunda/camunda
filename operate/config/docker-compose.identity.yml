@@ -106,7 +106,7 @@ services:
       - 8000:8000
     restart: always
   operate:
-    image: camunda/operate:8.9.0
+    image: camunda/camunda:8.9.0
     container_name: operate
     environment:
       - SERVER_PORT=8081
@@ -135,7 +135,7 @@ services:
       - zeebe
       - identity
   tasklist:
-    image: camunda/tasklist:8.9.0
+    image: camunda/camunda:8.9.0
     container_name: tasklist
     environment:
       - SERVER_PORT=8082

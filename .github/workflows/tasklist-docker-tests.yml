@@ -21,14 +21,14 @@ jobs:
         ports:
           - 5000:5000
     env:
-      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
-      TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
+      CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
+      CAMUNDA_TEST_DOCKER_IMAGE_TAG: current-test
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           ignore: DL3018 # redundant when pinning the base image
-          dockerfile: tasklist.Dockerfile
+          dockerfile: camunda.Dockerfile
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -42,11 +42,11 @@ jobs:
           maven-extra-args: -D skip.fe.build -D skipOptimize
       - uses: ./.github/actions/build-platform-docker
         with:
-          repository: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
-          version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
+          repository: ${{ env.CAMUNDA_TEST_DOCKER_IMAGE }}
+          version: ${{ env.CAMUNDA_TEST_DOCKER_IMAGE_TAG }}
           push: true
           distball: ${{ steps.build-backend.outputs.distball }}
-          dockerfile: tasklist.Dockerfile
+          dockerfile: camunda.Dockerfile
       - name: Run Docker tests
         run: |
           ./mvnw \
@@ -56,8 +56,8 @@ jobs:
             -Dtest=StartupIT \
             -Dsurefire.failIfNoSpecifiedTests=false \
             -Dspring.profiles.active=docker-test \
-            -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
-            -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }} \
+            -Dtasklist.currentVersion.docker.tag=${{ env.CAMUNDA_TEST_DOCKER_IMAGE_TAG }} \
+            -Dtasklist.currentVersion.docker.repo=${{ env.CAMUNDA_TEST_DOCKER_IMAGE }} \
             test
       - name: Upload Test Report
         if: failure()
