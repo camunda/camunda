@@ -68,4 +68,28 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
     writer.wrap(buffer, offset);
     return write(writer);
   }
+
+  /**
+   * Copies all declared properties from this object into {@code target} using property-level {@link
+   * io.camunda.zeebe.msgpack.value.BaseValue#copyFrom} — zero msgpack serialization for value types
+   * that override it.
+   */
+  public void copyTo(final UnpackedObject target) {
+    if (!target.getClass().isAssignableFrom(getClass())) {
+      throw new IllegalArgumentException(
+          "Target class %s is not assignable from this class %s"
+              .formatted(target.getClass(), getClass()));
+    }
+    target.copyPropertiesFrom(this);
+  }
+
+  public UnpackedObject createNewInstance() {
+    try {
+      final var ctor = getClass().getDeclaredConstructor();
+      ctor.setAccessible(true);
+      return (UnpackedObject) ctor.newInstance();
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to create new instance of " + getClass().getName(), e);
+    }
+  }
 }

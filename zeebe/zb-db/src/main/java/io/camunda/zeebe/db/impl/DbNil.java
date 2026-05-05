@@ -39,4 +39,14 @@ public final class DbNil implements DbValue {
   public String toString() {
     return "DbNil{}";
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    // No-op: DbNil has no state
+  }
+
+  @Override
+  public DbNil newInstance() {
+    return INSTANCE;
+  }
 }

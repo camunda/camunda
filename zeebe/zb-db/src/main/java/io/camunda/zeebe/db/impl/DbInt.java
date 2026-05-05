@@ -43,6 +43,16 @@ public final class DbInt implements DbKey, DbValue {
   }
 
   @Override
+  public void copyTo(final DbValue target) {
+    ((DbInt) target).intValue = intValue;
+  }
+
+  @Override
+  public DbInt newInstance() {
+    return new DbInt();
+  }
+
+  @Override
   public String toString() {
     return "DbInt{" + intValue + '}';
   }

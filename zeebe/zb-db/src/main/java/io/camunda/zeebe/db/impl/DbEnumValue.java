@@ -63,4 +63,15 @@ public final class DbEnumValue<T extends Enum<T>> implements DbKey, DbValue {
   public int write(final MutableDirectBuffer buffer, final int offset) {
     return value.write(buffer, offset);
   }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public void copyTo(final DbValue target) {
+    ((DbEnumValue<T>) target).value.wrapByte(value.getValue());
+  }
+
+  @Override
+  public DbEnumValue<T> newInstance() {
+    return new DbEnumValue<>(variants[0].getDeclaringClass());
+  }
 }

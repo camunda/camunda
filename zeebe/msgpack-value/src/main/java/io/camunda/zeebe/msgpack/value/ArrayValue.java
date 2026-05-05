@@ -105,6 +105,18 @@ public final class ArrayValue<T extends BaseValue> extends BaseValue
     return items.equals(that.items);
   }
 
+  @SuppressWarnings("unchecked")
+  @Override
+  public void copyFrom(final BaseValue source) {
+    final ArrayValue<T> src = (ArrayValue<T>) source;
+    reset();
+    for (int i = 0; i < src.items.size(); i++) {
+      final T item = valueFactory.get();
+      item.copyFrom(src.items.get(i));
+      items.add(item);
+    }
+  }
+
   public T add() {
     final var item = valueFactory.get();
     items.add(item);

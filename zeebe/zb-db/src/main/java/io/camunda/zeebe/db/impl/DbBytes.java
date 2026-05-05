@@ -52,4 +52,18 @@ public final class DbBytes implements DbKey, DbValue {
   public DirectBuffer getDirectBuffer() {
     return bytes;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    final DbBytes t = (DbBytes) target;
+    final int cap = bytes.capacity();
+    final byte[] data = new byte[cap];
+    bytes.getBytes(0, data);
+    t.bytes.wrap(data);
+  }
+
+  @Override
+  public DbBytes newInstance() {
+    return new DbBytes();
+  }
 }

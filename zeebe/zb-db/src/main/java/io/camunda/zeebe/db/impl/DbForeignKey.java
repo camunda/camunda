@@ -62,6 +62,11 @@ public record DbForeignKey<K extends DbKey>(
     return skip.test(inner);
   }
 
+  @Override
+  public DbForeignKey<K> newInstance() {
+    return new DbForeignKey<>(DbKeyInstanceFactory.newInstance(inner), columnFamily, match, skip);
+  }
+
   public enum MatchType {
     Full,
     Prefix,

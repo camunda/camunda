@@ -60,6 +60,15 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     return isSet || defaultValue != null;
   }
 
+  /**
+   * Copies the value and state from {@code source} into this property. Both must have values of the
+   * same concrete type. Zero serialization — delegates to {@link BaseValue#copyFrom}.
+   */
+  public void copyFrom(final BaseProperty<? extends BaseValue> source) {
+    isSet = source.isSet;
+    value.copyFrom(source.value);
+  }
+
   public StringValue getKey() {
     return key;
   }
