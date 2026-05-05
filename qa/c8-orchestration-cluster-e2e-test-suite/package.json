@@ -22,7 +22,7 @@
     "eslint-plugin-prettier": "5.5.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
-    "playwright-slack-report": "1.1.89",
+    "playwright-slack-report": "1.1.110",
     "prettier": "3.6.2",
     "typescript": "5.8.3",
     "valibot": "1.1.0",
