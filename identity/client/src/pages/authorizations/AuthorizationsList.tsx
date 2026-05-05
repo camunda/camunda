@@ -15,6 +15,7 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal/useModal";
 import { AddModal } from "./modals/add-modal";
 import DeleteModal from "./modals/DeleteModal";
+import { isProtectedRole } from "src/pages/roles/protected-roles";
 import { DataTableHeader } from "src/components/entityList/EntityList";
 import type {
   Authorization,
@@ -85,6 +86,8 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
               icon: TrashCan,
               isDangerous: true,
               onClick: deleteAuthorization,
+              disabled: ({ ownerType, ownerId }: Authorization) =>
+                ownerType === "ROLE" && isProtectedRole(ownerId),
             },
           ]}
           maxDisplayCellLength={25}
