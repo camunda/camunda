@@ -54,3 +54,7 @@ dependencies {
 }
 
 description = "Zeebe Client Java"
+
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "3g"
+}

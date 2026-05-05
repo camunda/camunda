@@ -118,6 +118,7 @@ tasks.named("compileJava") {
 }
 
 dependencies {
+    implementation(enforcedPlatform(libs.org.springframework.boot.spring.boot.dependencies))
     implementation(project(":zeebe-bpmn-model"))
     implementation(project(":configuration"))
     implementation(project(":camunda-search-domain"))
@@ -189,7 +190,10 @@ dependencies {
     implementation(project(":document-store"))
     implementation(libs.org.slf4j.slf4j.api)
     implementation(libs.org.apache.logging.log4j.log4j.api)
+    implementation(libs.org.apache.logging.log4j.log4j.core)
     implementation(libs.org.apache.logging.log4j.log4j.layout.template.json)
+    implementation(libs.org.apache.logging.log4j.log4j.slf4j2.impl)
+    annotationProcessor(libs.org.apache.logging.log4j.log4j.core)
     implementation(libs.org.springframework.boot.spring.boot.actuator)
     implementation(libs.org.springframework.boot.spring.boot.health)
     implementation(libs.org.springframework.spring.web)
@@ -201,8 +205,12 @@ dependencies {
     implementation(libs.io.micrometer.micrometer.commons)
     implementation(libs.io.micrometer.micrometer.core)
     implementation(libs.io.micrometer.micrometer.observation)
-    implementation(libs.org.springframework.boot.spring.boot.starter.web)
-    implementation(libs.org.springframework.boot.spring.boot.starter.data.jdbc)
+    implementation(libs.org.springframework.boot.spring.boot.starter.web) {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    }
+    implementation(libs.org.springframework.boot.spring.boot.starter.data.jdbc) {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    }
     implementation(libs.io.micrometer.micrometer.registry.prometheus)
     implementation(libs.org.springframework.spring.beans)
     implementation(libs.org.springframework.spring.core)
@@ -253,3 +261,7 @@ dependencies {
 }
 
 description = "Zeebe Distribution"
+
+configurations.named("testRuntimeClasspath") {
+    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+}
