@@ -148,7 +148,9 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
               record.getKey());
           treePath.appendFlowNode(String.valueOf(callingElementPath.get(i)));
         }
-        treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.get(1)));
+        // the call activity FNI is the last entry, not index 1: intermediate flow scopes
+        // (e.g. a subprocess wrapping the call activity) sit between the PI root and it
+        treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.getLast()));
       }
     }
 
