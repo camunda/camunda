@@ -6,7 +6,7 @@ C8Run lets internal developers run the Orchestration Cluster locally for rapid d
 
 | Requirement | Notes |
 |---|---|
-| **JDK** | ≥ 21. `JAVA_HOME` must be set. (C8Run 8.8 and earlier had a known compatibility constraint with JDK > 23 — use JDK 21–23 for those versions.) |
+| **JDK** | `JAVA_HOME` must be set. Supported range depends on the version: **8.8 and earlier** require OpenJDK 21–23; **8.9 and later** support OpenJDK 21–25. |
 | **Go** | 1.25+ (see `go.mod`) |
 | **Maven** | Configured with Camunda Nexus access (required when testing local code changes) |
 | **JFrog access** | Required for downloading artifacts |
