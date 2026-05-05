@@ -1,3 +1,7 @@
+# description: Guards against accidentally downgrading the SaaS Elasticsearch version in .ci/db-versions.yml
+# test location: .ci/db-versions.yml
+# type: CI
+# owner: @camunda/data-layer
 ---
 # Guards against accidentally downgrading the SaaS Elasticsearch version in
 # .ci/db-versions.yml. The saas field drives which image is deployed to SaaS,
