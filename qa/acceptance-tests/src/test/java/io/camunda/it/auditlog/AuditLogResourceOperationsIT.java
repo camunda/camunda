@@ -566,7 +566,7 @@ public class AuditLogResourceOperationsIT {
     final var deployment =
         client
             .newDeployResourceCommand()
-            .addResourceFromClasspath("decisions/decision_model_2.dmn")
+            .addResourceFromClasspath("decisions/decision_model_1.dmn")
             .tenantId(TENANT_A)
             .send()
             .join();
@@ -615,23 +615,23 @@ public class AuditLogResourceOperationsIT {
     final var deployment =
         client
             .newDeployResourceCommand()
-            .addResourceFromClasspath("decisions/decision_model_2.dmn")
+            .addResourceFromClasspath("decisions/decision_model_1.dmn")
             .tenantId(TENANT_A)
             .send()
             .join();
 
-    final var decisionDefinitionId =
-        deployment.getDecisionRequirements().getFirst().getDmnDecisionRequirementsId();
+    final var decisionId = deployment.getDecisions().getFirst().getDmnDecisionId();
 
     final var decisionEvaluation =
         client
             .newEvaluateDecisionCommand()
-            .decisionDefinitionId(decisionDefinitionId)
+            .decisionId(decisionId)
             .tenantId(TENANT_A)
+            .variables("{\"input1\": \"A\"}")
             .send()
             .join();
 
-    final var decisionEvaluationKey = decisionEvaluation.getDecisionKey();
+    final var decisionEvaluationKey = decisionEvaluation.getDecisionEvaluationKey();
 
     // when - delete the decision instance history
     client.newDeleteDecisionInstanceCommand(decisionEvaluationKey).send().join();
