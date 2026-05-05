@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a column family, where it is possible to store keys of type {@link KeyType} and
@@ -45,7 +46,7 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
    * @param key the key
    * @return if the key was found in the column family then the value, otherwise null
    */
-  ValueType get(KeyType key);
+  @Nullable ValueType get(KeyType key);
 
   /**
    * Returns the corresponding stored value in the column family to the given key. Returns null if
@@ -55,7 +56,7 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
    *
    * <p>Use this method if you would otherwise immediately copy the returned value.
    */
-  ValueType get(KeyType key, Supplier<ValueType> valueSupplier);
+  @Nullable ValueType get(KeyType key, Supplier<ValueType> valueSupplier);
 
   /**
    * Visits the values, which are stored in the column family. The ordering depends on the key.
