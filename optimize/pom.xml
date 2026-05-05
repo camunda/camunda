@@ -58,10 +58,10 @@
 
     <!-- DATABASE -->
     <!-- Elasticsearch-->
-    <version.elasticsearch-java-client>8.19.14</version.elasticsearch-java-client>
-    <version.elasticsearch>8.19.14</version.elasticsearch>
+    <version.elasticsearch>8.19.15</version.elasticsearch>
+    <version.elasticsearch-java-client>8.19.15</version.elasticsearch-java-client>
     <!-- The least supported elasticsearch version we should test against-->
-    <elasticsearch.test.version>8.19.11</elasticsearch.test.version>
+    <elasticsearch.test.version>8.19.15</elasticsearch.test.version>
     <!-- The ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>8.16.6</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->

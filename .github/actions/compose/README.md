@@ -28,7 +28,7 @@ steps:
     compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
     project_name: elasticsearch
   env:
-    ELASTIC_VERSION: 8.19.11
+    ELASTIC_VERSION: 8.19.15
     ELASTIC_JVM_MEMORY: 1
     ELASTIC_HTTP_PORT: 9200
 ```

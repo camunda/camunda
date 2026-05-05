@@ -31,16 +31,16 @@ jobs:
       fail-fast: false
       matrix: &database-matrix
         include:
-          # Elasticsearch 8 - Supported versions: 8.19.0 (min) to 8.19.11 (max)
+          # Elasticsearch 8 - Supported versions: 8.19.0 (min) to 8.19.15 (max)
           - database-name: "Elasticsearch 8.19.0"
             database-type: "elasticsearch8_19_0"
             database-container: "elasticsearch"
             database-image-version: "8.19.0"
             it-database-type: "es"
-          - database-name: "Elasticsearch 8.19.11"
-            database-type: "elasticsearch8_19_11"
+          - database-name: "Elasticsearch 8.19.15"
+            database-type: "elasticsearch8_19_15"
             database-container: "elasticsearch"
-            database-image-version: "8.19.11"
+            database-image-version: "8.19.15"
             it-database-type: "es"
           # Elasticsearch 9 - Supported versions: 9.2.0 (min) to 9.3.0 (max)
           - database-name: "Elasticsearch 9.2.0"

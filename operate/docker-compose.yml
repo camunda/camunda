@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.13
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.15
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
