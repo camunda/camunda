@@ -331,6 +331,37 @@ class IncidentErrorHashCodeNormalizerTest {
     assertThat(result).isEmpty();
   }
 
+  // resolved.contains("") is always true, so a stray blank value in the IN list must not be
+  // allowed to silently satisfy the AND — the user's other (non-blank) IN constraints have to
+  // remain authoritative. The normalizer drops the filter as invalid instead.
+  @Test
+  void shouldReturnEmptyWhenInListContainsBlankValueAlongsideOthers() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.in(List.of("Other", ""))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNotInListContainsBlankValueAlongsideOthers() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.notIn(List.of("Other", ""))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
   @Test
   void shouldReturnEmptyWhenHashResolvesButErrorMessageIsInvalid() {
     final var filter =
@@ -633,6 +664,34 @@ class IncidentErrorHashCodeNormalizerTest {
             .build();
     when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
         .thenReturn("Expected result of the expression");
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyWhenInListContainsBlankValueAlongsideOthersDefStat() {
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.in(List.of("Other", ""))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNotInListContainsBlankValueAlongsideOthersDefStat() {
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.notIn(List.of("Other", ""))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
     final var result =
         normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
     assertThat(result).isEmpty();
