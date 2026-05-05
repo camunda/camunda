@@ -281,9 +281,11 @@ test.describe('MCP Message Subscription Search API Tests', () => {
       json.items.forEach(
         (it: {
           processDefinitionId: string;
+          toolName: string;
           extensionProperties: Record<string, string>;
         }) => {
           expect(it.processDefinitionId).toBe('mcpProcessAlpha');
+          expect(it.toolName).toBe('alpha-tool-name');
           expect(it.extensionProperties['io.camunda.tool:name']).toBe(
             'alpha-tool-name',
           );
@@ -417,6 +419,7 @@ test.describe('MCP Message Subscription Search API Tests', () => {
 
         // mcpProcessAlpha v2 must appear first
         expect(versions[0]).toBeGreaterThanOrEqual(2);
+        expect(json.items[0].processDefinitionId).toBe('mcpProcessAlpha');
       }).toPass({
         intervals: [5_000, 10_000, 15_000],
         timeout: 30_000,

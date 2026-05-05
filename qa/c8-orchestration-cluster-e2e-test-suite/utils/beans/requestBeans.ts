@@ -229,6 +229,8 @@ export const messageSubscriptionRequiredFields = [
 // Used in follow-on MCP API test PRs that validate full response shapes.
 export const mcpMessageSubscriptionRequiredFields = [
   ...messageSubscriptionRequiredFields,
+  'processDefinitionKey',
+  'rootProcessInstanceKey',
   'messageSubscriptionType',
   'extensionProperties',
   'processDefinitionName',
