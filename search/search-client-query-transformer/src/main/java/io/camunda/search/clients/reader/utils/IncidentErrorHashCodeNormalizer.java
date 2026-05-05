@@ -70,38 +70,9 @@ public class IncidentErrorHashCodeNormalizer {
     final boolean hasMsg = msgOps != null && !msgOps.isEmpty();
 
     if (hasHash && hasMsg) {
-      final boolean hasLike =
-          msgOps.stream().anyMatch(op -> op != null && op.operator() == Operator.LIKE);
-      if (hasLike) {
-        if (hasInvalidErrorMessages(msgOps)) {
-          logDropReason("process instance filter", "invalid error message operations", msgOps);
-          return Optional.empty();
-        }
-        return normalizeOrFilters(
-            filter.toBuilder().replaceErrorMessageOperations(dedupeErrorMessages(msgOps)).build(),
-            resourceAccessChecks,
-            visited);
-      }
-      final var inOp = msgOps.stream().filter(op -> op.operator() == Operator.IN).findFirst();
-      if (inOp.isPresent()) {
-        final var resolvedOpt = resolveErrorMessage(hashOps, resourceAccessChecks);
-        if (resolvedOpt.isEmpty()) {
-          logDropReason(
-              "process instance filter",
-              "could not resolve error message from hashOps for IN op",
-              hashOps,
-              msgOps);
-          return Optional.empty();
-        }
-        final String resolved = resolvedOpt.get();
-        final List<String> values = new ArrayList<>(inOp.get().values());
-        if (!values.contains(resolved)) {
-          values.add(resolved);
-        }
-        return normalizeOrFilters(
-            filter.toBuilder().replaceErrorMessageOperations(List.of(Operation.in(values))).build(),
-            resourceAccessChecks,
-            visited);
+      if (hasInvalidErrorMessages(msgOps)) {
+        logDropReason("process instance filter", "invalid error message operations", msgOps);
+        return Optional.empty();
       }
       final var resolvedOpt = resolveErrorMessage(hashOps, resourceAccessChecks);
       if (resolvedOpt.isEmpty()) {
@@ -109,18 +80,17 @@ public class IncidentErrorHashCodeNormalizer {
             "process instance filter", "could not resolve error message from hashOps", hashOps);
         return Optional.empty();
       }
-      if (anyOpDoesNotMatch(msgOps, resolvedOpt.get())) {
+      final var resolved = resolvedOpt.get();
+      if (!allOpsAcceptResolved(msgOps, resolved)) {
         logDropReason(
             "process instance filter",
-            "resolved error message does not match msgOps",
+            "resolved error message does not satisfy msgOps",
             msgOps,
-            resolvedOpt.get());
+            resolved);
         return Optional.empty();
       }
       return normalizeOrFilters(
-          filter.toBuilder()
-              .replaceErrorMessageOperations(List.of(Operation.eq(resolvedOpt.get())))
-              .build(),
+          filter.toBuilder().replaceErrorMessageOperations(List.of(Operation.eq(resolved))).build(),
           resourceAccessChecks,
           visited);
     }
@@ -195,38 +165,9 @@ public class IncidentErrorHashCodeNormalizer {
     final boolean hasMsg = msgOps != null && !msgOps.isEmpty();
 
     if (hasHash && hasMsg) {
-      final boolean hasLike =
-          msgOps.stream().anyMatch(op -> op != null && op.operator() == Operator.LIKE);
-      if (hasLike) {
-        if (hasInvalidErrorMessages(msgOps)) {
-          logDropReason("process definition filter", "invalid error message operations", msgOps);
-          return Optional.empty();
-        }
-        return normalizeOrFilters(
-            filter.toBuilder().replaceErrorMessageOperations(dedupeErrorMessages(msgOps)).build(),
-            resourceAccessChecks,
-            visited);
-      }
-      final var inOp = msgOps.stream().filter(op -> op.operator() == Operator.IN).findFirst();
-      if (inOp.isPresent()) {
-        final var resolvedOpt = resolveErrorMessage(hashOps, resourceAccessChecks);
-        if (resolvedOpt.isEmpty()) {
-          logDropReason(
-              "process definition filter",
-              "could not resolve error message from hashOps for IN op",
-              hashOps,
-              msgOps);
-          return Optional.empty();
-        }
-        final String resolved = resolvedOpt.get();
-        final List<String> values = new ArrayList<>(inOp.get().values());
-        if (!values.contains(resolved)) {
-          values.add(resolved);
-        }
-        return normalizeOrFilters(
-            filter.toBuilder().replaceErrorMessageOperations(List.of(Operation.in(values))).build(),
-            resourceAccessChecks,
-            visited);
+      if (hasInvalidErrorMessages(msgOps)) {
+        logDropReason("process definition filter", "invalid error message operations", msgOps);
+        return Optional.empty();
       }
       final var resolvedOpt = resolveErrorMessage(hashOps, resourceAccessChecks);
       if (resolvedOpt.isEmpty()) {
@@ -234,18 +175,17 @@ public class IncidentErrorHashCodeNormalizer {
             "process definition filter", "could not resolve error message from hashOps", hashOps);
         return Optional.empty();
       }
-      if (anyOpDoesNotMatch(msgOps, resolvedOpt.get())) {
+      final var resolved = resolvedOpt.get();
+      if (!allOpsAcceptResolved(msgOps, resolved)) {
         logDropReason(
             "process definition filter",
-            "resolved error message does not match msgOps",
+            "resolved error message does not satisfy msgOps",
             msgOps,
-            resolvedOpt.get());
+            resolved);
         return Optional.empty();
       }
       return normalizeOrFilters(
-          filter.toBuilder()
-              .replaceErrorMessageOperations(List.of(Operation.eq(resolvedOpt.get())))
-              .build(),
+          filter.toBuilder().replaceErrorMessageOperations(List.of(Operation.eq(resolved))).build(),
           resourceAccessChecks,
           visited);
     }
@@ -319,16 +259,76 @@ public class IncidentErrorHashCodeNormalizer {
     return Optional.of(resolved);
   }
 
-  private boolean anyOpDoesNotMatch(final List<Operation<String>> ops, final String value) {
-    if (ops == null || ops.isEmpty()) {
-      return true;
+  /**
+   * Returns true if every op in {@code msgOps} accepts the {@code resolved} error message — i.e.,
+   * the AND of the user-supplied error-message operations does not contradict the message uniquely
+   * identified by the supplied incident-error-hash-code.
+   */
+  private boolean allOpsAcceptResolved(
+      final List<Operation<String>> msgOps, final String resolved) {
+    if (msgOps == null || msgOps.isEmpty() || resolved == null) {
+      return false;
     }
-    for (final var op : ops) {
-      if (op == null || op.value() == null || !value.equals(op.value())) {
-        return true;
+    for (final var op : msgOps) {
+      if (!opAcceptsResolved(op, resolved)) {
+        return false;
       }
     }
-    return false;
+    return true;
+  }
+
+  /**
+   * Evaluates an error-message {@link Operation} against the resolved message. {@code IN}/{@code
+   * NOT_IN} use {@link String#contains} semantics to mirror the {@code match_phrase} behavior of
+   * the Elasticsearch query (so a user-supplied truncated prefix is treated as a phrase contained
+   * in the resolved message).
+   */
+  private static boolean opAcceptsResolved(final Operation<String> op, final String resolved) {
+    if (op == null) {
+      return false;
+    }
+    return switch (op.operator()) {
+      case EQUALS -> resolved.equals(op.value());
+      case NOT_EQUALS -> !resolved.equals(op.value());
+      case IN -> {
+        final var values = op.values();
+        yield values != null
+            && !values.isEmpty()
+            && values.stream().anyMatch(v -> v != null && resolved.contains(v));
+      }
+      case NOT_IN -> {
+        final var values = op.values();
+        yield values != null
+            && !values.isEmpty()
+            && values.stream().noneMatch(v -> v != null && resolved.contains(v));
+      }
+      case LIKE -> likePatternMatches(op.value(), resolved);
+      case EXISTS -> true;
+      case NOT_EXISTS -> false;
+      default -> false;
+    };
+  }
+
+  private static boolean likePatternMatches(final String pattern, final String value) {
+    if (pattern == null || value == null) {
+      return false;
+    }
+    return value.toLowerCase().matches(globToRegex(pattern.toLowerCase()));
+  }
+
+  private static String globToRegex(final String glob) {
+    final var sb = new StringBuilder("^");
+    for (int i = 0; i < glob.length(); i++) {
+      final char c = glob.charAt(i);
+      switch (c) {
+        case '*' -> sb.append(".*");
+        case '?' -> sb.append('.');
+        case '.', '(', ')', '[', ']', '{', '}', '+', '|', '^', '$', '\\' ->
+            sb.append('\\').append(c);
+        default -> sb.append(c);
+      }
+    }
+    return sb.append('$').toString();
   }
 
   private boolean hasInvalidErrorMessages(final List<Operation<String>> ops) {
