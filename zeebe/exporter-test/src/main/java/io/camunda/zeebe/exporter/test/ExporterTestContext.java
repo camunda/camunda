@@ -30,6 +30,7 @@ public final class ExporterTestContext implements Context {
   private RecordFilter recordFilter;
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private int partitionId;
+  private String clusterId = "";
   private InstantSource clock = InstantSource.system();
 
   @Override
@@ -60,6 +61,16 @@ public final class ExporterTestContext implements Context {
   @Override
   public void setFilter(final RecordFilter filter) {
     recordFilter = filter;
+  }
+
+  @Override
+  public String getClusterId() {
+    return clusterId;
+  }
+
+  public ExporterTestContext setClusterId(final String clusterId) {
+    this.clusterId = Objects.requireNonNull(clusterId, "must specify a cluster ID");
+    return this;
   }
 
   public ExporterTestContext setPartitionId(final int partitionId) {

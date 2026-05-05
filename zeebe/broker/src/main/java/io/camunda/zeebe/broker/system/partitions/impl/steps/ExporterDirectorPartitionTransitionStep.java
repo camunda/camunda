@@ -129,6 +129,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .exporterMode(exporterMode)
             .positionsToSkipFilter(exporterFilter)
             .meterRegistry(context.getPartitionTransitionMeterRegistry())
+            .clusterId(
+                java.util.Objects.requireNonNullElse(brokerCfg.getCluster().getClusterId(), ""))
             .tenantName(brokerCfg.getExperimental().getDefaultTenantName())
             .sendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject())
             .receiveOnLegacySubject(brokerCfg.getExperimental().isReceiveOnLegacySubject());

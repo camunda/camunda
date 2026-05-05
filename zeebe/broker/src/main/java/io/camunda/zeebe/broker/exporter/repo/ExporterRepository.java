@@ -103,6 +103,7 @@ public final class ExporterRepository {
               LOG,
               descriptor.getConfiguration(),
               NULL_PARTITION_ID,
+              "",
               new SimpleMeterRegistry(),
               InstantSource.system())) {
 

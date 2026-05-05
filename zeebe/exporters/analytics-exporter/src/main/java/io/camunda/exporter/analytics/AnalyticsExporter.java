@@ -34,12 +34,14 @@ public class AnalyticsExporter implements Exporter {
   private AnalyticsExporterConfig config;
   private Controller controller;
   private EnumMap<ValueType, Consumer<Record<?>>> handlers;
+  private String clusterId;
 
   public AnalyticsExporter() {}
 
   @Override
   public void configure(final Context context) {
     config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class);
+    clusterId = context.getClusterId();
 
     config.validate();
 
@@ -47,9 +49,10 @@ public class AnalyticsExporter implements Exporter {
     registerHandler(ValueType.PROCESS_INSTANCE_CREATION, this::handleProcessInstanceCreation);
 
     LOG.info(
-        "Analytics exporter configured: enabled={}, endpoint={}",
+        "Analytics exporter configured: enabled={}, endpoint={}, clusterId={}",
         config.isEnabled(),
-        config.getEndpoint());
+        config.getEndpoint(),
+        clusterId);
   }
 
   @Override

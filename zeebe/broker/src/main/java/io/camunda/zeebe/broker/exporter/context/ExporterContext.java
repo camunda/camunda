@@ -27,6 +27,7 @@ public final class ExporterContext implements Context, AutoCloseable {
   private final Logger logger;
   private final Configuration configuration;
   private final int partitionId;
+  private final String clusterId;
   private final CompositeMeterRegistry meterRegistry;
   private final InstantSource clock;
 
@@ -36,11 +37,13 @@ public final class ExporterContext implements Context, AutoCloseable {
       final Logger logger,
       final Configuration configuration,
       final int partitionId,
+      final String clusterId,
       final MeterRegistry meterRegistry,
       final InstantSource clock) {
     this.logger = logger;
     this.configuration = configuration;
     this.partitionId = partitionId;
+    this.clusterId = clusterId;
     this.meterRegistry =
         MicrometerUtil.wrap(
             meterRegistry,
@@ -72,6 +75,11 @@ public final class ExporterContext implements Context, AutoCloseable {
   @Override
   public int getPartitionId() {
     return partitionId;
+  }
+
+  @Override
+  public String getClusterId() {
+    return clusterId;
   }
 
   public RecordFilter getFilter() {

@@ -88,6 +88,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterPositionsSendingSubject;
   private final List<String> exporterPositionsReceivingSubjects;
+  private final String clusterId;
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
   private ExporterStateDistributionService exporterDistributionService;
@@ -114,6 +115,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     name = context.getName();
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = logStream.getPartitionId();
+    clusterId = context.getClusterId();
     meterRegistry = context.getMeterRegistry();
     clock = context.getClock();
     containers =
@@ -123,6 +125,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                     new ExporterContainer(
                         descriptorEntry.getKey(),
                         partitionId,
+                        clusterId,
                         descriptorEntry.getValue(),
                         meterRegistry,
                         clock,
@@ -345,6 +348,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         new ExporterContainer(
             descriptor,
             partitionId,
+            clusterId,
             initializationInfo,
             meterRegistry,
             clock,
