@@ -44,6 +44,98 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);
+const PARAM_LOCATIONS = new Set(['path', 'query', 'header']);
+
+// Walks a request-body schema and collects the names of top-level
+// properties across composition keywords (allOf / oneOf / anyOf). The
+// union semantics for oneOf/anyOf are deliberately permissive: a
+// binding is accepted if any branch declares the property, because the
+// alternative would require the lint to know which branch the binding
+// targets — information that is not present in the annotation.
+//
+// Returns null when the schema cannot be walked at all (missing /
+// unresolved $ref / non-object). Callers treat null as "skip the
+// existence check for this body" rather than as "no properties exist",
+// which avoids false positives on per-file lint passes that cannot
+// resolve cross-file $refs.
+function collectTopLevelBodyProperties(schema, seen) {
+  if (!schema || typeof schema !== 'object') return null;
+  if (seen.has(schema)) return new Set();
+  seen.add(schema);
+  const props = new Set();
+  let walked = false;
+  if (schema.properties && typeof schema.properties === 'object') {
+    walked = true;
+    for (const k of Object.keys(schema.properties)) props.add(k);
+  }
+  for (const key of ['allOf', 'oneOf', 'anyOf']) {
+    if (!Array.isArray(schema[key])) continue;
+    for (const sub of schema[key]) {
+      const subProps = collectTopLevelBodyProperties(sub, seen);
+      if (subProps === null) continue;
+      walked = true;
+      for (const k of subProps) props.add(k);
+    }
+  }
+  return walked ? props : null;
+}
+
+// Collects the identifiers an annotation may legitimately reference on
+// the operation: path/query/header parameters from both the path-item
+// and operation level (operation overrides per OpenAPI 3.x), plus the
+// top-level body properties of every requestBody media type schema.
+//
+// Body state is tri-valued so callers can distinguish:
+//   hasRequestBody=false                     → no requestBody at all (hard
+//                                              fail for any body binding)
+//   hasRequestBody=true, bodyProps=null      → requestBody declared but
+//                                              schema unresolvable in this
+//                                              lint pass (silent skip — the
+//                                              bundled pass will catch it)
+//   hasRequestBody=true, bodyProps=Set(...)  → walked successfully (check
+//                                              membership)
+function collectAvailableMembers(pathItem, op) {
+  const members = {
+    path: new Set(),
+    query: new Set(),
+    header: new Set(),
+    hasRequestBody: false,
+    bodyProps: null,
+  };
+
+  const paramSources = [];
+  if (pathItem && Array.isArray(pathItem.parameters)) {
+    paramSources.push(...pathItem.parameters);
+  }
+  if (Array.isArray(op.parameters)) {
+    paramSources.push(...op.parameters);
+  }
+  for (const p of paramSources) {
+    if (!p || typeof p !== 'object') continue;
+    if (typeof p.name !== 'string' || typeof p.in !== 'string') continue;
+    if (!PARAM_LOCATIONS.has(p.in)) continue;
+    members[p.in].add(p.name);
+  }
+
+  const requestBody = op.requestBody;
+  if (requestBody && typeof requestBody === 'object') {
+    members.hasRequestBody = true;
+    const content = requestBody.content;
+    if (content && typeof content === 'object') {
+      const bodyProps = new Set();
+      let anyResolved = false;
+      for (const media of Object.values(content)) {
+        const sub = collectTopLevelBodyProperties(media?.schema, new WeakSet());
+        if (sub === null) continue;
+        anyResolved = true;
+        for (const k of sub) bodyProps.add(k);
+      }
+      if (anyResolved) members.bodyProps = bodyProps;
+    }
+  }
+
+  return members;
+}
 
 const REGISTRY_CANDIDATES = [
   // CI invokes spectral from the repo root.
@@ -141,6 +233,16 @@ module.exports = (input, _opts, _context) => {
     for (const [method, op] of Object.entries(pathItem)) {
       if (!HTTP_METHODS.has(method) || !op || typeof op !== 'object') continue;
 
+      // Lazily collected — only the first establishes/requires on the
+      // operation pays the cost of walking parameters and body schemas.
+      let availableMembers = null;
+      const members = () => {
+        if (availableMembers === null) {
+          availableMembers = collectAvailableMembers(pathItem, op);
+        }
+        return availableMembers;
+      };
+
       const est = op['x-semantic-establishes'];
       if (est && typeof est.kind === 'string') {
         established.add(est.kind);
@@ -206,6 +308,35 @@ module.exports = (input, _opts, _context) => {
             }
           }
         }
+
+        // Existence: every identifiedBy entry must reference a member
+        // that actually exists on the operation (camunda/camunda#52413).
+        if (Array.isArray(est.identifiedBy)) {
+          for (let i = 0; i < est.identifiedBy.length; i++) {
+            const item = est.identifiedBy[i];
+            if (!item || typeof item !== 'object') continue;
+            if (typeof item.in !== 'string' || typeof item.name !== 'string') continue;
+            const m = members();
+            if (item.in === 'body') {
+              if (!m.hasRequestBody) {
+                errors.push({
+                  message: `x-semantic-establishes.identifiedBy[${i}] on ${method.toUpperCase()} ${pathKey} references body member '${item.name}', but the operation declares no requestBody. Either add a requestBody with that property or move the identifier off the body.`,
+                  path: ['paths', pathKey, method, 'x-semantic-establishes', 'identifiedBy', i, 'name'],
+                });
+              } else if (m.bodyProps !== null && !m.bodyProps.has(item.name)) {
+                errors.push({
+                  message: `x-semantic-establishes.identifiedBy[${i}] on ${method.toUpperCase()} ${pathKey} references body member '${item.name}', but no requestBody media-type schema declares a top-level property of that name. Either add the property to the request body or fix the binding.`,
+                  path: ['paths', pathKey, method, 'x-semantic-establishes', 'identifiedBy', i, 'name'],
+                });
+              }
+            } else if (PARAM_LOCATIONS.has(item.in) && !m[item.in].has(item.name)) {
+              errors.push({
+                message: `x-semantic-establishes.identifiedBy[${i}] on ${method.toUpperCase()} ${pathKey} references ${item.in} parameter '${item.name}', but no such ${item.in} parameter is declared on the operation (or its path item). Add the parameter or fix the binding.`,
+                path: ['paths', pathKey, method, 'x-semantic-establishes', 'identifiedBy', i, 'name'],
+              });
+            }
+          }
+        }
       }
 
       const req = op['x-semantic-requires'];
@@ -226,6 +357,34 @@ module.exports = (input, _opts, _context) => {
             message: `Semantic kind '${req.kind}' is registered as 'shape: external-entity' and cannot be required directly. External entities have no producer in this API; reference them via a membership edge instead.`,
             path: ['paths', pathKey, method, 'x-semantic-requires', 'kind'],
           });
+        }
+
+        // Existence: every bind entry must reference a member that
+        // actually exists on the operation (camunda/camunda#52413).
+        if (req.bind && typeof req.bind === 'object') {
+          for (const [bindKey, binding] of Object.entries(req.bind)) {
+            if (!binding || typeof binding !== 'object') continue;
+            if (typeof binding.from !== 'string' || typeof binding.name !== 'string') continue;
+            const m = members();
+            if (binding.from === 'body') {
+              if (!m.hasRequestBody) {
+                errors.push({
+                  message: `x-semantic-requires.bind.${bindKey} on ${method.toUpperCase()} ${pathKey} references body member '${binding.name}', but the operation declares no requestBody. Either add a requestBody with that property or move the binding off the body.`,
+                  path: ['paths', pathKey, method, 'x-semantic-requires', 'bind', bindKey, 'name'],
+                });
+              } else if (m.bodyProps !== null && !m.bodyProps.has(binding.name)) {
+                errors.push({
+                  message: `x-semantic-requires.bind.${bindKey} on ${method.toUpperCase()} ${pathKey} references body member '${binding.name}', but no requestBody media-type schema declares a top-level property of that name. Either add the property to the request body or fix the binding.`,
+                  path: ['paths', pathKey, method, 'x-semantic-requires', 'bind', bindKey, 'name'],
+                });
+              }
+            } else if (PARAM_LOCATIONS.has(binding.from) && !m[binding.from].has(binding.name)) {
+              errors.push({
+                message: `x-semantic-requires.bind.${bindKey} on ${method.toUpperCase()} ${pathKey} references ${binding.from} parameter '${binding.name}', but no such ${binding.from} parameter is declared on the operation (or its path item). Add the parameter or fix the binding.`,
+                path: ['paths', pathKey, method, 'x-semantic-requires', 'bind', bindKey, 'name'],
+              });
+            }
+          }
         }
       }
     }

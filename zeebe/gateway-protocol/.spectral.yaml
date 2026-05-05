@@ -232,7 +232,7 @@ rules:
                   name: { type: string, minLength: 1 }
 
   verify-semantic-kinds-registered:
-    description: "Every `kind:` referenced by x-semantic-establishes / x-semantic-requires must appear in semantic-kinds.json, and every required kind must be established somewhere in the spec."
+    description: "Every `kind:` referenced by x-semantic-establishes / x-semantic-requires must appear in semantic-kinds.json, every required kind must be established somewhere in the spec, and every identifiedBy/bind member must reference a parameter or top-level requestBody property that actually exists on the operation."
     severity: error
     given: "$"
     message: "{{error}}"

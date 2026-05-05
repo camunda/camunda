@@ -59,3 +59,19 @@ paths:
     $ref: 'widgets.yaml#/paths/~1invalid~1external-things'
   /invalid/external-things/{externalThingId}:
     $ref: 'widgets.yaml#/paths/~1invalid~1external-things~1{externalThingId}'
+
+  # ── Invalid: binding existence (camunda/camunda#52413) ───────
+  /invalid/establishes-body-no-body:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-body-no-body'
+  /invalid/establishes-body-missing-prop:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-body-missing-prop'
+  /invalid/establishes-path-missing/{actuallyDeclared}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-path-missing~1{actuallyDeclared}'
+  /invalid/requires-query-missing:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-query-missing'
+  /invalid/requires-header-missing:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-header-missing'
+  /invalid/requires-body-missing-prop:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-body-missing-prop'
+  /valid/widgets-pathitem/{widgetId}:
+    $ref: 'widgets.yaml#/paths/~1valid~1widgets-pathitem~1{widgetId}'

@@ -259,6 +259,133 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
     });
   });
 
+  // ── Binding existence (camunda/camunda#52413) ────────────────
+  // The shape rules guarantee `{in,name,semanticType}` and `{from,name}`
+  // are well-formed. The existence check then verifies the named member
+  // actually exists on the operation. Class-scoped: one fixture per
+  // source locator (path / query / header / body) on each side
+  // (establishes / requires) plus the issue's "no requestBody at all"
+  // shape, so every category is exercised.
+  describe('verify-semantic-kinds-registered: binding existence', () => {
+    it('flags establishes binding to body when the operation declares no requestBody', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('establishesBodyNoBody') ||
+          e.message.includes('/invalid/establishes-body-no-body'),
+      );
+      assert.ok(
+        v.some((e) => /declares no requestBody/.test(e.message)),
+        JSON.stringify(v, null, 2),
+      );
+    });
+
+    it('flags establishes binding to a body member that no media-type schema declares', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('establishesBodyMissingProp') ||
+          e.message.includes('/invalid/establishes-body-missing-prop'),
+      );
+      assert.ok(
+        v.some(
+          (e) =>
+            /references body member 'widgetId'/.test(e.message) &&
+            /no requestBody media-type schema declares/.test(e.message),
+        ),
+        JSON.stringify(v, null, 2),
+      );
+    });
+
+    it('flags establishes binding to an undeclared path parameter', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('establishesPathMissing') ||
+          e.message.includes('/invalid/establishes-path-missing'),
+      );
+      assert.ok(
+        v.some(
+          (e) =>
+            /references path parameter 'widgetId'/.test(e.message) &&
+            /no such path parameter is declared/.test(e.message),
+        ),
+        JSON.stringify(v, null, 2),
+      );
+    });
+
+    it('flags requires binding to an undeclared query parameter', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('requiresQueryMissing') ||
+          e.message.includes('/invalid/requires-query-missing'),
+      );
+      assert.ok(
+        v.some(
+          (e) =>
+            /references query parameter 'widgetId'/.test(e.message) &&
+            /no such query parameter is declared/.test(e.message),
+        ),
+        JSON.stringify(v, null, 2),
+      );
+    });
+
+    it('flags requires binding to an undeclared header parameter', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('requiresHeaderMissing') ||
+          e.message.includes('/invalid/requires-header-missing'),
+      );
+      assert.ok(
+        v.some(
+          (e) =>
+            /references header parameter 'X-Widget-Id'/.test(e.message) &&
+            /no such header parameter is declared/.test(e.message),
+        ),
+        JSON.stringify(v, null, 2),
+      );
+    });
+
+    it('flags requires binding to a body member that no media-type schema declares', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('requiresBodyMissingProp') ||
+          e.message.includes('/invalid/requires-body-missing-prop'),
+      );
+      assert.ok(
+        v.some(
+          (e) =>
+            /references body member 'widgetId'/.test(e.message) &&
+            /no requestBody media-type schema declares/.test(e.message),
+        ),
+        JSON.stringify(v, null, 2),
+      );
+    });
+
+    it('honors path-item-level parameters (does not flag a path binding declared at path-item level)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('getWidgetPathItem') ||
+          e.message.includes('/valid/widgets-pathitem'),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+
+    it('does not flag the valid happy-path operations', () => {
+      const happy = [
+        'createWidget',
+        'createUser',
+        'getWidget',
+        'assignOwnerToWidget',
+        'searchOwnersForWidget',
+      ];
+      const v = registryViolations.filter(
+        (e) =>
+          /references body member|references path parameter|references query parameter|references header parameter/.test(
+            e.message,
+          ) && happy.some((op) => e.message.includes(op)),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+  });
+
   // ── Per-file pass: only the producer-existence cross-reference is gated ──
   // CI lints both the bundled entry (rest-api.yaml) and each domain file
   // independently. The cross-reference walk relies on every producer being

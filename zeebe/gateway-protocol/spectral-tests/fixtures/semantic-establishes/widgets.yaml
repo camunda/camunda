@@ -21,6 +21,15 @@ paths:
         kind: Widget
         identifiedBy:
           - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                widgetId: { type: string }
+              required: [widgetId]
       responses:
         '201':
           description: Created.
@@ -41,7 +50,7 @@ paths:
       x-semantic-requires:
         kind: Widget
         bind:
-          widgetId: { from: body, name: widgetId }
+          widgetId: { from: path, name: widgetId }
       responses:
         '200':
           description: OK.
@@ -60,6 +69,15 @@ paths:
         kind: User
         identifiedBy:
           - { in: body, name: username, semanticType: Username }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+              required: [username]
       responses:
         '201':
           description: Created.
@@ -414,6 +432,159 @@ paths:
         kind: ExternalThing
         bind:
           externalThingId: { from: path, name: externalThingId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Invalid: x-semantic-* binding-existence (camunda/camunda#52413) ──
+  # The semantic-establishes-shape rule validates the *shape* of identifiedBy
+  # entries; verify-semantic-kinds-registered now also verifies that each
+  # named member actually exists on the operation. One fixture per source
+  # locator (path / query / header / body) on each side (establishes /
+  # requires) covers the defect class, plus the issue's exact "body member
+  # but operation has no requestBody" example.
+
+  # 16. establishes binds to a body member, but the operation declares
+  #     no requestBody at all.
+  /invalid/establishes-body-no-body:
+    post:
+      operationId: establishesBodyNoBody
+      summary: Establishes from body with no requestBody
+      description: Should fail — body binding but no requestBody declared.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 17. establishes binds to a body member that the requestBody does not declare.
+  /invalid/establishes-body-missing-prop:
+    post:
+      operationId: establishesBodyMissingProp
+      summary: Establishes from body with missing property
+      description: Should fail — body declared but does not contain widgetId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+              required: [name]
+      responses:
+        '201':
+          description: Created.
+
+  # 18. establishes binds to a path parameter that the operation does not declare.
+  /invalid/establishes-path-missing/{actuallyDeclared}:
+    put:
+      operationId: establishesPathMissing
+      summary: Establishes from undeclared path parameter
+      description: Should fail — path binding to widgetId, but only actuallyDeclared exists.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: actuallyDeclared
+          in: path
+          required: true
+          description: The actually-declared parameter.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+      responses:
+        '204':
+          description: OK.
+
+  # 19. requires binds from a query parameter that the operation does not declare.
+  /invalid/requires-query-missing:
+    get:
+      operationId: requiresQueryMissing
+      summary: Requires from undeclared query parameter
+      description: Should fail — query binding but no such query parameter.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: query, name: widgetId }
+      responses:
+        '200':
+          description: OK.
+
+  # 20. requires binds from a header that the operation does not declare.
+  /invalid/requires-header-missing:
+    get:
+      operationId: requiresHeaderMissing
+      summary: Requires from undeclared header
+      description: Should fail — header binding but no such header parameter.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: header, name: X-Widget-Id }
+      responses:
+        '200':
+          description: OK.
+
+  # 21. requires binds from a body member that the requestBody does not declare.
+  /invalid/requires-body-missing-prop:
+    post:
+      operationId: requiresBodyMissingProp
+      summary: Requires from missing body property
+      description: Should fail — body declared but does not contain widgetId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: body, name: widgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Valid: path-item-level parameters honored ────────────────
+  # Path-item-level parameters apply to all operations on the path
+  # (OpenAPI 3.x). The existence check must honor them, not require the
+  # binding to find the parameter on the operation itself.
+  /valid/widgets-pathitem/{widgetId}:
+    parameters:
+      - name: widgetId
+        in: path
+        required: true
+        description: The widget id (declared at path-item level).
+        schema: { type: string }
+    get:
+      operationId: getWidgetPathItem
+      summary: Get widget via path-item parameter
+      description: Path parameter declared at path-item level, not on the operation.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: path, name: widgetId }
       responses:
         '200':
           description: OK.
