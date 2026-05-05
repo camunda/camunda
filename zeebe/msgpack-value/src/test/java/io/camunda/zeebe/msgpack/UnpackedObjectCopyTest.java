@@ -46,6 +46,29 @@ final class UnpackedObjectCopyTest {
   }
 
   @Test
+  void shouldCopyFromAnotherUnpackedObject() {
+    // given
+    final var source = new POJO();
+    source.setEnum(POJOEnum.BAR);
+    source.setLong(42L);
+    source.setInt(7);
+    source.setString(new UnsafeBuffer("hello".getBytes()));
+    source.nestedObject().setLong(99L);
+
+    final var target = new POJO();
+
+    // when
+    target.copyFrom(source);
+
+    // then
+    assertThat(target.getEnum()).isEqualTo(POJOEnum.BAR);
+    assertThat(target.getLong()).isEqualTo(42L);
+    assertThat(target.getInt()).isEqualTo(7);
+    assertThat(target.getString()).isEqualTo(new UnsafeBuffer("hello".getBytes()));
+    assertThat(target.nestedObject().getLong()).isEqualTo(99L);
+  }
+
+  @Test
   void shouldBeIndependentAfterCopy() {
     // given
     final var source = new POJO();

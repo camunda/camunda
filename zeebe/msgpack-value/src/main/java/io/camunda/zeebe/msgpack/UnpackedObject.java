@@ -9,6 +9,7 @@ package io.camunda.zeebe.msgpack;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -58,6 +59,15 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
   @Override
   public int getLength() {
     return getEncodedLength();
+  }
+
+  /**
+   * Resolves the otherwise ambiguous {@code copyFrom} overload for values that are both {@link
+   * BaseValue} and {@link BufferWriter}. Delegates to {@link BaseValue#copyFrom(BaseValue)} so
+   * subclasses such as {@code UnifiedRecordValue} keep their specialized copy behavior.
+   */
+  public void copyFrom(final UnpackedObject source) {
+    copyFrom((BaseValue) source);
   }
 
   @Override
