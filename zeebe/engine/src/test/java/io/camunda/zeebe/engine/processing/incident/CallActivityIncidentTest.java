@@ -16,10 +16,12 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -351,6 +353,82 @@ public final class CallActivityIncidentTest {
                 .limit(2))
         .extracting(Record::getIntent)
         .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+  }
+
+  // Regression test for https://github.com/camunda/camunda/issues/50014:
+  // when an incident is raised in the called process AFTER it has progressed past its
+  // first activity, the resulting INCIDENT.CREATED record must still expose the full
+  // call-hierarchy in elementInstancePath / callingElementPath / processDefinitionPath.
+  // Exporters rely on these fields to propagate `hasIncident` to the call activity FNI
+  // and to the parent PI; a truncated path leaves the call activity green in Operate.
+  @Test
+  public void shouldExposeFullCallHierarchyOnIncidentInChildProcessAfterFirstActivity() {
+    // given a child process with two service tasks: the first completes, the second fails
+    final var firstJobType = "first-" + Strings.newRandomValidBpmnId();
+    final var failingJobType = "failing-" + Strings.newRandomValidBpmnId();
+    final var childProcess =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .serviceTask("first", t -> t.zeebeJobType(firstJobType))
+            .serviceTask("failing", t -> t.zeebeJobType(failingJobType))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcess).deploy();
+
+    final long parentProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    final long callActivityInstanceKey =
+        getCallActivityInstance(parentProcessInstanceKey).getKey();
+
+    final long childProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(parentProcessInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getKey();
+
+    // advance the child past its first activity by completing the first job
+    ENGINE.job().ofInstance(childProcessInstanceKey).withType(firstJobType).complete();
+
+    // wait for the second job to be created, then fail it with no retries left
+    final Record<JobRecordValue> failingJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(childProcessInstanceKey)
+            .withType(failingJobType)
+            .getFirst();
+    final long failingElementInstanceKey = failingJob.getValue().getElementInstanceKey();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(childProcessInstanceKey)
+        .withType(failingJobType)
+        .withRetries(0)
+        .fail();
+
+    // then the engine emits an incident record for the leaf, but it must carry the full path
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(childProcessInstanceKey)
+            .getFirst();
+
+    final IncidentRecordValue value = incident.getValue();
+    assertThat(value.getProcessInstanceKey()).isEqualTo(childProcessInstanceKey);
+    assertThat(value.getElementInstanceKey()).isEqualTo(failingElementInstanceKey);
+    assertThat(value.getElementId()).isEqualTo("failing");
+
+    // elementInstancePath must contain BOTH levels of the call hierarchy. If the second
+    // entry is dropped, exporters lose the call-activity FNI key and the badge is missed.
+    assertThat(value.getElementInstancePath())
+        .as(
+            "elementInstancePath must include parent and child PI levels even when the child "
+                + "advanced past its first activity")
+        .containsExactly(
+            List.of(parentProcessInstanceKey, callActivityInstanceKey),
+            List.of(childProcessInstanceKey, failingElementInstanceKey));
+    assertThat(value.getCallingElementPath()).hasSize(1);
+    assertThat(value.getProcessDefinitionPath()).hasSize(2);
   }
 
   private Record<ProcessInstanceRecordValue> getCallActivityInstance(
