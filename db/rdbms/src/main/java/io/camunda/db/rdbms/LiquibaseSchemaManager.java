@@ -260,7 +260,7 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
    * </ul>
    */
   @VisibleForTesting
-  protected String resolveCurrentSchemaVersion(final Connection connection) {
+  protected String resolveCurrentSchemaVersion(final Connection connection) throws SQLException {
     final var prefix = getPrefix();
     final var versionFromTable = readSchemaVersion(connection, prefix);
     if (versionFromTable != null) {
@@ -282,42 +282,42 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
 
   /**
    * Reads the schema version from {@code RDBMS_SCHEMA_VERSION}. Returns {@code null} if the table
-   * does not exist, contains no rows, or if a SQL error occurs.
+   * does not exist or contains no rows. Propagates any unexpected {@link SQLException}.
    */
   @VisibleForTesting
-  protected String readSchemaVersion(final Connection connection, final String prefix) {
+  protected String readSchemaVersion(final Connection connection, final String prefix)
+      throws SQLException {
     final var tableName = prefix + SCHEMA_VERSION_TABLE;
+    if (!tableExists(connection, tableName)) {
+      return null;
+    }
     try (final var stmt = connection.prepareStatement("SELECT VERSION FROM " + tableName)) {
       stmt.setMaxRows(1);
       try (final var rs = stmt.executeQuery()) {
-        if (rs.next()) {
-          return rs.getString(1);
-        }
-        return null;
+        return rs.next() ? rs.getString(1) : null;
       }
-    } catch (final SQLException e) {
-      // Table does not exist or is not accessible.
-      return null;
     }
   }
 
-  /** Checks whether the given table exists in the database. Returns {@code false} on any error. */
+  /**
+   * Checks whether the given table exists in the database. Propagates any {@link SQLException} that
+   * is not a simple "table not found" condition so that unexpected errors (e.g. permission
+   * failures, broken connections) abort startup instead of being silently treated as a missing
+   * table.
+   */
   @VisibleForTesting
-  protected boolean tableExists(final Connection connection, final String tableName) {
-    try {
-      final var meta = connection.getMetaData();
-      // Try uppercase first (most databases), then as-is.
-      try (final var rs =
-          meta.getTables(null, null, tableName.toUpperCase(), new String[] {"TABLE"})) {
-        if (rs.next()) {
-          return true;
-        }
+  protected boolean tableExists(final Connection connection, final String tableName)
+      throws SQLException {
+    final var meta = connection.getMetaData();
+    // Try uppercase first (most databases store identifiers in upper case), then as-is.
+    try (final var rs =
+        meta.getTables(null, null, tableName.toUpperCase(), new String[] {"TABLE"})) {
+      if (rs.next()) {
+        return true;
       }
-      try (final var rs = meta.getTables(null, null, tableName, new String[] {"TABLE"})) {
-        return rs.next();
-      }
-    } catch (final SQLException e) {
-      return false;
+    }
+    try (final var rs = meta.getTables(null, null, tableName, new String[] {"TABLE"})) {
+      return rs.next();
     }
   }
 
