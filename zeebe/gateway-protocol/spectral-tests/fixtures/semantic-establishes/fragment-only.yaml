@@ -1,0 +1,35 @@
+# Fragment file (no `openapi:` at root) — mirrors the per-file CI pass over
+# the real spec's domain files (tenants.yaml, roles.yaml, etc.). The
+# verify-semantic-kinds-registered cross-reference walk must skip these
+# documents because producer ops live in sibling files that aren't visible
+# in this scope. Without the skip, edges binding User would falsely report
+# 'no operation establishes User'.
+
+paths:
+  /fragment/edges/{widgetId}/owners/{ownerId}:
+    put:
+      operationId: assignOwnerInFragment
+      summary: Edge in a fragment file
+      description: Edge whose endpoint Widget is established in a sibling file (not visible here).
+      x-semantic-establishes:
+        kind: WidgetOwnerMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+          - { in: path, name: ownerId,  semanticType: OwnerId }
+      responses:
+        '204':
+          description: Done.
+
+  /fragment/widgets/{widgetId}:
+    get:
+      operationId: getWidgetInFragment
+      summary: Consumer in a fragment file
+      description: Requires Widget which is established in a sibling file.
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '200':
+          description: Done.

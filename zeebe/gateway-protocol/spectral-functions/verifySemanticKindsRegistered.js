@@ -115,6 +115,15 @@ module.exports = (input, _opts, _context) => {
   const errors = [];
   const { names: registry, identifierToKinds, externalNames } = loadRegistry();
 
+  // The CI runs spectral twice: once on the bundled entry point
+  // (rest-api.yaml) and once per-file across the glob. The cross-reference
+  // walk below relies on every producer op being visible in `paths` — true
+  // for the bundled pass, false for the per-file pass (e.g. tenants.yaml
+  // has edges binding User, but createUser lives in users.yaml). Run only
+  // on documents that look like a complete OpenAPI root — fragment files
+  // omit the `openapi:` field.
+  if (typeof input?.openapi !== 'string') return errors;
+
   const paths = input?.paths;
   if (!paths || typeof paths !== 'object') return errors;
 

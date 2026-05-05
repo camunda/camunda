@@ -2,7 +2,7 @@
 
 const { describe, it, before } = require('node:test');
 const assert = require('node:assert/strict');
-const { lintFixture, filterByRule } = require('./helpers');
+const { lintFixture, lintFixtureFile, filterByRule } = require('./helpers');
 
 const FIXTURE = 'semantic-establishes';
 const SHAPE_RULE = 'semantic-establishes-shape';
@@ -256,6 +256,25 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
       );
       assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
       assert.match(v[0].message, /external-entity/);
+    });
+  });
+
+  // ── Per-file pass: skip on fragment files (no `openapi:` at root) ──
+  // CI lints both the bundled entry (rest-api.yaml) and each domain file
+  // independently. The cross-reference walk relies on every producer being
+  // visible in `paths`, which is true only for the bundled pass. Without
+  // the fragment skip, edges in tenants.yaml/roles.yaml/groups.yaml that
+  // bind User/MappingRule (whose producers live in users.yaml/
+  // mapping-rules.yaml) falsely report 'no operation establishes ...'.
+  describe('verify-semantic-kinds-registered: fragment skip', () => {
+    it('does not produce cross-reference errors when linting a fragment file standalone', () => {
+      const results = lintFixtureFile(FIXTURE, 'fragment-only.yaml');
+      const registry = filterByRule(results, REGISTRY_RULE);
+      assert.equal(
+        registry.length,
+        0,
+        `Fragment lint should produce no verify-semantic-kinds-registered errors. Got: ${JSON.stringify(registry, null, 2)}`,
+      );
     });
   });
 });
