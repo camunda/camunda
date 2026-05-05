@@ -14,7 +14,10 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 public class DbGroupState implements MutableGroupState {
 
@@ -59,5 +62,37 @@ public class DbGroupState implements MutableGroupState {
     this.groupId.wrapString(groupId);
     final var persistedGroup = groupColumnFamily.get(this.groupId, PersistedGroup::new);
     return Optional.ofNullable(persistedGroup);
+  }
+
+  @Override
+  public void forEachGroup(final BiFunction<String, PersistedGroup, Boolean> callback) {
+    groupColumnFamily.whileTrue((k, p) -> callback.apply(k.toString(), p));
+  }
+
+  @Override
+  public List<PersistedGroup> findByIdOrName(final String value) {
+    // First try to find by ID
+    final var byId = get(value);
+    if (byId.isPresent()) {
+      return List.of(byId.get());
+    }
+
+    // If not found by ID, search all groups by name
+    final List<PersistedGroup> matchingGroups = new ArrayList<>();
+    forEachGroup(
+        (id, group) -> {
+          if (value.equals(group.getName())) {
+            // Create a copy of the group to avoid reusing the same object reference
+            final var groupCopy = new PersistedGroup();
+            groupCopy.setGroupKey(group.getGroupKey());
+            groupCopy.setGroupId(group.getGroupId());
+            groupCopy.setDescription(group.getDescription());
+            groupCopy.setName(group.getName());
+            matchingGroups.add(groupCopy);
+          }
+          return true; // Continue iteration
+        });
+
+    return matchingGroups;
   }
 }

@@ -21,6 +21,8 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.qa.util.auth.GroupDefinition;
+import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -49,6 +51,19 @@ public class UserTaskProcessInstanceMigrationIT {
   @MultiDbTestApplication
   static final TestCamundaApplication STANDALONE_CAMUNDA =
       new TestCamundaApplication().withAuthorizationsDisabled();
+
+  private static final String GROUP_1_ID = "g1";
+  private static final String GROUP_2_ID = "g2";
+  private static final String GROUP_3_ID = "g3";
+  private static final String GROUP_4_ID = "g4";
+
+  @GroupDefinition private static final TestGroup GROUP_1 = new TestGroup(GROUP_1_ID, GROUP_1_ID);
+
+  @GroupDefinition private static final TestGroup GROUP_2 = new TestGroup(GROUP_2_ID, GROUP_2_ID);
+
+  @GroupDefinition private static final TestGroup GROUP_3 = new TestGroup(GROUP_3_ID, GROUP_3_ID);
+
+  @GroupDefinition private static final TestGroup GROUP_4 = new TestGroup(GROUP_4_ID, GROUP_4_ID);
 
   private static CamundaClient client;
   private static final String FROM_PROCESS_ID = "migration-user-task_v1";

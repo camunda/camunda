@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -74,6 +75,7 @@ public final class BpmnUserTaskBehavior {
   private final VariableState variableState;
   private final AsyncRequestState asyncRequestState;
   private final GlobalListenersState globalListenersState;
+  private final GroupState groupState;
   private final InstantSource clock;
 
   public BpmnUserTaskBehavior(
@@ -86,6 +88,7 @@ public final class BpmnUserTaskBehavior {
       final VariableState variableState,
       final AsyncRequestState asyncRequestState,
       final GlobalListenersState globalListenersState,
+      final GroupState groupState,
       final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -97,6 +100,7 @@ public final class BpmnUserTaskBehavior {
     this.variableState = variableState;
     this.asyncRequestState = asyncRequestState;
     this.globalListenersState = globalListenersState;
+    this.groupState = groupState;
     this.clock = clock;
   }
 
@@ -219,7 +223,48 @@ public final class BpmnUserTaskBehavior {
     if (candidateGroups == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateArrayOfStringsExpression(candidateGroups, scopeKey, tenantId);
+    return expressionBehavior
+        .evaluateArrayOfStringsExpression(candidateGroups, scopeKey, tenantId)
+        .map(this::resolveCandidateGroupNamesToIds);
+  }
+
+  /**
+   * Resolves candidate group names to group IDs. For each value:
+   *
+   * <ul>
+   *   <li>If it matches a group ID, keep it as-is
+   *   <li>If it matches a single group name, replace with that group's ID
+   *   <li>If it matches multiple group names (ambiguous), exclude it and log WARN
+   *   <li>If it doesn't match any group, exclude it and log WARN
+   * </ul>
+   *
+   * @param candidateGroups list of group IDs or names from BPMN
+   * @return list of resolved group IDs
+   */
+  private List<String> resolveCandidateGroupNamesToIds(final List<String> candidateGroups) {
+    if (candidateGroups == null || candidateGroups.isEmpty()) {
+      return candidateGroups;
+    }
+
+    final List<String> resolvedGroupIds = new ArrayList<>();
+    for (final String value : candidateGroups) {
+      final var matchingGroups = groupState.findByIdOrName(value);
+
+      if (matchingGroups.isEmpty()) {
+        LOGGER.warn(
+            "Candidate group '{}' not found. Please define this group in Identity or update the user task to use a valid group ID.",
+            value);
+      } else if (matchingGroups.size() > 1) {
+        LOGGER.warn(
+            "Multiple groups found with name '{}'. Please migrate this user task to use the specific group ID instead of the group name. Candidate group will be excluded.",
+            value);
+      } else {
+        // Single match - use the group ID
+        resolvedGroupIds.add(matchingGroups.get(0).getGroupId());
+      }
+    }
+
+    return resolvedGroupIds;
   }
 
   public Either<Failure, List<String>> evaluateCandidateUsersExpression(

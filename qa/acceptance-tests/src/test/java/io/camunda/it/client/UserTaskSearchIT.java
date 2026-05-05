@@ -22,6 +22,8 @@ import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.qa.util.auth.GroupDefinition;
+import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -51,6 +53,10 @@ class UserTaskSearchIT {
   private static OffsetDateTime defaultProcessTaskDate;
   private static final String LARGE_VAR_NAME = "largeVariable";
   private static final String LARGE_VALUE = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 10);
+
+  private static final String GROUP_ID = "group";
+
+  @GroupDefinition private static final TestGroup GROUP_1 = new TestGroup(GROUP_ID, GROUP_ID);
 
   private static CamundaClient camundaClient;
 
