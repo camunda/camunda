@@ -10,11 +10,10 @@ import {render, screen} from 'modules/testing-library';
 import {VariableFilter} from '.';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 
-beforeEach(() => {
-  variableFilterStore.reset();
-});
-
 describe('<VariableFilter />', () => {
+  beforeEach(() => {
+    variableFilterStore.reset();
+  });
   it('should show "Add conditions" label when no conditions are set', () => {
     render(<VariableFilter />);
 
@@ -65,7 +64,7 @@ describe('<VariableFilter />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should update store on apply', async () => {
+  it('should update conditions on apply', async () => {
     const {user} = render(<VariableFilter />);
 
     await user.click(screen.getByRole('button', {name: 'Add conditions'}));
@@ -89,7 +88,7 @@ describe('<VariableFilter />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should not update store on cancel', async () => {
+  it('should not update conditions on cancel', async () => {
     const {user} = render(<VariableFilter />);
 
     await user.click(screen.getByRole('button', {name: 'Add conditions'}));

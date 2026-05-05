@@ -10,27 +10,20 @@ import {render, screen} from 'modules/testing-library';
 import {VariableFilterModal} from './VariableFilterModal';
 import type {VariableCondition} from 'modules/stores/variableFilter';
 
-const renderModal = (
-  props: Partial<{
-    isOpen: boolean;
-    initialConditions: VariableCondition[];
-    onApply: (c: VariableCondition[]) => void;
-    onClose: () => void;
-  }> = {},
-) => {
-  return render(
-    <VariableFilterModal
-      isOpen={props.isOpen ?? true}
-      initialConditions={props.initialConditions ?? []}
-      onApply={props.onApply ?? vi.fn()}
-      onClose={props.onClose ?? vi.fn()}
-    />,
-  );
+const baseMockProps = {
+  isOpen: true,
+  initialConditions: [] as VariableCondition[],
+  onApply: vi.fn(),
+  onClose: vi.fn(),
 };
 
 describe('<VariableFilterModal />', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('should render one empty row when no initial conditions', () => {
-    renderModal();
+    render(<VariableFilterModal {...baseMockProps} />);
 
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(1);
   });
@@ -40,7 +33,9 @@ describe('<VariableFilterModal />', () => {
       {name: 'status', operator: 'equals', value: '"active"'},
       {name: 'count', operator: 'notEqual', value: '0'},
     ];
-    renderModal({initialConditions: conditions});
+    render(
+      <VariableFilterModal {...baseMockProps} initialConditions={conditions} />,
+    );
 
     const nameInputs = screen.getAllByPlaceholderText('Variable name');
     expect(nameInputs).toHaveLength(2);
@@ -49,33 +44,37 @@ describe('<VariableFilterModal />', () => {
   });
 
   it('should always enable Apply button', () => {
-    renderModal();
+    render(<VariableFilterModal {...baseMockProps} />);
 
     expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled();
   });
 
   it('should add a new row when Add condition is clicked', async () => {
-    const {user} = renderModal();
+    const {user} = render(<VariableFilterModal {...baseMockProps} />);
 
     await user.click(screen.getByRole('button', {name: 'Add condition'}));
 
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(2);
   });
 
-  it('should disable Add condition button at MAX_CONDITIONS rows', async () => {
+  it('should disable Add condition button when condition limit is reached', async () => {
     const conditions: VariableCondition[] = Array.from({length: 5}, (_, i) => ({
       name: `var${i}`,
       operator: 'equals' as const,
       value: `"val${i}"`,
     }));
-    renderModal({initialConditions: conditions});
+    render(
+      <VariableFilterModal {...baseMockProps} initialConditions={conditions} />,
+    );
 
     expect(screen.getByRole('button', {name: 'Add condition'})).toBeDisabled();
   });
 
   it('should call onApply with valid conditions stripped of id', async () => {
     const onApply = vi.fn();
-    const {user} = renderModal({onApply});
+    const {user} = render(
+      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
+    );
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -87,20 +86,16 @@ describe('<VariableFilterModal />', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-    expect(onApply).toHaveBeenCalledOnce();
-    const applied = onApply.mock.calls[0]![0] as VariableCondition[];
-    expect(applied).toHaveLength(1);
-    expect(applied[0]).toEqual({
-      name: 'status',
-      operator: 'equals',
-      value: '"active"',
-    });
-    expect(applied[0]).not.toHaveProperty('id');
+    expect(onApply).toHaveBeenCalledWith([
+      {name: 'status', operator: 'equals', value: '"active"'},
+    ]);
   });
 
   it('should call onClose when Cancel is clicked', async () => {
     const onClose = vi.fn();
-    const {user} = renderModal({onClose});
+    const {user} = render(
+      <VariableFilterModal {...baseMockProps} onClose={onClose} />,
+    );
 
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
@@ -109,7 +104,9 @@ describe('<VariableFilterModal />', () => {
 
   it('should accept exists operator without value as valid', async () => {
     const onApply = vi.fn();
-    const {user} = renderModal({onApply});
+    const {user} = render(
+      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
+    );
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -121,14 +118,16 @@ describe('<VariableFilterModal />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-    const applied = onApply.mock.calls[0]![0] as VariableCondition[];
-    expect(applied).toHaveLength(1);
-    expect(applied[0]).toEqual({name: 'myVar', operator: 'exists', value: ''});
+    expect(onApply).toHaveBeenCalledWith([
+      {name: 'myVar', operator: 'exists', value: ''},
+    ]);
   });
 
-  it('should accept doesNotExist operator without value as valid', async () => {
+  it('should accept "does not exist" operator without value as valid', async () => {
     const onApply = vi.fn();
-    const {user} = renderModal({onApply});
+    const {user} = render(
+      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
+    );
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -140,17 +139,13 @@ describe('<VariableFilterModal />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-    const applied = onApply.mock.calls[0]![0] as VariableCondition[];
-    expect(applied).toHaveLength(1);
-    expect(applied[0]).toEqual({
-      name: 'myVar',
-      operator: 'doesNotExist',
-      value: '',
-    });
+    expect(onApply).toHaveBeenCalledWith([
+      {name: 'myVar', operator: 'doesNotExist', value: ''},
+    ]);
   });
 
   it('should hide value field when operator is changed to exists', async () => {
-    const {user} = renderModal();
+    const {user} = render(<VariableFilterModal {...baseMockProps} />);
 
     await user.click(screen.getByRole('combobox', {name: 'Operator'}));
     await user.click(screen.getByText('exists'));
@@ -165,7 +160,9 @@ describe('<VariableFilterModal />', () => {
       {name: 'status', operator: 'equals', value: '"active"'},
       {name: 'count', operator: 'notEqual', value: '0'},
     ];
-    const {user} = renderModal({initialConditions: conditions});
+    const {user} = render(
+      <VariableFilterModal {...baseMockProps} initialConditions={conditions} />,
+    );
 
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(2);
 
@@ -180,7 +177,13 @@ describe('<VariableFilterModal />', () => {
   });
 
   it('should initialize with one empty row when opened with no initial conditions', () => {
-    renderModal({isOpen: true, initialConditions: []});
+    render(
+      <VariableFilterModal
+        {...baseMockProps}
+        isOpen={true}
+        initialConditions={[]}
+      />,
+    );
 
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(1);
     expect(screen.getAllByPlaceholderText('Variable name')[0]!).toHaveValue('');
@@ -188,7 +191,9 @@ describe('<VariableFilterModal />', () => {
 
   it('should show name error and keep modal open when name is empty on Apply', async () => {
     const onApply = vi.fn();
-    const {user} = renderModal({onApply});
+    const {user} = render(
+      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
+    );
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
@@ -201,7 +206,9 @@ describe('<VariableFilterModal />', () => {
 
   it('should show JSON error when value is not valid JSON on Apply', async () => {
     const onApply = vi.fn();
-    const {user} = renderModal({onApply});
+    const {user} = render(
+      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
+    );
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -219,7 +226,9 @@ describe('<VariableFilterModal />', () => {
 
   it('should not show JSON error for contains operator', async () => {
     const onApply = vi.fn();
-    const {user} = renderModal({onApply});
+    const {user} = render(
+      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
+    );
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -241,7 +250,7 @@ describe('<VariableFilterModal />', () => {
   });
 
   it('should clear error when user starts typing after a failed submit', async () => {
-    const {user} = renderModal();
+    const {user} = render(<VariableFilterModal {...baseMockProps} />);
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
     expect(screen.getByText('Variable name is required')).toBeInTheDocument();
@@ -257,7 +266,7 @@ describe('<VariableFilterModal />', () => {
   });
 
   it('should not show errors before a submit attempt', async () => {
-    const {user} = renderModal();
+    const {user} = render(<VariableFilterModal {...baseMockProps} />);
 
     await user.click(screen.getAllByPlaceholderText('Variable name')[0]!);
     await user.tab();
@@ -268,7 +277,7 @@ describe('<VariableFilterModal />', () => {
   });
 
   it('should clear errors when a row is deleted', async () => {
-    const {user} = renderModal();
+    const {user} = render(<VariableFilterModal {...baseMockProps} />);
 
     await user.click(screen.getByRole('button', {name: 'Add condition'}));
     await user.click(screen.getByRole('button', {name: 'Apply'}));
@@ -285,7 +294,9 @@ describe('<VariableFilterModal />', () => {
 
   it('should re-validate immediately when operator changes on a previously-failed row', async () => {
     const onApply = vi.fn();
-    const {user} = renderModal({onApply});
+    const {user} = render(
+      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
+    );
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -302,7 +313,9 @@ describe('<VariableFilterModal />', () => {
 
   it('should apply successfully when all conditions are valid', async () => {
     const onApply = vi.fn();
-    const {user} = renderModal({onApply});
+    const {user} = render(
+      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
+    );
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,

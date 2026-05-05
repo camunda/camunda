@@ -7,13 +7,11 @@
  */
 
 import styled from 'styled-components';
-import {IconButton as BaseIconButton, Modal as BaseModal} from '@carbon/react';
+import {IconButton as BaseIconButton} from '@carbon/react';
 import {styles} from '@carbon/elements';
 
-const Modal = styled(BaseModal)`
-  .cds--modal-content {
-    min-height: 350px;
-  }
+const ModalContent = styled.div`
+  min-height: 350px;
 `;
 
 const Description = styled.p`
@@ -48,7 +46,7 @@ const ConditionItem = styled.li`
 `;
 
 export {
-  Modal,
+  ModalContent,
   Description,
   FilterRow,
   ValueFieldContainer,
