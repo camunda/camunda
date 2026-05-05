@@ -198,6 +198,7 @@ camunda-platform:
       authentication:
         method: oidc
         oidc:
+          redirectUrl: https://{{ include "ingress.domain" . }}/orchestration
           secret:
             existingSecret: camunda-credentials
             existingSecretKey: identity-orchestration-client-token
