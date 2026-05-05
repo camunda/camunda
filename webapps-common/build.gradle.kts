@@ -8,7 +8,6 @@ plugins {
 
 dependencies {
     api(libs.jakarta.servlet.jakarta.servlet.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
 }
 

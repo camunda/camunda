@@ -109,6 +109,7 @@ dependencies {
     testImplementation(libs.org.glassfish.jersey.core.jersey.client)
     testImplementation(libs.org.glassfish.jersey.media.jersey.media.json.jackson)
     testImplementation(libs.org.wiremock.wiremock.standalone)
+    testImplementation(libs.org.apache.logging.log4j.log4j.core.test)
     testImplementation(project(":zeebe-qa-util"))
     testImplementation(project(":configuration"))
     testImplementation(project(":zeebe-broker"))
@@ -118,9 +119,28 @@ dependencies {
 group = "io.camunda.optimize"
 description = "Optimize Backend"
 
+val testSupport by sourceSets.creating {
+    java.srcDir("src/test/java")
+    java.srcDir("src/it/java")
+    resources.srcDir("src/test/resources")
+    resources.srcDir("src/it/resources")
+    compileClasspath += sourceSets["main"].output + configurations["testCompileClasspath"]
+    runtimeClasspath += output + compileClasspath + configurations["testRuntimeClasspath"]
+}
+
 val testsJar by tasks.registering(Jar::class) {
     archiveClassifier = "tests"
-    from(sourceSets["test"].output)
+    from(testSupport.output)
+}
+
+val tests by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    extendsFrom(configurations["testRuntimeClasspath"])
+}
+
+artifacts {
+    add("tests", testsJar)
 }
 
 (publishing.publications["maven"] as MavenPublication).artifact(testsJar)

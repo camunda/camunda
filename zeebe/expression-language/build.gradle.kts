@@ -17,9 +17,6 @@ dependencies {
     implementation(project(":zeebe-msgpack-core"))
     api(libs.io.micrometer.micrometer.commons)
     testImplementation(project(":zeebe-test-util"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
 }
 

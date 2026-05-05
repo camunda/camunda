@@ -9,8 +9,6 @@ plugins {
 dependencies {
     api(libs.org.camunda.feel.feel.engine)
     api(libs.org.scala.lang.scala.library)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.assertj.assertj.core)
 }
 

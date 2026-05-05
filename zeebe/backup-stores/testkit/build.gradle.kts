@@ -9,8 +9,6 @@ plugins {
 dependencies {
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-backup"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(project(":zeebe-protocol"))
     testImplementation(project(":zeebe-util"))

@@ -11,11 +11,10 @@ dependencies {
     implementation(project(":zeebe-msgpack-core"))
     implementation(project(":zeebe-util"))
     testImplementation(libs.junit.junit)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
+    testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.net.jqwik.jqwik.api)
 }
 

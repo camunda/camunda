@@ -47,10 +47,12 @@ dependencies {
     testImplementation(project(":camunda-search-client-plugin"))
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
     testImplementation(libs.org.junit.platform.junit.platform.suite)
+    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mock.server.mockserver.netty)
     testImplementation(libs.org.mock.server.mockserver.core)
     testImplementation(libs.org.mock.server.mockserver.client.java)
     testImplementation(libs.org.mockito.mockito.core)
+    testImplementation(libs.org.mockito.mockito.junit.jupiter)
 }
 
 group = "io.camunda.optimize"
@@ -65,7 +67,7 @@ val generateVersionJava by tasks.registering(Sync::class) {
     filter<org.apache.tools.ant.filters.ReplaceTokens>(
         "beginToken" to "\${",
         "endToken" to "}",
-        "tokens" to tokenMap
+        "tokens" to tokenMap,
     )
 }
 

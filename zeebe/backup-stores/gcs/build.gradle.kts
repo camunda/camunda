@@ -19,8 +19,8 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.core)
     implementation(libs.org.slf4j.slf4j.api)
+    testImplementation(project(":zeebe-backup-testkit"))
     testImplementation(project(":zeebe-backup-testkit", configuration = "tests"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.testcontainers.testcontainers)
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
@@ -28,6 +28,8 @@ dependencies {
     testImplementation(libs.com.github.docker.java.docker.java.api)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
+    testImplementation(libs.net.jqwik.jqwik)
+    testImplementation(libs.net.jqwik.jqwik.api)
     testImplementation(project(":zeebe-protocol"))
 }
 

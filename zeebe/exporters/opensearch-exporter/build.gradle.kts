@@ -35,8 +35,6 @@ dependencies {
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
     testImplementation(libs.org.opensearch.opensearch.testcontainers)
     testImplementation(libs.org.opensearch.client.opensearch.java)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(project(":zeebe-exporter-test"))
     testImplementation(project(":zeebe-broker"))
     testImplementation(project(":zeebe-msgpack-value"))

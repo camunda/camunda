@@ -23,8 +23,6 @@ dependencies {
     testImplementation(project(":zeebe-msgpack-core"))
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.junit.vintage.junit.vintage.engine)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.mockito.mockito.core)
@@ -32,7 +30,6 @@ dependencies {
     testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
     testImplementation(project(":zeebe-logstreams", configuration = "tests"))
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
 }
 
 description = "Zeebe Stream Platform"

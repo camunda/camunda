@@ -6,6 +6,28 @@ plugins {
     id("buildlogic.java-conventions")
 }
 
+val generatedTestSourcesDir = layout.buildDirectory.dir("generated-test-sources/java")
+val testSourceGenerator by sourceSets.creating {
+    java.srcDir("src/test/test-source-generator")
+    compileClasspath += sourceSets["main"].output + sourceSets["main"].compileClasspath
+    runtimeClasspath += output + compileClasspath
+}
+
+sourceSets.named("test") {
+    java.srcDir(generatedTestSourcesDir)
+    compileClasspath += testSourceGenerator.output
+    runtimeClasspath += testSourceGenerator.output
+}
+
+val generateJobWorkerPermutations by tasks.registering(JavaExec::class) {
+    dependsOn(tasks.named(testSourceGenerator.classesTaskName))
+    inputs.dir("src/test/test-source-generator")
+    outputs.dir(generatedTestSourcesDir)
+    classpath = testSourceGenerator.runtimeClasspath
+    mainClass.set("io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator")
+    args(generatedTestSourcesDir.get().asFile.absolutePath)
+}
+
 dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     api(project(":camunda-client-java"))
@@ -34,12 +56,17 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api.x1)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params.x1)
     testImplementation(libs.org.springframework.boot.spring.boot.jackson2)
     testImplementation(libs.org.springframework.boot.spring.boot.jackson)
     compileOnly(libs.org.springframework.spring.aop)
     compileOnly(libs.org.jboss.forge.roaster.roaster.api)
+
+    add(testSourceGenerator.implementationConfigurationName, libs.org.jboss.forge.roaster.roaster.api)
+    add(testSourceGenerator.runtimeOnlyConfigurationName, "org.jboss.forge.roaster:roaster-jdt:2.31.0.Final")
+}
+
+tasks.named("compileTestJava") {
+    dependsOn(generateJobWorkerPermutations)
 }
 
 description = "Camunda Spring Boot Starter"

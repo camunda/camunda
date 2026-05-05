@@ -28,8 +28,6 @@ dependencies {
     implementation(libs.io.micrometer.micrometer.core)
     implementation(libs.org.jeasy.easy.random.core)
     implementation(libs.io.github.classgraph.classgraph)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(project(":zeebe-protocol-asserts"))
 }
 

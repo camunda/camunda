@@ -10,8 +10,6 @@ dependencies {
     api(libs.org.liquibase.liquibase.core)
     api(libs.org.springframework.spring.core)
     api(libs.com.github.vertical.blank.sql.formatter)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.assertj.assertj.core)
 }
 

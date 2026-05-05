@@ -27,8 +27,6 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api.x1)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params.x1)
 }
 
 description = "Camunda Spring Boot 3 Starter"

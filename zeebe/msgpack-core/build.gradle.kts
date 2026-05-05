@@ -9,10 +9,10 @@ plugins {
 dependencies {
     api(libs.org.agrona.agrona)
     testImplementation(libs.org.msgpack.msgpack.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.junit.junit)
+    testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
     testImplementation(project(":zeebe-test-util"))
+    testImplementation(project(":zeebe-util"))
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.apache.commons.commons.lang3)
 }

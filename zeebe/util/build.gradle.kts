@@ -50,8 +50,6 @@ dependencies {
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.junit.vintage.junit.vintage.engine)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.net.bytebuddy.byte.buddy)

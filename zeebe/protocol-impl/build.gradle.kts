@@ -22,9 +22,6 @@ dependencies {
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     implementation(project(":zeebe-auth"))
     testImplementation(project(":zeebe-test-util"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.assertj.assertj.core)
 }
 

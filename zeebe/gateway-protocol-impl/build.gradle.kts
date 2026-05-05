@@ -21,7 +21,6 @@ dependencies {
     api(libs.io.grpc.grpc.stub)
     api(libs.com.google.guava.guava)
     api(libs.com.google.protobuf.protobuf.java)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.annotations)
     testImplementation(libs.org.assertj.assertj.core)

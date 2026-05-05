@@ -29,7 +29,6 @@ dependencies {
     testImplementation(libs.org.springframework.spring.test)
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.springframework.boot.spring.boot)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.apache.httpcomponents.core5.httpcore5)

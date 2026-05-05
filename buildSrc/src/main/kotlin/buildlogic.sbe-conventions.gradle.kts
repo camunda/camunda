@@ -71,12 +71,21 @@ dependencies {
     sbeTool("uk.co.real-logic:sbe-tool:1.37.1")
 }
 
-// Add generated sources to the source set
+// Add generated Java sources to the source set
 sourceSets {
     main {
         java {
             srcDir(layout.buildDirectory.dir("generated-sources/sbe"))
         }
+    }
+}
+
+// Package generated SBE IR and schema resources like Maven does.
+tasks.named<ProcessResources>("processResources") {
+    dependsOn(generateSbe)
+    from(layout.buildDirectory.dir("generated-sources")) {
+        include("**/*.sbeir")
+        include("**/*.xml")
     }
 }
 

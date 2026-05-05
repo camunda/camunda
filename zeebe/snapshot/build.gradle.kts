@@ -20,7 +20,7 @@ dependencies {
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.junit.junit)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
+    testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.mockito.mockito.core)
 }

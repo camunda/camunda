@@ -29,8 +29,6 @@ dependencies {
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
     testImplementation(libs.org.testcontainers.testcontainers.elasticsearch)
     testImplementation(libs.co.elastic.clients.elasticsearch.java)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(project(":zeebe-exporter-test"))
     testImplementation(project(":zeebe-broker"))
     testImplementation(project(":zeebe-msgpack-value"))

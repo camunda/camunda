@@ -20,7 +20,6 @@ dependencies {
     api(libs.org.springframework.spring.webmvc)
     api(libs.org.springframework.security.spring.security.core)
 
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)

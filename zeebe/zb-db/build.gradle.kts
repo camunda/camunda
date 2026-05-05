@@ -17,11 +17,10 @@ dependencies {
     api(libs.io.micrometer.micrometer.commons)
     api(libs.io.micrometer.micrometer.core)
     testImplementation(libs.junit.junit)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
+    testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.net.jqwik.jqwik.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
 }
 
 description = "Zeebe DB"

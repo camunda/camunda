@@ -9,6 +9,10 @@ plugins {
 dependencies {
     implementation(project(":camunda-spring-boot-starter"))
     testImplementation(project(":camunda-process-test-spring"))
+    testImplementation(project(":camunda-process-test-java"))
+    testImplementation(project(":camunda-process-test-json-test-cases"))
+    testImplementation(libs.org.springframework.boot.spring.boot.starter.test)
+    testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.springframework.spring.test)

@@ -26,7 +26,6 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
 
     testImplementation(project(":zeebe-bpmn-model"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
 }

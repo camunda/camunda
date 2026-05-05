@@ -11,8 +11,6 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-protocol-test-util"))
     testImplementation(project(":zeebe-protocol-asserts"))
