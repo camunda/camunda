@@ -11,11 +11,13 @@ import {AppHeader} from './AppHeader';
 import {PageContent} from './styled';
 import {observer} from 'mobx-react';
 import {C3Provider} from './C3Provider';
+import {Copilot} from 'modules/copilot';
 
 const Layout: React.FC = observer(() => {
   return (
     <C3Provider>
       <AppHeader />
+      <Copilot />
       <PageContent id="main-content">
         <Outlet />
       </PageContent>

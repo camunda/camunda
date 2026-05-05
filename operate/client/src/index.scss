@@ -12,6 +12,11 @@
 @use '@carbon/react/scss/themes';
 @use '@carbon/react/scss/theme';
 
+:root {
+  --copilot-brand-color: #fc5d0d;
+  --copilot-chat-sidecar-width: 416px;
+}
+
 * {
   box-sizing: border-box;
 }
