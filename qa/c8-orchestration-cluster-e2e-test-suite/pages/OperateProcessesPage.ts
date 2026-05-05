@@ -62,11 +62,14 @@ class OperateProcessesPage {
     rowIndex?: number,
     cellIndex?: number,
   ) => Locator;
+  readonly deleteBatchOperationButton: Locator;
+  readonly deleteBatchOperationConfirmButton: Locator;
   readonly batchOperationStartedMessage: (
     batchOperationType:
       | 'Resolve Incident'
       | 'Retry'
-      | 'Cancel Process Instance',
+      | 'Cancel Process Instance'
+      | 'Delete Process Instance',
   ) => Locator;
   readonly processCouldNotBeFoundMessage: Locator;
   readonly goToOperationDetailsButton: Locator;
@@ -189,11 +192,16 @@ class OperateProcessesPage {
         .nth(rowIndex)
         .getByRole('cell')
         .nth(cellIndex);
+    this.deleteButton = page.getByTestId('delete-batch-operation');
+    this.deleteBatchOperationConfirmButton = page
+      .getByRole('dialog')
+      .getByRole('button', {name: 'Delete'});
     this.batchOperationStartedMessage = (
       batchOperationType:
         | 'Resolve Incident'
         | 'Retry'
-        | 'Cancel Process Instance',
+        | 'Cancel Process Instance'
+        | 'Delete Process Instance',
     ) =>
       page.getByText(
         `Batch operation \"${batchOperationType}\" has been started`,
