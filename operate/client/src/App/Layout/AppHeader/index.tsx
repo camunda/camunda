@@ -166,7 +166,13 @@ const AppHeader: React.FC = observer(() => {
         {
           label: 'Copilot',
           icon: <Chat />,
-          action: toggleSidecar,
+          action: () => {
+            tracking.track({
+              eventName: 'navigation',
+              link: 'header-copilot',
+            });
+            toggleSidecar();
+          },
         },
       ]}
       navbar={{
