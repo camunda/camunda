@@ -102,7 +102,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
             .valueType(valueType);
 
     metadataDecorators.forEach(m -> m.accept(metadata));
-    metadata.getAuthorization().reset(); // don't expose the authorization data in the response
+    metadata.emptyAuthorization(); // don't expose the authorization data in the response
 
     final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);

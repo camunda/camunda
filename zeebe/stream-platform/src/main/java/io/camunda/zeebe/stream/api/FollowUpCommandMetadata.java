@@ -28,7 +28,7 @@ public record FollowUpCommandMetadata(
   public static class Builder {
     private long operationReference = RecordMetadataDecoder.operationReferenceNullValue();
     private long batchOperationReference = RecordMetadataDecoder.batchOperationReferenceNullValue();
-    private final AuthInfo authInfo = new AuthInfo();
+    private AuthInfo authInfo = AuthInfo.empty();
 
     public Builder operationReference(final long operationReference) {
       this.operationReference = operationReference;
@@ -41,12 +41,12 @@ public record FollowUpCommandMetadata(
     }
 
     public Builder authInfo(final AuthInfo authInfo) {
-      this.authInfo.copyFrom(authInfo);
+      this.authInfo = AuthInfo.of(authInfo);
       return this;
     }
 
     public Builder claims(final Map<String, Object> claims) {
-      authInfo.setClaims(claims);
+      authInfo = AuthInfo.ofClaims(claims);
       return this;
     }
 
