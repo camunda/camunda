@@ -508,6 +508,34 @@ jobs:
             echo "No downstream workflow run URL found." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Add debugging guidance on failure
+        if: failure()
+        run: |
+          DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
+          COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
+          {
+            echo ""
+            echo "### Debugging the SaaS E2E Failure"
+            echo ""
+            if [ -n "$DOWNSTREAM_URL" ]; then
+              echo "**Downstream run:** [$DOWNSTREAM_URL]($DOWNSTREAM_URL)"
+              echo ""
+              echo "**Artifacts (HTML report, screenshots, traces):** ${DOWNSTREAM_URL}#artifacts"
+            fi
+            echo ""
+            echo "**Quick steps:**"
+            echo "1. Click the downstream run link above"
+            echo "2. In the \`run-tests-saas-manual\` job, expand \`Run tests\` for log output"
+            echo "3. Download the \`playwright-report\` artifact → open \`index.html\`"
+            echo "4. Download \`test-results\` for screenshots and Playwright traces:"
+            echo "   \`\`\`"
+            echo "   npx playwright show-trace trace.zip"
+            echo "   \`\`\`"
+            echo "   Or upload to https://trace.playwright.dev"
+            echo ""
+            echo "**Full guide:** [CI Debugging Cookbook]($COOKBOOK_URL)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Observe build status
         if: always()
         continue-on-error: true
