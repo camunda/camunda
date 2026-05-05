@@ -969,10 +969,7 @@ DeploymentProcessResult:
 Used by the test generator to lift identifier values out of upstream
 responses and bind them into downstream `x-semantic-requires.bind`
 slots. Schema-level annotation; a single schema can provide multiple
-identifiers. The empty-array form (`x-semantic-provider: []`) is
-permitted and means "this is the canonical producer schema for the
-operation, but the identifiers are derived from elsewhere on the
-response" — see e.g. `MessageCorrelationResult`.
+identifiers.
 
 #### `x-semantic-client-minted` (identifier-level)
 
