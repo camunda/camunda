@@ -1,3 +1,6 @@
+# Nightly workflow that runs the Data Layer Nightly Tests against configurable branches.
+# test location: qa/acceptance-tests
+# owner: @camunda/data-layer
 name: Data Layer Nightly Tests
 
 on:
@@ -7,6 +10,10 @@ on:
   workflow_dispatch:
   pull_request:
     types: [labeled, synchronize]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   nightly-tests:
@@ -26,7 +33,6 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
-      actions: write
     steps:
       - uses: actions/checkout@v6
         with:
