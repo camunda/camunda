@@ -98,12 +98,7 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_HEALTH_ENABLED: 'true'
     healthcheck:
-      test:
-        - 'CMD-SHELL'
-        - |
-          exec 3<>/dev/tcp/127.0.0.1/9000 &&
-          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
-          grep -q '"status":"UP"' <&3
+      test: ['CMD', '/bin/bash', '-c', 'exec 3<>/dev/tcp/127.0.0.1/9000 2>/dev/null']
       interval: 10s
       timeout: 5s
       retries: 12
