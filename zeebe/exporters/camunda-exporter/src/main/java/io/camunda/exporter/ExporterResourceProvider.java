@@ -13,6 +13,7 @@ import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.store.IndexLocatorProvider;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -97,4 +98,6 @@ public interface ExporterResourceProvider {
    * @return {@link ExporterEntityCacheImpl} of {@link CachedFormEntity}
    */
   ExporterEntityCacheImpl<String, CachedFormEntity> getFormCache();
+
+  IndexLocatorProvider getIndexLocatorProvider();
 }

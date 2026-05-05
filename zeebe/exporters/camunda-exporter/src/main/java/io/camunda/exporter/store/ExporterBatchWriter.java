@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,15 +42,16 @@ public final class ExporterBatchWriter {
   private final Map<ValueType, List<ExportHandler>> handlers;
   private final BiConsumer<String, Error> customErrorHandler;
   private final CamundaExporterMetrics metrics;
-  private final IndexLocatorProvider indexLocatorProvider =
-      new FakeOrdinalIndexLocatorProvider(Set.of("operate-list-view-8.3.0_"));
+  private final IndexLocatorProvider indexLocatorProvider;
   private long totalMemoryEstimate = 0L;
 
   private ExporterBatchWriter(
       final Map<ValueType, List<ExportHandler>> handlers,
+      final IndexLocatorProvider indexLocatorProvider,
       final BiConsumer<String, Error> customErrorHandler,
       final CamundaExporterMetrics metrics) {
     this.handlers = new HashMap<>(handlers);
+    this.indexLocatorProvider = indexLocatorProvider;
     this.customErrorHandler = customErrorHandler;
     this.metrics = metrics;
   }
@@ -193,6 +193,7 @@ public final class ExporterBatchWriter {
   public static final class Builder {
     private final CamundaExporterMetrics metrics;
     private final Map<ValueType, List<ExportHandler>> handlers = new HashMap<>();
+    private IndexLocatorProvider indexLocatorProvider = new DefaultIndexLocatorProvider();
     private BiConsumer<String, Error> customErrorHandler = (ignored, error) -> {};
 
     private Builder(final CamundaExporterMetrics metrics) {
@@ -215,8 +216,13 @@ public final class ExporterBatchWriter {
       return this;
     }
 
+    public Builder withIndexLocatorProvider(final IndexLocatorProvider indexLocatorProvider) {
+      this.indexLocatorProvider = indexLocatorProvider;
+      return this;
+    }
+
     public ExporterBatchWriter build() {
-      return new ExporterBatchWriter(handlers, customErrorHandler, metrics);
+      return new ExporterBatchWriter(handlers, indexLocatorProvider, customErrorHandler, metrics);
     }
 
     public Builder withCustomErrorHandlers(final BiConsumer<String, Error> customErrorHandler) {
