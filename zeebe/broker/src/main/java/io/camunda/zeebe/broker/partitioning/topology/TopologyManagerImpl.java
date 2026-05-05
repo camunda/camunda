@@ -12,6 +12,7 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.engine.state.QueryService;
@@ -228,7 +229,10 @@ public final class TopologyManagerImpl extends Actor
           partitionLeaders.forEach(
               (partitionId, leader) ->
                   LogUtil.catchAndLog(
-                      LOG, () -> listener.onPartitionLeaderUpdated(partitionId, leader)));
+                      LOG,
+                      () ->
+                          listener.onPartitionLeaderUpdated(
+                              partitionId, resolveMemberIdInZone(leader.getNodeId()))));
         });
   }
 
@@ -257,8 +261,30 @@ public final class TopologyManagerImpl extends Actor
   }
 
   private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
+    final var leaderId = resolveMemberIdInZone(member.getNodeId());
     for (final TopologyPartitionListener listener : topologyPartitionListeners) {
-      LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, member));
+      LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, leaderId));
     }
+  }
+
+  private MemberId resolveMemberIdInZone(final int nodeId) {
+    return membershipService.getMembers().stream()
+        .map(Member::id)
+        .filter(
+            id -> {
+              try {
+                return id.isInZone(localBroker.zone()) && id.nodeIdx() == nodeId;
+              } catch (final Exception e) {
+                return false;
+              }
+            })
+        .findFirst()
+        .orElseGet(
+            () -> {
+              LOG.warn(
+                  "No cluster member found for nodeId {}; falling back to bare MemberId — zone-aware routing will not work for this member",
+                  nodeId);
+              return MemberId.from(Integer.toString(nodeId));
+            });
   }
 }
