@@ -1,3 +1,7 @@
+# description: Guards against accidentally downgrading the SaaS Elasticsearch version in .ci/db-versions.yml
+# test location: .ci/db-versions.yml
+# type: CI
+# owner: @camunda/data-layer
 ---
 # Guards against accidentally downgrading the SaaS Elasticsearch version in
 # .ci/db-versions.yml. The saas field drives which image is deployed to SaaS,
@@ -33,7 +37,7 @@ jobs:
           fetch-depth: 1
       - name: Install Python dependencies
         run: python3 -m pip install -q --disable-pip-version-check pyyaml==6.0.2
-      - name: Compare SaaS version against main
+      - name: Compare SaaS version against base branch
         env:
           # Add the label ci:allow-saas-downgrade to the PR to bypass this
           # check. Use only when intentionally downgrading — e.g. to retract
@@ -41,6 +45,7 @@ jobs:
           # once the PR is merged.
           SKIP_LABEL: "ci:allow-saas-downgrade"
           PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          BASE_BRANCH: ${{ github.base_ref }}
         shell: bash
         run: |
           if echo "$PR_LABELS" | python3 -c "import json,sys; sys.exit(0 if '$SKIP_LABEL' in json.load(sys.stdin) else 1)"; then
@@ -49,11 +54,15 @@ jobs:
           fi
 
           PR_VERSION=$(python3 -c "import yaml; print(yaml.safe_load(open('.ci/db-versions.yml'))['elasticsearch']['saas'])")
-          git fetch origin main --depth=1
-          MAIN_VERSION=$(git show origin/main:.ci/db-versions.yml | python3 -c "import yaml,sys; print(yaml.safe_load(sys.stdin)['elasticsearch']['saas'])")
+          git fetch origin "$BASE_BRANCH" --depth=1
+          if ! git show "origin/$BASE_BRANCH:.ci/db-versions.yml" > /dev/null 2>&1; then
+            echo ".ci/db-versions.yml does not exist on $BASE_BRANCH — nothing to compare against."
+            exit 0
+          fi
+          BASE_VERSION=$(git show "origin/$BASE_BRANCH:.ci/db-versions.yml" | python3 -c "import yaml,sys; print(yaml.safe_load(sys.stdin)['elasticsearch']['saas'])")
 
-          echo "SaaS version on main:    $MAIN_VERSION"
-          echo "SaaS version on this PR: $PR_VERSION"
+          echo "SaaS version on $BASE_BRANCH: $BASE_VERSION"
+          echo "SaaS version on this PR:      $PR_VERSION"
 
           python3 - <<EOF
           import sys
@@ -62,12 +71,12 @@ jobs:
               return tuple(int(x) for x in v.split("."))
 
           pr   = parse("$PR_VERSION")
-          main = parse("$MAIN_VERSION")
+          base = parse("$BASE_VERSION")
 
-          if pr < main:
-              print(f"::error::SaaS version decreased: {main} -> {pr}.")
+          if pr < base:
+              print(f"::error::SaaS version decreased: {base} -> {pr}.")
               print(f"::error::If this is intentional (e.g. security fix), add the label '$SKIP_LABEL' to the PR.")
               sys.exit(1)
 
-          print(f"OK: {main} -> {pr}")
+          print(f"OK: {base} -> {pr}")
           EOF

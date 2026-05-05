@@ -7,7 +7,6 @@ Run manually for testing:
 """
 
 import json
-import sys
 import yaml
 
 
