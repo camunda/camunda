@@ -82,6 +82,10 @@ paths:
       operationId: getUser
       summary: Get user
       description: Get a user by its username.
+      x-semantic-requires:
+        kind: User
+        bind:
+          username: { from: path, name: username }
       parameters:
         - name: username
           in: path
@@ -117,6 +121,10 @@ paths:
       operationId: updateUser
       summary: Update user
       description: Updates a user.
+      x-semantic-requires:
+        kind: User
+        bind:
+          username: { from: path, name: username }
       parameters:
         - name: username
           in: path
@@ -160,6 +168,10 @@ paths:
       operationId: deleteUser
       summary: Delete user
       description: Deletes a user.
+      x-semantic-requires:
+        kind: User
+        bind:
+          username: { from: path, name: username }
       parameters:
         - name: username
           in: path
