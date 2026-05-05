@@ -83,7 +83,7 @@ public final class RdbmsEntityCacheLoader<K, Entity, CachedEntity, Query>
     return toCachedEntities(search.apply(query));
   }
 
-  private Map<K, CachedEntity> toCachedEntities(final Iterable<Entity> entities) {
+  private @NotNull Map<K, CachedEntity> toCachedEntities(final Iterable<Entity> entities) {
     return java.util.stream.StreamSupport.stream(entities.spliterator(), false)
         .collect(Collectors.toMap(keyExtractor, mapper));
   }
