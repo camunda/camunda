@@ -349,6 +349,56 @@ public class CamundaProcessTestContextIT {
   }
 
   @Test
+  void shouldCompleteJobWithVariableMapper() {
+    // given
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variables(Collections.singletonMap("id", 1))
+            .send()
+            .join();
+
+    // when
+    processTestContext.completeJob(
+        "test",
+        inputVars -> {
+          final int id = ((Number) inputVars.get("id")).intValue();
+          return Collections.singletonMap("user", id == 1 ? "Alice" : "Bob");
+        });
+
+    // then
+    assertThatProcessInstance(processInstanceEvent).isCompleted();
+    assertThatProcessInstance(processInstanceEvent).hasVariable("user", "Alice");
+  }
+
+  @Test
+  void shouldCompleteUserTaskWithVariableMapper() {
+    // given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variables(Collections.singletonMap("id", 2))
+            .send()
+            .join();
+
+    // when
+    processTestContext.completeUserTask(
+        "user-task-1",
+        inputVars -> {
+          final int id = ((Number) inputVars.get("id")).intValue();
+          return Collections.singletonMap("user", id == 1 ? "Alice" : "Bob");
+        });
+
+    // then
+    assertThatProcessInstance(processInstanceEvent).isCompleted();
+    assertThatProcessInstance(processInstanceEvent).hasVariable("user", "Bob");
+  }
+
+  @Test
   void shouldFindUserTaskByElementId() {
     // Given
     final long processDefinitionKey = deployProcessModel(processModelWithUserTask());

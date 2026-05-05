@@ -37,6 +37,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -62,8 +63,12 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -336,6 +341,54 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void completeJob(
+      final String jobType,
+      final Function<Map<String, Object>, Map<String, Object>> variableMapper) {
+    completeJob(JobSelectors.byJobType(jobType), variableMapper);
+  }
+
+  @Override
+  public void completeJob(
+      final JobSelector jobSelector,
+      final Function<Map<String, Object>, Map<String, Object>> variableMapper) {
+    Objects.requireNonNull(variableMapper, "variableMapper must not be null");
+    final CamundaClient client = createClient();
+    final AtomicReference<Map<String, Object>> outputVariablesRef = new AtomicReference<>();
+
+    awaitJob(
+        jobSelector,
+        client,
+        job -> {
+          Map<String, Object> outputVariables = outputVariablesRef.get();
+          if (outputVariables == null) {
+            final Map<String, Object> inputVariables =
+                readInputVariables(
+                    client,
+                    jobSelector.describe(),
+                    "complete job",
+                    job.getProcessInstanceKey(),
+                    job.getElementInstanceKey());
+            outputVariables = variableMapper.apply(inputVariables);
+            if (outputVariables == null) {
+              throw new AssertionError(
+                  String.format(
+                      "Expected to complete job [%s] but the variableMapper returned null.",
+                      jobSelector.describe()));
+            }
+            outputVariablesRef.set(outputVariables);
+          }
+
+          LOGGER.debug(
+              "Mock: Complete job [{}, jobKey: '{}'] with variables {} from variableMapper",
+              jobSelector.describe(),
+              job.getJobKey(),
+              outputVariables);
+
+          client.newCompleteCommand(job.getJobKey()).variables(outputVariables).send().join();
+        });
+  }
+
+  @Override
   public void throwBpmnErrorFromJob(final String jobType, final String errorCode) {
     throwBpmnErrorFromJob(JobSelectors.byJobType(jobType), errorCode);
   }
@@ -477,6 +530,58 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
             client.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
           }
+        });
+  }
+
+  @Override
+  public void completeUserTask(
+      final String elementId,
+      final Function<Map<String, Object>, Map<String, Object>> variableMapper) {
+    completeUserTask(UserTaskSelectors.byElementId(elementId), variableMapper);
+  }
+
+  @Override
+  public void completeUserTask(
+      final UserTaskSelector userTaskSelector,
+      final Function<Map<String, Object>, Map<String, Object>> variableMapper) {
+    Objects.requireNonNull(variableMapper, "variableMapper must not be null");
+    final CamundaClient client = createClient();
+    final AtomicReference<Map<String, Object>> outputVariablesRef = new AtomicReference<>();
+
+    awaitUserTask(
+        userTaskSelector,
+        client,
+        userTask -> {
+          Map<String, Object> outputVariables = outputVariablesRef.get();
+          if (outputVariables == null) {
+            final Map<String, Object> inputVariables =
+                readInputVariables(
+                    client,
+                    userTaskSelector.describe(),
+                    "complete user task",
+                    userTask.getProcessInstanceKey(),
+                    userTask.getElementInstanceKey());
+            outputVariables = variableMapper.apply(inputVariables);
+            if (outputVariables == null) {
+              throw new AssertionError(
+                  String.format(
+                      "Expected to complete user task [%s] but the variableMapper returned null.",
+                      userTaskSelector.describe()));
+            }
+            outputVariablesRef.set(outputVariables);
+          }
+
+          LOGGER.debug(
+              "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {} from variableMapper",
+              userTaskSelector.describe(),
+              userTask.getUserTaskKey(),
+              outputVariables);
+
+          client
+              .newCompleteUserTaskCommand(userTask.getUserTaskKey())
+              .variables(outputVariables)
+              .send()
+              .join();
         });
   }
 
@@ -722,6 +827,62 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
               job.ifPresent(jobConsumer);
             });
+  }
+
+  /**
+   * Reads the variables visible to an element by querying the process-instance and element-local
+   * scopes via the Search API and merging them, with local values shadowing global ones. Truncated
+   * values are rejected because they cannot be reliably deserialized.
+   */
+  private Map<String, Object> readInputVariables(
+      final CamundaClient client,
+      final String selectorDescription,
+      final String operation,
+      final long processInstanceKey,
+      final long elementInstanceKey) {
+
+    final List<Variable> variables =
+        client
+            .newVariableSearchRequest()
+            .filter(filter -> filter.processInstanceKey(processInstanceKey))
+            .send()
+            .join()
+            .items();
+
+    final Map<String, Variable> bestByName = new HashMap<>();
+    for (final Variable variable : variables) {
+      final Long scopeKey = variable.getScopeKey();
+      if (scopeKey == null) {
+        continue;
+      }
+      final boolean isLocal = scopeKey == elementInstanceKey;
+      final boolean isGlobal = scopeKey == processInstanceKey;
+      if (!isLocal && !isGlobal) {
+        // intermediate subprocess scopes are not part of v1 of this feature
+        continue;
+      }
+      final Variable existing = bestByName.get(variable.getName());
+      if (existing == null || (!isLocalScope(existing, elementInstanceKey) && isLocal)) {
+        bestByName.put(variable.getName(), variable);
+      }
+    }
+
+    final Map<String, Object> result = new HashMap<>();
+    for (final Variable variable : bestByName.values()) {
+      if (Boolean.TRUE.equals(variable.isTruncated())) {
+        throw new AssertionError(
+            String.format(
+                "Expected to %s [%s] but variable '%s' is truncated.",
+                operation, selectorDescription, variable.getName()));
+      }
+      result.put(variable.getName(), jsonMapper.fromJson(variable.getValue(), Object.class));
+    }
+    return result;
+  }
+
+  private static boolean isLocalScope(final Variable variable, final long elementInstanceKey) {
+    final Long scopeKey = variable.getScopeKey();
+    return scopeKey != null && scopeKey == elementInstanceKey;
   }
 
   private Optional<Job> findJob(final JobSelector jobSelector, final CamundaClient client) {
