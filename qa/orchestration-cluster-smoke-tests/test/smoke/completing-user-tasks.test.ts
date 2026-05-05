@@ -16,7 +16,7 @@ import {expect, test} from '../test.ts';
 test.describe('Completing user-tasks', {tag: '@tasklist'}, () => {
   let process: DeploymentProcessResult;
 
-  test.beforeAll('Deploy resources', async ({camunda}) => {
+  test.beforeAll('deploy resources', async ({camunda}) => {
     process = await deployProcess(camunda, 'signup_flow.bpmn', [
       'signup_form.form',
     ]);
