@@ -115,8 +115,7 @@ ifeq ($(secondary_storage),elasticsearch)
     --namespace $(namespace) \
     --version $(prometheus_elasticsearch_exporter_chart_version) \
     --wait --timeout 5m0s \
-    -f prometheus-elasticsearch-exporter-values.yaml \
-    --set es.uri="http://$(namespace)-elasticsearch:9200"
+    -f prometheus-elasticsearch-exporter-values.yaml
 else
 	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
