@@ -68,5 +68,24 @@ public class AnalyticsExporterConfig {
       throw new IllegalArgumentException(
           "Analytics exporter is enabled but no endpoint is configured");
     }
+    try {
+      Duration.parse(pushInterval);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Invalid pushInterval: " + pushInterval, e);
+    }
+    if (maxQueueSize <= 0) {
+      throw new IllegalArgumentException("maxQueueSize must be positive, got: " + maxQueueSize);
+    }
+    if (maxBatchSize <= 0) {
+      throw new IllegalArgumentException("maxBatchSize must be positive, got: " + maxBatchSize);
+    }
+    if (maxBatchSize > maxQueueSize) {
+      throw new IllegalArgumentException(
+          "maxBatchSize ("
+              + maxBatchSize
+              + ") must not exceed maxQueueSize ("
+              + maxQueueSize
+              + ")");
+    }
   }
 }
