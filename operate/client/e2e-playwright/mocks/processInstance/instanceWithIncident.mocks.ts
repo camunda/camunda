@@ -25,6 +25,7 @@ const instanceWithIncident: InstanceMock = {
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
   },
   callHierarchy: [
     {

@@ -176,6 +176,7 @@ const orderProcessInstance: {
       parentElementInstanceKey: null,
       rootProcessInstanceKey: null,
       tags: [],
+      businessId: null,
     },
     callHierarchy: [],
     elementInstances: {
@@ -379,6 +380,7 @@ const orderProcessInstance: {
       parentElementInstanceKey: null,
       rootProcessInstanceKey: null,
       tags: [],
+      businessId: null,
     },
     callHierarchy: [],
     elementInstances: {
@@ -587,6 +589,7 @@ const orderProcessInstance: {
       parentElementInstanceKey: null,
       rootProcessInstanceKey: null,
       tags: [],
+      businessId: null,
     },
     callHierarchy: [],
     elementInstances: {
