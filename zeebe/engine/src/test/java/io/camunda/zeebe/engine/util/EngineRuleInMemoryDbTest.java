@@ -24,15 +24,15 @@ public final class EngineRuleInMemoryDbTest {
   private static final String PROCESS_ID = "process";
 
   @Rule
-  public final EngineRule engine = EngineRule.singlePartition(DefaultZeebeDbFactory.inMemoryFactory());
+  public final EngineRule engine =
+      EngineRule.singlePartition(DefaultZeebeDbFactory.inMemoryFactory());
 
   @Test
   public void shouldRecoverDeployedProcessFromSnapshotWithInMemoryDb() {
     // given
     engine
         .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
         .deploy();
 
     // when

@@ -87,7 +87,9 @@ public class BinaryValue extends BaseValue {
   @Override
   public void copyFrom(final BaseValue source) {
     final BinaryValue src = (BinaryValue) source;
-    wrap(src.data, 0, src.length);
+    final byte[] copy = new byte[src.length];
+    src.data.getBytes(0, copy, 0, src.length);
+    wrap(new UnsafeBuffer(copy), 0, src.length);
   }
 
   @Override
