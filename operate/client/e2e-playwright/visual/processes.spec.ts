@@ -323,6 +323,58 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('optional filters visible (part 3)', async ({
+    page,
+    processesPage,
+    processesPage: {filtersPanel},
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'panelStates',
+        JSON.stringify({
+          isOperationsCollapsed: false,
+        }),
+      );
+    });
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processDefinitions: mockProcessDefinitions,
+        batchOperations: mockBatchOperations,
+        processInstances: {
+          page: mockProcessInstances.page,
+          items: mockProcessInstances.items.map((instance, i) => ({
+            ...instance,
+            businessId: `order-${i}`,
+          })),
+        },
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
+        statistics: mockStatistics,
+        processXml: mockProcessXml,
+      }),
+    );
+
+    await processesPage.gotoProcessesPage({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+      },
+    });
+
+    await filtersPanel.displayOptionalFilter('Business ID');
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('data table toolbar visible', async ({page, processesPage}) => {
     await page.route(
       URL_API_PATTERN,

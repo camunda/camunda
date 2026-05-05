@@ -287,6 +287,7 @@ describe('Optional Filters', () => {
     expect(screen.getByLabelText(/^start date range$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^end date range$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^business id$/i)).toBeInTheDocument();
 
     await removeOptionalFilter({
       user,
