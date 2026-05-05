@@ -25,6 +25,7 @@ import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.EvaluateExpressionResponseImpl;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ExpressionEvaluationRequest;
 import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
 import java.time.Duration;
@@ -70,6 +71,18 @@ public class EvaluateExpressionCommandImpl
   }
 
   @Override
+  public EvaluateExpressionCommandStep2 processInstanceKey(final long processInstanceKey) {
+    request.setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
+    return this;
+  }
+
+  @Override
+  public EvaluateExpressionCommandStep2 elementInstanceKey(final long elementInstanceKey) {
+    request.setElementInstanceKey(ParseUtil.keyToString(elementInstanceKey));
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<EvaluateExpressionResponse> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -78,6 +91,11 @@ public class EvaluateExpressionCommandImpl
 
   @Override
   public CamundaFuture<EvaluateExpressionResponse> send() {
+    if (request.getProcessInstanceKey() != null && request.getElementInstanceKey() != null) {
+      throw new IllegalStateException(
+          "Expected to evaluate expression with either processInstanceKey or elementInstanceKey, "
+              + "but both were set. These fields are mutually exclusive.");
+    }
     final HttpCamundaFuture<EvaluateExpressionResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/expression/evaluation",
