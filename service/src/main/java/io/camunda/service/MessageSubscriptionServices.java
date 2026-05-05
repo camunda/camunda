@@ -44,35 +44,42 @@ public class MessageSubscriptionServices
 
   @Override
   public SearchQueryResult<MessageSubscriptionEntity> search(
-      final MessageSubscriptionQuery query, final CamundaAuthentication authentication) {
+      final MessageSubscriptionQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             searchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchMessageSubscriptions(query));
   }
 
   public MessageSubscriptionEntity getByKey(
-      final long key, final CamundaAuthentication authentication) {
+      final long key, final CamundaAuthentication authentication, final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             searchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .getMessageSubscription(key));
   }
 
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity> searchCorrelated(
-      final CorrelatedMessageSubscriptionQuery query, final CamundaAuthentication authentication) {
+      final CorrelatedMessageSubscriptionQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             searchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchCorrelatedMessageSubscriptions(query));
   }
 }

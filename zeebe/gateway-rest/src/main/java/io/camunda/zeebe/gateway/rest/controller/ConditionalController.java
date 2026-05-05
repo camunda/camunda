@@ -15,6 +15,7 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
@@ -42,16 +43,21 @@ public class ConditionalController {
 
   @CamundaPostMapping(path = "/evaluation")
   public CompletableFuture<ResponseEntity<Object>> evaluate(
-      @RequestBody final ConditionalEvaluationInstruction request) {
+      @RequestBody final ConditionalEvaluationInstruction request,
+      @PhysicalTenant final String physicalTenantId) {
     return RequestMapper.toEvaluateConditionalRequest(request, multiTenancyCfg.isChecksEnabled())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateConditionalEvent);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> evaluateConditionalEvent(req, physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> evaluateConditionalEvent(
-      final EvaluateConditionalRequest createRequest) {
+      final EvaluateConditionalRequest createRequest, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> conditionalServices.evaluateConditional(createRequest, authentication),
+        () ->
+            conditionalServices.evaluateConditional(
+                createRequest, authentication, physicalTenantId),
         ResponseMapper::toConditionalEvaluationResponse,
         HttpStatus.OK);
   }

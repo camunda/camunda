@@ -19,4 +19,6 @@ public interface AuthorizationSearchClient {
   SearchQueryResult<AuthorizationEntity> searchAuthorizations(AuthorizationQuery filter);
 
   AuthorizationSearchClient withSecurityContext(SecurityContext securityContext);
+
+  AuthorizationSearchClient withPhysicalTenant(String physicalTenant);
 }

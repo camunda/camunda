@@ -131,9 +131,9 @@ public class PhysicalTenantSearchClientReadersConfiguration {
 
   /**
    * Same source-of-truth as {@link #physicalTenantResolver(TenantConnectConfigResolver)} but
-   * exposed via the MCP gateway's local {@link io.camunda.gateway.mcp.context.PhysicalTenantResolver}
-   * type so the {@code gateway-mcp} module can validate {@code
-   * /mcp/physical-tenants/{physicalTenantId}/...} requests without depending on
+   * exposed via the MCP gateway's local {@link
+   * io.camunda.gateway.mcp.context.PhysicalTenantResolver} type so the {@code gateway-mcp} module
+   * can validate {@code /mcp/physical-tenants/{physicalTenantId}/...} requests without depending on
    * {@code zeebe-gateway-rest}.
    */
   @Bean

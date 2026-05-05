@@ -90,9 +90,9 @@ public class McpGatewayConfiguration {
 
   /**
    * Filter that resolves the {@code physicalTenantId} from the MCP request URI ({@code
-   * /mcp/physical-tenants/{physicalTenantId}/<server>}), validates it against the configured
-   * {@link PhysicalTenantResolver}, exposes it via {@link PhysicalTenantContext}, and rewrites
-   * the URI to the unprefixed MCP path so the existing transport router functions match.
+   * /mcp/physical-tenants/{physicalTenantId}/<server>}), validates it against the configured {@link
+   * PhysicalTenantResolver}, exposes it via {@link PhysicalTenantContext}, and rewrites the URI to
+   * the unprefixed MCP path so the existing transport router functions match.
    *
    * <p>Mirrors the REST {@code PhysicalTenantInterceptor} for {@code /v2/...} routes. Registered
    * with the highest precedence so the rewritten URI is visible to downstream filters (including

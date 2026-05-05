@@ -52,29 +52,37 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   @Override
   public SearchQueryResult<TenantEntity> search(
-      final TenantQuery query, final CamundaAuthentication authentication) {
+      final TenantQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             tenantSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, TENANT_READER_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchTenants(query));
   }
 
   public SearchQueryResult<TenantMemberEntity> searchMembers(
-      final TenantMemberQuery query, final CamundaAuthentication authentication) {
+      final TenantMemberQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             tenantSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, TENANT_READER_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchTenantMembers(query));
   }
 
   public CompletableFuture<TenantRecord> createTenant(
-      final TenantRequest request, final CamundaAuthentication authentication) {
+      final TenantRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerTenantCreateRequest()
             .setTenantId(request.tenantId())
@@ -84,7 +92,9 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   public CompletableFuture<TenantRecord> updateTenant(
-      final TenantRequest request, final CamundaAuthentication authentication) {
+      final TenantRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerTenantUpdateRequest(request.tenantId())
             .setName(request.name())
@@ -93,12 +103,16 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   public CompletableFuture<TenantRecord> deleteTenant(
-      final String tenantId, final CamundaAuthentication authentication) {
+      final String tenantId,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(new BrokerTenantDeleteRequest(tenantId), authentication);
   }
 
   public CompletableFuture<TenantRecord> addMember(
-      final TenantMemberRequest request, final CamundaAuthentication authentication) {
+      final TenantMemberRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createAddRequest()
             .setTenantId(request.tenantId())
@@ -107,7 +121,9 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   public CompletableFuture<TenantRecord> removeMember(
-      final TenantMemberRequest request, final CamundaAuthentication authentication) {
+      final TenantMemberRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createRemoveRequest()
             .setTenantId(request.tenantId())
@@ -117,15 +133,20 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public List<TenantEntity> getTenantsByMemberTypeAndMemberIds(
       final Map<EntityType, Set<String>> memberTypesToMemberIds,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return search(
             TenantQuery.of(
                 q -> q.filter(f -> f.memberIdsByType(memberTypesToMemberIds)).unlimited()),
-            authentication)
+            authentication,
+            physicalTenantId)
         .items();
   }
 
-  public TenantEntity getById(final String tenantId, final CamundaAuthentication authentication) {
+  public TenantEntity getById(
+      final String tenantId,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             tenantSearchClient
@@ -133,6 +154,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
                     securityContextProvider.provideSecurityContext(
                         authentication,
                         Authorization.withAuthorization(TENANT_READER_AUTHORIZATION, tenantId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getTenant(tenantId));
   }
 

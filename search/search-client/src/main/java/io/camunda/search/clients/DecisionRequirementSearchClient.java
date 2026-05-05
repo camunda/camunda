@@ -20,4 +20,6 @@ public interface DecisionRequirementSearchClient {
       DecisionRequirementsQuery filter);
 
   DecisionRequirementSearchClient withSecurityContext(SecurityContext securityContext);
+
+  DecisionRequirementSearchClient withPhysicalTenant(String physicalTenant);
 }

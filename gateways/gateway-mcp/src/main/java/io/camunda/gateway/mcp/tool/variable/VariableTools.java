@@ -20,6 +20,7 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
+import io.camunda.gateway.mcp.context.PhysicalTenantContext;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
@@ -71,7 +72,9 @@ public class VariableTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(
               variableServices.search(
-                  variableSearchQuery.get(), authenticationProvider.getCamundaAuthentication()),
+                  variableSearchQuery.get(),
+                  authenticationProvider.getCamundaAuthentication(),
+                  PhysicalTenantContext.current()),
               shouldTruncate));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
@@ -91,7 +94,9 @@ public class VariableTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableItem(
               variableServices.getByKey(
-                  variableKey, authenticationProvider.getCamundaAuthentication())));
+                  variableKey,
+                  authenticationProvider.getCamundaAuthentication(),
+                  PhysicalTenantContext.current())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }

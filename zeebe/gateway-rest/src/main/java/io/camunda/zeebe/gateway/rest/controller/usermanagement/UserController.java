@@ -29,6 +29,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
@@ -59,51 +60,63 @@ public class UserController {
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createUser(
-      @RequestBody final UserRequest userRequest) {
+      @RequestBody final UserRequest userRequest, @PhysicalTenant final String physicalTenantId) {
     return userMapper
         .toUserRequest(userRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> createUser(req, physicalTenantId));
   }
 
   @CamundaGetMapping(path = "/{username}")
   @RequiresSecondaryStorage
-  public ResponseEntity<Object> getUser(@PathVariable final String username) {
+  public ResponseEntity<Object> getUser(
+      @PathVariable final String username, @PhysicalTenant final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toUser(userServices.getUser(username, authentication)));
+          .body(
+              SearchQueryResponseMapper.toUser(
+                  userServices.getUser(username, authentication, physicalTenantId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
   }
 
   @CamundaDeleteMapping(path = "/{username}")
-  public CompletableFuture<ResponseEntity<Object>> deleteUser(@PathVariable final String username) {
+  public CompletableFuture<ResponseEntity<Object>> deleteUser(
+      @PathVariable final String username, @PhysicalTenant final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> userServices.deleteUser(username, authentication));
+        () -> userServices.deleteUser(username, authentication, physicalTenantId));
   }
 
-  private CompletableFuture<ResponseEntity<Object>> createUser(final UserDTO request) {
+  private CompletableFuture<ResponseEntity<Object>> createUser(
+      final UserDTO request, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> userServices.createUser(request, authentication),
+        () -> userServices.createUser(request, authentication, physicalTenantId),
         ResponseMapper::toUserCreateResponse,
         HttpStatus.CREATED);
   }
 
   @CamundaPutMapping(path = "/{username}")
   public CompletableFuture<ResponseEntity<Object>> updateUser(
-      @PathVariable final String username, @RequestBody final UserUpdateRequest userUpdateRequest) {
+      @PathVariable final String username,
+      @RequestBody final UserUpdateRequest userUpdateRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return userMapper
         .toUserUpdateRequest(userUpdateRequest, username)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUser);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> updateUser(req, physicalTenantId));
   }
 
-  private CompletableFuture<ResponseEntity<Object>> updateUser(final UserDTO request) {
+  private CompletableFuture<ResponseEntity<Object>> updateUser(
+      final UserDTO request, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> userServices.updateUser(request, authentication),
+        () -> userServices.updateUser(request, authentication, physicalTenantId),
         ResponseMapper::toUserUpdateResponse,
         HttpStatus.OK);
   }
@@ -111,15 +124,17 @@ public class UserController {
   @CamundaPostMapping(path = "/search")
   @RequiresSecondaryStorage
   public ResponseEntity<UserSearchResult> searchUsers(
-      @RequestBody(required = false) final UserSearchQueryRequest query) {
+      @RequestBody(required = false) final UserSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toUserQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
-  private ResponseEntity<UserSearchResult> search(final UserQuery query) {
+  private ResponseEntity<UserSearchResult> search(
+      final UserQuery query, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var result = userServices.search(query, authentication);
+      final var result = userServices.search(query, authentication, physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

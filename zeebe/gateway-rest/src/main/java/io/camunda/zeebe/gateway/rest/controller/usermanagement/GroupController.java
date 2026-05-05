@@ -44,6 +44,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
@@ -83,127 +84,165 @@ public class GroupController {
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createGroup(
-      @RequestBody final GroupCreateRequest createGroupRequest) {
+      @RequestBody final GroupCreateRequest createGroupRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return groupMapper
         .toGroupCreateRequest(createGroupRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createGroup);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> createGroup(req, physicalTenantId));
   }
 
   @CamundaPutMapping(path = "/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> updateGroup(
       @PathVariable final String groupId,
-      @RequestBody final GroupUpdateRequest groupUpdateRequest) {
+      @RequestBody final GroupUpdateRequest groupUpdateRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return groupMapper
         .toGroupUpdateRequest(groupUpdateRequest, groupId)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateGroup);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> updateGroup(req, physicalTenantId));
   }
 
   @CamundaDeleteMapping(path = "/{groupId}")
-  public CompletableFuture<ResponseEntity<Object>> deleteGroup(@PathVariable final String groupId) {
+  public CompletableFuture<ResponseEntity<Object>> deleteGroup(
+      @PathVariable final String groupId, @PhysicalTenant final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> groupServices.deleteGroup(groupId, authentication));
+        () -> groupServices.deleteGroup(groupId, authentication, physicalTenantId));
   }
 
   @CamundaPutMapping(path = "/{groupId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> assignUserToGroup(
-      @PathVariable final String groupId, @PathVariable final String username) {
+      @PathVariable final String groupId,
+      @PathVariable final String username,
+      @PhysicalTenant final String physicalTenantId) {
     return groupMapper
         .toGroupMemberRequest(groupId, username, EntityType.USER)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> assignMember(req, physicalTenantId));
   }
 
   @CamundaPutMapping(path = "/{groupId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> assignClientToGroup(
-      @PathVariable final String groupId, @PathVariable final String clientId) {
+      @PathVariable final String groupId,
+      @PathVariable final String clientId,
+      @PhysicalTenant final String physicalTenantId) {
     return groupMapper
         .toGroupMemberRequest(groupId, clientId, EntityType.CLIENT)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> assignMember(req, physicalTenantId));
   }
 
   @CamundaPutMapping(path = "/{groupId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingRuleToGroup(
-      @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
+      @PathVariable final String groupId,
+      @PathVariable final String mappingRuleId,
+      @PhysicalTenant final String physicalTenantId) {
     return groupMapper
         .toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> assignMember(req, physicalTenantId));
   }
 
   @CamundaDeleteMapping(path = "/{groupId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> unassignUserFromGroup(
-      @PathVariable final String groupId, @PathVariable final String username) {
+      @PathVariable final String groupId,
+      @PathVariable final String username,
+      @PhysicalTenant final String physicalTenantId) {
     return groupMapper
         .toGroupMemberRequest(groupId, username, EntityType.USER)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> unassignMember(req, physicalTenantId));
   }
 
   @CamundaDeleteMapping(path = "/{groupId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> unassignClientFromGroup(
-      @PathVariable final String groupId, @PathVariable final String clientId) {
+      @PathVariable final String groupId,
+      @PathVariable final String clientId,
+      @PhysicalTenant final String physicalTenantId) {
     return groupMapper
         .toGroupMemberRequest(groupId, clientId, EntityType.CLIENT)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> unassignMember(req, physicalTenantId));
   }
 
   @CamundaDeleteMapping(path = "/{groupId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> unassignMappingRuleFromGroup(
-      @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
+      @PathVariable final String groupId,
+      @PathVariable final String mappingRuleId,
+      @PhysicalTenant final String physicalTenantId) {
     return groupMapper
         .toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> unassignMember(req, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{groupId}/users/search")
   public ResponseEntity<GroupUserSearchResult> usersByGroup(
       @PathVariable final String groupId,
-      @RequestBody(required = false) final GroupUserSearchQueryRequest query) {
+      @RequestBody(required = false) final GroupUserSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toGroupMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            groupQuery -> searchUsersInGroup(groupId, groupQuery));
+            groupQuery -> searchUsersInGroup(groupId, groupQuery, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{groupId}/mapping-rules/search")
   public ResponseEntity<MappingRuleSearchQueryResult> mappingRulesByGroup(
       @PathVariable final String groupId,
-      @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
+      @RequestBody(required = false) final MappingRuleSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            mappingRuleQuery -> searchMappingsInGroup(groupId, mappingRuleQuery));
+            mappingRuleQuery -> searchMappingsInGroup(groupId, mappingRuleQuery, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{groupId}/roles/search")
   public ResponseEntity<RoleSearchQueryResult> rolesByGroup(
       @PathVariable final String groupId,
-      @RequestBody(required = false) final RoleSearchQueryRequest query) {
+      @RequestBody(required = false) final RoleSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toRoleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            userQuery -> searchRolesInGroup(groupId, userQuery));
+            userQuery -> searchRolesInGroup(groupId, userQuery, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{groupId}/clients/search")
   public ResponseEntity<GroupClientSearchResult> clientsByGroup(
       @PathVariable final String groupId,
-      @RequestBody(required = false) final GroupClientSearchQueryRequest query) {
+      @RequestBody(required = false) final GroupClientSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toGroupMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            groupMemberQuery -> searchClientsInGroup(groupId, groupMemberQuery));
+            groupMemberQuery -> searchClientsInGroup(groupId, groupMemberQuery, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{groupId}")
-  public ResponseEntity<Object> getGroup(@PathVariable final String groupId) {
+  public ResponseEntity<Object> getGroup(
+      @PathVariable final String groupId, @PhysicalTenant final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toGroup(groupServices.getGroup(groupId, authentication)));
+          .body(
+              SearchQueryResponseMapper.toGroup(
+                  groupServices.getGroup(groupId, authentication, physicalTenantId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -212,30 +251,34 @@ public class GroupController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<GroupSearchQueryResult> searchGroups(
-      @RequestBody(required = false) final GroupSearchQueryRequest query) {
+      @RequestBody(required = false) final GroupSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toGroupQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
-  private ResponseEntity<GroupSearchQueryResult> search(final GroupQuery query) {
+  private ResponseEntity<GroupSearchQueryResult> search(
+      final GroupQuery query, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var result = groupServices.search(query, authentication);
+      final var result = groupServices.search(query, authentication, physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
   }
 
-  private CompletableFuture<ResponseEntity<Object>> createGroup(final GroupDTO groupDTO) {
+  private CompletableFuture<ResponseEntity<Object>> createGroup(
+      final GroupDTO groupDTO, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> groupServices.createGroup(groupDTO, authentication),
+        () -> groupServices.createGroup(groupDTO, authentication, physicalTenantId),
         ResponseMapper::toGroupCreateResponse,
         HttpStatus.CREATED);
   }
 
-  public CompletableFuture<ResponseEntity<Object>> updateGroup(final GroupDTO updateGroupRequest) {
+  public CompletableFuture<ResponseEntity<Object>> updateGroup(
+      final GroupDTO updateGroupRequest, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->
@@ -243,24 +286,30 @@ public class GroupController {
                 updateGroupRequest.groupId(),
                 updateGroupRequest.name(),
                 updateGroupRequest.description(),
-                authentication),
+                authentication,
+                physicalTenantId),
         ResponseMapper::toGroupUpdateResponse,
         HttpStatus.OK);
   }
 
-  public CompletableFuture<ResponseEntity<Object>> assignMember(final GroupMemberDTO request) {
+  public CompletableFuture<ResponseEntity<Object>> assignMember(
+      final GroupMemberDTO request, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> groupServices.assignMember(request, authentication));
+        () -> groupServices.assignMember(request, authentication, physicalTenantId));
   }
 
   private ResponseEntity<GroupUserSearchResult> searchUsersInGroup(
-      final String groupId, final GroupMemberQuery groupMemberQuery) {
+      final String groupId,
+      final GroupMemberQuery groupMemberQuery,
+      final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
           groupServices.searchMembers(
-              buildGroupMemberQuery(groupId, EntityType.USER, groupMemberQuery), authentication);
+              buildGroupMemberQuery(groupId, EntityType.USER, groupMemberQuery),
+              authentication,
+              physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -268,12 +317,16 @@ public class GroupController {
   }
 
   private ResponseEntity<GroupClientSearchResult> searchClientsInGroup(
-      final String groupId, final GroupMemberQuery groupMemberQuery) {
+      final String groupId,
+      final GroupMemberQuery groupMemberQuery,
+      final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
           groupServices.searchMembers(
-              buildGroupMemberQuery(groupId, EntityType.CLIENT, groupMemberQuery), authentication);
+              buildGroupMemberQuery(groupId, EntityType.CLIENT, groupMemberQuery),
+              authentication,
+              physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupClientSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -281,11 +334,14 @@ public class GroupController {
   }
 
   private ResponseEntity<MappingRuleSearchQueryResult> searchMappingsInGroup(
-      final String groupId, final MappingRuleQuery mappingRuleQuery) {
+      final String groupId,
+      final MappingRuleQuery mappingRuleQuery,
+      final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedMappingQuery = buildMappingQuery(groupId, mappingRuleQuery);
-      final var result = mappingRuleServices.search(composedMappingQuery, authentication);
+      final var result =
+          mappingRuleServices.search(composedMappingQuery, authentication, physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -293,11 +349,11 @@ public class GroupController {
   }
 
   private ResponseEntity<RoleSearchQueryResult> searchRolesInGroup(
-      final String groupId, final RoleQuery roleQuery) {
+      final String groupId, final RoleQuery roleQuery, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedRoleQuery = buildRoleQuery(groupId, roleQuery);
-      final var result = roleServices.search(composedRoleQuery, authentication);
+      final var result = roleServices.search(composedRoleQuery, authentication, physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -325,9 +381,10 @@ public class GroupController {
         .build();
   }
 
-  public CompletableFuture<ResponseEntity<Object>> unassignMember(final GroupMemberDTO request) {
+  public CompletableFuture<ResponseEntity<Object>> unassignMember(
+      final GroupMemberDTO request, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> groupServices.removeMember(request, authentication));
+        () -> groupServices.removeMember(request, authentication, physicalTenantId));
   }
 }

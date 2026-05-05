@@ -19,4 +19,6 @@ public interface MappingRuleSearchClient {
   SearchQueryResult<MappingRuleEntity> searchMappingRules(MappingRuleQuery mappingRuleQuery);
 
   MappingRuleSearchClient withSecurityContext(SecurityContext securityContext);
+
+  MappingRuleSearchClient withPhysicalTenant(String physicalTenant);
 }

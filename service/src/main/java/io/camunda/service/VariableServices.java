@@ -41,17 +41,21 @@ public final class VariableServices
 
   @Override
   public SearchQueryResult<VariableEntity> search(
-      final VariableQuery query, final CamundaAuthentication authentication) {
+      final VariableQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             variableSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, VARIABLE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchVariables(query));
   }
 
-  public VariableEntity getByKey(final Long key, final CamundaAuthentication authentication) {
+  public VariableEntity getByKey(
+      final Long key, final CamundaAuthentication authentication, final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             variableSearchClient
@@ -60,6 +64,7 @@ public final class VariableServices
                         authentication,
                         withAuthorization(
                             VARIABLE_READ_AUTHORIZATION, VariableEntity::processDefinitionId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getVariable(key));
   }
 }

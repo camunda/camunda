@@ -33,7 +33,8 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
 
   public CompletableFuture<AdHocSubProcessInstructionRecord> activateActivities(
       final AdHocSubProcessActivateActivitiesRequest request,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerActivateAdHocSubProcessActivityRequest()
             .setAdHocSubProcessInstanceKey(request.adHocSubProcessInstanceKey());

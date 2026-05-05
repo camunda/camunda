@@ -14,7 +14,6 @@ import io.camunda.gateway.mapping.http.mapper.TenantMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
-import io.camunda.gateway.protocol.model.GroupSearchQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
 import io.camunda.gateway.protocol.model.RoleSearchQueryRequest;
@@ -30,7 +29,6 @@ import io.camunda.gateway.protocol.model.TenantSearchQueryResult;
 import io.camunda.gateway.protocol.model.TenantUpdateRequest;
 import io.camunda.gateway.protocol.model.TenantUserSearchQueryRequest;
 import io.camunda.gateway.protocol.model.TenantUserSearchResult;
-import io.camunda.gateway.protocol.model.UserSearchResult;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
@@ -51,6 +49,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
@@ -59,7 +58,9 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping("/v2/tenants")
@@ -92,20 +93,25 @@ public class TenantController {
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createTenant(
-      @RequestBody final TenantCreateRequest createTenantRequest) {
+      @RequestBody final TenantCreateRequest createTenantRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantCreateDto(createTenantRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> createTenant(req, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{tenantId}")
-  public ResponseEntity<TenantResult> getTenant(@PathVariable final String tenantId) {
+  public ResponseEntity<TenantResult> getTenant(
+      @PathVariable final String tenantId, @PhysicalTenant final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .body(
-              SearchQueryResponseMapper.toTenant(tenantServices.getById(tenantId, authentication)));
+              SearchQueryResponseMapper.toTenant(
+                  tenantServices.getById(tenantId, authentication, physicalTenantId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -114,203 +120,241 @@ public class TenantController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<TenantSearchQueryResult> searchTenants(
-      @RequestBody(required = false) final TenantSearchQueryRequest query) {
+      @RequestBody(required = false) final TenantSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toTenantQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
   @CamundaPutMapping(path = "/{tenantId}")
   public CompletableFuture<ResponseEntity<Object>> updateTenant(
       @PathVariable final String tenantId,
-      @RequestBody final TenantUpdateRequest tenantUpdateRequest) {
+      @RequestBody final TenantUpdateRequest tenantUpdateRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantUpdateDto(tenantId, tenantUpdateRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> updateTenant(req, physicalTenantId));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> assignUserToTenant(
-      @PathVariable final String tenantId, @PathVariable final String username) {
+      @PathVariable final String tenantId,
+      @PathVariable final String username,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantMemberRequest(tenantId, username, EntityType.USER)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> addMemberToTenant(req, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{tenantId}/users/search")
   public ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
       @PathVariable final String tenantId,
-      @RequestBody(required = false) final TenantUserSearchQueryRequest query) {
+      @RequestBody(required = false) final TenantUserSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            tenantQuery -> searchUsersInTenant(tenantId, tenantQuery));
+            tenantQuery -> searchUsersInTenant(tenantId, tenantQuery, physicalTenantId));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> assignClientToTenant(
-      @PathVariable final String tenantId, @PathVariable final String clientId) {
+      @PathVariable final String tenantId,
+      @PathVariable final String clientId,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantMemberRequest(tenantId, clientId, EntityType.CLIENT)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> addMemberToTenant(req, physicalTenantId));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingRuleToTenant(
-      @PathVariable final String tenantId, @PathVariable final String mappingRuleId) {
+      @PathVariable final String tenantId,
+      @PathVariable final String mappingRuleId,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> addMemberToTenant(req, physicalTenantId));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
-      @PathVariable final String tenantId, @PathVariable final String groupId) {
+      @PathVariable final String tenantId,
+      @PathVariable final String groupId,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantMemberRequest(tenantId, groupId, EntityType.GROUP)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> addMemberToTenant(req, physicalTenantId));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/roles/{roleId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToTenant(
-      @PathVariable final String tenantId, @PathVariable final String roleId) {
+      @PathVariable final String tenantId,
+      @PathVariable final String roleId,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantMemberRequest(tenantId, roleId, EntityType.ROLE)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> addMemberToTenant(req, physicalTenantId));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}")
   public CompletableFuture<ResponseEntity<Object>> deleteTenant(
-      @PathVariable final String tenantId) {
+      @PathVariable final String tenantId, @PhysicalTenant final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> tenantServices.deleteTenant(tenantId, authentication));
+        () -> tenantServices.deleteTenant(tenantId, authentication, physicalTenantId));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> unassignUserFromTenant(
-      @PathVariable final String tenantId, @PathVariable final String username) {
+      @PathVariable final String tenantId,
+      @PathVariable final String username,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantMemberRequest(tenantId, username, EntityType.USER)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> removeMemberFromTenant(req, physicalTenantId));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> unassignClientFromTenant(
-      @PathVariable final String tenantId, @PathVariable final String clientId) {
+      @PathVariable final String tenantId,
+      @PathVariable final String clientId,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantMemberRequest(tenantId, clientId, EntityType.CLIENT)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> removeMemberFromTenant(req, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{tenantId}/mapping-rules/search")
   public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesForTenant(
       @PathVariable final String tenantId,
-      @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
+      @RequestBody(required = false) final MappingRuleSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            mappingRuleQuery -> searchMappingRulesForTenant(tenantId, mappingRuleQuery));
+            mappingRuleQuery ->
+                searchMappingRulesForTenant(tenantId, mappingRuleQuery, physicalTenantId));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> unassignMappingRuleFromTenant(
-      @PathVariable final String tenantId, @PathVariable final String mappingRuleId) {
+      @PathVariable final String tenantId,
+      @PathVariable final String mappingRuleId,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> removeMemberFromTenant(req, physicalTenantId));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> unassignGroupFromTenant(
-      @PathVariable final String tenantId, @PathVariable final String groupId) {
+      @PathVariable final String tenantId,
+      @PathVariable final String groupId,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantMemberRequest(tenantId, groupId, EntityType.GROUP)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> removeMemberFromTenant(req, physicalTenantId));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/roles/{roleId}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromTenant(
-      @PathVariable final String tenantId, @PathVariable final String roleId) {
+      @PathVariable final String tenantId,
+      @PathVariable final String roleId,
+      @PhysicalTenant final String physicalTenantId) {
     return tenantMapper
         .toTenantMemberRequest(tenantId, roleId, EntityType.ROLE)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> removeMemberFromTenant(req, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{tenantId}/groups/search")
   public ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
       @PathVariable final String tenantId,
-      @RequestBody(required = false) final TenantGroupSearchQueryRequest query) {
+      @RequestBody(required = false) final TenantGroupSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            tenantQuery -> searchGroupIdsInTenant(tenantId, tenantQuery));
-  }
-
-  private ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
-      final String tenantId, final TenantMemberQuery query) {
-    try {
-      final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var result =
-          tenantServices.searchMembers(
-              buildTenantMemberQuery(tenantId, EntityType.GROUP, query), authentication);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toTenantGroupSearchQueryResponse(result));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
+            tenantQuery -> searchGroupIdsInTenant(tenantId, tenantQuery, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{tenantId}/roles/search")
   public ResponseEntity<RoleSearchQueryResult> searchRolesInTenant(
       @PathVariable final String tenantId,
-      @RequestBody(required = false) final RoleSearchQueryRequest query) {
+      @RequestBody(required = false) final RoleSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toRoleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            roleQuery -> searchRolesInTenant(tenantId, roleQuery));
+            roleQuery -> searchRolesInTenant(tenantId, roleQuery, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{tenantId}/clients/search")
   public ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
       @PathVariable final String tenantId,
-      @RequestBody(required = false) final TenantClientSearchQueryRequest query) {
+      @RequestBody(required = false) final TenantClientSearchQueryRequest query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            tenantQuery -> searchClientsInTenant(tenantId, tenantQuery));
+            tenantQuery -> searchClientsInTenant(tenantId, tenantQuery, physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createTenant(
-      final TenantRequest tenantRequest) {
+      final TenantRequest tenantRequest, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> tenantServices.createTenant(tenantRequest, authentication),
+        () -> tenantServices.createTenant(tenantRequest, authentication, physicalTenantId),
         ResponseMapper::toTenantCreateResponse,
         HttpStatus.CREATED);
   }
 
   private CompletableFuture<ResponseEntity<Object>> addMemberToTenant(
-      final TenantMemberRequest request) {
+      final TenantMemberRequest request, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> tenantServices.addMember(request, authentication));
+        () -> tenantServices.addMember(request, authentication, physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> removeMemberFromTenant(
-      final TenantMemberRequest request) {
+      final TenantMemberRequest request, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> tenantServices.removeMember(request, authentication));
+        () -> tenantServices.removeMember(request, authentication, physicalTenantId));
   }
 
-  private ResponseEntity<TenantSearchQueryResult> search(final TenantQuery query) {
+  private ResponseEntity<TenantSearchQueryResult> search(
+      final TenantQuery query, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var result = tenantServices.search(query, authentication);
+      final var result = tenantServices.search(query, authentication, physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -318,12 +362,16 @@ public class TenantController {
   }
 
   private ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
-      final String tenantId, final TenantMemberQuery tenantMemberQuery) {
+      final String tenantId,
+      final TenantMemberQuery tenantMemberQuery,
+      final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
           tenantServices.searchMembers(
-              buildTenantMemberQuery(tenantId, EntityType.USER, tenantMemberQuery), authentication);
+              buildTenantMemberQuery(tenantId, EntityType.USER, tenantMemberQuery),
+              authentication,
+              physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -331,60 +379,56 @@ public class TenantController {
   }
 
   private ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
-      final String tenantId, final TenantMemberQuery query) {
+      final String tenantId, final TenantMemberQuery query, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
           tenantServices.searchMembers(
-              buildTenantMemberQuery(tenantId, EntityType.CLIENT, query), authentication);
+              buildTenantMemberQuery(tenantId, EntityType.CLIENT, query),
+              authentication,
+              physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantClientSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
   }
 
+  private ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
+      final String tenantId, final TenantMemberQuery query, final String physicalTenantId) {
+    try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result =
+          tenantServices.searchMembers(
+              buildTenantMemberQuery(tenantId, EntityType.GROUP, query),
+              authentication,
+              physicalTenantId);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toTenantGroupSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   private ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesForTenant(
-      final String tenantId, final MappingRuleQuery mappingRuleQuery) {
+      final String tenantId,
+      final MappingRuleQuery mappingRuleQuery,
+      final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedMappingRuleQuery = buildMappingRuleQuery(tenantId, mappingRuleQuery);
-      final var result = mappingRuleServices.search(composedMappingRuleQuery, authentication);
+      final var result =
+          mappingRuleServices.search(composedMappingRuleQuery, authentication, physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
   }
 
-  private ResponseEntity<UserSearchResult> searchUsersInTenant(
-      final String tenantId, final UserQuery userQuery) {
-    try {
-      final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var composedUserQuery = buildUserQuery(tenantId, userQuery);
-      final var result = userServices.search(composedUserQuery, authentication);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
-  }
-
-  private ResponseEntity<GroupSearchQueryResult> searchGroupsInTenant(
-      final String tenantId, final GroupQuery groupQuery) {
-    try {
-      final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var composedGroupQuery = buildGroupQuery(tenantId, groupQuery);
-      final var result = groupServices.search(composedGroupQuery, authentication);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
-  }
-
   private ResponseEntity<RoleSearchQueryResult> searchRolesInTenant(
-      final String tenantId, final RoleQuery roleQuery) {
+      final String tenantId, final RoleQuery roleQuery, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedRoleQuery = buildRoleQuery(tenantId, roleQuery);
-      final var result = roleServices.search(composedRoleQuery, authentication);
+      final var result = roleServices.search(composedRoleQuery, authentication, physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -424,10 +468,10 @@ public class TenantController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateTenant(
-      final TenantRequest tenantRequest) {
+      final TenantRequest tenantRequest, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> tenantServices.updateTenant(tenantRequest, authentication),
+        () -> tenantServices.updateTenant(tenantRequest, authentication, physicalTenantId),
         ResponseMapper::toTenantUpdateResponse,
         HttpStatus.OK);
   }

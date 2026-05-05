@@ -13,6 +13,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
@@ -38,16 +39,21 @@ public class AdHocSubProcessActivityController {
   @CamundaPostMapping(path = "/{adHocSubProcessInstanceKey}/activation")
   public CompletableFuture<ResponseEntity<Object>> activateAdHocSubProcessActivities(
       @PathVariable final String adHocSubProcessInstanceKey,
-      @RequestBody final AdHocSubProcessActivateActivitiesInstruction activationRequest) {
+      @RequestBody final AdHocSubProcessActivateActivitiesInstruction activationRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
             adHocSubProcessInstanceKey, activationRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::activateActivities);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> activateActivities(req, physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateActivities(
-      final AdHocSubProcessActivateActivitiesRequest request) {
+      final AdHocSubProcessActivateActivitiesRequest request, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> adHocSubProcessActivityServices.activateActivities(request, authentication));
+        () ->
+            adHocSubProcessActivityServices.activateActivities(
+                request, authentication, physicalTenantId));
   }
 }

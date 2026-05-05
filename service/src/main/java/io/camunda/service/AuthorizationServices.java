@@ -51,18 +51,23 @@ public class AuthorizationServices
 
   @Override
   public SearchQueryResult<AuthorizationEntity> search(
-      final AuthorizationQuery query, final CamundaAuthentication authentication) {
+      final AuthorizationQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             authorizationSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, AUTHORIZATION_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchAuthorizations(query));
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(
-      final CreateAuthorizationRequest request, final CamundaAuthentication authentication) {
+      final CreateAuthorizationRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerAuthorizationRequest(AuthorizationIntent.CREATE)
             .setOwnerId(request.ownerId())
@@ -76,7 +81,9 @@ public class AuthorizationServices
   }
 
   public AuthorizationEntity getAuthorization(
-      final long authorizationKey, final CamundaAuthentication authentication) {
+      final long authorizationKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             authorizationSearchClient
@@ -85,17 +92,22 @@ public class AuthorizationServices
                         authentication,
                         withAuthorization(
                             AUTHORIZATION_READ_AUTHORIZATION, String.valueOf(authorizationKey))))
+                .withPhysicalTenant(physicalTenantId)
                 .getAuthorization(authorizationKey));
   }
 
   public CompletableFuture<AuthorizationRecord> deleteAuthorization(
-      final long authorizationKey, final CamundaAuthentication authentication) {
+      final long authorizationKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest = new BrokerAuthorizationDeleteRequest(authorizationKey);
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<AuthorizationRecord> updateAuthorization(
-      final UpdateAuthorizationRequest request, final CamundaAuthentication authentication) {
+      final UpdateAuthorizationRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerAuthorizationRequest(AuthorizationIntent.UPDATE)
             .setAuthorizationKey(request.authorizationKey())

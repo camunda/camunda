@@ -58,29 +58,37 @@ public class ProcessDefinitionServices
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> search(
-      final ProcessDefinitionQuery query, final CamundaAuthentication authentication) {
+      final ProcessDefinitionQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_DEFINITION_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchProcessDefinitions(query));
   }
 
   public List<ProcessFlowNodeStatisticsEntity> elementStatistics(
-      final ProcessDefinitionStatisticsFilter filter, final CamundaAuthentication authentication) {
+      final ProcessDefinitionStatisticsFilter filter,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .processDefinitionFlowNodeStatistics(filter));
   }
 
   public ProcessDefinitionEntity getByKey(
-      final Long processDefinitionKey, final CamundaAuthentication authentication) {
+      final Long processDefinitionKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
@@ -90,48 +98,57 @@ public class ProcessDefinitionServices
                         withAuthorization(
                             PROCESS_DEFINITION_READ_AUTHORIZATION,
                             ProcessDefinitionEntity::processDefinitionId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getProcessDefinition(processDefinitionKey));
   }
 
   public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity>
       getProcessDefinitionInstanceStatistics(
           final ProcessDefinitionInstanceStatisticsQuery query,
-          final CamundaAuthentication authentication) {
+          final CamundaAuthentication authentication,
+          final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .processDefinitionInstanceStatistics(query));
   }
 
   public SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity>
       searchProcessDefinitionInstanceVersionStatistics(
           final ProcessDefinitionInstanceVersionStatisticsQuery query,
-          final CamundaAuthentication authentication) {
+          final CamundaAuthentication authentication,
+          final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .processDefinitionInstanceVersionStatistics(query));
   }
 
   public Optional<FormEntity> getProcessDefinitionStartForm(
-      final long processDefinitionKey, final CamundaAuthentication authentication) {
-    return Optional.ofNullable(getByKey(processDefinitionKey, authentication))
+      final long processDefinitionKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return Optional.ofNullable(getByKey(processDefinitionKey, authentication, physicalTenantId))
         .filter(p -> p.formId() != null && !p.formId().isEmpty())
         .flatMap(
             p ->
                 formServices.getLatestVersionByFormIdAndTenantId(
-                    p.formId(), p.tenantId(), CamundaAuthentication.anonymous()));
+                    p.formId(), p.tenantId(), CamundaAuthentication.anonymous(), physicalTenantId));
   }
 
   public Optional<String> getProcessDefinitionXml(
-      final Long processDefinitionKey, final CamundaAuthentication authentication) {
-    final var processDefinition = getByKey(processDefinitionKey, authentication);
+      final Long processDefinitionKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    final var processDefinition = getByKey(processDefinitionKey, authentication, physicalTenantId);
     return Optional.ofNullable(processDefinition)
         .map(ProcessDefinitionEntity::bpmnXml)
         .filter(xml -> !xml.isEmpty());
@@ -140,13 +157,15 @@ public class ProcessDefinitionServices
   public SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity>
       getProcessDefinitionMessageSubscriptionStatistics(
           final ProcessDefinitionMessageSubscriptionStatisticsQuery query,
-          final CamundaAuthentication authentication) {
+          final CamundaAuthentication authentication,
+          final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .getProcessDefinitionMessageSubscriptionStatistics(query));
   }
 }

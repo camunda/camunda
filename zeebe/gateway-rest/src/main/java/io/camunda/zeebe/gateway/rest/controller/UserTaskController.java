@@ -36,6 +36,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -63,52 +64,64 @@ public class UserTaskController {
   @CamundaPostMapping(path = "/{userTaskKey}/completion")
   public CompletableFuture<ResponseEntity<Object>> completeUserTask(
       @PathVariable final long userTaskKey,
-      @RequestBody(required = false) final UserTaskCompletionRequest completionRequest) {
+      @RequestBody(required = false) final UserTaskCompletionRequest completionRequest,
+      @PhysicalTenant final String physicalTenantId) {
 
     return completeUserTask(
-        RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey));
+        RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey),
+        physicalTenantId);
   }
 
   @CamundaPostMapping(path = "/{userTaskKey}/assignment")
   public CompletableFuture<ResponseEntity<Object>> assignUserTask(
       @PathVariable final long userTaskKey,
-      @RequestBody final UserTaskAssignmentRequest assignmentRequest) {
+      @RequestBody final UserTaskAssignmentRequest assignmentRequest,
+      @PhysicalTenant final String physicalTenantId) {
 
     return RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignUserTask);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> assignUserTask(req, physicalTenantId));
   }
 
   @CamundaDeleteMapping(path = "/{userTaskKey}/assignee")
   public CompletableFuture<ResponseEntity<Object>> unassignUserTask(
-      @PathVariable final long userTaskKey) {
+      @PathVariable final long userTaskKey, @PhysicalTenant final String physicalTenantId) {
 
-    return unassignUserTask(RequestMapper.toUserTaskUnassignmentRequest(userTaskKey));
+    return unassignUserTask(
+        RequestMapper.toUserTaskUnassignmentRequest(userTaskKey), physicalTenantId);
   }
 
   @CamundaPatchMapping(path = "/{userTaskKey}")
   public CompletableFuture<ResponseEntity<Object>> updateUserTask(
       @PathVariable final long userTaskKey,
-      @RequestBody(required = false) final UserTaskUpdateRequest updateRequest) {
+      @RequestBody(required = false) final UserTaskUpdateRequest updateRequest,
+      @PhysicalTenant final String physicalTenantId) {
 
     return RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUserTask);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> updateUserTask(req, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<UserTaskSearchQueryResult> searchUserTasks(
-      @RequestBody(required = false) final UserTaskSearchQuery query) {
+      @RequestBody(required = false) final UserTaskSearchQuery query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toUserTaskQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{userTaskKey}")
   public ResponseEntity<UserTaskResult> getByKey(
-      @PathVariable("userTaskKey") final Long userTaskKey) {
+      @PathVariable("userTaskKey") final Long userTaskKey,
+      @PhysicalTenant final String physicalTenantId) {
     try {
       final var userTask =
-          userTaskServices.getByKey(userTaskKey, authenticationProvider.getCamundaAuthentication());
+          userTaskServices.getByKey(
+              userTaskKey, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
 
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toUserTask(userTask));
     } catch (final Exception e) {
@@ -119,10 +132,12 @@ public class UserTaskController {
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{userTaskKey}/form")
   public ResponseEntity<FormResult> getFormByUserTaskKey(
-      @PathVariable("userTaskKey") final long userTaskKey) {
+      @PathVariable("userTaskKey") final long userTaskKey,
+      @PhysicalTenant final String physicalTenantId) {
     try {
       return userTaskServices
-          .getUserTaskForm(userTaskKey, authenticationProvider.getCamundaAuthentication())
+          .getUserTaskForm(
+              userTaskKey, authenticationProvider.getCamundaAuthentication(), physicalTenantId)
           .map(SearchQueryResponseMapper::toFormItem)
           .map(ResponseEntity::ok)
           .orElseGet(() -> ResponseEntity.noContent().build());
@@ -138,11 +153,13 @@ public class UserTaskController {
       @RequestBody(required = false)
           final UserTaskVariableSearchQueryRequest userTaskVariablesSearchQueryRequest,
       @RequestParam(name = "truncateValues", required = false, defaultValue = "true")
-          final boolean truncateValues) {
+          final boolean truncateValues,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toUserTaskVariableQuery(userTaskVariablesSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            query -> searchUserTaskVariableQuery(userTaskKey, query, truncateValues));
+            query ->
+                searchUserTaskVariableQuery(userTaskKey, query, truncateValues, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
@@ -153,12 +170,15 @@ public class UserTaskController {
           final UserTaskEffectiveVariableSearchQueryRequest
               userTaskEffectiveVariablesSearchQueryRequest,
       @RequestParam(name = "truncateValues", required = false, defaultValue = "true")
-          final boolean truncateValues) {
+          final boolean truncateValues,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toUserTaskEffectiveVariableQuery(
             userTaskEffectiveVariablesSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            query -> searchUserTaskEffectiveVariableQuery(userTaskKey, query, truncateValues));
+            query ->
+                searchUserTaskEffectiveVariableQuery(
+                    userTaskKey, query, truncateValues, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
@@ -166,17 +186,20 @@ public class UserTaskController {
   public ResponseEntity<AuditLogSearchQueryResult> searchAuditLogs(
       @PathVariable final long userTaskKey,
       @RequestBody(required = false)
-          final UserTaskAuditLogSearchQueryRequest auditLogSearchQueryRequest) {
+          final UserTaskAuditLogSearchQueryRequest auditLogSearchQueryRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toUserTaskAuditLogQuery(auditLogSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            query -> searchUserTaskAuditLogQuery(userTaskKey, query));
+            query -> searchUserTaskAuditLogQuery(userTaskKey, query, physicalTenantId));
   }
 
-  private ResponseEntity<UserTaskSearchQueryResult> search(final UserTaskQuery query) {
+  private ResponseEntity<UserTaskSearchQueryResult> search(
+      final UserTaskQuery query, final String physicalTenantId) {
     try {
       final var result =
-          userTaskServices.search(query, authenticationProvider.getCamundaAuthentication());
+          userTaskServices.search(
+              query, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
 
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -185,11 +208,17 @@ public class UserTaskController {
   }
 
   private ResponseEntity<VariableSearchQueryResult> searchUserTaskVariableQuery(
-      final long userTaskKey, final VariableQuery query, final boolean truncateValues) {
+      final long userTaskKey,
+      final VariableQuery query,
+      final boolean truncateValues,
+      final String physicalTenantId) {
     try {
       final var result =
           userTaskServices.searchUserTaskVariables(
-              userTaskKey, query, authenticationProvider.getCamundaAuthentication());
+              userTaskKey,
+              query,
+              authenticationProvider.getCamundaAuthentication(),
+              physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues));
     } catch (final Exception e) {
@@ -198,11 +227,17 @@ public class UserTaskController {
   }
 
   private ResponseEntity<VariableSearchQueryResult> searchUserTaskEffectiveVariableQuery(
-      final long userTaskKey, final VariableQuery query, final boolean truncateValues) {
+      final long userTaskKey,
+      final VariableQuery query,
+      final boolean truncateValues,
+      final String physicalTenantId) {
     try {
       final var result =
           userTaskServices.searchUserTaskEffectiveVariables(
-              userTaskKey, query, authenticationProvider.getCamundaAuthentication());
+              userTaskKey,
+              query,
+              authenticationProvider.getCamundaAuthentication(),
+              physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues));
     } catch (final Exception e) {
@@ -211,11 +246,14 @@ public class UserTaskController {
   }
 
   private ResponseEntity<AuditLogSearchQueryResult> searchUserTaskAuditLogQuery(
-      final long userTaskKey, final AuditLogQuery query) {
+      final long userTaskKey, final AuditLogQuery query, final String physicalTenantId) {
     try {
       final var result =
           userTaskServices.searchUserTaskAuditLogs(
-              userTaskKey, query, authenticationProvider.getCamundaAuthentication());
+              userTaskKey,
+              query,
+              authenticationProvider.getCamundaAuthentication(),
+              physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -223,7 +261,7 @@ public class UserTaskController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> assignUserTask(
-      final AssignUserTaskRequest request) {
+      final AssignUserTaskRequest request, final String physicalTenantId) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices.assignUserTask(
@@ -231,38 +269,42 @@ public class UserTaskController {
                 request.assignee(),
                 request.action(),
                 request.allowOverride(),
-                authenticationProvider.getCamundaAuthentication()));
+                authenticationProvider.getCamundaAuthentication(),
+                physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> completeUserTask(
-      final CompleteUserTaskRequest request) {
+      final CompleteUserTaskRequest request, final String physicalTenantId) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices.completeUserTask(
                 request.userTaskKey(),
                 request.variables(),
                 request.action(),
-                authenticationProvider.getCamundaAuthentication()));
+                authenticationProvider.getCamundaAuthentication(),
+                physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> unassignUserTask(
-      final AssignUserTaskRequest request) {
+      final AssignUserTaskRequest request, final String physicalTenantId) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices.unassignUserTask(
                 request.userTaskKey(),
                 request.action(),
-                authenticationProvider.getCamundaAuthentication()));
+                authenticationProvider.getCamundaAuthentication(),
+                physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateUserTask(
-      final UpdateUserTaskRequest request) {
+      final UpdateUserTaskRequest request, final String physicalTenantId) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices.updateUserTask(
                 request.userTaskKey(),
                 request.changeset(),
                 request.action(),
-                authenticationProvider.getCamundaAuthentication()));
+                authenticationProvider.getCamundaAuthentication(),
+                physicalTenantId));
   }
 }

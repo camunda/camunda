@@ -21,4 +21,6 @@ public interface GlobalListenerSearchClient {
   SearchQueryResult<GlobalListenerEntity> searchGlobalListeners(GlobalListenerQuery query);
 
   GlobalListenerSearchClient withSecurityContext(SecurityContext securityContext);
+
+  GlobalListenerSearchClient withPhysicalTenant(String physicalTenant);
 }

@@ -45,25 +45,31 @@ public final class DecisionRequirementsServices
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> search(
-      final DecisionRequirementsQuery query, final CamundaAuthentication authentication) {
+      final DecisionRequirementsQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             decisionRequirementSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, DECISION_REQUIREMENTS_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchDecisionRequirements(
                     decisionRequirementsSearchQuery(
                         q -> q.filter(query.filter()).sort(query.sort()).page(query.page()))));
   }
 
   public DecisionRequirementsEntity getByKey(
-      final Long key, final CamundaAuthentication authentication) {
-    return getByKey(key, false, authentication);
+      final Long key, final CamundaAuthentication authentication, final String physicalTenantId) {
+    return getByKey(key, false, authentication, physicalTenantId);
   }
 
   public DecisionRequirementsEntity getByKey(
-      final Long key, final boolean includeXml, final CamundaAuthentication authentication) {
+      final Long key,
+      final boolean includeXml,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             decisionRequirementSearchClient
@@ -73,18 +79,22 @@ public final class DecisionRequirementsServices
                         Authorization.withAuthorization(
                             DECISION_REQUIREMENTS_READ_AUTHORIZATION,
                             DecisionRequirementsEntity::decisionRequirementsId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getDecisionRequirements(key, includeXml));
   }
 
   public SearchQueryResult<DecisionRequirementsEntity> search(
       final Function<DecisionRequirementsQuery.Builder, ObjectBuilder<DecisionRequirementsQuery>>
           fn,
-      final CamundaAuthentication authentication) {
-    return search(decisionRequirementsSearchQuery(fn), authentication);
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return search(decisionRequirementsSearchQuery(fn), authentication, physicalTenantId);
   }
 
   public String getDecisionRequirementsXml(
-      final Long decisionRequirementsKey, final CamundaAuthentication authentication) {
-    return getByKey(decisionRequirementsKey, true, authentication).xml();
+      final Long decisionRequirementsKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return getByKey(decisionRequirementsKey, true, authentication, physicalTenantId).xml();
   }
 }

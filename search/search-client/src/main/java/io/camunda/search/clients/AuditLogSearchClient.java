@@ -19,4 +19,6 @@ public interface AuditLogSearchClient {
   SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query);
 
   AuditLogSearchClient withSecurityContext(SecurityContext securityContext);
+
+  AuditLogSearchClient withPhysicalTenant(String physicalTenant);
 }

@@ -15,6 +15,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.SignalServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
@@ -44,18 +45,25 @@ public class SignalController {
 
   @CamundaPostMapping(path = "/broadcast")
   public CompletableFuture<ResponseEntity<Object>> broadcastSignal(
-      @RequestBody final SignalBroadcastRequest request) {
+      @RequestBody final SignalBroadcastRequest request,
+      @PhysicalTenant final String physicalTenantId) {
     return RequestMapper.toBroadcastSignalRequest(request, multiTenancyCfg.isChecksEnabled())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::broadcastSignal);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> broadcastSignal(req, physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> broadcastSignal(
-      final BroadcastSignalRequest request) {
+      final BroadcastSignalRequest request, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->
             signalServices.broadcastSignal(
-                request.signalName(), request.variables(), request.tenantId(), authentication),
+                request.signalName(),
+                request.variables(),
+                request.tenantId(),
+                authentication,
+                physicalTenantId),
         ResponseMapper::toSignalBroadcastResponse,
         HttpStatus.OK);
   }

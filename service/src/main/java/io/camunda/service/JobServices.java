@@ -90,7 +90,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final ActivateJobsRequest request,
       final ResponseObserver<T> responseObserver,
       final Consumer<Runnable> cancelationHandlerConsumer,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerActivateJobsRequest(request.type())
             .setMaxJobsToActivate(request.maxJobsToActivate())
@@ -112,7 +113,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorMessage,
       final Long retryBackOff,
       final Map<String, Object> variables,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var request =
         new BrokerFailJobRequest(jobKey, retries, retryBackOff)
             .setVariables(getDocumentOrEmpty(variables))
@@ -125,7 +127,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorCode,
       final String errorMessage,
       final Map<String, Object> variables,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var request =
         new BrokerThrowErrorRequest(jobKey, errorCode)
             .setErrorMessage(errorMessage)
@@ -137,7 +140,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final long jobKey,
       final Map<String, Object> variables,
       final JobResult result,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerCompleteJobRequest(
             jobKey, getDocumentOrEmpty(variables), result, maxVariableNameLength),
@@ -148,7 +152,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final long jobKey,
       final Long operationReference,
       final UpdateJobChangeset changeset,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerUpdateJobRequest(jobKey, changeset.retries(), changeset.timeout());
     if (operationReference != null) {
@@ -159,68 +164,86 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
 
   @Override
   public SearchQueryResult<JobEntity> search(
-      final JobQuery query, final CamundaAuthentication authentication) {
+      final JobQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, JOB_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchJobs(query));
   }
 
   public GlobalJobStatisticsEntity getGlobalStatistics(
-      final GlobalJobStatisticsQuery query, final CamundaAuthentication authentication) {
+      final GlobalJobStatisticsQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, Authorization.of(a -> a.system().readJobMetric())))
+                .withPhysicalTenant(physicalTenantId)
                 .getGlobalJobStatistics(query));
   }
 
   public SearchQueryResult<JobTypeStatisticsEntity> getJobTypeStatistics(
-      final JobTypeStatisticsQuery query, final CamundaAuthentication authentication) {
+      final JobTypeStatisticsQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, Authorization.of(a -> a.system().readJobMetric())))
+                .withPhysicalTenant(physicalTenantId)
                 .getJobTypeStatistics(query));
   }
 
   public SearchQueryResult<JobWorkerStatisticsEntity> getJobWorkerStatistics(
-      final JobWorkerStatisticsQuery query, final CamundaAuthentication authentication) {
+      final JobWorkerStatisticsQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, Authorization.of(a -> a.system().readJobMetric())))
+                .withPhysicalTenant(physicalTenantId)
                 .getJobWorkerStatistics(query));
   }
 
   public SearchQueryResult<JobTimeSeriesStatisticsEntity> getJobTimeSeriesStatistics(
-      final JobTimeSeriesStatisticsQuery query, final CamundaAuthentication authentication) {
+      final JobTimeSeriesStatisticsQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, Authorization.of(a -> a.system().readJobMetric())))
+                .withPhysicalTenant(physicalTenantId)
                 .getJobTimeSeriesStatistics(query));
   }
 
   public SearchQueryResult<JobErrorStatisticsEntity> getJobErrorStatistics(
-      final JobErrorStatisticsQuery query, final CamundaAuthentication authentication) {
+      final JobErrorStatisticsQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, JOB_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .getJobErrorStatistics(query));
   }
 

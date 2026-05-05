@@ -17,6 +17,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import org.springframework.http.ResponseEntity;
@@ -44,15 +45,20 @@ public class VariableController {
   public ResponseEntity<Object> searchVariables(
       @RequestBody(required = false) final VariableSearchQuery query,
       @RequestParam(name = "truncateValues", required = false, defaultValue = "true")
-          final boolean truncateValues) {
+          final boolean truncateValues,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toVariableQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, truncateValues));
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            q -> search(q, truncateValues, physicalTenantId));
   }
 
-  private ResponseEntity<Object> search(final VariableQuery query, final boolean truncateValues) {
+  private ResponseEntity<Object> search(
+      final VariableQuery query, final boolean truncateValues, final String physicalTenantId) {
     try {
       final var result =
-          variableServices.search(query, authenticationProvider.getCamundaAuthentication());
+          variableServices.search(
+              query, authenticationProvider.getCamundaAuthentication(), physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues));
     } catch (final Exception e) {
@@ -61,14 +67,17 @@ public class VariableController {
   }
 
   @CamundaGetMapping(path = "/{variableKey}")
-  public ResponseEntity<Object> getByKey(@PathVariable("variableKey") final Long variableKey) {
+  public ResponseEntity<Object> getByKey(
+      @PathVariable("variableKey") final Long variableKey,
+      @PhysicalTenant final String physicalTenantId) {
     try {
-      // Success case: Return the left side with the VariableItem wrapped in ResponseEntity
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toVariableItem(
                   variableServices.getByKey(
-                      variableKey, authenticationProvider.getCamundaAuthentication())));
+                      variableKey,
+                      authenticationProvider.getCamundaAuthentication(),
+                      physicalTenantId)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

@@ -60,15 +60,18 @@ public final class ElementInstanceServices
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> search(
-      final FlowNodeInstanceQuery query, final CamundaAuthentication authentication) {
+      final FlowNodeInstanceQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return search(
         query,
         securityContextProvider.provideSecurityContext(
-            authentication, ELEMENT_INSTANCE_READ_AUTHORIZATION));
+            authentication, ELEMENT_INSTANCE_READ_AUTHORIZATION),
+        physicalTenantId);
   }
 
   public FlowNodeInstanceEntity getByKey(
-      final Long key, final CamundaAuthentication authentication) {
+      final Long key, final CamundaAuthentication authentication, final String physicalTenantId) {
     final var result =
         executeSearchRequest(
             () ->
@@ -79,6 +82,7 @@ public final class ElementInstanceServices
                             withAuthorization(
                                 ELEMENT_INSTANCE_READ_AUTHORIZATION,
                                 FlowNodeInstanceEntity::processDefinitionId)))
+                    .withPhysicalTenant(physicalTenantId)
                     .getFlowNodeInstance(key));
 
     final var cachedItem = processCache.getCacheItem(result.processDefinitionKey());
@@ -86,13 +90,16 @@ public final class ElementInstanceServices
   }
 
   private SearchQueryResult<FlowNodeInstanceEntity> search(
-      final FlowNodeInstanceQuery query, final SecurityContext securityContext) {
+      final FlowNodeInstanceQuery query,
+      final SecurityContext securityContext,
+      final String physicalTenantId) {
 
     final var result =
         executeSearchRequest(
             () ->
                 flowNodeInstanceSearchClient
                     .withSecurityContext(securityContext)
+                    .withPhysicalTenant(physicalTenantId)
                     .searchFlowNodeInstances(query));
 
     return toCacheEnrichedResult(result);
@@ -100,7 +107,8 @@ public final class ElementInstanceServices
 
   public CompletableFuture<VariableDocumentRecord> setVariables(
       final ElementInstanceServices.SetVariablesRequest request,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerSetVariablesRequest()
             .setElementInstanceKey(request.elementInstanceKey())
@@ -146,8 +154,9 @@ public final class ElementInstanceServices
   public SearchQueryResult<IncidentEntity> searchIncidents(
       final long elementInstanceKey,
       final IncidentQuery query,
-      final CamundaAuthentication authentication) {
-    final var elementInstance = getByKey(elementInstanceKey, authentication);
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    final var elementInstance = getByKey(elementInstanceKey, authentication, physicalTenantId);
     return incidentServices.search(
         IncidentQuery.of(
             b ->
@@ -161,7 +170,8 @@ public final class ElementInstanceServices
                             .build())
                     .sort(query.sort())
                     .page(query.page())),
-        authentication);
+        authentication,
+        physicalTenantId);
   }
 
   public record SetVariablesRequest(

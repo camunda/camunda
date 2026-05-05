@@ -23,6 +23,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
+import io.camunda.gateway.mcp.context.PhysicalTenantContext;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.OffsetPagination;
@@ -71,7 +72,9 @@ public class UserTaskTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toUserTaskSearchQueryResponse(
               userTaskServices.search(
-                  userTaskSearchQuery.get(), authenticationProvider.getCamundaAuthentication())));
+                  userTaskSearchQuery.get(),
+                  authenticationProvider.getCamundaAuthentication(),
+                  PhysicalTenantContext.current())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -89,7 +92,9 @@ public class UserTaskTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toUserTask(
               userTaskServices.getByKey(
-                  userTaskKey, authenticationProvider.getCamundaAuthentication())));
+                  userTaskKey,
+                  authenticationProvider.getCamundaAuthentication(),
+                  PhysicalTenantContext.current())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -144,7 +149,8 @@ public class UserTaskTools {
             assignmentRequest.assignee(),
             assignmentRequest.action(),
             assignmentRequest.allowOverride(),
-            authenticationProvider.getCamundaAuthentication()),
+            authenticationProvider.getCamundaAuthentication(),
+            PhysicalTenantContext.current()),
         r ->
             "User task with key %s assigned to %s."
                 .formatted(assignmentRequest.userTaskKey(), assignmentRequest.assignee()));
@@ -157,7 +163,8 @@ public class UserTaskTools {
         userTaskServices.unassignUserTask(
             unassignRequest.userTaskKey(),
             unassignRequest.action(),
-            authenticationProvider.getCamundaAuthentication()),
+            authenticationProvider.getCamundaAuthentication(),
+            PhysicalTenantContext.current()),
         r -> "User task with key %s unassigned.".formatted(unassignRequest.userTaskKey()));
   }
 
@@ -194,7 +201,8 @@ public class UserTaskTools {
               userTaskServices.searchUserTaskEffectiveVariables(
                   userTaskKey,
                   variableSearchQuery.get(),
-                  authenticationProvider.getCamundaAuthentication()),
+                  authenticationProvider.getCamundaAuthentication(),
+                  PhysicalTenantContext.current()),
               shouldTruncate));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);

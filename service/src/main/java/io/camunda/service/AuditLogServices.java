@@ -58,24 +58,30 @@ public class AuditLogServices
 
   @Override
   public SearchQueryResult<AuditLogEntity> search(
-      final AuditLogQuery query, final CamundaAuthentication authentication) {
+      final AuditLogQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             auditLogSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, AUDIT_LOG_AUTHORIZATIONS))
+                .withPhysicalTenant(physicalTenantId)
                 .searchAuditLogs(query));
   }
 
   public AuditLogEntity getAuditLog(
-      final String auditLogKey, final CamundaAuthentication authentication) {
+      final String auditLogKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             auditLogSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, AUDIT_LOG_AUTHORIZATIONS))
+                .withPhysicalTenant(physicalTenantId)
                 .getAuditLog(auditLogKey));
   }
 }

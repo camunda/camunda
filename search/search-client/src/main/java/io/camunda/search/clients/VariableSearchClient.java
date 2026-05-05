@@ -19,4 +19,6 @@ public interface VariableSearchClient {
   SearchQueryResult<VariableEntity> searchVariables(VariableQuery filter);
 
   VariableSearchClient withSecurityContext(SecurityContext securityContext);
+
+  VariableSearchClient withPhysicalTenant(String physicalTenant);
 }

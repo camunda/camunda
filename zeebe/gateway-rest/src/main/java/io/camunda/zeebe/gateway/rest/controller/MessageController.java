@@ -17,6 +17,7 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -48,34 +49,41 @@ public class MessageController {
 
   @CamundaPostMapping(path = "/publication")
   public CompletableFuture<ResponseEntity<Object>> publishMessage(
-      @RequestBody final MessagePublicationRequest publicationRequest) {
+      @RequestBody final MessagePublicationRequest publicationRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return RequestMapper.toMessagePublicationRequest(
             publicationRequest, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::publishMessage);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> publishMessage(req, physicalTenantId));
   }
 
   @CamundaPostMapping(path = "/correlation")
   public CompletableFuture<ResponseEntity<Object>> correlateMessage(
-      @RequestBody final MessageCorrelationRequest correlationRequest) {
+      @RequestBody final MessageCorrelationRequest correlationRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return RequestMapper.toMessageCorrelationRequest(
             correlationRequest, multiTenancyCfg.isChecksEnabled(), maxNameFieldLength)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::correlateMessage);
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            req -> correlateMessage(req, physicalTenantId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> correlateMessage(
-      final CorrelateMessageRequest correlationRequest) {
+      final CorrelateMessageRequest correlationRequest, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> messageServices.correlateMessage(correlationRequest, authentication),
+        () ->
+            messageServices.correlateMessage(correlationRequest, authentication, physicalTenantId),
         ResponseMapper::toMessageCorrelationResponse,
         HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> publishMessage(
-      final PublicationMessageRequest request) {
+      final PublicationMessageRequest request, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> messageServices.publishMessage(request, authentication),
+        () -> messageServices.publishMessage(request, authentication, physicalTenantId),
         ResponseMapper::toMessagePublicationResponse,
         HttpStatus.OK);
   }

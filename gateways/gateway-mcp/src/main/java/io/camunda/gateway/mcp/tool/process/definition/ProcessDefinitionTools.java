@@ -16,6 +16,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
+import io.camunda.gateway.mcp.context.PhysicalTenantContext;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.simple.ProcessDefinitionSearchQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -60,7 +61,8 @@ public class ProcessDefinitionTools {
           SearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(
               processDefinitionServices.search(
                   processDefinitionQuery.get(),
-                  authenticationProvider.getCamundaAuthentication())));
+                  authenticationProvider.getCamundaAuthentication(),
+                  PhysicalTenantContext.current())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -78,7 +80,9 @@ public class ProcessDefinitionTools {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessDefinition(
               processDefinitionServices.getByKey(
-                  processDefinitionKey, authenticationProvider.getCamundaAuthentication())));
+                  processDefinitionKey,
+                  authenticationProvider.getCamundaAuthentication(),
+                  PhysicalTenantContext.current())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -96,7 +100,9 @@ public class ProcessDefinitionTools {
       final var xml =
           processDefinitionServices
               .getProcessDefinitionXml(
-                  processDefinitionKey, authenticationProvider.getCamundaAuthentication())
+                  processDefinitionKey,
+                  authenticationProvider.getCamundaAuthentication(),
+                  PhysicalTenantContext.current())
               .orElseThrow(
                   () ->
                       new ServiceException(

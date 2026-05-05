@@ -18,6 +18,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.nio.charset.StandardCharsets;
@@ -44,15 +45,18 @@ public class DecisionRequirementsController {
 
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<Object> searchDecisionRequirements(
-      @RequestBody(required = false) final DecisionRequirementsSearchQuery query) {
+      @RequestBody(required = false) final DecisionRequirementsSearchQuery query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toDecisionRequirementsQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
-  private ResponseEntity<Object> search(final DecisionRequirementsQuery query) {
+  private ResponseEntity<Object> search(
+      final DecisionRequirementsQuery query, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var result = decisionRequirementsServices.search(query, authentication);
+      final var result =
+          decisionRequirementsServices.search(query, authentication, physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionRequirementsSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -62,13 +66,15 @@ public class DecisionRequirementsController {
 
   @CamundaGetMapping(path = "/{decisionRequirementsKey}")
   public ResponseEntity<DecisionRequirementsResult> getByKey(
-      @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
+      @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey,
+      @PhysicalTenant final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toDecisionRequirements(
-                  decisionRequirementsServices.getByKey(decisionRequirementsKey, authentication)));
+                  decisionRequirementsServices.getByKey(
+                      decisionRequirementsKey, authentication, physicalTenantId)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -78,14 +84,15 @@ public class DecisionRequirementsController {
       path = "/{decisionRequirementsKey}/xml",
       produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<String> getDecisionRequirementsXml(
-      @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
+      @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey,
+      @PhysicalTenant final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
           .body(
               decisionRequirementsServices.getDecisionRequirementsXml(
-                  decisionRequirementsKey, authentication));
+                  decisionRequirementsKey, authentication, physicalTenantId));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

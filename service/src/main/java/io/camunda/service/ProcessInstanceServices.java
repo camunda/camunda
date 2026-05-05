@@ -561,7 +561,8 @@ public final class ProcessInstanceServices
                             .build())
                     .page(query.page())
                     .sort(query.sort())),
-        authentication);
+        authentication,
+        physicalTenantId);
   }
 
   private <R> CompletableFuture<R> sendWithPerProcessRoundRobin(

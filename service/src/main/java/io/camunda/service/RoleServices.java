@@ -53,56 +53,67 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   @Override
   public SearchQueryResult<RoleEntity> search(
-      final RoleQuery query, final CamundaAuthentication authentication) {
+      final RoleQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             roleSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, ROLE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchRoles(query));
   }
 
   public SearchQueryResult<RoleMemberEntity> searchMembers(
-      final RoleMemberQuery query, final CamundaAuthentication authentication) {
+      final RoleMemberQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             roleSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, ROLE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchRoleMembers(query));
   }
 
   public boolean hasMembersOfType(
       final String roleId,
       final EntityType entityType,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var query =
         RoleMemberQuery.of(
             builder ->
                 builder.filter(
                     filter ->
                         filter.roleId(DefaultRole.ADMIN.getId()).memberType(EntityType.USER)));
-    final var members = searchMembers(query, authentication);
+    final var members = searchMembers(query, authentication, physicalTenantId);
     return members.total() > 0;
   }
 
   public List<RoleEntity> getRolesByMemberTypeAndMemberIds(
       final Map<EntityType, Set<String>> memberTypesToMemberIds,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return search(
             RoleQuery.of(
                 roleQuery ->
                     roleQuery
                         .filter(roleFilter -> roleFilter.memberIdsByType(memberTypesToMemberIds))
                         .unlimited()),
-            authentication)
+            authentication,
+            physicalTenantId)
         .items();
   }
 
   public CompletableFuture<RoleRecord> createRole(
-      final CreateRoleRequest request, final CamundaAuthentication authentication) {
+      final CreateRoleRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerRoleCreateRequest()
             .setRoleId(request.roleId())
@@ -112,7 +123,9 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   }
 
   public CompletableFuture<RoleRecord> updateRole(
-      final UpdateRoleRequest updateRoleRequest, final CamundaAuthentication authentication) {
+      final UpdateRoleRequest updateRoleRequest,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerRoleUpdateRequest(updateRoleRequest.roleId())
             .setName(updateRoleRequest.name())
@@ -120,23 +133,31 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         authentication);
   }
 
-  public RoleEntity getRole(final String roleId, final CamundaAuthentication authentication) {
+  public RoleEntity getRole(
+      final String roleId,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             roleSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, withAuthorization(ROLE_READ_AUTHORIZATION, roleId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getRole(roleId));
   }
 
   public CompletableFuture<RoleRecord> deleteRole(
-      final String roleId, final CamundaAuthentication authentication) {
+      final String roleId,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(new BrokerRoleDeleteRequest(roleId), authentication);
   }
 
   public CompletableFuture<?> addMember(
-      final RoleMemberRequest request, final CamundaAuthentication authentication) {
+      final RoleMemberRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         BrokerRoleEntityRequest.createAddRequest()
             .setRoleId(request.roleId())
@@ -145,7 +166,9 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   }
 
   public CompletableFuture<?> removeMember(
-      final RoleMemberRequest request, final CamundaAuthentication authentication) {
+      final RoleMemberRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         BrokerRoleEntityRequest.createRemoveRequest()
             .setRoleId(request.roleId())

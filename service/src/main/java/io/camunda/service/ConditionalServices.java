@@ -32,7 +32,9 @@ public class ConditionalServices extends ApiServices<ConditionalServices> {
   }
 
   public CompletableFuture<BrokerResponse<ConditionalEvaluationRecord>> evaluateConditional(
-      final EvaluateConditionalRequest request, final CamundaAuthentication authentication) {
+      final EvaluateConditionalRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerEvaluateConditionalRequest()
             .setProcessDefinitionKey(request.processDefinitionKey())

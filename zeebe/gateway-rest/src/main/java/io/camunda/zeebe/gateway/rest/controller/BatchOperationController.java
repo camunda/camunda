@@ -19,6 +19,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -55,13 +56,15 @@ public class BatchOperationController {
 
   @CamundaGetMapping(path = "/{batchOperationKey}")
   public ResponseEntity<BatchOperationResponse> getById(
-      @PathVariable("batchOperationKey") final String batchOperationKey) {
+      @PathVariable("batchOperationKey") final String batchOperationKey,
+      @PhysicalTenant final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toBatchOperation(
-                  batchOperationServices.getById(batchOperationKey, authentication)));
+                  batchOperationServices.getById(
+                      batchOperationKey, authentication, physicalTenantId)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -69,18 +72,21 @@ public class BatchOperationController {
 
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<BatchOperationSearchQueryResult> searchBatchOperations(
-      @RequestBody(required = false) final BatchOperationSearchQuery query) {
+      @RequestBody(required = false) final BatchOperationSearchQuery query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toBatchOperationQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
   @CamundaPostMapping(
       path = "/{batchOperationKey}/cancellation",
       consumes = {})
-  public ResponseEntity<Object> cancelBatchOperation(@PathVariable final String batchOperationKey) {
+  public ResponseEntity<Object> cancelBatchOperation(
+      @PathVariable final String batchOperationKey, @PhysicalTenant final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-            () -> batchOperationServices.cancel(batchOperationKey, authentication))
+            () ->
+                batchOperationServices.cancel(batchOperationKey, authentication, physicalTenantId))
         .join();
   }
 
@@ -88,27 +94,31 @@ public class BatchOperationController {
       path = "/{batchOperationKey}/suspension",
       consumes = {})
   public ResponseEntity<Object> suspendBatchOperation(
-      @PathVariable final String batchOperationKey) {
+      @PathVariable final String batchOperationKey, @PhysicalTenant final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-            () -> batchOperationServices.suspend(batchOperationKey, authentication))
+            () ->
+                batchOperationServices.suspend(batchOperationKey, authentication, physicalTenantId))
         .join();
   }
 
   @CamundaPostMapping(
       path = "/{batchOperationKey}/resumption",
       consumes = {})
-  public ResponseEntity<Object> resumeBatchOperation(@PathVariable final String batchOperationKey) {
+  public ResponseEntity<Object> resumeBatchOperation(
+      @PathVariable final String batchOperationKey, @PhysicalTenant final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-            () -> batchOperationServices.resume(batchOperationKey, authentication))
+            () ->
+                batchOperationServices.resume(batchOperationKey, authentication, physicalTenantId))
         .join();
   }
 
-  private ResponseEntity<BatchOperationSearchQueryResult> search(final BatchOperationQuery query) {
+  private ResponseEntity<BatchOperationSearchQueryResult> search(
+      final BatchOperationQuery query, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var result = batchOperationServices.search(query, authentication);
+      final var result = batchOperationServices.search(query, authentication, physicalTenantId);
       return ResponseEntity.ok(SearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

@@ -56,30 +56,36 @@ public final class DecisionDefinitionServices
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> search(
-      final DecisionDefinitionQuery query, final CamundaAuthentication authentication) {
+      final DecisionDefinitionQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             decisionDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, DECISION_DEFINITION_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchDecisionDefinitions(query));
   }
 
   public SearchQueryResult<DecisionDefinitionEntity> search(
       final Function<DecisionDefinitionQuery.Builder, ObjectBuilder<DecisionDefinitionQuery>> fn,
-      final CamundaAuthentication authentication) {
-    return search(decisionDefinitionSearchQuery(fn), authentication);
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return search(decisionDefinitionSearchQuery(fn), authentication, physicalTenantId);
   }
 
   public String getDecisionDefinitionXml(
-      final long decisionKey, final CamundaAuthentication authentication) {
-    return Optional.ofNullable(getByKey(decisionKey, authentication))
+      final long decisionKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return Optional.ofNullable(getByKey(decisionKey, authentication, physicalTenantId))
         .map(DecisionDefinitionEntity::decisionRequirementsKey)
         .map(
             k ->
                 decisionRequirementServices.getDecisionRequirementsXml(
-                    k, CamundaAuthentication.anonymous()))
+                    k, CamundaAuthentication.anonymous(), physicalTenantId))
         .orElseThrow(
             () ->
                 new ServiceException(
@@ -88,7 +94,9 @@ public final class DecisionDefinitionServices
   }
 
   public DecisionDefinitionEntity getByKey(
-      final long decisionKey, final CamundaAuthentication authentication) {
+      final long decisionKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             decisionDefinitionSearchClient
@@ -98,6 +106,7 @@ public final class DecisionDefinitionServices
                         withAuthorization(
                             DECISION_DEFINITION_READ_AUTHORIZATION,
                             DecisionDefinitionEntity::decisionDefinitionId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getDecisionDefinition(decisionKey));
   }
 
@@ -106,7 +115,8 @@ public final class DecisionDefinitionServices
       final Long definitionKey,
       final Map<String, Object> variables,
       final String tenantId,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequestWithFullResponse(
         new BrokerEvaluateDecisionRequest()
             .setDecisionId(definitionId)

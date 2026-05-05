@@ -23,4 +23,6 @@ public interface TenantSearchClient {
   SearchQueryResult<TenantMemberEntity> searchTenantMembers(TenantMemberQuery filter);
 
   TenantSearchClient withSecurityContext(SecurityContext securityContext);
+
+  TenantSearchClient withPhysicalTenant(String physicalTenant);
 }

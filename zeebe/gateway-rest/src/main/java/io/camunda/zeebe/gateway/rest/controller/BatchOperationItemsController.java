@@ -17,6 +17,7 @@ import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import org.springframework.http.ResponseEntity;
@@ -40,16 +41,18 @@ public class BatchOperationItemsController {
 
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<BatchOperationItemSearchQueryResult> searchBatchOperationItems(
-      @RequestBody(required = false) final BatchOperationItemSearchQuery query) {
+      @RequestBody(required = false) final BatchOperationItemSearchQuery query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toBatchOperationItemQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
   private ResponseEntity<BatchOperationItemSearchQueryResult> search(
-      final BatchOperationItemQuery query) {
+      final BatchOperationItemQuery query, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var result = batchOperationServices.searchItems(query, authentication);
+      final var result =
+          batchOperationServices.searchItems(query, authentication, physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toBatchOperationItemSearchQueryResult(result));
     } catch (final Exception e) {

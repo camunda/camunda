@@ -51,18 +51,23 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
 
   @Override
   public SearchQueryResult<UserEntity> search(
-      final UserQuery query, final CamundaAuthentication authentication) {
+      final UserQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             userSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, USER_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchUsers(query));
   }
 
   public CompletableFuture<UserRecord> createUser(
-      final UserDTO request, final CamundaAuthentication authentication) {
+      final UserDTO request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final String encodedPassword = passwordEncoder.encode(request.password());
     return sendBrokerRequest(
         new BrokerUserCreateRequest()
@@ -74,7 +79,9 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   }
 
   public CompletableFuture<UserRecord> createInitialAdminUser(
-      final UserDTO request, final CamundaAuthentication authentication) {
+      final UserDTO request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final String encodedPassword = passwordEncoder.encode(request.password());
     return sendBrokerRequest(
         new BrokerUserCreateRequest(UserIntent.CREATE_INITIAL_ADMIN)
@@ -85,18 +92,24 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
         authentication);
   }
 
-  public UserEntity getUser(final String username, final CamundaAuthentication authentication) {
+  public UserEntity getUser(
+      final String username,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             userSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, withAuthorization(USER_READ_AUTHORIZATION, username)))
+                .withPhysicalTenant(physicalTenantId)
                 .getUser(username));
   }
 
   public CompletableFuture<UserRecord> updateUser(
-      final UserDTO request, final CamundaAuthentication authentication) {
+      final UserDTO request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final String encodedPassword =
         StringUtils.isEmpty(request.password) ? "" : passwordEncoder.encode(request.password());
     return sendBrokerRequest(
@@ -109,7 +122,9 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   }
 
   public CompletableFuture<UserRecord> deleteUser(
-      final String username, final CamundaAuthentication authentication) {
+      final String username,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(new BrokerUserDeleteRequest().setUsername(username), authentication);
   }
 

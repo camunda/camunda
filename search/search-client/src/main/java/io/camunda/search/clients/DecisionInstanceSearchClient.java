@@ -19,4 +19,6 @@ public interface DecisionInstanceSearchClient {
   SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(DecisionInstanceQuery filter);
 
   DecisionInstanceSearchClient withSecurityContext(SecurityContext securityContext);
+
+  DecisionInstanceSearchClient withPhysicalTenant(String physicalTenant);
 }

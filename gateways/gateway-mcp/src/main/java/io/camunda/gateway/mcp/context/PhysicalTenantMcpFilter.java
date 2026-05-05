@@ -20,8 +20,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ServletRequestPathUtils;
 
 /**
- * Validates the {@code physicalTenantId} captured from the MCP request URI and exposes the
- * resolved id on the request via {@link PhysicalTenantContext}, mirroring the REST {@code
+ * Validates the {@code physicalTenantId} captured from the MCP request URI and exposes the resolved
+ * id on the request via {@link PhysicalTenantContext}, mirroring the REST {@code
  * io.camunda.zeebe.gateway.rest.interceptor.PhysicalTenantInterceptor}.
  *
  * <p>MCP endpoints are served by Spring AI {@code RouterFunction}s registered on the unprefixed
@@ -29,7 +29,8 @@ import org.springframework.web.util.ServletRequestPathUtils;
  * {@code /v2/physical-tenants/{physicalTenantId}/...}, this filter:
  *
  * <ul>
- *   <li>matches incoming MCP requests against {@code /mcp/physical-tenants/{physicalTenantId}/<rest>};
+ *   <li>matches incoming MCP requests against {@code
+ *       /mcp/physical-tenants/{physicalTenantId}/<rest>};
  *   <li>rejects unknown ids with HTTP 404 before they reach any handler;
  *   <li>stores the resolved id on the request scope; and
  *   <li>rewrites the request URI to the unprefixed path ({@code /mcp/<rest>}) so the existing
@@ -95,9 +96,8 @@ public class PhysicalTenantMcpFilter extends OncePerRequestFilter {
   }
 
   /**
-   * {@link HttpServletRequestWrapper} that exposes a rewritten URI so downstream Spring MVC
-   * routing (RouterFunction predicates, handler mapping path parsing) sees the unprefixed MCP
-   * path.
+   * {@link HttpServletRequestWrapper} that exposes a rewritten URI so downstream Spring MVC routing
+   * (RouterFunction predicates, handler mapping path parsing) sees the unprefixed MCP path.
    */
   private static final class RewrittenUriRequest extends HttpServletRequestWrapper {
 
@@ -141,4 +141,3 @@ public class PhysicalTenantMcpFilter extends OncePerRequestFilter {
     }
   }
 }
-

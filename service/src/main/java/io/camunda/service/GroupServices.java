@@ -52,31 +52,38 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
 
   public List<GroupEntity> getGroupsByMemberTypeAndMemberIds(
       final Map<EntityType, Set<String>> memberTypesToMemberIds,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return search(
             GroupQuery.of(
                 groupQuery ->
                     groupQuery
                         .filter(groupFilter -> groupFilter.memberIdsByType(memberTypesToMemberIds))
                         .unlimited()),
-            authentication)
+            authentication,
+            physicalTenantId)
         .items();
   }
 
   @Override
   public SearchQueryResult<GroupEntity> search(
-      final GroupQuery query, final CamundaAuthentication authentication) {
+      final GroupQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             groupSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, GROUP_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchGroups(query));
   }
 
   public CompletableFuture<GroupRecord> createGroup(
-      final GroupDTO groupDTO, final CamundaAuthentication authentication) {
+      final GroupDTO groupDTO,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerGroupCreateRequest()
             .setGroupId(groupDTO.groupId)
@@ -85,13 +92,17 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         authentication);
   }
 
-  public GroupEntity getGroup(final String groupId, final CamundaAuthentication authentication) {
+  public GroupEntity getGroup(
+      final String groupId,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             groupSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, withAuthorization(GROUP_READ_AUTHORIZATION, groupId)))
+                .withPhysicalTenant(physicalTenantId)
                 .getGroup(groupId));
   }
 
@@ -99,19 +110,24 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
       final String groupId,
       final String name,
       final String description,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         new BrokerGroupUpdateRequest(groupId).setName(name).setDescription(description),
         authentication);
   }
 
   public CompletableFuture<GroupRecord> deleteGroup(
-      final String groupId, final CamundaAuthentication authentication) {
+      final String groupId,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(new BrokerGroupDeleteRequest(groupId), authentication);
   }
 
   public CompletableFuture<GroupRecord> assignMember(
-      final GroupMemberDTO groupMemberDTO, final CamundaAuthentication authentication) {
+      final GroupMemberDTO groupMemberDTO,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createAddRequest(groupMemberDTO.groupId)
             .setMemberId(groupMemberDTO.memberId)
@@ -120,7 +136,9 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public CompletableFuture<GroupRecord> removeMember(
-      final GroupMemberDTO groupMemberDTO, final CamundaAuthentication authentication) {
+      final GroupMemberDTO groupMemberDTO,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createRemoveRequest(groupMemberDTO.groupId)
             .setMemberId(groupMemberDTO.memberId)
@@ -129,13 +147,16 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public SearchQueryResult<GroupMemberEntity> searchMembers(
-      final GroupMemberQuery query, final CamundaAuthentication authentication) {
+      final GroupMemberQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             groupSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, GROUP_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchGroupMembers(query));
   }
 

@@ -27,6 +27,8 @@ public interface IncidentSearchClient {
 
   IncidentSearchClient withSecurityContext(SecurityContext securityContext);
 
+  IncidentSearchClient withPhysicalTenant(String physicalTenant);
+
   SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity>
       searchIncidentProcessInstanceStatisticsByDefinition(
           final IncidentProcessInstanceStatisticsByDefinitionQuery query);

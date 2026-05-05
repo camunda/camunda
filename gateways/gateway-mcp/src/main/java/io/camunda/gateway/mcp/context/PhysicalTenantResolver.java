@@ -23,4 +23,3 @@ public interface PhysicalTenantResolver {
    */
   boolean exists(String physicalTenantId);
 }
-

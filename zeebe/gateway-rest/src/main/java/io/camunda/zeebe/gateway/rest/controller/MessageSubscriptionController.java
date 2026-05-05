@@ -20,6 +20,7 @@ import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import org.springframework.http.ResponseEntity;
@@ -43,9 +44,10 @@ public class MessageSubscriptionController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/message-subscriptions/search")
   public ResponseEntity<MessageSubscriptionSearchQueryResult> searchMessageSubscriptions(
-      @RequestBody(required = false) final MessageSubscriptionSearchQuery searchRequest) {
+      @RequestBody(required = false) final MessageSubscriptionSearchQuery searchRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toMessageSubscriptionQuery(searchRequest)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
@@ -53,16 +55,21 @@ public class MessageSubscriptionController {
   public ResponseEntity<CorrelatedMessageSubscriptionSearchQueryResult>
       searchCorrelatedMessageSubscriptions(
           @RequestBody(required = false)
-              final CorrelatedMessageSubscriptionSearchQuery searchRequest) {
+              final CorrelatedMessageSubscriptionSearchQuery searchRequest,
+          @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toCorrelatedMessageSubscriptionQuery(searchRequest)
-        .fold(RestErrorMapper::mapProblemToResponse, this::searchCorrelatedMessageSubscriptions);
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            q -> searchCorrelatedMessageSubscriptions(q, physicalTenantId));
   }
 
   private ResponseEntity<CorrelatedMessageSubscriptionSearchQueryResult>
-      searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
+      searchCorrelatedMessageSubscriptions(
+          final CorrelatedMessageSubscriptionQuery query, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var result = messageSubscriptionServices.searchCorrelated(query, authentication);
+      final var result =
+          messageSubscriptionServices.searchCorrelated(query, authentication, physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -71,10 +78,11 @@ public class MessageSubscriptionController {
   }
 
   private ResponseEntity<MessageSubscriptionSearchQueryResult> search(
-      final MessageSubscriptionQuery query) {
+      final MessageSubscriptionQuery query, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var result = messageSubscriptionServices.search(query, authentication);
+      final var result =
+          messageSubscriptionServices.search(query, authentication, physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toMessageSubscriptionSearchQueryResponse(result));
     } catch (final Exception e) {

@@ -20,4 +20,6 @@ public interface DecisionDefinitionSearchClient {
       DecisionDefinitionQuery filter);
 
   DecisionDefinitionSearchClient withSecurityContext(SecurityContext securityContext);
+
+  DecisionDefinitionSearchClient withPhysicalTenant(String physicalTenant);
 }

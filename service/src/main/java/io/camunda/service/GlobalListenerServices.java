@@ -47,12 +47,16 @@ public final class GlobalListenerServices
   }
 
   public CompletableFuture<GlobalListenerRecord> createGlobalListener(
-      final GlobalListenerRecord request, final CamundaAuthentication authentication) {
+      final GlobalListenerRecord request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(new BrokerCreateGlobalListenerRequest(request), authentication);
   }
 
   public GlobalListenerEntity getGlobalTaskListener(
-      final GlobalListenerRecord request, final CamundaAuthentication authentication) {
+      final GlobalListenerRecord request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             globalListenerSearchClient
@@ -60,29 +64,37 @@ public final class GlobalListenerServices
                     securityContextProvider.provideSecurityContext(
                         authentication,
                         withAuthorization(GLOBAL_TASK_LISTENER_READ_AUTHORIZATION, WILDCARD_CHAR)))
+                .withPhysicalTenant(physicalTenantId)
                 .getGlobalListener(
                     request.getId(), GlobalListenerType.valueOf(request.getListenerType().name())));
   }
 
   public CompletableFuture<GlobalListenerRecord> updateGlobalListener(
-      final GlobalListenerRecord request, final CamundaAuthentication authentication) {
+      final GlobalListenerRecord request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(new BrokerUpdateGlobalListenerRequest(request), authentication);
   }
 
   public CompletableFuture<GlobalListenerRecord> deleteGlobalListener(
-      final GlobalListenerRecord request, final CamundaAuthentication authentication) {
+      final GlobalListenerRecord request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return sendBrokerRequest(new BrokerDeleteGlobalListenerRequest(request), authentication);
   }
 
   @Override
   public SearchQueryResult<GlobalListenerEntity> search(
-      final GlobalListenerQuery query, final CamundaAuthentication authentication) {
+      final GlobalListenerQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             globalListenerSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, GLOBAL_TASK_LISTENER_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchGlobalListeners(query));
   }
 }

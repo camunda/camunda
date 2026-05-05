@@ -24,4 +24,6 @@ public interface MessageSubscriptionSearchClient {
   MessageSubscriptionEntity getMessageSubscription(long key);
 
   MessageSubscriptionSearchClient withSecurityContext(SecurityContext securityContext);
+
+  MessageSubscriptionSearchClient withPhysicalTenant(String physicalTenant);
 }

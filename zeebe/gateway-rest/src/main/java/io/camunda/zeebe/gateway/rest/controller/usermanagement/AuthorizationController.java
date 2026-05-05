@@ -28,6 +28,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenant;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
@@ -59,21 +60,24 @@ public class AuthorizationController {
 
   @CamundaPostMapping()
   public CompletableFuture<ResponseEntity<Object>> createAuthorization(
-      @RequestBody final AuthorizationRequest authorizationCreateRequest) {
+      @RequestBody final AuthorizationRequest authorizationCreateRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return authorizationMapper
         .toCreateAuthorizationRequest(authorizationCreateRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, req -> create(req, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{authorizationKey}")
-  public ResponseEntity<Object> getAuthorization(@PathVariable final long authorizationKey) {
+  public ResponseEntity<Object> getAuthorization(
+      @PathVariable final long authorizationKey, @PhysicalTenant final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toAuthorization(
-                  authorizationServices.getAuthorization(authorizationKey, authentication)));
+                  authorizationServices.getAuthorization(
+                      authorizationKey, authentication, physicalTenantId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -81,33 +85,38 @@ public class AuthorizationController {
 
   @CamundaDeleteMapping(path = "/{authorizationKey}")
   public CompletableFuture<ResponseEntity<Object>> delete(
-      @PathVariable final long authorizationKey) {
+      @PathVariable final long authorizationKey, @PhysicalTenant final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> authorizationServices.deleteAuthorization(authorizationKey, authentication));
+        () ->
+            authorizationServices.deleteAuthorization(
+                authorizationKey, authentication, physicalTenantId));
   }
 
   @CamundaPutMapping(path = "/{authorizationKey}")
   public CompletableFuture<ResponseEntity<Object>> updateAuthorization(
       @PathVariable final long authorizationKey,
-      @RequestBody final AuthorizationRequest authorizationUpdateRequest) {
+      @RequestBody final AuthorizationRequest authorizationUpdateRequest,
+      @PhysicalTenant final String physicalTenantId) {
     return authorizationMapper
         .toUpdateAuthorizationRequest(authorizationKey, authorizationUpdateRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::update);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, req -> update(req, physicalTenantId));
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<AuthorizationSearchResult> searchAuthorizations(
-      @RequestBody(required = false) final AuthorizationSearchQuery query) {
+      @RequestBody(required = false) final AuthorizationSearchQuery query,
+      @PhysicalTenant final String physicalTenantId) {
     return SearchQueryRequestMapper.toAuthorizationQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, q -> search(q, physicalTenantId));
   }
 
-  private ResponseEntity<AuthorizationSearchResult> search(final AuthorizationQuery query) {
+  private ResponseEntity<AuthorizationSearchResult> search(
+      final AuthorizationQuery query, final String physicalTenantId) {
     try {
       final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var result = authorizationServices.search(query, authentication);
+      final var result = authorizationServices.search(query, authentication, physicalTenantId);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -116,18 +125,22 @@ public class AuthorizationController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> create(
-      final CreateAuthorizationRequest createAuthorizationRequest) {
+      final CreateAuthorizationRequest createAuthorizationRequest, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () -> authorizationServices.createAuthorization(createAuthorizationRequest, authentication),
+        () ->
+            authorizationServices.createAuthorization(
+                createAuthorizationRequest, authentication, physicalTenantId),
         ResponseMapper::toAuthorizationCreateResponse,
         HttpStatus.CREATED);
   }
 
   private CompletableFuture<ResponseEntity<Object>> update(
-      final UpdateAuthorizationRequest authorizationRequest) {
+      final UpdateAuthorizationRequest authorizationRequest, final String physicalTenantId) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () -> authorizationServices.updateAuthorization(authorizationRequest, authentication));
+        () ->
+            authorizationServices.updateAuthorization(
+                authorizationRequest, authentication, physicalTenantId));
   }
 }

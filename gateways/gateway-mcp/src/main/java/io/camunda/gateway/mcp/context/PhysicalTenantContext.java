@@ -15,8 +15,8 @@ import org.springframework.web.context.request.RequestContextHolder;
  * Carries the resolved physical tenant id for the current MCP request.
  *
  * <p>Mirrors the REST {@code io.camunda.zeebe.gateway.rest.context.PhysicalTenantContext} used for
- * {@code /v2/physical-tenants/{physicalTenantId}/...} routes. The MCP variant is intentionally
- * kept local to this module to avoid pulling in the {@code zeebe-gateway-rest} dependency.
+ * {@code /v2/physical-tenants/{physicalTenantId}/...} routes. The MCP variant is intentionally kept
+ * local to this module to avoid pulling in the {@code zeebe-gateway-rest} dependency.
  */
 public final class PhysicalTenantContext {
 
@@ -61,4 +61,3 @@ public final class PhysicalTenantContext {
     return value != null ? value.toString() : null;
   }
 }
-
