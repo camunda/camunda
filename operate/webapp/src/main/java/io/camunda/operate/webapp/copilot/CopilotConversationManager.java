@@ -20,6 +20,7 @@ import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import io.camunda.operate.webapp.copilot.dto.AgentEvent;
 import io.camunda.operate.webapp.copilot.llm.CopilotProperties;
 import io.camunda.operate.webapp.copilot.tools.CopilotToolRegistry;
+import io.camunda.security.api.model.CamundaAuthentication;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -66,11 +67,16 @@ public class CopilotConversationManager {
     return emitter;
   }
 
-  public void handleUserMessage(String conversationId, String content) {
+  public void handleUserMessage(
+      String conversationId,
+      CamundaAuthentication auth,
+      String content,
+      Map<String, Object> context) {
     final ConversationSession session =
         sessions.computeIfAbsent(conversationId, ConversationSession::new);
     session.appendUser(content);
-    worker.submit(() -> runAgentLoop(session));
+    final var safeContext = context != null ? Map.copyOf(context) : Map.<String, Object>of();
+    worker.submit(() -> runAgentLoop(session, auth, safeContext));
   }
 
   public void halt(String conversationId) {
@@ -80,13 +86,16 @@ public class CopilotConversationManager {
     }
   }
 
-  private void runAgentLoop(ConversationSession session) {
+  private void runAgentLoop(
+      ConversationSession session,
+      CamundaAuthentication auth,
+      Map<String, Object> context) {
     try {
       for (int turn = 0; turn < MAX_TOOL_TURNS; turn++) {
         if (session.isCancelled()) {
           break;
         }
-        final ChatResponse response = streamOnce(session);
+        final ChatResponse response = streamOnce(session, context);
         final AiMessage ai = response.aiMessage();
         session.appendAi(ai);
 
@@ -100,7 +109,9 @@ public class CopilotConversationManager {
           session.emit(
               AgentEvent.toolInvoke(
                   session.id(), request.name(), request.id(), request.arguments()));
-          final String result = toolRegistry.invoke(request.name(), request.arguments());
+          // Tool error mapping is added in Task 4 — for now, keep the existing happy path:
+          final String result =
+              toolRegistry.invoke(request.name(), request.arguments(), auth);
           session.emit(
               AgentEvent.toolResult(session.id(), request.name(), request.id(), result, true));
           session.appendToolResult(request, result);
@@ -113,7 +124,8 @@ public class CopilotConversationManager {
     }
   }
 
-  private ChatResponse streamOnce(ConversationSession session) throws InterruptedException {
+  private ChatResponse streamOnce(
+      ConversationSession session, Map<String, Object> context) throws InterruptedException {
     final CountDownLatch done = new CountDownLatch(1);
     final AtomicReference<ChatResponse> result = new AtomicReference<>();
     final AtomicReference<Throwable> failure = new AtomicReference<>();

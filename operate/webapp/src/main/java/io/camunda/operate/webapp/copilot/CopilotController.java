@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.copilot;
 
 import io.camunda.operate.webapp.copilot.dto.SendMessagePayload;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,9 +25,13 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class CopilotController {
 
   private final CopilotConversationManager conversations;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public CopilotController(CopilotConversationManager conversations) {
+  public CopilotController(
+      CopilotConversationManager conversations,
+      CamundaAuthenticationProvider authenticationProvider) {
     this.conversations = conversations;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @GetMapping(value = "/{conversationId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -36,7 +42,8 @@ public class CopilotController {
   @PostMapping("/{conversationId}/messages")
   public ResponseEntity<Void> sendMessage(
       @PathVariable String conversationId, @RequestBody SendMessagePayload payload) {
-    conversations.handleUserMessage(conversationId, payload.content());
+    final CamundaAuthentication auth = authenticationProvider.getCamundaAuthentication();
+    conversations.handleUserMessage(conversationId, auth, payload.content(), payload.context());
     return ResponseEntity.accepted().build();
   }
 
