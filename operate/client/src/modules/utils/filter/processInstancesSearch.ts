@@ -42,6 +42,7 @@ const ProcessInstancesFilterSchema = z
     endDateTo: z.string().optional(),
     variableName: z.string().optional(),
     variableValues: z.string().optional(),
+    businessId: z.string().optional(),
   })
   .catch({});
 
@@ -164,6 +165,10 @@ const parseProcessInstancesSearchFilter = (
       ...(filter.endDateFrom && {$gt: formatToISO(filter.endDateFrom)}),
       ...(filter.endDateTo && {$lt: formatToISO(filter.endDateTo)}),
     };
+  }
+
+  if (filter.businessId) {
+    apiFilter.businessId = {$eq: filter.businessId};
   }
 
   return apiFilter;
