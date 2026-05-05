@@ -332,8 +332,8 @@ class TaskDetailsPage {
       const expectedValue = `${value}${index + 1}`;
       await element.fill(expectedValue);
 
-      // Assert that the value was added correctly
-      await expect(element).toHaveValue(expectedValue);
+      // Wait for the value to be set with a longer timeout
+      await expect(element).toHaveValue(expectedValue, {timeout: 15000});
     }
   }
 

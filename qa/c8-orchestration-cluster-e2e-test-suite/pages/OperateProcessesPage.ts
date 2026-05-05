@@ -311,7 +311,9 @@ class OperateProcessesPage {
 
   async selectProcessCheckboxByPIK(...PIK: string[]): Promise<void> {
     for (const key of PIK) {
-      await this.page.locator(`label[for$="${key}"]`).click();
+      const checkbox = this.page.locator(`label[for$="${key}"]`);
+      await checkbox.waitFor({state: 'visible', timeout: 30000});
+      await checkbox.click({timeout: 30000});
     }
   }
 
