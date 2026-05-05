@@ -3,10 +3,21 @@
 A finite, label-triggered load test that gives PR authors a comparable performance signal
 within ~10 minutes, posted as a comment on the PR.
 
-Compared to the existing `benchmark` label (indefinite max load + flamegraphs), the
-`quicker-benchmark` label runs the same `max` workload but stops cleanly after a configured
-duration, scrapes throughput + engine-side metrics off each pod, and posts a table
-comparing the run against a static baseline.
+Compared to the existing `benchmark` label (indefinite max load + flamegraphs), the quicker
+benchmark runs one of the shared scenarios but stops cleanly after a configured duration,
+scrapes throughput + engine-side metrics off each pod, and posts a table comparing the run
+against a static baseline.
+
+Two scenarios are supported:
+
+|        Label        | Scenario in `camunda-load-test.yml` |                                         What it tests                                         |
+|---------------------|-------------------------------------|-----------------------------------------------------------------------------------------------|
+| `quicker-max`       | `max` (rate=300, platform tuning)   | Saturating throughput. Goal: 300 PI/s submitted ≈ 300 PI/s completed, no backpressure.        |
+| `quicker-realistic` | `realistic`                         | Sustainable, real-world rate. Goal: ~51 PI/s submitted ≈ ~51 PI/s completed, no backpressure. |
+
+Both labels can coexist on the same PR — each scenario runs in its own namespace and posts
+its own PR comment. The `benchmark` label is independent and can also coexist with either
+quicker label.
 
 The platform takes ~7min to come up; the default 10min duration leaves ~3min of usable
 load. Bump `duration-seconds` via `workflow_dispatch` for longer runs.
@@ -14,19 +25,16 @@ load. Bump `duration-seconds` via `workflow_dispatch` for longer runs.
 This feature is **self-contained** — it does not modify
 [`load-tests/setup/default/Makefile`](../setup/default/Makefile) or
 [`.github/workflows/camunda-load-test.yml`](../../.github/workflows/camunda-load-test.yml).
-Instead, it calls the existing reusable workflow with `scenario: 'max'` and passes
+Instead, it calls the existing reusable workflow with the matching `scenario` and passes
 `--set starter.durationLimit=<seconds>` through the `load-test-load` input. Helm honors
-the last `--set`, so the duration override wins over the `max` scenario's defaults.
+the last `--set`, so the duration override wins over the scenario's defaults.
 
 ## Triggering
 
-| Trigger |                                                                                               How                                                                                               |
-|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| On a PR | Apply the `quicker-benchmark` label. Removing the label tears the namespace down.                                                                                                               |
-| Ad-hoc  | Run the `Camunda Pull Request Quicker Benchmark` workflow via `workflow_dispatch`. Optional inputs: `duration-seconds` (default 600), `pr-number` (when set, the comment is posted on that PR). |
-
-The two labels (`benchmark` and `quicker-benchmark`) deploy to **separate namespaces** and
-can coexist on the same PR.
+| Trigger |                                                                                                        How                                                                                                         |
+|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| On a PR | Apply `quicker-max` and/or `quicker-realistic`. A push to the PR re-runs every applied label in parallel (matrix). Removing a label tears down only that scenario's namespace.                                     |
+| Ad-hoc  | Run the `Camunda Pull Request Quicker Benchmark` workflow via `workflow_dispatch`. Inputs: `scenario` (default `max`), `duration-seconds` (default 600), `pr-number` (when set, the comment is posted on that PR). |
 
 ## How completion is detected
 
@@ -89,30 +97,37 @@ Each row is annotated:
 The comment also links to the live Grafana dashboard for the namespace and to the workflow
 run for details.
 
-## Baseline file
+## Baseline files
 
-The renderer reads `load-tests/quicker-benchmark/baseline.yaml`. Each metric carries an
-`expected` value and a `tolerance-percent`. The default values in this directory are
-**placeholders** until we have run the workflow against `main` enough times to set realistic
-expectations.
+The renderer reads one of:
 
-### Updating the baseline
+- [`load-tests/quicker-benchmark/baseline-max.yaml`](baseline-max.yaml) — for `quicker-max`
+- [`load-tests/quicker-benchmark/baseline-realistic.yaml`](baseline-realistic.yaml) — for `quicker-realistic`
 
-1. Trigger `workflow_dispatch` against `main` (no PR number) two or three times in a row.
+Each metric carries an `expected` value and a `tolerance-percent`. The current values are
+**placeholders** until we have run the workflow against `main` enough times to set
+realistic expectations.
+
+### Updating a baseline
+
+1. Trigger `workflow_dispatch` against `main` (no PR number, pick the relevant `scenario`)
+   two or three times in a row.
 2. Read the resulting tables from the run summaries.
-3. Open a PR that updates `baseline.yaml` to the median (or a slightly conservative value)
-   and tightens `tolerance-percent` to a band that survives normal cluster noise.
+3. Open a PR that updates the matching `baseline-*.yaml` to the median (or a slightly
+   conservative value) and tightens `tolerance-percent` to a band that survives normal
+   cluster noise.
 4. Reference the workflow runs you sampled in the PR description so future updates have a
    trail to follow.
 
-Update the baseline on intentional, accepted performance shifts (engine refactors, new
+Update a baseline on intentional, accepted performance shifts (engine refactors, new
 data layer rollouts) — not on flaky noise. If a single run regresses but the next ten
-don't, leave the baseline alone.
+don't, leave the baseline alone. Keep the two baselines independent; a calibration run
+for `max` does not justify changing `realistic`.
 
 ## Implementation pointers
 
 - Trigger workflow: [.github/workflows/camunda-quicker-pr-load-test.yaml](../../.github/workflows/camunda-quicker-pr-load-test.yaml)
-- Reusable deploy: [.github/workflows/camunda-load-test.yml](../../.github/workflows/camunda-load-test.yml) (called with `scenario: 'max'` + `--set starter.durationLimit`)
+- Reusable deploy: [.github/workflows/camunda-load-test.yml](../../.github/workflows/camunda-load-test.yml) (called with `scenario: 'max'` or `scenario: 'realistic'` + `--set starter.durationLimit`)
 - Readiness: [`./.github/actions/await-load-test`](../../.github/actions/await-load-test/action.yml) (pod-reschedule retries + gateway-connectivity check)
 - Starter duration logic: [load-tests/load-tester/src/main/java/io/camunda/zeebe/starter/Starter.java](../load-tester/src/main/java/io/camunda/zeebe/starter/Starter.java) (`createContinuationCondition`)
 - Starter counter + run-finished gauge: [StarterCounterMetricsDoc.java](../load-tester/src/main/java/io/camunda/zeebe/metrics/StarterCounterMetricsDoc.java)

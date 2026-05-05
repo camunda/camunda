@@ -47,7 +47,7 @@ graph TD
 
     subgraph "Event Triggers"
         PR["camunda-pr-load-test.yaml<br/><i>PR label: benchmark</i>"]
-        QUICKER["camunda-quicker-pr-load-test.yaml<br/><i>PR label: quicker-benchmark</i>"]
+        QUICKER["camunda-quicker-pr-load-test.yaml<br/><i>PR labels: quicker-max, quicker-realistic</i>"]
         ADHOC["Manual workflow_dispatch"]
     end
 
@@ -299,7 +299,7 @@ It is as easy as it sounds; we can label an existing PR with the [**benchmark**]
 
 This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
 
-For a **finite** (default 1h) run that posts a comparable, baseline-checked metrics table back as a PR comment and auto-cleans the namespace, use the [**quicker-benchmark**](https://github.com/camunda/camunda/labels/quicker-benchmark) label instead. See [`quicker-benchmark/`](quicker-benchmark/README.md) for details.
+For a **finite** (default 10min) run that posts a comparable, baseline-checked metrics table back as a PR comment and auto-cleans the namespace, use [**quicker-max**](https://github.com/camunda/camunda/labels/quicker-max) (saturating throughput) and/or [**quicker-realistic**](https://github.com/camunda/camunda/labels/quicker-realistic) (sustainable rate) instead. Each label runs in its own namespace and posts its own comment; both can coexist on the same PR. See [`quicker-benchmark/`](quicker-benchmark/README.md) for details.
 
 #### Trigger Camunda load test GitHub Workflow
 

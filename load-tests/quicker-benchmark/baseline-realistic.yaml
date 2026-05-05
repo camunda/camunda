@@ -1,0 +1,43 @@
+# Static baseline for the `realistic` quicker scenario, consumed by
+# `.github/workflows/camunda-quicker-pr-load-test.yaml` when a PR is labeled with
+# `quicker-realistic`. Numbers are placeholders — calibrate from clean runs of the
+# workflow against `main` before treating the comparison as authoritative. See the
+# README in this directory for the update procedure.
+#
+# Goal state for `realistic` at 600s (sustainable, no backpressure expected):
+#   - 30_600 instances submitted, 30_600 completed end-to-end (started ≈ completed)
+#   - 51 PI/s submission throughput, 51 PI/s completion rate
+#   - Backpressure expected to be 0 — any nonzero value is flagged as a regression.
+#
+# Each metric:
+#   expected         the target value (units match the comment column)
+#   tolerance-percent the +/- band that counts as ✅ in the PR comment
+#                    (defaults to 10% in the renderer if omitted)
+#
+# Direction (higher-is-better vs lower-is-better) is hard-coded per metric in the
+# renderer — throughput/instances/completed-rate go up; backpressure goes down.
+
+scenario: realistic
+duration-seconds: 600
+
+metrics:
+  process-instances-started:
+    expected: 600
+    tolerance-percent: 10
+
+  process-instances-completed:
+    expected: 30600
+    tolerance-percent: 10
+
+  throughput-per-second:
+    expected: 51
+    tolerance-percent: 10
+
+  completed-pi-rate-per-second:
+    expected: 51
+    tolerance-percent: 10
+
+  # Goal: zero backpressure on the sustainable rate. Any nonzero is flagged.
+  backpressure-percent:
+    expected: 0
+    tolerance-percent: 0

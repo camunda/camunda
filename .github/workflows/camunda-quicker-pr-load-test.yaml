@@ -1,11 +1,10 @@
 # description: Creates a finite (default 10min) load test when a PR is labeled with
-#              'quicker-benchmark'. Deploys via the reusable camunda-load-test workflow
-#              (scenario: max + starter.durationLimit override), waits for the run to
-#              complete, scrapes throughput + engine metrics from each pod, compares
-#              against a static baseline, and posts a results table as a PR comment.
-#              Auto-cleans up the namespace once results are posted (or on label removal
-#              / PR close).
-# calls: camunda-load-test.yml (scenario: max + starter.durationLimit override)
+#              'quicker-max' and/or 'quicker-realistic'. Each label maps to one of the
+#              shared `max` / `realistic` scenarios in camunda-load-test.yml. Both labels
+#              can coexist on the same PR — the workflow fans out via a job matrix and
+#              each scenario gets its own namespace + PR comment. Auto-cleans up the
+#              namespace once results are posted (or on label removal / PR close).
+# calls: camunda-load-test.yml (scenario: max|realistic + starter.durationLimit override)
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda Pull Request Quicker Benchmark
@@ -22,6 +21,14 @@ on:
         description: 'Git ref (branch, tag or commit SHA) to benchmark'
         required: true
         type: string
+      scenario:
+        description: 'Scenario to benchmark'
+        required: false
+        type: choice
+        options:
+          - max
+          - realistic
+        default: max
       duration-seconds:
         description: 'Test duration in seconds (overrides the default 600)'
         required: false
@@ -45,63 +52,90 @@ env:
   # Default test duration in seconds. The platform takes ~7min to come up; 10min leaves a
   # short but usable load window. Override per-run via workflow_dispatch input.
   DEFAULT_DURATION_SECONDS: '600'
-  LABEL_NAME: 'quicker-benchmark'
 
 jobs:
   sanitize-branch-name:
-    name: Sanitize Branch Name
+    name: Resolve scenarios
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event.action == 'labeled' && github.event.label.name == 'quicker-benchmark') ||
-      (github.event.action == 'unlabeled' && github.event.label.name == 'quicker-benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark')) ||
-      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark'))
+      (github.event.action == 'labeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+      (github.event.action == 'unlabeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+      (github.event.action == 'synchronize' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic'))) ||
+      (github.event.action == 'closed' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic')))
     outputs:
-      sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
-      pr-number: ${{ steps.compute-namespace.outputs.pr-number }}
-      duration-seconds: ${{ steps.compute-namespace.outputs.duration-seconds }}
-      ref: ${{ steps.compute-namespace.outputs.ref }}
+      author-sanitized: ${{ steps.compute-outputs.outputs.author-sanitized }}
+      pr-number: ${{ steps.compute-outputs.outputs.pr-number }}
+      pr-id-suffix: ${{ steps.compute-outputs.outputs.pr-id-suffix }}
+      duration-seconds: ${{ steps.compute-outputs.outputs.duration-seconds }}
+      ref: ${{ steps.compute-outputs.outputs.ref }}
+      scenarios: ${{ steps.compute-outputs.outputs.scenarios }}
     steps:
       - id: sanitize-author
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
           branch: ${{ github.event_name == 'workflow_dispatch' && github.actor || github.event.pull_request.user.login }}
           max_length: 10
-      - id: compute-namespace
-        name: Compute namespace, PR number, duration, and ref
+      - id: compute-outputs
+        name: Compute scenarios, namespace pieces, duration, and ref
         env:
           # Pass untrusted user-controlled refs/inputs through env so a maliciously named
           # branch can't break out of the shell context (actionlint expression check).
           EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          PR_LABELS_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}
           DISPATCH_PR_NUMBER: ${{ inputs.pr-number }}
           DISPATCH_REF: ${{ inputs.ref }}
+          DISPATCH_SCENARIO: ${{ inputs.scenario }}
           DISPATCH_DURATION: ${{ inputs.duration-seconds }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
           AUTHOR_SANITIZED: ${{ steps.sanitize-author.outputs.branch_name }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          # Namespace is distinct from the existing 'benchmark' label (c8-...-pr-...) so both
-          # labels can coexist on the same PR if ever needed.
+          # Namespace is distinct from the existing 'benchmark' label (c8-...-pr-...) so all
+          # quicker-* labels can coexist on the same PR alongside it. Each scenario gets its
+          # own namespace: c8-<author>-quicker-<scenario>-pr-<id-suffix>.
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             pr_number="$DISPATCH_PR_NUMBER"
             ref="$DISPATCH_REF"
             duration="$DISPATCH_DURATION"
-            id_suffix="${pr_number:-run-$RUN_ID}"
+            scenarios=$(jq -nc --arg s "${DISPATCH_SCENARIO:-max}" '[$s]')
           else
             pr_number="$PR_NUMBER"
             ref="$PR_HEAD_REF"
             duration="$DEFAULT_DURATION_SECONDS"
-            id_suffix="$pr_number"
+            case "$ACTION" in
+              labeled|unlabeled)
+                # Single-label event: act on just the label that triggered it. The label is
+                # known-good (the if-guard restricts to quicker-max / quicker-realistic).
+                scenarios=$(jq -nc --arg s "${LABEL_NAME#quicker-}" '[$s]')
+                ;;
+              synchronize|closed)
+                # Multi-label-aware: every quicker-* label currently on the PR. The matrix
+                # below fans out to all of them.
+                scenarios=$(jq -cn --argjson labels "$PR_LABELS_JSON" '[
+                  $labels[]
+                  | select(. == "quicker-max" or . == "quicker-realistic")
+                  | sub("^quicker-"; "")
+                ]')
+                ;;
+              *)
+                scenarios='[]'
+                ;;
+            esac
           fi
+          id_suffix="${pr_number:-run-$RUN_ID}"
           {
-            echo "namespace=c8-${AUTHOR_SANITIZED}-quicker-pr-${id_suffix}"
+            echo "author-sanitized=${AUTHOR_SANITIZED}"
             echo "pr-number=${pr_number}"
+            echo "pr-id-suffix=${id_suffix}"
             echo "duration-seconds=${duration:-${DEFAULT_DURATION_SECONDS}}"
             echo "ref=${ref}"
+            echo "scenarios=${scenarios}"
           } >> "$GITHUB_OUTPUT"
       - name: Observe build status
         if: always()
@@ -114,30 +148,36 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   create-benchmark:
-    name: Quicker Benchmark
+    name: Quicker Benchmark (${{ matrix.scenario }})
     needs: sanitize-branch-name
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event.action == 'labeled' && github.event.label.name == 'quicker-benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark'))
+      (github.event.action == 'labeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+      (github.event.action == 'synchronize' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic')))
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: ${{ fromJSON(needs.sanitize-branch-name.outputs.scenarios) }}
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      # Each scenario gets its own namespace so both can run side-by-side on the same PR.
+      name: c8-${{ needs.sanitize-branch-name.outputs.author-sanitized }}-quicker-${{ matrix.scenario }}-pr-${{ needs.sanitize-branch-name.outputs.pr-id-suffix }}
       ref: ${{ needs.sanitize-branch-name.outputs.ref }}
-      # Reuse the existing `max` scenario (rate=300, max-load platform tuning) and add a
-      # finite-runtime override via load-test-load. This keeps the quicker workflow self-
-      # contained — no edits needed in the shared Makefile or in camunda-load-test.yml.
-      scenario: 'max'
+      scenario: ${{ matrix.scenario }}
       load-test-load: --set starter.durationLimit=${{ needs.sanitize-branch-name.outputs.duration-seconds }}
 
   collect-metrics:
-    name: Collect metrics & post results
+    name: Collect metrics & post results (${{ matrix.scenario }})
     needs: [sanitize-branch-name, create-benchmark]
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event.action == 'labeled' && github.event.label.name == 'quicker-benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark'))
+      (github.event.action == 'labeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+      (github.event.action == 'synchronize' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic')))
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: ${{ fromJSON(needs.sanitize-branch-name.outputs.scenarios) }}
     runs-on: ubuntu-latest
     # Test runs for `duration-seconds` and we want headroom for platform bring-up + scrape.
     timeout-minutes: 30
@@ -146,9 +186,10 @@ jobs:
       id-token: 'write'
       pull-requests: 'write'
     env:
-      NAMESPACE: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      NAMESPACE: c8-${{ needs.sanitize-branch-name.outputs.author-sanitized }}-quicker-${{ matrix.scenario }}-pr-${{ needs.sanitize-branch-name.outputs.pr-id-suffix }}
       DURATION_SECONDS: ${{ needs.sanitize-branch-name.outputs.duration-seconds }}
       PR_NUMBER: ${{ needs.sanitize-branch-name.outputs.pr-number }}
+      SCENARIO: ${{ matrix.scenario }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -336,8 +377,9 @@ jobs:
             const fs = require('fs');
             const yaml = require('js-yaml');
 
+            const scenario = process.env.SCENARIO;
             const baseline = yaml.load(
-              fs.readFileSync('load-tests/quicker-benchmark/baseline.yaml', 'utf8')
+              fs.readFileSync(`load-tests/quicker-benchmark/baseline-${scenario}.yaml`, 'utf8')
             );
             const m = baseline.metrics || {};
 
@@ -443,16 +485,16 @@ jobs:
 
             const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ env.NAMESPACE }}`;
             const body = [
-              '## ⏱️ Quicker Benchmark Results',
+              `## ⏱️ Quicker Benchmark Results — \`${scenario}\``,
               '',
-              `Scenario: \`quicker\` · Duration: ${durationSeconds}s · Namespace: \`${{ env.NAMESPACE }}\``,
+              `Scenario: \`${scenario}\` · Duration: ${durationSeconds}s · Namespace: \`${{ env.NAMESPACE }}\``,
               ...(warnings.length ? ['', ...warnings] : []),
               '',
               ...tableLines,
               '',
               `📊 [Grafana dashboard](${dashboard}) · 🔁 [Workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
               '',
-              '_Baseline lives at `load-tests/quicker-benchmark/baseline.yaml`. ⚠️ flags only fire on the regression side — improvements outside tolerance still show ✅._',
+              `_Baseline lives at \`load-tests/quicker-benchmark/baseline-${scenario}.yaml\`. ⚠️ flags only fire on the regression side — improvements outside tolerance still show ✅._`,
             ].join('\n');
 
             await core.summary.addRaw(body).write();
@@ -478,7 +520,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   delete-benchmark:
-    name: Quicker Benchmark Cleanup
+    name: Quicker Benchmark Cleanup (${{ matrix.scenario }})
     needs: [sanitize-branch-name, collect-metrics]
     # Run after results are posted (success or failure), and also on label-removal / PR-close
     # so abandoned tests don't leak namespaces. `if: always()` lets it fire when collect-metrics
@@ -486,16 +528,22 @@ jobs:
     if: >
       always() && (
         github.event_name == 'workflow_dispatch' ||
-        (github.event.action == 'labeled' && github.event.label.name == 'quicker-benchmark') ||
-        (github.event.action == 'unlabeled' && github.event.label.name == 'quicker-benchmark') ||
-        (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark')) ||
-        (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'quicker-benchmark'))
+        (github.event.action == 'labeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+        (github.event.action == 'unlabeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+        (github.event.action == 'synchronize' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic'))) ||
+        (github.event.action == 'closed' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic')))
       )
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: ${{ fromJSON(needs.sanitize-branch-name.outputs.scenarios) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: 'read'
       id-token: 'write'
+    env:
+      NAMESPACE: c8-${{ needs.sanitize-branch-name.outputs.author-sanitized }}-quicker-${{ matrix.scenario }}-pr-${{ needs.sanitize-branch-name.outputs.pr-id-suffix }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -513,7 +561,7 @@ jobs:
 
       - name: Delete benchmark namespace
         run: |
-          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}" --ignore-not-found=true
+          kubectl delete ns "$NAMESPACE" --ignore-not-found=true
       - name: Observe build status
         if: always()
         continue-on-error: true

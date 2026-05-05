@@ -19,7 +19,7 @@ When modifying load test infrastructure, workflows, or setup scripts, always che
 if related documentation needs updating:
 
 - `load-tests/README.md` — main entry point and workflow overview
-- `load-tests/quicker-benchmark/README.md` — `quicker-benchmark` label flow + baseline update procedure
+- `load-tests/quicker-benchmark/README.md` — `quicker-max` / `quicker-realistic` label flow + per-scenario baseline update procedure
 - Workflow YAML header comments (`.github/workflows/*load-test*`, etc.) — detailed per-workflow reference
 - `docs/testing/reliability-testing.md` — goals, test variants, observability, chaos engineering
 - This file (`.github/instructions/load-tests.instructions.md`) — AI-facing guidance
