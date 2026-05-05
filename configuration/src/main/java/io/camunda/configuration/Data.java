@@ -40,9 +40,9 @@ public class Data {
   /** This section allows configuring exporters */
   private Map<String, Exporter> exporters = new HashMap<>();
 
-  /** This section allows configuring message subscription extension property mapping. */
+  /** This section allows configuring tool property extension mapping. */
   @NestedConfigurationProperty
-  private MessageSubscriptionConfig messageSubscription = new MessageSubscriptionConfig();
+  private ToolPropertiesConfig toolProperties = new ToolPropertiesConfig();
 
   public AuditLog getAuditLog() {
     return auditLog;
@@ -105,11 +105,11 @@ public class Data {
     this.exporters = exporters;
   }
 
-  public MessageSubscriptionConfig getMessageSubscription() {
-    return messageSubscription;
+  public ToolPropertiesConfig getToolProperties() {
+    return toolProperties;
   }
 
-  public void setMessageSubscription(final MessageSubscriptionConfig messageSubscription) {
-    this.messageSubscription = messageSubscription;
+  public void setToolProperties(final ToolPropertiesConfig toolProperties) {
+    this.toolProperties = toolProperties;
   }
 }

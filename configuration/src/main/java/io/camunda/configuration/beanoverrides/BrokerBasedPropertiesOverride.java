@@ -985,7 +985,7 @@ public class BrokerBasedPropertiesOverride {
                   }
 
                   final var msgSub =
-                      unifiedConfiguration.getCamunda().getData().getMessageSubscription();
+                      unifiedConfiguration.getCamunda().getData().getToolProperties();
                   config
                       .getMessageSubscription()
                       .setExtensionPropertyAttributeToolName(

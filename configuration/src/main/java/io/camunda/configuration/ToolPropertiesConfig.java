@@ -8,13 +8,14 @@
 package io.camunda.configuration;
 
 /**
- * Configuration for which extension property names are exported for message subscriptions.
+ * Configuration for which extension property names are exported as tool properties.
  *
  * <p>These properties control which BPMN extension properties are extracted and stored as
- * structured attributes on message subscription entities, making them queryable without exporting
- * all extension properties.
+ * structured attributes on entities, making them queryable without exporting all extension
+ * properties. While currently used primarily for message subscriptions, these settings are general
+ * and can be applied to other entity types in the future.
  */
-public class MessageSubscriptionConfig {
+public class ToolPropertiesConfig {
 
   public static final String DEFAULT_EXTENSION_PROPERTY_ATTRIBUTE_TOOL_NAME =
       "io.camunda.tool:name";

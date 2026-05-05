@@ -38,7 +38,7 @@ const messageSubscriptionSchema = z.object({
 	correlationKey: z.string().nullable(),
 	tenantId: z.string(),
 	rootProcessInstanceKey: z.string().nullable(),
-	extensionProperties: z.record(z.string(), z.string()),
+	toolProperties: z.record(z.string(), z.string()),
 	processDefinitionName: z.string().nullable(),
 	processDefinitionVersion: z.number().int().nullable(),
 	toolName: z.string().nullable(),

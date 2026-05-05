@@ -9,10 +9,10 @@ package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.InterceptorPlugin;
-import io.camunda.configuration.MessageSubscriptionConfig;
 import io.camunda.configuration.Opensearch;
 import io.camunda.configuration.Retention;
 import io.camunda.configuration.SecondaryStorage;
+import io.camunda.configuration.ToolPropertiesConfig;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.BulkConfiguration;
@@ -251,8 +251,8 @@ public final class CamundaExporterConfigurationApplier {
       final ExporterConfiguration exporterConfiguration,
       final UnifiedConfiguration unifiedConfiguration) {
 
-    final MessageSubscriptionConfig source =
-        unifiedConfiguration.getCamunda().getData().getMessageSubscription();
+    final ToolPropertiesConfig source =
+        unifiedConfiguration.getCamunda().getData().getToolProperties();
     final MessageSubscriptionConfiguration target = exporterConfiguration.getMessageSubscription();
 
     target.setExtensionPropertyAttributeToolName(source.getExtensionPropertyAttributeToolName());

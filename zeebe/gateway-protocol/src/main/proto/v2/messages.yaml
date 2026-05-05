@@ -344,13 +344,14 @@ components:
           description: The correlation key of the message subscription.
         messageSubscriptionType:
           $ref: '#/components/schemas/MessageSubscriptionTypeEnum'
-        extensionProperties:
+        toolProperties:
           type: object
           additionalProperties:
             type: string
           description: |
-            The `zeebe:properties` extension properties extracted from the BPMN element associated
-            with this subscription. Empty object when no properties are defined.
+            Tool-related properties extracted from the BPMN element associated with this subscription,
+            filtered by the configured prefix (default: `io.camunda.tool:`). Empty object when no
+            matching properties are defined.
         processDefinitionName:
           type: string
           nullable: true

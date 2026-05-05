@@ -238,7 +238,7 @@ public class MessageSubscriptionSearchIT {
     // then
     assertThat(result.items()).hasSize(1);
     final var sub = result.items().getFirst();
-    assertThat(sub.getExtensionProperties())
+    assertThat(sub.getToolProperties())
         .containsEntry("customKey", "customValue")
         .containsEntry("env", "test");
   }

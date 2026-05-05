@@ -118,7 +118,7 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   }
 
   @Override
-  public Map<String, String> getExtensionProperties() {
+  public Map<String, String> getToolProperties() {
     return extensionProperties;
   }
 
