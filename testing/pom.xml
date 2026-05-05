@@ -21,6 +21,7 @@
   </licenses>
 
   <modules>
+    <module>camunda-process-test-coverage-frontend-new</module>
     <module>camunda-process-test-java</module>
     <module>camunda-process-test-spring</module>
     <module>camunda-process-test-spring-boot-3</module>
