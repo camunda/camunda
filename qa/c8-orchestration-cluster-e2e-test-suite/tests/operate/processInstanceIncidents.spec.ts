@@ -432,4 +432,71 @@ test.describe('Process Instance Incident', () => {
       ).toBeVisible();
     });
   });
+
+  test('Navigate to called decision instance from DMN incident', async ({
+    operateProcessInstancePage,
+    operateDecisionInstancePage,
+    operateHomePage,
+    operateProcessesPage,
+  }) => {
+    test.slow();
+
+    await test.step('Navigate to Processes tab and open the process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName('Process-Incident');
+      await operateProcessesPage.clickProcessInstanceLink();
+    });
+
+    await test.step('Verify process diagram is visible and incidents tab is present', async () => {
+      await expect(operateProcessInstancePage.diagram).toBeVisible();
+      await expect(operateProcessInstancePage.diagramSpinner).toBeHidden({
+        timeout: 30000,
+      });
+      await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
+    });
+
+    await test.step('Open incidents tab', async () => {
+      await operateProcessInstancePage.clickIncidentsTab();
+      await expect(operateProcessInstancePage.incidentsTab).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+    });
+
+    await test.step('Click on the Business Rule Task in the diagram that triggered the decision', async () => {
+      await operateProcessInstancePage.clickOnElementInDiagram('Task_Decision');
+    });
+
+    await test.step('Verify the incident tab displays the failed downstream decision', async () => {
+      await expect(
+        operateProcessInstancePage.getSelectedIncidentRow(
+          /Decision evaluation error\./i,
+        ),
+      ).toBeVisible();
+    });
+
+    await test.step('Verify the incident includes a link whose label contains the decision name and instance ID', async () => {
+      const incidentRow = operateProcessInstancePage.getSelectedIncidentRow(
+        /Decision evaluation error\./i,
+      );
+      const decisionLink = incidentRow.getByRole('link', {
+        name: /Decision C \(Root Cause\)/i,
+      });
+      await expect(decisionLink).toBeVisible();
+      await expect(decisionLink).toHaveAccessibleName(
+        /Decision C \(Root Cause\).*?\d+/i,
+      );
+    });
+
+    await test.step('Click the link to navigate to the decision that caused the incident', async () => {
+      await operateProcessInstancePage.navigateToFailingElementForIncident(
+        /Decision evaluation error\./i,
+        'Decision C (Root Cause)',
+      );
+    });
+
+    await test.step('Verify navigation to the decision instance page', async () => {
+      await expect(operateDecisionInstancePage.decisionPanel).toBeVisible();
+    });
+  });
 });
