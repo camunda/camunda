@@ -1,0 +1,48 @@
+%% Journey 3: User Task Lifecycle
+%% A user task is created, assigned, and completed through Tasklist.
+
+sequenceDiagram
+    autonumber
+    participant Engine as Engine
+    participant Log as Log Stream
+    participant CExp as Camunda Exporter
+    participant ES as Elasticsearch
+    participant Search as Search Client
+    participant TL as Tasklist
+    participant User as End User
+    participant GW as REST Gateway
+    participant Broker as Broker
+
+    Engine->>Log: USER_TASK:CREATING (engine hits user task element)
+    Engine->>Log: USER_TASK:CREATED
+    Log->>CExp: Export USER_TASK records
+    CExp->>ES: Index user task (state: CREATED)
+
+    User->>TL: Open Tasklist UI
+    TL->>Search: Search user tasks (filtered by assignee / candidate)
+    Search->>ES: HTTP query
+    ES-->>Search: Results
+    Search-->>TL: UserTaskEntity[]
+    TL-->>User: Display tasks
+
+    User->>TL: Claim task
+    TL->>GW: POST /v2/user-tasks/{id}/assignment
+    GW->>Broker: BrokerAssignUserTaskRequest
+    Broker->>Engine: USER_TASK:ASSIGN
+    Engine->>Log: USER_TASK:ASSIGNED
+    Log->>CExp: Export assignment
+    CExp->>ES: Update task assignee
+
+    User->>User: Fill in form / provide data
+
+    User->>TL: Complete task
+    TL->>GW: POST /v2/user-tasks/{id}/completion
+    GW->>Broker: BrokerCompleteUserTaskRequest
+    Broker->>Engine: USER_TASK:COMPLETE
+    Engine->>Log: USER_TASK:COMPLETED
+    Engine->>Log: VARIABLE:CREATED (form output)
+
+    Note over Engine,Log: Engine advances process past user task
+
+    Log->>CExp: Export completion
+    CExp->>ES: Update task state to COMPLETED

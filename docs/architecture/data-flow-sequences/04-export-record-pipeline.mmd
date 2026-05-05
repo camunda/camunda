@@ -1,0 +1,49 @@
+%% Journey 4: Export Record Pipeline
+%% How every record produced by the engine reaches secondary storage and webapps.
+
+sequenceDiagram
+    autonumber
+    participant Engine as Engine
+    participant Log as Log Stream
+    participant ExDir as Exporter Director (Broker)
+    participant CExp as Camunda Exporter
+    participant RExp as RDBMS Exporter
+    participant ES as Elasticsearch / OpenSearch
+    participant DB as RDBMS
+    participant Search as Search Client
+    participant Operate as Operate
+    participant Tasklist as Tasklist
+    participant Optimize as Optimize
+
+    Engine->>Log: Append record (any ValueType × Intent)
+
+    Note over Log,ExDir: Exporter Director reads from last exported position
+
+    ExDir->>CExp: Record (position N)
+    CExp->>CExp: Select handler (83 handlers by ValueType)
+    CExp->>CExp: Transform to ES/OS document
+    CExp->>ES: Bulk index request (HTTP)
+    ES-->>CExp: Ack
+    CExp->>ExDir: Update exported position
+
+    ExDir->>RExp: Record (position N)
+    RExp->>RExp: Select handler (42 handlers by ValueType)
+    RExp->>RExp: Transform to DB model
+    RExp->>DB: INSERT / UPDATE (JDBC / MyBatis)
+    DB-->>RExp: Ack
+    RExp->>ExDir: Update exported position
+
+    Note over ES,Optimize: Webapps read from secondary storage (eventually consistent)
+
+    Operate->>Search: Search process instances
+    Search->>ES: HTTP query
+    ES-->>Search: Results
+    Search-->>Operate: ProcessInstanceEntity[]
+
+    Tasklist->>Search: Search user tasks
+    Search->>DB: JDBC query (if RDBMS mode)
+    DB-->>Search: Results
+    Search-->>Tasklist: UserTaskEntity[]
+
+    Optimize->>ES: Analytics queries (aggregations)
+    ES-->>Optimize: Aggregated data

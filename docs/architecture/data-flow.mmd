@@ -1,0 +1,115 @@
+%% Camunda 8 — Data-Flow Overview
+%% Shows how data enters, flows through, and exits the system.
+%% Renderable with any Mermaid-compatible viewer (GitHub, VS Code, etc.)
+%%
+%% This is a single flowchart covering all four key data journeys.
+%% For detailed step-by-step sequence diagrams of each journey, see:
+%%   data-flow-sequences/01-deploy-process-definition.mmd
+%%   data-flow-sequences/02-process-instance-execution.mmd
+%%   data-flow-sequences/03-user-task-lifecycle.mmd
+%%   data-flow-sequences/04-export-record-pipeline.mmd
+
+flowchart LR
+    %% ── External Actors ──────────────────────────────────────────
+    Dev["👨‍💻 Developer"]
+    Worker["⚙️ Job Worker"]
+    EndUser["👤 End User"]
+
+    %% ── Gateways ─────────────────────────────────────────────────
+    subgraph GW ["API Gateway"]
+        REST["REST /v2"]
+        GRPC["gRPC"]
+    end
+
+    %% ── Zeebe Core ───────────────────────────────────────────────
+    subgraph Core ["Zeebe Core (per partition)"]
+        Engine["Engine<br/>(BPMN / DMN)"]
+        Log["Log Stream"]
+        State["State Store<br/>(RocksDB)"]
+    end
+
+    %% ── Exporters ────────────────────────────────────────────────
+    subgraph Exp ["Exporters"]
+        CamExp["Camunda Exporter"]
+        RDBMSExp["RDBMS Exporter"]
+    end
+
+    %% ── Secondary Storage ────────────────────────────────────────
+    ES["Elasticsearch /<br/>OpenSearch"]
+    DB["RDBMS"]
+
+    %% ── Search Abstraction ───────────────────────────────────────
+    Search["Search Client"]
+
+    %% ── Webapps ──────────────────────────────────────────────────
+    subgraph Webapps ["Webapps"]
+        Operate["Operate"]
+        Tasklist["Tasklist"]
+        Optimize["Optimize"]
+    end
+
+    %% ═══════════════════════════════════════════════════════════
+    %% Journey 1 — Deploy Process Definition (blue)
+    %% Dev → Gateway → Engine → Log → Exporter → ES → Operate
+    %% ═══════════════════════════════════════════════════════════
+    Dev -- "1. Deploy BPMN<br/>(REST/gRPC)" --> REST & GRPC
+    REST & GRPC -- "2. DEPLOYMENT:CREATE<br/>command" --> Engine
+    Engine -- "3. Parse and validate<br/>(bpmn-model)" --> Engine
+    Engine -- "4. Store definition" --> State
+    Engine -- "5. DEPLOYMENT:CREATED<br/>+ PROCESS:CREATED" --> Log
+
+    %% ═══════════════════════════════════════════════════════════
+    %% Journey 2 — Process Instance Execution (green)
+    %% Client → Gateway → Engine → Job Worker → Engine → Log
+    %% ═══════════════════════════════════════════════════════════
+    Dev -- "6. Create instance" --> REST & GRPC
+    REST & GRPC -- "7. PI_CREATION:CREATE" --> Engine
+    Engine -- "8. Activate elements,<br/>create jobs" --> Log
+    Engine -- "9. Update state" --> State
+    GRPC -- "10. ActivateJobs" --- Worker
+    Worker -- "11. CompleteJob<br/>(+ result vars)" --> GRPC
+    GRPC -- "12. JOB:COMPLETE" --> Engine
+    Engine -- "13. JOB:COMPLETED<br/>+ advance flow" --> Log
+
+    %% ═══════════════════════════════════════════════════════════
+    %% Journey 3 — User Task (orange)
+    %% Engine → Log → Exporter → ES → Tasklist → User → Engine
+    %% ═══════════════════════════════════════════════════════════
+    Engine -- "14. USER_TASK:CREATED" --> Log
+    EndUser -- "15. View tasks" --> Tasklist
+    Tasklist -- "16. Search tasks" --> Search
+    EndUser -- "17. Claim and complete" --> Tasklist
+    Tasklist -- "18. Assign / Complete<br/>(REST)" --> REST
+    REST -- "19. USER_TASK:COMPLETE" --> Engine
+    Engine -- "20. USER_TASK:COMPLETED<br/>+ advance" --> Log
+
+    %% ═══════════════════════════════════════════════════════════
+    %% Journey 4 — Export Pipeline (purple)
+    %% Log → ExporterDirector → Exporter → ES/RDBMS → Webapps
+    %% ═══════════════════════════════════════════════════════════
+    Log -- "21. Stream all records<br/>(any ValueType × Intent)" --> CamExp
+    Log -- "21. Stream all records" --> RDBMSExp
+    CamExp -- "22. Bulk index<br/>(HTTP)" --> ES
+    RDBMSExp -- "23. INSERT/UPDATE<br/>(JDBC)" --> DB
+    ES --> Search
+    DB --> Search
+    Search -- "24. Query results" --> Operate
+    Search -- "24. Query results" --> Tasklist
+    ES -- "25. Aggregation<br/>queries" --> Optimize
+
+    %% ── Styles ───────────────────────────────────────────────────
+    classDef actor fill:#e1bee7,stroke:#6a1b9a
+    classDef gateway fill:#c8e6c9,stroke:#2e7d32
+    classDef core fill:#fff9c4,stroke:#f9a825
+    classDef exporter fill:#d1c4e9,stroke:#4527a0
+    classDef storage fill:#ffe0b2,stroke:#e65100
+    classDef webapp fill:#bbdefb,stroke:#1565c0
+    classDef search fill:#b2dfdb,stroke:#00695c
+
+    class Dev,Worker,EndUser actor
+    class REST,GRPC gateway
+    class Engine,Log,State core
+    class CamExp,RDBMSExp exporter
+    class ES,DB storage
+    class Operate,Tasklist,Optimize webapp
+    class Search search

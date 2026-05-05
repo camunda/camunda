@@ -1,0 +1,183 @@
+%% Camunda 8 — Architecture Diagram
+%% Renderable with any Mermaid-compatible viewer (GitHub, VS Code, etc.)
+
+graph TD
+    %% ── External actors ──────────────────────────────────────────
+    User["👤 End User<br/>(Browser)"]
+    Dev["👨‍💻 Developer<br/>(IDE / CLI)"]
+    Worker["⚙️ Job Worker<br/>(External App)"]
+    AIClient["🤖 AI / LLM Client"]
+    ExtModeler["📐 Web Modeler<br/>(external)"]
+    ExtConnectors["🔌 Connectors<br/>(external)"]
+
+    %% ── Frontends ────────────────────────────────────────────────
+    subgraph Frontends ["Frontends (React / Carbon)"]
+        OperateUI["Operate UI"]
+        TasklistUI["Tasklist UI"]
+        IdentityUI["Identity UI"]
+        OptimizeUI["Optimize UI"]
+    end
+
+    %% ── API Layer ────────────────────────────────────────────────
+    subgraph APILayer ["API Layer"]
+        RESTGateway["REST Gateway<br/>/v2/*"]
+        GRPCGateway["gRPC Gateway<br/>(23 RPCs)"]
+        MCPGateway["MCP Gateway<br/>/mcp/cluster · /mcp/processes"]
+    end
+
+    %% ── Authentication & Security ────────────────────────────────
+    subgraph AuthLayer ["Auth and Security"]
+        AuthModule["Authentication<br/>(OIDC / Basic)"]
+        SecurityCore["Security Core<br/>(Authorization)"]
+    end
+    Keycloak["🔑 Keycloak / OIDC Provider"]
+
+    %% ── Service Layer ────────────────────────────────────────────
+    ServiceLayer["Service Layer<br/>(ProcessInstance · Job · UserTask ·<br/>Incident · Decision · Variable · …)"]
+
+    %% ── Zeebe Core ───────────────────────────────────────────────
+    subgraph ZeebeCore ["Zeebe Core"]
+        Broker["Broker<br/>(Raft Consensus · Partitions)"]
+        Engine["Engine<br/>(BPMN / DMN execution)"]
+        LogStream["Log Stream<br/>(Append-only)"]
+        StateStore["State Store<br/>(RocksDB)"]
+    end
+
+    %% ── Exporters ────────────────────────────────────────────────
+    subgraph Exporters ["Exporters"]
+        CamundaExporter["Camunda Exporter<br/>(83 handlers)"]
+        RDBMSExporter["RDBMS Exporter<br/>(42 handlers)"]
+    end
+
+    %% ── Secondary Storage ────────────────────────────────────────
+    subgraph SecondaryStorage ["Secondary Storage"]
+        ES["Elasticsearch /<br/>OpenSearch"]
+        RDBMS["RDBMS<br/>(PostgreSQL · MySQL ·<br/>MariaDB · Oracle · MSSQL · H2)"]
+    end
+
+    %% ── Search Abstraction ───────────────────────────────────────
+    SearchClient["Search Client<br/>(ES / OS / RDBMS abstraction)"]
+
+    %% ── Webapp Backends ──────────────────────────────────────────
+    subgraph WebappBackends ["Webapp Backends"]
+        OperateBE["Operate Backend"]
+        TasklistBE["Tasklist Backend"]
+        OptimizeBE["Optimize Backend"]
+    end
+
+    %% ── Client Libraries ─────────────────────────────────────────
+    subgraph ClientLibs ["Client Libraries"]
+        JavaClient["Java Client"]
+        SpringStarter["Spring Boot Starter"]
+    end
+
+    %% ── Packaging ────────────────────────────────────────────────
+    C8Run["C8Run<br/>(single-jar local runner)"]
+
+    %% ── Backup Storage ───────────────────────────────────────────
+    BackupStore["☁️ Backup<br/>(S3 / GCS / Azure / FS)"]
+
+    %% ═══════════════════════════════════════════════════════════
+    %% Edges
+    %% ═══════════════════════════════════════════════════════════
+
+    %% Users → Frontends
+    User -->|"HTTPS"| OperateUI
+    User -->|"HTTPS"| TasklistUI
+    User -->|"HTTPS"| IdentityUI
+    User -->|"HTTPS"| OptimizeUI
+
+    %% Frontends → Webapp Backends
+    OperateUI -->|"REST"| OperateBE
+    TasklistUI -->|"REST"| TasklistBE
+    OptimizeUI -->|"REST"| OptimizeBE
+    IdentityUI -->|"REST"| AuthModule
+
+    %% Developer / Worker → API Layer
+    Dev -->|"REST / gRPC"| RESTGateway
+    Dev -->|"gRPC"| GRPCGateway
+    Worker -->|"gRPC stream"| GRPCGateway
+    Worker -->|"REST"| RESTGateway
+    AIClient -->|"MCP (SSE)"| MCPGateway
+
+    %% Client Libraries → API Layer
+    JavaClient -->|"gRPC / REST"| GRPCGateway
+    JavaClient -->|"REST"| RESTGateway
+    SpringStarter --> JavaClient
+
+    %% External systems → API Layer
+    ExtModeler -->|"REST / gRPC"| RESTGateway
+    ExtConnectors -->|"gRPC"| GRPCGateway
+
+    %% API Layer → Auth
+    RESTGateway --> AuthModule
+    GRPCGateway --> AuthModule
+    MCPGateway --> AuthModule
+    AuthModule -->|"OIDC / OAuth2"| Keycloak
+    AuthModule --> SecurityCore
+
+    %% API Layer → Service Layer
+    RESTGateway --> ServiceLayer
+    MCPGateway --> ServiceLayer
+
+    %% Webapp Backends → Service Layer
+    OperateBE --> ServiceLayer
+    TasklistBE --> ServiceLayer
+    OptimizeBE --> ServiceLayer
+
+    %% Service Layer → Broker (mutations)
+    ServiceLayer -->|"Broker requests<br/>(gRPC internal)"| Broker
+
+    %% Service Layer → Search (queries)
+    ServiceLayer -->|"Search queries"| SearchClient
+
+    %% gRPC Gateway → Broker (direct for gRPC clients)
+    GRPCGateway -->|"Broker requests<br/>(SBE protocol)"| Broker
+
+    %% Broker internals
+    Broker --> Engine
+    Engine -->|"Read / Write"| StateStore
+    Engine -->|"Append"| LogStream
+    Broker -->|"Raft replication"| Broker
+
+    %% Broker → Exporters
+    LogStream -->|"Export records"| CamundaExporter
+    LogStream -->|"Export records"| RDBMSExporter
+
+    %% Exporters → Secondary Storage
+    CamundaExporter -->|"Bulk index<br/>(HTTP)"| ES
+    RDBMSExporter -->|"JDBC"| RDBMS
+
+    %% Search Client → Secondary Storage
+    SearchClient -->|"HTTP queries"| ES
+    SearchClient -->|"JDBC queries"| RDBMS
+
+    %% Broker → Backup
+    Broker -->|"Snapshots"| BackupStore
+
+    %% Broker → Job Workers (streaming)
+    Broker -->|"Job stream"| GRPCGateway
+
+    %% C8Run bundles everything
+    C8Run -.->|"bundles"| Broker
+    C8Run -.->|"bundles"| RESTGateway
+    C8Run -.->|"bundles"| OperateBE
+    C8Run -.->|"bundles"| TasklistBE
+    C8Run -.->|"bundles"| IdentityUI
+
+    %% ── Styles ───────────────────────────────────────────────────
+    classDef external fill:#f9f,stroke:#333,stroke-width:1px
+    classDef frontend fill:#bbdefb,stroke:#1565c0
+    classDef api fill:#c8e6c9,stroke:#2e7d32
+    classDef core fill:#fff9c4,stroke:#f9a825
+    classDef storage fill:#ffe0b2,stroke:#e65100
+    classDef exporter fill:#d1c4e9,stroke:#4527a0
+    classDef service fill:#b2dfdb,stroke:#00695c
+
+    class User,Dev,Worker,AIClient,ExtModeler,ExtConnectors,Keycloak,BackupStore external
+    class OperateUI,TasklistUI,IdentityUI,OptimizeUI frontend
+    class RESTGateway,GRPCGateway,MCPGateway api
+    class Broker,Engine,LogStream,StateStore core
+    class ES,RDBMS storage
+    class CamundaExporter,RDBMSExporter exporter
+    class ServiceLayer,OperateBE,TasklistBE,OptimizeBE,SearchClient service

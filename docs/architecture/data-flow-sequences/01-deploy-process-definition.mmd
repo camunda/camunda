@@ -1,0 +1,35 @@
+%% Journey 1: Process Definition Deployment
+%% Deploy a BPMN resource end-to-end through the system.
+
+sequenceDiagram
+    autonumber
+    participant Dev as Developer / Modeler
+    participant GW as Gateway (REST / gRPC)
+    participant Auth as Auth Layer
+    participant Broker as Broker
+    participant Engine as Engine
+    participant Log as Log Stream
+    participant State as State Store (RocksDB)
+    participant CExp as Camunda Exporter
+    participant RExp as RDBMS Exporter
+    participant ES as Elasticsearch / OpenSearch
+    participant DB as RDBMS
+    participant Operate as Operate
+    participant Tasklist as Tasklist
+
+    Dev->>GW: Deploy BPMN resource (REST POST /v2/deployments or gRPC DeployResource)
+    GW->>Auth: Authenticate & authorize
+    Auth-->>GW: ✅ Allowed
+    GW->>Broker: BrokerDeployResourceRequest (routed to partition 1)
+    Broker->>Engine: DEPLOYMENT:CREATE command
+    Engine->>Engine: Parse & validate BPMN (bpmn-model)
+    Engine->>State: Store ProcessDefinition
+    Engine->>Log: Write DEPLOYMENT:CREATED event
+    Engine->>Log: Write PROCESS:CREATED event
+    Log->>CExp: Export DEPLOYMENT + PROCESS records
+    CExp->>ES: Bulk index to process-definition index
+    Log->>RExp: Export DEPLOYMENT + PROCESS records
+    RExp->>DB: INSERT into process_definition table
+    Note over Operate,Tasklist: Webapps query secondary storage (eventually consistent)
+    Operate->>ES: Search process definitions
+    Tasklist->>ES: Search startable processes
