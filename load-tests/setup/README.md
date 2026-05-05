@@ -246,7 +246,7 @@ Benchmark clusters have authentication enabled. Logging into Operate, Tasklist a
 
    ```sh
     kubectl -n <namespace> port-forward svc/camunda 8080:8080 &
-    kubectl -n <namespace> port-forward pod/keycloak-0 18080:8080 &
+    kubectl -n <namespace> port-forward svc/keycloak 18080:80 &
     wait
    ```
 
