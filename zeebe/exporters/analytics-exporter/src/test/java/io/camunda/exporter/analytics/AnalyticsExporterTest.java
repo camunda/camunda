@@ -17,8 +17,16 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.opentelemetry.api.logs.LogRecordBuilder;
+import io.opentelemetry.api.logs.Severity;
+import io.opentelemetry.sdk.logs.SdkLoggerProvider;
+import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
+import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.util.ArrayList;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,12 +41,11 @@ class AnalyticsExporterTest {
     @Test
     void shouldRejectMissingEndpoint() {
       // given
-      final var config = new AnalyticsExporterConfig();
-      config.setEnabled(true);
-      config.setEndpoint("");
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("analytics", config));
+              .setConfiguration(
+                  new ExporterTestConfiguration<>(
+                      "analytics", new AnalyticsExporterConfig().setEnabled(true).setEndpoint("")));
 
       // when / then
       assertThatThrownBy(() -> new AnalyticsExporter().configure(context))
@@ -48,12 +55,11 @@ class AnalyticsExporterTest {
     @Test
     void shouldAcceptMissingEndpointWhenDisabled() {
       // given
-      final var config = new AnalyticsExporterConfig();
-      config.setEnabled(false);
-      config.setEndpoint("");
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("analytics", config));
+              .setConfiguration(
+                  new ExporterTestConfiguration<>(
+                      "analytics", new AnalyticsExporterConfig().setEndpoint("")));
 
       // when / then
       assertThatCode(() -> new AnalyticsExporter().configure(context)).doesNotThrowAnyException();
@@ -63,21 +69,45 @@ class AnalyticsExporterTest {
   @Nested
   class ExportBehavior {
 
+    private InMemoryLogRecordExporter memoryExporter;
     private ExporterTestController controller;
     private AnalyticsExporter exporter;
 
     @BeforeEach
     void setUp() {
+      memoryExporter = InMemoryLogRecordExporter.create();
       controller = new ExporterTestController();
-      final var config = new AnalyticsExporterConfig();
-      final var context =
-          new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("analytics", config))
-              .setClusterId("test-cluster")
-              .setPartitionId(1);
-      exporter = new AnalyticsExporter();
-      exporter.configure(context);
-      exporter.open(controller);
+      exporter = exporterWithInMemory(memoryExporter, controller);
+    }
+
+    @Test
+    void shouldEmitLogRecordWithAllAttributes() {
+      // given
+      final var record = piCreatedEvent();
+
+      // when
+      exporter.export(record);
+
+      // then
+      final var value = (ProcessInstanceCreationRecordValue) record.getValue();
+      assertThat(memoryExporter.getFinishedLogRecordItems())
+          .singleElement()
+          .satisfies(
+              logRecord -> {
+                assertThat(logRecord.getSeverity()).isEqualTo(Severity.INFO);
+                assertThat(logRecord.getAttributes().asMap())
+                    .containsEntry(AnalyticsAttributes.EVENT_NAME, "process_instance_created")
+                    .containsEntry(AnalyticsAttributes.BPMN_PROCESS_ID, value.getBpmnProcessId())
+                    .containsEntry(AnalyticsAttributes.PROCESS_VERSION, (long) value.getVersion())
+                    .containsEntry(
+                        AnalyticsAttributes.PROCESS_DEFINITION_KEY, value.getProcessDefinitionKey())
+                    .containsEntry(AnalyticsAttributes.PROCESS_INSTANCE_KEY, record.getKey())
+                    .containsEntry(
+                        AnalyticsAttributes.ROOT_PROCESS_INSTANCE_KEY,
+                        value.getRootProcessInstanceKey())
+                    .containsEntry(AnalyticsAttributes.TENANT_ID, value.getTenantId())
+                    .containsEntry(AnalyticsAttributes.LOG_POSITION, record.getPosition());
+              });
     }
 
     @Test
@@ -91,32 +121,41 @@ class AnalyticsExporterTest {
 
       // then
       assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+      assertThat(memoryExporter.getFinishedLogRecordItems()).isEmpty();
     }
 
     @Test
-    void shouldUpdatePositionForHandledEvents() {
+    void shouldEmitMultipleEventsInSequence() {
       // given / when
       final var positions = new ArrayList<Long>(10);
       for (int i = 0; i < 10; i++) {
-        final var record =
-            FACTORY.generateRecord(
-                ValueType.PROCESS_INSTANCE_CREATION,
-                r ->
-                    r.withRecordType(RecordType.EVENT)
-                        .withIntent(ProcessInstanceCreationIntent.CREATED));
+        final var record = piCreatedEvent();
         exporter.export(record);
         positions.add(record.getPosition());
       }
 
       // then
-      assertThat(controller.getPosition()).isIn(positions);
+      assertThat(memoryExporter.getFinishedLogRecordItems()).hasSize(10);
+      assertThat(controller.getPosition())
+          .isEqualTo(positions.stream().mapToLong(Long::longValue).max().orElseThrow());
+    }
+
+    @Test
+    void shouldContinueWhenHandlerThrows() {
+      // given
+      final var failController = new ExporterTestController();
+      final var failExporter = exporterWithThrowingOtel(failController);
+      final var record = piCreatedEvent();
+
+      // when / then — export must not propagate the exception
+      assertThatCode(() -> failExporter.export(record)).doesNotThrowAnyException();
+      assertThat(failController.getPosition()).isEqualTo(record.getPosition());
     }
 
     @Test
     void shouldUpdatePositionWhenDisabled() {
       // given
       final var disabledConfig = new AnalyticsExporterConfig();
-      disabledConfig.setEnabled(false);
       final var disabledController = new ExporterTestController();
       final var context =
           new ExporterTestContext()
@@ -133,5 +172,59 @@ class AnalyticsExporterTest {
       // then
       assertThat(disabledController.getPosition()).isEqualTo(record.getPosition());
     }
+  }
+
+  // -- helpers --
+
+  private static io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent() {
+    return FACTORY.generateRecord(
+        ValueType.PROCESS_INSTANCE_CREATION,
+        r -> r.withRecordType(RecordType.EVENT).withIntent(ProcessInstanceCreationIntent.CREATED));
+  }
+
+  private static AnalyticsExporter exporterWithInMemory(
+      final InMemoryLogRecordExporter memoryExporter, final ExporterTestController controller) {
+    return newExporter(
+        new OtelSdkManager() {
+          @Override
+          protected SdkLoggerProvider createLoggerProvider(
+              final AnalyticsExporterConfig cfg, final Resource resource) {
+            return SdkLoggerProvider.builder()
+                .setResource(resource)
+                .addLogRecordProcessor(SimpleLogRecordProcessor.create(memoryExporter))
+                .build();
+          }
+        },
+        controller);
+  }
+
+  private static AnalyticsExporter exporterWithThrowingOtel(
+      final ExporterTestController controller) {
+    return newExporter(
+        new OtelSdkManager() {
+          @Override
+          void logEvent(
+              final String eventName,
+              final long logPosition,
+              final Consumer<LogRecordBuilder> builder) {
+            throw new RuntimeException("simulated failure");
+          }
+        },
+        controller);
+  }
+
+  private static AnalyticsExporter newExporter(
+      final OtelSdkManager otelSdkManager, final ExporterTestController controller) {
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>(
+                    "analytics", new AnalyticsExporterConfig().setEnabled(true)))
+            .setClusterId("test-cluster")
+            .setPartitionId(1);
+    final var exporter = new AnalyticsExporter(otelSdkManager);
+    exporter.configure(context);
+    exporter.open(controller);
+    return exporter;
   }
 }
