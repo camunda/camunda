@@ -252,32 +252,25 @@ public class OpensearchBackupRepository implements BackupRepository {
         .async()
         .snapshot()
         .create(requestBuilder)
-        .thenAccept(
-            response -> {
-              try {
-                handleSnapshotReceived(response.snapshot(), onSuccess, onFailure);
-              } catch (final Exception e) {
-                LOGGER.error(
-                    format(
-                        "Exception while handling snapshot response for [%s], backup id [%d].",
-                        snapshotRequest.snapshotName(), backupId),
-                    e);
-                try {
-                  onFailure.run();
-                } catch (final Exception ex) {
-                  LOGGER.error("Exception while calling onFailure callback", ex);
-                }
-              }
-            })
+        .thenAccept(response -> handleSnapshotReceived(response.snapshot(), onSuccess, onFailure))
         .exceptionally(
             e -> {
               try {
                 if (e instanceof SocketTimeoutException) {
                   // This is thrown even if the backup is still running
+                  final Integer socketTimeout =
+                      operateProperties.getOpensearch().getSocketTimeout();
                   LOGGER.warn(
                       format(
-                          "Timeout while creating snapshot [%s] for backup id [%d]. Need to keep waiting with polling...",
-                          snapshotRequest.snapshotName(), backupId));
+                          "The OpenSearch HTTP connection timed out while waiting for snapshot [%s] "
+                              + "(backup id [%d]) to complete. The snapshot is likely still running in "
+                              + "OpenSearch. Polling will continue to check its status. If socket timeouts "
+                              + "occur repeatedly, consider increasing the socket timeout via "
+                              + "CAMUNDA_OPERATE_OPENSEARCH_SOCKETTIMEOUT (current value: %s ms). "
+                              + "Consider doubling or tripling the current value.",
+                          snapshotRequest.snapshotName(),
+                          backupId,
+                          socketTimeout != null ? socketTimeout : "not set"));
                   // Keep waiting
                   while (true) {
                     final List<OpenSearchSnapshotInfo> snapshotInfos =

@@ -24,21 +24,17 @@ public class ElasticsearchProperties {
   public static final int DEFAULT_MAX_TERMS_COUNT = 10_000;
   public static final long BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024L * 1024L * 90L; // 90 MB
 
+  public static final int DEFAULT_SOCKET_TIMEOUT = 180_000;
   private String clusterName = "elasticsearch";
-
   @Deprecated private String host = "localhost";
-
   @Deprecated private int port = 9200;
-
   private String dateFormat = DATE_FORMAT_DEFAULT;
-
   private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
-
   private int batchSize = 200;
   private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
   private long bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
 
-  private Integer socketTimeout;
+  private Integer socketTimeout = DEFAULT_SOCKET_TIMEOUT;
   private Integer connectTimeout;
 
   private boolean createSchema = true;

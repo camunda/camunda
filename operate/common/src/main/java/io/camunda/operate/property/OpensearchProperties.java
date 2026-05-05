@@ -21,20 +21,15 @@ public class OpensearchProperties {
   public static final String OS_DATE_FORMAT_DEFAULT = "date_time";
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
-
+  public static final int DEFAULT_SOCKET_TIMEOUT = 180_000;
   private String clusterName = "opensearch";
-
   @Deprecated private String host = "localhost";
-
   @Deprecated private int port = 9200;
-
   private String dateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
-
   private String osDateFormat = OS_DATE_FORMAT_DEFAULT;
-
   private int batchSize = 200;
 
-  private Integer socketTimeout;
+  private Integer socketTimeout = DEFAULT_SOCKET_TIMEOUT;
   private Integer connectTimeout;
 
   private boolean createSchema = true;
