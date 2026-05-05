@@ -294,13 +294,16 @@ public class IncidentErrorHashCodeNormalizer {
         final var values = op.values();
         yield values != null
             && !values.isEmpty()
-            && values.stream().anyMatch(v -> v != null && resolved.contains(v));
+            && values.stream().anyMatch(v -> v != null && !v.isBlank() && resolved.contains(v));
       }
       case NOT_IN -> {
         final var values = op.values();
+        // Defensive: blank values are filtered out so a stray "" in the list does not force a
+        // rejection via resolved.contains("") == true. hasInvalidErrorMessages drops such ops
+        // upstream, but the predicate stays correct in isolation.
         yield values != null
             && !values.isEmpty()
-            && values.stream().noneMatch(v -> v != null && resolved.contains(v));
+            && values.stream().filter(v -> v != null && !v.isBlank()).noneMatch(resolved::contains);
       }
       case LIKE -> likePatternMatches(op.value(), resolved);
       case EXISTS -> true;
@@ -336,8 +339,26 @@ public class IncidentErrorHashCodeNormalizer {
       return true;
     }
     for (final var op : ops) {
-      if ((op.operator() != Operator.EXISTS && op.operator() != Operator.NOT_EXISTS)
-          && (op.value() == null || op.value().isBlank())) {
+      if (op == null) {
+        return true;
+      }
+      final var operator = op.operator();
+      if (operator == Operator.EXISTS || operator == Operator.NOT_EXISTS) {
+        continue;
+      }
+      if (operator == Operator.IN || operator == Operator.NOT_IN) {
+        final var values = op.values();
+        if (values == null || values.isEmpty()) {
+          return true;
+        }
+        for (final var v : values) {
+          if (v == null || v.isBlank()) {
+            return true;
+          }
+        }
+        continue;
+      }
+      if (op.value() == null || op.value().isBlank()) {
         return true;
       }
     }
