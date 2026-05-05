@@ -537,6 +537,84 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
     });
   });
 
+  // ── Producer-existence gate: structural-shape branch ─────────
+  // camunda/camunda#52322 review: errors raised by *other* Spectral
+  // rules (e.g. `semantic-establishes-shape`) are not visible inside
+  // verifySemanticKindsRegistered's local errors[]. Without a
+  // duplicated structural check, a malformed-shape producer would
+  // satisfy the producer-existence gate and silently mask the orphan
+  // error on every consumer of its kind. Class-scoped: covers the three
+  // shape-rule failure modes the reviewer named (empty identifiedBy,
+  // missing identifiedBy, typo'd top-level key) plus a single consumer
+  // that must report orphan exactly once.
+  describe('verify-semantic-kinds-registered: producer-existence gate (structural shape)', () => {
+    it('reports orphan on the consumer when every producer of the kind has a malformed establishes block', () => {
+      // Three malformed producers (#26-#28) all attempt to establish
+      // MalformedShapeKind. None should be admitted to `established`,
+      // so the consumer (#29) must report orphan once.
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes("Semantic kind 'MalformedShapeKind'") &&
+          e.message.includes('no operation establishes it') &&
+          e.message.includes('/invalid/malformed-shape-consumer'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+
+    it('the shape rule still fires on each malformed producer (not suppressed)', () => {
+      // Sanity check: the user-facing shape rule should report on each
+      // of the three malformed producers. The producer-existence gate
+      // does not push duplicate errors — it only refuses to admit the
+      // kind into `established`.
+      const paths = [
+        '/invalid/malformed-empty-identified-by',
+        '/invalid/malformed-missing-identified-by',
+        '/invalid/malformed-typoed-top-level-key',
+      ];
+      for (const p of paths) {
+        const m = shapeViolations.filter(
+          (e) => Array.isArray(e.path) && e.path.includes(p),
+        );
+        assert.ok(
+          m.length >= 1,
+          `Expected semantic-establishes-shape to flag ${p}, got: ${JSON.stringify(shapeViolations, null, 2)}`,
+        );
+      }
+    });
+  });
+
+  // ── Binding existence: non-object request body ───────────────
+  // camunda/camunda#52322 review: a body binding against a scalar or
+  // array request body is impossible and must fail. Previously the
+  // walker returned `null` for both unresolved $refs and resolved
+  // non-object schemas, so the binding-existence check silently skipped
+  // both cases. Tri-state walker {unresolved | walked | non-object}
+  // distinguishes them — unresolved still skips (per-file pass with
+  // cross-file $ref), non-object now fails. Class-scoped across both
+  // establish and require branches and across scalar and array body
+  // shapes.
+  describe('verify-semantic-kinds-registered: binding existence (non-object body)', () => {
+    it('flags establishes when the requestBody schema is a scalar (type: string)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/invalid/establishes-body-non-object-scalar') &&
+          e.message.includes("body member 'widgetId'") &&
+          e.message.includes('non-object type'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+
+    it('flags requires when the requestBody schema is an array (type: array)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/invalid/requires-body-non-object-array') &&
+          e.message.includes("body member 'widgetId'") &&
+          e.message.includes('non-object type'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+  });
+
   // ── Per-file pass: only the producer-existence cross-reference is gated ──
   // CI lints both the bundled entry (rest-api.yaml) and each domain file
   // independently. The cross-reference walk relies on every producer being

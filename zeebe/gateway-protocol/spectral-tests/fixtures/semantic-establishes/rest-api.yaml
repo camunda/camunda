@@ -90,6 +90,22 @@ paths:
   /invalid/broken-establish-consumer/{brokenProducedId}:
     $ref: 'widgets.yaml#/paths/~1invalid~1broken-establish-consumer~1{brokenProducedId}'
 
+  # ── Producer-existence gate (structural-shape branch) ────────
+  /invalid/malformed-empty-identified-by:
+    $ref: 'widgets.yaml#/paths/~1invalid~1malformed-empty-identified-by'
+  /invalid/malformed-missing-identified-by:
+    $ref: 'widgets.yaml#/paths/~1invalid~1malformed-missing-identified-by'
+  /invalid/malformed-typoed-top-level-key:
+    $ref: 'widgets.yaml#/paths/~1invalid~1malformed-typoed-top-level-key'
+  /invalid/malformed-shape-consumer/{malformedShapeId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1malformed-shape-consumer~1{malformedShapeId}'
+
+  # ── Binding existence: non-object request body ───────────────
+  /invalid/establishes-body-non-object-scalar:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-body-non-object-scalar'
+  /invalid/requires-body-non-object-array:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-body-non-object-array'
+
   # ── Binding existence with $ref'd request body ───────────────
   # Production specs declare `requestBody.content.*.schema` as a `$ref`
   # to a top-level component schema, not as an inline object. The

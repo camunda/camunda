@@ -12,7 +12,8 @@
     { "name": "WidgetExternalLink", "shape": "edge", "$comment": "Edge from Widget to ExternalThing — establishes correctly without needing an ExternalThing producer." },
     { "name": "Bimodal", "shape": "entity", "identifiers": ["BimodalId"], "$comment": "Registered entity with no producer in the fixture spec. Used to exercise the per-tuple `acceptsExternal: true` opt-out (camunda/camunda#52322): an edge endpoint with that flag must NOT trigger the derived-requires orphan check, even though Bimodal has no producer." },
     { "name": "WidgetBimodalLink", "shape": "edge", "$comment": "Edge from Widget to Bimodal — uses identifiedBy.acceptsExternal: true on the Bimodal endpoint to declare that this site accepts either an in-API producer or an externally-minted ID." },
-    { "name": "BrokenProducedKind", "shape": "entity", "identifiers": ["BrokenProducedId"], "$comment": "Established by a fixture op whose `establishes` block is invalid (broken identifiedBy). The producer-existence gate must NOT count it as established, so consumers get the orphan error." }
+    { "name": "BrokenProducedKind", "shape": "entity", "identifiers": ["BrokenProducedId"], "$comment": "Established by a fixture op whose `establishes` block is invalid (broken identifiedBy). The producer-existence gate must NOT count it as established, so consumers get the orphan error." },
+    { "name": "MalformedShapeKind", "shape": "entity", "identifiers": ["MalformedShapeId"], "$comment": "Class-scoped guard for the producer-existence gate's structural-shape validation (camunda/camunda#52322 review). Several fixture ops attempt to establish this kind via malformed `x-semantic-establishes` blocks (empty identifiedBy, missing identifiedBy, typo'd top-level key, non-object). The gate must NOT count any of them as a producer, so the downstream consumer still reports the orphan error." }
   ]
 }
 

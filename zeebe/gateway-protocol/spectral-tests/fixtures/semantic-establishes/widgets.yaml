@@ -741,3 +741,147 @@ paths:
       responses:
         '200':
           description: OK.
+
+  # ── Producer-existence gate: structural-shape validation ─────
+  # Class-scoped: the gate must NOT count a malformed-shape producer as
+  # an actual producer of its declared `kind`, even though the
+  # `semantic-establishes-shape` Spectral rule already flags the shape.
+  # Errors raised by other rules are not visible inside the
+  # verifySemanticKindsRegistered function's local errors[], so without
+  # a duplicated structural check the kind would still be added to
+  # `established` and the consumer's orphan error would be silently
+  # suppressed. Mirror of fixtures #24/#25 but for the structural-shape
+  # branch instead of the existence-binding branch.
+
+  # 26. Empty identifiedBy.
+  /invalid/malformed-empty-identified-by:
+    post:
+      operationId: malformedEmptyIdentifiedBy
+      summary: Establishes MalformedShapeKind with empty identifiedBy
+      description: |
+        Should fail the shape rule AND not satisfy the producer gate, so
+        the consumer below still reports orphan.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: MalformedShapeKind
+        identifiedBy: []
+      responses:
+        '201':
+          description: Created.
+
+  # 27. Missing identifiedBy entirely.
+  /invalid/malformed-missing-identified-by:
+    post:
+      operationId: malformedMissingIdentifiedBy
+      summary: Establishes MalformedShapeKind without identifiedBy
+      description: Should fail the shape rule AND not satisfy the producer gate.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: MalformedShapeKind
+      responses:
+        '201':
+          description: Created.
+
+  # 28. Typo'd top-level key (`identifyBy` instead of `identifiedBy`).
+  /invalid/malformed-typoed-top-level-key:
+    post:
+      operationId: malformedTypoedTopLevelKey
+      summary: Establishes MalformedShapeKind with typo'd top-level key
+      description: Should fail the shape rule AND not satisfy the producer gate.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: MalformedShapeKind
+        identifyBy:
+          - { in: body, name: id, semanticType: MalformedShapeId }
+      responses:
+        '201':
+          description: Created.
+
+  # 29. Consumer of MalformedShapeKind. Must report the orphan error
+  #     once — not three times (one per malformed producer above) and
+  #     not zero (which would mean a malformed producer was admitted).
+  /invalid/malformed-shape-consumer/{malformedShapeId}:
+    get:
+      operationId: malformedShapeConsumer
+      summary: Requires MalformedShapeKind
+      description: Class-scoped guard for the structural-shape branch of the producer-existence gate.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: malformedShapeId
+          in: path
+          required: true
+          description: The id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: MalformedShapeKind
+        bind:
+          malformedShapeId: { from: path, name: malformedShapeId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Binding existence: non-object request body ───────────────
+  # camunda/camunda#52322 review: the verifier previously conflated
+  # "schema unresolvable in this pass" with "schema resolved to a
+  # non-object type" — both returned null from
+  # collectTopLevelBodyProperties, so a body binding against a scalar or
+  # array request body lint-cleaned instead of failing. The walker now
+  # returns a tri-state {unresolved | walked | non-object}, and the
+  # binding-existence check fails any body binding when the resolved
+  # state is non-object.
+
+  # 30. Establishes binds in: body against a scalar (type: string) request body.
+  /invalid/establishes-body-non-object-scalar:
+    post:
+      operationId: establishesBodyNonObjectScalar
+      summary: Establishes from a scalar request body
+      description: |
+        Should fail — the requestBody schema resolves to `type: string`,
+        which cannot have top-level properties. Without the tri-state
+        fix, this would silently lint clean.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+      responses:
+        '201':
+          description: Created.
+
+  # 31. Requires binds from: body against an array request body.
+  /invalid/requires-body-non-object-array:
+    post:
+      operationId: requiresBodyNonObjectArray
+      summary: Requires from an array request body
+      description: |
+        Should fail — the requestBody schema resolves to `type: array`,
+        which cannot have top-level properties. Symmetric coverage with
+        #30 across the establish/require branches.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: body, name: widgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        '200':
+          description: OK.

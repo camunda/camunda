@@ -60,6 +60,60 @@ const path = require('node:path');
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);
 const PARAM_LOCATIONS = new Set(['path', 'query', 'header']);
 
+// Allowed top-level keys on `x-semantic-establishes`. Mirrors the
+// `semantic-establishes-shape` Spectral rule's `additionalProperties:
+// false`. Duplicated here (rather than imported from the rule) because
+// this function runs as the producer-existence gate: see
+// isWellFormedEstablishes below for the rationale.
+const ESTABLISHES_ALLOWED_KEYS = new Set(['kind', 'shape', 'identifiedBy']);
+const ESTABLISHES_ITEM_ALLOWED_KEYS = new Set([
+  'in',
+  'name',
+  'semanticType',
+  'acceptsExternal',
+]);
+const ESTABLISHES_SHAPE_VALUES = new Set(['entity', 'edge']);
+const ESTABLISHES_LOCATIONS = new Set(['body', 'path', 'query', 'header']);
+
+// Returns true iff `est` matches the structural shape required by the
+// `semantic-establishes-shape` Spectral rule. Used to gate
+// `established.add(est.kind)` independently of whether the shape rule's
+// own errors are visible to this function.
+//
+// Why duplicate the shape rule here: Spectral's `errors[]` array inside
+// a custom function is local — errors emitted by *other* rules (such as
+// `semantic-establishes-shape`) are not counted, so a malformed
+// establishes block can fail that rule and still be admitted as a
+// producer here. That suppresses the orphan-on-consumer error this
+// function exists to surface. Class-scoped guard against the defect
+// reported on PR #52322.
+function isWellFormedEstablishes(est) {
+  if (!est || typeof est !== 'object' || Array.isArray(est)) return false;
+  if (typeof est.kind !== 'string' || est.kind.length === 0) return false;
+  if (!Array.isArray(est.identifiedBy) || est.identifiedBy.length === 0) return false;
+  for (const key of Object.keys(est)) {
+    if (!ESTABLISHES_ALLOWED_KEYS.has(key)) return false;
+  }
+  if ('shape' in est) {
+    if (typeof est.shape !== 'string' || !ESTABLISHES_SHAPE_VALUES.has(est.shape)) {
+      return false;
+    }
+  }
+  for (const item of est.identifiedBy) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+    if (typeof item.in !== 'string' || !ESTABLISHES_LOCATIONS.has(item.in)) return false;
+    if (typeof item.name !== 'string' || item.name.length === 0) return false;
+    if (typeof item.semanticType !== 'string' || item.semanticType.length === 0) return false;
+    for (const key of Object.keys(item)) {
+      if (!ESTABLISHES_ITEM_ALLOWED_KEYS.has(key)) return false;
+    }
+    if ('acceptsExternal' in item && typeof item.acceptsExternal !== 'boolean') {
+      return false;
+    }
+  }
+  return true;
+}
+
 // Walks a request-body schema and collects the names of top-level
 // properties across composition keywords (allOf / oneOf / anyOf). The
 // union semantics for oneOf/anyOf are deliberately permissive: a
@@ -67,14 +121,22 @@ const PARAM_LOCATIONS = new Set(['path', 'query', 'header']);
 // alternative would require the lint to know which branch the binding
 // targets — information that is not present in the annotation.
 //
-// Returns null when the schema cannot be walked at all (missing /
-// unresolved $ref / non-object). Callers treat null as "skip the
-// existence check for this body" rather than as "no properties exist",
-// which avoids false positives on per-file lint passes that cannot
-// resolve cross-file $refs.
+// Returns a tri-state result so callers can distinguish:
+//   { kind: 'unresolved' } — schema missing or unresolvable in this
+//                            pass (per-file pass with cross-file $ref).
+//                            Callers skip the existence check; the
+//                            bundled pass will catch real violations.
+//   { kind: 'walked', props: Set } — at least one composition branch
+//                                    walked successfully. Membership
+//                                    check applies.
+//   { kind: 'non-object' } — schema is present and resolved but is not
+//                            an object/composition type (e.g. scalar or
+//                            array). Any { in: body, name: ... }
+//                            binding against such a body is impossible
+//                            and must fail.
 function collectTopLevelBodyProperties(schema, seen) {
-  if (!schema || typeof schema !== 'object') return null;
-  if (seen.has(schema)) return new Set();
+  if (!schema || typeof schema !== 'object') return { kind: 'unresolved' };
+  if (seen.has(schema)) return { kind: 'walked', props: new Set() };
   seen.add(schema);
   const props = new Set();
   let walked = false;
@@ -85,13 +147,32 @@ function collectTopLevelBodyProperties(schema, seen) {
   for (const key of ['allOf', 'oneOf', 'anyOf']) {
     if (!Array.isArray(schema[key])) continue;
     for (const sub of schema[key]) {
-      const subProps = collectTopLevelBodyProperties(sub, seen);
-      if (subProps === null) continue;
+      const subRes = collectTopLevelBodyProperties(sub, seen);
+      if (subRes.kind === 'unresolved') continue;
+      // A non-object branch under oneOf/anyOf does not poison the
+      // union — other branches may legitimately be objects. Only treat
+      // the body as non-object when the *root* schema has no properties
+      // and no composition branches walked (handled below).
+      if (subRes.kind === 'non-object') continue;
       walked = true;
-      for (const k of subProps) props.add(k);
+      for (const k of subRes.props) props.add(k);
     }
   }
-  return walked ? props : null;
+  if (walked) return { kind: 'walked', props };
+  // Schema was resolved (object) but declared neither `properties` nor
+  // a composition keyword we could walk. Distinguish two sub-cases:
+  //   - has an explicit non-object `type` (string/number/integer/boolean/array)
+  //     → resolved as non-object; body bindings are impossible.
+  //   - everything else (e.g. unresolved $ref node, or an empty object)
+  //     → unresolved, defer to the bundled pass.
+  if (
+    typeof schema.type === 'string' &&
+    schema.type !== 'object' &&
+    schema.type.length > 0
+  ) {
+    return { kind: 'non-object' };
+  }
+  return { kind: 'unresolved' };
 }
 
 // Collects the identifiers an annotation may legitimately reference on
@@ -99,21 +180,31 @@ function collectTopLevelBodyProperties(schema, seen) {
 // and operation level (operation overrides per OpenAPI 3.x), plus the
 // top-level body properties of every requestBody media type schema.
 //
-// Body state is tri-valued so callers can distinguish:
-//   hasRequestBody=false                     → no requestBody at all (hard
-//                                              fail for any body binding)
-//   hasRequestBody=true, bodyProps=null      → requestBody declared but
-//                                              schema unresolvable in this
-//                                              lint pass (silent skip — the
-//                                              bundled pass will catch it)
-//   hasRequestBody=true, bodyProps=Set(...)  → walked successfully (check
-//                                              membership)
+// Body state is four-valued so callers can distinguish:
+//   hasRequestBody=false                       → no requestBody at all
+//                                                (hard fail for any body
+//                                                binding)
+//   hasRequestBody=true, bodyState='unresolved'
+//                                              → schema unresolvable in
+//                                                this lint pass (silent
+//                                                skip — the bundled pass
+//                                                will catch it)
+//   hasRequestBody=true, bodyState='non-object'
+//                                              → all media-type schemas
+//                                                resolved to scalar/array
+//                                                types. Body bindings are
+//                                                impossible (hard fail).
+//   hasRequestBody=true, bodyState='walked',
+//   bodyProps=Set(...)                         → at least one media-type
+//                                                schema walked. Membership
+//                                                check applies.
 function collectAvailableMembers(pathItem, op) {
   const members = {
     path: new Set(),
     query: new Set(),
     header: new Set(),
     hasRequestBody: false,
+    bodyState: 'unresolved',
     bodyProps: null,
   };
 
@@ -137,14 +228,29 @@ function collectAvailableMembers(pathItem, op) {
     const content = requestBody.content;
     if (content && typeof content === 'object') {
       const bodyProps = new Set();
-      let anyResolved = false;
+      let anyWalked = false;
+      let anyNonObject = false;
       for (const media of Object.values(content)) {
         const sub = collectTopLevelBodyProperties(media?.schema, new WeakSet());
-        if (sub === null) continue;
-        anyResolved = true;
-        for (const k of sub) bodyProps.add(k);
+        if (sub.kind === 'unresolved') continue;
+        if (sub.kind === 'non-object') {
+          anyNonObject = true;
+          continue;
+        }
+        anyWalked = true;
+        for (const k of sub.props) bodyProps.add(k);
       }
-      if (anyResolved) members.bodyProps = bodyProps;
+      if (anyWalked) {
+        members.bodyState = 'walked';
+        members.bodyProps = bodyProps;
+      } else if (anyNonObject) {
+        // Every resolved media-type schema is non-object. Body bindings
+        // against this requestBody are impossible — fail any binding
+        // attempt. (Mixed object/non-object across media types still
+        // resolves as 'walked' above, deliberately permissive.)
+        members.bodyState = 'non-object';
+      }
+      // else: every media-type schema was unresolved; leave 'unresolved'.
     }
   }
 
@@ -387,7 +493,12 @@ module.exports = (input, _opts, _context) => {
                   message: `x-semantic-establishes.identifiedBy[${i}] on ${method.toUpperCase()} ${pathKey} references body member '${item.name}', but the operation declares no requestBody. Either add a requestBody with that property or move the identifier off the body.`,
                   path: ['paths', pathKey, method, 'x-semantic-establishes', 'identifiedBy', i, 'name'],
                 });
-              } else if (m.bodyProps !== null && !m.bodyProps.has(item.name)) {
+              } else if (m.bodyState === 'non-object') {
+                errors.push({
+                  message: `x-semantic-establishes.identifiedBy[${i}] on ${method.toUpperCase()} ${pathKey} references body member '${item.name}', but the requestBody schema resolves to a non-object type (scalar or array) and cannot have top-level properties. Move the identifier off the body or change the requestBody schema to an object.`,
+                  path: ['paths', pathKey, method, 'x-semantic-establishes', 'identifiedBy', i, 'name'],
+                });
+              } else if (m.bodyState === 'walked' && !m.bodyProps.has(item.name)) {
                 errors.push({
                   message: `x-semantic-establishes.identifiedBy[${i}] on ${method.toUpperCase()} ${pathKey} references body member '${item.name}', but no requestBody media-type schema declares a top-level property of that name. Either add the property to the request body or fix the binding.`,
                   path: ['paths', pathKey, method, 'x-semantic-establishes', 'identifiedBy', i, 'name'],
@@ -404,10 +515,23 @@ module.exports = (input, _opts, _context) => {
 
         // Gate the producer-existence side of the cross-reference walk:
         // only count this op as a producer of `est.kind` if its
-        // establishes block is well-formed (no errors pushed above).
+        // establishes block is well-formed:
+        //   1. No errors raised by this function above (unknown kind,
+        //      illegal external-entity, shape-vs-registry mismatch, or
+        //      unresolved/multi-owner edge endpoint).
+        //   2. Structural shape matches the `semantic-establishes-shape`
+        //      Spectral rule. Re-checked here because errors raised by
+        //      *other* rules are not visible in this function's local
+        //      `errors[]`, so a producer that fails the shape rule
+        //      (e.g. `identifiedBy: []`, missing `identifiedBy`, typo'd
+        //      top-level key) would otherwise still be admitted here
+        //      and mask the orphan error on every downstream consumer.
         // Otherwise consumers of this kind must still see the orphan
         // error so the downstream impact is visible.
-        if (errors.length === errorsBeforeEstablishes) {
+        if (
+          errors.length === errorsBeforeEstablishes &&
+          isWellFormedEstablishes(est)
+        ) {
           established.add(est.kind);
         }
       }
@@ -445,7 +569,12 @@ module.exports = (input, _opts, _context) => {
                   message: `x-semantic-requires.bind.${bindKey} on ${method.toUpperCase()} ${pathKey} references body member '${binding.name}', but the operation declares no requestBody. Either add a requestBody with that property or move the binding off the body.`,
                   path: ['paths', pathKey, method, 'x-semantic-requires', 'bind', bindKey, 'name'],
                 });
-              } else if (m.bodyProps !== null && !m.bodyProps.has(binding.name)) {
+              } else if (m.bodyState === 'non-object') {
+                errors.push({
+                  message: `x-semantic-requires.bind.${bindKey} on ${method.toUpperCase()} ${pathKey} references body member '${binding.name}', but the requestBody schema resolves to a non-object type (scalar or array) and cannot have top-level properties. Move the binding off the body or change the requestBody schema to an object.`,
+                  path: ['paths', pathKey, method, 'x-semantic-requires', 'bind', bindKey, 'name'],
+                });
+              } else if (m.bodyState === 'walked' && !m.bodyProps.has(binding.name)) {
                 errors.push({
                   message: `x-semantic-requires.bind.${bindKey} on ${method.toUpperCase()} ${pathKey} references body member '${binding.name}', but no requestBody media-type schema declares a top-level property of that name. Either add the property to the request body or fix the binding.`,
                   path: ['paths', pathKey, method, 'x-semantic-requires', 'bind', bindKey, 'name'],
