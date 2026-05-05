@@ -347,6 +347,12 @@ paths:
       description: |
         Assigns a client to a group, making it a member of the group.
         Members of the group inherit the group authorizations, roles, and tenant assignments.
+      x-semantic-establishes:
+        kind: GroupClientMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: groupId,  semanticType: GroupId }
+          - { in: path, name: clientId, semanticType: ClientId }
       parameters:
         - name: groupId
           in: path
@@ -394,6 +400,11 @@ paths:
       description: |
         Unassigns a client from a group.
         The client is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
+      x-semantic-requires:
+        kind: GroupClientMembership
+        bind:
+          groupId:  { from: path, name: groupId }
+          clientId: { from: path, name: clientId }
       parameters:
         - name: groupId
           in: path
@@ -434,6 +445,10 @@ paths:
       operationId: searchClientsForGroup
       summary: Search group clients
       description: Search clients assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
@@ -622,6 +637,10 @@ paths:
       operationId: searchRolesForGroup
       summary: Search group roles
       description: Search roles assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path

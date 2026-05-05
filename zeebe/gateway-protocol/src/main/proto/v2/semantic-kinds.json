@@ -96,6 +96,36 @@
       "description": "Edge between a Tenant and a MappingRule, identified by the (tenantId, mappingRuleId) tuple. Established by assignMappingRuleToTenant, observable only via searchMappingRulesForTenant."
     },
     {
+      "name": "RoleGroupMembership",
+      "shape": "edge",
+      "description": "Edge between a Role and a Group, identified by the (roleId, groupId) tuple. Established by assignRoleToGroup, observable only via searchGroupsForRole."
+    },
+    {
+      "name": "RoleClientMembership",
+      "shape": "edge",
+      "description": "Edge between a Role and a Client (external entity), identified by the (roleId, clientId) tuple. Established by assignRoleToClient, observable only via searchClientsForRole."
+    },
+    {
+      "name": "GroupClientMembership",
+      "shape": "edge",
+      "description": "Edge between a Group and a Client (external entity), identified by the (groupId, clientId) tuple. Established by assignClientToGroup, observable only via searchClientsForGroup."
+    },
+    {
+      "name": "TenantClientMembership",
+      "shape": "edge",
+      "description": "Edge between a Tenant and a Client (external entity), identified by the (tenantId, clientId) tuple. Established by assignClientToTenant, observable only via searchClientsForTenant."
+    },
+    {
+      "name": "TenantGroupMembership",
+      "shape": "edge",
+      "description": "Edge between a Tenant and a Group, identified by the (tenantId, groupId) tuple. Established by assignGroupToTenant, observable only via searchGroupIdsForTenant."
+    },
+    {
+      "name": "TenantRoleMembership",
+      "shape": "edge",
+      "description": "Edge between a Tenant and a Role, identified by the (tenantId, roleId) tuple. Established by assignRoleToTenant, observable only via searchRolesForTenant."
+    },
+    {
       "name": "GlobalTaskListener",
       "shape": "entity",
       "identifiers": ["GlobalListenerId"],

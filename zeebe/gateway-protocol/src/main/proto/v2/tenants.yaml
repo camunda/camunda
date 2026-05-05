@@ -343,6 +343,12 @@ paths:
       description: |
         Assign the client to the specified tenant.
         The client can then access tenant data and perform authorized actions.
+      x-semantic-establishes:
+        kind: TenantClientMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: tenantId, semanticType: TenantId }
+          - { in: path, name: clientId, semanticType: ClientId }
       parameters:
         - name: tenantId
           in: path
@@ -384,6 +390,11 @@ paths:
       description: |
         Unassigns the client from the specified tenant.
         The client can no longer access tenant data.
+      x-semantic-requires:
+        kind: TenantClientMembership
+        bind:
+          tenantId: { from: path, name: tenantId }
+          clientId: { from: path, name: clientId }
       parameters:
         - name: tenantId
           in: path
@@ -424,6 +435,10 @@ paths:
       operationId: searchClientsForTenant
       summary: Search clients for tenant
       description: Retrieves a filtered and sorted list of clients for a specified tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -456,6 +471,12 @@ paths:
       description: |
         Assigns a group to a specified tenant.
         Group members (users, clients) can then access tenant data and perform authorized actions.
+      x-semantic-establishes:
+        kind: TenantGroupMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: tenantId, semanticType: TenantId }
+          - { in: path, name: groupId,  semanticType: GroupId }
       parameters:
         - name: tenantId
           in: path
@@ -497,6 +518,11 @@ paths:
       description: |
         Unassigns a group from a specified tenant.
         Members of the group (users, clients) will no longer have access to the tenant's data - except they are assigned directly to the tenant.
+      x-semantic-requires:
+        kind: TenantGroupMembership
+        bind:
+          tenantId: { from: path, name: tenantId }
+          groupId:  { from: path, name: groupId }
       parameters:
         - name: tenantId
           in: path
@@ -537,6 +563,10 @@ paths:
       operationId: searchGroupIdsForTenant
       summary: Search groups for tenant
       description: Retrieves a filtered and sorted list of groups for a specified tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -567,6 +597,10 @@ paths:
       operationId: searchRolesForTenant
       summary: Search roles for tenant
       description: Retrieves a filtered and sorted list of roles for a specified tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -599,6 +633,12 @@ paths:
       description: |
         Assigns a role to a specified tenant.
         Users, Clients or Groups, that have the role assigned, will get access to the tenant's data and can perform actions according to their authorizations.
+      x-semantic-establishes:
+        kind: TenantRoleMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: tenantId, semanticType: TenantId }
+          - { in: path, name: roleId,   semanticType: RoleId }
       parameters:
         - name: tenantId
           in: path
@@ -641,6 +681,11 @@ paths:
         Unassigns a role from a specified tenant.
         Users, Clients or Groups, that have the role assigned, will no longer have access to the
         tenant's data - unless they are assigned directly to the tenant.
+      x-semantic-requires:
+        kind: TenantRoleMembership
+        bind:
+          tenantId: { from: path, name: tenantId }
+          roleId:   { from: path, name: roleId }
       parameters:
         - name: tenantId
           in: path

@@ -342,6 +342,12 @@ paths:
       operationId: assignRoleToClient
       summary: Assign a role to a client
       description: Assigns the specified role to the client. The client will inherit the authorizations associated with this role.
+      x-semantic-establishes:
+        kind: RoleClientMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: roleId,   semanticType: RoleId }
+          - { in: path, name: clientId, semanticType: ClientId }
       parameters:
         - name: roleId
           in: path
@@ -387,6 +393,11 @@ paths:
       operationId: unassignRoleFromClient
       summary: Unassign a role from a client
       description: Unassigns the specified role from the client. The client will no longer inherit the authorizations associated with this role.
+      x-semantic-requires:
+        kind: RoleClientMembership
+        bind:
+          roleId:   { from: path, name: roleId }
+          clientId: { from: path, name: clientId }
       parameters:
         - name: roleId
           in: path
@@ -427,6 +438,10 @@ paths:
       operationId: searchClientsForRole
       summary: Search role clients
       description: Search clients with assigned role.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
@@ -471,6 +486,12 @@ paths:
       operationId: assignRoleToGroup
       summary: Assign a role to a group
       description: Assigns the specified role to the group. Every member of the group (user or client) will inherit the authorizations associated with this role.
+      x-semantic-establishes:
+        kind: RoleGroupMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: roleId,  semanticType: RoleId }
+          - { in: path, name: groupId, semanticType: GroupId }
       parameters:
         - name: roleId
           in: path
@@ -516,6 +537,11 @@ paths:
       operationId: unassignRoleFromGroup
       summary: Unassign a role from a group
       description: Unassigns the specified role from the group. All group members (user or client) no longer inherit the authorizations associated with this role.
+      x-semantic-requires:
+        kind: RoleGroupMembership
+        bind:
+          roleId:  { from: path, name: roleId }
+          groupId: { from: path, name: groupId }
       parameters:
         - name: roleId
           in: path
@@ -556,6 +582,10 @@ paths:
       operationId: searchGroupsForRole
       summary: Search role groups
       description: Search groups with assigned role.
+      x-semantic-requires:
+        kind: Role
+        bind:
+          roleId: { from: path, name: roleId }
       parameters:
         - name: roleId
           in: path
