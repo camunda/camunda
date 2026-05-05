@@ -37,6 +37,9 @@ import {
   FieldContainer,
 } from 'modules/components/FiltersPanel/styled';
 import {Variable} from './VariableField';
+import {VariableFilter} from './VariablesFilter';
+import {variableFilterStore} from 'modules/stores/variableFilter';
+import {MULTI_VARIABLE_FILTER} from 'modules/feature-flags';
 
 type OptionalFilter =
   | 'variable'
@@ -70,8 +73,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
   }
 > = {
   variable: {
-    keys: ['variableName', 'variableValues'],
-    label: 'Variable',
+    keys: MULTI_VARIABLE_FILTER ? [] : ['variableName', 'variableValues'],
+    label: MULTI_VARIABLE_FILTER ? 'Variables' : 'Variable',
   },
   processInstanceKey: {
     keys: ['processInstanceKey'],
@@ -137,6 +140,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
   ({visibleFilters, onVisibleFilterChange}) => {
     const location = useLocation() as LocationType;
     const form = useForm();
+    const hasActiveVariableFilters =
+      MULTI_VARIABLE_FILTER && variableFilterStore.hasActiveFilters;
 
     useEffect(() => {
       const filters = getProcessInstanceFilters(location.search);
@@ -155,11 +160,17 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               ...('endDateFrom' in filters && 'endDateTo' in filters
                 ? ['endDateRange']
                 : []),
+              ...(hasActiveVariableFilters ? ['variable'] : []),
             ] as OptionalFilter[]),
           ]),
         );
       });
-    }, [location.state, location.search, onVisibleFilterChange]);
+    }, [
+      location.state,
+      location.search,
+      onVisibleFilterChange,
+      hasActiveVariableFilters,
+    ]);
 
     const [isStartDateRangeModalOpen, setIsStartDateRangeModalOpen] =
       useState<boolean>(false);
@@ -196,6 +207,9 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               {(() => {
                 switch (filter) {
                   case 'variable':
+                    if (MULTI_VARIABLE_FILTER) {
+                      return <VariableFilter />;
+                    }
                     return <Variable />;
                   case 'startDateRange':
                     return (
@@ -304,6 +318,11 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                         form.change('incidentErrorHashCode', undefined);
                       }
                     });
+
+                    if (filter === 'variable' && MULTI_VARIABLE_FILTER) {
+                      variableFilterStore.setConditions([]);
+                    }
+
                     form.submit();
                   }}
                 >

@@ -6,4 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {};
+const MULTI_VARIABLE_FILTER = false;
+
+export {MULTI_VARIABLE_FILTER};
