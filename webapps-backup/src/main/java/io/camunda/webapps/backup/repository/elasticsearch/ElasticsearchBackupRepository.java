@@ -559,12 +559,18 @@ public class ElasticsearchBackupRepository implements BackupRepository {
         // This is thrown even if the backup is still running
         final int snapshotTimeout = backupProps.snapshotTimeout();
         LOGGER.warn(
-            "Socket timeout while creating snapshot [{}] for backup id [{}]. Start waiting with polling timeout, {}",
+            "The Elasticsearch HTTP connection timed out while waiting for snapshot [{}] "
+                + "(backup id [{}]) to complete. The snapshot is likely still running in "
+                + "Elasticsearch. Polling will continue {}. "
+                + "If socket timeouts occur repeatedly, consider increasing the socket timeout via "
+                + "CAMUNDA_OPERATE_ELASTICSEARCH_SOCKETTIMEOUT or "
+                + "CAMUNDA_TASKLIST_ELASTICSEARCH_SOCKETTIMEOUT "
+                + "and consider doubling or tripling the current value.",
             snapshotRequest.snapshotName(),
             backupId,
-            (snapshotTimeout == 0)
-                ? "until completion."
-                : "at most " + snapshotTimeout + " seconds.");
+            snapshotTimeout == 0
+                ? "until completion"
+                : "for at most " + snapshotTimeout + " seconds");
         if (isSnapshotFinishedWithinTimeout(
             snapshotRequest.repositoryName(), snapshotRequest.snapshotName())) {
           onSuccess.run();

@@ -22,6 +22,7 @@ public class ElasticsearchProperties {
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
+  public static final int SOCKET_TIMEOUT_DEFAULT = 180_000;
 
   private String clusterName = "elasticsearch";
 
@@ -35,7 +36,7 @@ public class ElasticsearchProperties {
 
   private int batchSize = 200;
 
-  private Integer socketTimeout;
+  private Integer socketTimeout = SOCKET_TIMEOUT_DEFAULT;
   private Integer connectTimeout;
 
   private boolean createSchema = true;

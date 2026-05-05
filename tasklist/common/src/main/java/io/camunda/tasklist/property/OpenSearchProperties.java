@@ -22,6 +22,7 @@ public class OpenSearchProperties {
 
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
   public static final int DEFAULT_MAX_TERMS_COUNT = 10_000;
+  public static final int SOCKET_TIMEOUT_DEFAULT = 180_000;
 
   private String clusterName = "opensearch-cluster";
 
@@ -36,7 +37,7 @@ public class OpenSearchProperties {
   private int batchSize = 200;
   private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
 
-  private Integer socketTimeout;
+  private Integer socketTimeout = SOCKET_TIMEOUT_DEFAULT;
   private Integer connectTimeout;
 
   private boolean createSchema = true;
