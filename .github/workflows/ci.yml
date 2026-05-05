@@ -559,7 +559,7 @@ jobs:
         include:
           - name: "Elasticsearch 8"
             database-type: "elasticsearch"
-            database-image-version: "8.19.11"
+            database-image-version: "8.19.15"
             database-name: "Elasticsearch 8"
             it-database-type: "es"
           - name: "Elasticsearch 9"
@@ -1026,7 +1026,7 @@ jobs:
           - 5000:5000
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
-      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
+      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.19.15
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
