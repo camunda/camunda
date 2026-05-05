@@ -8,7 +8,8 @@ on:
   workflow_dispatch:
     inputs:
       monorepo_release:
-        description: "Enter the monorepo release version (e.g., 8.8.0, 8.8.1, 8.8.0-alpha8, 8.8.0-alpha8-rc1)"
+        description: "Enter the monorepo release version (e.g., 8.8.0, 8.8.1,
+          8.8.0-alpha8, 8.8.0-alpha8-rc1)"
         required: true
         type: string
 
@@ -269,7 +270,8 @@ jobs:
           TESTRAIL_HOST: "https://camunda.testrail.com/"
           TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
+          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/ju\
+            nit-report.xml"
         run: |
           pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
@@ -285,7 +287,8 @@ jobs:
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
-          name: C8 Orchestration Cluster E2E API Test Result Release v${{ needs.validate-release.outputs.release_version }}
+          name: C8 Orchestration Cluster E2E API Test Result Release v${{
+            needs.validate-release.outputs.release_version }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
 
@@ -309,9 +312,10 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   build-rdbms-dist:
-    if: ${{ needs.validate-release.outputs.base == 'stable/8.9' || needs.validate-release.outputs.base == 'main' }}
+    if: ${{ needs.validate-release.outputs.base == 'stable/8.9' ||
+      needs.validate-release.outputs.base == 'main' }}
     name: "Build Camunda distribution"
-    needs: [validate-release]
+    needs: [ validate-release ]
     runs-on: gcp-perf-core-16-default
     permissions:
       contents: read
@@ -359,9 +363,11 @@ jobs:
           retention-days: 1
 
   c8-orchestration-cluster-api-tests-rdbms:
-    name: API Tests (RDBMS) (${{ needs.validate-release.outputs.base }} / ${{ matrix.database.database-name }})
-    needs: [validate-release, build-rdbms-dist]
-    if: ${{ needs.validate-release.outputs.base == 'stable/8.9' || needs.validate-release.outputs.base == 'main' }}
+    name: API Tests (RDBMS) (${{ needs.validate-release.outputs.base }} / ${{
+      matrix.database.database-name }})
+    needs: [ validate-release, build-rdbms-dist ]
+    if: ${{ needs.validate-release.outputs.base == 'stable/8.9' ||
+      needs.validate-release.outputs.base == 'main' }}
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 60
     permissions: {}
@@ -438,7 +444,8 @@ jobs:
           echo "Base branch: ${{ needs.validate-release.outputs.base }}"
 
       - name: Resolve database container name
-        run: echo "DATABASE_CONTAINER=${{ matrix.database.database-type }}" >> "$GITHUB_ENV"
+        run: echo "DATABASE_CONTAINER=${{ matrix.database.database-type }}" >>
+          "$GITHUB_ENV"
 
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -481,7 +488,7 @@ jobs:
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
 
       - name: Python setup
         if: always()
@@ -571,7 +578,8 @@ jobs:
           esac
 
       # ── Start Camunda wired to the matrix DB ────────────────────────────────
-      - name: Start Camunda with ${{ needs.validate-release.outputs.base }} / ${{ matrix.database.database-name }}
+      - name: Start Camunda with ${{ needs.validate-release.outputs.base }} / ${{
+          matrix.database.database-name }}
         run: |
           export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,operate,tasklist"
           export ZEEBE_CLOCK_CONTROLLED="true"
@@ -673,11 +681,15 @@ jobs:
             kill "$(cat dev-dist/camunda.pid)" 2>/dev/null || true
           fi
   c8-orchestration-cluster-e2e-tests:
-    name: C8 Orchestration Cluster E2E Tests Release (Tasklist ${{ matrix.tasklist_mode }} mode)
+    name: C8 Orchestration Cluster E2E Tests Release (Tasklist ${{
+      matrix.tasklist_mode }} mode)
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || needs.validate-release.outputs.base == 'main' && '["v2"]' || '["v1","v2"]' ) }}
+        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base ==
+          'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7')
+          && '["v1"]' || needs.validate-release.outputs.base == 'main' &&
+          '["v2"]' || '["v1","v2"]' ) }}
     needs: validate-release
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -891,7 +903,8 @@ jobs:
           TESTRAIL_HOST: "https://camunda.testrail.com/"
           TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
+          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/ju\
+            nit-report.xml"
         run: |
           pip install trcli==1.14.1
           trcli -y -h "$TESTRAIL_HOST" \
@@ -907,7 +920,9 @@ jobs:
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: failure()
         with:
-          name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode)
+          name: C8 Orchestration Cluster E2E Test Result Release v${{
+            needs.validate-release.outputs.release_version }} (Tasklist ${{
+            matrix.tasklist_mode }} mode)
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
 
@@ -915,7 +930,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: json-report-release-e2e-${{ needs.validate-release.outputs.release_version }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode) || '' }}
+          name: json-report-release-e2e-${{ needs.validate-release.outputs.release_version
+            }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode)
+            || '' }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
           retention-days: 60
 
@@ -930,43 +947,43 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  notify-result:
-    name: Send notification based on test results
-    runs-on: ubuntu-latest
-    needs: [validate-release, c8-orchestration-cluster-e2e-tests, c8-orchestration-cluster-api-tests, c8-orchestration-cluster-api-tests-rdbms]
-    if: always()
-    timeout-minutes: 5
-    permissions: {}
-    steps:
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+      # notify-result:
+      #   name: Send notification based on test results
+      #   runs-on: ubuntu-latest
+      #   needs: [validate-release, c8-orchestration-cluster-e2e-tests, c8-orchestration-cluster-api-tests, c8-orchestration-cluster-api-tests-rdbms]
+      #   if: always()
+      #   timeout-minutes: 5
+      #   permissions: {}
+      #   steps:
+      #     - name: Import Secrets
+      #       id: secrets
+      #       uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+      #       with:
+      #         url: ${{ secrets.VAULT_ADDR }}
+      #         method: approle
+      #         roleId: ${{ secrets.VAULT_ROLE_ID }}
+      #         secretId: ${{ secrets.VAULT_SECRET_ID }}
+      #         exportEnv: false
+      #         secrets: |
+      #           secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
-      - name: Send Slack notification
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
-        with:
-          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ needs.c8-orchestration-cluster-e2e-tests.result == 'success' && format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :test_tube: C8 Orchestration Cluster E2E Tests for {0} succeeded. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) || format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :warning: C8 Orchestration Cluster E2E Tests for {0} failed. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) }}"
-                  }
-                }
-              ]
-            }
+      #     - name: Send Slack notification
+      #       uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+      #       with:
+      #         webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+      #         webhook-type: incoming-webhook
+      #         payload: |
+      #           {
+      #             "blocks": [
+      #               {
+      #                 "type": "section",
+      #                 "text": {
+      #                   "type": "mrkdwn",
+      #                   "text": "${{ needs.c8-orchestration-cluster-e2e-tests.result == 'success' && format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :test_tube: C8 Orchestration Cluster E2E Tests for {0} succeeded. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) || format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :warning: C8 Orchestration Cluster E2E Tests for {0} failed. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) }}"
+      #                 }
+      #               }
+      #             ]
+      #           }
 
       - name: Observe build status
         if: always()
