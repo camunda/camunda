@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.util.CoordinatorResolver;
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -25,30 +26,22 @@ public interface ClusterConfigurationCoordinatorSupplier {
 
     return new ClusterConfigurationCoordinatorSupplier() {
 
-      private MemberId lowestMemberId(final Collection<MemberId> members) {
-        if (members.isEmpty()) {
-          // if cluster configuration is not initialized, fall back to member 0
-          return MemberId.from("0");
-        }
-        return members.stream().min(MemberId::compareTo).orElseThrow();
-      }
-
       @Override
       public MemberId getDefaultCoordinator() {
         final var clusterTopology = clusterTopologySupplier.get();
-        return lowestMemberId(clusterTopology.members().keySet());
+        return CoordinatorResolver.resolveCoordinator(clusterTopology).orElse(MemberId.from("0"));
       }
 
       @Override
       public MemberId getNextCoordinator(final Collection<MemberId> members) {
-        return lowestMemberId(members);
+        return CoordinatorResolver.resolveCoordinatorFrom(members).orElse(MemberId.from("0"));
       }
 
       @Override
       public MemberId getNextCoordinatorExcluding(final Set<MemberId> memberIds) {
         final var currentMembers = clusterTopologySupplier.get().members().keySet();
         final var newMembers = currentMembers.stream().filter(m -> !memberIds.contains(m)).toList();
-        return lowestMemberId(newMembers);
+        return CoordinatorResolver.resolveCoordinatorFrom(newMembers).orElse(MemberId.from("0"));
       }
     };
   }

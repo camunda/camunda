@@ -46,12 +46,10 @@ import java.util.Optional;
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
   public static final String TOPOLOGY_FILE_NAME = ".topology.meta";
-  // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
-  // dynamically.
   private static final int COORDINATOR_NODE_ID = 0;
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
-  private final boolean isCoordinator;
+  private final MemberId localMemberId;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
   private final Path configurationFile;
   private final ConfigurationChangeCoordinator configurationChangeCoordinator;
@@ -80,7 +78,7 @@ public final class ClusterConfigurationManagerService
       throw new UncheckedIOException("Failed to create data directory", e);
     }
 
-    final MemberId localMemberId = memberShipService.getLocalMember().id();
+    localMemberId = memberShipService.getLocalMember().id();
     configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterConfiguration =
         PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
@@ -98,7 +96,6 @@ public final class ClusterConfigurationManagerService
             config,
             clusterConfigurationManager::onGossipReceived,
             topologyMetrics);
-    isCoordinator = localMemberId.nodeIdx() == COORDINATOR_NODE_ID;
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
             clusterConfigurationManager, localMemberId, managerActor);
@@ -192,8 +189,14 @@ public final class ClusterConfigurationManagerService
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
     final var result = new CompletableActorFuture<Void>();
+    // At startup, the cluster configuration is not yet initialized. Use nodeIdx == 0 as an initial
+    // heuristic to decide which initializer to use. The actual coordinator identity is resolved
+    // dynamically once the ClusterConfiguration is available (see
+    // ConfigurationChangeCoordinatorImpl
+    // and ClusterConfigurationCoordinatorSupplier).
+    final boolean isLikelyCoordinator = localMemberId.nodeIdx() == COORDINATOR_NODE_ID;
     final ClusterConfigurationInitializer clusterConfigurationInitializer =
-        isCoordinator
+        isLikelyCoordinator
             ? getCoordinatorInitializer(staticConfiguration)
             : getNonCoordinatorInitializer(staticConfiguration);
 
