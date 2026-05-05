@@ -63,7 +63,7 @@
     "@camunda/lint-config": "file:../../webapp/client/packages/lint-config",
     "@camunda/c8-mocks": "file:../../webapp/client/packages/c8-mocks",
     "@eslint/js": "9.39.4",
-    "@playwright/test": "1.58.2",
+    "@playwright/test": "1.59.1",
     "@tanstack/react-query-devtools": "5.91.3",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
@@ -111,5 +111,8 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "npm@11.12.1"
+  "packageManager": "npm@11.12.1",
+  "overrides": {
+    "playwright-core": "$@playwright/test"
+  }
 }
