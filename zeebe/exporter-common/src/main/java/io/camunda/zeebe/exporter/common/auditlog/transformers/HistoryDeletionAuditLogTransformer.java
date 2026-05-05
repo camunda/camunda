@@ -29,6 +29,14 @@ public class HistoryDeletionAuditLogTransformer
         .setEntityType(mapResourceTypeToEntityType(value.getResourceType()))
         .setEntityDescription(value.getResourceType().name());
 
+    // Set specific key based on resource type
+    switch (value.getResourceType()) {
+      case PROCESS_INSTANCE -> log.setProcessInstanceKey(value.getResourceKey());
+      case DECISION_INSTANCE -> log.setDecisionEvaluationKey(value.getResourceKey());
+      case DECISION_REQUIREMENTS -> log.setDecisionRequirementsKey(value.getResourceKey());
+      case PROCESS_DEFINITION -> log.setProcessDefinitionKey(value.getResourceKey());
+    }
+
     // Set processDefinitionId for process-related deletions
     if (value.getProcessId() != null && !value.getProcessId().isEmpty()) {
       log.setProcessDefinitionId(value.getProcessId());

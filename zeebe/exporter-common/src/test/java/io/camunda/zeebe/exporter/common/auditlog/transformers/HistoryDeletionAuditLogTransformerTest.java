@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -49,6 +50,8 @@ class HistoryDeletionAuditLogTransformerTest {
     assertThat(entity.getEntityKey()).isEqualTo("12345");
     assertThat(entity.getEntityType()).isEqualTo(AuditLogEntityType.PROCESS_INSTANCE);
     assertThat(entity.getEntityDescription()).isEqualTo("PROCESS_INSTANCE");
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.DELETE);
+    assertThat(entity.getProcessInstanceKey()).isEqualTo(12345L);
     assertThat(entity.getProcessDefinitionId()).isEqualTo("myProcess");
     assertThat(entity.getDecisionDefinitionId()).isNull();
   }
@@ -76,6 +79,8 @@ class HistoryDeletionAuditLogTransformerTest {
     assertThat(entity.getEntityKey()).isEqualTo("54321");
     assertThat(entity.getEntityType()).isEqualTo(AuditLogEntityType.RESOURCE);
     assertThat(entity.getEntityDescription()).isEqualTo("PROCESS_DEFINITION");
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.DELETE);
+    assertThat(entity.getProcessDefinitionKey()).isEqualTo(54321L);
     assertThat(entity.getProcessDefinitionId()).isEqualTo("myProcessDef");
     assertThat(entity.getDecisionDefinitionId()).isNull();
   }
@@ -103,6 +108,8 @@ class HistoryDeletionAuditLogTransformerTest {
     assertThat(entity.getEntityKey()).isEqualTo("98765");
     assertThat(entity.getEntityType()).isEqualTo(AuditLogEntityType.DECISION);
     assertThat(entity.getEntityDescription()).isEqualTo("DECISION_INSTANCE");
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.DELETE);
+    assertThat(entity.getDecisionEvaluationKey()).isEqualTo(98765L);
     assertThat(entity.getDecisionDefinitionId()).isEqualTo("myDecision");
     assertThat(entity.getProcessDefinitionId()).isNull();
   }
@@ -130,6 +137,8 @@ class HistoryDeletionAuditLogTransformerTest {
     assertThat(entity.getEntityKey()).isEqualTo("11111");
     assertThat(entity.getEntityType()).isEqualTo(AuditLogEntityType.RESOURCE);
     assertThat(entity.getEntityDescription()).isEqualTo("DECISION_REQUIREMENTS");
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.DELETE);
+    assertThat(entity.getDecisionRequirementsKey()).isEqualTo(11111L);
     assertThat(entity.getDecisionDefinitionId()).isEqualTo("myDRD");
     assertThat(entity.getProcessDefinitionId()).isNull();
   }
