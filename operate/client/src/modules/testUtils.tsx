@@ -92,6 +92,7 @@ const createProcessInstance = (
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
     ...options,
   };
 };
