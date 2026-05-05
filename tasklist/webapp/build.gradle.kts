@@ -23,14 +23,18 @@ dependencies {
     implementation(project(":camunda-search-domain"))
     implementation(project(":camunda-spring-utils"))
     implementation(project(":camunda-client-java"))
-    api(libs.org.springframework.boot.spring.boot.starter.web)
+    api(libs.org.springframework.boot.spring.boot.starter.web) {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    }
     api(libs.org.springframework.boot.spring.boot.starter.log4j2)
     api(libs.org.springframework.boot.spring.boot.starter.security)
     api(libs.org.springframework.boot.spring.boot.starter.thymeleaf)
     api(libs.io.micrometer.micrometer.registry.prometheus)
     api(libs.com.google.guava.guava)
     api(libs.org.springframework.boot.spring.boot.starter.oauth2.resource.server)
-    api(libs.org.springdoc.springdoc.openapi.starter.webmvc.ui)
+    api(libs.org.springdoc.springdoc.openapi.starter.webmvc.ui) {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    }
     api(libs.software.amazon.awssdk.sts)
     api(libs.org.springframework.boot.spring.boot.starter.validation)
     implementation(libs.org.thymeleaf.thymeleaf)
@@ -45,7 +49,9 @@ dependencies {
     api(libs.co.elastic.clients.elasticsearch.java)
     api(libs.org.springframework.boot.spring.boot.actuator)
     api(libs.org.springframework.spring.core)
-    api(libs.org.springdoc.springdoc.openapi.starter.common)
+    api(libs.org.springdoc.springdoc.openapi.starter.common) {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    }
     api(libs.org.apache.tomcat.embed.tomcat.embed.core)
     api(libs.org.elasticsearch.elasticsearch)
     api(libs.org.springframework.spring.beans)

@@ -15,6 +15,8 @@ dependencies {
     testImplementation(project(":zeebe-broker"))
     testImplementation(project(":zeebe-protocol"))
     testImplementation(project(":zeebe-bpmn-model"))
+    testImplementation(libs.org.camunda.bpm.model.camunda.xml.model)
+    testImplementation(libs.org.camunda.bpm.model.camunda.dmn.model)
     testImplementation(project(":camunda-client-java"))
     testImplementation(project(":zeebe-auth"))
     testImplementation(project(":camunda-gateway-model"))
@@ -49,6 +51,7 @@ dependencies {
     testImplementation(libs.org.springframework.spring.beans)
     testImplementation(libs.org.springframework.spring.jdbc)
     testImplementation(libs.org.springframework.boot.spring.boot.starter.data.jdbc)
+    testImplementation("org.springframework.boot:spring-boot-data-jdbc-test:4.0.6")
     testImplementation(libs.org.springframework.spring.test)
     testImplementation(project(":camunda-zeebe"))
     testImplementation(libs.com.fasterxml.jackson.core.jackson.core)
@@ -64,6 +67,7 @@ dependencies {
     testImplementation(project(":camunda-security-protocol"))
     testImplementation(project(":zeebe-exporter-test"))
     testImplementation(project(":zeebe-exporter-api"))
+    testImplementation(project(":zeebe-exporter-filter"))
     testImplementation(project(":rdbms-exporter"))
     testImplementation(project(":camunda-db-rdbms"))
     testImplementation(project(":camunda-db-rdbms-schema"))
@@ -107,6 +111,7 @@ dependencies {
     testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
     testImplementation(libs.com.auth0.java.jwt)
     testImplementation(libs.io.netty.netty.handler)
+    testImplementation(libs.org.scala.lang.scala.library)
     testImplementation(libs.com.github.dasniko.testcontainers.keycloak)
     testImplementation(libs.org.keycloak.keycloak.client.common.synced)
     testImplementation(libs.org.keycloak.keycloak.admin.client)
@@ -120,3 +125,11 @@ dependencies {
 }
 
 description = "Camunda QA Acceptance Tests"
+
+configurations.named("testRuntimeClasspath") {
+    exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
+}
+
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "3g"
+}

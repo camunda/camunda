@@ -79,6 +79,10 @@ dependencies {
 
 description = "Tasklist Integration Tests"
 
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "3g"
+}
+
 val testsJar by tasks.registering(Jar::class) {
     archiveClassifier = "tests"
     from(sourceSets["test"].output)

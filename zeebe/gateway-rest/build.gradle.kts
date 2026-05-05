@@ -43,7 +43,9 @@ dependencies {
     api(libs.io.swagger.core.v3.swagger.models.jakarta)
     api(libs.io.swagger.parser.v3.swagger.parser.v3)
     api(libs.io.swagger.parser.v3.swagger.parser.core)
-    api(libs.org.springdoc.springdoc.openapi.starter.common)
+    api(libs.org.springdoc.springdoc.openapi.starter.common) {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    }
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jdk8)
@@ -86,3 +88,7 @@ dependencies {
 }
 
 description = "Zeebe Gateway REST API server"
+
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "3g"
+}

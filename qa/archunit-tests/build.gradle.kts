@@ -8,15 +8,40 @@ plugins {
 
 dependencies {
     testImplementation(project(":camunda-zeebe"))
+    testImplementation(project(":camunda-client-java"))
+    testImplementation(project(":camunda-service"))
+    testImplementation(project(":camunda-search-domain"))
+    testImplementation(project(":camunda-gateway-mcp"))
+    testImplementation(project(":zeebe-gateway-rest"))
+    testImplementation(project(":zeebe-protocol"))
+    testImplementation(project(":zeebe-protocol-impl"))
+    testImplementation(project(":camunda-security-protocol"))
+    testImplementation(project(":zeebe-stream-platform"))
+    testImplementation(project(":zeebe-workflow-engine"))
     testImplementation(project(":zeebe-util"))
     testImplementation(project(":zeebe-bpmn-model"))
-    testImplementation(project(":zeebe-protocol-impl"))
     testImplementation(project(":zeebe-scheduler"))
     testImplementation(libs.com.tngtech.archunit.archunit)
     testImplementation(libs.com.tngtech.archunit.archunit.junit5.api)
     testImplementation(libs.com.tngtech.archunit.archunit.junit5.engine)
+    testImplementation(libs.org.camunda.bpm.model.camunda.xml.model)
     testImplementation(libs.org.springframework.boot.spring.boot.autoconfigure)
+    testImplementation(libs.org.springframework.spring.beans)
+    testImplementation(libs.org.springframework.spring.context)
+    testImplementation(libs.org.springframework.spring.web)
+    testImplementation(libs.org.opensearch.client.opensearch.java)
+    testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
+    testImplementation(libs.jakarta.validation.jakarta.validation.api)
+    testImplementation(libs.org.springaicommunity.mcp.annotations)
     testImplementation(libs.org.immutables.value)
 }
 
 description = "Camunda ArchUnit Tests"
+
+configurations.named("testRuntimeClasspath") {
+    exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
+}
+
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "8g"
+}
