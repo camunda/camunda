@@ -254,8 +254,7 @@ final class ClusterConfigurationModifierTest {
     private static Arguments configNotFoundExporterNotReadded() {
       final var initialConfig =
           new DynamicPartitionConfig(
-              new ExportingConfig(
-                  ExportingState.EXPORTING,
+              new ExportersConfig(
                   Map.of(
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),
