@@ -1,0 +1,14 @@
+# Node dependencies
+node_modules/
+
+# Node.js binary (installed by frontend-maven-plugin)
+node/
+
+# npm lock file (tracked separately – exclude .tgz etc.)
+*.tgz
+
+# Maven build output
+target/
+
+# Build output (managed by Maven, not git)
+# The actual output goes to camunda-process-test-java/target/

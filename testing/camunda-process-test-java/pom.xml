@@ -206,8 +206,8 @@
         <groupId>com.github.eirslett</groupId>
         <artifactId>frontend-maven-plugin</artifactId>
         <configuration>
-          <workingDirectory>${project.basedir}/../camunda-process-test-coverage-frontend</workingDirectory>
-          <installDirectory>${project.basedir}/../camunda-process-test-coverage-frontend</installDirectory>
+          <workingDirectory>${project.basedir}/../camunda-process-test-coverage-frontend-new</workingDirectory>
+          <installDirectory>${project.basedir}/../camunda-process-test-coverage-frontend-new</installDirectory>
         </configuration>
         <executions>
           <!-- Install Node and NPM -->

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Camunda Process Test: Coverage Report</title>
+
+    <link rel="icon" href="./static/media/favicon.ico" />
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="./static/vendor/bootstrap/bootstrap.min.css" />
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="./static/vendor/bootstrap-icons/bootstrap-icons.min.css" />
+
+    <!-- bpmn-js styles -->
+    <link rel="stylesheet" href="./static/vendor/bpmn-js/assets/bpmn-js.css" />
+    <link rel="stylesheet" href="./static/vendor/bpmn-js/assets/diagram-js.css" />
+    <link
+      rel="stylesheet"
+      href="./static/vendor/bpmn-js/assets/bpmn-font/css/bpmn-embedded.css"
+    />
+
+    <!-- Application styles -->
+    <link rel="stylesheet" href="./static/styles.css" />
+
+    <!--
+      COVERAGE_DATA is replaced by the Java reporting module (CoverageReportUtil)
+      with the serialized JSON of HtmlCoverageReport before writing the HTML file.
+    -->
+    <script>
+      window.COVERAGE_DATA = {{ COVERAGE_DATA }};
+    </script>
+  </head>
+
+  <body>
+    <div id="app">
+      <!-- Header -->
+      <header class="app-header d-flex align-items-center px-3 py-2 border-bottom">
+        <img
+          src="./static/media/camunda-logo.png"
+          alt="Camunda"
+          width="32"
+          height="32"
+          class="me-2"
+          onerror="this.style.display='none'"
+        />
+        <span class="app-header-title">Process Test: Coverage Report</span>
+      </header>
+
+      <!-- Body: sidebar + main content -->
+      <div class="app-body d-flex">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="app-sidebar border-end" aria-label="Coverage navigation">
+          <div id="sidebar-content"></div>
+        </nav>
+
+        <!-- Main content -->
+        <main id="content" class="app-content flex-grow-1 p-4" role="main"></main>
+      </div>
+    </div>
+
+    <!-- bpmn-js navigated viewer (UMD bundle exposes window.BpmnJS) -->
+    <script src="./static/vendor/bpmn-js/bpmn-navigated-viewer.production.min.js"></script>
+    <!-- Bootstrap JS (for collapse, tooltips, etc.) -->
+    <script src="./static/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <!-- Application -->
+    <script src="./static/app.js"></script>
+  </body>
+</html>

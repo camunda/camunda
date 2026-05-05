@@ -1,0 +1,22 @@
+{
+  "name": "camunda-coverage-frontend-new",
+  "version": "1.0.0",
+  "description": "A lightweight web application for visualizing Camunda process test coverage.",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "node scripts/build.js --dev"
+  },
+  "keywords": [
+    "camunda",
+    "coverage",
+    "bpmn"
+  ],
+  "dependencies": {
+    "bpmn-js": "^18.16.1",
+    "bootstrap": "^5.3.7",
+    "bootstrap-icons": "^1.13.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
