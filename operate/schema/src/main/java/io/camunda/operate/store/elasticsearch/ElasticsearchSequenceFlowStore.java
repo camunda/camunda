@@ -49,12 +49,10 @@ public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
             .query(query)
             .sort(ElasticsearchUtil.sortOrder(SequenceFlowTemplate.ACTIVITY_ID, SortOrder.Asc));
 
-    try {
-      return ElasticsearchUtil.scrollAllStream(
-              esClient, searchRequestBuilder, SequenceFlowEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        ElasticsearchUtil.scrollAllStream(
+            esClient, searchRequestBuilder, SequenceFlowEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
 
     } catch (final ScrollException e) {
       final String message =

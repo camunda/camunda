@@ -122,17 +122,19 @@ public class ElasticsearchIncidentStore implements IncidentStore {
     try {
       final var firstResponse = new AtomicBoolean(true);
 
-      return ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, IncidentEntity.class)
-          .peek(
-              res -> {
-                if (firstResponse.compareAndSet(true, false)) {
-                  populateErrorTypes(errorTypes, res, errorTypesAggName);
-                }
-              })
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
-
+      try (final var resStream =
+          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, IncidentEntity.class)) {
+        return resStream
+            .peek(
+                res -> {
+                  if (firstResponse.compareAndSet(true, false)) {
+                    populateErrorTypes(errorTypes, res, errorTypesAggName);
+                  }
+                })
+            .flatMap(res -> res.hits().hits().stream())
+            .map(Hit::source)
+            .toList();
+      }
     } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining incidents: %s", e.getMessage());
@@ -157,11 +159,9 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             .query(tenantAwareQuery)
             .sort(sortOrder(IncidentTemplate.CREATION_TIME, SortOrder.Asc));
 
-    try {
-      return scrollAllStream(esClient, searchRequestBuilder, IncidentEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, IncidentEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
 
     } catch (final ScrollException e) {
       final String message =
@@ -187,11 +187,9 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             .query(tenantAwareQuery)
             .sort(sortOrder(IncidentTemplate.CREATION_TIME, SortOrder.Asc));
 
-    try {
-      return scrollAllStream(esClient, searchRequestBuilder, IncidentEntity.class)
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
+    try (final var resStream =
+        scrollAllStream(esClient, searchRequestBuilder, IncidentEntity.class)) {
+      return resStream.flatMap(res -> res.hits().hits().stream()).map(Hit::source).toList();
     } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
