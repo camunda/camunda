@@ -38,6 +38,7 @@ components:
       type: string
       format: GlobalListenerId
       x-semantic-type: GlobalListenerId
+      x-semantic-client-minted: true
       example: GlobalListener_1
 
     TenantId:

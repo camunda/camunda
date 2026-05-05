@@ -971,6 +971,20 @@ responses and bind them into downstream `x-semantic-requires.bind`
 slots. Schema-level annotation; a single schema can provide multiple
 identifiers.
 
+> **Caveat — shared response schemas.** Because the annotation lives on
+> the schema, it implicitly claims provider semantics for **every**
+> operation whose response `$ref`s that schema. Do not add
+> `x-semantic-provider` to a schema that is shared across operations
+> with different identity contracts (e.g. a single `FooResult` reused by
+> `createFoo`, `getFoo`, `updateFoo`, and `searchFoos`) — the create
+> response is the canonical producer of `id`, but the search items are
+> not, and the annotation cannot distinguish. In that case either split
+> the schema (a dedicated `FooCreateResult` for the producing
+> operation), or omit `x-semantic-provider` and let consumers chain via
+> `x-semantic-establishes` on the producing operation instead. A
+> structural lint guard for this is tracked in
+> [#52414](https://github.com/camunda/camunda/issues/52414).
+
 #### `x-semantic-client-minted` (identifier-level)
 
 Set on identifier schemas in `identifiers.yaml` to declare that the ID

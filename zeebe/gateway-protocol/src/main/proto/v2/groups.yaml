@@ -748,7 +748,7 @@ components:
         groupId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/GroupId'
-          description: The unique external group ID.
+          description: The unique group ID.
         name:
           type: string
           description: The name of the group.
