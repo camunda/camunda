@@ -21,7 +21,6 @@ import {Notifications} from 'modules/notifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {Paths} from 'modules/Routes';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
-import {DemoLauncher} from './DemoLauncher';
 import {AuthenticationCheck} from '../modules/auth/AuthenticationCheck';
 import {AuthorizationCheck} from '../modules/auth/AuthorizationCheck';
 import {SessionWatcher} from '../modules/auth/SessionWatcher';
@@ -58,7 +57,6 @@ const Wrapper: React.FC = () => {
       <SessionWatcher />
       <TrackPagination />
       <Outlet />
-      {import.meta.env.DEV ? <DemoLauncher /> : null}
     </>
   );
 };

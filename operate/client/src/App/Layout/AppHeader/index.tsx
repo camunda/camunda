@@ -21,6 +21,7 @@ import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {isForbidden} from 'modules/auth/isForbidden';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {notificationsStore} from 'modules/stores/notifications';
+import {SCENARIOS} from 'modules/mock-server/scenarioRegistry';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -292,6 +293,16 @@ const AppHeader: React.FC = observer(() => {
                       },
                     },
                   ]),
+              ...(import.meta.env.DEV
+                ? SCENARIOS.map((scenario) => ({
+                    key: `demo-${scenario.instanceKey}`,
+                    label: `Demo: ${scenario.name}`,
+                    isCurrentPage: false,
+                    routeProps: {
+                      to: Paths.processInstance(scenario.instanceKey),
+                    },
+                  }))
+                : []),
             ],
         licenseTag: {
           show: licenseTagStore.state.isTagVisible,
