@@ -41,4 +41,18 @@ public class GetResourceContentTest extends ClientRestTest {
 
     assertThat(response).isEqualTo(resourceContent);
   }
+
+  @Test
+  void shouldGetResourceContentWhenContentIsJsonStructure() {
+    // given - RPA resource content is itself a JSON document returned as application/json
+    final String resourceContent =
+        "{\n  \"type\": \"default\",\n  \"id\": \"RPA_auditlog_test\",\n  \"schemaVersion\": 7\n}\n";
+    gatewayService.onResourceContentGetRequest(456L, resourceContent);
+
+    // when
+    final String response = client.newResourceContentGetRequest(456L).execute();
+
+    // then
+    assertThat(response).isEqualTo(resourceContent);
+  }
 }

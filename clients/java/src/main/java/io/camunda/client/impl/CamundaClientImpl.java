@@ -315,6 +315,7 @@ import io.camunda.client.impl.fetch.ProcessDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetCallHierarchyRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.ResourceContentBinaryGetRequestImpl;
 import io.camunda.client.impl.fetch.ResourceContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ResourceGetRequestImpl;
 import io.camunda.client.impl.fetch.RoleGetRequestImpl;
@@ -1695,6 +1696,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ResourceContentGetRequest newResourceContentGetRequest(final long resourceKey) {
     return new ResourceContentGetRequestImpl(httpClient, resourceKey);
+  }
+
+  @Override
+  public ResourceContentGetRequest newResourceContentBinaryGetRequest(final long resourceKey) {
+    return new ResourceContentBinaryGetRequestImpl(httpClient, resourceKey);
   }
 
   @Override

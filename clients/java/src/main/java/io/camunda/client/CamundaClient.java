@@ -3394,9 +3394,26 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the request to get a resource content
+   * @deprecated since 8.10, use {@link #newResourceContentBinaryGetRequest(long)} instead.
+   * @return a builder for the request to get an RPA resource content as JSON
    */
+  @Deprecated
   ResourceContentGetRequest newResourceContentGetRequest(long resourceKey);
+
+  /**
+   * Retrieves a resource content as binary by key.
+   *
+   * <pre>
+   * long resourceKey = ...;
+   *
+   * camundaClient
+   *  .newResourceContentBinaryGetRequest(resourceKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the request to get a resource content as binary
+   */
+  ResourceContentGetRequest newResourceContentBinaryGetRequest(long resourceKey);
 
   /**
    * Creates a request to create a new global task listener.
