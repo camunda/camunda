@@ -42,15 +42,15 @@ public class ExpressionBehavior {
    *
    * <ol>
    *   <li>Variables provided in the record body.
-   *   <li>Process/element instance variables visible from the record's scope (the element-instance
-   *       key if set, otherwise the process-instance key), walked up the scope tree.
+   *   <li>Process/element instance variables visible from the record's scope, walked up the scope
+   *       tree.
    *   <li>Tenant-scoped cluster variables.
    *   <li>Global cluster variables.
    * </ol>
    */
   public Either<Rejection, ExpressionRecord> resolveExpression(
       final Expression expression, final ExpressionRecord expressionRecord) {
-    final long scopeKey = resolveScopeKey(expressionRecord);
+    final long scopeKey = expressionRecord.getScopeKey();
     final var variables = expressionRecord.getVariables();
     final var bodyContext =
         variables == null
@@ -70,13 +70,6 @@ public class ExpressionBehavior {
         .mapLeft(this::mapEvaluationFailure)
         .flatMap(this::rejectIfEvaluationFailed)
         .map(evaluationResult -> mapSuccess(evaluationResult, expressionRecord));
-  }
-
-  private static long resolveScopeKey(final ExpressionRecord record) {
-    if (record.getElementInstanceKey() >= 0) {
-      return record.getElementInstanceKey();
-    }
-    return record.getProcessInstanceKey();
   }
 
   private Either<Rejection, EvaluationResult> rejectIfEvaluationFailed(
@@ -101,8 +94,7 @@ public class ExpressionBehavior {
         .setTenantId(expressionRecord.getTenantId())
         .setExpression(expressionRecord.getExpression())
         .setVariables(expressionRecord.getVariablesBuffer())
-        .setProcessInstanceKey(expressionRecord.getProcessInstanceKey())
-        .setElementInstanceKey(expressionRecord.getElementInstanceKey())
+        .setScopeKey(expressionRecord.getScopeKey())
         .setWarnings(
             evaluationResult.getWarnings().stream().map(EvaluationWarning::getMessage).toList())
         .setResultValue(evaluationResult.toBuffer());

@@ -748,7 +748,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=myVar")
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .resolve();
 
     // then
@@ -790,7 +790,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=elemVar")
-            .withElementInstanceKey(elementInstanceKey)
+            .withScopeKey(elementInstanceKey)
             .resolve();
 
     // then
@@ -837,7 +837,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=catchVar")
-            .withElementInstanceKey(elementInstanceKey)
+            .withScopeKey(elementInstanceKey)
             .resolve();
 
     // then
@@ -885,7 +885,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=boundaryVar")
-            .withElementInstanceKey(elementInstanceKey)
+            .withScopeKey(elementInstanceKey)
             .resolve();
 
     // then
@@ -896,23 +896,63 @@ public class ResolveFeelExpressionTest {
   }
 
   @Test
-  public void shouldRejectWhenBothProcessInstanceKeyAndElementInstanceKeyProvided() {
+  public void shouldWriteProcessInstanceKeyAsScopeKeyOnEvaluatedRecord() {
+    // given
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("processScopeKey")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId("processScopeKey").create();
+
     // when
     final var record =
-        ENGINE_RULE
-            .expression()
-            .withExpression("=1")
-            .withProcessInstanceKey(1L)
-            .withElementInstanceKey(2L)
-            .expectRejection()
-            .resolve();
+        ENGINE_RULE.expression().withExpression("=1").withScopeKey(processInstanceKey).resolve();
 
     // then
     Assertions.assertThat(record)
-        .hasIntent(ExpressionIntent.EVALUATE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
-    assertThat(record.getRejectionReason())
-        .contains("Either 'processInstanceKey' or 'elementInstanceKey' must be provided, not both");
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getScopeKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  public void shouldWriteElementInstanceKeyAsScopeKeyOnEvaluatedRecord() {
+    // given
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("elementScopeKey")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId("elementScopeKey").create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst()
+            .getKey();
+
+    // when
+    final var record =
+        ENGINE_RULE.expression().withExpression("=1").withScopeKey(elementInstanceKey).resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getScopeKey()).isEqualTo(elementInstanceKey);
   }
 
   @Test
@@ -922,7 +962,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=1")
-            .withProcessInstanceKey(999999L)
+            .withScopeKey(999999L)
             .expectRejection()
             .resolve();
 
@@ -940,7 +980,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=1")
-            .withElementInstanceKey(999999L)
+            .withScopeKey(999999L)
             .expectRejection()
             .resolve();
 
@@ -976,7 +1016,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=score")
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .withVariables(Map.of("score", 99))
             .resolve();
 
@@ -1029,7 +1069,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=score")
-            .withElementInstanceKey(elementInstanceKey)
+            .withScopeKey(elementInstanceKey)
             .resolve();
 
     // then - element-scope variable shadows the process-scope one
@@ -1066,7 +1106,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=score")
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .resolve();
 
     // then - process instance variable wins over cluster variable
@@ -1097,7 +1137,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=1")
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .withTenantId("wrong-tenant")
             .expectRejection()
             .resolve();
