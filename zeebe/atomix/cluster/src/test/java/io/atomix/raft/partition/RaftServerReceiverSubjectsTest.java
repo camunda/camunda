@@ -70,7 +70,7 @@ public class RaftServerReceiverSubjectsTest {
   void shouldRegisterSubjects(final RaftPartitionConfig config, @TempDir final Path tempDir) {
     // given
     final var legacyReceiverSubjectsDisabled = config.isReceiveOnLegacySubject();
-    final var engineName = config.getEngineName();
+    final var engineName = config.getTenantName();
 
     // when
     createRaftPartitionServer(config, tempDir);
@@ -86,7 +86,7 @@ public class RaftServerReceiverSubjectsTest {
     // given
     final var server = createRaftPartitionServer(config, tempDir);
     final var receiveOnLegacySubject = config.isReceiveOnLegacySubject();
-    final var engineName = config.getEngineName();
+    final var engineName = config.getTenantName();
 
     // when
     server.stop().join();
@@ -179,6 +179,7 @@ public class RaftServerReceiverSubjectsTest {
   static RaftPartitionConfig createDefaultConfig() {
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var raftStorageConfig = new RaftStorageConfig();
+    raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
     raftPartitionConfig.setStorageConfig(raftStorageConfig);
     return raftPartitionConfig;
   }
@@ -186,6 +187,7 @@ public class RaftServerReceiverSubjectsTest {
   static RaftPartitionConfig createConfigAndDisableReceiveOnLegacySubject() {
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var raftStorageConfig = new RaftStorageConfig();
+    raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
     raftPartitionConfig.setReceiveOnLegacySubject(false);
     raftPartitionConfig.setStorageConfig(raftStorageConfig);
     return raftPartitionConfig;
@@ -194,7 +196,8 @@ public class RaftServerReceiverSubjectsTest {
   static RaftPartitionConfig createConfigWithEngineName() {
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var raftStorageConfig = new RaftStorageConfig();
-    raftPartitionConfig.setEngineName("foo");
+    raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
+    raftPartitionConfig.setTenantName("foo");
     raftPartitionConfig.setStorageConfig(raftStorageConfig);
     return raftPartitionConfig;
   }
@@ -202,7 +205,8 @@ public class RaftServerReceiverSubjectsTest {
   static RaftPartitionConfig createConfigWithEngineNameAndDisableReceiveOnLegacySubject() {
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var raftStorageConfig = new RaftStorageConfig();
-    raftPartitionConfig.setEngineName("foo");
+    raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
+    raftPartitionConfig.setTenantName("foo");
     raftPartitionConfig.setReceiveOnLegacySubject(false);
     raftPartitionConfig.setStorageConfig(raftStorageConfig);
     return raftPartitionConfig;

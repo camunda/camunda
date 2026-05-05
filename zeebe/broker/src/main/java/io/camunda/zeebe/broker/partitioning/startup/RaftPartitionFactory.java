@@ -29,7 +29,8 @@ import java.time.Duration;
 import org.slf4j.Logger;
 
 public final class RaftPartitionFactory {
-  public static final String GROUP_NAME = "raft-partition";
+  public static final String GROUP_NAME = "default";
+  private static final String LEGACY_GROUP_NAME = "raft-partition";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final BrokerCfg brokerCfg;
 
@@ -114,10 +115,17 @@ public final class RaftPartitionFactory {
     partitionConfig.setPreferSnapshotReplicationThreshold(
         brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
 
-    partitionConfig.setEngineName(brokerCfg.getExperimental().getDefaultEngineName());
+    final var tenantName = brokerCfg.getExperimental().getDefaultTenantName();
+    partitionConfig.setTenantName(tenantName);
     partitionConfig.setSendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject());
     partitionConfig.setReceiveOnLegacySubject(
         brokerCfg.getExperimental().isReceiveOnLegacySubject());
+    // Only the default partition group needs legacy subject support for backward compatibility with
+    // brokers that still use the old "raft-partition" group name. Non-default partition groups have
+    // no legacy subjects to listen on.
+    if (GROUP_NAME.equals(tenantName)) {
+      partitionConfig.setLegacyGroupName(LEGACY_GROUP_NAME);
+    }
 
     return new RaftPartition(
         partitionMetadata, partitionConfig, partitionDirectory.toFile(), partitionMeterRegistry);

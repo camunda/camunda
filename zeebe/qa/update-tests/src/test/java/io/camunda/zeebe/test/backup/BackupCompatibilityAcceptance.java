@@ -22,6 +22,9 @@ import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.VersionUtil;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
@@ -107,6 +110,10 @@ public interface BackupCompatibilityAcceptance {
         .describedAs("Restore app working directory should be set after start()")
         .isNotNull();
 
+    // then -- the restored data directory must not contain any files with the legacy
+    // "raft-partition" prefix, which would be invisible to the current-version broker
+    assertNoLegacyPartitionFiles(restoredDataDir);
+
     // then -- start a current-version broker on the restored data and verify the job is available
     verifyRestoredJobCanBeCompleted(restoredDataDir, storeBasePath);
   }
@@ -187,9 +194,33 @@ public interface BackupCompatibilityAcceptance {
       restoredDataDir = restoreApp.getWorkingDirectory();
     }
 
+    // then -- no legacy-prefixed files remain after restore (see #50538)
+    assertNoLegacyPartitionFiles(restoredDataDir);
+
     // then -- the current-version broker must deserialize old checkpoint state from the
     // snapshot without errors and replay the remaining log successfully
     verifyRestoredJobCanBeCompleted(restoredDataDir, storeBasePath);
+  }
+
+  /**
+   * Asserts that no files with the legacy {@code raft-partition} prefix remain anywhere under the
+   * restored data directory. Guards against the {@link
+   * io.camunda.zeebe.restore.PartitionRestoreService} or the broker's migration step missing a file
+   * type when upgrading from the legacy partition group name (see <a
+   * href="https://github.com/camunda/camunda/issues/50538">#50538</a>).
+   */
+  private void assertNoLegacyPartitionFiles(final Path restoredDataDir) {
+    try (final var tree = Files.walk(restoredDataDir)) {
+      assertThat(tree)
+          .filteredOn(Files::isRegularFile)
+          .allSatisfy(
+              path ->
+                  assertThat(path.getFileName().toString())
+                      .as("File %s should not carry the legacy 'raft-partition' prefix", path)
+                      .doesNotContain("raft-partition"));
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   /**
