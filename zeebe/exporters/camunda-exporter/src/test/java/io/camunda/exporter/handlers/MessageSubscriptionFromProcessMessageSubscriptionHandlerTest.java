@@ -441,7 +441,6 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     expectedUpdateFields.put("processDefinitionKey", null);
     expectedUpdateFields.put("processDefinitionName", null);
     expectedUpdateFields.put("processDefinitionVersion", null);
-    expectedUpdateFields.put("extensionProperties", null);
     expectedUpdateFields.put("toolName", null);
     expectedUpdateFields.put("inboundConnectorType", null);
     expectedUpdateFields.put("metadata", metadataMap);
