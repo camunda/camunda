@@ -27,8 +27,8 @@ test.beforeAll(async () => {
   await deploy(['./resources/mcpProcessBravo.bpmn']);
   await deploy(['./resources/mcp-process-with-inputs.bpmn']);
   await deploy(['./resources/mcp-process-intermediate-event.bpmn']);
-  // Deploy Alpha a second time to create version 2 (used by sort-by-version test)
-  await deploy(['./resources/mcpProcessAlpha.bpmn']);
+  // Deploy a modified Alpha (same processId, different BPMN content) to create version 2
+  await deploy(['./resources/mcp-process-alpha-v2.bpmn']);
   // Create an instance so the PROCESS_EVENT (intermediate) subscription becomes active
   await createInstances('mcpIntermediateProcess', 1, 1);
 });
