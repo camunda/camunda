@@ -18,6 +18,9 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.ResolvedDocument;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.UnaryOperator;
 
 /**
@@ -55,6 +58,14 @@ class JudgeAssertj {
    *
    * @throws IllegalStateException if judgeConfig or its chatModel is null
    */
+  /**
+   * @return the current judge config (never {@code null} once {@link
+   *     #assertJudgeHasAllRequiredSettings()} has passed).
+   */
+  JudgeConfig getJudgeConfig() {
+    return judgeConfig;
+  }
+
   void assertJudgeHasAllRequiredSettings() {
     if (judgeConfig == null) {
       throw new IllegalStateException(
@@ -77,12 +88,20 @@ class JudgeAssertj {
    */
   void evaluateExpectation(
       final String expectation, final String actualValue, final String context) {
+    evaluateExpectation(expectation, actualValue, context, Collections.emptyList());
+  }
+
+  void evaluateExpectation(
+      final String expectation,
+      final String actualValue,
+      final String context,
+      final List<ResolvedDocument> documents) {
 
     final JudgeEvaluation evaluation =
         new JudgeEvaluation(judgeConfig.getChatModel(), expectation, judgeConfig.getCustomPrompt());
 
     try {
-      final JudgeEvaluation.Result result = evaluation.evaluate(actualValue);
+      final JudgeEvaluation.Result result = evaluation.evaluate(actualValue, documents);
       final double threshold = judgeConfig.getThreshold();
 
       if (!result.passed(threshold)) {
