@@ -81,7 +81,10 @@ test.describe.parallel('Job Statistics By Worker API Tests', () => {
       const body = await res.json();
       expect(body.items.length).toBeGreaterThanOrEqual(1);
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-      const item = body.items[0];
+      const item = body.items.find(
+        (i: {failed: {count: number}}) => i.failed.count >= 1,
+      );
+      expect(item).toBeDefined();
       expect(item.worker).toBeDefined();
       expect(item.created.count).toBeGreaterThanOrEqual(0);
       expect(item.completed.count).toBeGreaterThanOrEqual(0);
