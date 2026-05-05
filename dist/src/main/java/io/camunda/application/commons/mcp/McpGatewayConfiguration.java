@@ -10,11 +10,15 @@ package io.camunda.application.commons.mcp;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.camunda.gateway.mcp.config.CamundaMcpToolScannerAutoConfiguration;
 import io.camunda.gateway.mcp.config.CamundaMcpToolSpecificationsAutoConfiguration;
+import io.camunda.gateway.mcp.context.PhysicalTenantContext;
+import io.camunda.gateway.mcp.context.PhysicalTenantMcpFilter;
+import io.camunda.gateway.mcp.context.PhysicalTenantResolver;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.micrometer.observation.autoconfigure.ObservationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -81,6 +85,32 @@ public class McpGatewayConfiguration {
     registrationBean.addUrlPatterns("/mcp/*");
     registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
 
+    return registrationBean;
+  }
+
+  /**
+   * Filter that resolves the {@code physicalTenantId} from the MCP request URI ({@code
+   * /mcp/physical-tenants/{physicalTenantId}/<server>}), validates it against the configured
+   * {@link PhysicalTenantResolver}, exposes it via {@link PhysicalTenantContext}, and rewrites
+   * the URI to the unprefixed MCP path so the existing transport router functions match.
+   *
+   * <p>Mirrors the REST {@code PhysicalTenantInterceptor} for {@code /v2/...} routes. Registered
+   * with the highest precedence so the rewritten URI is visible to downstream filters (including
+   * the content caching filter) and handlers.
+   */
+  @Bean
+  public FilterRegistrationBean<PhysicalTenantMcpFilter> mcpPhysicalTenantFilter(
+      final ObjectProvider<PhysicalTenantResolver> resolverProvider) {
+    final PhysicalTenantResolver resolver =
+        resolverProvider.getIfAvailable(
+            () -> PhysicalTenantContext.DEFAULT_PHYSICAL_TENANT_ID::equals);
+    final FilterRegistrationBean<PhysicalTenantMcpFilter> registrationBean =
+        new FilterRegistrationBean<>(new PhysicalTenantMcpFilter(resolver));
+    registrationBean.addUrlPatterns("/mcp/*");
+    // Run after the content caching filter (HIGHEST_PRECEDENCE) so the rewritten URI is the
+    // last wrapping seen by downstream handlers; content caching still applies because both
+    // filters are pure request wrappers passed through the chain.
+    registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
     return registrationBean;
   }
 }

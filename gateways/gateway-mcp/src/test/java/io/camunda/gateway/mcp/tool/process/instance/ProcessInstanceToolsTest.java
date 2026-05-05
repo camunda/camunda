@@ -129,7 +129,8 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
     @Test
     void shouldGetProcessInstanceByKey() {
       // given
-      when(processInstanceServices.getByKey(any(), any())).thenReturn(PROCESS_INSTANCE_ENTITY);
+      when(processInstanceServices.getByKey(any(), any(), any()))
+          .thenReturn(PROCESS_INSTANCE_ENTITY);
 
       // when
       final CallToolResult result =
@@ -147,7 +148,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProcessInstanceResult.class);
       assertExampleProcessInstance(processInstance);
 
-      verify(processInstanceServices).getByKey(eq(123L), any());
+      verify(processInstanceServices).getByKey(eq(123L), any(), any());
 
       assertTextContentFallback(result);
     }
@@ -155,7 +156,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
     @Test
     void shouldFailGetProcessInstanceByKeyOnException() {
       // given
-      when(processInstanceServices.getByKey(any(), any()))
+      when(processInstanceServices.getByKey(any(), any(), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -480,7 +481,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
               .setTags(Set.of());
 
       when(processInstanceServices.createProcessInstance(
-              any(ProcessInstanceCreateRequest.class), any()))
+              any(ProcessInstanceCreateRequest.class), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -502,7 +503,8 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+      verify(processInstanceServices)
+          .createProcessInstance(createRequestCaptor.capture(), any(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
       assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
@@ -537,7 +539,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
               .setTags(Set.of("mcp-tool:abc"));
 
       when(processInstanceServices.createProcessInstance(
-              any(ProcessInstanceCreateRequest.class), any()))
+              any(ProcessInstanceCreateRequest.class), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -560,7 +562,8 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // then
       assertThat(result.isError()).isFalse();
 
-      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+      verify(processInstanceServices)
+          .createProcessInstance(createRequestCaptor.capture(), any(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.bpmnProcessId()).contains("testProcessId");
       assertThat(capturedRequest.version()).isEqualTo(7);
@@ -599,7 +602,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
               .setTags(Set.of("mcp-tool:abc"));
 
       when(processInstanceServices.createProcessInstanceWithResult(
-              any(ProcessInstanceCreateRequest.class), any()))
+              any(ProcessInstanceCreateRequest.class), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -627,7 +630,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
 
       verify(processInstanceServices)
-          .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
+          .createProcessInstanceWithResult(createRequestCaptor.capture(), any(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.awaitCompletion()).isTrue();
       assertThat(capturedRequest.fetchVariables()).containsExactly("foo");
@@ -663,7 +666,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
               .setTags(Set.of("mcp-tool:abc"));
 
       when(processInstanceServices.createProcessInstanceWithResult(
-              any(ProcessInstanceCreateRequest.class), any()))
+              any(ProcessInstanceCreateRequest.class), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -691,7 +694,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
 
       verify(processInstanceServices)
-          .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
+          .createProcessInstanceWithResult(createRequestCaptor.capture(), any(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.awaitCompletion()).isTrue();
       assertThat(capturedRequest.requestTimeout()).isEqualTo(60000L);
@@ -716,7 +719,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
 
       when(processInstanceServices.createProcessInstance(
-              any(ProcessInstanceCreateRequest.class), any()))
+              any(ProcessInstanceCreateRequest.class), any(), any()))
           .thenThrow(new ServiceException("Expected failure", Status.INVALID_ARGUMENT));
 
       // when
@@ -798,7 +801,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
               .setTags(Set.of());
 
       when(processInstanceServices.createProcessInstance(
-              any(ProcessInstanceCreateRequest.class), any()))
+              any(ProcessInstanceCreateRequest.class), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -822,7 +825,8 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+      verify(processInstanceServices)
+          .createProcessInstance(createRequestCaptor.capture(), any(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
       assertThat(capturedRequest.tenantId()).isEqualTo("tenant-a");
@@ -857,7 +861,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
               .setTags(Set.of("mcp-tool:abc"));
 
       when(processInstanceServices.createProcessInstance(
-              any(ProcessInstanceCreateRequest.class), any()))
+              any(ProcessInstanceCreateRequest.class), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -882,7 +886,8 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       // then
       assertThat(result.isError()).isFalse();
 
-      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+      verify(processInstanceServices)
+          .createProcessInstance(createRequestCaptor.capture(), any(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.bpmnProcessId()).contains("testProcessId");
       assertThat(capturedRequest.version()).isEqualTo(7);
@@ -977,7 +982,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
               .setBusinessId(businessId);
 
       when(processInstanceServices.createProcessInstance(
-              any(ProcessInstanceCreateRequest.class), any()))
+              any(ProcessInstanceCreateRequest.class), any(), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -992,7 +997,8 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+      verify(processInstanceServices)
+          .createProcessInstance(createRequestCaptor.capture(), any(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
       assertThat(capturedRequest.businessId()).isEqualTo(businessId);

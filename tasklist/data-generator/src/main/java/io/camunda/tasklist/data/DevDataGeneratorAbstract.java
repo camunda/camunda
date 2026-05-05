@@ -304,7 +304,8 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
                     null,
                     Set.of(),
                     null),
-                authentication));
+                authentication,
+                "default"));
   }
 
   private <T> T executeCamundaServiceAnonymously(

@@ -17,4 +17,6 @@ public interface SequenceFlowSearchClient {
   SearchQueryResult<SequenceFlowEntity> searchSequenceFlows(SequenceFlowQuery filter);
 
   SequenceFlowSearchClient withSecurityContext(SecurityContext securityContext);
+
+  SequenceFlowSearchClient withPhysicalTenant(String physicalTenant);
 }

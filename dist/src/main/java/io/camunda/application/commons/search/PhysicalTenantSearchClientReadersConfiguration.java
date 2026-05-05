@@ -128,4 +128,18 @@ public class PhysicalTenantSearchClientReadersConfiguration {
     final Set<String> known = Set.copyOf(tenantConnectConfigResolver.tenantConfigs().keySet());
     return known::contains;
   }
+
+  /**
+   * Same source-of-truth as {@link #physicalTenantResolver(TenantConnectConfigResolver)} but
+   * exposed via the MCP gateway's local {@link io.camunda.gateway.mcp.context.PhysicalTenantResolver}
+   * type so the {@code gateway-mcp} module can validate {@code
+   * /mcp/physical-tenants/{physicalTenantId}/...} requests without depending on
+   * {@code zeebe-gateway-rest}.
+   */
+  @Bean
+  public io.camunda.gateway.mcp.context.PhysicalTenantResolver mcpPhysicalTenantResolver(
+      final TenantConnectConfigResolver tenantConnectConfigResolver) {
+    final Set<String> known = Set.copyOf(tenantConnectConfigResolver.tenantConfigs().keySet());
+    return known::contains;
+  }
 }

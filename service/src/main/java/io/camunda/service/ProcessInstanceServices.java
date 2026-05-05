@@ -177,36 +177,45 @@ public final class ProcessInstanceServices
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> search(
-      final ProcessInstanceQuery query, final CamundaAuthentication authentication) {
+      final ProcessInstanceQuery query,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             processInstanceSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .searchProcessInstances(query));
   }
 
   public SearchQueryResult<ProcessInstanceEntity> search(
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn,
-      final CamundaAuthentication authentication) {
-    return search(processInstanceSearchQuery(fn), authentication);
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    return search(processInstanceSearchQuery(fn), authentication, physicalTenantId);
   }
 
   public List<ProcessFlowNodeStatisticsEntity> elementStatistics(
-      final long processInstanceKey, final CamundaAuthentication authentication) {
+      final long processInstanceKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             processInstanceSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .withPhysicalTenant(physicalTenantId)
                 .processInstanceFlowNodeStatistics(processInstanceKey));
   }
 
   public List<ProcessInstanceEntity> callHierarchy(
-      final long processInstanceKey, final CamundaAuthentication authentication) {
-    final var rootInstance = getByKey(processInstanceKey, authentication);
+      final long processInstanceKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    final var rootInstance = getByKey(processInstanceKey, authentication, physicalTenantId);
 
     final var treePath = rootInstance.treePath();
     if (treePath == null || treePath.isBlank()) {
@@ -228,6 +237,7 @@ public final class ProcessInstanceServices
                         .withSecurityContext(
                             securityContextProvider.provideSecurityContext(
                                 CamundaAuthentication.anonymous()))
+                        .withPhysicalTenant(physicalTenantId)
                         .searchProcessInstances(
                             processInstanceSearchQuery(
                                 q ->
@@ -244,13 +254,16 @@ public final class ProcessInstanceServices
   }
 
   public List<SequenceFlowEntity> sequenceFlows(
-      final long processInstanceKey, final CamundaAuthentication authentication) {
+      final long processInstanceKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return executeSearchRequest(
             () ->
                 sequenceFlowSearchClient
                     .withSecurityContext(
                         securityContextProvider.provideSecurityContext(
                             authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                    .withPhysicalTenant(physicalTenantId)
                     .searchSequenceFlows(
                         SequenceFlowQuery.of(
                             b ->
@@ -260,26 +273,34 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceEntity getByKey(
-      final Long processInstanceKey, final CamundaAuthentication authentication) {
+      final Long processInstanceKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     return getByKey(
         processInstanceKey,
         securityContextProvider.provideSecurityContext(
             authentication,
             withAuthorization(
-                PROCESS_INSTANCE_READ_AUTHORIZATION, ProcessInstanceEntity::processDefinitionId)));
+                PROCESS_INSTANCE_READ_AUTHORIZATION, ProcessInstanceEntity::processDefinitionId)),
+        physicalTenantId);
   }
 
   private ProcessInstanceEntity getByKey(
-      final Long processInstanceKey, final SecurityContext securityContext) {
+      final Long processInstanceKey,
+      final SecurityContext securityContext,
+      final String physicalTenantId) {
     return executeSearchRequest(
         () ->
             processInstanceSearchClient
                 .withSecurityContext(securityContext)
+                .withPhysicalTenant(physicalTenantId)
                 .getProcessInstance(processInstanceKey));
   }
 
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(
-      final ProcessInstanceCreateRequest request, final CamundaAuthentication authentication) {
+      final ProcessInstanceCreateRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerCreateProcessInstanceRequest(maxVariableNameLength)
             .setBpmnProcessId(request.bpmnProcessId())
@@ -309,7 +330,9 @@ public final class ProcessInstanceServices
   }
 
   public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(
-      final ProcessInstanceCreateRequest request, final CamundaAuthentication authentication) {
+      final ProcessInstanceCreateRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerCreateProcessInstanceWithResultRequest(maxVariableNameLength)
             .setBpmnProcessId(request.bpmnProcessId())
@@ -342,7 +365,9 @@ public final class ProcessInstanceServices
   }
 
   public CompletableFuture<ProcessInstanceRecord> cancelProcessInstance(
-      final ProcessInstanceCancelRequest request, final CamundaAuthentication authentication) {
+      final ProcessInstanceCancelRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerCancelProcessInstanceRequest()
             .setProcessInstanceKey(request.processInstanceKey());
@@ -355,7 +380,9 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<BatchOperationCreationRecord>
       cancelProcessInstanceBatchOperationWithResult(
-          final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+          final ProcessInstanceFilter filter,
+          final CamundaAuthentication authentication,
+          final String physicalTenantId) {
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
@@ -366,12 +393,15 @@ public final class ProcessInstanceServices
   }
 
   public CompletableFuture<BatchOperationCreationRecord> resolveProcessInstanceIncidents(
-      final long processInstanceKey, final CamundaAuthentication authentication) {
+      final long processInstanceKey,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     // internal read, no user permissions needed
     final var processInstance =
         getByKey(
             processInstanceKey,
-            securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()));
+            securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()),
+            physicalTenantId);
 
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
@@ -388,7 +418,9 @@ public final class ProcessInstanceServices
   }
 
   public CompletableFuture<BatchOperationCreationRecord> resolveIncidentsBatchOperationWithResult(
-      final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+      final ProcessInstanceFilter filter,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
@@ -400,7 +432,8 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<BatchOperationCreationRecord> migrateProcessInstancesBatchOperation(
       final ProcessInstanceMigrateBatchOperationRequest request,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var migrationPlan = new BatchOperationProcessInstanceMigrationPlan();
     migrationPlan.setTargetProcessDefinitionKey(request.targetProcessDefinitionKey);
     request.mappingInstructions.forEach(migrationPlan::addMappingInstruction);
@@ -416,7 +449,9 @@ public final class ProcessInstanceServices
   }
 
   public CompletableFuture<ProcessInstanceMigrationRecord> migrateProcessInstance(
-      final ProcessInstanceMigrateRequest request, final CamundaAuthentication authentication) {
+      final ProcessInstanceMigrateRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerMigrateProcessInstanceRequest()
             .setProcessInstanceKey(request.processInstanceKey())
@@ -430,7 +465,9 @@ public final class ProcessInstanceServices
   }
 
   public CompletableFuture<ProcessInstanceModificationRecord> modifyProcessInstance(
-      final ProcessInstanceModifyRequest request, final CamundaAuthentication authentication) {
+      final ProcessInstanceModifyRequest request,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerModifyProcessInstanceRequest()
             .setProcessInstanceKey(request.processInstanceKey())
@@ -446,7 +483,8 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<BatchOperationCreationRecord> modifyProcessInstancesBatchOperation(
       final ProcessInstanceModifyBatchOperationRequest request,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var rootInstanceFilter =
         request.filter.toBuilder()
             // It is only possible to modify active processes in zeebe
@@ -466,7 +504,9 @@ public final class ProcessInstanceServices
   }
 
   public CompletableFuture<BatchOperationCreationRecord> deleteProcessInstancesBatchOperation(
-      final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+      final ProcessInstanceFilter filter,
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
@@ -478,13 +518,15 @@ public final class ProcessInstanceServices
   public CompletableFuture<HistoryDeletionRecord> deleteProcessInstance(
       final Long processInstanceKey,
       final Long operationReference,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
 
     // make sure process instance exists before deletion, otherwise return not found
     final var processInstance =
         getByKey(
             processInstanceKey,
-            securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()));
+            securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()),
+            physicalTenantId);
 
     // We pass along the process id and tenant id as the process instance won't exist in primary
     // storage anymore. We cannot rely on just the key.
@@ -505,8 +547,9 @@ public final class ProcessInstanceServices
   public SearchQueryResult<IncidentEntity> searchIncidents(
       final long processInstanceKey,
       final IncidentQuery query,
-      final CamundaAuthentication authentication) {
-    final var processInstance = getByKey(processInstanceKey, authentication);
+      final CamundaAuthentication authentication,
+      final String physicalTenantId) {
+    final var processInstance = getByKey(processInstanceKey, authentication, physicalTenantId);
     final var treePath = processInstance.treePath();
 
     return incidentServices.search(

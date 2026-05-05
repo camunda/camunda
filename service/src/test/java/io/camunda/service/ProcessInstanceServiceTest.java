@@ -107,6 +107,9 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.withSecurityContext(any()))
         .thenReturn(processInstanceSearchClient);
     when(sequenceFlowSearchClient.withSecurityContext(any())).thenReturn(sequenceFlowSearchClient);
+    when(processInstanceSearchClient.withPhysicalTenant(any()))
+        .thenReturn(processInstanceSearchClient);
+    when(sequenceFlowSearchClient.withPhysicalTenant(any())).thenReturn(sequenceFlowSearchClient);
     securityContextProvider = mock(SecurityContextProvider.class);
     brokerClient = mock(BrokerClient.class);
     when(brokerClient.getTopologyManager()).thenReturn(new StubbedTopologyManager(3));
@@ -156,7 +159,7 @@ public final class ProcessInstanceServiceTest {
     when(sequenceFlowSearchClient.searchSequenceFlows(any())).thenReturn(result);
 
     // when
-    final var actual = services.sequenceFlows(123L, authentication);
+    final var actual = services.sequenceFlows(123L, authentication, "default");
 
     // then
     verify(sequenceFlowSearchClient)
@@ -175,7 +178,7 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getByKey(key, authentication);
+    final var searchQueryResult = services.getByKey(key, authentication, "default");
 
     // then
     assertThat(searchQueryResult.processInstanceKey()).isEqualTo(key);
@@ -190,7 +193,7 @@ public final class ProcessInstanceServiceTest {
         .thenThrow(
             new ResourceAccessDeniedException(Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION));
     // when
-    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication);
+    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication, "default");
     // then
     final var exception =
         (ServiceException)
@@ -218,7 +221,9 @@ public final class ProcessInstanceServiceTest {
 
     // when
     final var result =
-        services.cancelProcessInstanceBatchOperationWithResult(filter, authentication).join();
+        services
+            .cancelProcessInstanceBatchOperationWithResult(filter, authentication, "default")
+            .join();
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
@@ -251,7 +256,8 @@ public final class ProcessInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
-    final var result = services.resolveProcessInstanceIncidents(345L, authentication).join();
+    final var result =
+        services.resolveProcessInstanceIncidents(345L, authentication, "default").join();
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
@@ -291,7 +297,8 @@ public final class ProcessInstanceServiceTest {
             new SearchQueryResult<>(1, false, List.of(childProcess, parentProcess), null, null));
 
     // when
-    final var result = services.callHierarchy(childProcess.processInstanceKey(), authentication);
+    final var result =
+        services.callHierarchy(childProcess.processInstanceKey(), authentication, "default");
 
     // then
     assertThat(result).hasSize(2);
@@ -311,7 +318,7 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(rootInstance);
 
     // when
-    final var result = services.callHierarchy(123L, authentication);
+    final var result = services.callHierarchy(123L, authentication, "default");
 
     // then
     assertThat(result).isEmpty(); // No hierarchy should return an empty list
@@ -329,7 +336,7 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(rootInstance);
 
     // when
-    final var result = services.callHierarchy(123L, authentication);
+    final var result = services.callHierarchy(123L, authentication, "default");
 
     // then
     assertThat(result).isEmpty(); // No hierarchy should return an empty list
@@ -352,7 +359,7 @@ public final class ProcessInstanceServiceTest {
 
     // when
     final var result =
-        services.resolveIncidentsBatchOperationWithResult(filter, authentication).join();
+        services.resolveIncidentsBatchOperationWithResult(filter, authentication, "default").join();
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
@@ -393,7 +400,7 @@ public final class ProcessInstanceServiceTest {
 
     // when
     final var result =
-        services.migrateProcessInstancesBatchOperation(request, authentication).join();
+        services.migrateProcessInstancesBatchOperation(request, authentication, "default").join();
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
@@ -441,7 +448,7 @@ public final class ProcessInstanceServiceTest {
 
     // when
     final var result =
-        services.modifyProcessInstancesBatchOperation(request, authentication).join();
+        services.modifyProcessInstancesBatchOperation(request, authentication, "default").join();
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
@@ -487,7 +494,8 @@ public final class ProcessInstanceServiceTest {
     when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(queryResult);
 
     // when
-    final var result = services.searchIncidents(processInstanceKey, query, authentication);
+    final var result =
+        services.searchIncidents(processInstanceKey, query, authentication, "default");
 
     // then
     assertThat(result).isEqualTo(queryResult);
@@ -517,7 +525,7 @@ public final class ProcessInstanceServiceTest {
 
     // when
     final ThrowingCallable executeGetByKey =
-        () -> services.searchIncidents(processInstanceKey, query, authentication);
+        () -> services.searchIncidents(processInstanceKey, query, authentication, "default");
 
     // then
     final var exception =
@@ -546,7 +554,8 @@ public final class ProcessInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
-    final var result = services.deleteProcessInstancesBatchOperation(filter, authentication).join();
+    final var result =
+        services.deleteProcessInstancesBatchOperation(filter, authentication, "default").join();
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
@@ -586,7 +595,7 @@ public final class ProcessInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
-    services.deleteProcessInstance(processInstanceKey, null, authentication).join();
+    services.deleteProcessInstance(processInstanceKey, null, authentication, "default").join();
 
     // then
     final var brokerRequest = (HistoryDeletionRecord) captor.getValue().getRequestWriter();
@@ -609,7 +618,10 @@ public final class ProcessInstanceServiceTest {
 
     // when/then
     assertThatThrownBy(
-            () -> services.deleteProcessInstance(processInstanceKey, null, authentication).join())
+            () ->
+                services
+                    .deleteProcessInstance(processInstanceKey, null, authentication, "default")
+                    .join())
         .isInstanceOf(ServiceException.class)
         .hasMessage("Process Instance with key '123' not found");
   }
@@ -641,7 +653,7 @@ public final class ProcessInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse)));
 
     // when
-    services.createProcessInstanceWithResult(request, authentication).join();
+    services.createProcessInstanceWithResult(request, authentication, "default").join();
 
     // then
     verify(brokerClient)
@@ -679,7 +691,7 @@ public final class ProcessInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse)));
 
     // when
-    services.createProcessInstanceWithResult(request, authentication).join();
+    services.createProcessInstanceWithResult(request, authentication, "default").join();
 
     // then
     verify(brokerClient)
@@ -718,7 +730,7 @@ public final class ProcessInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse)));
 
     // when
-    services.createProcessInstanceWithResult(request, authentication).join();
+    services.createProcessInstanceWithResult(request, authentication, "default").join();
 
     // then
     verify(brokerClient)
@@ -767,7 +779,7 @@ public final class ProcessInstanceServiceTest {
               });
 
       // when
-      final var result = services.createProcessInstance(request, authentication).join();
+      final var result = services.createProcessInstance(request, authentication, "default").join();
 
       // then - retried on a different partition and succeeded
       assertThat(result).isNotNull();
@@ -796,7 +808,8 @@ public final class ProcessInstanceServiceTest {
               });
 
       // when
-      final var result = services.createProcessInstanceWithResult(request, authentication).join();
+      final var result =
+          services.createProcessInstanceWithResult(request, authentication, "default").join();
 
       // then
       assertThat(result).isNotNull();
@@ -821,7 +834,8 @@ public final class ProcessInstanceServiceTest {
               });
 
       // when / then - all 3 partitions tried with distinct IDs, then RESOURCE_EXHAUSTED error
-      assertThatThrownBy(() -> services.createProcessInstance(request, authentication).join())
+      assertThatThrownBy(
+              () -> services.createProcessInstance(request, authentication, "default").join())
           .isInstanceOf(CompletionException.class)
           .hasCauseInstanceOf(ServiceException.class)
           .extracting(Throwable::getCause)
@@ -852,7 +866,10 @@ public final class ProcessInstanceServiceTest {
 
       // when / then
       assertThatThrownBy(
-              () -> services.createProcessInstanceWithResult(request, authentication).join())
+              () ->
+                  services
+                      .createProcessInstanceWithResult(request, authentication, "default")
+                      .join())
           .isInstanceOf(CompletionException.class)
           .hasCauseInstanceOf(ServiceException.class)
           .extracting(Throwable::getCause)
@@ -876,7 +893,8 @@ public final class ProcessInstanceServiceTest {
                       new BrokerError(ErrorCode.PROCESS_NOT_FOUND, "process not found"))));
 
       // when / then - only tried once, no retry
-      assertThatThrownBy(() -> services.createProcessInstance(request, authentication).join())
+      assertThatThrownBy(
+              () -> services.createProcessInstance(request, authentication, "default").join())
           .isInstanceOf(CompletionException.class)
           .hasCauseInstanceOf(ServiceException.class);
       verify(brokerClient, times(1)).sendRequest(any(BrokerCreateProcessInstanceRequest.class));
@@ -892,7 +910,8 @@ public final class ProcessInstanceServiceTest {
 
       // when / then - only one attempt, error propagated directly without retrying other
       // partitions
-      assertThatThrownBy(() -> services.createProcessInstance(request, authentication).join())
+      assertThatThrownBy(
+              () -> services.createProcessInstance(request, authentication, "default").join())
           .isInstanceOf(CompletionException.class)
           .hasCauseInstanceOf(ServiceException.class);
       verify(brokerClient, times(1)).sendRequest(any(BrokerCreateProcessInstanceRequest.class));
@@ -921,7 +940,8 @@ public final class ProcessInstanceServiceTest {
               });
 
       // when
-      final var result = services.createProcessInstanceWithResult(request, authentication).join();
+      final var result =
+          services.createProcessInstanceWithResult(request, authentication, "default").join();
 
       // then
       assertThat(result).isNotNull();
@@ -942,7 +962,10 @@ public final class ProcessInstanceServiceTest {
 
       // when / then - only one attempt
       assertThatThrownBy(
-              () -> services.createProcessInstanceWithResult(request, authentication).join())
+              () ->
+                  services
+                      .createProcessInstanceWithResult(request, authentication, "default")
+                      .join())
           .isInstanceOf(CompletionException.class)
           .hasCauseInstanceOf(ServiceException.class);
       verify(brokerClient, times(1))
