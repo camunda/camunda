@@ -1,0 +1,25 @@
+name: Read DB Versions
+description: |
+  Parses .ci/db-versions.yml and exposes the configured database versions as named outputs.
+  The repository must already be checked out before this action is called.
+
+outputs:
+  elasticsearch-8:
+    value: ${{ steps.parse.outputs.elasticsearch-8 }}
+  saas:
+    value: ${{ steps.parse.outputs.saas }}
+
+runs:
+  using: composite
+  steps:
+    - name: Python setup
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      with:
+        python-version: "3.x"
+    - name: Install Python dependencies
+      shell: bash
+      run: python3 -m pip install -q --disable-pip-version-check pyyaml==6.0.2
+    - name: Parse DB versions
+      id: parse
+      shell: bash
+      run: python3 .github/actions/read-db-versions/generate-db-versions.py >> "$GITHUB_OUTPUT"
