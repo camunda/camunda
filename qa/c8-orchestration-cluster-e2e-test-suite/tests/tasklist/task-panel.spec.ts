@@ -107,38 +107,50 @@ test.describe('task panel page', () => {
   test('scrolling', async ({page, taskPanelPage}) => {
     test.slow();
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    await expect(async () => {
+      await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
+      await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
+      await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    }).toPass();
 
     await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(99);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    await expect(async () => {
+      await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
+      await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(99);
+      await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    }).toPass();
 
     await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(149);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    await expect(async () => {
+      await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
+      await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(149);
+      await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    }).toPass();
 
     await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    await expect(async () => {
+      await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
+      await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
+      await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    }).toPass();
 
     await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1);
+    await expect(async () => {
+      await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0);
+      await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
+      await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1);
+    }).toPass();
 
     await taskPanelPage.scrollToFirstTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    await expect(async () => {
+      await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
+      await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
+      await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    }).toPass();
   });
 });
