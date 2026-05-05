@@ -47,30 +47,44 @@ export async function createCancellationBatch(
   const processInstanceKeys: string[] = [];
   for (let i = 0; i < numberOfInstances; i += WAVE_SIZE) {
     const waveCount = Math.min(WAVE_SIZE, numberOfInstances - i);
-    const waveResponses = await Promise.all(
-      Array.from({length: waveCount}, () =>
-        request.post(buildUrl('/process-instances'), {
-          headers: jsonHeaders(),
-          data: {
-            processDefinitionId: processDefinitionId,
-          },
-          timeout: 30_000,
-        }),
-      ),
-    );
-    for (const startRes of waveResponses) {
-      await assertStatusCode(startRes, 200);
-      await validateResponse(
-        {
-          path: '/process-instances',
-          method: 'POST',
-          status: '200',
-        },
-        startRes,
+
+    // Wrap process instance creation in retry logic to handle transient 503 errors
+    const waveKeys: string[] = [];
+    await expect(async () => {
+      // Clear wave keys at the start of each attempt
+      waveKeys.length = 0;
+
+      const waveResponses = await Promise.all(
+        Array.from({length: waveCount}, () =>
+          request.post(buildUrl('/process-instances'), {
+            headers: jsonHeaders(),
+            data: {
+              processDefinitionId: processDefinitionId,
+            },
+            timeout: 30_000,
+          }),
+        ),
       );
-      const startJson = await startRes.json();
-      processInstanceKeys.push(String(startJson.processInstanceKey));
-    }
+      for (const startRes of waveResponses) {
+        await assertStatusCode(startRes, 200);
+        await validateResponse(
+          {
+            path: '/process-instances',
+            method: 'POST',
+            status: '200',
+          },
+          startRes,
+        );
+        const startJson = await startRes.json();
+        waveKeys.push(String(startJson.processInstanceKey));
+      }
+    }).toPass({
+      intervals: [2_000, 5_000, 10_000],
+      timeout: 60_000,
+    });
+
+    // Add successful wave keys to the overall list
+    processInstanceKeys.push(...waveKeys);
   }
 
   await expect(async () => {
