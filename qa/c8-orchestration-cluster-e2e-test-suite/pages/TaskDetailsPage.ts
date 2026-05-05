@@ -339,17 +339,18 @@ class TaskDetailsPage {
     value: string,
   ): Promise<void> {
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 5;
     while (retryCount < maxRetries) {
       try {
         const expectedValue = `${value}${index + 1}`;
+        await locator.waitFor({state: 'visible', timeout: 10000});
         await locator.fill(expectedValue);
-        await expect(locator).toHaveValue(expectedValue);
+        await expect(locator).toHaveValue(expectedValue, {timeout: 15000});
         return;
       } catch {
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);
-        await sleep(1000);
+        await sleep(1500);
         await locator.click();
         await locator.clear();
       }

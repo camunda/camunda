@@ -38,7 +38,10 @@ class TasklistProcessesPage {
   }
 
   public async searchForProcess(process: string) {
-    await this.searchProcessesInput.click();
+    // Wait for any modals to close before interacting
+    await this.page.locator('.cds--modal.is-visible').waitFor({state: 'hidden', timeout: 5000}).catch(() => {});
+    await this.searchProcessesInput.waitFor({state: 'visible', timeout: 10000});
+    await this.searchProcessesInput.click({timeout: 15000, force: false});
     await this.searchProcessesInput.fill(process);
     await this.searchProcessesInput.press('Enter');
   }
