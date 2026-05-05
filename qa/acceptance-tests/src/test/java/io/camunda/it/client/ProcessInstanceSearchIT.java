@@ -1391,6 +1391,34 @@ public class ProcessInstanceSearchIT {
     assertThat(result.items()).isNotEmpty();
   }
 
+  // Regression test for https://github.com/camunda/camunda/issues/45129: when the IN list
+  // contains a partial phrase shared by multiple incidents (e.g. the truncated prefix Operate
+  // sends from the dashboard), the incidentErrorHashCode filter must still narrow the result
+  // to the single incident identified by the hash.
+  @Test
+  void shouldNarrowByHashCodeWhenErrorMessageInContainsSharedPrefix() {
+    // given: prefix matched by both incident_process_v1 and incident_process_v2 error messages
+    final var sharedPrefix = "Expected result of the expression";
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
+                        .errorMessage(f2 -> f2.in(List.of(sharedPrefix))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items())
+        .hasSize(1)
+        .allSatisfy(
+            instance ->
+                assertThat(instance.getProcessDefinitionId()).isEqualTo("incident_process_v2"));
+  }
+
   @Test
   void shouldReturnWhenTopLevelHashAndOrClauseHasMatchingErrorMessage() {
     final var result =
