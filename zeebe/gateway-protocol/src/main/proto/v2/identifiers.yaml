@@ -60,7 +60,8 @@ components:
       type: string
       minLength: 1
       maxLength: 256
-      pattern: ^(<default>|[A-Za-z0-9_@.+-]+)$
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     RoleId:
       example: admin
