@@ -10,6 +10,7 @@ package io.camunda.optimize.rest.security.ccsm;
 import static io.camunda.optimize.OptimizeTomcatConfig.EXTERNAL_SUB_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
+import static io.camunda.optimize.rest.AuthenticationRestService.LOGOUT;
 import static io.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
@@ -27,6 +28,7 @@ import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.OptimizeApiConfiguration;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,9 +52,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 @Configuration
@@ -124,73 +126,100 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   @Order(2)
   protected SecurityFilterChain configureWebSecurity(final HttpSecurity http) {
     try {
-      return super.configureGenericSecurityOptions(http)
-          // Then we configure the specific web security for CCSM
-          .authorizeHttpRequests(
-              requests ->
-                  requests
-                      // ready endpoint is public
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(createApiPath(READYZ_PATH)))
-                      .permitAll()
-                      // Identity callback request handling is public
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(createApiPath(AUTHENTICATION_PATH + CALLBACK)))
-                      .permitAll()
-                      // Static resources
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults().matcher("/*.ico"),
-                          PathPatternRequestMatcher.withDefaults().matcher("/*.html"),
-                          PathPatternRequestMatcher.withDefaults().matcher("/static/*.js"),
-                          PathPatternRequestMatcher.withDefaults().matcher("/static/*.css"),
-                          PathPatternRequestMatcher.withDefaults().matcher("/static/*.html"))
-                      .permitAll()
-                      // public share resources
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults().matcher(EXTERNAL_SUB_PATH + "/"),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(EXTERNAL_SUB_PATH + "/index*"),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(EXTERNAL_SUB_PATH + "/*.js"),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(EXTERNAL_SUB_PATH + "/*.ico"))
-                      .permitAll()
-                      // public share related resources (API)
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(EXTERNAL_SUB_PATH + "/api/**"))
-                      .permitAll()
-                      // common public api resources
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(createApiPath(UI_CONFIGURATION_PATH)),
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(createApiPath(LOCALIZATION_PATH)))
-                      .permitAll()
-                      .requestMatchers(
-                          PathPatternRequestMatcher.withDefaults()
-                              .matcher(ACTUATOR_ENDPOINT + "/**"))
-                      .permitAll()
-                      .anyRequest()
-                      .authenticated())
-          .addFilterBefore(
-              ccsmAuthenticationCookieFilter(http), AbstractPreAuthenticatedProcessingFilter.class)
-          .exceptionHandling(
-              exceptionHandling ->
-                  exceptionHandling
-                      .defaultAuthenticationEntryPointFor(
-                          new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                          PathPatternRequestMatcher.withDefaults().matcher(REST_API_PATH + "/**"))
-                      .defaultAuthenticationEntryPointFor(
-                          this::redirectToIdentity,
-                          PathPatternRequestMatcher.withDefaults().matcher("/**")))
-          .build();
+      final var httpSecurity =
+          super.configureGenericSecurityOptions(http)
+              // Then we configure the specific web security for CCSM
+              .authorizeHttpRequests(
+                  requests ->
+                      requests
+                          // ready endpoint is public
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(READYZ_PATH)))
+                          .permitAll()
+                          // Identity callback and logout are public — logout must work even
+                          // when the session token has already expired
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(AUTHENTICATION_PATH + CALLBACK)),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(AUTHENTICATION_PATH + LOGOUT)))
+                          .permitAll()
+                          // Static resources
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults().matcher("/*.ico"),
+                              PathPatternRequestMatcher.withDefaults().matcher("/*.html"),
+                              PathPatternRequestMatcher.withDefaults().matcher("/static/*.js"),
+                              PathPatternRequestMatcher.withDefaults().matcher("/static/*.css"),
+                              PathPatternRequestMatcher.withDefaults().matcher("/static/*.html"))
+                          .permitAll()
+                          // public share resources
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + "/"),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + "/index*"),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + "/*.js"),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + "/*.ico"))
+                          .permitAll()
+                          // public share related resources (API)
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(EXTERNAL_SUB_PATH + "/api/**"))
+                          .permitAll()
+                          // common public api resources
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(UI_CONFIGURATION_PATH)),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(LOCALIZATION_PATH)))
+                          .permitAll()
+                          .requestMatchers(
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(ACTUATOR_ENDPOINT + "/**"))
+                          .permitAll()
+                          .anyRequest()
+                          .authenticated())
+              // Register cookie filter before BearerTokenAuthenticationFilter (position 1100).
+              // When jwtAuthForApiEnabled=true, oauth2ResourceServer adds
+              // BearerTokenAuthenticationFilter at 1100 and the cookie filter sits just before it.
+              // When jwtAuthForApiEnabled=false, no BearerTokenAuthenticationFilter instance is
+              // registered, but Spring still uses BearerTokenAuthenticationFilter.class as the
+              // anchor for ordering, so the cookie filter keeps this relative position.
+              .addFilterBefore(
+                  ccsmAuthenticationCookieFilter(http), BearerTokenAuthenticationFilter.class)
+              .exceptionHandling(
+                  exceptionHandling ->
+                      exceptionHandling
+                          .defaultAuthenticationEntryPointFor(
+                              new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(REST_API_PATH + "/**"))
+                          .defaultAuthenticationEntryPointFor(
+                              this::redirectToIdentity,
+                              PathPatternRequestMatcher.withDefaults().matcher("/**")));
+
+      // When the flag is on, enable Spring's native bearer-token support. This adds
+      // BearerTokenAuthenticationFilter (order 1100) to the chain. The cookie filter registered
+      // above still runs first at 1099, so it only acts as a no-op when no relevant auth cookies
+      // are present (which is typical for M2M bearer-token clients). Spring's bearer-token filter
+      // then handles auth and populates the SecurityContext before
+      // AbstractPreAuthenticatedProcessingFilter (1500) can interfere.
+      if (configurationService.getOptimizeApiConfiguration().isJwtAuthForApiEnabled()) {
+        LOG.info(
+            "JWT bearer-token authentication for /api/** is ENABLED "
+                + "(api.jwtAuthForApiEnabled=true)");
+        httpSecurity.oauth2ResourceServer(
+            oauth2 -> oauth2.jwt(jwt -> jwt.decoder(publicApiJwtDecoder())));
+      }
+
+      return httpSecurity.build();
     } catch (final Exception e) {
       throw new OptimizeRuntimeException(e);
     }
@@ -200,9 +229,19 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
     return configurationService.getOptimizeApiConfiguration().getAudience();
   }
 
+  @Bean
   @Override
   protected JwtDecoder publicApiJwtDecoder() {
-    return Optional.ofNullable(configurationService.getOptimizeApiConfiguration().getJwtSetUri())
+    final OptimizeApiConfiguration apiConfig = configurationService.getOptimizeApiConfiguration();
+    if (apiConfig.isJwtAuthForApiEnabled()) {
+      final String jwtSetUri = apiConfig.getJwtSetUri();
+      if (jwtSetUri == null || jwtSetUri.isEmpty()) {
+        throw new IllegalStateException(
+            "api.jwtAuthForApiEnabled is true but api.jwtSetUri is not configured");
+      }
+      return createJwtDecoderWithAudience(jwtSetUri);
+    }
+    return Optional.ofNullable(apiConfig.getJwtSetUri())
         .map(this::createJwtDecoderWithAudience)
         .orElseGet(() -> new OptimizeStaticTokenDecoder(configurationService));
   }

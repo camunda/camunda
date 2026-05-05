@@ -92,6 +92,11 @@ api:
   accessToken: ${OPTIMIZE_API_ACCESS_TOKEN:null}
   jwtSetUri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:null}
   audience: ${CAMUNDA_OPTIMIZE_API_AUDIENCE:optimize}
+  # Self-managed (CCSM) only. When true, non-public /api/** endpoints also accept an
+  # 'Authorization: Bearer <jwt>' header in addition to the existing Identity session cookie.
+  # The bearer token is validated with the same jwtSetUri / audience configured above.
+  # Requires jwtSetUri to be set. Defaults to false.
+  jwtAuthForApiEnabled: ${CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED:false}
 
 container:
   # A host name or IP address, to identify a specific network interface on
