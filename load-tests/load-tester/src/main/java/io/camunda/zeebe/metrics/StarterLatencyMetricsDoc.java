@@ -13,60 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 import java.time.Duration;
 
 public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
-  /**
-   * The data availability latency when starting process instances. It measures the time from
-   * instance creation to the time the instance can be queried.
-   */
-  DATA_AVAILABILITY_LATENCY {
-    private static final KeyName[] KEY_NAMES = new KeyName[] {StarterMetricKeyNames.PARTITION};
-
-    private static final Duration[] BUCKETS = {
-      Duration.ofSeconds(5),
-      Duration.ofSeconds(10),
-      Duration.ofSeconds(15),
-      Duration.ofSeconds(30),
-      Duration.ofSeconds(45),
-      Duration.ofSeconds(60),
-      Duration.ofSeconds(90),
-      Duration.ofSeconds(120),
-      Duration.ofMinutes(3),
-      Duration.ofMinutes(4)
-    };
-
-    @Override
-    public KeyName[] getKeyNames() {
-      return KEY_NAMES;
-    }
-
-    @Override
-    public String getDescription() {
-      return "The data availability latency when starting process instances. It measures the time from instance creation to the time the instance can be queried.";
-    }
-
-    @Override
-    public String getName() {
-      return "starter.data.availability.latency";
-    }
-
-    @Override
-    public Type getType() {
-      return Type.TIMER;
-    }
-
-    @Override
-    public Duration[] getTimerSLOs() {
-      return BUCKETS;
-    }
-  },
-
   /**
    * The response latency when starting process instances. It measures the time from sending the
    * request to receiving the response.
@@ -105,16 +58,5 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     public Duration[] getTimerSLOs() {
       return BUCKETS;
     }
-  };
-
-  public enum StarterMetricKeyNames implements KeyName {
-
-    /** The ID of the partition associated to the metric */
-    PARTITION {
-      @Override
-      public String asString() {
-        return "partition";
-      }
-    },
   }
 }

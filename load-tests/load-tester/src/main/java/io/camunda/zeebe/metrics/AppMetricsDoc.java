@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.micrometer.core.instrument.Meter.Type;

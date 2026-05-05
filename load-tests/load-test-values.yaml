@@ -1,10 +1,4 @@
 global:
-  # Override TLS to false — saas.enabled injects -Dapp.tls=true but our
-  # internal gateway has no TLS certificate, so we need plaintext gRPC.
-  extraEnvVars:
-    - name: CONFIG_FORCE_app_tls
-      value: "false"
-
   commonLabels:
     camunda.io/created-by: __AUTHOR__
     camunda.io/purpose: load-test

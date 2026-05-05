@@ -1,0 +1,10 @@
+# Test-only overrides on top of application.yaml.
+# mode is nulled so the SDK installs NoopCredentialsProvider and skips OIDC,
+# matching the unauthenticated test cluster booted by CamundaContainerProvider.
+camunda:
+  client:
+    mode: ~
+    zeebe:
+      enabled: true
+      defaults:
+        type: benchmark-task
