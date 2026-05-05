@@ -376,8 +376,7 @@ public final class CallActivityIncidentTest {
     final long parentProcessInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
 
-    final long callActivityInstanceKey =
-        getCallActivityInstance(parentProcessInstanceKey).getKey();
+    final long callActivityInstanceKey = getCallActivityInstance(parentProcessInstanceKey).getKey();
 
     final long childProcessInstanceKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -398,12 +397,7 @@ public final class CallActivityIncidentTest {
     final long failingElementInstanceKey = failingJob.getValue().getElementInstanceKey();
 
     // when
-    ENGINE
-        .job()
-        .ofInstance(childProcessInstanceKey)
-        .withType(failingJobType)
-        .withRetries(0)
-        .fail();
+    ENGINE.job().ofInstance(childProcessInstanceKey).withType(failingJobType).withRetries(0).fail();
 
     // then the engine emits an incident record for the leaf, but it must carry the full path
     final Record<IncidentRecordValue> incident =
