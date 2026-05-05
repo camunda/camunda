@@ -38,13 +38,15 @@ jobs:
         id: filter
 
   read-versions:
+    needs: [detect-changes]
+    if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
     outputs:
       elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Read DB versions
         id: db-versions
         uses: ./.github/actions/read-db-versions
