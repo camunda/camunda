@@ -9,6 +9,9 @@ plugins {
 dependencies {
     api(libs.org.springframework.spring.context)
     api(libs.org.springframework.spring.core)
+    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
+    testImplementation(libs.org.assertj.assertj.core)
+    testImplementation(libs.org.mockito.mockito.core)
 }
 
 description = "Camunda Spring Utils"

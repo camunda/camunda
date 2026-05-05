@@ -42,6 +42,8 @@ dependencies {
     testImplementation(libs.org.junit.jupiter.junit.jupiter.migrationsupport)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
+    testImplementation(libs.org.apache.logging.log4j.log4j.api)
+    testImplementation(libs.org.apache.logging.log4j.log4j.core)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.awaitility.awaitility)
