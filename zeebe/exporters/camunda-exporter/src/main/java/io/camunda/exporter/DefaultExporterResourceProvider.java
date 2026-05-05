@@ -289,10 +289,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new MessageSubscriptionFromProcessMessageSubscriptionHandler(
                 indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
                 exporterMetadata,
-                processCache),
+                processCache,
+                configuration.getMessageSubscription()),
             new MessageSubscriptionFromMessageStartEventSubscriptionHandler(
                 indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
-                processCache),
+                processCache,
+                configuration.getMessageSubscription()),
             new UserTaskCreatingHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,

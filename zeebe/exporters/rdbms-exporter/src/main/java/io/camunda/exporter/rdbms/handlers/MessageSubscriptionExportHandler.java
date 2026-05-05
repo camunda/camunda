@@ -11,6 +11,7 @@ import static io.camunda.exporter.rdbms.utils.DateUtil.toOffsetDateTime;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
+import io.camunda.exporter.rdbms.ExporterConfiguration.MessageSubscriptionConfiguration;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
@@ -37,12 +38,21 @@ public class MessageSubscriptionExportHandler
           ProcessMessageSubscriptionIntent.MIGRATED);
   private final MessageSubscriptionWriter messageSubscriptionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final MessageSubscriptionConfiguration messageSubscriptionConfig;
 
   public MessageSubscriptionExportHandler(
       final MessageSubscriptionWriter messageSubscriptionWriter,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+    this(messageSubscriptionWriter, processCache, new MessageSubscriptionConfiguration());
+  }
+
+  public MessageSubscriptionExportHandler(
+      final MessageSubscriptionWriter messageSubscriptionWriter,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final MessageSubscriptionConfiguration messageSubscriptionConfig) {
     this.messageSubscriptionWriter = messageSubscriptionWriter;
     this.processCache = processCache;
+    this.messageSubscriptionConfig = messageSubscriptionConfig;
   }
 
   @Override
@@ -94,9 +104,15 @@ public class MessageSubscriptionExportHandler
         .processDefinitionName(
             cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null))
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
-        .extensionProperties(Map.of())
-        .toolName(ProcessCacheUtil.getToolName(ext))
-        .inboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext))
+        .extensionProperties(
+            ProcessCacheUtil.getToolProperties(
+                ext, messageSubscriptionConfig.getExtensionPropertyAttributePrefixToolProperties()))
+        .toolName(
+            ProcessCacheUtil.getToolName(
+                ext, messageSubscriptionConfig.getExtensionPropertyAttributeToolName()))
+        .inboundConnectorType(
+            ProcessCacheUtil.getInboundConnectorType(
+                ext, messageSubscriptionConfig.getExtensionPropertyAttributeInboundConnectorType()))
         .build();
   }
 }

@@ -160,16 +160,44 @@ public final class ProcessCacheUtil {
   }
 
   public static String getToolName(final Map<String, String> extensionProperties) {
+    return getToolName(extensionProperties, EXTENSION_PROPERTY_CAMUNDA_TOOL_NAME);
+  }
+
+  public static String getToolName(
+      final Map<String, String> extensionProperties, final String toolNameProperty) {
     if (extensionProperties == null) {
       return null;
     }
-    return extensionProperties.get(EXTENSION_PROPERTY_CAMUNDA_TOOL_NAME);
+    return extensionProperties.get(toolNameProperty);
   }
 
   public static String getInboundConnectorType(final Map<String, String> extensionProperties) {
+    return getInboundConnectorType(extensionProperties, EXTENSION_PROPERTY_INBOUND_TYPE);
+  }
+
+  public static String getInboundConnectorType(
+      final Map<String, String> extensionProperties, final String inboundTypeProperty) {
     if (extensionProperties == null) {
       return null;
     }
-    return extensionProperties.get(EXTENSION_PROPERTY_INBOUND_TYPE);
+    return extensionProperties.get(inboundTypeProperty);
+  }
+
+  /**
+   * Returns a map of extension properties whose keys start with the given prefix. Returns an empty
+   * map if {@code extensionProperties} is null or the prefix is null/blank.
+   */
+  public static Map<String, String> getToolProperties(
+      final Map<String, String> extensionProperties, final String prefix) {
+    if (extensionProperties == null || prefix == null || prefix.isBlank()) {
+      return Map.of();
+    }
+    final Map<String, String> result = new HashMap<>();
+    for (final Map.Entry<String, String> entry : extensionProperties.entrySet()) {
+      if (entry.getKey().startsWith(prefix)) {
+        result.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return result;
   }
 }
