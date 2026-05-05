@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +55,7 @@ import org.slf4j.LoggerFactory;
 public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   protected static final Logger LOGGER = LoggerFactory.getLogger(ArchiverJobIT.class);
   protected static final int PARTITION_ID = 1;
+  protected static final AtomicLong ID_GENERATOR = new AtomicLong(1);
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
@@ -118,6 +121,13 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
     try (final T job = createArchiveJob(config, exporterResourceProvider, repository)) {
       jobConsumer.accept(job, exporterResourceProvider);
     }
+  }
+
+  protected <E extends ExporterEntity<E>> E create(final Supplier<E> constructor) {
+    final long id = ID_GENERATOR.incrementAndGet();
+    final var entity = constructor.get();
+    entity.setId(String.valueOf(id));
+    return entity;
   }
 
   protected void store(
