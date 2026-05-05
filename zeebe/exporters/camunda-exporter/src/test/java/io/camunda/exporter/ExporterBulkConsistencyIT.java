@@ -48,7 +48,6 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -60,12 +59,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * Verifies that the final indexed state produced by the CamundaExporter is identical regardless of
- * the bulk flush size.
+ * the bulk flush size. Records are interleaved in a deterministic step-round-robin order so that
+ * specific flush boundaries (exact step boundary, one-past, intra-step splits) are exercised
+ * predictably on every run.
  */
 @TestInstance(Lifecycle.PER_CLASS)
 final class ExporterBulkConsistencyIT {
 
-  private static final int INSTANCE_COUNT = 100;
+  private static final int INSTANCE_COUNT = 20;
   private static final int PARTITION_ID = 1;
   private static final String TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private static final String ELEMENT_ID = "serviceTask";
@@ -94,11 +95,11 @@ final class ExporterBulkConsistencyIT {
   void shouldProduceConsistentDataRegardlessOfBulkSize(
       final ExporterConfiguration baseConfig, final SearchClientAdapter clientAdapter)
       throws IOException {
-    // given — INSTANCE_COUNT independent process instances, each producing 6 records covering
-    // all multi-handler entity scenarios. Records from different instances are interleaved in a
-    // random order on each run to exercise different flush boundaries, while records within each
-    // instance always stay in causal order (ACTIVATING before COMPLETED etc.) to match the
-    // invariant the exporter relies on.
+    // given — INSTANCE_COUNT independent process instances, each producing 6 records.
+    // Deterministic interleaving: all step-N records precede all step-(N+1) records, with
+    // instances in fixed construction order within each step. This exposes flush-boundary
+    // bugs predictably: at bulk size INSTANCE_COUNT each flush holds exactly one step, at
+    // INSTANCE_COUNT+1 the first record of the next step spills into the same flush, etc.
     final var recordGroups = new ArrayList<List<Record<?>>>();
     final var flowNodeIds = new ArrayList<String>();
     final var processInstanceIds = new ArrayList<String>();
@@ -113,39 +114,21 @@ final class ExporterBulkConsistencyIT {
       incidentIds.add(String.valueOf(incidentKey(i)));
       postImporterQueueIds.add(String.format("%d-CREATED", incidentKey(i)));
     }
-    Collections.shuffle(recordGroups);
 
-    // interleave: for each step in the lifecycle sequence, take that record from every instance
-    // in the shuffled order, then shuffle within the step for extra variety
     final var allRecords = new ArrayList<Record<?>>();
     final int stepsPerInstance = recordGroups.getFirst().size();
     for (int step = 0; step < stepsPerInstance; step++) {
-      final var stepRecords = new ArrayList<Record<?>>();
       for (final var group : recordGroups) {
-        stepRecords.add(group.get(step));
+        allRecords.add(group.get(step));
       }
-      Collections.shuffle(stepRecords);
-      allRecords.addAll(stepRecords);
     }
 
-    // bulk size 1 forces a flush after every record; the reference bulk size is large enough
-    // that all records are buffered and flushed in a single batch
+    // reference: single flush containing all records
     final int referenceBulkSize = allRecords.size() + 1;
 
-    // when — export at bulk size 1
-    final var bulkOneConfig = configWithBulkSize(baseConfig, 1, "bs-1");
-    createSchemas(bulkOneConfig);
-    runExporter(allRecords, bulkOneConfig);
-    clientAdapter.refresh();
-    final var bulkOneSnapshot =
-        captureSnapshot(
-            clientAdapter,
-            bulkOneConfig,
-            flowNodeIds,
-            processInstanceIds,
-            jobIds,
-            incidentIds,
-            postImporterQueueIds);
+    // test sizes hit: every-record, intra-step splits, exact step boundary (INSTANCE_COUNT),
+    // one-past-step boundary (INSTANCE_COUNT+1), and multi-step flushes
+    final var testBulkSizes = List.of(1, 3, 7, INSTANCE_COUNT, INSTANCE_COUNT + 1, INSTANCE_COUNT * 2);
 
     // when — export at reference bulk size (single flush)
     final var referenceConfig = configWithBulkSize(baseConfig, referenceBulkSize, "bs-ref");
@@ -193,7 +176,6 @@ final class ExporterBulkConsistencyIT {
         .as("state set by ListViewProcessInstanceFromProcessInstanceHandler (COMPLETED intent)")
         .allMatch(e -> ProcessInstanceState.COMPLETED.equals(e.getState()));
 
-    // single-handler entities — confirm each handler wrote the document
     assertThat(referenceSnapshot.jobs())
         .as("one JobEntity per instance (JobHandler)")
         .hasSize(INSTANCE_COUNT);
@@ -215,45 +197,56 @@ final class ExporterBulkConsistencyIT {
         .as("processInstanceKey set by PostImporterQueueFromIncidentHandler")
         .allMatch(e -> e.getProcessInstanceKey() != null);
 
-    // then — all bulk-size-1 documents must be identical to the reference documents
-    assertThat(
-            sortById(bulkOneSnapshot.listViewFlowNodes(), FlowNodeInstanceForListViewEntity::getId))
-        .as("FlowNodeInstanceForListViewEntity: bulk size 1 should match reference")
-        .usingRecursiveFieldByFieldElementComparator()
-        .isEqualTo(
-            sortById(
-                referenceSnapshot.listViewFlowNodes(), FlowNodeInstanceForListViewEntity::getId));
+    // then — each test bulk size must produce documents identical to the reference
+    for (final int bulkSize : testBulkSizes) {
+      final var config = configWithBulkSize(baseConfig, bulkSize, "bs-" + bulkSize);
+      createSchemas(config);
+      runExporter(allRecords, config);
+      clientAdapter.refresh();
+      final var snapshot =
+          captureSnapshot(
+              clientAdapter, config, flowNodeIds, processInstanceIds, jobIds, incidentIds,
+              postImporterQueueIds);
 
-    assertThat(sortById(bulkOneSnapshot.flowNodeInstances(), FlowNodeInstanceEntity::getId))
-        .as("FlowNodeInstanceEntity: bulk size 1 should match reference")
-        .usingRecursiveFieldByFieldElementComparator()
-        .isEqualTo(sortById(referenceSnapshot.flowNodeInstances(), FlowNodeInstanceEntity::getId));
+      assertThat(sortById(snapshot.listViewFlowNodes(), FlowNodeInstanceForListViewEntity::getId))
+          .as("FlowNodeInstanceForListViewEntity: bulk size %d should match reference", bulkSize)
+          .usingRecursiveFieldByFieldElementComparator()
+          .isEqualTo(
+              sortById(
+                  referenceSnapshot.listViewFlowNodes(), FlowNodeInstanceForListViewEntity::getId));
 
-    assertThat(
-            sortById(
-                bulkOneSnapshot.listViewProcessInstances(),
-                ProcessInstanceForListViewEntity::getId))
-        .as("ProcessInstanceForListViewEntity: bulk size 1 should match reference")
-        .usingRecursiveFieldByFieldElementComparator()
-        .isEqualTo(
-            sortById(
-                referenceSnapshot.listViewProcessInstances(),
-                ProcessInstanceForListViewEntity::getId));
+      assertThat(sortById(snapshot.flowNodeInstances(), FlowNodeInstanceEntity::getId))
+          .as("FlowNodeInstanceEntity: bulk size %d should match reference", bulkSize)
+          .usingRecursiveFieldByFieldElementComparator()
+          .isEqualTo(
+              sortById(referenceSnapshot.flowNodeInstances(), FlowNodeInstanceEntity::getId));
 
-    assertThat(sortById(bulkOneSnapshot.jobs(), e -> String.valueOf(e.getKey())))
-        .as("JobEntity: bulk size 1 should match reference")
-        .usingRecursiveFieldByFieldElementComparator()
-        .isEqualTo(sortById(referenceSnapshot.jobs(), e -> String.valueOf(e.getKey())));
+      assertThat(
+              sortById(
+                  snapshot.listViewProcessInstances(), ProcessInstanceForListViewEntity::getId))
+          .as("ProcessInstanceForListViewEntity: bulk size %d should match reference", bulkSize)
+          .usingRecursiveFieldByFieldElementComparator()
+          .isEqualTo(
+              sortById(
+                  referenceSnapshot.listViewProcessInstances(),
+                  ProcessInstanceForListViewEntity::getId));
 
-    assertThat(sortById(bulkOneSnapshot.incidents(), e -> String.valueOf(e.getKey())))
-        .as("IncidentEntity: bulk size 1 should match reference")
-        .usingRecursiveFieldByFieldElementComparator()
-        .isEqualTo(sortById(referenceSnapshot.incidents(), e -> String.valueOf(e.getKey())));
+      assertThat(sortById(snapshot.jobs(), e -> String.valueOf(e.getKey())))
+          .as("JobEntity: bulk size %d should match reference", bulkSize)
+          .usingRecursiveFieldByFieldElementComparator()
+          .isEqualTo(sortById(referenceSnapshot.jobs(), e -> String.valueOf(e.getKey())));
 
-    assertThat(sortById(bulkOneSnapshot.postImporterQueue(), PostImporterQueueEntity::getId))
-        .as("PostImporterQueueEntity: bulk size 1 should match reference")
-        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("creationTime")
-        .isEqualTo(sortById(referenceSnapshot.postImporterQueue(), PostImporterQueueEntity::getId));
+      assertThat(sortById(snapshot.incidents(), e -> String.valueOf(e.getKey())))
+          .as("IncidentEntity: bulk size %d should match reference", bulkSize)
+          .usingRecursiveFieldByFieldElementComparator()
+          .isEqualTo(sortById(referenceSnapshot.incidents(), e -> String.valueOf(e.getKey())));
+
+      assertThat(sortById(snapshot.postImporterQueue(), PostImporterQueueEntity::getId))
+          .as("PostImporterQueueEntity: bulk size %d should match reference", bulkSize)
+          .usingRecursiveFieldByFieldElementComparatorIgnoringFields("creationTime")
+          .isEqualTo(
+              sortById(referenceSnapshot.postImporterQueue(), PostImporterQueueEntity::getId));
+    }
   }
 
   private static long processInstanceKey(final int i) {
