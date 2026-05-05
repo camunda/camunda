@@ -73,6 +73,7 @@ class AnalyticsExporterTest {
       final var context =
           new ExporterTestContext()
               .setConfiguration(new ExporterTestConfiguration<>("analytics", config))
+              .setClusterId("test-cluster")
               .setPartitionId(1);
       exporter = new AnalyticsExporter();
       exporter.configure(context);
