@@ -24,11 +24,13 @@
 		"@tanstack/react-router": "1.168.25",
 		"@tanstack/react-router-devtools": "1.166.13",
 		"@tanstack/router-plugin": "1.167.28",
+		"final-form": "5.0.0",
 		"mixpanel-browser": "2.78.0",
 		"mobx": "6.15.0",
 		"mobx-react-lite": "4.1.1",
 		"react": "19.2.5",
 		"react-dom": "19.2.5",
+		"react-final-form": "7.0.0",
 		"sass": "1.99.0",
 		"zod": "4.3.6"
 	},
@@ -49,6 +51,7 @@
 		"typescript": "6.0.3",
 		"vite": "8.0.10",
 		"vitest": "4.1.5",
-		"vitest-browser-react": "2.2.0"
+		"vitest-browser-react": "2.2.0",
+		"vite-plugin-svgr": "5.2.0"
 	}
 }

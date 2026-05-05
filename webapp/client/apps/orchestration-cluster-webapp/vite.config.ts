@@ -13,6 +13,7 @@ import {defineConfig, type PluginOption} from 'vite';
 import {devtools} from '@tanstack/devtools-vite';
 import {tanstackRouter} from '@tanstack/router-plugin/vite';
 import viteReact from '@vitejs/plugin-react';
+import svgr from 'vite-plugin-svgr';
 import sbom from 'rollup-plugin-sbom';
 import {playwright} from '@vitest/browser-playwright';
 
@@ -23,6 +24,7 @@ const basePlugins: PluginOption[] = [
 		autoCodeSplitting: true,
 	}),
 	viteReact(),
+	svgr(),
 ];
 
 const config = defineConfig(({mode}) => ({
