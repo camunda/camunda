@@ -82,7 +82,7 @@ public class BrokerRequestAuthorizationConverter {
         claims.put(USER_GROUPS_CLAIMS, groups);
       }
 
-      if (tokenClaims != null) {
+      if (tokenClaims != null && !tokenClaims.isEmpty()) {
         claims.put(USER_TOKEN_CLAIMS, tokenClaims);
       }
     }
