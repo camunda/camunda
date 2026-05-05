@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.UntypedDbValueTarget;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
@@ -28,14 +29,17 @@ import io.camunda.zeebe.util.Copyable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * In-memory implementation of {@link ColumnFamily}.
@@ -130,9 +134,9 @@ class InMemoryColumnFamily<
   }
 
   @Override
-  public ValueType get(final KeyType key) {
+  public @Nullable ValueType get(final KeyType key) {
     try (final var timer = metrics.measureGetLatency()) {
-      final DbValue[] result = {null};
+      final @Nullable DbValue[] result = {null};
       ensureInOpenTransaction(transaction -> result[0] = transaction.get(serializeKey(key)));
       if (result[0] != null) {
         readValueInto(result[0]);
@@ -143,9 +147,9 @@ class InMemoryColumnFamily<
   }
 
   @Override
-  public ValueType get(final KeyType key, final Supplier<ValueType> valueSupplier) {
+  public @Nullable ValueType get(final KeyType key, final Supplier<ValueType> valueSupplier) {
     try (final var timer = metrics.measureGetLatency()) {
-      final DbValue[] result = {null};
+      final @Nullable DbValue[] result = {null};
       ensureInOpenTransaction(transaction -> result[0] = transaction.get(serializeKey(key)));
       if (result[0] != null) {
         final var newValue = valueSupplier.get();
@@ -361,11 +365,22 @@ class InMemoryColumnFamily<
    * serialize+wrap for types that don't.
    */
   private void readValueInto(final DbValue stored) {
-    stored.copyTo(valueInstance);
+    readValueInto(stored, valueInstance);
   }
 
   /** Like {@link #readValueInto} but targets an arbitrary instance. */
   private void readValueInto(final DbValue stored, final DbValue target) {
+    if (target instanceof UntypedDbValueTarget) {
+      // Generic readers such as EngineRule.VersatileBlob are not the same concrete type as the
+      // stored value. Fall back to serialization + wrap explicitly for those cases.
+      final int length = stored.getLength();
+      final byte[] bytes = new byte[length];
+      final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+      stored.write(buffer, 0);
+      target.wrap(buffer, 0, length);
+      return;
+    }
+
     stored.copyTo(target);
   }
 
@@ -373,15 +388,15 @@ class InMemoryColumnFamily<
     return serializeKey(prefix);
   }
 
-  private byte[] computePrefixUpperBound(final byte[] prefix) {
+  private Optional<byte[]> computePrefixUpperBound(final byte[] prefix) {
     final byte[] upper = Arrays.copyOf(prefix, prefix.length);
     for (int i = upper.length - 1; i >= 0; i--) {
       if ((upper[i] & 0xFF) < 0xFF) {
         upper[i]++;
-        return Arrays.copyOf(upper, i + 1);
+        return Optional.of(Arrays.copyOf(upper, i + 1));
       }
     }
-    return null;
+    return Optional.empty();
   }
 
   // ---- Internal: iteration core ----
@@ -399,8 +414,8 @@ class InMemoryColumnFamily<
       ensureInOpenTransaction(
           transaction -> {
             final byte[] prefixBytes = computePrefix(prefix);
-            final byte[] startBytes = serializeKey(startAt);
-            final byte[] upperBound = computePrefixUpperBound(prefixBytes);
+            final byte[] startBytes = serializeKey(startAt == null ? prefix : startAt);
+            final Optional<byte[]> upperBound = computePrefixUpperBound(prefixBytes);
             final var it =
                 createMergeIterator(transaction, startBytes, prefixBytes, upperBound, false);
             while (it.hasNext()) {
@@ -422,8 +437,8 @@ class InMemoryColumnFamily<
       ensureInOpenTransaction(
           transaction -> {
             final byte[] prefixBytes = computePrefix(prefix);
-            final byte[] startBytes = serializeKey(startAt);
-            final byte[] upperBound = computePrefixUpperBound(prefixBytes);
+            final byte[] startBytes = serializeKey(startAt == null ? prefix : startAt);
+            final Optional<byte[]> upperBound = computePrefixUpperBound(prefixBytes);
             final var it =
                 createMergeIterator(transaction, startBytes, prefixBytes, upperBound, true);
             while (it.hasNext()) {
@@ -447,8 +462,8 @@ class InMemoryColumnFamily<
       ensureInOpenTransaction(
           transaction -> {
             final byte[] prefixBytes = computePrefix(prefix);
-            final byte[] startBytes = serializeKey(startAt);
-            final byte[] upperBound = computePrefixUpperBound(prefixBytes);
+            final byte[] startBytes = serializeKey(startAt == null ? prefix : startAt);
+            final Optional<byte[]> upperBound = computePrefixUpperBound(prefixBytes);
             final var it =
                 createMergeIterator(transaction, startBytes, prefixBytes, upperBound, false);
             while (it.hasNext()) {
@@ -462,13 +477,13 @@ class InMemoryColumnFamily<
   }
 
   private void forEachKeyInPrefixReverse(
-      final DbKey startAt, final DbKey prefix, final KeyVisitor<KeyType> visitor) {
+      final @Nullable DbKey startAt, final DbKey prefix, final KeyVisitor<KeyType> visitor) {
     try (final var timer = metrics.measureIterateLatency()) {
       ensureInOpenTransaction(
           transaction -> {
             final byte[] prefixBytes = computePrefix(prefix);
-            final byte[] startBytes = serializeKey(startAt);
-            final byte[] upperBound = computePrefixUpperBound(prefixBytes);
+            final byte[] startBytes = serializeKey(startAt == null ? prefix : startAt);
+            final Optional<byte[]> upperBound = computePrefixUpperBound(prefixBytes);
             final var it =
                 createMergeIterator(transaction, startBytes, prefixBytes, upperBound, true);
             while (it.hasNext()) {
@@ -487,13 +502,13 @@ class InMemoryColumnFamily<
       final InMemoryTransaction transaction,
       final byte[] startBytes,
       final byte[] prefixBytes,
-      final byte[] upperBound,
+      final Optional<byte[]> upperBound,
       final boolean reverse) {
 
     final NavigableMap<byte[], DbValue> committedRange;
     if (reverse) {
       committedRange =
-          upperBound != null
+          upperBound.isPresent()
               ? new java.util.TreeMap<>(
                   db.committedData.subMap(prefixBytes, true, startBytes, true).descendingMap())
               : new java.util.TreeMap<>(
@@ -503,9 +518,9 @@ class InMemoryColumnFamily<
                       .descendingMap());
     } else {
       committedRange =
-          upperBound != null
+          upperBound.isPresent()
               ? new java.util.TreeMap<>(
-                  db.committedData.subMap(startBytes, true, upperBound, false))
+                  db.committedData.subMap(startBytes, true, upperBound.orElseThrow(), false))
               : new java.util.TreeMap<>(db.committedData.tailMap(startBytes, true));
     }
 
@@ -513,14 +528,17 @@ class InMemoryColumnFamily<
     final NavigableMap<byte[], DbValue> pendingRange;
     if (reverse) {
       pendingRange =
-          upperBound != null
-              ? allPending.subMap(prefixBytes, true, startBytes, true).descendingMap()
-              : allPending.tailMap(prefixBytes, true).headMap(startBytes, true).descendingMap();
+          upperBound.isPresent()
+              ? new java.util.TreeMap<>(
+                  allPending.subMap(prefixBytes, true, startBytes, true).descendingMap())
+              : new java.util.TreeMap<>(
+                  allPending.tailMap(prefixBytes, true).headMap(startBytes, true).descendingMap());
     } else {
       pendingRange =
-          upperBound != null
-              ? allPending.subMap(startBytes, true, upperBound, false)
-              : allPending.tailMap(startBytes, true);
+          upperBound.isPresent()
+              ? new java.util.TreeMap<>(
+                  allPending.subMap(startBytes, true, upperBound.orElseThrow(), false))
+              : new java.util.TreeMap<>(allPending.tailMap(startBytes, true));
     }
 
     return new MergeIterator(
@@ -589,7 +607,7 @@ class InMemoryColumnFamily<
         }
       }
       case Prefix -> {
-        final byte[] upperBound = computePrefixUpperBound(rawFkKey);
+        final Optional<byte[]> upperBound = computePrefixUpperBound(rawFkKey);
         boolean found =
             findAnyWithPrefix(transaction.getPendingWrites(), rawFkKey, upperBound, transaction);
         if (!found) {
@@ -612,11 +630,11 @@ class InMemoryColumnFamily<
   private boolean findAnyWithPrefix(
       final NavigableMap<byte[], ?> map,
       final byte[] prefix,
-      final byte[] upperBound,
+      final Optional<byte[]> upperBound,
       final InMemoryTransaction transaction) {
     final var range =
-        upperBound != null
-            ? map.subMap(prefix, true, upperBound, false)
+        upperBound.isPresent()
+            ? map.subMap(prefix, true, upperBound.orElseThrow(), false)
             : map.tailMap(prefix, true);
     for (final var entry : range.entrySet()) {
       if (!startsWith(entry.getKey(), prefix)) {
@@ -647,9 +665,9 @@ class InMemoryColumnFamily<
     private final java.util.Set<byte[]> pendingDeletes;
     private final byte[] prefixBytes;
     private final boolean reverse;
-    private Map.Entry<byte[], DbValue> nextCommitted;
-    private Map.Entry<byte[], DbValue> nextPending;
-    private Map.Entry<byte[], DbValue> nextResult;
+    private @Nullable Entry<byte[], DbValue> nextCommitted;
+    private @Nullable Entry<byte[], DbValue> nextPending;
+    private @Nullable Entry<byte[], DbValue> nextResult;
 
     MergeIterator(
         final Iterator<Map.Entry<byte[], DbValue>> committedIt,
@@ -674,37 +692,37 @@ class InMemoryColumnFamily<
 
     @Override
     public Map.Entry<byte[], DbValue> next() {
-      if (nextResult == null) {
+      final var result = nextResult;
+      if (result == null) {
         throw new NoSuchElementException();
       }
-      final var result = nextResult;
       nextResult = computeNext();
       return result;
     }
 
-    private Map.Entry<byte[], DbValue> computeNext() {
+    private @Nullable Entry<byte[], DbValue> computeNext() {
       while (true) {
         if (nextCommitted == null && nextPending == null) {
           return null;
         }
         final Map.Entry<byte[], DbValue> chosen;
         if (nextCommitted == null) {
-          chosen = nextPending;
+          chosen = java.util.Objects.requireNonNull(nextPending);
           nextPending = advance(pendingIt);
         } else if (nextPending == null) {
-          chosen = nextCommitted;
+          chosen = java.util.Objects.requireNonNull(nextCommitted);
           nextCommitted = advance(committedIt);
         } else {
           final int cmp = Arrays.compareUnsigned(nextCommitted.getKey(), nextPending.getKey());
           final int effectiveCmp = reverse ? -cmp : cmp;
           if (effectiveCmp < 0) {
-            chosen = nextCommitted;
+            chosen = java.util.Objects.requireNonNull(nextCommitted);
             nextCommitted = advance(committedIt);
           } else if (effectiveCmp > 0) {
-            chosen = nextPending;
+            chosen = java.util.Objects.requireNonNull(nextPending);
             nextPending = advance(pendingIt);
           } else {
-            chosen = nextPending;
+            chosen = java.util.Objects.requireNonNull(nextPending);
             nextPending = advance(pendingIt);
             nextCommitted = advance(committedIt);
           }
@@ -732,7 +750,7 @@ class InMemoryColumnFamily<
       return false;
     }
 
-    private static Map.Entry<byte[], DbValue> advance(
+    private static @Nullable Entry<byte[], DbValue> advance(
         final Iterator<Map.Entry<byte[], DbValue>> it) {
       return it.hasNext() ? it.next() : null;
     }

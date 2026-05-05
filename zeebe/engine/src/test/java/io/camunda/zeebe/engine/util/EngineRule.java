@@ -15,6 +15,8 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.UntypedDbValueTarget;
+import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -145,26 +147,48 @@ public final class EngineRule extends ExternalResource {
   private Optional<RoutingState> initialRoutingState = Optional.empty();
 
   private EngineRule(final int partitionCount) {
-    this(partitionCount, null);
+    this(partitionCount, null, DefaultZeebeDbFactory.inMemoryFactory());
   }
 
   private EngineRule(final int partitionCount, final ListLogStorage sharedStorage) {
+    this(partitionCount, sharedStorage, DefaultZeebeDbFactory.inMemoryFactory());
+  }
+
+  private EngineRule(
+      final int partitionCount,
+      final ListLogStorage sharedStorage,
+      final ZeebeDbFactory<ZbColumnFamilies> zeebeDbFactory) {
     this.partitionCount = partitionCount;
     environmentRule =
-        new StreamProcessorRule(
-            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory(), sharedStorage);
+        new StreamProcessorRule(PARTITION_ID, partitionCount, zeebeDbFactory, sharedStorage);
   }
 
   public static EngineRule singlePartition() {
     return new EngineRule(1);
   }
 
+  public static EngineRule singlePartition(
+      final ZeebeDbFactory<ZbColumnFamilies> zeebeDbFactory) {
+    return new EngineRule(1, null, zeebeDbFactory);
+  }
+
   public static EngineRule multiplePartition(final int partitionCount) {
     return new EngineRule(partitionCount);
   }
 
+  public static EngineRule multiplePartition(
+      final int partitionCount, final ZeebeDbFactory<ZbColumnFamilies> zeebeDbFactory) {
+    return new EngineRule(partitionCount, null, zeebeDbFactory);
+  }
+
   public static EngineRule withSharedStorage(final ListLogStorage listLogStorage) {
     return new EngineRule(1, listLogStorage);
+  }
+
+  public static EngineRule withSharedStorage(
+      final ListLogStorage listLogStorage,
+      final ZeebeDbFactory<ZbColumnFamilies> zeebeDbFactory) {
+    return new EngineRule(1, listLogStorage, zeebeDbFactory);
   }
 
   @Override
@@ -760,7 +784,7 @@ public final class EngineRule extends ExternalResource {
     return new GlobalListenerClient(environmentRule);
   }
 
-  private static final class VersatileBlob implements DbKey, DbValue {
+  private static final class VersatileBlob implements DbKey, DbValue, UntypedDbValueTarget {
 
     private final DirectBuffer genericBuffer = new UnsafeBuffer(0, 0);
 
