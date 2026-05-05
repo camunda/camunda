@@ -24,7 +24,7 @@ const Login: React.FC = () => {
 	return (
 		<Grid as="main" condensed className={styles['container']!}>
 			<Form<FormValues>
-				onSubmit={async ({username: _username, password: _password}) => {
+				onSubmit={async () => {
 					// TODO: call authentication API, navigate on success, return FORM_ERROR on failure
 					// https://github.com/camunda/camunda/issues/51318
 					return {[FORM_ERROR]: 'Login not yet implemented.'};
