@@ -8,7 +8,11 @@ paths:
       tags:
         - Expression
       summary: Evaluate an expression
-      description: Evaluates a FEEL expression and returns the result. Supports references to tenant scoped cluster variables when a tenant ID is provided.
+      description: |
+        Evaluates a FEEL expression and returns the result. Supports references to tenant scoped
+        cluster variables when a tenant ID is provided. Optionally, a `processInstanceKey` or
+        `elementInstanceKey` may be provided to evaluate the expression in the variable scope of
+        the given instance process or element instance variables. The two keys are mutually exclusive.
       requestBody:
         required: true
         content:
@@ -38,6 +42,20 @@ components:
       type: object
       required:
         - expression
+      # processInstanceKey and elementInstanceKey are mutually exclusive: zero or one of them
+      # may be set, but never both. Setting neither evaluates the expression unscoped (only
+      # tenant-scoped cluster variables and request-body variables are visible).
+      oneOf:
+        - required:
+            - processInstanceKey
+        - required:
+            - elementInstanceKey
+        - not:
+            anyOf:
+              - required:
+                  - processInstanceKey
+              - required:
+                  - elementInstanceKey
       properties:
         expression:
           type: string
@@ -47,6 +65,18 @@ components:
           type: string
           description: Required when the expression references tenant-scoped cluster variables
           example: "tenant_123"
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: |
+            Key of the process instance whose variable scope should be made visible to the
+            expression. Mutually exclusive with `elementInstanceKey`.
+        elementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: |
+            Key of the element instance whose variable scope should be made visible to the
+            expression. Mutually exclusive with `processInstanceKey`.
         variables:
           type: object
           description: Optional variables for expression evaluation. These variables are only used for the current evaluation and do not persist beyond it.

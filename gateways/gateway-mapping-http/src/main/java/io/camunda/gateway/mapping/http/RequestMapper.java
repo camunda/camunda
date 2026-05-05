@@ -468,6 +468,8 @@ public class RequestMapper {
   public static Either<ProblemDetail, ExpressionEvaluationRequest> toExpressionEvaluationRequest(
       final String expression,
       final String tenantId,
+      final String processInstanceKey,
+      final String elementInstanceKey,
       final Map<String, Object> variables,
       final boolean isMultiTenancyEnabled) {
     final var validator =
@@ -480,7 +482,13 @@ public class RequestMapper {
               INVALID_ARGUMENT.name()));
     }
     return validator.map(
-        validTenantId -> new ExpressionEvaluationRequest(expression, validTenantId, variables));
+        validTenantId ->
+            new ExpressionEvaluationRequest(
+                expression,
+                validTenantId,
+                KeyUtil.keyToLong(processInstanceKey),
+                KeyUtil.keyToLong(elementInstanceKey),
+                variables));
   }
 
   public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
