@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.state;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import java.util.List;
 import java.util.Map;
@@ -248,6 +249,18 @@ public record ClusterConfiguration(
 
   public boolean hasPendingChanges() {
     return pendingChanges.isPresent() && pendingChanges.orElseThrow().hasPendingChanges();
+  }
+
+  /**
+   * Returns true if this configuration was produced by a restore: there is exactly one pending
+   * operation and it is an {@link UpdateRoutingState}.
+   */
+  public boolean isAfterRestore() {
+    return pendingChanges
+        .filter(ClusterChangePlan::isRestore)
+        .map(ClusterChangePlan::pendingOperations)
+        .filter(ops -> ops.size() == 1 && ops.get(0) instanceof UpdateRoutingState)
+        .isPresent();
   }
 
   /**

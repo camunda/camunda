@@ -30,6 +30,8 @@ public record ClusterChangePlan(
     List<CompletedOperation> completedOperations,
     List<ClusterConfigurationChangeOperation> pendingOperations) {
 
+  private static final long RESTORE_CHANGE_ID = 0L;
+
   public ClusterChangePlan {
     completedOperations = List.copyOf(completedOperations);
     pendingOperations = List.copyOf(pendingOperations);
@@ -39,6 +41,15 @@ public record ClusterChangePlan(
       final long id, final List<ClusterConfigurationChangeOperation> operations) {
     return new ClusterChangePlan(
         id, 1, Status.IN_PROGRESS, Instant.now(), List.of(), List.copyOf(operations));
+  }
+
+  public static ClusterChangePlan initForRestore(
+      final List<ClusterConfigurationChangeOperation> operations) {
+    return init(RESTORE_CHANGE_ID, operations);
+  }
+
+  public boolean isRestore() {
+    return id == RESTORE_CHANGE_ID;
   }
 
   /** To be called when the first operation is completed. */

@@ -142,7 +142,8 @@ public final class ClusterConfigurationManagerService
             new ExporterStateInitializer(
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
                 staticConfiguration.localMemberId(),
-                managerActor))
+                managerActor,
+                false))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()));
     // This initializer does not set the cluster ID, as it is not required for non-coordinators.
     // Non-coordinators will receive the cluster ID from the coordinator via gossip.
@@ -167,7 +168,8 @@ public final class ClusterConfigurationManagerService
             new ExporterStateInitializer(
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
                 staticConfiguration.localMemberId(),
-                managerActor))
+                managerActor,
+                true))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId()));
   }
