@@ -447,24 +447,17 @@ public class SimpleSearchQueryMapper {
         .toList();
   }
 
-  // The Builder's IBuild methods for inherited optional fields ($eq, etc.) currently lack a
-  // @Nullable annotation on the parameter — the staged-builder template emits them without one.
-  // Until that's fixed at the template level, guard the .$eq(value) call when the value is null
-  // by returning the empty filter instance instead of passing null through. Tracked as cleanup.
   private static StringFilterProperty getStringFilter(final @Nullable String value) {
-    final var builder = AdvancedStringFilter.Builder.create();
-    return value == null ? builder.build() : builder.$eq(value).build();
+    return AdvancedStringFilter.Builder.create().$eq(value).build();
   }
 
   private static BasicStringFilterProperty getBasicStringFilter(final @Nullable String value) {
-    final var builder = BasicStringFilter.Builder.create();
-    return value == null ? builder.build() : builder.$eq(value).build();
+    return BasicStringFilter.Builder.create().$eq(value).build();
   }
 
   private static io.camunda.gateway.protocol.model.IntegerFilterProperty getIntegerFilter(
       final @Nullable Integer value) {
-    final var builder = AdvancedIntegerFilter.Builder.create();
-    return value == null ? builder.build() : builder.$eq(value).build();
+    return AdvancedIntegerFilter.Builder.create().$eq(value).build();
   }
 
   private static io.camunda.gateway.protocol.model.@Nullable DateTimeFilterProperty

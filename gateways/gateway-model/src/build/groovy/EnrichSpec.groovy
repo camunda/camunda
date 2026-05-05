@@ -647,12 +647,15 @@ schemas.each { name, schema ->
         (parentProps as Map).each { propName, propSchema ->
           // Include only if NOT in the merged required list (i.e., truly optional for child).
           if (!mergedSet.contains(propName) && seenNames.add(propName)) {
-            def nullable = (propSchema instanceof Map) && propSchema.nullable == true
             def javaFieldName = javaName((String) propName)
+            // Optional fields are unset-by-default in Java; @Nullable on the IBuild setter
+            // parameter lets callers pass null without a NullAway warning. The spec's
+            // explicit `nullable: true` is one signal, but in Java any reference-type field
+            // that is not required is reachable as null too.
             optParentVars << [
               name             : javaFieldName,
               type             : javaTypeForProperty(propSchema as Map, javaFieldName),
-              nullableAnnotation: nullable ? '@org.jspecify.annotations.Nullable ' : '',
+              nullableAnnotation: '@org.jspecify.annotations.Nullable ',
             ]
           }
         }
@@ -785,12 +788,11 @@ schemas.each { name, schema ->
   def addOptVarsFromProps = { Map propsMap ->
     propsMap.each { propName, propSchema ->
       if (!mergedSet.contains(propName) && seenOwnNames.add(propName)) {
-        def nullable = (propSchema instanceof Map) && (propSchema as Map).nullable == true
         def javaFieldName = javaName((String) propName)
         ownOptVars << [
           name             : javaFieldName,
           type             : javaTypeForProperty(propSchema as Map, javaFieldName),
-          nullableAnnotation: nullable ? '@org.jspecify.annotations.Nullable ' : '',
+          nullableAnnotation: '@org.jspecify.annotations.Nullable ',
         ]
       }
     }
@@ -842,12 +844,11 @@ schemas.each { name, schema ->
   def addSimpleOptVarsFromProps = { Map propsMap ->
     propsMap.each { propName, propSchema ->
       if (!mergedSet.contains(propName) && seenSimpleOwnNames.add(propName)) {
-        def nullable = (propSchema instanceof Map) && (propSchema as Map).nullable == true
         def javaFieldName = javaName((String) propName)
         simpleOwnOptVars << [
           name             : javaFieldName,
           type             : simpleJavaTypeForProperty(propSchema as Map, javaFieldName),
-          nullableAnnotation: nullable ? '@org.jspecify.annotations.Nullable ' : '',
+          nullableAnnotation: '@org.jspecify.annotations.Nullable ',
         ]
       }
     }
