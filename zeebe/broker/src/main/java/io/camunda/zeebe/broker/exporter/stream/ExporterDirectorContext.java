@@ -33,6 +33,7 @@ public final class ExporterDirectorContext {
   private EventFilter positionsToSkipFilter;
   private MeterRegistry meterRegistry;
   private InstantSource clock;
+  private String clusterId = "";
   private String tenantName;
   private boolean sendOnLegacySubject = true;
   private boolean receiveOnLegacySubject = true;
@@ -79,6 +80,10 @@ public final class ExporterDirectorContext {
 
   public InstantSource getClock() {
     return clock;
+  }
+
+  public String getClusterId() {
+    return clusterId;
   }
 
   public String getTenantName() {
@@ -147,6 +152,11 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext clock(final InstantSource clock) {
     this.clock = clock;
+    return this;
+  }
+
+  public ExporterDirectorContext clusterId(final String clusterId) {
+    this.clusterId = clusterId;
     return this;
   }
 

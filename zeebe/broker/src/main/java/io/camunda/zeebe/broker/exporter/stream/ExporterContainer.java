@@ -52,6 +52,7 @@ final class ExporterContainer implements Controller {
   ExporterContainer(
       final ExporterDescriptor descriptor,
       final int partitionId,
+      final String clusterId,
       final ExporterInitializationInfo initializationInfo,
       final MeterRegistry meterRegistry,
       final InstantSource clock,
@@ -63,6 +64,7 @@ final class ExporterContainer implements Controller {
             Loggers.getExporterLogger(descriptor.getId()),
             descriptor.getConfiguration(),
             partitionId,
+            clusterId,
             meterRegistry,
             clock);
 
