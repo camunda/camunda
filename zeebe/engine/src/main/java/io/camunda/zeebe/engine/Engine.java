@@ -44,6 +44,8 @@ import org.slf4j.Logger;
 
 public class Engine implements RecordProcessor {
 
+  public static final String ERROR_MESSAGE_BANNED_PI =
+      "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled.";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_PROCESSOR_NOT_FOUND =
       "Expected to find processor for record '{}', but caught an exception. Skip this record.";
@@ -51,9 +53,6 @@ public class Engine implements RecordProcessor {
       "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
   private static final String DEBUG_MESSAGE_PI_KEY_NOT_FOUND =
       "Expected to reject command for banned process instance, but could not extract process instance key from record '{}'. Skipping rejection response.";
-  private static final String ERROR_MESSAGE_BANNED_PI =
-      "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled.";
-
   private static final EnumSet<ValueType> SUPPORTED_VALUETYPES =
       EnumSet.range(ValueType.JOB, ValueType.SCALE);
 

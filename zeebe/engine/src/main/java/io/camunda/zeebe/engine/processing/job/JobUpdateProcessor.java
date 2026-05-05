@@ -41,7 +41,7 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
   public void processRecord(final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
     jobUpdateBehaviour
-        .getJob(jobKey, command)
+        .checkJobCommand(command)
         .flatMap(job -> jobUpdateBehaviour.isAuthorized(command, job))
         .ifRightOrLeft(
             job -> {

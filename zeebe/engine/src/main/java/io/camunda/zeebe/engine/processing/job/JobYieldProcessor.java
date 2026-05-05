@@ -30,7 +30,6 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final JobCommandPreconditionValidator preconditionChecker;
-  private final AuthorizationCheckBehavior authorizationCheckBehavior;
 
   public JobYieldProcessor(
       final ProcessingState state,
@@ -41,19 +40,20 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
-    this.authorizationCheckBehavior = authorizationCheckBehavior;
     preconditionChecker =
         new JobCommandPreconditionValidator(
-            jobState, "yield", List.of(State.ACTIVATED), authorizationCheckBehavior);
+            jobState,
+            state.getBannedInstanceState(),
+            "yield",
+            List.of(State.ACTIVATED),
+            authorizationCheckBehavior);
   }
 
   @Override
   public void processRecord(final TypedRecord<JobRecord> record) {
-    final long jobKey = record.getKey();
-    final JobState.State state = jobState.getState(jobKey);
-
+    final var jobKey = record.getKey();
     preconditionChecker
-        .check(state, record)
+        .check(record)
         .ifRightOrLeft(
             yieldedJob -> {
               stateWriter.appendFollowUpEvent(jobKey, JobIntent.YIELDED, yieldedJob);

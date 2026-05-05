@@ -37,7 +37,7 @@ public class JobUpdateTimeoutProcessor implements TypedRecordProcessor<JobRecord
   public void processRecord(final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
     jobUpdateBehaviour
-        .getJob(jobKey, command)
+        .checkJobCommand(command)
         .flatMap(job -> jobUpdateBehaviour.isAuthorized(command, job))
         .ifRightOrLeft(
             job ->
@@ -50,10 +50,9 @@ public class JobUpdateTimeoutProcessor implements TypedRecordProcessor<JobRecord
                           responseWriter.writeRejectionOnCommand(
                               command, RejectionType.INVALID_STATE, errorMessage);
                         },
-                        () -> {
-                          responseWriter.writeEventOnCommand(
-                              jobKey, JobIntent.TIMEOUT_UPDATED, job, command);
-                        }),
+                        () ->
+                            responseWriter.writeEventOnCommand(
+                                jobKey, JobIntent.TIMEOUT_UPDATED, job, command)),
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
