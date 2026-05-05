@@ -270,14 +270,7 @@ public final class TopologyManagerImpl extends Actor
   private MemberId resolveMemberIdInZone(final int nodeId) {
     return membershipService.getMembers().stream()
         .map(Member::id)
-        .filter(
-            id -> {
-              try {
-                return id.isInZone(localBroker.zone()) && id.nodeIdx() == nodeId;
-              } catch (final Exception e) {
-                return false;
-              }
-            })
+        .filter(id -> id.isInZone(localBroker.zone()) && id.nodeIdx() == nodeId)
         .findFirst()
         .orElseGet(
             () -> {

@@ -46,7 +46,8 @@ final class BrokerInfoTest {
             .setNodeId(nodeId)
             .setPartitionsCount(partitionsCount)
             .setClusterSize(clusterSize)
-            .setReplicationFactor(replicationFactor);
+            .setReplicationFactor(replicationFactor)
+            .setZone("eu-west-1b");
 
     addresses.forEach(brokerInfo::addAddress);
     partitionRoles.forEach(brokerInfo::addPartitionRole);
@@ -63,6 +64,7 @@ final class BrokerInfoTest {
     assertThat(decoded.getAddresses()).containsAllEntriesOf(addresses);
     assertThat(decoded.getPartitionRoles()).containsAllEntriesOf(partitionRoles);
     assertThat(decoded.getPartitionHealthStatuses()).containsAllEntriesOf(partitionHealthStatuses);
+    assertThat(decoded.getZone()).isEqualTo("eu-west-1b");
   }
 
   @Test
@@ -91,6 +93,7 @@ final class BrokerInfoTest {
     assertThat(decoded.getAddresses()).isEmpty();
     assertThat(decoded.getPartitionRoles()).isEmpty();
     assertThat(decoded.getPartitionHealthStatuses()).isEmpty();
+    assertThat(decoded.getZone()).isNull();
   }
 
   @Test
@@ -117,6 +120,7 @@ final class BrokerInfoTest {
     assertThat(decoded.getAddresses()).isEmpty();
     assertThat(decoded.getPartitionRoles()).isEmpty();
     assertThat(decoded.getPartitionHealthStatuses()).isEmpty();
+    assertThat(decoded.getZone()).isNull();
   }
 
   private BrokerInfo encodeDecode(final BrokerInfo brokerInfo) {

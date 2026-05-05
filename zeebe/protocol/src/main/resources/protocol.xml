@@ -217,5 +217,6 @@
       <field name="healthStatus" id="17" type="PartitionHealthStatus"/>
     </group>
     <data name="version" id="14" type="varDataEncoding"/>
+    <data name="zone" id="18" type="varDataEncoding" sinceVersion="8"/>
   </sbe:message>
 </sbe:messageSchema>
