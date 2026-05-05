@@ -11,10 +11,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
+import io.camunda.security.api.model.CamundaAuthentication;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import org.springframework.stereotype.Component;
 
 /**
@@ -41,21 +42,25 @@ public class CopilotToolRegistry {
     return tools.values().stream().map(Tool::spec).toList();
   }
 
-  public String invoke(String name, String argumentsJson) {
+  public String invoke(String name, String argumentsJson, CamundaAuthentication authentication) {
     final Tool tool = tools.get(name);
     if (tool == null) {
-      return "{\"error\":\"unknown tool: " + name + "\"}";
+      throw new IllegalArgumentException("unknown tool: " + name);
     }
+    @SuppressWarnings("unchecked")
+    final Map<String, Object> args;
     try {
-      @SuppressWarnings("unchecked")
-      final Map<String, Object> args =
-          argumentsJson == null || argumentsJson.isBlank()
-              ? Map.of()
-              : objectMapper.readValue(argumentsJson, Map.class);
-      final Object result = tool.handler().apply(args);
+      args = argumentsJson == null || argumentsJson.isBlank()
+          ? Map.of()
+          : objectMapper.readValue(argumentsJson, Map.class);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("invalid arguments JSON: " + e.getMessage(), e);
+    }
+    final Object result = tool.handler().apply(args, authentication);
+    try {
       return objectMapper.writeValueAsString(result);
     } catch (Exception e) {
-      return "{\"error\":\"" + e.getMessage() + "\"}";
+      throw new RuntimeException("failed to serialise tool result", e);
     }
   }
 
@@ -73,7 +78,7 @@ public class CopilotToolRegistry {
             .parameters(JsonObjectSchema.builder().build())
             .build(),
         // TODO: replace with ProcessDefinitionReader.search(...)
-        args ->
+        (args, auth) ->
             Map.of(
                 "processes",
                 List.of(
@@ -96,7 +101,7 @@ public class CopilotToolRegistry {
                     .build())
             .build(),
         // TODO: replace with IncidentReader.search(...) + group by process
-        args ->
+        (args, auth) ->
             Map.of(
                 "processId", args.getOrDefault("processId", "*"),
                 "count", 12,
@@ -118,7 +123,7 @@ public class CopilotToolRegistry {
                     .build())
             .build(),
         // TODO: replace with ProcessInstanceReader.byKey(...)
-        args ->
+        (args, auth) ->
             Map.of(
                 "processInstanceKey", args.get("processInstanceKey"),
                 "processId", "order-process",
@@ -141,7 +146,7 @@ public class CopilotToolRegistry {
                     .build())
             .build(),
         // TODO: proxy to Kapa AI search endpoint
-        args ->
+        (args, auth) ->
             Map.of(
                 "query", args.get("query"),
                 "results",
@@ -152,5 +157,7 @@ public class CopilotToolRegistry {
                         "snippet", "Placeholder result for: " + args.get("query")))));
   }
 
-  private record Tool(ToolSpecification spec, Function<Map<String, Object>, Object> handler) {}
+  private record Tool(
+      ToolSpecification spec,
+      BiFunction<Map<String, Object>, CamundaAuthentication, Object> handler) {}
 }
