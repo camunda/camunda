@@ -17,7 +17,7 @@ import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.configuration.helpers.WebappsHelper;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;

@@ -9,7 +9,7 @@ package io.camunda.operate;
 
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
