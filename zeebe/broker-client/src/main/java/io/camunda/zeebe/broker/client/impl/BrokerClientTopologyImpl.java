@@ -117,6 +117,12 @@ public record BrokerClientTopologyImpl(
   }
 
   @Override
+  public String getBrokerMemberId(final int brokerId) {
+    final String memberId = liveClusterState.brokerMemberIds.get(brokerId);
+    return memberId != null ? memberId : String.valueOf(brokerId);
+  }
+
+  @Override
   public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partitionId) {
     final var brokerHealthyPartitions = liveClusterState.partitionsHealthPerBroker.get(brokerId);
 
@@ -161,6 +167,7 @@ public record BrokerClientTopologyImpl(
         partitionsHealthPerBroker;
     private final Int2ObjectHashMap<String> brokerAddresses;
     private final Int2ObjectHashMap<String> brokerVersions;
+    private final Int2ObjectHashMap<String> brokerMemberIds;
     private final IntArrayList brokers;
     private final Random randomBroker;
 
@@ -172,6 +179,7 @@ public record BrokerClientTopologyImpl(
       partitionsHealthPerBroker = new Int2ObjectHashMap<>();
       brokerAddresses = new Int2ObjectHashMap<>();
       brokerVersions = new Int2ObjectHashMap<>();
+      brokerMemberIds = new Int2ObjectHashMap<>();
       brokers = new IntArrayList(5, NODE_ID_NULL);
       randomBroker = new Random();
 
@@ -184,6 +192,7 @@ public record BrokerClientTopologyImpl(
               brokerAddresses.put(nodeId, brokerInfo.getCommandApiAddress());
             }
             brokerVersions.put(nodeId, brokerInfo.getVersion());
+            brokerMemberIds.put(nodeId, brokerInfo.getMemberId());
             brokerInfo.consumePartitions(
                 pId -> {}, // nothing to consume
                 (leaderPartitionId, term) -> setPartitionLeader(leaderPartitionId, nodeId, term),

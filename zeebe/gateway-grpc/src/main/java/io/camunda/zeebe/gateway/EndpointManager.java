@@ -128,7 +128,8 @@ public final class EndpointManager {
         .setNodeId(brokerId)
         .setHost(address.host())
         .setPort(address.port())
-        .setVersion(topology.getBrokerVersion(brokerId));
+        .setVersion(topology.getBrokerVersion(brokerId))
+        .setMemberId(topology.getBrokerMemberId(brokerId));
   }
 
   private void addPartitionInfoToBrokerInfo(

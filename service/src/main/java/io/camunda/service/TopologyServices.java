@@ -118,6 +118,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
 
     broker
         .nodeId(brokerId)
+        .memberId(topology.getBrokerMemberId(brokerId))
         .host(address.host())
         .port(address.port())
         .version(topology.getBrokerVersion(brokerId));
@@ -242,10 +243,16 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   public record Broker(
-      Integer nodeId, String host, Integer port, List<Partition> partitions, String version) {
+      Integer nodeId,
+      String memberId,
+      String host,
+      Integer port,
+      List<Partition> partitions,
+      String version) {
 
     static class Builder {
       Integer nodeId;
+      String memberId;
       String host;
       Integer port;
       List<Partition> partitions = new ArrayList<>();
@@ -257,6 +264,11 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
 
       public Builder nodeId(final Integer nodeId) {
         this.nodeId = nodeId;
+        return this;
+      }
+
+      public Builder memberId(final String memberId) {
+        this.memberId = memberId;
         return this;
       }
 
@@ -281,7 +293,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
       }
 
       public Broker build() {
-        return new Broker(nodeId, host, port, partitions, version);
+        return new Broker(nodeId, memberId, host, port, partitions, version);
       }
     }
   }
