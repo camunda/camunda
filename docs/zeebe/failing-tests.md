@@ -28,6 +28,60 @@ Here are some tips to do so:
   it [repeat until the test fails](https://www.jetbrains.com/help/idea/run-debug-configuration-junit.html#tests)
   .
 
+### Simulate CI pressure locally
+
+If simple repetition doesn't reproduce the failure, the test likely depends on conditions specific
+to CI: concurrent test method execution within a class, GC pressure from many parallel JVMs, or
+thread-scheduler starvation. You can recreate these conditions locally.
+
+#### Enable in-class parallel execution
+
+CI runs test methods within a class concurrently via `junit-platform.properties` (see e.g.
+`zeebe/backup-stores/gcs/src/test/resources/junit-platform.properties`):
+
+```properties
+junit.jupiter.execution.parallel.enabled=true
+junit.jupiter.execution.parallel.mode.default=concurrent
+junit.jupiter.execution.parallel.mode.classes.default=same_thread
+```
+
+If the module under test has no such file, add one temporarily to its `src/test/resources/`
+directory (do **not** commit it), then run the test class with Maven:
+
+```shell
+./mvnw verify -pl <module> -Dtest=MyFlakeyTest \
+  -DskipITs -DskipUTs=false -DskipTests=false -Dquickly
+```
+
+#### Throttle CPU with cgroups (Linux)
+
+On modern Linux (Fedora 33+, Ubuntu 22+) with cgroups v2, you can run the test JVM in a
+CPU-throttled systemd scope to simulate a busy CI runner. No root access is required:
+
+```shell
+systemd-run --scope --user -p CPUQuota=10% \
+  --working-directory="$(pwd)" -- \
+  ./mvnw verify -pl <module> -Dtest=MyFlakeyTest \
+    -DskipITs -DskipUTs=false -DskipTests=false -Dquickly
+```
+
+Start at `CPUQuota=20%` and reduce until the failure reproduces. A value of `5–10%` typically
+matches the effective CPU available to a test fork on a busy CI runner.
+
+You can combine this with JVM heap pressure to reproduce races that depend on GC timing or
+thread scheduling delays more reliably:
+
+```shell
+systemd-run --scope --user -p CPUQuota=10% \
+  --working-directory="$(pwd)" -- \
+  ./mvnw verify -pl <module> -Dtest=MyFlakeyTest \
+    -DskipITs -DskipUTs=false -DskipTests=false -Dquickly \
+    -DargLine="-Xmx48m -XX:+UseSerialGC"
+```
+
+`-XX:+UseSerialGC` with a small heap forces frequent stop-the-world GCs, which helps expose
+races that depend on GC timing or thread scheduling delays.
+
 If you cannot reproduce it locally, the next step is to reproduce it in our CI environment.
 
 ## Reproduce in CI
