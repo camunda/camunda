@@ -24,6 +24,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResource;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
@@ -151,6 +152,11 @@ public final class ZeebeDesignTimeValidators {
         ZeebeElementValidator.verifyThat(ZeebePriorityDefinition.class)
             .hasNonEmptyAttribute(
                 ZeebePriorityDefinition::getPriority, ZeebeConstants.ATTRIBUTE_PRIORITY));
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeJobPriorityDefinition.class)
+            .hasNonEmptyAttribute(
+                ZeebeJobPriorityDefinition::getPriority, ZeebeConstants.ATTRIBUTE_PRIORITY));
+    validators.add(new ZeebeJobPriorityDefinitionValidator());
     validators.add(
         ZeebeElementValidator.verifyThat(Condition.class)
             .hasNonEmptyAttribute(Condition::getTextContent, ZeebeConstants.ATTRIBUTE_CONDITION));

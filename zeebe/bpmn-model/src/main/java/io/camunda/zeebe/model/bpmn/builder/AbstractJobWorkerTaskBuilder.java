@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Task;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 
 /**
  * A builder for tasks that are based on jobs and should be processed by job workers. For example,
@@ -60,5 +61,16 @@ public abstract class AbstractJobWorkerTaskBuilder<
   @Override
   public B zeebeTaskHeader(final String key, final String value) {
     return jobWorkerPropertiesBuilder.zeebeTaskHeader(key, value);
+  }
+
+  public B zeebeJobPriority(final String priority) {
+    final ZeebeJobPriorityDefinition jobPriorityDefinition =
+        myself.getCreateSingleExtensionElement(ZeebeJobPriorityDefinition.class);
+    jobPriorityDefinition.setPriority(priority);
+    return myself;
+  }
+
+  public B zeebeJobPriorityExpression(final String expression) {
+    return zeebeJobPriority(asZeebeExpression(expression));
   }
 }
