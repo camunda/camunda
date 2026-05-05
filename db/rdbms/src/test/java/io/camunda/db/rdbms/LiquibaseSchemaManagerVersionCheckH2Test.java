@@ -196,9 +196,8 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
 
   private String readSchemaVersion() throws Exception {
     try (final var conn = dataSource.getConnection();
-        final var stmt =
-            conn.prepareStatement(
-                "SELECT VERSION FROM RDBMS_SCHEMA_VERSION FETCH FIRST 1 ROWS ONLY")) {
+        final var stmt = conn.prepareStatement("SELECT VERSION FROM RDBMS_SCHEMA_VERSION")) {
+      stmt.setMaxRows(1);
       final var rs = stmt.executeQuery();
       return rs.next() ? rs.getString(1) : null;
     }
