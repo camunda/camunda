@@ -133,34 +133,36 @@ test.describe('Identity MCP Processes', () => {
   });
 
   test('MCP Processes can be sorted by tool name', async ({
-    page,
     identityMcpProcessesPage,
   }) => {
-    const rows = identityMcpProcessesPage.allMcpProcessRows;
-    const toolNameHeader = page.getByRole('columnheader', {
-      name: 'Tool Name',
-    });
+    const {toolNameCells, toolNameHeader} = identityMcpProcessesPage;
     await identityMcpProcessesPage.navigateToMcpProcesses();
 
     await test.step("Verify default sort is ascending by 'Tool Name'", async () => {
-      await expect(rows.nth(1)).toContainText(ALPHA_TOOL_NAME);
-      await expect(rows.nth(3)).toContainText(BRAVO_TOOL_NAME);
+      await expect(toolNameCells).toHaveText([
+        ALPHA_TOOL_NAME,
+        BRAVO_TOOL_NAME,
+      ]);
     });
 
     await test.step("Sort ASC by 'Tool Name'", async () => {
       // First click results in ASC order
       await toolNameHeader.click();
 
-      await expect(rows.nth(1)).toContainText(ALPHA_TOOL_NAME);
-      await expect(rows.nth(3)).toContainText(BRAVO_TOOL_NAME);
+      await expect(toolNameCells).toHaveText([
+        ALPHA_TOOL_NAME,
+        BRAVO_TOOL_NAME,
+      ]);
     });
 
     await test.step("Sort DESC by 'Tool Name'", async () => {
       // Second click results in DESC order
       await toolNameHeader.click();
 
-      await expect(rows.nth(1)).toContainText(BRAVO_TOOL_NAME);
-      await expect(rows.nth(3)).toContainText(ALPHA_TOOL_NAME);
+      await expect(toolNameCells).toHaveText([
+        BRAVO_TOOL_NAME,
+        ALPHA_TOOL_NAME,
+      ]);
     });
   });
 

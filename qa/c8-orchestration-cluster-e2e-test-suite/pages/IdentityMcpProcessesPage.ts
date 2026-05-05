@@ -15,6 +15,8 @@ export class IdentityMcpProcessesPage {
   readonly mcpProcessesHeading: Locator;
   readonly searchInput: Locator;
   readonly allMcpProcessRows: Locator;
+  readonly toolNameHeader: Locator;
+  readonly toolNameCells: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -24,6 +26,11 @@ export class IdentityMcpProcessesPage {
     });
     this.searchInput = page.getByPlaceholder('Search by tool name');
     this.allMcpProcessRows = this.mcpProcessesTable.getByRole('row');
+    this.toolNameHeader = page.getByRole('columnheader', {name: 'Tool Name'});
+    this.toolNameCells = this.mcpProcessesTable
+      .getByRole('row')
+      .filter({hasText: /-tool-name/})
+      .locator('td:first-child');
   }
 
   async navigateToMcpProcesses(): Promise<void> {
