@@ -87,3 +87,80 @@ paths:
     $ref: 'widgets.yaml#/paths/~1invalid~1broken-establish'
   /invalid/broken-establish-consumer/{brokenProducedId}:
     $ref: 'widgets.yaml#/paths/~1invalid~1broken-establish-consumer~1{brokenProducedId}'
+
+  # ── Binding existence with $ref'd request body ───────────────
+  # Production specs declare `requestBody.content.*.schema` as a `$ref`
+  # to a top-level component schema, not as an inline object. The
+  # body-member existence check must follow the `$ref` to inspect the
+  # referenced schema's properties; otherwise a regression in Spectral
+  # ref resolution (or in `collectTopLevelBodyProperties`) would
+  # silently disable the check on every real `createX` operation while
+  # every inline-body fixture stayed green. The ops live here in the
+  # entry document so the local `#/components/schemas/...` ref is
+  # resolvable in both bundled and per-file lint passes.
+  /valid/establishes-body-ref-present:
+    post:
+      operationId: establishesBodyRefPresent
+      summary: Establishes from $ref'd body schema (member present)
+      description: Should pass — member exists on the $ref'd component.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWidgetWithIdRequest'
+      responses:
+        '201':
+          description: Created.
+
+  /invalid/establishes-body-ref-missing:
+    post:
+      operationId: establishesBodyRefMissing
+      summary: Establishes from $ref'd body schema (member missing)
+      description: |
+        Should fail — body binding to widgetId, but the $ref'd component
+        only declares `name`. Class-scoped guard: if Spectral ref
+        resolution regressed, the existing inline-body fixtures (#16-21)
+        would still pass and this defect class would silently slip
+        through on the real spec.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWidgetMissingIdRequest'
+      responses:
+        '201':
+          description: Created.
+
+components:
+  schemas:
+    CreateWidgetWithIdRequest:
+      type: object
+      properties:
+        widgetId:
+          type: string
+        name:
+          type: string
+      required:
+        - widgetId
+
+    CreateWidgetMissingIdRequest:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name

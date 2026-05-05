@@ -478,6 +478,32 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
     });
   });
 
+  // ── Binding existence with $ref'd request body ───────────────
+  // Production specs use `requestBody.content.*.schema: { $ref: ... }`
+  // for every `createX`. The body-member existence check must follow
+  // the `$ref` to inspect the referenced component's properties — if
+  // Spectral ref resolution ever regressed, the existing inline-body
+  // fixtures would still pass while the check silently disabled itself
+  // on every real op. One class-scoped fixture pair (present / missing)
+  // pins the resolution behaviour.
+  describe('verify-semantic-kinds-registered: binding existence ($ref body)', () => {
+    it('does not flag establishes when the $ref\u0027d body schema declares the member', () => {
+      const v = registryViolations.filter((e) =>
+        e.message.includes('/valid/establishes-body-ref-present'),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+
+    it('flags establishes when the $ref\u0027d body schema is missing the member', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/invalid/establishes-body-ref-missing') &&
+          e.message.includes("body member 'widgetId'"),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+  });
+
   // ── Per-file pass: only the producer-existence cross-reference is gated ──
   // CI lints both the bundled entry (rest-api.yaml) and each domain file
   // independently. The cross-reference walk relies on every producer being
