@@ -11,7 +11,7 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
 import io.camunda.gateway.protocol.model.MessagePublicationRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
@@ -43,7 +43,7 @@ public class MessageController {
     this.messageServices = messageServices;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
-    this.maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
+    maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
   }
 
   @CamundaPostMapping(path = "/publication")

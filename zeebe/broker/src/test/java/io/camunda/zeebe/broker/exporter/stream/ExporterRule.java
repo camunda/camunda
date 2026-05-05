@@ -148,7 +148,7 @@ public final class ExporterRule implements TestRule {
             .descriptors(descriptorsWithInitializationInfo)
             .meterRegistry(new SimpleMeterRegistry())
             .positionsToSkipFilter(positionsToSkipFilter)
-            .engineName("default");
+            .tenantName("default");
 
     contextApplier.accept(context);
     director = new ExporterDirector(context, phase, recordExporter);

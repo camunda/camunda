@@ -21,8 +21,8 @@ import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuer
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;

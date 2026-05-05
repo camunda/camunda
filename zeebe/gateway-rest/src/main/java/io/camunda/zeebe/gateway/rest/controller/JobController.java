@@ -35,7 +35,7 @@ import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQuery;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
 import io.camunda.search.query.JobQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;

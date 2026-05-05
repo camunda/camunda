@@ -20,7 +20,7 @@ import io.camunda.gateway.protocol.model.UserSearchQueryRequest;
 import io.camunda.gateway.protocol.model.UserSearchResult;
 import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.search.query.UserQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.UserValidator;
 import io.camunda.service.UserServices;

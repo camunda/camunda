@@ -140,7 +140,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     final var exporterPositionsLegacySubject =
         String.format(LEGACY_EXPORTER_STATE_TOPIC_FORMAT, partitionId);
     final var exporterPositionsSubject =
-        String.format(EXPORTER_STATE_TOPIC_FORMAT, context.getEngineName(), partitionId);
+        String.format(EXPORTER_STATE_TOPIC_FORMAT, context.getTenantName(), partitionId);
     exporterPositionsSendingSubject =
         context.isSendOnLegacySubject() ? exporterPositionsLegacySubject : exporterPositionsSubject;
     exporterPositionsReceivingSubjects =

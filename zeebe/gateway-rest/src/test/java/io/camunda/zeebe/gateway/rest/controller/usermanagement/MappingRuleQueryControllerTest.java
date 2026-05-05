@@ -19,7 +19,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.MappingRuleSort;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.exception.ErrorMapper;

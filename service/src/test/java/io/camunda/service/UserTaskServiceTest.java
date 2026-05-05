@@ -33,7 +33,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.SortOptionBuilders;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;

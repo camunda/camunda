@@ -33,7 +33,7 @@ NEW_MAX_KEY="${NEW_MAX_KEY:-}"                   # Optional
 SNAPSHOT_ID="${SNAPSHOT_ID:-}"                   # Optional override
 PARTITION_BROKER_IDS="${PARTITION_BROKER_IDS:-}" # Space-separated broker IDs
 
-LEADER_PATH="/mnt/broker-${LEADER_BROKER}/raft-partition/partitions/${PARTITION_ID}"
+LEADER_PATH="/mnt/broker-${LEADER_BROKER}/default/partitions/${PARTITION_ID}"
 RUNTIME_PATH="/tmp/recovery-runtime-${PARTITION_ID}"
 
 echo "============================================="
@@ -118,7 +118,7 @@ echo ""
 
 # First, check if any backups already exist (from previous failed run)
 for broker_id in $PARTITION_BROKER_IDS; do
-        BROKER_BACKUP_PATH="/mnt/broker-${broker_id}/raft-partition/partitions/${PARTITION_ID}/snapshots-backup"
+        BROKER_BACKUP_PATH="/mnt/broker-${broker_id}/default/partitions/${PARTITION_ID}/snapshots-backup"
 
         if [ -d "${BROKER_BACKUP_PATH}" ]; then
                 echo "ERROR: Existing backup found at ${BROKER_BACKUP_PATH}"
@@ -127,7 +127,7 @@ for broker_id in $PARTITION_BROKER_IDS; do
                 echo "To proceed, manually review and remove existing backups:"
                 echo ""
                 for bid in $PARTITION_BROKER_IDS; do
-                        BBACKUP="/mnt/broker-${bid}/raft-partition/partitions/${PARTITION_ID}/snapshots-backup"
+                        BBACKUP="/mnt/broker-${bid}/default/partitions/${PARTITION_ID}/snapshots-backup"
                         [ -d "${BBACKUP}" ] && echo "  kubectl exec <pod> -- rm -rf ${BBACKUP}"
                 done
                 echo ""
@@ -137,7 +137,7 @@ for broker_id in $PARTITION_BROKER_IDS; do
 done
 
 for broker_id in $PARTITION_BROKER_IDS; do
-        BROKER_PATH="/mnt/broker-${broker_id}/raft-partition/partitions/${PARTITION_ID}"
+        BROKER_PATH="/mnt/broker-${broker_id}/default/partitions/${PARTITION_ID}"
         BROKER_BACKUP_PATH="${BROKER_PATH}/snapshots-backup"
 
         if [ -d "${BROKER_PATH}/snapshots" ]; then
@@ -202,7 +202,7 @@ echo "[5/5] Copying updated partition data to replicas..."
 
 for broker_id in $PARTITION_BROKER_IDS; do
         if [ "$broker_id" != "$LEADER_BROKER" ]; then
-                REPLICA_PATH="/mnt/broker-${broker_id}/raft-partition/partitions/${PARTITION_ID}"
+                REPLICA_PATH="/mnt/broker-${broker_id}/default/partitions/${PARTITION_ID}"
                 echo "  Syncing to Broker ${broker_id}..."
 
                 # Remove all existing snapshots and copy new ones from leader
@@ -235,7 +235,7 @@ echo "IMPORTANT: Backups are preserved in 'snapshots-backup' directories."
 echo "After verifying successful recovery, clean them up manually:"
 echo ""
 for broker_id in $PARTITION_BROKER_IDS; do
-        echo "  kubectl exec \${POD_PREFIX}-${broker_id} -n \${NAMESPACE} -- rm -rf /usr/local/zeebe/data/raft-partition/partitions/${PARTITION_ID}/snapshots-backup"
+        echo "  kubectl exec \${POD_PREFIX}-${broker_id} -n \${NAMESPACE} -- rm -rf /usr/local/zeebe/data/default/partitions/${PARTITION_ID}/snapshots-backup"
 done
 echo ""
 echo "You can now restart the cluster."

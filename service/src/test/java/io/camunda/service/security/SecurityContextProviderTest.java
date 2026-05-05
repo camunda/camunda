@@ -10,8 +10,8 @@ package io.camunda.service.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.condition.AuthorizationConditions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

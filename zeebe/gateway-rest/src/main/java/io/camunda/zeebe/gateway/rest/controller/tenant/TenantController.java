@@ -37,7 +37,7 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.TenantValidator;
 import io.camunda.service.GroupServices;

@@ -81,7 +81,7 @@ public final class GatewayBasedConfiguration {
     return new BrokerClientCfg(
         properties.getCluster().getRequestTimeout(),
         properties.getCluster().isSendOnLegacySubject(),
-        properties.getCluster().getDefaultEngineName());
+        properties.getCluster().getDefaultTenantName());
   }
 
   @Bean

@@ -7,7 +7,7 @@
  */
 package io.camunda.security.reader;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import java.util.function.Function;
 
@@ -22,8 +22,9 @@ public interface ResourceAccessController {
   /**
    * Called before doing a get to retrieve a single resource.
    *
-   * @param securityContext contains the {@link CamundaAuthentication} and the required {@link
-   *     io.camunda.security.auth.Authorization authorization} to be checked.
+   * @param securityContext contains the {@link io.camunda.security.api.model.CamundaAuthentication}
+   *     and the required {@link io.camunda.security.auth.Authorization authorization} to be
+   *     checked.
    * @param resourceChecksApplier will be used to pass required @{@link ResourceAccessChecks} to the
    *     actual reader
    */
@@ -33,8 +34,9 @@ public interface ResourceAccessController {
   /**
    * Called before doing a search by query.
    *
-   * @param securityContext contains the {@link CamundaAuthentication} and the required {@link
-   *     io.camunda.security.auth.Authorization authorization} to be checked.
+   * @param securityContext contains the {@link io.camunda.security.api.model.CamundaAuthentication}
+   *     and the required {@link io.camunda.security.auth.Authorization authorization} to be
+   *     checked.
    * @param resourceChecksApplier will be used to pass required @{@link ResourceAccessChecks} to the
    *     actual reader
    */
@@ -47,10 +49,7 @@ public interface ResourceAccessController {
    */
   boolean supports(SecurityContext securityContext);
 
-  /**
-   * Returns true if the given {@link io.camunda.security.auth.CamundaAuthentication authentication}
-   * is anonymous. *
-   */
+  /** Returns true if the given {@link CamundaAuthentication authentication} is anonymous. */
   default boolean isAnonymousAuthentication(final CamundaAuthentication authentication) {
     return authentication.isAnonymous();
   }

@@ -9,6 +9,7 @@ package io.camunda.security.auth;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;
 import java.util.function.Function;

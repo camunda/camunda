@@ -22,7 +22,7 @@ import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;

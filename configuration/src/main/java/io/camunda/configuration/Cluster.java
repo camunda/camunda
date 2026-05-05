@@ -157,7 +157,7 @@ public class Cluster implements Cloneable {
    */
   private String zone;
 
-  private boolean sendOnLegacySubject = true;
+  private boolean sendOnLegacySubject = false;
   private boolean receiveOnLegacySubject = true;
 
   public NodeIdProvider getNodeIdProvider() {

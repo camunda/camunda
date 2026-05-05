@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
@@ -52,7 +52,7 @@ public class NoDBMembershipService implements MembershipService {
           }
           return a.roleIds(Collections.emptyList())
               .groupIds(groups.stream().toList())
-              .mappingRule(Collections.emptyList())
+              .mappingRules(Collections.emptyList())
               .tenants(Collections.emptyList())
               .claims(tokenClaims);
         });

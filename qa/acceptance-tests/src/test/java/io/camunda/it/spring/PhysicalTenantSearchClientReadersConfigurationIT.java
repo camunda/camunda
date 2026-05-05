@@ -26,7 +26,7 @@ import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.connect.tenant.TenantConnectConfigResolver;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;

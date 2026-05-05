@@ -9,7 +9,7 @@ package io.camunda.authentication.filters;
 
 import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
 import jakarta.servlet.FilterChain;

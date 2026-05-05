@@ -9,8 +9,8 @@ package io.camunda.gateway.mcp;
 
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
 import io.modelcontextprotocol.client.McpClient;

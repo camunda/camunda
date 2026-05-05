@@ -29,7 +29,7 @@ import io.camunda.gateway.protocol.model.simple.OffsetPagination;
 import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskSearchQuery;
 import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;

@@ -16,8 +16,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.UserRequest;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.RoleServices;

@@ -18,7 +18,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.collection.Tuple;

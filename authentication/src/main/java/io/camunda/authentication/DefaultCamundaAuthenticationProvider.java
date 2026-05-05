@@ -7,10 +7,10 @@
  */
 package io.camunda.authentication;
 
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationConverter;
-import io.camunda.security.auth.CamundaAuthenticationHolder;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.context.CamundaAuthenticationHolder;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

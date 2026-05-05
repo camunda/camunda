@@ -413,6 +413,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-services</artifactId>
     </dependency>
 
