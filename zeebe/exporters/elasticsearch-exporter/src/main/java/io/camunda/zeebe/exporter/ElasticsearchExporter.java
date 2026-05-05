@@ -59,6 +59,11 @@ public class ElasticsearchExporter implements Exporter {
   private long lastPosition = -1;
 
   @Override
+  public boolean isAsyncAllowed() {
+    return true;
+  }
+
+  @Override
   public void configure(final Context context) {
     log = context.getLogger();
     configuration =
