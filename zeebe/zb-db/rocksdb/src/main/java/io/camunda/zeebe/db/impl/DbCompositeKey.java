@@ -73,6 +73,12 @@ public class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends Db
   }
 
   @Override
+  public DbCompositeKey<FirstKeyType, SecondKeyType> newInstance() {
+    return new DbCompositeKey<>(
+        DbKeyInstanceFactory.newInstance(first), DbKeyInstanceFactory.newInstance(second));
+  }
+
+  @Override
   public String toString() {
     return "DbCompositeKey{" + "first=" + first + ", second=" + second + '}';
   }

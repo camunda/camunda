@@ -63,6 +63,11 @@ public final class IntegerValue extends BaseValue {
   }
 
   @Override
+  public void copyFrom(final BaseValue source) {
+    value = ((IntegerValue) source).value;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(getValue());
   }

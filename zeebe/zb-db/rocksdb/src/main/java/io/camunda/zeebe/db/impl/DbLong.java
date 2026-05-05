@@ -43,6 +43,16 @@ public final class DbLong implements DbKey, DbValue {
   }
 
   @Override
+  public void copyTo(final DbValue target) {
+    ((DbLong) target).longValue = longValue;
+  }
+
+  @Override
+  public DbLong newInstance() {
+    return new DbLong();
+  }
+
+  @Override
   public String toString() {
     return "DbLong{" + longValue + '}';
   }

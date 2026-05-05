@@ -41,6 +41,16 @@ public final class DbByte implements DbKey, DbValue {
   }
 
   @Override
+  public void copyTo(final DbValue target) {
+    ((DbByte) target).value = value;
+  }
+
+  @Override
+  public DbByte newInstance() {
+    return new DbByte();
+  }
+
+  @Override
   public String toString() {
     return "DbByte{" + "value=" + value + '}';
   }
