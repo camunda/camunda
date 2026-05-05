@@ -7,8 +7,8 @@
  */
 package io.camunda.authentication.config;
 
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.configuration.SecurityConfiguration;
 
 public final class AuthenticationProperties {
   public static final String METHOD = "camunda.security.authentication.method";
