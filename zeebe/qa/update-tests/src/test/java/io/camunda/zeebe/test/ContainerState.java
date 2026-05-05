@@ -11,7 +11,6 @@ import static io.camunda.application.commons.security.CamundaSecurityConfigurati
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -22,6 +21,7 @@ import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.CamundaContainer.GatewayContainer;
 import io.camunda.container.ZeebeTopologyWaitStrategy;
 import io.camunda.container.volume.CamundaVolume;
+import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
@@ -30,6 +30,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -392,9 +393,7 @@ final class ContainerState implements AutoCloseable {
   }
 
   public String getLogContaining(final String... pieces) {
-    final String[] lines = getLogs().split("\n");
-
-    return Arrays.stream(lines)
+    return Arrays.stream(getLogs().split("\n"))
         .filter(line -> Arrays.stream(pieces).allMatch(line::contains))
         .findFirst()
         .orElse(null);
@@ -423,15 +422,9 @@ final class ContainerState implements AutoCloseable {
     if (!isSpring) {
       return broker.getLogs();
     }
+
     return RecordingExporter.getRecords().stream()
-        .map(
-            r -> {
-              try {
-                return MAPPER.writeValueAsString(r);
-              } catch (final JsonProcessingException e) {
-                return "";
-              }
-            })
+        .map(JsonSerializable::toJson)
         .collect(Collectors.joining("\n"));
   }
 
@@ -456,7 +449,8 @@ final class ContainerState implements AutoCloseable {
         try {
           FileUtil.deleteFolder(extractedDataDir);
         } catch (final IOException e) {
-          throw new RuntimeException(e);
+          LOG.warn("Failed to delete extracted data directory", e);
+          throw new UncheckedIOException(e);
         }
         extractedDataDir = null;
       }
