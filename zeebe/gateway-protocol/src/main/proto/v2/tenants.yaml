@@ -651,7 +651,7 @@ paths:
           required: true
           description: The unique identifier of the role.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       responses:
         "204":
           description: The role was successfully assigned to the tenant.
@@ -698,7 +698,7 @@ paths:
           required: true
           description: The unique identifier of the role.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       responses:
         "204":
           description: The role was successfully unassigned from the tenant.
