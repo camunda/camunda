@@ -12,15 +12,23 @@ Thank you for contributing! This document explains how to set up a local develop
 npm install
 ```
 
-### 2. Build
+### 2. Build (production)
 
 ```bash
 npm run build
 ```
 
-This copies vendor libraries and the application sources to the Java module's `target/` directory (see `scripts/build.js` for details).
+This runs Webpack in production mode, bundling all dependencies and outputting to `target/generated-frontend-resources/coverage/`.
 
-### 3. Run against real data
+### 3. Build (development / watch)
+
+```bash
+npm run dev
+```
+
+Runs Webpack in development mode with `--watch`. Re-bundles on any source file change.
+
+### 4. Run against real data
 
 The easiest way to see the report in a browser is to run the Java tests in the example module first:
 
@@ -32,7 +40,7 @@ The easiest way to see the report in a browser is to run the Java tests in the e
 Open the generated report:
 
 ```
-testing/camunda-process-test-java/target/coverage-report/index.html
+testing/camunda-process-test-example/target/coverage-report/index.html
 ```
 
 ---
@@ -42,28 +50,45 @@ testing/camunda-process-test-java/target/coverage-report/index.html
 ```
 camunda-process-test-coverage-frontend-new/
 ├── package.json          npm package descriptor
+├── webpack.config.js     Webpack configuration
 ├── .npmrc                npm configuration
-├── pom.xml               Maven module (runs the npm build)
-├── scripts/
-│   └── build.js          Node.js build script (copies vendor + sources)
+├── pom.xml               Maven module (packaging=jar)
 ├── src/
-│   ├── index.html        HTML template (contains {{ COVERAGE_DATA }} placeholder)
-│   ├── app.js            Single-file vanilla JS application
-│   └── styles.css        Custom CSS (Camunda brand, layout)
+│   ├── app.js            Entry point
+│   ├── utils.js          Shared helpers (formatting, HTML escaping)
+│   ├── router.js         Hash-based router
+│   ├── sidebar.js        Sidebar navigation
+│   ├── bpmn.js           camunda-bpmn-js viewer wrapper
+│   ├── styles.css        Custom styles
+│   ├── index.html        HTML template
+│   └── views/
+│       ├── dashboard.js
+│       ├── process.js
+│       ├── suite.js
+│       └── run.js
 └── public/
-    └── static/
-        └── media/        Static assets (logo, favicon)
+    └── static/media/     Static assets (logo, favicon)
 ```
 
 ---
 
 ## Architecture
 
-The application is a single-page app implemented in **vanilla JavaScript** (no build step for the JS itself – no transpilation, no bundling of the application code). It follows an **IIFE** pattern to avoid polluting the global scope.
+### Webpack bundling
+
+Webpack (configured in `webpack.config.js`) handles:
+
+- **Entry**: `src/app.js` imports all ES modules and CSS.
+- **CSS**: `MiniCssExtractPlugin` extracts all CSS (Bootstrap, Bootstrap Icons, camunda-bpmn-js, custom) into `bundle.css`. Fonts referenced by CSS are copied to `static/fonts/` by webpack's `asset/resource` rule.
+- **Output**: `bundle.js` (all JS) + `bundle.css` (all CSS) in `coverage/static/`.
+- **HTML**: `CopyWebpackPlugin` copies `src/index.html` to `coverage/index.html`.
+- **Media**: Logo and favicon are copied to `coverage/static/media/`.
+
+The `BUILD_PATH` environment variable (set by Maven) tells webpack where to write the `coverage/` output directory.
 
 ### Routing
 
-Hash-based routing (`window.location.hash`) provides deep-linkable URLs without requiring a server:
+Hash-based routing (`window.location.hash`) provides deep-linkable URLs:
 
 | Hash | View |
 |------|------|
@@ -72,37 +97,30 @@ Hash-based routing (`window.location.hash`) provides deep-linkable URLs without 
 | `#/suite/<suiteId>` | Suite details |
 | `#/suite/<suiteId>/run/<runName>` | Test-case details |
 
-The router is implemented in `parseRoute()` and `render()` in `src/app.js`.
-
-### Sidebar
-
-Rendered once on load, with active state updated on each route change. Expandable sections (suites and test cases) use Bootstrap 5 collapse components.
+The router is implemented in `src/router.js`.
 
 ### BPMN rendering
 
-[bpmn-js](https://bpmn.io/toolkit/bpmn-js/) `NavigatedViewer` is used. It is loaded as a pre-built UMD bundle from `vendor/bpmn-js/`. The viewer is destroyed and recreated on each navigation to a process page.
+`camunda-bpmn-js` `NavigatedViewer` is used. It is destroyed and recreated on each navigation to a process page (see `src/bpmn.js`).
 
 Coverage highlighting:
-
-- **Completed elements** – CSS marker class `coverage-completed` is applied via `canvas.addMarker()`, which adds a blue stroke and light-blue fill.
-- **Taken sequence flows** – coloured via the bpmn-js `graphicsFactory` API (DI stroke/fill).
+- **Completed elements** – CSS marker class `coverage-completed` via `canvas.addMarker()`.
+- **Taken sequence flows** – blue stroke via `graphicsFactory.update()`.
 
 ---
 
 ## Coding conventions
 
-- **Vanilla JS** – no frameworks (React, Vue, Angular, …). Keep it simple.
-- **ES5 / ES2015 compatible** – the script is loaded directly in the browser without transpilation. Avoid features that require a transpiler.
-- **IIFE** – wrap the entire application in `(function() { 'use strict'; … })()`.
-- **No external HTTP requests** – all assets must be bundled locally; the report is self-contained.
-- **HTML escaping** – always escape user-supplied strings with `escapeHtml()` before inserting into the DOM via `innerHTML`.
-- **Camunda brand colours** – use the colour constants defined at the top of `app.js`.
+- **ES modules** – use `import`/`export` throughout. Webpack handles bundling.
+- **No class components** – keep code functional and simple.
+- **HTML escaping** – always escape user-supplied strings with `escapeHtml()` from `utils.js`.
+- **Camunda brand colours** – use the `COLORS` constants from `utils.js`.
 
 ### CSS conventions
 
-- Follow [BEM](https://getbem.com/)-ish naming for custom classes (e.g., `.coverage-badge`, `.coverage-bar-wrap`).
 - Camunda brand colours are defined as comments at the top of `styles.css`.
 - Avoid inline styles in HTML; prefer CSS classes.
+- Custom classes use a `coverage-` prefix.
 
 ---
 
@@ -113,9 +131,9 @@ Coverage highlighting:
 npm outdated
 
 # Update to latest (check for breaking changes first!)
-npm install bpmn-js@latest bootstrap@latest bootstrap-icons@latest
+npm install camunda-bpmn-js@latest bootstrap@latest bootstrap-icons@latest
 
-# Rebuild to copy the new vendor files
+# Rebuild
 npm run build
 ```
 

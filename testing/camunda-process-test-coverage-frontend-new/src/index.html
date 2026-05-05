@@ -7,22 +7,8 @@
 
     <link rel="icon" href="./static/media/favicon.ico" />
 
-    <!-- Bootstrap -->
-    <link rel="stylesheet" href="./static/vendor/bootstrap/bootstrap.min.css" />
-
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="./static/vendor/bootstrap-icons/bootstrap-icons.min.css" />
-
-    <!-- bpmn-js styles -->
-    <link rel="stylesheet" href="./static/vendor/bpmn-js/assets/bpmn-js.css" />
-    <link rel="stylesheet" href="./static/vendor/bpmn-js/assets/diagram-js.css" />
-    <link
-      rel="stylesheet"
-      href="./static/vendor/bpmn-js/assets/bpmn-font/css/bpmn-embedded.css"
-    />
-
-    <!-- Application styles -->
-    <link rel="stylesheet" href="./static/styles.css" />
+    <!-- All CSS is bundled by Webpack into bundle.css -->
+    <link rel="stylesheet" href="./static/bundle.css" />
 
     <!--
       COVERAGE_DATA is replaced by the Java reporting module (CoverageReportUtil)
@@ -60,11 +46,7 @@
       </div>
     </div>
 
-    <!-- bpmn-js navigated viewer (UMD bundle exposes window.BpmnJS) -->
-    <script src="./static/vendor/bpmn-js/bpmn-navigated-viewer.production.min.js"></script>
-    <!-- Bootstrap JS (for collapse, tooltips, etc.) -->
-    <script src="./static/vendor/bootstrap/bootstrap.bundle.min.js"></script>
-    <!-- Application -->
-    <script src="./static/app.js"></script>
+    <!-- All JS (camunda-bpmn-js, Bootstrap, application) bundled by Webpack -->
+    <script src="./static/bundle.js"></script>
   </body>
 </html>
