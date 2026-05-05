@@ -40,6 +40,11 @@ import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage'
 import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
 import {SwaggerPage} from '@pages/SwaggerPage';
 import {OperateBatchOperationsPage} from '@pages/OperateBatchOperationsPage';
+import {OptimizeLoginPage} from '@pages/OptimizeLoginPage';
+import {OptimizeHomePage} from '@pages/OptimizeHomePage';
+import {OptimizeCollectionPage} from '@pages/OptimizeCollectionPage';
+import {OptimizeDashboardPage} from '@pages/OptimizeDashboardPage';
+import {OptimizeProcessReportPage} from '@pages/OptimizeProcessReportPage';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -77,6 +82,11 @@ type PlaywrightFixtures = {
   swaggerPage: SwaggerPage;
   identityGlobalTaskListenersPage: IdentityGlobalTaskListenersPage;
   suppressHelperModals: void;
+  optimizeLoginPage: OptimizeLoginPage;
+  optimizeHomePage: OptimizeHomePage;
+  optimizeCollectionPage: OptimizeCollectionPage;
+  optimizeDashboardPage: OptimizeDashboardPage;
+  optimizeProcessReportPage: OptimizeProcessReportPage;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -209,6 +219,21 @@ const test = base.extend<PlaywrightFixtures>({
   },
   identityMcpProcessesPage: async ({page}, use) => {
     await use(new IdentityMcpProcessesPage(page));
+  },
+  optimizeLoginPage: async ({page}, use) => {
+    await use(new OptimizeLoginPage(page));
+  },
+  optimizeHomePage: async ({page}, use) => {
+    await use(new OptimizeHomePage(page));
+  },
+  optimizeCollectionPage: async ({page}, use) => {
+    await use(new OptimizeCollectionPage(page));
+  },
+  optimizeDashboardPage: async ({page}, use) => {
+    await use(new OptimizeDashboardPage(page));
+  },
+  optimizeProcessReportPage: async ({page}, use) => {
+    await use(new OptimizeProcessReportPage(page));
   },
 });
 

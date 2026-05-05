@@ -11,6 +11,12 @@ services:
       POSTGRES_DB: identity
       POSTGRES_USER: identity
       POSTGRES_PASSWORD: 't2L@!AqSMg8%I%NmHM'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U identity -d identity']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - zeebe_network
 
@@ -73,25 +79,30 @@ services:
 
   keycloak:
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     container_name: keycloak
-    image: bitnami/keycloak:26.3.3
+    image: quay.io/keycloak/keycloak:26.3.3
+    command: start-dev
     ports:
       - '18080:8080'
+      - '9000:9000'
     environment:
-      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
-      KEYCLOAK_DATABASE_HOST: postgres
-      KEYCLOAK_DATABASE_NAME: identity
-      KEYCLOAK_DATABASE_USER: identity
-      KEYCLOAK_DATABASE_PASSWORD: 't2L@!AqSMg8%I%NmHM'
-      KEYCLOAK_ADMIN_USER: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/identity
+      KC_DB_USERNAME: identity
+      KC_DB_PASSWORD: 't2L@!AqSMg8%I%NmHM'
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HTTP_PORT: '8080'
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: 'true'
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8080/auth']
-      interval: 30s
-      timeout: 15s
-      retries: 8
-      start_period: 30s
+      test: ['CMD', '/bin/bash', '-c', 'exec 3<>/dev/tcp/127.0.0.1/9000 2>/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
     networks:
       - zeebe_network
 
@@ -139,3 +150,69 @@ services:
       - zeebe_network
     env_file:
       - envs/.env.database.${DATABASE}
+
+  identity:
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    restart: on-failure
+    container_name: identity
+    image: camunda/identity:${IDENTITY_VERSION:-SNAPSHOT}
+    ports:
+      - '8081:8081'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--tries=1', '--spider', 'http://localhost:8082/actuator/health']
+      interval: 5s
+      timeout: 15s
+      retries: 30
+      start_period: 60s
+    environment:
+      SERVER_PORT: 8081
+      KEYCLOAK_URL: http://keycloak:8080/auth
+      IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:8090
+      KEYCLOAK_USERS_0_USERNAME: 'demo'
+      KEYCLOAK_USERS_0_PASSWORD: 'demo'
+      KEYCLOAK_USERS_0_FIRST_NAME: 'demo'
+      KEYCLOAK_USERS_0_ROLES_0: 'Identity'
+      KEYCLOAK_USERS_0_ROLES_1: 'Optimize'
+    networks:
+      - zeebe_network
+
+  optimize:
+    container_name: optimize
+    image: camunda/optimize:${OPTIMIZE_VERSION:-8-latest}
+    depends_on:
+      identity:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_started
+    ports:
+      - '8090:8090'
+      - '8092:8092'
+    environment:
+      - SPRING_PROFILES_ACTIVE=ccsm
+      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://identity:8081/
+      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize
+      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      - CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=optimize-api
+      - OPTIMIZE_ELASTICSEARCH_HOST=elasticsearch
+      - OPTIMIZE_ELASTICSEARCH_HTTP_PORT=9200
+      - CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED=false
+      - CAMUNDA_OPTIMIZE_ENTERPRISE=false
+      - CAMUNDA_OPTIMIZE_ZEEBE_ENABLED=true
+      - CAMUNDA_OPTIMIZE_ZEEBE_NAME=zeebe-record
+      - CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=2
+      - CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED=true
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8090/api/readyz || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - zeebe_network
