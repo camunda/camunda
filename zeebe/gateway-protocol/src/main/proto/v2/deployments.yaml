@@ -83,12 +83,16 @@ paths:
 
   /resources/{resourceKey}/content:
     get:
+      deprecated: true
       x-eventually-consistent: true
       tags:
         - Resource
       operationId: getResourceContent
-      summary: Get RPA resource content
+      summary: Get RPA resource content (deprecated)
       description: |
+        **Deprecated** — use `/resources/{resourceKey}/content/binary` instead, which supports all
+        resource types and returns content as binary (octet-stream).
+
         Returns the content of a deployed RPA resource as JSON.
         :::info
         This endpoint only supports RPA resources. For generic resource content in binary format,
