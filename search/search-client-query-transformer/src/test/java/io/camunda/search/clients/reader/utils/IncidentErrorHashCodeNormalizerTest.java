@@ -16,6 +16,7 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.reader.ResourceAccessChecks;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -479,6 +480,46 @@ class IncidentErrorHashCodeNormalizerTest {
     final var result =
         normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
     assertThat(result).isEmpty();
+  }
+
+  // Defends opAcceptsResolved's switch against an Operation that was constructed (or
+  // deserialized) with a null operator — would otherwise NPE inside the switch.
+  @Test
+  void shouldReturnEmptyWhenErrorMessageOperationHasNullOperator() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(new Operation<>(null, "Resolved")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  // Lock down Locale.ROOT lowercasing in likePatternMatches: ASCII patterns and ASCII messages
+  // must round-trip identically regardless of the JVM default locale (e.g. tr_TR's dotted-I).
+  @Test
+  void shouldMatchLikePatternWithUppercaseAsciiInputUnderTurkishLocale() {
+    final var defaultLocale = Locale.getDefault();
+    Locale.setDefault(new Locale("tr", "TR"));
+    try {
+      final var filter =
+          new ProcessInstanceFilter.Builder()
+              .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+              .errorMessageOperations(List.of(Operation.like("INVALID*")))
+              .build();
+      when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+          .thenReturn("Invalid input");
+      final var result =
+          normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+      assertThat(result).isPresent();
+      assertThat(result.get().errorMessageOperations())
+          .containsExactly(Operation.eq("Invalid input"));
+    } finally {
+      Locale.setDefault(defaultLocale);
+    }
   }
 
   @Test
