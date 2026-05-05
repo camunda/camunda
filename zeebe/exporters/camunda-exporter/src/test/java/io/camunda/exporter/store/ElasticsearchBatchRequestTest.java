@@ -62,6 +62,8 @@ class ElasticsearchBatchRequestTest {
     scriptBuilder = mock(ElasticsearchScriptBuilder.class);
     batchRequest = new ElasticsearchBatchRequest(elasticsearchClient, scriptBuilder);
     final BulkResponse bulkResponse = mock(BulkResponse.class);
+    when(bulkResponse.items()).thenReturn(List.of());
+    when(bulkResponse.errors()).thenReturn(false);
     when(elasticsearchClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
   }
 
