@@ -965,7 +965,8 @@ components:
       properties:
         clientId:
           description: The ID of the client.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ClientId'
       required:
         - clientId
 
@@ -1011,7 +1012,8 @@ components:
       properties:
         groupId:
           description: The id of the group.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
       required:
         - groupId
 
