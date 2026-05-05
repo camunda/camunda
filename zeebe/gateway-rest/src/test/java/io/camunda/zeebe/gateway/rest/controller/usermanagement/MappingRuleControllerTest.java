@@ -57,12 +57,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
     // given
     final var dto = validCreateMappingRuleRuleDTO();
     final var request =
-        MappingRuleCreateRequest.Builder.create()
-            .claimName(dto.claimName())
-            .claimValue(dto.claimValue())
-            .name(dto.name())
-            .mappingRuleId(dto.mappingRuleId())
-            .build();
+        createRequestWith(dto.mappingRuleId(), dto.claimName(), dto.claimValue(), dto.name());
     final var mappingRecord =
         new MappingRuleRecord()
             .setMappingRuleKey(1L)
@@ -112,9 +107,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleCreationWitBlankId() {
     // given
-    final var request =
-        Map.of(
-            "claimName", "claim", "claimValue", "claimValue", "name", "name", "mappingRuleId", "");
+    final var request = createRequestWith("", "claim", "claimValue", "name");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -154,8 +147,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleCreationWitBlankClaimName() {
     // given
-    final var request =
-        Map.of("claimName", "", "claimValue", "claimValue", "name", "name", "mappingRuleId", "id");
+    final var request = createRequestWith("id", "", "claimValue", "name");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -195,8 +187,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleCreationWitBlankClaimValue() {
     // given
-    final var request =
-        Map.of("claimName", "claimName", "claimValue", "", "name", "name", "mappingRuleId", "id");
+    final var request = createRequestWith("id", "claimName", "", "name");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -243,16 +234,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
       })
   void shouldRejectMappingRuleCreationWithIllegalCharactersInId(final String id) {
     // given
-    final var request =
-        Map.of(
-            "mappingRuleId",
-            id,
-            "claimName",
-            "claimName",
-            "claimValue",
-            "claimValue",
-            "name",
-            "name");
+    final var request = createRequestWith(id, "claimName", "claimValue", "name");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -273,16 +255,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void shouldRejectMappingRuleWithTooLongId() {
     // given
     final var id = "x".repeat(257);
-    final var request =
-        Map.of(
-            "mappingRuleId",
-            id,
-            "claimName",
-            "claimName",
-            "claimValue",
-            "claimValue",
-            "name",
-            "name");
+    final var request = createRequestWith(id, "claimName", "claimValue", "name");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -384,7 +357,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleUpdateWitBlankClaimName() {
     // given
-    final var request = Map.of("claimName", "", "claimValue", "claimValue", "name", "name");
+    final var request = updateRequestWith("", "claimValue", "name");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -426,7 +399,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingRuleUpdateWitBlankClaimValue() {
     // given
-    final var request = Map.of("claimName", "claimName", "claimValue", "", "name", "name");
+    final var request = updateRequestWith("claimName", "", "name");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -467,6 +440,28 @@ public class MappingRuleControllerTest extends RestControllerTest {
 
   private MappingRuleDTO validCreateMappingRuleRuleDTO() {
     return new MappingRuleDTO("newClaimName", "newClaimValue", "mapName", "mapRuleId");
+  }
+
+  private MappingRuleCreateRequest createRequestWith(
+      final String mappingRuleId,
+      final String claimName,
+      final String claimValue,
+      final String name) {
+    return MappingRuleCreateRequest.Builder.create()
+        .claimName(claimName)
+        .claimValue(claimValue)
+        .name(name)
+        .mappingRuleId(mappingRuleId)
+        .build();
+  }
+
+  private MappingRuleUpdateRequest updateRequestWith(
+      final String claimName, final String claimValue, final String name) {
+    return MappingRuleUpdateRequest.Builder.create()
+        .claimName(claimName)
+        .claimValue(claimValue)
+        .name(name)
+        .build();
   }
 
   private MappingRuleDTO validUpdateMappingRuleRuleRequest(final String id) {
