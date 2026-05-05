@@ -11,17 +11,17 @@ tasks.named<JavaExec>("generateSbe") {
     args(
         "${project.projectDir}/src/main/resources/snapshot-schema.xml",
         "${project.projectDir}/src/main/resources/raft-entry-schema.xml",
-        "${project.projectDir}/src/main/resources/cluster-messaging.xml"
+        "${project.projectDir}/src/main/resources/cluster-messaging.xml",
     )
 }
 
 dependencies {
     api(project(":zeebe-atomix-utils"))
-    api(project(":zeebe-util"))
-    api(project(":zeebe-scheduler"))
-    api(project(":zeebe-protocol"))
-    api(project(":zeebe-snapshots"))
-    api(project(":zeebe-journal"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-scheduler"))
+    implementation(project(":zeebe-protocol"))
+    implementation(project(":zeebe-snapshots"))
+    implementation(project(":zeebe-journal"))
     api(libs.org.agrona.agrona)
     api(libs.io.netty.netty.transport)
     api(libs.io.netty.netty.codec.base)

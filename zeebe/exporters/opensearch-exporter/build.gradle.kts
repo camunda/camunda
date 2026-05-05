@@ -7,10 +7,10 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-exporter-api"))
-    api(project(":zeebe-exporter-filter"))
-    api(project(":zeebe-protocol"))
-    api(project(":camunda-search-client-connect"))
+    implementation(project(":zeebe-exporter-api"))
+    implementation(project(":zeebe-exporter-filter"))
+    implementation(project(":zeebe-protocol"))
+    implementation(project(":camunda-search-client-connect"))
     api(libs.org.opensearch.client.opensearch.rest.client)
     api(libs.org.apache.httpcomponents.httpasyncclient)
     api(libs.org.apache.httpcomponents.httpclient)
@@ -18,7 +18,7 @@ dependencies {
     api(libs.org.apache.httpcomponents.httpcore)
     api(libs.org.apache.httpcomponents.core5.httpcore5)
     implementation(libs.org.slf4j.slf4j.api)
-    api(project(":zeebe-util"))
+    implementation(project(":zeebe-util"))
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)

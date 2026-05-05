@@ -7,13 +7,13 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-client-java"))
-    api(project(":zeebe-util"))
-    api(project(":zeebe-bpmn-model"))
-    api(project(":camunda-authentication"))
-    api(project(":camunda-security-core"))
-    api(project(":camunda-search-client-connect"))
-    api(project(":camunda-spring-utils"))
+    implementation(project(":camunda-client-java"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-bpmn-model"))
+    implementation(project(":camunda-authentication"))
+    implementation(project(":camunda-security-core"))
+    implementation(project(":camunda-search-client-connect"))
+    implementation(project(":camunda-spring-utils"))
     api(libs.org.springframework.spring.context)
     api(libs.org.springframework.boot.spring.boot)
     api(libs.org.springframework.spring.core)

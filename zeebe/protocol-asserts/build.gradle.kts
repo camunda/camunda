@@ -68,7 +68,7 @@ val patchRecordAssert by tasks.registering(PatchRecordAssert::class) {
 }
 
 dependencies {
-    api(project(":zeebe-protocol"))
+    implementation(project(":zeebe-protocol"))
     implementation(project(":camunda-security-protocol"))
     implementation(libs.org.assertj.assertj.core)
     implementation(libs.javax.annotation.javax.annotation.api)

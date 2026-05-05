@@ -7,9 +7,9 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-security-protocol"))
-    api(project(":zeebe-util"))
-    api(project(":zeebe-auth"))
+    implementation(project(":camunda-security-protocol"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-auth"))
     api(libs.org.springframework.spring.core)
     api(libs.org.springframework.spring.context)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)

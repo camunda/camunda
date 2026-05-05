@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-process-test-spring"))
+    implementation(project(":camunda-process-test-spring"))
 }
 
 description = "Camunda Process Test Spring Boot 4"

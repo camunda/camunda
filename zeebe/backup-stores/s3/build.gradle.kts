@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-backup"))
+    implementation(project(":zeebe-backup"))
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.org.apache.commons.commons.compress)
     implementation(libs.com.github.luben.zstd.jni)
@@ -24,7 +24,7 @@ dependencies {
     api(libs.software.amazon.awssdk.http.client.spi)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     api(libs.org.reactivestreams.reactive.streams)
-    api(project(":zeebe-util"))
+    implementation(project(":zeebe-util"))
     testImplementation(project(":zeebe-backup-testkit", configuration = "tests"))
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)

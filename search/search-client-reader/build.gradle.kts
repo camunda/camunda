@@ -7,8 +7,8 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-search-domain"))
-    api(project(":camunda-security-core"))
+    implementation(project(":camunda-search-domain"))
+    implementation(project(":camunda-security-core"))
 }
 
 description = "Camunda Search Client - Reader"

@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-process-test-java"))
+    implementation(project(":camunda-process-test-java"))
 
     api(platform("dev.langchain4j:langchain4j-bom:1.12.2"))
     api("dev.langchain4j:langchain4j-core")

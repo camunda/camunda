@@ -22,7 +22,7 @@ dependencies {
     api(libs.org.apache.httpcomponents.client5.httpclient5)
     implementation(libs.org.apache.commons.commons.lang3)
     api(libs.io.micrometer.micrometer.core)
-    api(project(":zeebe-gateway-protocol-impl"))
+    implementation(project(":zeebe-gateway-protocol-impl"))
     api(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
     api(libs.org.springframework.boot.spring.boot.actuator)
     api(libs.org.springframework.boot.spring.boot.health)

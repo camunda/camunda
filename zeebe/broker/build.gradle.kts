@@ -26,7 +26,7 @@ dependencies {
     implementation(project(":zeebe-atomix-cluster"))
     implementation(project(":zeebe-atomix-utils"))
     implementation(project(":zeebe-db"))
-    implementation(project(":zeebe-exporter-api"))
+    api(project(":zeebe-exporter-api"))
     implementation(project(":zeebe-stream-platform"))
     implementation(project(":zeebe-gateway"))
     implementation(project(":zeebe-expression-language"))

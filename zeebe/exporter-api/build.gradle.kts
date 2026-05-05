@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-protocol"))
+    implementation(project(":zeebe-protocol"))
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.io.micrometer.micrometer.core)
     testImplementation(libs.junit.junit)

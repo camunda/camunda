@@ -7,14 +7,14 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-feel-integration"))
-    api(project(":zeebe-util"))
+    implementation(project(":zeebe-feel-integration"))
+    implementation(project(":zeebe-util"))
     api(libs.org.camunda.bpm.extension.dmn.scala.dmn.engine)
     api(libs.org.scala.lang.scala.library)
     api(libs.org.camunda.bpm.model.camunda.dmn.model)
     api(libs.org.agrona.agrona)
     api(libs.org.camunda.feel.feel.engine)
-    api(project(":zeebe-msgpack-core"))
+    implementation(project(":zeebe-msgpack-core"))
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)

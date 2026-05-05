@@ -7,15 +7,15 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-search-domain"))
-    api(project(":zeebe-util"))
-    api(project(":zeebe-bpmn-model"))
-    api(project(":zeebe-auth"))
-    api(project(":zeebe-protocol"))
+    implementation(project(":camunda-search-domain"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-bpmn-model"))
+    implementation(project(":zeebe-auth"))
+    implementation(project(":zeebe-protocol"))
+    implementation(project(":camunda-security-protocol"))
     api(libs.com.github.ben.manes.caffeine.caffeine)
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(project(":zeebe-protocol-impl"))
-    testImplementation(project(":camunda-security-protocol"))
     testImplementation(project(":zeebe-protocol-test-util"))
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)

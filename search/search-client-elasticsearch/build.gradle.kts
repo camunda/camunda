@@ -7,9 +7,9 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-util"))
-    api(project(":camunda-search-client-query-transformer"))
-    api(project(":camunda-search-domain"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":camunda-search-client-query-transformer"))
+    implementation(project(":camunda-search-domain"))
     api(libs.co.elastic.clients.elasticsearch.java)
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)

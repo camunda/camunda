@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-util"))
+    implementation(project(":zeebe-util"))
     api(libs.com.google.guava.guava)
     implementation(libs.org.apache.commons.commons.lang3)
     implementation(libs.com.esotericsoftware.kryo)

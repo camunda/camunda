@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-spring-boot-starter"))
+    implementation(project(":camunda-spring-boot-starter"))
 }
 
 description = "Camunda Spring Boot 4 Starter"

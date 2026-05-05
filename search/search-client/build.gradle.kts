@@ -7,9 +7,9 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-search-domain"))
-    api(project(":camunda-search-client-reader"))
-    api(project(":camunda-security-core"))
+    implementation(project(":camunda-search-domain"))
+    implementation(project(":camunda-search-client-reader"))
+    implementation(project(":camunda-security-core"))
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)

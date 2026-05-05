@@ -7,14 +7,14 @@ plugins {
 }
 
 dependencies {
-    api(project(":tasklist-common"))
-    api(project(":webapps-schema"))
-    api(project(":camunda-spring-utils"))
-    api(project(":camunda-service"))
-    api(project(":camunda-security-core"))
-    api(project(":camunda-client-java"))
-    api(project(":zeebe-protocol"))
-    api(project(":zeebe-protocol-impl"))
+    implementation(project(":tasklist-common"))
+    implementation(project(":webapps-schema"))
+    implementation(project(":camunda-spring-utils"))
+    implementation(project(":camunda-service"))
+    implementation(project(":camunda-security-core"))
+    implementation(project(":camunda-client-java"))
+    implementation(project(":zeebe-protocol"))
+    implementation(project(":zeebe-protocol-impl"))
     api(libs.org.springframework.spring.context)
     api(libs.org.springframework.spring.beans)
     api(libs.org.springframework.boot.spring.boot.autoconfigure)

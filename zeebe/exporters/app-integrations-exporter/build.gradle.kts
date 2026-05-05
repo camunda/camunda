@@ -7,9 +7,9 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-exporter-api"))
-    api(project(":zeebe-protocol"))
-    api(project(":zeebe-util"))
+    implementation(project(":zeebe-exporter-api"))
+    implementation(project(":zeebe-protocol"))
+    implementation(project(":zeebe-util"))
     api(libs.org.apache.httpcomponents.httpclient)
     api(libs.org.apache.httpcomponents.httpcore)
     api(libs.com.fasterxml.jackson.core.jackson.databind)

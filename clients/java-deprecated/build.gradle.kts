@@ -12,14 +12,14 @@ openApiGenerate {
 }
 
 dependencies {
-    api(project(":zeebe-bpmn-model"))
+    implementation(project(":zeebe-bpmn-model"))
     api(libs.com.auth0.java.jwt)
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     implementation(libs.com.google.code.findbugs.jsr305)
     api(libs.org.apache.httpcomponents.core5.httpcore5)
-    api(project(":zeebe-gateway-protocol-impl"))
+    implementation(project(":zeebe-gateway-protocol-impl"))
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.org.apache.httpcomponents.client5.httpclient5)
     api(libs.io.grpc.grpc.stub)

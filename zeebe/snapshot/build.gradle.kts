@@ -7,11 +7,11 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-util"))
-    api(project(":zeebe-scheduler"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-scheduler"))
     api(libs.io.micrometer.micrometer.core)
     api(libs.io.micrometer.micrometer.commons)
-    api(project(":zeebe-protocol"))
+    implementation(project(":zeebe-protocol"))
     api(libs.org.agrona.agrona)
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.com.fasterxml.jackson.core.jackson.databind)

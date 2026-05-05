@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-util"))
+    implementation(project(":zeebe-util"))
 }
 
 description = "Camunda Document Store API"

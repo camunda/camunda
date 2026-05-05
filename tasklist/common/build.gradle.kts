@@ -7,11 +7,11 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-client-java"))
-    api(project(":zeebe-util"))
-    api(project(":camunda-search-client-connect"))
-    api(project(":webapps-schema"))
-    api(project(":zeebe-protocol"))
+    implementation(project(":camunda-client-java"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":camunda-search-client-connect"))
+    implementation(project(":webapps-schema"))
+    implementation(project(":zeebe-protocol"))
     api(libs.org.springframework.boot.spring.boot.autoconfigure)
     api(libs.org.springframework.spring.context)
     api(libs.org.springframework.boot.spring.boot)

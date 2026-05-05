@@ -7,12 +7,12 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-search-client"))
-    api(project(":camunda-search-domain"))
+    implementation(project(":camunda-search-client"))
+    implementation(project(":camunda-search-domain"))
     api(project(":camunda-search-client-reader"))
-    api(project(":camunda-security-protocol"))
-    api(project(":camunda-security-core"))
-    api(project(":zeebe-util"))
+    implementation(project(":camunda-security-protocol"))
+    implementation(project(":camunda-security-core"))
+    implementation(project(":zeebe-util"))
     api(libs.org.mybatis.mybatis)
     api(libs.org.liquibase.liquibase.core)
     api(libs.com.fasterxml.jackson.core.jackson.core)
@@ -21,7 +21,7 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.io.micrometer.micrometer.core)
     api(libs.com.github.ben.manes.caffeine.caffeine)
-    api(project(":camunda-db-rdbms-schema"))
+    implementation(project(":camunda-db-rdbms-schema"))
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.assertj.assertj.core)

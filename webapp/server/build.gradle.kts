@@ -7,8 +7,8 @@ plugins {
 }
 
 dependencies {
-    api(project(":webapps-common"))
-    api(project(":camunda-spring-utils"))
+    implementation(project(":webapps-common"))
+    implementation(project(":camunda-spring-utils"))
     runtimeOnly(project(":webapp-webjar"))
 
     api(libs.jakarta.annotation.jakarta.annotation.api)
