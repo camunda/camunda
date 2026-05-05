@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.protocol.model.DecisionEvaluationById;
 import io.camunda.gateway.protocol.model.DecisionEvaluationByKey;
 import java.util.Optional;
@@ -20,6 +21,8 @@ import org.springframework.http.ProblemDetail;
 
 @DisplayName("EvaluateDecisionRequestValidator Tests")
 class EvaluateDecisionRequestValidatorTest {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Test
   @DisplayName("Should accept valid decisionDefinitionKey format")
@@ -53,29 +56,33 @@ class EvaluateDecisionRequestValidatorTest {
   }
 
   @Test
-  @DisplayName("Should reject when decisionDefinitionId is blank (null-like invalid value)")
-  void shouldRejectNullDecisionDefinitionId() {
-    final var request = DecisionEvaluationById.Builder.create().decisionDefinitionId("").build();
+  @DisplayName("Should reject when decisionDefinitionId is null (omitted from JSON)")
+  void shouldRejectNullDecisionDefinitionId() throws Exception {
+    // The staged builder requires the field to be set, so the only way to construct a request
+    // with a null required field is via Jackson deserialization of a body that omits the field.
+    final var request = OBJECT_MAPPER.readValue("{}", DecisionEvaluationById.class);
 
     final Optional<ProblemDetail> result =
         EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
 
     assertThat(result).isPresent();
     final ProblemDetail problem = result.get();
-    assertThat(problem.getDetail()).contains("decisionDefinitionId");
+    assertThat(problem.getDetail())
+        .contains("At least one of [decisionDefinitionId, decisionDefinitionKey] is required");
   }
 
   @Test
-  @DisplayName("Should reject when decisionDefinitionKey is blank (null-like invalid value)")
-  void shouldRejectNullDecisionDefinitionKey() {
-    final var request = DecisionEvaluationByKey.Builder.create().decisionDefinitionKey("").build();
+  @DisplayName("Should reject when decisionDefinitionKey is null (omitted from JSON)")
+  void shouldRejectNullDecisionDefinitionKey() throws Exception {
+    final var request = OBJECT_MAPPER.readValue("{}", DecisionEvaluationByKey.class);
 
     final Optional<ProblemDetail> result =
         EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
 
     assertThat(result).isPresent();
     final ProblemDetail problem = result.get();
-    assertThat(problem.getDetail()).contains("decisionDefinitionKey");
+    assertThat(problem.getDetail())
+        .contains("At least one of [decisionDefinitionId, decisionDefinitionKey] is required");
   }
 
   @Test

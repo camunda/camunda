@@ -79,16 +79,6 @@ public final class SearchQueryRequestMapper {
       EMPTY_DECISION_INSTANCE_FILTER =
           io.camunda.gateway.protocol.model.DecisionInstanceFilter.Builder.create().build();
 
-  @SuppressWarnings("NullAway") // errorHashCode is @Nullable in the field but not in the stage;
-  // the empty-sentinel must have null errorHashCode to match the no-criteria case
-  public static final io.camunda.gateway.protocol.model
-          .IncidentProcessInstanceStatisticsByDefinitionFilter
-      EMPTY_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_FILTER =
-          io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter
-              .Builder.create()
-              .errorHashCode(null)
-              .build();
-
   private SearchQueryRequestMapper() {}
 
   public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(

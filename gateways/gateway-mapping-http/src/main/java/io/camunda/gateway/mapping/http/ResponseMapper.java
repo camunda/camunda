@@ -353,7 +353,7 @@ public final class ResponseMapper {
         .detail(requireNonNull(defaultProblemDetail.getDetail(), "detail"))
         .fileName(error.request().metadata().fileName())
         .status(defaultProblemDetail.getStatus())
-        .title(Objects.requireNonNullElse(defaultProblemDetail.getTitle(), ""))
+        .title(requireNonNull(defaultProblemDetail.getTitle(), "title"))
         .build();
   }
 
@@ -388,7 +388,7 @@ public final class ResponseMapper {
 
   public static DeleteResourceResponse toDeleteResourceResponse(
       final ResourceDeletionRecord brokerResponse) {
-    final BatchOperationCreatedResult batchOperation;
+    final @Nullable BatchOperationCreatedResult batchOperation;
     if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() > 0) {
       batchOperation =
           BatchOperationCreatedResult.Builder.create()
@@ -831,7 +831,7 @@ public final class ResponseMapper {
         clusterVariableRecord.isTenantScoped()
             ? ClusterVariableScopeEnum.TENANT
             : ClusterVariableScopeEnum.GLOBAL;
-    final String tenantId =
+    final @Nullable String tenantId =
         clusterVariableRecord.isTenantScoped() ? clusterVariableRecord.getTenantId() : null;
     return ClusterVariableResult.Builder.create()
         .name(clusterVariableRecord.getName())

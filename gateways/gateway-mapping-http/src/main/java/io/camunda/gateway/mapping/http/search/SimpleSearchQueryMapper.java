@@ -260,13 +260,10 @@ public class SimpleSearchQueryMapper {
   private static io.camunda.gateway.protocol.model.simple.ProcessInstanceFilterFields
       toProcessInstanceFilterFields(
           final io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter source) {
+    final var fields = new io.camunda.gateway.protocol.model.simple.ProcessInstanceFilterFields();
     if (source == null) {
-      return io.camunda.gateway.protocol.model.simple.ProcessInstanceFilterFields.Builder.create()
-          .build();
+      return fields;
     }
-    final var fields =
-        io.camunda.gateway.protocol.model.simple.ProcessInstanceFilterFields.Builder.create()
-            .build();
 
     fields
         .startDate(source.getStartDate())

@@ -24,7 +24,6 @@ import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstructio
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
-import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationActivateInstruction;
@@ -46,12 +45,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
 
 public class ProcessInstanceRequestValidator {
-
-  public static final ProcessInstanceMigrationBatchOperationPlan EMPTY_MIGRATION_PLAN =
-      ProcessInstanceMigrationBatchOperationPlan.Builder.create()
-          .targetProcessDefinitionKey("")
-          .mappingInstructions(List.of())
-          .build();
 
   public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
       final ProcessInstanceCreationInstruction request) {

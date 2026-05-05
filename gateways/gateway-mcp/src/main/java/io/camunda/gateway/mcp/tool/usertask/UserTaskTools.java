@@ -115,8 +115,7 @@ public class UserTaskTools {
         return performUnassignment(userTaskKey);
       } else {
         // merge assignee root param with potential assignment options
-        UserTaskAssignmentRequest request =
-            UserTaskAssignmentRequest.Builder.create().assignee(assignee).build();
+        UserTaskAssignmentRequest request = new UserTaskAssignmentRequest().assignee(assignee);
         if (assignmentOptions != null) {
           request =
               request
