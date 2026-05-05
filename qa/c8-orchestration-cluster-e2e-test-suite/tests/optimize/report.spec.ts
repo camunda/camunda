@@ -10,31 +10,38 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {deploy} from 'utils/zeebeClient';
+import {sleep} from 'utils/sleep';
 
-test.beforeEach(async ({page, optimizeLoginPage, optimizeHomePage}) => {
-  await navigateToApp(page, 'optimize');
-  await optimizeLoginPage.login('demo', 'demo');
-  await expect(optimizeHomePage.createNewButton).toBeVisible({timeout: 60000});
-});
-
-test.afterEach(async ({page}, testInfo) => {
-  await captureScreenshot(page, testInfo);
-  await captureFailureVideo(page, testInfo);
+test.beforeAll(async () => {
+  await deploy(['./resources/orderProcess_v_1.bpmn']);
+  await sleep(30000);
 });
 
 test.describe('Process Report', () => {
+  test.beforeEach(async ({page, optimizeLoginPage, optimizeHomePage}) => {
+    await navigateToApp(page, 'optimize');
+    await optimizeLoginPage.login('demo', 'demo');
+    await expect(optimizeHomePage.createNewButton).toBeVisible({
+      timeout: 60000,
+    });
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
   test('shouldCreateBlankReport', async ({
     page,
     optimizeHomePage,
     optimizeProcessReportPage,
   }) => {
-    // when - create a blank report
     await optimizeHomePage.createNewButton.click();
     await optimizeHomePage.menuOption('Report').click();
     await page.getByRole('button', {name: 'Blank report'}).click();
     await optimizeHomePage.modalConfirmButton.click();
 
-    // then - control panel is visible (edit mode)
     await expect(optimizeProcessReportPage.controlPanel).toBeVisible();
   });
 
@@ -43,17 +50,16 @@ test.describe('Process Report', () => {
     optimizeHomePage,
     optimizeProcessReportPage,
   }) => {
-    // given
     await optimizeHomePage.createNewButton.click();
     await optimizeHomePage.menuOption('Report').click();
     await page.getByRole('button', {name: 'Blank report'}).click();
     await optimizeHomePage.modalConfirmButton.click();
 
-    // when - name and save the report
-    await page.locator('.EntityNameForm .name-input input').fill('Invoice Pipeline');
+    await page
+      .locator('.EntityNameForm .name-input input')
+      .fill('Invoice Pipeline');
     await optimizeProcessReportPage.save();
 
-    // then
     await expect(optimizeProcessReportPage.reportName).toHaveText(
       'Invoice Pipeline',
     );
@@ -64,37 +70,72 @@ test.describe('Process Report', () => {
     optimizeHomePage,
     optimizeProcessReportPage,
   }) => {
-    // given - create and save a blank report
     await optimizeHomePage.createNewButton.click();
     await optimizeHomePage.menuOption('Report').click();
     await page.getByRole('button', {name: 'Blank report'}).click();
     await optimizeHomePage.modalConfirmButton.click();
     await optimizeProcessReportPage.save();
 
-    // navigate back to home then into the report view
     await page.goto(process.env.OPTIMIZE_URL!);
     await optimizeHomePage.listItemLink('report').click();
 
-    // then
     await expect(optimizeHomePage.noDataNotice).toContainText(
       'Report configuration is incomplete',
     );
   });
 
-  test.fixme(
-    'shouldCreateReportFromTemplate',
-    async ({page, optimizeHomePage, optimizeProcessReportPage}) => {
-      // Requires 'Order process' deployed and imported by Optimize.
-      // TODO: Deploy process BPMN, wait for Optimize import, then enable.
-    },
-  );
+  test('shouldCreateReportFromTemplate', async ({
+    page,
+    optimizeHomePage,
+    optimizeProcessReportPage,
+  }) => {
+    await optimizeHomePage.createNewButton.click();
+    await optimizeHomePage.menuOption('Report').click();
+    await page
+      .locator('.Modal .DefinitionSelection input')
+      .fill('Order process');
+    await expect(
+      page
+        .locator('.cds--list-box__menu-item')
+        .filter({hasText: 'Order process'}),
+    ).toBeVisible({timeout: 60000});
+    await page
+      .locator('.cds--list-box__menu-item')
+      .filter({hasText: 'Order process'})
+      .first()
+      .click();
+    await page.locator('.TemplateModal .cds--radio-button').first().click();
+    await optimizeHomePage.modalConfirmButton.click();
 
-  test.fixme(
-    'shouldShareReport',
-    async ({page, optimizeHomePage, optimizeProcessReportPage}) => {
-      // Requires a report with actual data (process definition deployed +
-      // imported by Optimize).
-      // TODO: Enable after process data seeding is implemented.
-    },
-  );
+    await expect(optimizeProcessReportPage.controlPanel).toBeVisible();
+  });
+
+  test('shouldShareReport', async ({
+    page,
+    optimizeHomePage,
+    optimizeProcessReportPage,
+  }) => {
+    await optimizeHomePage.createNewButton.click();
+    await optimizeHomePage.menuOption('Report').click();
+    await page
+      .locator('.Modal .DefinitionSelection input')
+      .fill('Order process');
+    await expect(
+      page
+        .locator('.cds--list-box__menu-item')
+        .filter({hasText: 'Order process'}),
+    ).toBeVisible({timeout: 60000});
+    await page
+      .locator('.cds--list-box__menu-item')
+      .filter({hasText: 'Order process'})
+      .first()
+      .click();
+    await page.locator('.TemplateModal .cds--radio-button').first().click();
+    await optimizeHomePage.modalConfirmButton.click();
+    await optimizeProcessReportPage.save();
+    await page.locator('.share-button button').click();
+    await page.locator('.ShareEntity .cds--toggle__switch').click();
+
+    await expect(page.locator('.ShareEntity input[type="text"]')).toBeVisible();
+  });
 });

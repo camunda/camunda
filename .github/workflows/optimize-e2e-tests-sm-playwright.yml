@@ -24,6 +24,8 @@ on:
       - "optimize/**"
       - "optimize.Dockerfile"
       - "qa/c8-orchestration-cluster-e2e-test-suite/**"
+  schedule:
+    - cron: "0 2 * * *"
   workflow_dispatch: {}
 
 # Limit to 1 concurrent run per ref — cancel in-progress if a new commit arrives
@@ -58,44 +60,103 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
 
       - name: Set CAMUNDA_DOCKER_IMAGE
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
-          branch="${{ github.ref_name }}"
-          if [[ "$branch" == "main" ]]; then
-            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
-            echo "OPTIMIZE_VERSION=SNAPSHOT" >> "$GITHUB_ENV"
-            echo "IDENTITY_VERSION=SNAPSHOT" >> "$GITHUB_ENV"
-          elif [[ "$branch" == stable/* ]]; then
-            minor="${branch#stable/}"
-            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
-            echo "OPTIMIZE_VERSION=${minor}-SNAPSHOT" >> "$GITHUB_ENV"
-            echo "IDENTITY_VERSION=${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+          echo "DATABASE=elasticsearch" >> "$GITHUB_ENV"
+          if [[ "$BRANCH" == "main" ]]; then
+            {
+              echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT"
+              echo "OPTIMIZE_VERSION=SNAPSHOT"
+              echo "IDENTITY_VERSION=SNAPSHOT"
+            } >> "$GITHUB_ENV"
+          elif [[ "$BRANCH" == stable/* ]]; then
+            minor="${BRANCH#stable/}"
+            {
+              echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT"
+              echo "OPTIMIZE_VERSION=${minor}-SNAPSHOT"
+              echo "IDENTITY_VERSION=${minor}-SNAPSHOT"
+            } >> "$GITHUB_ENV"
           else
-            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
-            echo "OPTIMIZE_VERSION=SNAPSHOT" >> "$GITHUB_ENV"
-            echo "IDENTITY_VERSION=SNAPSHOT" >> "$GITHUB_ENV"
+            {
+              echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT"
+              echo "OPTIMIZE_VERSION=SNAPSHOT"
+              echo "IDENTITY_VERSION=SNAPSHOT"
+            } >> "$GITHUB_ENV"
           fi
 
-      - name: Start core services (Elasticsearch, Keycloak, Camunda)
+      - name: Start Elasticsearch
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
-        run: DATABASE=elasticsearch docker compose up -d elasticsearch keycloak camunda
+        run: docker compose up -d elasticsearch
+
+      - name: Wait for Elasticsearch to be ready
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: |
+          echo "Waiting for Elasticsearch cluster health..."
+          for i in {1..60}; do
+            status=$(curl -s -m 5 "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s" | grep -o '"status":"[^"]*"' || true)
+            if [[ "$status" == '"status":"yellow"' || "$status" == '"status":"green"' ]]; then
+              echo "Elasticsearch is healthy: $status"
+              break
+            fi
+            echo "Waiting for Elasticsearch... ($i/60)"
+            sleep 5
+          done
+          if [[ $i -eq 60 ]]; then
+            echo "Elasticsearch did not become healthy in time"
+            docker compose logs elasticsearch
+            exit 1
+          fi
+
+      - name: Start Keycloak
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: docker compose up -d keycloak
+
+      - name: Wait for Keycloak to be ready
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: |
+          echo "Waiting for Keycloak to be ready..."
+          for i in {1..60}; do
+            status=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' keycloak 2>/dev/null || echo "missing")
+            if [[ "$status" == "healthy" ]]; then
+              echo "Keycloak is healthy"
+              break
+            fi
+            echo "Waiting for Keycloak... ($i/60), status=$status"
+            sleep 10
+          done
+          if [[ $i -eq 60 ]]; then
+            echo "Keycloak did not become healthy in time"
+            docker compose logs keycloak
+            exit 1
+          fi
+
+      - name: Start Camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: docker compose up -d camunda
 
       - name: Wait for Camunda to be ready
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
         run: |
           echo "Waiting for Camunda to be ready..."
           for i in {1..90}; do
-            status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
-            if [[ "$status" != "Failed" ]]; then
-              echo "Camunda is ready!"
+            code=$(curl -s -o /dev/null -w "%{http_code}" -m 5 http://localhost:8080/operate || echo "000")
+            if [[ "$code" == "200" || "$code" == "302" || "$code" == "401" ]]; then
+              echo "Camunda is ready with HTTP $code"
               break
             fi
-            echo "Waiting... ($i/90)"
+            echo "Waiting for Camunda... ($i/90), HTTP=$code"
             sleep 10
           done
+          if [[ $i -eq 90 ]]; then
+            echo "Camunda did not become ready in time"
+            docker compose logs camunda
+            exit 1
+          fi
 
       - name: Start Identity and Optimize
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
-        run: DATABASE=elasticsearch docker compose up -d identity optimize
+        run: docker compose up -d identity optimize
 
       - name: Wait for Optimize to be ready
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
@@ -110,6 +171,10 @@ jobs:
             echo "Waiting for Optimize... ($i/90)"
             sleep 10
           done
+          if [[ $i -eq 90 ]]; then
+            echo "Optimize did not become ready in time"
+            exit 1
+          fi
 
       - name: List running Docker containers
         run: docker ps -a
@@ -142,7 +207,7 @@ jobs:
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "true"
           OPTIMIZE_URL: "http://localhost:8090"
-        run: npm run test -- --project=chromium tests/optimize/
+        run: npm run test -- --project=optimize-e2e --workers=1
 
       - name: Upload HTML report
         if: always()
@@ -164,6 +229,7 @@ jobs:
         if: failure()
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
         run: |
+          docker compose logs elasticsearch
           docker compose logs keycloak
           docker compose logs identity
           docker compose logs optimize

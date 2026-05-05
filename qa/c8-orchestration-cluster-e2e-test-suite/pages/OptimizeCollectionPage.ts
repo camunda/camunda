@@ -35,11 +35,21 @@ export class OptimizeCollectionPage {
     this.userTab = tabButton.filter({hasText: 'Users'});
     this.alertTab = tabButton.filter({hasText: 'Alerts'});
     this.sourcesTab = tabButton.filter({hasText: 'Data sources'});
-    const activeTab = page.locator('.Collection .cds--tab-content:not([hidden])');
-    this.addButton = activeTab.locator('.cds--toolbar-content > .cds--btn--primary');
-    this.emptyStateAddButton = activeTab.locator('.EmptyState .cds--btn--primary');
-    this.sourceModalSearchField = page.locator('.SourcesModal .cds--search-input');
-    this.selectAllCheckbox = page.locator('.Table thead .cds--table-column-checkbox label');
+    const activeTab = page.locator(
+      '.Collection .cds--tab-content:not([hidden])',
+    );
+    this.addButton = activeTab.locator(
+      '.cds--toolbar-content > .cds--btn--primary',
+    );
+    this.emptyStateAddButton = activeTab.locator(
+      '.EmptyState .cds--btn--primary',
+    );
+    this.sourceModalSearchField = page.locator(
+      '.SourcesModal .cds--search-input',
+    );
+    this.selectAllCheckbox = page.locator(
+      '.Table thead .cds--table-column-checkbox label',
+    );
     this.bulkRemoveButton = activeTab
       .locator('.cds--action-list button')
       .filter({hasText: 'Remove'});
@@ -50,7 +60,9 @@ export class OptimizeCollectionPage {
   }
 
   overflowMenuOption(text: string): Locator {
-    return this.page.locator('.cds--overflow-menu-options__option').filter({hasText: text});
+    return this.page
+      .locator('.cds--overflow-menu-options__option')
+      .filter({hasText: text});
   }
 
   itemCheckbox(index: number): Locator {

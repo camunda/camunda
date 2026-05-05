@@ -49,5 +49,6 @@ export class OptimizeProcessReportPage {
 
   async save(): Promise<void> {
     await this.saveButton.click();
+    await this.saveButton.waitFor({state: 'hidden'});
   }
 }

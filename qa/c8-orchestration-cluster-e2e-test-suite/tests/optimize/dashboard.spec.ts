@@ -13,6 +13,8 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import type {OptimizeHomePage} from '@pages/OptimizeHomePage';
 import type {OptimizeDashboardPage} from '@pages/OptimizeDashboardPage';
 import type {Page} from '@playwright/test';
+import {deploy} from 'utils/zeebeClient';
+import {sleep} from 'utils/sleep';
 
 async function createBlankDashboard(
   page: Page,
@@ -25,35 +27,37 @@ async function createBlankDashboard(
   await optimizeDashboardPage.save();
 }
 
-test.beforeEach(async ({page, optimizeLoginPage, optimizeHomePage}) => {
-  await navigateToApp(page, 'optimize');
-  await optimizeLoginPage.login('demo', 'demo');
-  await expect(optimizeHomePage.createNewButton).toBeVisible({timeout: 60000});
-});
-
-test.afterEach(async ({page}, testInfo) => {
-  await captureScreenshot(page, testInfo);
-  await captureFailureVideo(page, testInfo);
+test.beforeAll(async () => {
+  await deploy(['./resources/orderProcess_v_1.bpmn']);
+  await sleep(30000);
 });
 
 test.describe('Dashboard', () => {
+  test.beforeEach(async ({page, optimizeLoginPage, optimizeHomePage}) => {
+    await navigateToApp(page, 'optimize');
+    await optimizeLoginPage.login('demo', 'demo');
+    await expect(optimizeHomePage.createNewButton).toBeVisible({
+      timeout: 60000,
+    });
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
   test('shouldRenameDashboard', async ({
     page,
     optimizeHomePage,
     optimizeDashboardPage,
   }) => {
-    // given
     await createBlankDashboard(page, optimizeHomePage, optimizeDashboardPage);
     await expect(optimizeDashboardPage.dashboardName).toBeVisible();
 
-    // when - enter edit mode and rename
     await optimizeDashboardPage.editButton.click();
-    await page
-      .locator('.EntityNameForm .name-input input')
-      .fill('New Name');
+    await page.locator('.EntityNameForm .name-input input').fill('New Name');
     await optimizeDashboardPage.save();
 
-    // then
     await expect(optimizeDashboardPage.dashboardName).toHaveText('New Name');
   });
 
@@ -62,21 +66,17 @@ test.describe('Dashboard', () => {
     optimizeHomePage,
     optimizeDashboardPage,
   }) => {
-    // given
     await createBlankDashboard(page, optimizeHomePage, optimizeDashboardPage);
-    const originalName = await optimizeDashboardPage.dashboardName.textContent();
+    const originalName =
+      await optimizeDashboardPage.dashboardName.textContent();
 
-    // when - edit then cancel
     await optimizeDashboardPage.editButton.click();
     await page
       .locator('.EntityNameForm .name-input input')
       .fill('Should Not Be Saved');
     await page.getByRole('button', {name: 'Cancel'}).click();
 
-    // then - name is unchanged
-    await expect(optimizeDashboardPage.dashboardName).toHaveText(
-      originalName!,
-    );
+    await expect(optimizeDashboardPage.dashboardName).toHaveText(originalName!);
   });
 
   test('shouldCreateReportAndAddToDashboard', async ({
@@ -85,23 +85,19 @@ test.describe('Dashboard', () => {
     optimizeDashboardPage,
     optimizeProcessReportPage,
   }) => {
-    // given - create a blank report
     await optimizeHomePage.createNewButton.click();
     await optimizeHomePage.menuOption('Report').click();
     await page.getByRole('button', {name: 'Blank report'}).click();
     await optimizeHomePage.modalConfirmButton.click();
     await optimizeProcessReportPage.save();
 
-    // go back to home
     await page.goto(process.env.OPTIMIZE_URL!);
     await expect(optimizeHomePage.createNewButton).toBeVisible();
 
-    // when - create a blank dashboard and add the report
     await optimizeHomePage.createNewButton.click();
     await optimizeHomePage.menuOption('Dashboard').click();
     await page.getByRole('button', {name: 'Blank dashboard'}).click();
 
-    // add report tile via the add tile button
     await page.locator('.AddButton').click();
     await page
       .locator('.cds--list-box__menu-item')
@@ -113,24 +109,50 @@ test.describe('Dashboard', () => {
 
     await optimizeDashboardPage.save();
 
-    // then - report tile is visible
     await expect(optimizeDashboardPage.reportTile).toBeVisible();
   });
 
-  test.fixme(
-    'shouldCreateDashboardFromTemplate',
-    async ({page, optimizeHomePage, optimizeDashboardPage}) => {
-      // Requires 'Order process' deployed and imported by Optimize.
-      // TODO: Deploy process BPMN, wait for Optimize import, then enable.
-    },
-  );
+  test('shouldCreateDashboardFromTemplate', async ({
+    page,
+    optimizeHomePage,
+    optimizeDashboardPage,
+  }) => {
+    await optimizeHomePage.createNewButton.click();
+    await optimizeHomePage.menuOption('Dashboard').click();
+    await page
+      .locator('.Modal .DefinitionSelection input')
+      .fill('Order process');
+    await expect(
+      page
+        .locator('.cds--list-box__menu-item')
+        .filter({hasText: 'Order process'}),
+    ).toBeVisible({timeout: 60000});
+    await page
+      .locator('.cds--list-box__menu-item')
+      .filter({hasText: 'Order process'})
+      .click();
+    await page
+      .locator('.Modal .templateContainer button')
+      .filter({hasText: 'Improve productivity'})
+      .click();
+    await optimizeHomePage.modalConfirmButton.click();
+    await optimizeDashboardPage.save();
 
-  test.fixme(
-    'shouldShareDashboard',
-    async ({page, optimizeHomePage, optimizeDashboardPage}) => {
-      // Requires 'Order process' deployed, imported, and at least one
-      // dashboard created from a template.
-      // TODO: Enable after process data seeding is implemented.
-    },
-  );
+    await expect(optimizeDashboardPage.dashboardName).toHaveText(
+      'Improve productivity',
+    );
+    await expect(optimizeDashboardPage.reportTile).toBeVisible();
+  });
+
+  test('shouldShareDashboard', async ({
+    page,
+    optimizeHomePage,
+    optimizeDashboardPage,
+  }) => {
+    await createBlankDashboard(page, optimizeHomePage, optimizeDashboardPage);
+    await page.locator('.share-button button').click();
+    await page.locator('.ShareEntity .cds--toggle__switch').click();
+
+    await expect(page.locator('.ShareEntity input[type="text"]')).toBeVisible();
+  });
 });

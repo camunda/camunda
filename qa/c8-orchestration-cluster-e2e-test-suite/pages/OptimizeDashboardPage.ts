@@ -28,7 +28,9 @@ export class OptimizeDashboardPage {
     this.autoRefreshButton = page.locator('.tools .AutoRefreshSelect button');
     this.reportTile = page.locator('.OptimizeReportTile');
     this.fullscreenButton = page.locator('.fullscreen-button');
-    this.addTileButton = page.locator('.CreateTileModal button').filter({hasText: 'Add tile'});
+    this.addTileButton = page
+      .locator('.CreateTileModal button')
+      .filter({hasText: 'Add tile'});
     this.createTileModal = page.locator('.CreateTileModal');
     this.modalConfirmButton = page.locator(
       '.Modal.is-visible .cds--modal-footer .cds--btn:last-child:not([disabled])',
@@ -41,6 +43,8 @@ export class OptimizeDashboardPage {
 
   async save(): Promise<void> {
     await this.saveButton.click();
+    await this.saveButton.waitFor({state: 'hidden'});
+    await this.editButton.waitFor({state: 'visible'});
   }
 
   async clickAutoRefreshOption(option: string): Promise<void> {
