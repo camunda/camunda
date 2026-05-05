@@ -49,7 +49,7 @@ If the module under test has no such file, add one temporarily to its `src/test/
 directory (do **not** commit it), then run the test class with Maven:
 
 ```shell
-./mvnw verify -pl <module> -Dtest=MyFlakeyTest \
+./mvnw verify -pl <module> -Dtest=MyFlakyTest \
   -DskipITs -DskipUTs=false -DskipTests=false -Dquickly
 ```
 
@@ -61,7 +61,7 @@ CPU-throttled systemd scope to simulate a busy CI runner. No root access is requ
 ```shell
 systemd-run --scope --user -p CPUQuota=10% \
   --working-directory="$(pwd)" -- \
-  ./mvnw verify -pl <module> -Dtest=MyFlakeyTest \
+  ./mvnw verify -pl <module> -Dtest=MyFlakyTest \
     -DskipITs -DskipUTs=false -DskipTests=false -Dquickly
 ```
 
@@ -74,7 +74,7 @@ thread scheduling delays more reliably:
 ```shell
 systemd-run --scope --user -p CPUQuota=10% \
   --working-directory="$(pwd)" -- \
-  ./mvnw verify -pl <module> -Dtest=MyFlakeyTest \
+  ./mvnw verify -pl <module> -Dtest=MyFlakyTest \
     -DskipITs -DskipUTs=false -DskipTests=false -Dquickly \
     -DargLine="-Xmx48m -XX:+UseSerialGC"
 ```
