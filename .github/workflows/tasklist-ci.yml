@@ -12,6 +12,7 @@ on:
       - "stable/**"
       - "release**"
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
@@ -20,6 +21,23 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
+  ci-gate:
+    name: "CI Gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      pull-requests: write
+    outputs:
+      should-run: ${{ steps.gate.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions/ci-gate
+      - uses: ./.github/actions/ci-gate
+        id: gate
+        with:
+          github-token: ${{ github.token }}
+
   detect-changes:
     outputs:
       tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
@@ -37,20 +55,20 @@ jobs:
 
   run-build:
     name: run-build
-    needs: [detect-changes]
+    needs: [ci-gate, detect-changes]
     uses: ./.github/workflows/tasklist-ci-build-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
+    if: needs.ci-gate.outputs.should-run == 'true' && (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true')
 
   # Does not meet run time requirements for Unified CI
   run-integration-tests:
     name: "Integration"
-    needs: [detect-changes]
+    needs: [ci-gate, detect-changes]
     uses: ./.github/workflows/tasklist-ci-test-reusable.yml
     secrets: inherit
     permissions: { }
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}
+    if: needs.ci-gate.outputs.should-run == 'true' && (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true')

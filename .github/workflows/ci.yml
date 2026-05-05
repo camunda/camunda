@@ -11,7 +11,8 @@ on:
       - main
       - stable/*
       - release-*
-  pull_request: {}
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
   merge_group: {}
   workflow_dispatch: {}
   schedule:
@@ -72,6 +73,40 @@ jobs:
       - name: Detect changes
         uses: ./.github/actions/paths-filter
         id: filter
+
+  # ──────────────────────────────────────────────────────────────────────────────
+  # On-demand CI gate (PoC): gate expensive SHR jobs behind the `ci:run` label
+  # on pull_request events. All other trigger types (merge_group, push, schedule,
+  # workflow_dispatch) bypass the gate and always run.
+  #
+  # How it works for developers:
+  #   1. Open/push to PR → lightweight linters run automatically (GH-hosted)
+  #   2. Add the `ci:run` label when ready → full CI matrix runs on SHR
+  #   3. The label is automatically removed after consumption (one-shot trigger)
+  #   4. Next push only runs linters again; re-add `ci:run` for another full run
+  #   5. merge_group trigger remains unaffected (always runs full CI)
+  #
+  # Bot PRs (renovate[bot], camunda-platform-release[bot]) bypass the gate.
+  #
+  # See docs/monorepo-docs/ci.md § "On-Demand CI" for full documentation.
+  # ──────────────────────────────────────────────────────────────────────────────
+  ci-gate:
+    name: "CI Gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    permissions:
+      pull-requests: write  # needed to remove the ci:run label after consuming it
+    outputs:
+      should-run-shr: ${{ steps.gate.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions/ci-gate
+      - name: Evaluate CI gate
+        id: gate
+        uses: ./.github/actions/ci-gate
+        with:
+          github-token: ${{ github.token }}
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
@@ -253,9 +288,9 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   java-checks:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true' && needs.ci-gate.outputs.should-run-shr == 'true'
     name: "Java Checks"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, ci-gate ]
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
@@ -283,7 +318,7 @@ jobs:
     # Temporarily disabling the dependency-cycle-check as too brittle
     if: ${{ false }}
     name: "Dependency Cycle Check"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, ci-gate ]
     runs-on: gcp-core-16-default
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -663,9 +698,9 @@ jobs:
 
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-tests
   general-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true' && needs.ci-gate.outputs.should-run-shr == 'true'
     name: "General / Unit - Back End"
-    needs: [ detect-changes, setup-tests ]
+    needs: [ detect-changes, setup-tests, ci-gate ]
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -729,9 +764,9 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   zeebe-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true' && needs.ci-gate.outputs.should-run-shr == 'true'
     name: "Zeebe / Unit - ${{matrix.component}}"
-    needs: [ detect-changes, setup-tests ]
+    needs: [ detect-changes, setup-tests, ci-gate ]
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -838,8 +873,8 @@ jobs:
 
   database-integration-tests:
     name: "Database Integration Tests / ${{ matrix.name }}"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
+    if: needs.detect-changes.outputs.java-code-changes == 'true' && needs.ci-gate.outputs.should-run-shr == 'true'
+    needs: [ detect-changes, ci-gate ]
     strategy:
       fail-fast: false
       matrix: &database-matrix
@@ -882,8 +917,8 @@ jobs:
 
   history-tests:
     name: "History Integration Tests / ${{ matrix.name }}"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
+    if: needs.detect-changes.outputs.java-code-changes == 'true' && needs.ci-gate.outputs.should-run-shr == 'true'
+    needs: [ detect-changes, ci-gate ]
     strategy:
       fail-fast: false
       matrix: *database-matrix
@@ -902,8 +937,8 @@ jobs:
 
   identity-tests:
     name: "Identity Integration Tests / ${{ matrix.name }}"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
+    if: needs.detect-changes.outputs.java-code-changes == 'true' && needs.ci-gate.outputs.should-run-shr == 'true'
+    needs: [ detect-changes, ci-gate ]
     strategy:
       fail-fast: false
       matrix: *database-matrix
@@ -920,8 +955,8 @@ jobs:
       test-type-label: "Identity"
 
   rdbms-integration-tests:
-    if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
-    needs: [ detect-changes ]
+    if: needs.detect-changes.outputs.rdbms-integration-tests == 'true' && needs.ci-gate.outputs.should-run-shr == 'true'
+    needs: [ detect-changes, ci-gate ]
     name: "General / Integration / RDBMS ITs"
     timeout-minutes: 30
     runs-on: gcp-perf-core-8-default
@@ -987,9 +1022,9 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   integration-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true' && needs.ci-gate.outputs.should-run-shr == 'true'
     name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs (${{ matrix.stressRun }})"
-    needs: [ detect-changes, setup-tests ]
+    needs: [ detect-changes, setup-tests, ci-gate ]
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runs-on }}
@@ -1129,9 +1164,9 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   archunit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true' && needs.ci-gate.outputs.should-run-shr == 'true'
     name: "General / Unit - ArchUnit"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, ci-gate ]
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -1574,9 +1609,9 @@ jobs:
           user_description: "Identity"
 
   tasklist-ci:
-    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
+    if: (needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true') && needs.ci-gate.outputs.should-run-shr == 'true'
     name: "Tasklist"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, ci-gate ]
     uses: ./.github/workflows/ci-tasklist.yml
     secrets: inherit
     permissions: { }
@@ -1585,9 +1620,9 @@ jobs:
       runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
 
   operate-ci:
-    if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
+    if: (needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true') && needs.ci-gate.outputs.should-run-shr == 'true'
     name: "Operate"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, ci-gate ]
     uses: ./.github/workflows/ci-operate.yml
     secrets: inherit
     permissions: { }
@@ -1596,9 +1631,9 @@ jobs:
       runBeTests: ${{ needs.detect-changes.outputs.operate-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true'}}
 
   optimize-ci:
-    if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' }}
+    if: ${{ (needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true') && needs.ci-gate.outputs.should-run-shr == 'true' }}
     name: "Optimize"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, ci-gate ]
     uses: ./.github/workflows/ci-optimize.yml
     secrets: inherit
     permissions: { }
@@ -1607,9 +1642,9 @@ jobs:
       runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
 
   zeebe-ci:
-    if: needs.detect-changes.outputs.zeebe-changes == 'true'
+    if: needs.detect-changes.outputs.zeebe-changes == 'true' && needs.ci-gate.outputs.should-run-shr == 'true'
     name: "Zeebe"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, ci-gate ]
     uses: ./.github/workflows/ci-zeebe.yml
     secrets: inherit
     with:
@@ -1814,6 +1849,7 @@ jobs:
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - archunit-tests
+      - ci-gate
       - build-platform-frontend
       - c8-e2e-test-suite
       - codeowners-check

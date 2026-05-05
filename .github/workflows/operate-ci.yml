@@ -23,6 +23,7 @@ on:
       - 'zeebe/**'
       - 'clients/**'
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - '.ci/**'
       - '.github/actions/**'
@@ -45,9 +46,28 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
+  ci-gate:
+    name: "CI Gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      pull-requests: write
+    outputs:
+      should-run: ${{ steps.gate.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions/ci-gate
+      - uses: ./.github/actions/ci-gate
+        id: gate
+        with:
+          github-token: ${{ github.token }}
+
   # builds image and pushes to Dockerhub if branch is `main`
   run-operate-build:
     name: "Build / Operate and Image"
+    needs: [ci-gate]
+    if: needs.ci-gate.outputs.should-run == 'true'
     uses: ./.github/workflows/operate-ci-build-reusable.yml
     secrets: inherit
     with:
@@ -55,6 +75,8 @@ jobs:
   # over 10min run time
   run-core-features-integration-tests:
     name: "Integration"
+    needs: [ci-gate]
+    if: needs.ci-gate.outputs.should-run == 'true'
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:

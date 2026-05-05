@@ -18,20 +18,39 @@ on:
     types:
     - opened
     - synchronize
+    - labeled
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
+  ci-gate:
+    name: "CI Gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    permissions:
+      pull-requests: write
+    outputs:
+      should-run: ${{ steps.gate.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions/ci-gate
+      - name: Evaluate CI gate
+        id: gate
+        uses: ./.github/actions/ci-gate
+        with:
+          github-token: ${{ github.token }}
+
   analyze:
+    needs: [ ci-gate ]
+    if: needs.ci-gate.outputs.should-run == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork)
     name: "Analyze ${{ matrix.project.name }} dependencies"
     permissions:
       # Needed for camunda/infra-global-github-actions/fossa/info
       actions: read
       contents: read
     runs-on: gcp-core-16-longrunning
-    # Skip analysis on fork PRs as they cannot access FOSSA due to lack of credentials
-    if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
     timeout-minutes: 31
     strategy:
