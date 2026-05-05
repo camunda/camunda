@@ -296,7 +296,13 @@ public class OpensearchBackupRepository implements BackupRepository {
               if (e instanceof SocketTimeoutException) {
                 // This is thrown even if the backup is still running
                 LOGGER.warn(
-                    "Timeout while creating snapshot [{}] for backup id [{}]. Need to keep waiting with polling...",
+                    "The OpenSearch HTTP connection timed out while waiting for snapshot [{}] "
+                        + "(backup id [{}]) to complete. The snapshot is likely still running in "
+                        + "OpenSearch. Polling will continue until completion. "
+                        + "If socket timeouts occur repeatedly, consider increasing the socket timeout via "
+                        + "CAMUNDA_OPERATE_OPENSEARCH_SOCKETTIMEOUT or "
+                        + "CAMUNDA_TASKLIST_OPENSEARCH_SOCKETTIMEOUT "
+                        + "and consider doubling or tripling the current value.",
                     snapshotRequest.snapshotName(),
                     backupId);
                 // Keep waiting
