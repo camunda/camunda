@@ -13,8 +13,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.core5.http.HttpHost;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -34,16 +34,16 @@ public class OpensearchExporterMigrationIT {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchExporterMigrationIT.class);
   private static final String OS_NETWORK_ALIAS = "test-opensearch";
 
-  private static Network network;
-  private static OpenSearchContainer osContainer;
-  private static ApacheHttpClient5Transport transport;
-  private static OpenSearchClient osClient;
-  private static ExporterMigrationTestHelper testHelper;
-
   @TempDir private static Path dataDir;
 
-  @BeforeAll
-  static void setUp() {
+  private Network network;
+  private OpenSearchContainer osContainer;
+  private ApacheHttpClient5Transport transport;
+  private OpenSearchClient osClient;
+  private ExporterMigrationTestHelper testHelper;
+
+  @BeforeEach
+  void setUp() {
     network = Network.newNetwork();
 
     osContainer =
@@ -84,8 +84,8 @@ public class OpensearchExporterMigrationIT {
             osClient, OS_NETWORK_ALIAS, network, osContainer.getHttpHostAddress(), dataDir, LOGGER);
   }
 
-  @AfterAll
-  static void tearDown() throws Exception {
+  @AfterEach
+  void tearDown() throws Exception {
     if (transport != null) {
       transport.close();
     }
@@ -108,7 +108,7 @@ public class OpensearchExporterMigrationIT {
 
   @ParameterizedTest(name = "Migrate from {0} to current version")
   @MethodSource("io.camunda.it.schema.ExporterMigrationTestHelper#fetchAllPatchesFromPreviousMinor")
-  @Tag("nightly")
+  @Tag("dl-nightly")
   @Timeout(value = 10, unit = TimeUnit.MINUTES)
   void shouldCompleteUpgradeWithBacklogAndExportAllRecordsAgainstReleasePatches(
       final String version) throws Exception {

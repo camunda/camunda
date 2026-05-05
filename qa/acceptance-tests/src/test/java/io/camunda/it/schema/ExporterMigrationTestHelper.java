@@ -60,13 +60,13 @@ public class ExporterMigrationTestHelper {
   private static final String DEPLOYMENT_INDEX = "zeebe-record_deployment_*";
   private static final String ZEEBE_RECORD_INDEXES = "zeebe-record*";
 
-  private static final String PREVIOUS_VERSION_MINOR =
-      getMinorVersion(VersionUtil.getPreviousVersion());
-  private static final String CURRENT_VERSION_MINOR = getMinorVersion(VersionUtil.getVersion());
+  private static final String CURRENT_MINOR_VERSION = getCurrentMinorVersion();
+  private static final String PREVIOUS_MINOR_VERSION =
+      getPreviousMinorVersion(CURRENT_MINOR_VERSION);
   private static final String API_URL =
       String.format(
           "https://hub.docker.com/v2/repositories/camunda/camunda/tags?page_size=%d&name=%s",
-          100, PREVIOUS_VERSION_MINOR);
+          100, PREVIOUS_MINOR_VERSION);
 
   private static final String PROCESS_ID = "migration-test";
   private static final String JOB_TYPE = "test-job";
@@ -296,7 +296,7 @@ public class ExporterMigrationTestHelper {
           .join(30, TimeUnit.SECONDS);
     } finally {
       // ---- Phase 3: Stop previous version, extract volume to host ----
-      log.info("Phase 3: Stopping Camunda " + PREVIOUS_VERSION_MINOR + " and extracting volume");
+      log.info("Phase 3: Stopping Camunda " + version + " and extracting volume");
       camundaPrevious.stop();
     }
 
@@ -333,7 +333,7 @@ public class ExporterMigrationTestHelper {
     // ---- Phase 4: Start current version in-JVM, resume exporter, create instance #4 ----
     log.info(
         "Phase 4: Starting Camunda {} (in-JVM) with working dir: {}",
-        CURRENT_VERSION_MINOR,
+        CURRENT_MINOR_VERSION,
         workingDir);
     assertThat(Files.exists(workingDir.resolve("data")))
         .as("data directory should exist after extraction")
@@ -360,11 +360,11 @@ public class ExporterMigrationTestHelper {
 
     try {
       brokerCurrent.start().await(TestHealthProbe.READY, Duration.ofMinutes(3));
-      log.info("Camunda " + CURRENT_VERSION_MINOR + " broker started");
+      log.info("Camunda " + CURRENT_MINOR_VERSION + " broker started");
 
       // Resume exporter
       ExportingActuator.of(brokerCurrent).resume();
-      log.info("Resumed exporter on " + CURRENT_VERSION_MINOR);
+      log.info("Resumed exporter on " + CURRENT_MINOR_VERSION);
 
       try (final CamundaClient clientCurrent =
           brokerCurrent.newClientBuilder().preferRestOverGrpc(false).build()) {
@@ -372,7 +372,7 @@ public class ExporterMigrationTestHelper {
         // previous version
         // may not be immediately available after log replay
         final var instanceKey4 = new long[1];
-        Awaitility.await("create instance #4 on " + CURRENT_VERSION_MINOR)
+        Awaitility.await("create instance #4 on " + CURRENT_MINOR_VERSION)
             .atMost(Duration.ofSeconds(60))
             .pollInterval(Duration.ofSeconds(2))
             .ignoreExceptions()
@@ -383,7 +383,7 @@ public class ExporterMigrationTestHelper {
                   return true;
                 });
         instanceKeys.add(instanceKey4[0]);
-        log.info("Created instance #4 on {}: {}", CURRENT_VERSION_MINOR, instanceKey4[0]);
+        log.info("Created instance #4 on {}: {}", CURRENT_MINOR_VERSION, instanceKey4[0]);
 
         // ---- Phase 5: Complete all remaining jobs ----
         log.info("Phase 5: Completing remaining jobs");
@@ -527,11 +527,6 @@ public class ExporterMigrationTestHelper {
     return Integer.compare(patch1, patch2);
   }
 
-  public static String getMinorVersion(final String version) {
-    final String[] components = version.split("\\.");
-    return components[0] + "." + components[1];
-  }
-
   public static List<String> fetchLatestPatchFromPreviousMinor()
       throws IOException, InterruptedException {
     final List<String> allVersions = fetchAllPatchesFromPreviousMinor();
@@ -575,7 +570,7 @@ public class ExporterMigrationTestHelper {
 
     final List<String> allVersions = new ArrayList<>();
     for (final String tag : allTags) {
-      if (!tag.startsWith(PREVIOUS_VERSION_MINOR)) {
+      if (!tag.startsWith(PREVIOUS_MINOR_VERSION)) {
         continue;
       }
 
@@ -594,16 +589,41 @@ public class ExporterMigrationTestHelper {
     }
 
     if (allVersions.isEmpty()) {
-      throw new NoSuchElementException("No release images found for " + PREVIOUS_VERSION_MINOR);
+      throw new NoSuchElementException("No release images found for " + PREVIOUS_MINOR_VERSION);
     }
 
     allVersions.sort(ExporterMigrationTestHelper::comparePatches);
 
-    final String snapshotVersion = PREVIOUS_VERSION_MINOR + "-SNAPSHOT";
+    final String snapshotVersion = PREVIOUS_MINOR_VERSION + "-SNAPSHOT";
     if (allTags.contains(snapshotVersion)) {
       allVersions.add(snapshotVersion);
     }
 
     return allVersions;
+  }
+
+  private static String getCurrentMinorVersion() {
+    final String currentVersion = VersionUtil.getVersion();
+    if ("development".equalsIgnoreCase(currentVersion)) {
+      throw new RuntimeException("Current version cannot be determined");
+    }
+
+    final String[] components = currentVersion.split("\\.");
+    if (components.length < 2) {
+      throw new RuntimeException("Current version has invalid format: " + currentVersion);
+    }
+
+    return String.format("%s.%s", components[0], components[1]);
+  }
+
+  private static String getPreviousMinorVersion(final String currentMinorVersion) {
+    final String[] components = currentMinorVersion.split("\\.");
+    final int minor = Integer.parseInt(components[1]);
+    if (minor == 0) {
+      throw new RuntimeException(
+          "previous minor version cannot be determined from " + currentMinorVersion);
+    }
+
+    return String.format("%s.%s", components[0], String.valueOf(minor - 1));
   }
 }
