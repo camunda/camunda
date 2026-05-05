@@ -191,6 +191,14 @@ final class PartitionTransitionProcess {
     return completed;
   }
 
+  long term() {
+    return term;
+  }
+
+  Role role() {
+    return role;
+  }
+
   @Override
   public String toString() {
     return "PartitionTransitionProcess{"
