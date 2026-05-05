@@ -25,7 +25,6 @@
   <properties>
     <version.java>8</version.java>
     <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
-    <protocol.version>7</protocol.version>
   </properties>
 
   <dependencies>
@@ -104,13 +103,6 @@
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <filtering>true</filtering>
-        <directory>src/main/resources</directory>
-      </resource>
-    </resources>
-
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -133,20 +125,6 @@
           </execution>
         </executions>
 
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default-resources</id>
-            <goals>
-              <goal>resources</goal>
-            </goals>
-            <phase>generate-sources</phase>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
@@ -177,8 +155,8 @@
             <phase>generate-sources</phase>
             <configuration>
               <arguments>
-                <argument>${project.build.outputDirectory}/protocol.xml</argument>
-                <argument>${project.build.outputDirectory}/cluster-management-protocol.xml</argument>
+                <argument>${project.basedir}/src/main/resources/protocol.xml</argument>
+                <argument>${project.basedir}/src/main/resources/cluster-management-protocol.xml</argument>
               </arguments>
             </configuration>
           </execution>
