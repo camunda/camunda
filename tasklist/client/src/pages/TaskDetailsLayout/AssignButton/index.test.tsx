@@ -13,7 +13,7 @@ import {currentUser} from '@camunda/c8-mocks';
 import {getMockQueryClient} from 'modules/testing/getMockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {nodeMockServer} from 'modules/testing/nodeMockServer';
-import {http, HttpResponse} from 'msw';
+import {delay, http, HttpResponse} from 'msw';
 import {notificationsStore} from 'modules/notifications/notifications.store';
 
 vi.mock('modules/notifications/notifications.store', () => ({
@@ -39,14 +39,10 @@ describe('AssignButton', () => {
     const mockUnassignedTask1 = unassignedTask();
     const mockUnassignedTask2 = unassignedTask();
 
-    let resolveAssignment!: (response: Response) => void;
-    const assignmentPromise = new Promise<Response>((resolve) => {
-      resolveAssignment = resolve;
-    });
-
     nodeMockServer.use(
-      http.post('/v2/user-tasks/:userTaskKey/assignment', () => {
-        return assignmentPromise;
+      http.post('/v2/user-tasks/:userTaskKey/assignment', async () => {
+        await delay('infinite');
+        return HttpResponse.json();
       }),
     );
 
@@ -78,7 +74,6 @@ describe('AssignButton', () => {
     );
 
     expect(screen.getByRole('button', {name: 'Assign to me'})).toBeEnabled();
-    resolveAssignment(HttpResponse.json());
   });
 
   it('should assign a task', async () => {
