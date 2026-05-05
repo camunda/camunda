@@ -292,8 +292,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(10)
+              .timeout(5000L)
               .tenantIds(List.of("tenant-a", "tenant-b"))
               .build();
       // when
@@ -315,8 +315,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("test-job")
-              .timeout(3000L)
               .maxJobsToActivate(5)
+              .timeout(3000L)
               .tenantFilter(TenantFilterEnum.ASSIGNED)
               .build();
 
@@ -339,8 +339,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("test-job")
-              .timeout(3000L)
               .maxJobsToActivate(5)
+              .timeout(3000L)
               .tenantIds(List.of("tenant-a", "tenant-b"))
               .tenantFilter(TenantFilterEnum.ASSIGNED)
               .build();
@@ -364,8 +364,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(10)
+              .timeout(5000L)
               .build();
 
       // when
@@ -385,8 +385,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(10)
+              .timeout(5000L)
               .tenantIds(List.of("tenant-a"))
               .build();
 
@@ -408,8 +408,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("test-job")
-              .timeout(3000L)
               .maxJobsToActivate(5)
+              .timeout(3000L)
               .worker("test-worker")
               .build();
 
@@ -432,8 +432,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(10)
+              .timeout(5000L)
               .tenantIds(List.of("tenant-a"))
               .build();
 
@@ -453,8 +453,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("complex-job")
-              .timeout(10000L)
               .maxJobsToActivate(15)
+              .timeout(10000L)
               .worker("worker-123")
               .requestTimeout(30000L)
               .fetchVariable(List.of("var1", "var2"))
@@ -482,8 +482,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("")
-              .timeout(5000L)
               .maxJobsToActivate(10)
+              .timeout(5000L)
               .tenantIds(List.of("tenant-a"))
               .build();
 
@@ -503,8 +503,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(0)
+              .timeout(5000L)
               .tenantIds(List.of("tenant-a"))
               .build();
 
@@ -524,8 +524,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("test-job")
-              .timeout(0L)
               .maxJobsToActivate(10)
+              .timeout(0L)
               .tenantIds(List.of("tenant-a"))
               .build();
 
@@ -545,8 +545,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(10)
+              .timeout(5000L)
               .tenantIds(List.of("tenant-a", "tenant-b", "tenant-c"))
               .build();
 
@@ -566,8 +566,8 @@ class RequestMapperTest {
       final var request =
           JobActivationRequest.Builder.create()
               .type("test-job")
-              .timeout(5000L)
               .maxJobsToActivate(10)
+              .timeout(5000L)
               .tenantFilter(TenantFilterEnum.ASSIGNED)
               .build();
 

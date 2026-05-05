@@ -315,8 +315,8 @@ components:
           default: PROVIDED
       required:
         - type
-        - timeout
         - maxJobsToActivate
+        - timeout
 
     JobActivationResult:
       description: The list of activated jobs
