@@ -1,0 +1,170 @@
+# description: Runs Optimize Self-Managed E2E tests using Playwright against the
+#              c8-orchestration-cluster-e2e-test-suite. Replaces the legacy TestCafe
+#              workflow (optimize-e2e-tests-sm.yml) for the Playwright test suite.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite/tests/optimize
+# type: CI
+# owner: @camunda/core-features
+---
+name: Optimize E2E Self-Managed (Playwright)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/optimize-e2e-tests-sm-playwright.yml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
+      - "qa/c8-orchestration-cluster-e2e-test-suite/**"
+  push:
+    branches:
+      - "main"
+      - "stable/**"
+      - "release/**"
+    paths:
+      - ".github/workflows/optimize-e2e-tests-sm-playwright.yml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
+      - "qa/c8-orchestration-cluster-e2e-test-suite/**"
+  workflow_dispatch: {}
+
+# Limit to 1 concurrent run per ref — cancel in-progress if a new commit arrives
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write # required for Vault authentication
+
+jobs:
+  optimize-e2e-sm-playwright:
+    name: Optimize E2E Self-Managed (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
+      - name: Set CAMUNDA_DOCKER_IMAGE
+        run: |
+          branch="${{ github.ref_name }}"
+          if [[ "$branch" == "main" ]]; then
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+            echo "OPTIMIZE_VERSION=SNAPSHOT" >> "$GITHUB_ENV"
+            echo "IDENTITY_VERSION=SNAPSHOT" >> "$GITHUB_ENV"
+          elif [[ "$branch" == stable/* ]]; then
+            minor="${branch#stable/}"
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+            echo "OPTIMIZE_VERSION=${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+            echo "IDENTITY_VERSION=${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+          else
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+            echo "OPTIMIZE_VERSION=SNAPSHOT" >> "$GITHUB_ENV"
+            echo "IDENTITY_VERSION=SNAPSHOT" >> "$GITHUB_ENV"
+          fi
+
+      - name: Start core services (Elasticsearch, Keycloak, Camunda)
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: DATABASE=elasticsearch docker compose up -d elasticsearch keycloak camunda
+
+      - name: Wait for Camunda to be ready
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: |
+          echo "Waiting for Camunda to be ready..."
+          for i in {1..90}; do
+            status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+            if [[ "$status" != "Failed" ]]; then
+              echo "Camunda is ready!"
+              break
+            fi
+            echo "Waiting... ($i/90)"
+            sleep 10
+          done
+
+      - name: Start Identity and Optimize
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: DATABASE=elasticsearch docker compose up -d identity optimize
+
+      - name: Wait for Optimize to be ready
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: |
+          echo "Waiting for Optimize to be ready..."
+          for i in {1..90}; do
+            status=$(curl -s -m 10 http://localhost:8090/api/readyz || echo "Failed")
+            if [[ "$status" != "Failed" ]]; then
+              echo "Optimize is ready!"
+              break
+            fi
+            echo "Waiting for Optimize... ($i/90)"
+            sleep 10
+          done
+
+      - name: List running Docker containers
+        run: docker ps -a
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Install dependencies
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+
+      - name: Install Playwright browsers
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Optimize E2E tests
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        env:
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_URL: "http://localhost:8080"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "true"
+          OPTIMIZE_URL: "http://localhost:8090"
+        run: npm run test -- --project=chromium tests/optimize/
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: optimize-e2e-sm-playwright-html-report
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report/**
+          retention-days: 30
+
+      - name: Upload JSON report
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: optimize-e2e-sm-playwright-json-report
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          retention-days: 30
+
+      - name: Print Docker logs on failure
+        if: failure()
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        run: |
+          docker compose logs keycloak
+          docker compose logs identity
+          docker compose logs optimize
+          docker compose logs camunda
