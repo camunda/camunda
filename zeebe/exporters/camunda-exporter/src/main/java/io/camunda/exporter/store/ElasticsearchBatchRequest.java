@@ -40,12 +40,13 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("rawtypes")
 public class ElasticsearchBatchRequest implements BatchRequest {
   public static final int UPDATE_RETRY_COUNT = 3;
+  private static final long DEFAULT_MAX_BULK_BYTES = 20L * 1024 * 1024;
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
   private final ElasticsearchClient esClient;
   private final ElasticsearchScriptBuilder scriptBuilder;
   private final JsonpMapper jsonpMapper;
   private final List<SizedOperation> operations = new ArrayList<>();
-  private long maxBulkBytes;
+  private long maxBulkBytes = DEFAULT_MAX_BULK_BYTES;
   private CamundaExporterMetrics metrics;
 
   public ElasticsearchBatchRequest(
@@ -257,12 +258,8 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     if (operations.isEmpty()) {
       return;
     }
-    try {
-      for (final List<BulkOperation> chunk : chunkByBytes(operations, maxBulkBytes)) {
-        executeChunk(chunk, shouldRefresh, customErrorHandlers);
-      }
-    } finally {
-      operations.clear();
+    for (final List<BulkOperation> chunk : chunkByBytes(operations, maxBulkBytes)) {
+      executeChunk(chunk, shouldRefresh, customErrorHandlers);
     }
   }
 
