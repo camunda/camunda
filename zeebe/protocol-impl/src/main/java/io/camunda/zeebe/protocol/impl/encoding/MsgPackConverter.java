@@ -9,6 +9,8 @@ package io.camunda.zeebe.protocol.impl.encoding;
 
 import static io.camunda.zeebe.util.StringUtil.getBytes;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -75,8 +77,6 @@ public final class MsgPackConverter {
           .setReuseResourceInParser(false)
           .setStreamReadConstraints(JSON_STREAM_CONSTRAINTS);
 
-  // We serialize the CamundaAuthentication as JSON for batch operations.
-  // To NOT have JsonProperty Annotations on the CamundaAuthentication record, use a mixin.
   private static final ObjectMapper MESSSAGE_PACK_OBJECT_MAPPER =
       new ObjectMapper(MESSAGE_PACK_FACTORY)
           .registerModule(new JavaTimeModule())
@@ -251,6 +251,10 @@ public final class MsgPackConverter {
     }
   }
 
+  // We serialize the CamundaAuthentication as JSON for batch operations.
+  // To NOT have JsonProperty Annotations on the CamundaAuthentication record, use a mixin.
+  @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+  @JsonIgnoreProperties({"anonymous"})
   private abstract static class CamundaAuthenticationMixin {
     @JsonProperty("authenticated_username")
     abstract String authenticatedUsername();
