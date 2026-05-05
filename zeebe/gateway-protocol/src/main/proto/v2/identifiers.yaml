@@ -64,6 +64,12 @@ components:
       minLength: 1
       maxLength: 256
       # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      # Operator-configurable via `camunda.security.idValidationPattern`
+      # (`SecurityConfiguration#getCompiledIdValidationPattern()`); this
+      # schema describes the default-shipped contract. Operators that
+      # override the pattern accept the wire/runtime divergence — same
+      # trade-off documented for the other DEFAULT_ID_REGEX-derived
+      # identifiers in this file.
       pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     RoleId:
@@ -77,6 +83,8 @@ components:
       maxLength: 256
       # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core
       # (applied by IdentifierValidator at request time).
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
       pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     GroupId:
@@ -110,6 +118,8 @@ components:
       minLength: 1
       maxLength: 256
       # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
       pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     ClientId:
@@ -123,12 +133,13 @@ components:
       format: ClientId
       type: string
       x-semantic-type: ClientId
-      x-semantic-client-minted: true
       minLength: 1
       maxLength: 256
       # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core,
       # which is the regex applied to clientId values when they are passed
       # back into the Camunda API (e.g. assigning a client to a role).
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
       pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     ClusterVariableName:
@@ -142,6 +153,8 @@ components:
       maxLength: 256
       # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core
       # (ClusterVariableValidator routes through IdentifierValidator.validateId).
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
       pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     Tag:
