@@ -16,12 +16,13 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import org.jspecify.annotations.Nullable;
 
 /**
  * In-memory transaction context that buffers all writes until commit.
  *
- * <p>Values are stored as Java object copies ({@link DbValue#copy()}) — no serialization. Keys are
- * {@code byte[]} for ordering.
+ * <p>Values are stored as Java object copies ({@link DbValue#copyTo(DbValue)}) — no serialization.
+ * Keys are {@code byte[]} for ordering.
  *
  * <p>Deletes are tracked as tombstones: a key present in {@code pendingDeletes} means "this key was
  * deleted in this transaction" and reads must return {@code null} for it, even if the committed
@@ -119,7 +120,7 @@ final class InMemoryTransactionContext implements TransactionContext {
      *
      * @return the value, or {@code null} if not found or deleted
      */
-    DbValue get(final byte[] key) {
+    @Nullable DbValue get(final byte[] key) {
       if (isDeleted(key)) {
         return null;
       }
