@@ -12,72 +12,87 @@ plugins {
 val openApiOutputDir = "${project.layout.buildDirectory.get()}/generated/openapi"
 val openApiGenerateBackups by tasks.registering(org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
     generatorName.set("spring")
-    inputSpec.set("${projectDir}/src/main/resources/api/backup-management-api.yaml")
+    inputSpec.set("$projectDir/src/main/resources/api/backup-management-api.yaml")
     outputDir.set(openApiOutputDir)
     modelPackage.set("io.camunda.management.backups")
 
-    globalProperties.set(mapOf(
-        "models" to "",
-        "apis" to "false",
-        "supportingFiles" to "false"
-    ))
+    globalProperties.set(
+        mapOf(
+            "models" to "",
+            "apis" to "false",
+            "supportingFiles" to "false",
+        ),
+    )
 
     skipValidateSpec.set(false)
 
-    configOptions.set(mapOf(
-        "additionalModelTypeAnnotations" to "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
-        "useSpringBoot3" to "true",
-        "sourceFolder" to "src/main/java"
-    ))
+    configOptions.set(
+        mapOf(
+            "additionalModelTypeAnnotations" to
+                "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+            "useSpringBoot3" to "true",
+            "sourceFolder" to "src/main/java",
+        ),
+    )
 }
 
 val openApiGenerateCluster by tasks.registering(org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
     generatorName.set("spring")
-    inputSpec.set("${projectDir}/src/main/resources/api/cluster/cluster-api.yaml")
+    inputSpec.set("$projectDir/src/main/resources/api/cluster/cluster-api.yaml")
     outputDir.set(openApiOutputDir)
     modelPackage.set("io.camunda.zeebe.management.cluster")
 
-    globalProperties.set(mapOf(
-        "models" to "",
-        "apis" to "false",
-        "supportingFiles" to "false"
-    ))
+    globalProperties.set(
+        mapOf(
+            "models" to "",
+            "apis" to "false",
+            "supportingFiles" to "false",
+        ),
+    )
 
     skipValidateSpec.set(false)
 
-    configOptions.set(mapOf(
-        "additionalModelTypeAnnotations" to "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
-        "useSpringBoot3" to "true",
-        "sourceFolder" to "src/main/java"
-    ))
+    configOptions.set(
+        mapOf(
+            "additionalModelTypeAnnotations" to
+                "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+            "useSpringBoot3" to "true",
+            "sourceFolder" to "src/main/java",
+        ),
+    )
 }
 
 val openApiGenerateExporter by tasks.registering(org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
     generatorName.set("spring")
-    inputSpec.set("${projectDir}/src/main/resources/api/cluster/exporter-api.yaml")
+    inputSpec.set("$projectDir/src/main/resources/api/cluster/exporter-api.yaml")
     outputDir.set(openApiOutputDir)
     modelPackage.set("io.camunda.zeebe.management.cluster")
 
-    globalProperties.set(mapOf(
-        "models" to "",
-        "apis" to "false",
-        "supportingFiles" to "false"
-    ))
+    globalProperties.set(
+        mapOf(
+            "models" to "",
+            "apis" to "false",
+            "supportingFiles" to "false",
+        ),
+    )
 
     skipValidateSpec.set(false)
 
-    configOptions.set(mapOf(
-        "additionalModelTypeAnnotations" to "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
-        "useSpringBoot3" to "true",
-        "sourceFolder" to "src/main/java"
-    ))
+    configOptions.set(
+        mapOf(
+            "additionalModelTypeAnnotations" to
+                "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+            "useSpringBoot3" to "true",
+            "sourceFolder" to "src/main/java",
+        ),
+    )
 }
 
 // Add generated sources to the source set
 sourceSets {
     main {
         java {
-            srcDir("${openApiOutputDir}/src/main/java")
+            srcDir("$openApiOutputDir/src/main/java")
         }
     }
 }
@@ -123,6 +138,7 @@ dependencies {
     implementation(project(":camunda-security-protocol"))
     implementation(project(":camunda-security-validation"))
     implementation(project(":camunda-exporter"))
+    implementation(project(":app-integrations-exporter"))
     implementation(project(":zeebe-elasticsearch-exporter"))
     implementation(project(":zeebe-opensearch-exporter"))
     implementation(project(":rdbms-exporter"))
@@ -140,6 +156,7 @@ dependencies {
     implementation(project(":zeebe-backup-store-gcs"))
     implementation(project(":zeebe-cluster-config"))
     implementation(project(":camunda-client-java"))
+    implementation(project(":webapp-server"))
     implementation(project(":operate-webapp"))
     implementation(project(":identity-webjar"))
     implementation(project(":operate-data-generator"))

@@ -17,6 +17,7 @@ dependencies {
     testImplementation(project(":zeebe-protocol-impl"))
     testImplementation(project(":camunda-security-protocol"))
     testImplementation(project(":zeebe-protocol-test-util"))
+    testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.assertj.assertj.core)

@@ -8,10 +8,10 @@ plugins {
 
 dependencies {
     implementation(project(":camunda-process-test-java"))
-    implementation(project(":camunda-process-test-dsl"))
+    implementation(project(":camunda-process-test-json-test-cases"))
+    implementation(project(":camunda-process-test-langchain4j"))
     implementation(project(":camunda-spring-boot-starter"))
     implementation(project(":camunda-client-java"))
-    implementation(project(":zeebe-client-java"))
     implementation(libs.org.springframework.spring.test)
     implementation(libs.org.springframework.spring.core)
     implementation(libs.org.springframework.spring.context)

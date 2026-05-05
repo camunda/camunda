@@ -32,6 +32,8 @@ dependencies {
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(project(":zeebe-exporter-test"))
+    testImplementation(project(":zeebe-broker"))
+    testImplementation(project(":zeebe-msgpack-value"))
     testImplementation(project(":zeebe-protocol-test-util"))
     testImplementation(project(":zeebe-protocol-jackson"))
     testImplementation(libs.org.agrona.agrona)

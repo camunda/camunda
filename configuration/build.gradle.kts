@@ -24,6 +24,7 @@ dependencies {
     api(project(":zeebe-workflow-engine"))
     api(project(":zeebe-exporter-common"))
     api(project(":dynamic-node-id-provider"))
+    api(project(":zeebe-util"))
     api(project(":camunda-search-domain"))
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.org.springframework.spring.core)
