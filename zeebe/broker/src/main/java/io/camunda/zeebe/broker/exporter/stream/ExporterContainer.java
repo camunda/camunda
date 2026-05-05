@@ -260,7 +260,12 @@ final class ExporterContainer implements Controller {
 
   boolean exportRecord(final RecordMetadata rawMetadata, final TypedRecord<?> typedEvent) {
     if (exporterNeedsReopen) {
-      // Reopen is in progress; stop trying until the exporter is ready again
+      // Reopen is in progress; keep returning false so the retry strategy backs off and waits.
+      // All access to exporterNeedsReopen happens on the actor thread, so no CAS is needed.
+      LOG.trace(
+          "Exporter '{}' is waiting for reopen to complete; skipping export of record at position {}.",
+          getId(),
+          typedEvent.getPosition());
       return false;
     }
     try {
@@ -278,6 +283,8 @@ final class ExporterContainer implements Controller {
             "Exporter '{}' encountered a non-recoverable error. Requesting reopen to recover.",
             getId(),
             ex);
+        // Set before calling the callback so that concurrent retries (which all run on the same
+        // actor thread) do not trigger a second reopen request.
         exporterNeedsReopen = true;
         if (reopenRequestedCallback != null) {
           reopenRequestedCallback.accept(this);
