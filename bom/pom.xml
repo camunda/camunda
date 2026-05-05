@@ -78,6 +78,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>analytics-exporter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway-protocol-impl</artifactId>
         <version>${project.version}</version>
       </dependency>
