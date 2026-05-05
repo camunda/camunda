@@ -12,7 +12,7 @@ import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import org.junit.jupiter.api.Test;

@@ -19,7 +19,7 @@ import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

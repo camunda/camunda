@@ -21,7 +21,7 @@ import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.Monitoring;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Optional;
 import java.util.function.Consumer;

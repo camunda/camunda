@@ -19,7 +19,7 @@ import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;

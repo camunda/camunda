@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetricsDoc.AuthResultValues;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetricsDoc.LatencyKeyNames;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;

@@ -7,7 +7,7 @@
  */
 package io.camunda.security.auth;
 
-import static io.camunda.security.entity.AuthenticationMethod.OIDC;
+import static io.camunda.security.api.model.config.AuthenticationMethod.OIDC;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
