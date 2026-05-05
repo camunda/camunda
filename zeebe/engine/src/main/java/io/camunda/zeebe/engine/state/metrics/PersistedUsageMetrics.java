@@ -121,7 +121,7 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
 
   public PersistedUsageMetrics close(final long time) {
     final var bucket = new PersistedUsageMetrics();
-    bucket.copyFrom(this);
+    super.copyTo(bucket);
     // Ensure the fromTime is set. This can happen if metrics were recorded before the first
     // applier.
     if (getFromTime() == TIME_NOT_SET) {
@@ -129,5 +129,15 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
     }
     bucket.setToTime(time);
     return bucket;
+  }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedUsageMetrics) target);
+  }
+
+  @Override
+  public PersistedUsageMetrics newInstance() {
+    return new PersistedUsageMetrics();
   }
 }

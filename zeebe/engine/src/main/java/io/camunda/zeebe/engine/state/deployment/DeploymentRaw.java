@@ -37,4 +37,14 @@ public class DeploymentRaw extends UnpackedObject implements DbValue {
     deploymentRecord.write(valueBuffer, 0);
     deploymentRecordProperty.getValue().wrap(valueBuffer, 0, encodedLength);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((DeploymentRaw) target);
+  }
+
+  @Override
+  public DeploymentRaw newInstance() {
+    return new DeploymentRaw();
+  }
 }

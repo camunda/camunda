@@ -46,4 +46,14 @@ public class RequestData extends UnpackedObject implements DbValue {
     requestStreamIdProp.setValue(requestStreamId);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((RequestData) target);
+  }
+
+  @Override
+  public RequestData newInstance() {
+    return new RequestData();
+  }
 }

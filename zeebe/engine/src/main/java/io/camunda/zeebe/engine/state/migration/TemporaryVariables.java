@@ -27,4 +27,14 @@ public class TemporaryVariables extends UnpackedObject implements DbValue {
   public void set(final DirectBuffer value) {
     valueProp.setValue(value);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((TemporaryVariables) target);
+  }
+
+  @Override
+  public TemporaryVariables newInstance() {
+    return new TemporaryVariables();
+  }
 }

@@ -59,4 +59,14 @@ public class Permissions extends UnpackedObject implements DbValue {
   public boolean isEmpty() {
     return getPermissions().isEmpty();
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((Permissions) target);
+  }
+
+  @Override
+  public Permissions newInstance() {
+    return new Permissions();
+  }
 }

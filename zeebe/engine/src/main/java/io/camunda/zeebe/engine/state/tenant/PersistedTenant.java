@@ -31,7 +31,7 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
 
   public PersistedTenant copy() {
     final var copy = new PersistedTenant();
-    copy.copyFrom(this);
+    super.copyTo(copy);
     return copy;
   }
 
@@ -116,5 +116,15 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
     tenantIdProp.setValue(tenantRecord.getTenantId());
     nameProp.setValue(tenantRecord.getName());
     descriptionProp.setValue(tenantRecord.getDescription());
+  }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedTenant) target);
+  }
+
+  @Override
+  public PersistedTenant newInstance() {
+    return new PersistedTenant();
   }
 }

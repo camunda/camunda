@@ -44,4 +44,14 @@ public class AuthorizationKeys extends UnpackedObject implements DbValue {
     keys.remove(authorizationKey);
     setAuthorizationKeys(keys);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((AuthorizationKeys) target);
+  }
+
+  @Override
+  public AuthorizationKeys newInstance() {
+    return new AuthorizationKeys();
+  }
 }

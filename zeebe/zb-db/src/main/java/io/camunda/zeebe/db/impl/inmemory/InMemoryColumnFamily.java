@@ -361,8 +361,8 @@ class InMemoryColumnFamily<
 
   /**
    * Populates {@code valueInstance} from a stored {@link DbValue} copy using {@link
-   * DbValue#copyTo}. Zero serialization for types that override it; falls back to the default
-   * serialize+wrap for types that don't.
+   * DbValue#copyTo}. Most values use explicit typed copies; restored snapshot values serialize
+   * themselves into the target.
    */
   private void readValueInto(final DbValue stored) {
     readValueInto(stored, valueInstance);

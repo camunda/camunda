@@ -91,4 +91,14 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
     buffer.getBytes(offset, bytes, 0, length);
     super.wrap(mutableBuffer, 0, length);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((IndexedRecord) target);
+  }
+
+  @Override
+  public IndexedRecord newInstance() {
+    return new IndexedRecord();
+  }
 }

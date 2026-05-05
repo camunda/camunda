@@ -81,4 +81,14 @@ public final class AwaitProcessInstanceResultMetadata extends UnpackedObject imp
         && requestStreamIdProperty.equals(that.requestStreamIdProperty)
         && fetchVariablesProperty.equals(that.fetchVariablesProperty);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((AwaitProcessInstanceResultMetadata) target);
+  }
+
+  @Override
+  public AwaitProcessInstanceResultMetadata newInstance() {
+    return new AwaitProcessInstanceResultMetadata();
+  }
 }

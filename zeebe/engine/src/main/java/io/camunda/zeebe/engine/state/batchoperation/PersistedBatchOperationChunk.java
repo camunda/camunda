@@ -83,4 +83,14 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
 
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedBatchOperationChunk) target);
+  }
+
+  @Override
+  public PersistedBatchOperationChunk newInstance() {
+    return new PersistedBatchOperationChunk();
+  }
 }

@@ -163,6 +163,16 @@ final class InMemoryColumnFamilyObjectBackedValueTest {
       knownProp.setValue(known);
       return this;
     }
+
+    @Override
+    public void copyTo(final DbValue target) {
+      super.copyTo((KnownOnlyValue) target);
+    }
+
+    @Override
+    public KnownOnlyValue newInstance() {
+      return new KnownOnlyValue();
+    }
   }
 
   private static final class KnownAndExtraValue extends UnpackedObject implements DbValue {
@@ -191,6 +201,16 @@ final class InMemoryColumnFamilyObjectBackedValueTest {
     private String getExtra() {
       return BufferUtil.bufferAsString(extraProp.getValue());
     }
+
+    @Override
+    public void copyTo(final DbValue target) {
+      super.copyTo((KnownAndExtraValue) target);
+    }
+
+    @Override
+    public KnownAndExtraValue newInstance() {
+      return new KnownAndExtraValue();
+    }
   }
 
   private static final class UntypedValue extends UnpackedObject
@@ -198,6 +218,16 @@ final class InMemoryColumnFamilyObjectBackedValueTest {
 
     private UntypedValue() {
       super(0);
+    }
+
+    @Override
+    public void copyTo(final DbValue target) {
+      super.copyTo((UntypedValue) target);
+    }
+
+    @Override
+    public UntypedValue newInstance() {
+      return new UntypedValue();
     }
   }
 }

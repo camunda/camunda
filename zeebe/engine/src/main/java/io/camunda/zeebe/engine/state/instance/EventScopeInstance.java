@@ -112,4 +112,14 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
         && Objects.equals(boundaryElementIdsProp, that.boundaryElementIdsProp)
         && Objects.equals(interruptedProp, that.interruptedProp);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((EventScopeInstance) target);
+  }
+
+  @Override
+  public EventScopeInstance newInstance() {
+    return new EventScopeInstance();
+  }
 }

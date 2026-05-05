@@ -27,6 +27,16 @@ public final class PersistedGlobalListener extends UnpackedObject implements DbV
   }
 
   public void setGlobalListener(final GlobalListenerRecord record) {
-    globalListener.getValue().copyFrom(record);
+    globalListener.getValue().copyFrom((io.camunda.zeebe.msgpack.value.BaseValue) record);
+  }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedGlobalListener) target);
+  }
+
+  @Override
+  public PersistedGlobalListener newInstance() {
+    return new PersistedGlobalListener();
   }
 }

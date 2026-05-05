@@ -75,4 +75,14 @@ public final class CheckpointInfo extends UnpackedObject implements DbValue {
     firstLogPositionProperty.setValue(firstLogPosition);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((CheckpointInfo) target);
+  }
+
+  @Override
+  public CheckpointInfo newInstance() {
+    return new CheckpointInfo();
+  }
 }

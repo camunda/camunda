@@ -41,4 +41,14 @@ public class MessageStartEventSubscription extends UnpackedObject implements DbV
     keyProp.setValue(key);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((MessageStartEventSubscription) target);
+  }
+
+  @Override
+  public MessageStartEventSubscription newInstance() {
+    return new MessageStartEventSubscription();
+  }
 }

@@ -71,4 +71,14 @@ public class PersistedGroup extends UnpackedObject implements DbValue {
     nameProp.setValue(name);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedGroup) target);
+  }
+
+  @Override
+  public PersistedGroup newInstance() {
+    return new PersistedGroup();
+  }
 }

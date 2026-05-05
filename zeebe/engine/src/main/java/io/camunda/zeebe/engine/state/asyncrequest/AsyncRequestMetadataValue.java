@@ -37,4 +37,14 @@ public class AsyncRequestMetadataValue extends UnpackedObject implements DbValue
   public long getAsyncRequestKey() {
     return asyncRequestKeyProperty.getValue();
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((AsyncRequestMetadataValue) target);
+  }
+
+  @Override
+  public AsyncRequestMetadataValue newInstance() {
+    return new AsyncRequestMetadataValue();
+  }
 }

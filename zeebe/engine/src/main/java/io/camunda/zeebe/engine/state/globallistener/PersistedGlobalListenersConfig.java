@@ -27,6 +27,16 @@ public final class PersistedGlobalListenersConfig extends UnpackedObject impleme
   }
 
   public void setGlobalListeners(final GlobalListenerBatchRecord record) {
-    globalListeners.getValue().copyFrom(record);
+    globalListeners.getValue().copyFrom((io.camunda.zeebe.msgpack.value.BaseValue) record);
+  }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedGlobalListenersConfig) target);
+  }
+
+  @Override
+  public PersistedGlobalListenersConfig newInstance() {
+    return new PersistedGlobalListenersConfig();
   }
 }

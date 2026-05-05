@@ -34,7 +34,7 @@ public class PersistedMappingRule extends UnpackedObject
 
   public PersistedMappingRule copy() {
     final var copy = new PersistedMappingRule();
-    copy.copyFrom(this);
+    super.copyTo(copy);
     return copy;
   }
 
@@ -96,5 +96,15 @@ public class PersistedMappingRule extends UnpackedObject
   @Override
   public String claimValue() {
     return getClaimValue();
+  }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedMappingRule) target);
+  }
+
+  @Override
+  public PersistedMappingRule newInstance() {
+    return new PersistedMappingRule();
   }
 }

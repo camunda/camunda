@@ -82,4 +82,14 @@ public final class ProcessMessageSubscription extends UnpackedObject implements 
     STATE_OPENED,
     STATE_CLOSING,
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((ProcessMessageSubscription) target);
+  }
+
+  @Override
+  public ProcessMessageSubscription newInstance() {
+    return new ProcessMessageSubscription();
+  }
 }

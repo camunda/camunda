@@ -42,4 +42,14 @@ public final class RuntimeInstructionValue extends UnpackedObject implements DbV
   public void setType(final RuntimeInstructionType type) {
     typeProp.setValue(type);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((RuntimeInstructionValue) target);
+  }
+
+  @Override
+  public RuntimeInstructionValue newInstance() {
+    return new RuntimeInstructionValue();
+  }
 }
