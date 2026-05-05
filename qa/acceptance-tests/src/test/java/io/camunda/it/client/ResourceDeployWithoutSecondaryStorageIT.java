@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.IOUtils;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +70,13 @@ class ResourceDeployWithoutSecondaryStorageIT {
             .getResource()
             .getFirst()
             .getResourceKey();
+  }
+
+  @AfterAll
+  static void tearDown() {
+    if (camundaClient != null) {
+      camundaClient.close();
+    }
   }
 
   @Test

@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -618,7 +619,9 @@ public class ResourceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .expectBody(byte[].class)
         .consumeWith(
-            response -> assertThat(response.getResponseBody()).isEqualTo(content.getBytes()));
+            response ->
+                assertThat(response.getResponseBody())
+                    .isEqualTo(content.getBytes(StandardCharsets.UTF_8)));
   }
 
   @Test
