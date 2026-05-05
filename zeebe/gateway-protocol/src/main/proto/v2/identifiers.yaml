@@ -70,6 +70,11 @@ components:
       type: string
       x-semantic-type: RoleId
       x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core
+      # (applied by IdentifierValidator at request time).
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     GroupId:
       example: engineering
@@ -78,6 +83,13 @@ components:
       type: string
       x-semantic-type: GroupId
       x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      # The runtime allows a separate `groupIdPattern` for "bring your own
+      # groups" but defaults to the same regex; the schema reflects the
+      # default-deployment contract.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     MappingRuleId:
       example: my-mapping-rule
@@ -86,6 +98,10 @@ components:
       type: string
       x-semantic-type: MappingRuleId
       x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     ClientId:
       example: my-application
@@ -99,6 +115,12 @@ components:
       type: string
       x-semantic-type: ClientId
       x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core,
+      # which is the regex applied to clientId values when they are passed
+      # back into the Camunda API (e.g. assigning a client to a role).
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     ClusterVariableName:
       example: feature-flag-checkout
@@ -107,6 +129,11 @@ components:
       type: string
       x-semantic-type: ClusterVariableName
       x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core
+      # (ClusterVariableValidator routes through IdentifierValidator.validateId).
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     Tag:
       description: A tag. Needs to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.
