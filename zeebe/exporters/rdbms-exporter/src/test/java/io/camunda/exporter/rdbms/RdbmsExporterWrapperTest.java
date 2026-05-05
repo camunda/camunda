@@ -194,6 +194,9 @@ class RdbmsExporterWrapperTest {
         .as("Should register USER handler on partition 1")
         .containsKey(ValueType.USER);
     assertThat(registeredHandlers)
+        .as("Should register GROUP handler on partition 1")
+        .containsKey(ValueType.GROUP);
+    assertThat(registeredHandlers)
         .as("Should register AUTHORIZATION handler on partition 1")
         .containsKey(ValueType.AUTHORIZATION);
     assertThat(registeredHandlers)
@@ -205,6 +208,12 @@ class RdbmsExporterWrapperTest {
     assertThat(registeredHandlers)
         .as("Should register FORM handler on partition 1")
         .containsKey(ValueType.FORM);
+    assertThat(registeredHandlers)
+        .as("Should register CLUSTER_VARIABLE handler on partition 1")
+        .containsKey(ValueType.CLUSTER_VARIABLE);
+    assertThat(registeredHandlers)
+        .as("Should register GLOBAL_LISTENER handler on partition 1")
+        .containsKey(ValueType.GLOBAL_LISTENER);
   }
 
   @Test
@@ -248,6 +257,9 @@ class RdbmsExporterWrapperTest {
         .as("Should not register USER handler on partition 2")
         .doesNotContainKey(ValueType.USER);
     assertThat(registeredHandlers)
+        .as("Should not register GROUP handler on partition 2")
+        .doesNotContainKey(ValueType.GROUP);
+    assertThat(registeredHandlers)
         .as("Should not register AUTHORIZATION handler on partition 2")
         .doesNotContainKey(ValueType.AUTHORIZATION);
     assertThat(registeredHandlers)
@@ -259,6 +271,12 @@ class RdbmsExporterWrapperTest {
     assertThat(registeredHandlers)
         .as("Should not register FORM handler on partition 2")
         .doesNotContainKey(ValueType.FORM);
+    assertThat(registeredHandlers)
+        .as("Should not register CLUSTER_VARIABLE handler on partition 1")
+        .doesNotContainKey(ValueType.CLUSTER_VARIABLE);
+    assertThat(registeredHandlers)
+        .as("Should not register GLOBAL_LISTENER handler on partition 1")
+        .doesNotContainKey(ValueType.GLOBAL_LISTENER);
   }
 
   private void assertAuditLogExportPresent(
