@@ -54,4 +54,26 @@ public interface CommandWithVariables<T> {
    *     to the broker.
    */
   T variable(String key, Object value);
+
+  /**
+   * Adds a single variable to the command. Unlike {@link #variable(String, Object)}, this method
+   * accumulates variables across multiple invocations, allowing you to build the variable map entry
+   * by entry.
+   *
+   * @param key the key of the variable as string
+   * @param value the value of the variable as object
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  T addVariable(String key, Object value);
+
+  /**
+   * Adds multiple variables to the command. Unlike {@link #variables(Map)}, this method accumulates
+   * variables across multiple invocations, allowing you to build the variable map incrementally.
+   *
+   * @param variables the variables to add as map
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  T addVariables(Map<String, Object> variables);
 }
