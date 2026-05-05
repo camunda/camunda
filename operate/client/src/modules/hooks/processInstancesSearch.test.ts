@@ -11,12 +11,13 @@ import type {VariableCondition} from 'modules/stores/variableFilter';
 
 const makeCondition = (
   overrides: Partial<VariableCondition> = {},
-): VariableCondition => ({
-  name: 'status',
-  operator: 'equals',
-  value: '"active"',
-  ...overrides,
-});
+): VariableCondition =>
+  ({
+    name: 'status',
+    operator: 'equals',
+    value: '"active"',
+    ...overrides,
+  }) as VariableCondition;
 
 describe('buildVariableEntry', () => {
   it('should build equals entry as plain string value', () => {
