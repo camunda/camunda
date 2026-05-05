@@ -19,6 +19,8 @@ dependencies {
     implementation(libs.net.jcip.jcip.annotations)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
+    testImplementation(libs.org.wiremock.wiremock.standalone)
+    testImplementation(libs.org.mockito.mockito.core)
 }
 
 description = "Camunda Security Core"
