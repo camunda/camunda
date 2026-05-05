@@ -38,6 +38,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Webflux (Netty) instead of Web (Tomcat) to minimize memory footprint.
@@ -47,11 +53,23 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webflux</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -88,6 +106,39 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!-- Log4j2 backend with Stackdriver-formatted JSON layout. Mirrors the
+         dist module's setup so load-tester pods emit the same JSON shape as
+         zeebe/operate/etc. Toggled by LOAD_TESTER_LOG_APPENDER (see
+         src/main/resources/log4j2.xml).
+
+         Declared explicitly rather than via spring-boot-starter-log4j2:
+         the parent pom pins log4j-core and log4j-slf4j2-impl to test scope,
+         and Maven's "direct beats transitive" rule keeps them at test scope
+         when the starter brings them transitively. Since the load-tester
+         ships as its own jib container (not bundled into dist), test-scope
+         deps are excluded from the runtime image and SLF4J falls back to
+         NOP — silent pods. Re-declaring at compile scope here overrides
+         the parent's test-scope pin. -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-layout-template-json</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
     </dependency>
 
     <dependency>
@@ -245,6 +296,11 @@
             <dependency>org.springframework.boot:spring-boot-starter-actuator</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dependency>
+            <!-- Log4j2 runtime deps loaded via SPI / log4j2.xml, not direct imports -->
+            <dependency>org.apache.logging.log4j:log4j-api</dependency>
+            <dependency>org.apache.logging.log4j:log4j-core</dependency>
+            <dependency>org.apache.logging.log4j:log4j-slf4j2-impl</dependency>
+            <dependency>org.apache.logging.log4j:log4j-layout-template-json</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
