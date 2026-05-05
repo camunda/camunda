@@ -277,27 +277,29 @@
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.JobDbModel">
     UPDATE ${prefix}JOB
-    SET PROCESS_INSTANCE_KEY = #{processInstanceKey},
-        ELEMENT_INSTANCE_KEY = #{elementInstanceKey},
-        PROCESS_DEFINITION_ID = #{processDefinitionId},
-        PROCESS_DEFINITION_KEY =  #{processDefinitionKey},
-        TENANT_ID = #{tenantId},
-        RETRIES = #{retries},
-        STATE  = #{state},
-        TYPE = #{type},
-        WORKER = #{worker},
-        ERROR_MESSAGE = #{errorMessage},
-        ERROR_CODE = #{errorCode},
-        END_TIME = #{endTime, jdbcType=TIMESTAMP},
-        CUSTOM_HEADERS = #{serializedCustomHeaders},
-        KIND = #{kind},
-        ELEMENT_ID = #{elementId},
-        IS_DENIED = #{isDenied},
-        DENIED_REASON = #{deniedReason},
-        LISTENER_EVENT_TYPE = #{listenerEventType},
-        DEADLINE = #{deadline, jdbcType=TIMESTAMP},
-        HAS_FAILED_WITH_RETRIES_LEFT = #{hasFailedWithRetriesLeft},
-        LAST_UPDATE_TIME = #{lastUpdateTime, jdbcType=TIMESTAMP}
+    <set>
+      PROCESS_INSTANCE_KEY = #{processInstanceKey},
+      ELEMENT_INSTANCE_KEY = #{elementInstanceKey},
+      PROCESS_DEFINITION_ID = #{processDefinitionId},
+      PROCESS_DEFINITION_KEY = #{processDefinitionKey},
+      TENANT_ID = #{tenantId},
+      RETRIES = #{retries},
+      STATE = #{state},
+      TYPE = #{type},
+      WORKER = #{worker},
+      KIND = #{kind},
+      LISTENER_EVENT_TYPE = #{listenerEventType},
+      HAS_FAILED_WITH_RETRIES_LEFT = #{hasFailedWithRetriesLeft},
+      LAST_UPDATE_TIME = #{lastUpdateTime, jdbcType=TIMESTAMP},
+      <if test="isDenied != null">IS_DENIED = #{isDenied},</if>
+      <if test="deniedReason != null">DENIED_REASON = #{deniedReason},</if>
+      <if test="errorCode != null">ERROR_CODE = #{errorCode},</if>
+      <if test="errorMessage != null">ERROR_MESSAGE = #{errorMessage},</if>
+      <if test="endTime != null">END_TIME = #{endTime, jdbcType=TIMESTAMP},</if>
+      <if test="serializedCustomHeaders != null">CUSTOM_HEADERS = #{serializedCustomHeaders},</if>
+      <if test="deadline != null">DEADLINE = #{deadline, jdbcType=TIMESTAMP},</if>
+      <if test="elementId != null">ELEMENT_ID = #{elementId},</if>
+    </set>
     WHERE JOB_KEY = #{jobKey}
   </update>
 

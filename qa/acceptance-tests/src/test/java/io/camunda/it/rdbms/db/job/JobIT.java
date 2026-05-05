@@ -304,6 +304,62 @@ public class JobIT {
   }
 
   @TestTemplate
+  public void shouldUpdateJobWithoutOverwritingNullableFieldsWithNull(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final JobDbReader jobReader = rdbmsService.getJobReader();
+
+    final var original =
+        JobFixtures.createRandomized(
+            b ->
+                b.elementId("original-element-id")
+                    .errorMessage("original-error")
+                    .errorCode("original-code")
+                    .isDenied(true)
+                    .deniedReason("original-denied-reason"));
+    createAndSaveJob(rdbmsWriters, original);
+
+    // when — update with a partial model where @Nullable and conditionally-set fields are null
+    final var update =
+        new JobDbModel.Builder()
+            .jobKey(original.jobKey())
+            .type(original.type())
+            .worker(original.worker())
+            .state(original.state())
+            .kind(original.kind())
+            .listenerEventType(original.listenerEventType())
+            .retries(original.retries())
+            .hasFailedWithRetriesLeft(original.hasFailedWithRetriesLeft())
+            .processDefinitionId(original.processDefinitionId())
+            .processDefinitionKey(original.processDefinitionKey())
+            .processInstanceKey(original.processInstanceKey())
+            .elementInstanceKey(original.elementInstanceKey())
+            .tenantId(original.tenantId())
+            .partitionId(original.partitionId())
+            .lastUpdateTime(NOW)
+            // intentionally omit: elementId, creationTime, errorMessage, errorCode, isDenied,
+            // deniedReason, deadline, endTime, rootProcessInstanceKey
+            .build();
+    rdbmsWriters.getJobWriter().update(update);
+    rdbmsWriters.flush();
+
+    // then — fields not carried by the update should retain their original values
+    final var stored = jobReader.findOne(original.jobKey()).orElseThrow();
+    assertThat(stored.elementId()).isEqualTo("original-element-id");
+    assertThat(stored.errorMessage()).isEqualTo("original-error");
+    assertThat(stored.errorCode()).isEqualTo("original-code");
+    assertThat(stored.isDenied()).isEqualTo(true);
+    assertThat(stored.deniedReason()).isEqualTo("original-denied-reason");
+    assertThat(stored.deadline())
+        .isCloseTo(original.deadline(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(stored.endTime())
+        .isCloseTo(original.endTime(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(stored.rootProcessInstanceKey()).isEqualTo(original.rootProcessInstanceKey());
+  }
+
+  @TestTemplate
   public void shouldDeleteProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given
