@@ -489,9 +489,6 @@
     }
 
     document.getElementById('content').innerHTML = html;
-
-    // Make navigate() accessible for onclick attributes in this view
-    window.navigate = navigate;
   }
 
   function statCard(value, label, icon, extraClass) {
@@ -765,7 +762,6 @@
     }
 
     document.getElementById('content').innerHTML = html;
-    window.navigate = navigate;
   }
 
   // ── Run (test-case) view ───────────────────────────────────────────────────────
@@ -846,7 +842,6 @@
     }
 
     document.getElementById('content').innerHTML = html;
-    window.navigate = navigate;
   }
 
   // ── Router / main render loop ─────────────────────────────────────────────────
