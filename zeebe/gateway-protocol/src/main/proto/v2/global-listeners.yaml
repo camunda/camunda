@@ -277,8 +277,6 @@ components:
     # CRUD Responses
     GlobalTaskListenerResult:
       type: object
-      x-semantic-provider:
-        - id
       required:
         - id
         - type
