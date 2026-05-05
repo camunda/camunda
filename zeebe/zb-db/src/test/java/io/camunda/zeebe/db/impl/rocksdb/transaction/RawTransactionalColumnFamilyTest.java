@@ -70,10 +70,8 @@ public class RawTransactionalColumnFamilyTest {
             rawCF.put(
                 (ZeebeTransaction) context.getCurrentTransaction(),
                 bytes,
-                0,
                 bytes.length,
                 bytes,
-                0,
                 bytes.length);
           }
         });
@@ -118,10 +116,8 @@ public class RawTransactionalColumnFamilyTest {
             rawCF.put(
                 (ZeebeTransaction) context.getCurrentTransaction(),
                 bytes,
-                0,
                 bytes.length,
                 bytes,
-                0,
                 bytes.length);
           }
         });
