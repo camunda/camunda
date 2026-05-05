@@ -37,15 +37,27 @@ jobs:
         uses: ./.github/actions/paths-filter
         id: filter
 
+  read-versions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
   test:
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
-    needs: [detect-changes]
+    needs: [detect-changes, read-versions]
     if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.19.13
+        image: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.read-versions.outputs.elasticsearch-8 }}
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
