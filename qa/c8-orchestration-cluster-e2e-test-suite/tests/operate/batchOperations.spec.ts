@@ -12,7 +12,6 @@ import {deploy} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {
-  cancelBatchOperation,
   createCancellationBatch,
   expectBatchState,
   findCompletedBatchKey,
