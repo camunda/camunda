@@ -22,6 +22,12 @@ global:
   # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
   elasticsearch:
     enabled: true
+    url:
+      # The Elasticsearch host value used to connect to Elasticsearch depends
+      # on the "elasticsearch.fullnameOverride" value.
+      # If you change the "elasticsearch.fullnameOverride" value, make sure to
+      # update this host value accordingly.
+      host: elastic
   # Disable global ingress
   ingress:
     enabled: false
@@ -332,7 +338,12 @@ prometheusServiceMonitor:
 ########################################################################################
 elasticsearch:
   enabled: true
-  clusterName: "elasticsearch"
+  # Override the default name for ConfigMap, Service, etc.
+  # Changing this value also changes the name of the Kubernetes Service used by
+  # the other components to connect to Elasticsearch, make sure to update
+  # the "global.elasticsearch.url.host" value accordingly.
+  fullnameOverride: elastic
+  clusterName: elasticsearch
   master:
     fullnameOverride: elastic
     nameOverride: elastic
