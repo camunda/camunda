@@ -1,0 +1,148 @@
+# description: Runs orchestration cluster smoke tests against an Orchestration Cluster with Operate and Tasklist.
+# test location: /qa/orchestration-cluster-smoke-tests
+# called by: ci.yml
+# type: CI
+# owner: @camunda/core-features
+---
+name: Orchestration Cluster Smoke Tests
+
+on:
+  workflow_call: {}
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  utils-get-snapshot-docker-tag:
+    uses: ./.github/workflows/generate-snapshot-docker-tag.yml
+    secrets: inherit
+    permissions:
+      contents: read
+
+  run-smoke-tests:
+    name: Run Smoke Tests
+    needs: [utils-get-snapshot-docker-tag]
+    if: ${{ !cancelled() && needs.utils-get-snapshot-docker-tag.result != 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    env:
+      TEST_OWNER: Core Features
+      TEST_PRODUCT: Orchestration Cluster
+      TEST_TYPE: Smoke
+    defaults:
+      run:
+        working-directory: qa/orchestration-cluster-smoke-tests
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: qa/orchestration-cluster-smoke-tests/.nvmrc
+          cache: npm
+          cache-dependency-path: qa/orchestration-cluster-smoke-tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint smoke tests
+        run: npm run lint
+
+      - name: Setup Camunda build
+        uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+
+      - name: Build Operate frontend
+        uses: ./.github/actions/build-frontend
+        id: build-operate-fe
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+
+      - name: Build Tasklist frontend
+        uses: ./.github/actions/build-frontend
+        id: build-tasklist-fe
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+
+      - name: Build Zeebe and Camunda Platform
+        uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -DskipQaBuild=true -PskipFrontendBuild
+
+      - name: Build Camunda Docker image
+        uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          repository: camunda/camunda
+          version: |
+            ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+            ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: linux/amd64
+          dockerfile: camunda.Dockerfile
+
+      - name: Resolve Camunda Docker image
+        run: |
+          echo "CAMUNDA_DOCKER_IMAGE=${{ steps.build-camunda-docker.outputs.image }}" >> "$GITHUB_ENV"
+          echo "Using CAMUNDA_DOCKER_IMAGE=${{ steps.build-camunda-docker.outputs.image }}"
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Camunda cluster
+        run: npm run cluster:up
+
+      - name: Wait for Camunda cluster
+        run: npm run cluster:wait
+
+      - name: Run smoke tests
+        run: npm run test
+
+      - name: Capture docker logs
+        if: failure()
+        run: docker compose logs camunda
+        working-directory: qa/orchestration-cluster-smoke-tests/config
+
+      - name: Upload smoke test reports
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: orchestration-cluster-smoke-tests-report
+          path: qa/orchestration-cluster-smoke-tests/reports/html
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Stop Camunda cluster
+        if: always()
+        run: npm run cluster:down
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "ci-orchestration-cluster-smoke-tests/run-smoke-tests"
+          build_status: ${{ job.status }}
+          detailed_junit_tests: true
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          user_description: "team-core-features"
