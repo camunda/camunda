@@ -57,7 +57,7 @@ export class OperateOperationsDetailsPage {
 
   async clickCancelFromOptionsMenu(): Promise<void> {
     await this.optionsMenuButton.click();
-    await this.page.getByRole('menuitem', {name: /^Cancel$/i}).click();
+    await this.page.getByRole('menuitem', {name: /^Cancel\b/i}).click();
   }
 
   async getBatchOperationStatus(): Promise<string> {
