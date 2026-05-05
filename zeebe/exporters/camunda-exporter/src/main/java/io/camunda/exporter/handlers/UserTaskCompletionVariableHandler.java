@@ -89,7 +89,7 @@ public class UserTaskCompletionVariableHandler
       final IndexLocator indexLocator,
       final SnapshotTaskVariableBatch entity,
       final BatchRequest batchRequest) {
-    entity.variables().forEach(v -> flushSnapshotTaskVariableEntity(v, batchRequest));
+    entity.variables().forEach(v -> flushSnapshotTaskVariableEntity(indexLocator, v, batchRequest));
   }
 
   @Override
@@ -98,12 +98,15 @@ public class UserTaskCompletionVariableHandler
   }
 
   private void flushSnapshotTaskVariableEntity(
-      final SnapshotTaskVariableEntity entity, final BatchRequest batchRequest) {
+      final IndexLocator indexLocator,
+      final SnapshotTaskVariableEntity entity,
+      final BatchRequest batchRequest) {
     final var updateFields = new HashMap<String, Object>();
     updateFields.put(SnapshotTaskVariableTemplate.VALUE, entity.getValue());
     updateFields.put(SnapshotTaskVariableTemplate.FULL_VALUE, entity.getFullValue());
     updateFields.put(SnapshotTaskVariableTemplate.IS_PREVIEW, entity.getIsPreview());
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(entity, indexName), entity.getId(), entity, updateFields);
   }
 
   private SnapshotTaskVariableEntity createSnapshotVariableEntity(

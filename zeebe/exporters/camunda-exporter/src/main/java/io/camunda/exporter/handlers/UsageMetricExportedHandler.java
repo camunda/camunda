@@ -110,9 +110,12 @@ public record UsageMetricExportedHandler(String indexName, String tuIndexName)
       final UsageMetricsBatch batch,
       final BatchRequest batchRequest) {
     Optional.ofNullable(batch.variables())
-        .ifPresent(l -> l.forEach(e -> batchRequest.add(indexName, e)));
+        .ifPresent(
+            l -> l.forEach(e -> batchRequest.add(indexLocator.getIndexLocation(e, indexName), e)));
     Optional.ofNullable(batch.tuVariables())
-        .ifPresent(l -> l.forEach(e -> batchRequest.add(tuIndexName, e)));
+        .ifPresent(
+            l ->
+                l.forEach(e -> batchRequest.add(indexLocator.getIndexLocation(e, tuIndexName), e)));
   }
 
   @Override

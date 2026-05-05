@@ -69,7 +69,7 @@ public class UserCreatedUpdatedHandler implements ExportHandler<UserEntity, User
   public void flush(
       final IndexLocator indexLocator, final UserEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

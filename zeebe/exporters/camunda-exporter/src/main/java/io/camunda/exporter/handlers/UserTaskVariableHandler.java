@@ -134,7 +134,11 @@ public class UserTaskVariableHandler
               updateFields.put(TaskTemplate.VARIABLE_VALUE, v.getValue());
               updateFields.put(TaskTemplate.IS_TRUNCATED, v.getIsTruncated());
               batchRequest.upsertWithRouting(
-                  indexName, v.getId(), v, updateFields, String.valueOf(v.getProcessInstanceId()));
+                  indexLocator.getIndexLocation(v, indexName),
+                  v.getId(),
+                  v,
+                  updateFields,
+                  String.valueOf(v.getProcessInstanceId()));
             });
   }
 

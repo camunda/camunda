@@ -82,7 +82,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandler<
             + "ctx._source.batchOperationIds.add(params.batchOperationId);"
             + "}";
     batchRequest.updateWithScript(
-        indexName,
+        indexLocator.getIndexLocation(entity, indexName),
         processInstanceKey,
         script,
         Map.of("batchOperationId", entity.getBatchOperationIds().getFirst()));

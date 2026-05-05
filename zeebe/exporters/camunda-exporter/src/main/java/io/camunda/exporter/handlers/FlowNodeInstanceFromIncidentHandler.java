@@ -81,7 +81,8 @@ public class FlowNodeInstanceFromIncidentHandler
       final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(entity, indexName), entity.getId(), entity, updateFields);
   }
 
   @Override

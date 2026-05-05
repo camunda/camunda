@@ -70,7 +70,9 @@ public class GroupEntityRemovedHandler
       final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.deleteWithRouting(
-        indexName, entity.getId(), String.valueOf(entity.getJoin().parent()));
+        indexLocator.getIndexLocation(entity, indexName),
+        entity.getId(),
+        String.valueOf(entity.getJoin().parent()));
   }
 
   @Override

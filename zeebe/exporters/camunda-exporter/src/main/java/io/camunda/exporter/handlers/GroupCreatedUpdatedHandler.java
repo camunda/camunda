@@ -72,7 +72,7 @@ public class GroupCreatedUpdatedHandler implements ExportHandler<GroupEntity, Gr
   public void flush(
       final IndexLocator indexLocator, final GroupEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

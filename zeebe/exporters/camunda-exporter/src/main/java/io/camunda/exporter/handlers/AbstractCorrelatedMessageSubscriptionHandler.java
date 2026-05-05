@@ -60,6 +60,6 @@ public abstract class AbstractCorrelatedMessageSubscriptionHandler<T extends Rec
       final IndexLocator indexLocator,
       final CorrelatedMessageSubscriptionEntity entity,
       final BatchRequest batchRequest) {
-    batchRequest.add(getIndexName(), entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, getIndexName()), entity);
   }
 }

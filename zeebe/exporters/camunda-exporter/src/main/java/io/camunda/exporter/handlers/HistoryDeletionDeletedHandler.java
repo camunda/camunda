@@ -70,7 +70,7 @@ public class HistoryDeletionDeletedHandler
       final HistoryDeletionEntity entity,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

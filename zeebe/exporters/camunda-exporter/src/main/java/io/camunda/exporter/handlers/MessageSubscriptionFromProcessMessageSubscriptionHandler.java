@@ -117,6 +117,7 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
       final MessageSubscriptionEntity entity,
       final BatchRequest batchRequest) {
     persistEvent(
+        indexLocator,
         entity,
         MessageSubscriptionTemplate.POSITION_MESSAGE,
         entity.getPositionProcessMessageSubscription(),

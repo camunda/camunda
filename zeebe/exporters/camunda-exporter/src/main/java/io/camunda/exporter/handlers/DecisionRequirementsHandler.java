@@ -93,7 +93,7 @@ public class DecisionRequirementsHandler
       final IndexLocator indexLocator,
       final DecisionRequirementsEntity entity,
       final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

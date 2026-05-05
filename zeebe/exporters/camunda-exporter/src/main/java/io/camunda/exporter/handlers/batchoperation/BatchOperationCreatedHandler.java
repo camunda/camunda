@@ -120,7 +120,8 @@ public class BatchOperationCreatedHandler
     if (actorId != null) {
       updateFields.put(BatchOperationTemplate.ACTOR_ID, actorId);
     }
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(entity, indexName), entity.getId(), entity, updateFields);
   }
 
   @Override

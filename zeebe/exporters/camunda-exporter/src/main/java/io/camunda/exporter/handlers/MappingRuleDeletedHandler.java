@@ -68,7 +68,7 @@ public class MappingRuleDeletedHandler
       final MappingRuleEntity entity,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(indexLocator.getIndexLocation(entity, indexName), entity.getId());
   }
 
   @Override

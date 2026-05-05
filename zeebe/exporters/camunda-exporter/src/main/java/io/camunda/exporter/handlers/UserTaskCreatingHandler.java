@@ -90,7 +90,7 @@ public class UserTaskCreatingHandler implements ExportHandler<TaskEntity, UserTa
     final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
 
     batchRequest.addWithRouting(
-        indexName,
+        indexLocator.getIndexLocation(entity, indexName),
         entity,
         previousVersionRecord ? String.valueOf(entity.getKey()) : entity.getProcessInstanceId());
   }

@@ -77,7 +77,8 @@ public class MigratedVariableHandler implements ExportHandler<VariableEntity, Va
     updateFields.put(VariableTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
     updateFields.put(VariableTemplate.POSITION, entity.getPosition());
 
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(entity, indexName), entity.getId(), entity, updateFields);
   }
 
   @Override

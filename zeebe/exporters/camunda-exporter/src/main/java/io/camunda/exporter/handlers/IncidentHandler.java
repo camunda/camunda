@@ -129,7 +129,11 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     updateFields.put(POSITION, entity.getPosition());
     updateFields.put(TREE_PATH, entity.getTreePath());
     updateFields.put(STATE, entity.getState());
-    batchRequest.upsert(indexName, String.valueOf(entity.getKey()), entity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(entity, indexName),
+        String.valueOf(entity.getKey()),
+        entity,
+        updateFields);
   }
 
   @Override

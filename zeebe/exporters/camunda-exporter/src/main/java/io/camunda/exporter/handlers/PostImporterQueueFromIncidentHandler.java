@@ -89,7 +89,7 @@ public class PostImporterQueueFromIncidentHandler
       final IndexLocator indexLocator,
       final PostImporterQueueEntity entity,
       final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

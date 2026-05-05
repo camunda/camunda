@@ -71,7 +71,9 @@ public class EmbeddedFormHandler implements ExportHandler<EmbeddedFormBatch, Pro
       final EmbeddedFormBatch entity,
       final BatchRequest batchRequest) {
     final var forms = entity.getForms();
-    Optional.ofNullable(forms).ifPresent(l -> l.forEach(f -> batchRequest.add(indexName, f)));
+    Optional.ofNullable(forms)
+        .ifPresent(
+            l -> l.forEach(f -> batchRequest.add(indexLocator.getIndexLocation(f, indexName), f)));
   }
 
   @Override

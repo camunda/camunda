@@ -73,7 +73,7 @@ public class AuthorizationDeletedHandler
       final AuthorizationEntity entity,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(getIndexName(), entity.getId());
+    batchRequest.delete(indexLocator.getIndexLocation(entity, indexName), entity.getId());
   }
 
   @Override
