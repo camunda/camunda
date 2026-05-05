@@ -1877,12 +1877,13 @@ public final class SearchQueryResponseMapper {
   public static ResourceSearchQueryResult toResourceSearchQueryResponse(
       final SearchQueryResult<DeployedResourceEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new ResourceSearchQueryResult()
+    return ResourceSearchQueryResult.Builder.create()
         .page(page)
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toResources)
-                .orElseGet(Collections::emptyList));
+                .orElseGet(Collections::emptyList))
+        .build();
   }
 
   private static List<ResourceResult> toResources(final List<DeployedResourceEntity> resources) {
@@ -1890,13 +1891,14 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ResourceResult toResource(final DeployedResourceEntity entity) {
-    return new ResourceResult()
-        .resourceKey(KeyUtil.keyToString(entity.resourceKey()))
+    return ResourceResult.Builder.create()
         .resourceName(entity.resourceName())
-        .resourceId(entity.resourceId())
         .version(entity.version())
         .versionTag(entity.versionTag())
-        .tenantId(entity.tenantId());
+        .resourceId(entity.resourceId())
+        .tenantId(entity.tenantId())
+        .resourceKey(KeyUtil.keyToString(entity.resourceKey()))
+        .build();
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

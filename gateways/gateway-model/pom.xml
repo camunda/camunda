@@ -21,6 +21,9 @@
 
   <properties>
     <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/v2</openapi.dir>
+    <!-- Roaster builds the emitted Java AST inside the maven-antrun-plugin classpath;
+         only used by this module so the version is local. -->
+    <version.roaster>2.31.0.Final</version.roaster>
   </properties>
 
   <dependencies>
@@ -71,22 +74,6 @@
       <artifactId>jspecify</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <build>
@@ -97,30 +84,31 @@
         <dependencies>
           <!-- snakeyaml powers ModelGenerator's spec loading; jspecify supplies @NullMarked
                for the tool sources we javac in-line; roaster builds the emitted Java AST.
-               Pinned here because the antrun plugin classloader does not see project compile
-               dependencies. -->
+               Listed here because the antrun plugin classloader does not see project compile
+               dependencies. snakeyaml and jspecify versions come from parent's
+               dependencyManagement; roaster is local to this module so we define its version
+               via the property below. -->
           <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>2.6</version>
+            <version>${version.snakeyaml}</version>
           </dependency>
           <dependency>
             <groupId>org.jspecify</groupId>
             <artifactId>jspecify</artifactId>
-            <version>1.0.0</version>
+            <version>${version.jspecify}</version>
           </dependency>
           <dependency>
             <groupId>org.jboss.forge.roaster</groupId>
             <artifactId>roaster-api</artifactId>
-            <version>2.31.0.Final</version>
+            <version>${version.roaster}</version>
           </dependency>
           <dependency>
             <groupId>org.jboss.forge.roaster</groupId>
             <artifactId>roaster-jdt</artifactId>
-            <version>2.31.0.Final</version>
+            <version>${version.roaster}</version>
           </dependency>
         </dependencies>
-        <!-- version managed in parent/pom.xml at ${plugin.version.antrun} (3.2.0) -->
         <executions>
           <execution>
             <id>generate-advanced-model</id>
@@ -132,18 +120,32 @@
               <target>
                 <property name="advanced.tool.classes" value="${project.build.directory}/tool-classes"/>
                 <property name="advanced.model.outDir" value="${project.build.directory}/generated-sources/openapi/src/main/java/io/camunda/gateway/protocol/model"/>
+                <property name="advanced.model.timestamp" value="${project.build.directory}/generated-sources/openapi/.advanced-model-timestamp"/>
                 <mkdir dir="${advanced.tool.classes}"/>
                 <mkdir dir="${advanced.model.outDir}"/>
-                <javac classpathref="maven.plugin.classpath" debug="true" destdir="${advanced.tool.classes}" encoding="UTF-8" includeantruntime="false" release="21" srcdir="${project.basedir}/src/tool/java"/>
-                <java classname="io.camunda.gateway.protocol.model.tools.ModelGenerator" failonerror="true" fork="true">
+                <!-- Skip the generator run when the inputs haven't changed since the last
+                     successful generation. The marker file is <touch>-ed after a successful run;
+                     ant's <uptodate> compares mtimes against srcfiles. The output dir itself is
+                     also a srcfile: if any other tool (e.g. an older branch's openapi-generator
+                     run after a `git checkout` without `mvn clean`) wrote into it, those files
+                     will be newer than the marker and we re-run. -->
+                <uptodate property="advanced.model.skip" targetfile="${advanced.model.timestamp}">
+                  <srcfiles dir="${openapi.dir}" includes="*.yaml"/>
+                  <srcfiles dir="${project.basedir}/src/tool/java" includes="**/*.java"/>
+                  <srcfiles file="${project.basedir}/pom.xml"/>
+                  <srcfiles dir="${advanced.model.outDir}" includes="**/*.java"/>
+                </uptodate>
+                <javac xmlns:unless="ant:unless" classpathref="maven.plugin.classpath" debug="true" destdir="${advanced.tool.classes}" encoding="UTF-8" includeantruntime="false" release="21" unless:set="advanced.model.skip" srcdir="${project.basedir}/src/tool/java"></javac>
+                <java xmlns:unless="ant:unless" classname="io.camunda.gateway.protocol.model.tools.ModelGenerator" failonerror="true" fork="true" unless:set="advanced.model.skip">
                   <classpath>
                     <pathelement location="${advanced.tool.classes}"/>
                     <path refid="maven.plugin.classpath"/>
                   </classpath>
                   <arg value="${openapi.dir}"/>
                   <arg value="${advanced.model.outDir}"/>
-                  <arg value="${license.header.file}"/>
                 </java>
+                <touch xmlns:unless="ant:unless" file="${advanced.model.timestamp}" mkdirs="true" unless:set="advanced.model.skip"></touch>
+                <echo xmlns:if="ant:if" message="[ModelGenerator] inputs unchanged, skipping" if:set="advanced.model.skip"></echo>
               </target>
             </configuration>
           </execution>
@@ -287,8 +289,6 @@
         </configuration>
       </plugin>
 
-      <!-- Registers src/test/groovy as a test source root so IDEs and surefire see the tests. -->
-      <!-- Version managed in parent/pom.xml at ${plugin.version.build-helper}. -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>

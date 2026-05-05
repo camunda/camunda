@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jboss.forge.roaster.Roaster;
+import org.jboss.forge.roaster.model.impl.JavaSourceImpl;
 import org.jboss.forge.roaster.model.source.AnnotationSource;
 import org.jboss.forge.roaster.model.source.FieldSource;
 import org.jboss.forge.roaster.model.source.JavaClassSource;
@@ -101,34 +102,15 @@ public final class ModelGenerator {
    */
   private final Map<String, String> filterPropertyAliases = new LinkedHashMap<>();
 
-  private final String licenseHeader;
-
-  ModelGenerator(final String licenseHeader) {
-    this.licenseHeader = licenseHeader;
-  }
-
   public static void main(final String[] args) throws IOException {
-    if (args.length != 3) {
-      throw new IllegalArgumentException(
-          "Usage: ModelGenerator <specDir> <outDir> <licenseHeaderFile>");
+    if (args.length != 2) {
+      throw new IllegalArgumentException("Usage: ModelGenerator <specDir> <outDir>");
     }
-    final String header = renderHeader(Files.readString(Path.of(args[2])));
-    final var gen = new ModelGenerator(header);
+    final var gen = new ModelGenerator();
     gen.loadSpec(Path.of(args[0]));
     gen.buildRelations();
     gen.buildFilterPropertyAliases();
     gen.emitAll(Path.of(args[1]));
-  }
-
-  /** Wraps the raw header text in a Java block comment, matching the Spotless license format. */
-  private static String renderHeader(final String raw) {
-    final String trimmed = raw.endsWith("\n") ? raw.substring(0, raw.length() - 1) : raw;
-    final StringBuilder sb = new StringBuilder("/*\n");
-    for (final String line : trimmed.split("\n", -1)) {
-      sb.append(" * ").append(line).append('\n');
-    }
-    sb.append(" */\n");
-    return sb.toString();
   }
 
   // ============================================================
@@ -283,18 +265,77 @@ public final class ModelGenerator {
 
   void emitAll(final Path outDir) throws IOException {
     Files.createDirectories(outDir);
-    int emitted = 0;
-    for (final var entry : schemas.entrySet()) {
-      final var name = entry.getKey();
-      final var schema = entry.getValue();
-      final JavaSource<?> source = build(name, schema);
-      if (source == null) {
-        continue;
+    final var counters = new java.util.concurrent.atomic.LongAdder[] {
+      new java.util.concurrent.atomic.LongAdder(),
+      new java.util.concurrent.atomic.LongAdder(),
+    };
+    final Set<String> emittedFiles =
+        java.util.concurrent.ConcurrentHashMap.newKeySet(schemas.size());
+    // Per-schema emission is independent (no shared mutable state across schemas), and
+    // Roaster's per-instance JavaSource is thread-confined here. Running the build+write in
+    // parallel scales the wall-clock cost roughly with available cores; the dominant cost is
+    // the Eclipse JDT AST construction inside Roaster, which is CPU-bound.
+    schemas.entrySet().parallelStream()
+        .forEach(
+            entry -> {
+              final var name = entry.getKey();
+              final var schema = entry.getValue();
+              final JavaSource<?> source = build(name, schema);
+              if (source == null) {
+                return;
+              }
+              final String fileName = name + ".java";
+              emittedFiles.add(fileName);
+              final Path outFile = outDir.resolve(fileName);
+              // toUnformattedString skips Roaster's Eclipse JDT pretty-printer; spotless:apply
+              // formats every emitted source uniformly afterwards, so Roaster's formatting
+              // would be redundant work.
+              final String content = ((JavaSourceImpl<?>) source).toUnformattedString();
+              try {
+                if (writeIfChanged(outFile, content)) {
+                  counters[0].increment();
+                } else {
+                  counters[1].increment();
+                }
+              } catch (final IOException e) {
+                throw new RuntimeException(e);
+              }
+            });
+    final int orphans = removeOrphans(outDir, emittedFiles);
+    System.out.printf(
+        "[ModelGenerator] %d written, %d unchanged, %d orphans removed in %s%n",
+        counters[0].sum(), counters[1].sum(), orphans, outDir);
+  }
+
+  /**
+   * Write {@code content} to {@code path} only if the file is missing or its current contents
+   * differ. Skipping no-op writes lets Maven incremental compilation, spotless, and downstream
+   * jar packaging short-circuit when the spec hasn't changed.
+   */
+  private static boolean writeIfChanged(final Path path, final String content) throws IOException {
+    if (Files.exists(path)) {
+      final String existing = Files.readString(path);
+      if (existing.equals(content)) {
+        return false;
       }
-      Files.writeString(outDir.resolve(name + ".java"), licenseHeader + source);
-      emitted++;
     }
-    System.out.printf("[ModelGenerator] emitted %d files to %s%n", emitted, outDir);
+    Files.writeString(path, content);
+    return true;
+  }
+
+  /** Delete previously-emitted {@code .java} files that no longer correspond to a schema. */
+  private static int removeOrphans(final Path outDir, final Set<String> kept) throws IOException {
+    int removed = 0;
+    try (final Stream<Path> stream = Files.list(outDir)) {
+      for (final Path p : stream.filter(Files::isRegularFile).toList()) {
+        final String fn = p.getFileName().toString();
+        if (fn.endsWith(".java") && !kept.contains(fn)) {
+          Files.delete(p);
+          removed++;
+        }
+      }
+    }
+    return removed;
   }
 
   private JavaSource<?> build(final String name, final Map<String, Object> schema) {
@@ -643,6 +684,7 @@ public final class ModelGenerator {
     final String capitalized = capitalize(fieldName);
     final boolean isContainer = isContainerType(type);
     final boolean hasDefault = hasDefaultInit(propSchema, type);
+    final boolean nullableFlag = isPropertyNullable(propSchema);
     final String description = stringOrNull(propSchema.get("description"));
 
     if (!required) {
@@ -688,7 +730,12 @@ public final class ModelGenerator {
     if (description != null) {
       getter.getJavaDoc().setText(description);
     }
-    if (required) {
+    // @NotNull only when the JSON key is required AND the value cannot be null. A
+    // required-AND-nullable field (e.g. DeploymentMetadataResult.decisionDefinition) must be
+    // present in the JSON but its value can be null, so @NotNull would falsely fail bean
+    // validation. The @Schema(requiredMode=REQUIRED) annotation still tracks the JSON-key
+    // requirement separately.
+    if (required && !nullableFlag) {
       getter.addAnnotation(NOT_NULL);
     }
     final AnnotationSource<?> schemaAnno = getter.addAnnotation(SCHEMA).setStringValue("name", propName);
@@ -699,9 +746,10 @@ public final class ModelGenerator {
         "requiredMode",
         "Schema.RequiredMode." + (required ? "REQUIRED" : "NOT_REQUIRED"));
     getter.addAnnotation(JSON_PROPERTY).setStringValue(propName);
-    if (!required && !hasDefault) {
-      // NullAway treats method-level @Nullable as a nullable return; equivalent for our purposes
-      // and avoids Roaster's lack of return-type annotation support.
+    // Mark the getter return as nullable whenever the underlying field can hold null. NullAway
+    // treats method-level @Nullable as a nullable return; equivalent for our purposes and
+    // sidesteps Roaster's lack of return-type annotation support.
+    if (nullableFlag || (!required && !hasDefault)) {
       getter.addAnnotation(NULLABLE);
     }
 
