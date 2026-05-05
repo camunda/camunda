@@ -182,7 +182,7 @@ services:
 
   optimize:
     container_name: optimize
-    image: camunda/optimize:${OPTIMIZE_VERSION:-SNAPSHOT}
+    image: camunda/optimize:${OPTIMIZE_VERSION:-8-latest}
     depends_on:
       identity:
         condition: service_healthy

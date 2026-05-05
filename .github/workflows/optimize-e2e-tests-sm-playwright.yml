@@ -67,20 +67,20 @@ jobs:
           if [[ "$BRANCH" == "main" ]]; then
             {
               echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT"
-              echo "OPTIMIZE_VERSION=SNAPSHOT"
+              echo "OPTIMIZE_VERSION=8-SNAPSHOT"
               echo "IDENTITY_VERSION=SNAPSHOT"
             } >> "$GITHUB_ENV"
           elif [[ "$BRANCH" == stable/* ]]; then
             minor="${BRANCH#stable/}"
             {
               echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT"
-              echo "OPTIMIZE_VERSION=${minor}-SNAPSHOT"
+              echo "OPTIMIZE_VERSION=8-${minor}-SNAPSHOT"
               echo "IDENTITY_VERSION=${minor}-SNAPSHOT"
             } >> "$GITHUB_ENV"
           else
             {
               echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT"
-              echo "OPTIMIZE_VERSION=SNAPSHOT"
+              echo "OPTIMIZE_VERSION=8-SNAPSHOT"
               echo "IDENTITY_VERSION=SNAPSHOT"
             } >> "$GITHUB_ENV"
           fi
