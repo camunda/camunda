@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
@@ -25,6 +25,7 @@ import {
   resumeBatchOperation,
   suspendBatchOperation,
 } from '@requestHelpers';
+import {defaultAssertionOptions} from 'utils/constants';
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Suspend & Resume Batch Operation Tests', () => {
@@ -141,8 +142,10 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     });
 
     await test.step('Send suspend request', async () => {
-      const res = await suspendBatchOperation(request, key);
-      await assertStatusCode(res, 204);
+      await expect(async () => {
+        const res = await suspendBatchOperation(request, key);
+        await assertStatusCode(res, 204);
+      }).toPass(defaultAssertionOptions);
     });
 
     await test.step('Poll until batch operation is suspended', async () => {
