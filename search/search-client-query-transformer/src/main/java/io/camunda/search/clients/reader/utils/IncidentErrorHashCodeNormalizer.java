@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -284,7 +285,7 @@ public class IncidentErrorHashCodeNormalizer {
    * in the resolved message).
    */
   private static boolean opAcceptsResolved(final Operation<String> op, final String resolved) {
-    if (op == null) {
+    if (op == null || op.operator() == null) {
       return false;
     }
     return switch (op.operator()) {
@@ -316,7 +317,10 @@ public class IncidentErrorHashCodeNormalizer {
     if (pattern == null || value == null) {
       return false;
     }
-    return value.toLowerCase().matches(globToRegex(pattern.toLowerCase()));
+    // Locale.ROOT keeps the lowercase mapping locale-independent — under Turkish/Azerbaijani
+    // default locales, 'I'.toLowerCase() returns dotless 'ı' (U+0131), which would break
+    // case-insensitive matching against ASCII error messages.
+    return value.toLowerCase(Locale.ROOT).matches(globToRegex(pattern.toLowerCase(Locale.ROOT)));
   }
 
   private static String globToRegex(final String glob) {
@@ -343,6 +347,9 @@ public class IncidentErrorHashCodeNormalizer {
         return true;
       }
       final var operator = op.operator();
+      if (operator == null) {
+        return true;
+      }
       if (operator == Operator.EXISTS || operator == Operator.NOT_EXISTS) {
         continue;
       }
