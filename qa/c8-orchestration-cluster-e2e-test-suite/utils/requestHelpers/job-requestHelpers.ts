@@ -17,27 +17,68 @@ import { validateResponse } from 'json-body-assertions';
 export async function activateJobToObtainAValidJobKey(
   request: APIRequestContext,
   jobType: string,
+  processInstanceKey?: string,
 ): Promise<number> {
-  const activateRes = await request.post(buildUrl('/jobs/activation'), {
-    headers: jsonHeaders(),
-    data: {
-      type: jobType,
-      timeout: 10000,
-      maxJobsToActivate: 1,
-    },
-  });
-  await assertStatusCode(activateRes, 200);
-  await validateResponse(
-    {
-      path: '/jobs/activation',
-      method: 'POST',
-      status: '200',
-    },
-    activateRes,
-  );
-  const activateJson = await activateRes.json();
-  expect(activateJson.jobs.length).toBe(1);
-  return activateJson.jobs[0].jobKey;
+  const result: Record<string, number> = {};
+  await expect(async () => {
+    // When filtering by processInstanceKey, grab a large batch so this worker
+    // can claim all available jobs of this type at once.  Releasing wrong jobs
+    // one-by-one with maxJobsToActivate:1 causes a livelock: every parallel
+    // worker grabs a wrong job, releases it back, and the jobs cycle endlessly
+    // between workers until the 30 s toPass timeout expires.  With a large
+    // batch, one worker claims everything, keeps its own job, and releases the
+    // rest; subsequent workers serialize naturally on the released pool.
+    const maxJobsToActivate = processInstanceKey !== undefined ? 50 : 1;
+    const activateRes = await request.post(buildUrl('/jobs/activation'), {
+      headers: jsonHeaders(),
+      data: {
+        type: jobType,
+        timeout: 30000,
+        maxJobsToActivate,
+      },
+    });
+    await assertStatusCode(activateRes, 200);
+    await validateResponse(
+      {
+        path: '/jobs/activation',
+        method: 'POST',
+        status: '200',
+      },
+      activateRes,
+    );
+    const activateJson = await activateRes.json();
+
+    if (processInstanceKey !== undefined) {
+      // Release every job that doesn't belong to our process instance so other
+      // workers can pick them up.  Do this unconditionally — even if our job
+      // isn't in the list — so we never hold foreign jobs locked on a retry.
+      for (const job of activateJson.jobs as Array<{
+        processInstanceKey: string | number;
+        jobKey: number;
+      }>) {
+        if (String(job.processInstanceKey) !== String(processInstanceKey)) {
+          await request.post(buildUrl(`/jobs/${job.jobKey}/failure`), {
+            headers: jsonHeaders(),
+            data: {retries: 1, errorMessage: 'Released by wrong worker'},
+          });
+        }
+      }
+      const myJob = (
+        activateJson.jobs as Array<{
+          processInstanceKey: string | number;
+          jobKey: number;
+        }>
+      ).find(
+        (j) => String(j.processInstanceKey) === String(processInstanceKey),
+      );
+      expect(myJob).toBeDefined();
+      result.jobKey = myJob!.jobKey;
+    } else {
+      expect(activateJson.jobs.length).toBe(1);
+      result.jobKey = activateJson.jobs[0].jobKey;
+    }
+  }).toPass(defaultAssertionOptions);
+  return result.jobKey;
 }
 
 export async function searchJobKey(

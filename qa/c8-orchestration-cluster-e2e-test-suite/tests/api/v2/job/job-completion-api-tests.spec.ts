@@ -45,6 +45,7 @@ test.describe('Job Completion API Tests', () => {
     const jobKey = await activateJobToObtainAValidJobKey(
       request,
       'jobApiTaskType',
+      state['processInstanceKey'] as string,
     );
 
     const completeRes = await request.post(
@@ -99,6 +100,7 @@ test.describe('Job Completion API Tests', () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,
         'jobApiTaskType',
+        state['processInstanceKey'] as string,
       );
     });
 

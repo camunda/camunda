@@ -21,10 +21,8 @@ import {
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Fail API Tests', () => {
-  const {beforeAll, beforeEach, afterEach} = setupProcessInstanceForTests(
-    'job_api_process',
-    'jobApiProcess',
-  );
+  const {beforeAll, beforeEach, afterEach, state} =
+    setupProcessInstanceForTests('job_api_process', 'jobApiProcess');
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);
   test.afterEach(afterEach);
@@ -33,6 +31,7 @@ test.describe('Job Fail API Tests', () => {
     const jobKey = await activateJobToObtainAValidJobKey(
       request,
       'jobApiTaskType',
+      state['processInstanceKey'] as string,
     );
 
     // Now fail the job
@@ -82,6 +81,7 @@ test.describe('Job Fail API Tests', () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,
         'jobApiTaskType',
+        state['processInstanceKey'] as string,
       );
     });
 
