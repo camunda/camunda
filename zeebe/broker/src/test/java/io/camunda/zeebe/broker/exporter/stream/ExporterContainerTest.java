@@ -28,6 +28,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.Map;
+import org.agrona.collections.MutableLong;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -227,7 +228,7 @@ final class ExporterContainerTest {
       assertThat(exporter.getRecord()).isNotNull();
       assertThat(exporter.getRecord()).isEqualTo(mockedRecord);
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -251,7 +252,7 @@ final class ExporterContainerTest {
       assertThat(exporter.getRecord()).isNotNull();
       assertThat(exporter.getRecord()).isEqualTo(secondRecord);
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(2);
-      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -296,8 +297,8 @@ final class ExporterContainerTest {
 
       // then
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getPosition()).isZero();
-      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
+      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(-1L);
     }
 
     @Test
@@ -346,7 +347,7 @@ final class ExporterContainerTest {
 
       // then
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -368,7 +369,7 @@ final class ExporterContainerTest {
       awaitPreviousCall();
 
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
       assertThat(exporterContainer.readMetadata()).isNotPresent();
 
       // when
@@ -379,6 +380,33 @@ final class ExporterContainerTest {
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
       assertThat(exporterContainer.getPosition()).isEqualTo(1);
       assertThat(exporterContainer.readMetadata()).isPresent().hasValue(metadata);
+    }
+
+    @Test
+    void shouldNotPersistPositionZeroOnResumeWithoutAcknowledgment() throws Exception {
+      // given - a fresh exporter that never acknowledges (e.g. BlockingExporter)
+      exporterContainer.configureExporter();
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter();
+      exporterContainer.softPauseExporter();
+
+      // when
+      exporterContainer.undoSoftPauseExporter();
+      awaitPreviousCall();
+
+      // then - position 0 must never be persisted, see #52257. Inspect the raw stored value
+      // since getPosition() normalizes 0 to VALUE_NOT_FOUND on read.
+      final var rawStoredPosition = new MutableLong(Long.MIN_VALUE);
+      runtime
+          .getState()
+          .visitExporterState(
+              (id, entry) -> {
+                if (EXPORTER_ID.equals(id)) {
+                  rawStoredPosition.set(entry.getPosition());
+                }
+              });
+      assertThat(rawStoredPosition.get()).isEqualTo(-1L);
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
     }
 
     @Test
@@ -398,7 +426,7 @@ final class ExporterContainerTest {
 
       // then
       assertThat(exporter.getRecord()).isNull();
-      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(-1L);
       assertThat(exporterContainer.getPosition()).isEqualTo(1);
     }
 
@@ -450,7 +478,7 @@ final class ExporterContainerTest {
       assertThat(exporter.getRecord()).isNotNull();
       assertThat(exporter.getRecord()).isEqualTo(firstRecord);
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
     }
 
     @Test
