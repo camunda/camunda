@@ -1,21 +1,22 @@
 # Camunda Process Test Coverage Frontend (New)
 
-A lightweight, vanilla-JavaScript frontend for visualising [Camunda Process Test](../camunda-process-test-java/README.md) coverage reports.
+A lightweight frontend for visualising [Camunda Process Test](../camunda-process-test-java/README.md) coverage reports.
 
-This module eventually replaces `camunda-process-test-coverage-frontend`. It avoids heavy frameworks (React, Angular, Vue) and instead uses:
+This module eventually replaces `camunda-process-test-coverage-frontend`. It uses:
 
-- **[bpmn-js](https://bpmn.io/toolkit/bpmn-js/)** – BPMN diagram rendering
+- **[camunda-bpmn-js](https://github.com/camunda/camunda-bpmn-js)** – Camunda-branded BPMN diagram rendering (NavigatedViewer)
 - **[Bootstrap 5](https://getbootstrap.com/)** – responsive layout and components
 - **[Bootstrap Icons](https://icons.getbootstrap.com/)** – icon set
+- **[Webpack 5](https://webpack.js.org/)** – bundles all dependencies into `bundle.js` + `bundle.css`
 
-The build produces static HTML/CSS/JS files that are bundled inside the `camunda-process-test-java` JAR and injected with coverage data at runtime.
+The build produces a **JAR** that is consumed by `camunda-process-test-java` as a regular Maven dependency. The JAR contains `coverage/index.html` and `coverage/static/…` which `CoverageReportUtil` reads from the classpath to generate self-contained HTML reports.
 
 ---
 
 ## Features
 
 - **Dashboard** – summary statistics (test suites, test cases, processes, average coverage)
-- **Process view** – BPMN diagram with completed elements and taken sequence flows highlighted in Camunda Blue; coverage breakdown table
+- **Process view** – bpmn-js diagram with completed elements and taken sequence flows highlighted in Camunda Blue; coverage breakdown table
 - **Suite view** – per-suite coverage over all processes and list of test cases
 - **Test-case view** – list of processes covered by a single test method
 - **Sidebar navigation** – hierarchical tree (Processes / Test Suites / Test Cases / Processes)
@@ -43,58 +44,84 @@ The build produces static HTML/CSS/JS files that are bundled inside the `camunda
 # 1. Install dependencies
 npm install
 
-# 2. Build static files into the Java module's target directory
+# 2. Production build (outputs to target/generated-frontend-resources/coverage/)
 npm run build
 
-# 3. Open the generated file in a browser
-open ../camunda-process-test-java/target/generated-frontend-resources/coverage/index.html
+# 3. Development build with watch mode
+npm run dev
 ```
 
-The `build` script copies all vendor files (bpmn-js, Bootstrap, Bootstrap Icons) and the application sources into the output directory. There is **no watch/hot-reload** mode because the sources are plain JS and CSS – edit `src/app.js` or `src/styles.css` and re-run `npm run build`.
+The webpack build (`npm run build`) bundles all vendor libraries and application modules into:
 
-### Working with sample data
+```
+target/generated-frontend-resources/
+└── coverage/
+    ├── index.html            ← copied from src/index.html
+    └── static/
+        ├── bundle.js         ← all JS (camunda-bpmn-js, Bootstrap, application)
+        ├── bundle.css        ← all CSS (extracted by MiniCssExtractPlugin)
+        ├── fonts/            ← font files referenced by CSS
+        └── media/            ← logo, favicon
+```
 
-The generated `index.html` expects `window.COVERAGE_DATA` to be set. When opened directly from the filesystem (without the Java module injecting real data), you will see an error message. To develop against sample data:
+### Previewing the report
 
-1. Run the Java tests once to generate a real report (or use the example module).
-2. Open the generated `coverage-report/index.html` that the Java plugin writes to `target/`.
+To preview with sample data:
+
+1. Run the Java tests to generate a real report:
+   ```bash
+   ./mvnw verify -pl testing/camunda-process-test-example -am -DskipTests=false -DskipITs -Dquickly -T1C
+   ```
+2. Open the generated coverage report in a browser:
+   ```
+   testing/camunda-process-test-example/target/coverage-report/index.html
+   ```
 
 ---
 
-## Build output
+## Project structure
 
 ```
-coverage/
-├── index.html                  ← HTML template (window.COVERAGE_DATA placeholder)
-└── static/
-    ├── app.js                  ← application (vanilla JS)
-    ├── styles.css              ← custom styles (Camunda brand)
-    ├── media/
-    │   ├── camunda-logo.png
-    │   └── favicon.ico
-    └── vendor/
-        ├── bpmn-js/            ← bpmn-js viewer bundle + CSS/fonts
-        ├── bootstrap/          ← Bootstrap CSS + JS bundle
-        └── bootstrap-icons/    ← Bootstrap Icons CSS + fonts
+camunda-process-test-coverage-frontend-new/
+├── package.json          npm package descriptor
+├── webpack.config.js     Webpack configuration (bundling + CSS extraction)
+├── .npmrc                npm configuration
+├── pom.xml               Maven module (packaging=jar, runs webpack via frontend-maven-plugin)
+├── src/
+│   ├── app.js            Entry point – imports CSS, wires router + views
+│   ├── utils.js          Shared helper functions
+│   ├── router.js         Hash-based router
+│   ├── sidebar.js        Sidebar navigation component
+│   ├── bpmn.js           camunda-bpmn-js viewer wrapper
+│   ├── styles.css        Custom styles (Camunda brand, layout)
+│   ├── index.html        HTML template ({{ COVERAGE_DATA }} placeholder)
+│   └── views/
+│       ├── dashboard.js  Dashboard view
+│       ├── process.js    Process details view (BPMN diagram)
+│       ├── suite.js      Test suite view
+│       └── run.js        Test case (run) view
+└── public/
+    └── static/
+        └── media/        Logo, favicon
 ```
 
 ---
 
 ## Maven integration
 
-The Maven build in `camunda-process-test-java/pom.xml` uses `frontend-maven-plugin` to:
+The module uses `packaging=jar`. The Maven lifecycle:
 
-1. Install Node + npm (via `frontend-maven-plugin`).
-2. Run `npm install` in this module.
-3. Run `npm run build` (sets `BUILD_PATH` to the Java module's `target/generated-frontend-resources/coverage`).
-
-The Java module then includes that target directory as an unfiltered resource directory, so all files are bundled into the JAR. `CoverageReportUtil.toHtml()` reads `coverage/index.html` from the classpath and replaces `{{ COVERAGE_DATA }}` with the serialised `HtmlCoverageReport` JSON.
+1. `frontend-maven-plugin` installs Node + npm and runs `npm install` (phase `initialize`).
+2. `frontend-maven-plugin` runs `npm run build` (phase `generate-resources`), passing `BUILD_PATH` to Webpack.
+3. Maven resource processing packages `target/generated-frontend-resources/` into the JAR.
+4. `camunda-process-test-java` declares this artifact as a compile-scope dependency; the frontend resources are available on the classpath.
+5. `CoverageReportUtil.toHtml()` reads `coverage/index.html` from the classpath and replaces `{{ COVERAGE_DATA }}` with the serialised `HtmlCoverageReport` JSON.
 
 ---
 
 ## Data format
 
-The page reads `window.COVERAGE_DATA`, which is a serialised `HtmlCoverageReport` object:
+The page reads `window.COVERAGE_DATA`, set by `CoverageReportUtil`:
 
 ```jsonc
 {
@@ -132,11 +159,13 @@ The page reads `window.COVERAGE_DATA`, which is a serialised `HtmlCoverageReport
 
 ## Dependency updates
 
-All runtime libraries are plain npm dependencies. Update them with:
-
 ```bash
-npm install bpmn-js@latest bootstrap@latest bootstrap-icons@latest
+# Check for updates
+npm outdated
+
+# Update a package
+npm install camunda-bpmn-js@latest
+
+# Rebuild
 npm run build
 ```
-
-Then rebuild the Java module to pick up the new vendor files.

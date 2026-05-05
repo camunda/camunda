@@ -9,12 +9,13 @@
   </parent>
 
   <artifactId>camunda-process-test-coverage-frontend-new</artifactId>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
 
   <name>Camunda Process Test Coverage Frontend (New)</name>
-  <description>Lightweight vanilla-JS frontend for visualising Camunda process test coverage reports.
-    Builds static HTML/CSS/JS resources that are bundled into the camunda-process-test-java JAR
-    and used by CoverageReportUtil to produce self-contained HTML coverage reports.</description>
+  <description>Lightweight frontend for visualising Camunda process test coverage reports.
+    Webpack bundles camunda-bpmn-js, Bootstrap 5, and the application into static
+    HTML/CSS/JS resources that are packaged into this JAR and consumed by
+    camunda-process-test-java via a Maven dependency.</description>
 
   <licenses>
     <license>
@@ -26,13 +27,29 @@
   <properties>
     <skip.fe.build>false</skip.fe.build>
     <!--
-      Output directory consumed by camunda-process-test-java as a resource directory.
-      The path matches the resource directory declared in that module's pom.xml.
+      Maven resource root – everything placed here becomes a classpath resource.
+      The Webpack build writes to <fe.output.dir>/coverage/ so the JAR contains:
+        coverage/index.html
+        coverage/static/bundle.js
+        coverage/static/bundle.css
+        ...
+      These paths match what CoverageReportUtil looks for on the classpath.
     -->
-    <fe.build.output.dir>${project.basedir}/../camunda-process-test-java/target/generated-frontend-resources/coverage</fe.build.output.dir>
+    <fe.output.dir>${project.build.directory}/generated-frontend-resources</fe.output.dir>
   </properties>
 
   <build>
+    <!--
+      Include the webpack output directory as a Maven resource root so that all
+      built files are packaged into the JAR without filtering.
+    -->
+    <resources>
+      <resource>
+        <filtering>false</filtering>
+        <directory>${fe.output.dir}</directory>
+      </resource>
+    </resources>
+
     <plugins>
       <plugin>
         <groupId>com.github.eirslett</groupId>
@@ -70,7 +87,7 @@
             </configuration>
           </execution>
 
-          <!-- 3. Build (assemble vendor files + copy sources) -->
+          <!-- 3. Webpack production build -->
           <execution>
             <id>npm-build</id>
             <goals>
@@ -81,7 +98,12 @@
               <skip>${skip.fe.build}</skip>
               <arguments>run build</arguments>
               <environmentVariables>
-                <BUILD_PATH>${fe.build.output.dir}</BUILD_PATH>
+                <!--
+                  Passes the target coverage sub-directory to webpack.config.js via BUILD_PATH.
+                  Webpack writes coverage/index.html and coverage/static/... inside fe.output.dir,
+                  which Maven then packages into the JAR as classpath resources.
+                -->
+                <BUILD_PATH>${fe.output.dir}/coverage</BUILD_PATH>
               </environmentVariables>
             </configuration>
           </execution>

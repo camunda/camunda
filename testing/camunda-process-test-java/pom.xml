@@ -31,6 +31,13 @@
       <artifactId>camunda-process-test-json-test-cases</artifactId>
     </dependency>
 
+    <!-- Frontend coverage report resources (bundled by camunda-process-test-coverage-frontend-new) -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-test-coverage-frontend-new</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
@@ -182,11 +189,6 @@
         <filtering>true</filtering>
         <directory>src/main/resources</directory>
       </resource>
-      <!-- Frontend files with filtering disabled -->
-      <resource>
-        <filtering>false</filtering>
-        <directory>target/generated-frontend-resources</directory>
-      </resource>
     </resources>
 
     <plugins>
@@ -199,55 +201,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
-
-      <!-- Coverage frontend build with frontend-maven-plugin -->
-      <plugin>
-        <groupId>com.github.eirslett</groupId>
-        <artifactId>frontend-maven-plugin</artifactId>
-        <configuration>
-          <workingDirectory>${project.basedir}/../camunda-process-test-coverage-frontend-new</workingDirectory>
-          <installDirectory>${project.basedir}/../camunda-process-test-coverage-frontend-new</installDirectory>
-        </configuration>
-        <executions>
-          <!-- Install Node and NPM -->
-          <execution>
-            <id>install-node-and-npm</id>
-            <goals>
-              <goal>install-node-and-npm</goal>
-            </goals>
-            <phase>initialize</phase>
-            <configuration>
-              <skip>${skip.fe.build}</skip>
-              <nodeVersion>v24.13.0</nodeVersion>
-              <npmVersion>11.9.0</npmVersion>
-            </configuration>
-          </execution>
-          <!-- Install dependencies -->
-          <execution>
-            <id>npm-install</id>
-            <goals>
-              <goal>npm</goal>
-            </goals>
-            <phase>initialize</phase>
-            <configuration>
-              <skip>${skip.fe.build}</skip>
-              <arguments>install</arguments>
-            </configuration>
-          </execution>
-          <!-- Build frontend (output: target/generated-frontend-resources/coverage) -->
-          <execution>
-            <id>npm-build</id>
-            <goals>
-              <goal>npm</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <skip>${skip.fe.build}</skip>
-              <arguments>run build</arguments>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
@@ -310,12 +263,4 @@
     </plugins>
   </build>
 
-  <profiles>
-    <profile>
-      <id>skipFrontendBuild</id>
-      <properties>
-        <skip.fe.build>true</skip.fe.build>
-      </properties>
-    </profile>
-  </profiles>
 </project>
