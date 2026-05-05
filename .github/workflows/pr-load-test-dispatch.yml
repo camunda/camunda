@@ -1,0 +1,122 @@
+# type: CI
+# owner: @camunda/reliability-testing
+#
+# Single entry-point workflow for PR benchmarks across all supported secondary-storage
+# backends. A dispatcher job inspects the triggering event and produces a matrix that
+# contains *only* the relevant DB(s). Irrelevant DBs do not appear as matrix legs, so
+# they cannot emit "skipped" checks that would mask an in-progress benchmark from a
+# previous workflow run for the same PR.
+#
+# Event -> matrix mapping:
+#   labeled:     single-entry matrix for the added DB
+#   unlabeled:   single-entry matrix for the removed DB (triggers cleanup)
+#   synchronize: all currently-labeled DBs (restarts all benchmarks)
+#   closed:      all currently-labeled DBs (cleanup for all)
+#
+# Job-level concurrency (keyed on matrix.db + PR) ensures:
+#   - adding/removing a label for one DB never cancels a benchmark for another DB
+#   - pushing a commit restarts each labeled DB's benchmark independently
+#   - unlabeling a DB cancels its in-progress run; the reusable pipeline then runs cleanup
+#
+# No workflow-level concurrency: all event-triggered runs coexist independently. The reusable
+# pipeline's job conditions ensure correct create vs. delete behavior per DB per event.
+name: Camunda PR Benchmark
+on:
+  pull_request:
+    types:
+      - labeled
+      - unlabeled
+      - synchronize
+      - closed
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  dispatch:
+    name: Dispatch benchmark matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    outputs:
+      matrix: ${{ steps.build.outputs.matrix }}
+      any: ${{ steps.build.outputs.any }}
+    steps:
+      - id: build
+        name: Build matrix from event
+        env:
+          ACTION: ${{ github.event.action }}
+          EVENT_LABEL: ${{ github.event.label.name }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -euo pipefail
+
+          # Benchmark label -> secondary-storage-type mapping.
+          # NOTE: 'benchmark' (no suffix) is historically the elasticsearch trigger.
+          declare -A label_to_db=(
+            [benchmark]=elasticsearch
+            [benchmark-opensearch]=opensearch
+            [benchmark-postgresql]=postgresql
+            [benchmark-mysql]=mysql
+            [benchmark-mariadb]=mariadb
+            [benchmark-mssql]=mssql
+            [benchmark-oracle]=oracle
+            [benchmark-none]=none
+          )
+
+          entries=()
+          add_entry() {
+            local label="$1"
+            local db="${label_to_db[$label]:-}"
+            if [[ -n "$db" ]]; then
+              entries+=("{\"label\":\"${label}\",\"db\":\"${db}\"}")
+            else
+              echo "::warning title=Unknown Benchmark Label::Label '$label' is not a recognized benchmark trigger. Ignoring."
+            fi
+          }
+
+          case "$ACTION" in
+            labeled|unlabeled)
+              # Single DB: the one whose label changed
+              add_entry "$EVENT_LABEL"
+              ;;
+            synchronize|closed)
+              # All currently-labeled DBs
+              while IFS= read -r label; do
+                [[ -n "$label" ]] && add_entry "$label"
+              done < <(echo "$PR_LABELS" | jq -r '.[]?')
+              ;;
+            *)
+              ;;
+          esac
+
+          if (( ${#entries[@]} == 0 )); then
+            matrix='{"include":[]}'
+            any=false
+          else
+            joined=$(IFS=,; echo "${entries[*]}")
+            matrix="{\"include\":[${joined}]}"
+            any=true
+          fi
+
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "any=$any" >> "$GITHUB_OUTPUT"
+          echo "Generated matrix: $matrix"
+
+  benchmark:
+    name: Benchmark (${{ matrix.db }})
+    needs: dispatch
+    if: needs.dispatch.outputs.any == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.dispatch.outputs.matrix) }}
+    concurrency:
+      group: pr-benchmark-${{ matrix.db }}-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    uses: ./.github/workflows/camunda-pr-load-test.yaml
+    secrets: inherit
+    with:
+      label: ${{ matrix.label }}
+      secondary-storage-type: ${{ matrix.db }}
+      ref: ${{ github.event.pull_request.head.ref }}
