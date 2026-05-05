@@ -476,7 +476,13 @@ paths:
         shape: edge
         identifiedBy:
           - { in: path, name: tenantId, semanticType: TenantId }
-          - { in: path, name: groupId,  semanticType: GroupId }
+          # acceptsExternal: true — under BYOG/OIDC (`groupsClaim` set), the
+          # runtime accepts externally-minted IdP group IDs here even though
+          # group CRUD itself is always local. Skips the producer-existence
+          # cross-reference for this tuple; the planner is free to chain a
+          # local createGroup producer when one is reachable. See
+          # camunda/api-test-generator#134.
+          - { in: path, name: groupId,  semanticType: GroupId, acceptsExternal: true }
       parameters:
         - name: tenantId
           in: path

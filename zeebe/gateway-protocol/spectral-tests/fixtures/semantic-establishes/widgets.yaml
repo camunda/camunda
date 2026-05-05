@@ -391,6 +391,43 @@ paths:
         '204':
           description: Assigned.
 
+  # 13b. Edge whose endpoint resolves to a registered entity (Bimodal)
+  #      that has NO producer in the fixture, but where the identifiedBy
+  #      tuple sets `acceptsExternal: true` (camunda/camunda#52322). The
+  #      cross-reference check must NOT report Bimodal as an orphan for
+  #      this tuple, because the flag declares that the site accepts
+  #      either an in-API producer or an externally-minted ID. Note that
+  #      Bimodal is registered as `shape: entity`, not `external-entity`
+  #      — the per-tuple flag is the discriminator, not the registry
+  #      entry.
+  /valid/widgets/{widgetId}/bimodals/{bimodalId}:
+    put:
+      operationId: assignBimodalToWidget
+      summary: Assign bimodal to widget
+      description: Should pass — identifiedBy.acceptsExternal:true skips the orphan-derived-requires check on the Bimodal endpoint.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: bimodalId
+          in: path
+          required: true
+          description: The bimodal id (may be in-API or externally minted).
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetBimodalLink
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId,  semanticType: WidgetId }
+          - { in: path, name: bimodalId, semanticType: BimodalId, acceptsExternal: true }
+      responses:
+        '204':
+          description: Assigned.
+
   # 14. Operation that tries to `establishes` an external entity directly.
   #     Should fail — external entities have no API producer (camunda/camunda#52320).
   /invalid/external-things:

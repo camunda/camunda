@@ -10,6 +10,8 @@
     { "name": "WidgetMysteryLink", "shape": "edge", "$comment": "Edge whose endpoint semanticType resolves to no entity at all — exercises the unresolved-endpoint check." },
     { "name": "ExternalThing", "shape": "external-entity", "identifiers": ["ExternalThingId"], "$comment": "External entity (camunda/camunda#52320). Has no producer in the fixture spec; the cross-reference check must skip it." },
     { "name": "WidgetExternalLink", "shape": "edge", "$comment": "Edge from Widget to ExternalThing — establishes correctly without needing an ExternalThing producer." },
+    { "name": "Bimodal", "shape": "entity", "identifiers": ["BimodalId"], "$comment": "Registered entity with no producer in the fixture spec. Used to exercise the per-tuple `acceptsExternal: true` opt-out (camunda/camunda#52322): an edge endpoint with that flag must NOT trigger the derived-requires orphan check, even though Bimodal has no producer." },
+    { "name": "WidgetBimodalLink", "shape": "edge", "$comment": "Edge from Widget to Bimodal — uses identifiedBy.acceptsExternal: true on the Bimodal endpoint to declare that this site accepts either an in-API producer or an externally-minted ID." },
     { "name": "BrokenProducedKind", "shape": "entity", "identifiers": ["BrokenProducedId"], "$comment": "Established by a fixture op whose `establishes` block is invalid (broken identifiedBy). The producer-existence gate must NOT count it as established, so consumers get the orphan error." }
   ]
 }

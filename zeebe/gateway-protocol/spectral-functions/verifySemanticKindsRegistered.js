@@ -26,6 +26,20 @@
 //   — external entities are *referenced* through edge `identifiedBy`
 //   tuples only.
 //
+//   Per-tuple opt-out for bimodal entity sources (camunda/camunda#52322
+//   review): an `identifiedBy` entry may set `acceptsExternal: true` to
+//   declare that this *specific* edge endpoint accepts either an in-API
+//   producer (the canonical local entity) OR an externally-minted ID. The
+//   single-owner identifier resolution still runs (typo / config check),
+//   but the resolved entity kind is NOT pushed onto `required` for that
+//   tuple — so the producer-existence cross-reference is satisfied
+//   regardless of whether a producer exists in this API. This is distinct
+//   from kind-level `shape: external-entity`: the kind is still locally
+//   producible at most other sites; only this tuple is bimodal. Used for
+//   `assignGroupToRole`/`assignGroupToTenant`, where BYOG/OIDC
+//   deployments accept IdP-supplied group IDs as members of roles or
+//   tenants even though group CRUD itself remains local.
+//
 // The orphan check in the other direction (`establishes` with no consumer)
 // is intentionally not enforced — many producers are legitimately useful
 // without a consumer in this spec (e.g. setup/admin operations).
@@ -339,6 +353,15 @@ module.exports = (input, _opts, _context) => {
               });
             }
             for (const ownerKind of owners) {
+              // Per-tuple bimodal opt-out (camunda/camunda#52322): when the
+              // identifiedBy entry sets `acceptsExternal: true`, this
+              // specific edge endpoint accepts either an in-API producer or
+              // an externally-minted ID. Skip pushing the implicit
+              // requires so the producer-existence cross-reference does
+              // not flag missing-producer for this tuple. The single-owner
+              // resolution above still runs, so typos and registry-config
+              // errors are still caught.
+              if (item.acceptsExternal === true) continue;
               required.push({
                 kind: ownerKind,
                 method,

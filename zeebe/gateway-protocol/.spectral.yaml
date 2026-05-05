@@ -203,6 +203,17 @@ rules:
                   semanticType:
                     type: string
                     pattern: "^[A-Z][A-Za-z0-9]+$"
+                  acceptsExternal:
+                    type: boolean
+                    description: |
+                      Per-tuple opt-out for the producer-existence cross-reference (camunda/camunda#52322).
+                      Set to `true` when this specific edge endpoint accepts either an in-API producer
+                      (the canonical local entity) OR an externally-minted ID (e.g. BYOG/OIDC IdP-supplied
+                      group IDs at `assignGroupToRole` / `assignGroupToTenant`). The single-owner
+                      identifier resolution still runs (typo / config check), but the resolved entity kind
+                      is NOT pushed onto the producer-existence required-set for this tuple. Distinct from
+                      kind-level `shape: external-entity` (which marks the kind as having no in-API
+                      producer at all).
 
   semantic-requires-shape:
     description: "`x-semantic-requires` must conform to the documented schema."

@@ -249,6 +249,39 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
       assert.equal(v.length, 0, JSON.stringify(v, null, 2));
     });
 
+    // Per-tuple bimodal opt-out: identifiedBy.acceptsExternal:true on
+    // /valid/widgets/{widgetId}/bimodals/{bimodalId} declares that the
+    // Bimodal endpoint accepts either an in-API producer or an
+    // externally-minted ID. The cross-reference walk must NOT push the
+    // resolved Bimodal kind onto `required` for that tuple, so no
+    // orphan-derived-requires error fires for Bimodal even though no
+    // operation in the fixture establishes it. Class-scoped: assert the
+    // entire suite has zero Bimodal-orphan errors, not just zero from
+    // this one path. This is the only fixture that references Bimodal,
+    // so a regression that broke the flag would re-introduce the orphan
+    // error at this site (and any future bimodal site).
+    it('does not flag Bimodal as an orphan derived requires when identifiedBy.acceptsExternal is true (camunda/camunda#52322)', () => {
+      const v = registryViolations.filter((e) =>
+        e.message.includes("Semantic kind 'Bimodal'") &&
+        e.message.includes('derived from'),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+
+    // Sanity: acceptsExternal does NOT bypass single-owner identifier
+    // resolution. If BimodalId were unregistered or owned by multiple
+    // entities, the verifier should still flag — proving the flag only
+    // gates the producer-existence cross-reference, not the typo /
+    // registry-config check that runs before it.
+    it('still resolves the Bimodal endpoint identifier (acceptsExternal does not skip single-owner check)', () => {
+      const v = registryViolations.filter((e) =>
+        e.message.includes("'BimodalId'") &&
+        (e.message.includes('not declared as an identifier') ||
+          e.message.includes('resolves to multiple entity kinds')),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+
     it('flags a direct x-semantic-establishes against an external entity', () => {
       const v = registryViolations.filter((e) =>
         e.message.includes("Semantic kind 'ExternalThing'") &&
