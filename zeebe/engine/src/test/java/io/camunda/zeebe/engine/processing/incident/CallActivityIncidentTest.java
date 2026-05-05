@@ -355,6 +355,7 @@ public final class CallActivityIncidentTest {
         .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
   }
 
+<<<<<<< HEAD
   // Regression test for https://github.com/camunda/camunda/issues/50014.
   @Test
   public void shouldExposeWrappingSubprocessInElementInstancePathWhenCallActivityIsNested() {
@@ -403,6 +404,33 @@ public final class CallActivityIncidentTest {
             .getKey();
 
     final long callActivityInstanceKey = getCallActivityInstance(parentProcessInstanceKey).getKey();
+=======
+  // Regression test for https://github.com/camunda/camunda/issues/50014:
+  // when an incident is raised in the called process AFTER it has progressed past its
+  // first activity, the resulting INCIDENT.CREATED record must still expose the full
+  // call-hierarchy in elementInstancePath / callingElementPath / processDefinitionPath.
+  // Exporters rely on these fields to propagate `hasIncident` to the call activity FNI
+  // and to the parent PI; a truncated path leaves the call activity green in Operate.
+  @Test
+  public void shouldExposeFullCallHierarchyOnIncidentInChildProcessAfterFirstActivity() {
+    // given a child process with two service tasks: the first completes, the second fails
+    final var firstJobType = "first-" + Strings.newRandomValidBpmnId();
+    final var failingJobType = "failing-" + Strings.newRandomValidBpmnId();
+    final var childProcess =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .serviceTask("first", t -> t.zeebeJobType(firstJobType))
+            .serviceTask("failing", t -> t.zeebeJobType(failingJobType))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcess).deploy();
+
+    final long parentProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    final long callActivityInstanceKey =
+        getCallActivityInstance(parentProcessInstanceKey).getKey();
+>>>>>>> 8a3f84026 (test: add regression coverage for call-activity incident propagation)
 
     final long childProcessInstanceKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -411,6 +439,13 @@ public final class CallActivityIncidentTest {
             .getFirst()
             .getKey();
 
+<<<<<<< HEAD
+=======
+    // advance the child past its first activity by completing the first job
+    ENGINE.job().ofInstance(childProcessInstanceKey).withType(firstJobType).complete();
+
+    // wait for the second job to be created, then fail it with no retries left
+>>>>>>> 8a3f84026 (test: add regression coverage for call-activity incident propagation)
     final Record<JobRecordValue> failingJob =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(childProcessInstanceKey)
@@ -419,6 +454,7 @@ public final class CallActivityIncidentTest {
     final long failingElementInstanceKey = failingJob.getValue().getElementInstanceKey();
 
     // when
+<<<<<<< HEAD
     ENGINE.job().ofInstance(childProcessInstanceKey).withType(failingJobType).withRetries(0).fail();
 
     // then
@@ -476,15 +512,44 @@ public final class CallActivityIncidentTest {
     ENGINE.job().ofInstance(childProcessInstanceKey).withType(failingJobType).withRetries(0).fail();
 
     // then
+=======
+    ENGINE
+        .job()
+        .ofInstance(childProcessInstanceKey)
+        .withType(failingJobType)
+        .withRetries(0)
+        .fail();
+
+    // then the engine emits an incident record for the leaf, but it must carry the full path
+>>>>>>> 8a3f84026 (test: add regression coverage for call-activity incident propagation)
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(childProcessInstanceKey)
             .getFirst();
 
+<<<<<<< HEAD
     assertThat(incident.getValue().getElementInstancePath())
         .containsExactly(
             List.of(parentProcessInstanceKey, callActivityInstanceKey),
             List.of(childProcessInstanceKey, failingElementInstanceKey));
+=======
+    final IncidentRecordValue value = incident.getValue();
+    assertThat(value.getProcessInstanceKey()).isEqualTo(childProcessInstanceKey);
+    assertThat(value.getElementInstanceKey()).isEqualTo(failingElementInstanceKey);
+    assertThat(value.getElementId()).isEqualTo("failing");
+
+    // elementInstancePath must contain BOTH levels of the call hierarchy. If the second
+    // entry is dropped, exporters lose the call-activity FNI key and the badge is missed.
+    assertThat(value.getElementInstancePath())
+        .as(
+            "elementInstancePath must include parent and child PI levels even when the child "
+                + "advanced past its first activity")
+        .containsExactly(
+            List.of(parentProcessInstanceKey, callActivityInstanceKey),
+            List.of(childProcessInstanceKey, failingElementInstanceKey));
+    assertThat(value.getCallingElementPath()).hasSize(1);
+    assertThat(value.getProcessDefinitionPath()).hasSize(2);
+>>>>>>> 8a3f84026 (test: add regression coverage for call-activity incident propagation)
   }
 
   private Record<ProcessInstanceRecordValue> getCallActivityInstance(
