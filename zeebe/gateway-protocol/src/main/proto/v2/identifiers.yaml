@@ -88,13 +88,16 @@ components:
       x-semantic-client-minted: true
       minLength: 1
       maxLength: 256
-      # No `pattern` constraint: groupId validation is deployment-scoped.
-      # `SecurityConfiguration.getCompiledGroupIdValidationPattern()` returns
-      # `DEFAULT_EXTERNAL_ID_REGEX` (`.*`) when OIDC `groupsClaim` is
-      # configured ("bring your own groups"), and `DEFAULT_ID_REGEX`
-      # (`^[a-zA-Z0-9_~@.+-]+$`) otherwise. Advertising the strict regex
-      # here would falsely reject valid IdP-supplied group IDs in BYOG
-      # deployments.
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core,
+      # which is the regex GroupValidator.validate (group CRUD) applies via
+      # IdentifierValidator.validateId. The looser BYOG/OIDC pattern from
+      # SecurityConfiguration.getCompiledGroupIdValidationPattern() is only
+      # used by IdentifierValidator.validateGroupId for group-as-member
+      # operations (assigning a group as a member of a role/tenant) — those
+      # accept externally-minted IdP group IDs, but the schema here encodes
+      # the strictest valid form so generated clients construct CRUD inputs
+      # the runtime accepts in every deployment.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     MappingRuleId:
       example: my-mapping-rule
