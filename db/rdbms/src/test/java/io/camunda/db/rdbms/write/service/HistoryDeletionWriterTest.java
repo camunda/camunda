@@ -49,7 +49,7 @@ class HistoryDeletionWriterTest {
                     ContextType.HISTORY_DELETION,
                     WriteStatementType.INSERT,
                     model.getId(),
-                    "io.camunda.db.rdbms.sql.HistoryDeletionMapper.insert",
+                    "io.camunda.db.rdbms.sql.HistoryDeletionMapper.createIfNotExists",
                     model)));
   }
 
