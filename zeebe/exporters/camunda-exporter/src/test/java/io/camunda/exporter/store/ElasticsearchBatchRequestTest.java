@@ -20,7 +20,6 @@ import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.BulkRequest.Builder;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
@@ -52,7 +51,6 @@ class ElasticsearchBatchRequestTest {
   private static final String INDEX_WITH_HANDLER = "indexWithHandler";
   private ElasticsearchBatchRequest batchRequest;
   private ElasticsearchClient elasticsearchClient;
-  private Builder requestBuilder;
   private ElasticsearchScriptBuilder scriptBuilder;
   private JacksonJsonpMapper jsonpMapper;
 
@@ -61,10 +59,8 @@ class ElasticsearchBatchRequestTest {
     elasticsearchClient = mock(ElasticsearchClient.class);
     jsonpMapper = new JacksonJsonpMapper();
     when(elasticsearchClient._jsonpMapper()).thenReturn(jsonpMapper);
-    requestBuilder = new Builder();
     scriptBuilder = mock(ElasticsearchScriptBuilder.class);
-    batchRequest =
-        new ElasticsearchBatchRequest(elasticsearchClient, requestBuilder, scriptBuilder);
+    batchRequest = new ElasticsearchBatchRequest(elasticsearchClient, scriptBuilder);
     final BulkResponse bulkResponse = mock(BulkResponse.class);
     when(elasticsearchClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
   }
@@ -395,8 +391,8 @@ class ElasticsearchBatchRequestTest {
   void shouldSplitIntoMultipleBulksWhenAccumulatedSizeExceedsCap()
       throws PersistenceException, IOException {
     // given - a tiny cap that any 2 operations will exceed, forcing one bulk per op
-    final ElasticsearchBatchRequest tinyCapRequest =
-        new ElasticsearchBatchRequest(elasticsearchClient, scriptBuilder, 1L);
+    final BatchRequest tinyCapRequest =
+        new ElasticsearchBatchRequest(elasticsearchClient, scriptBuilder).withMaxBytes(1L);
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
     // when
@@ -536,5 +532,58 @@ class ElasticsearchBatchRequestTest {
 
   private static Script realScript(final String source) {
     return Script.of(s -> s.source(source));
+  }
+
+  @Test
+  void chunkByBytesShouldReturnEmptyForNoOps() {
+    assertThat(ElasticsearchBatchRequest.chunkByBytes(List.of(), 100L)).isEmpty();
+  }
+
+  @Test
+  void chunkByBytesShouldReturnSingleChunkWhenUnderLimit() {
+    final var ops =
+        List.of(
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 10L),
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 20L));
+    final var chunks = ElasticsearchBatchRequest.chunkByBytes(ops, 100L);
+    assertThat(chunks).hasSize(1);
+    assertThat(chunks.get(0)).hasSize(2);
+  }
+
+  @Test
+  void chunkByBytesShouldKeepSingleOversizedOpInItsOwnChunk() {
+    final var ops = List.of(new ElasticsearchBatchRequest.SizedOperation(noopOp(), 500L));
+    final var chunks = ElasticsearchBatchRequest.chunkByBytes(ops, 100L);
+    assertThat(chunks).hasSize(1);
+    assertThat(chunks.get(0)).hasSize(1);
+  }
+
+  @Test
+  void chunkByBytesShouldSplitWhenAdditionWouldExceedLimit() {
+    final var ops =
+        List.of(
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 60L),
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 60L),
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 60L));
+    final var chunks = ElasticsearchBatchRequest.chunkByBytes(ops, 100L);
+    assertThat(chunks).hasSize(3);
+    assertThat(chunks).allSatisfy(chunk -> assertThat(chunk).hasSize(1));
+  }
+
+  @Test
+  void chunkByBytesShouldFitExactlyOnBoundary() {
+    final var ops =
+        List.of(
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 50L),
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 50L),
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 50L));
+    final var chunks = ElasticsearchBatchRequest.chunkByBytes(ops, 100L);
+    assertThat(chunks).hasSize(2);
+    assertThat(chunks.get(0)).hasSize(2);
+    assertThat(chunks.get(1)).hasSize(1);
+  }
+
+  private static BulkOperation noopOp() {
+    return BulkOperation.of(b -> b.delete(d -> d.index("idx").id("id")));
   }
 }

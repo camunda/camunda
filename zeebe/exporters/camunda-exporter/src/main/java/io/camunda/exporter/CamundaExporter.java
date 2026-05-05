@@ -347,7 +347,9 @@ public class CamundaExporter implements Exporter {
     if (writer.getBatchSize() > 0) {
       try (final var ignored = metrics.measureFlushDuration()) {
         metrics.recordBulkSize(writer.getBatchSize());
-        final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
+        final long maxBulkBytes = configuration.getBulk().getMemoryLimit() * 1024L * 1024L;
+        final BatchRequest batchRequest =
+            clientAdapter.createBatchRequest().withMetrics(metrics).withMaxBytes(maxBulkBytes);
         writer.flush(batchRequest);
         metrics.recordFlushOccurrence(Instant.now());
         metrics.stopFlushLatencyMeasurement();
