@@ -1,0 +1,35 @@
+# Sub-file fixture (no `openapi:` at root) for the per-file lint pass.
+#
+# Mirrors the real-spec shape where domain YAMLs (e.g. tenants.yaml) declare
+# an edge whose endpoint resolves to an entity established by an operation
+# in a sibling file (e.g. createWidget in widgets.yaml). Linting this file
+# in isolation must NOT raise a cross-reference orphan for `Widget` — the
+# producer-existence check is only meaningful against the bundled spec.
+#
+# See verifySemanticKindsRegistered.js (the openapi-presence guard) and
+# the per-file lint pass at .github/workflows/ci.yml referencing
+# camunda/camunda#46274.
+
+paths:
+  /sub/widgets/{widgetId}/owners/{username}:
+    put:
+      operationId: assignOwnerInSubfile
+      summary: Assign owner to a widget (sub-file edge)
+      x-semantic-establishes:
+        kind: WidgetOwnership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+          - { in: path, name: username, semanticType: Username }
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: username
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Assigned.

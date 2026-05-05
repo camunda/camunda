@@ -197,6 +197,20 @@ module.exports = (input, _opts, _context) => {
   // Cross-reference: every required kind must be established somewhere.
   // Skip kinds that already failed the registry check — the message above
   // is the actionable one.
+  //
+  // Only meaningful against a complete spec (the bundled rest-api.yaml root
+  // with `openapi:` at top level). CI runs spectral twice — once on the
+  // bundled root and once with a per-file glob (see camunda/camunda#46274).
+  // In the per-file pass, sub-files like tenants.yaml only carry their own
+  // paths, so an edge whose producer lives in a sibling file (e.g.
+  // assignUserToTenant deriving User from Username, with createUser in
+  // users.yaml) would falsely fail here. Sub-files have no `openapi` at
+  // root — gate the cross-reference walk on its presence so the bundled
+  // pass is the single source of truth for this check, while the
+  // per-operation registry-membership checks above still fire correctly
+  // per-file.
+  if (typeof input?.openapi !== 'string') return errors;
+
   for (const r of required) {
     if (!registry.has(r.kind)) continue;
     if (established.has(r.kind)) continue;

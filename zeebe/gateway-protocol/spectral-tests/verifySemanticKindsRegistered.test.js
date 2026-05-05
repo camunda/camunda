@@ -2,7 +2,7 @@
 
 const { describe, it, before } = require('node:test');
 const assert = require('node:assert/strict');
-const { lintFixture, filterByRule } = require('./helpers');
+const { lintFixture, lintFixtureFile, filterByRule } = require('./helpers');
 
 const FIXTURE = 'semantic-establishes';
 const SHAPE_RULE = 'semantic-establishes-shape';
@@ -218,5 +218,46 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
       );
       assert.equal(v.length, 0, JSON.stringify(v, null, 2));
     });
+  });
+});
+
+// ── Per-file lint pass: cross-reference must be skipped on sub-files ──
+//
+// CI runs spectral twice (see camunda/camunda#46274) — once on the bundled
+// rest-api.yaml root and once with a per-file glob over each domain YAML.
+// Sub-files like tenants.yaml only carry their own paths, so an edge whose
+// producer lives in a sibling file (e.g. assignUserToTenant deriving User
+// from Username, with createUser in users.yaml) used to false-positive
+// here. The verifier now gates the cross-reference walk on the document
+// having `openapi:` at root — sub-files don't, so the check is suppressed.
+// The per-operation registry-membership checks above still fire correctly
+// per-file.
+//
+// Regression for camunda/camunda#52308 (PR check failure on
+// "Semantic kind 'User' is required ... but no operation establishes it"
+// when linting tenants.yaml in isolation).
+
+describe('verifySemanticKindsRegistered: per-file lint pass on sub-files', () => {
+  let subfileResults;
+  let subfileRegistryViolations;
+
+  before(() => {
+    subfileResults = lintFixtureFile(FIXTURE, 'subfile-no-openapi.yaml');
+    subfileRegistryViolations = filterByRule(subfileResults, REGISTRY_RULE);
+  });
+
+  it('does not raise a cross-reference orphan for an entity established only in a sibling file', () => {
+    // The sub-file's edge resolves to Widget (via WidgetId) and User (via
+    // Username). Both producers (createWidget, createUser) live in the
+    // sibling widgets.yaml. Per-file linting must not flag either as
+    // orphaned — that's the bundled-pass's job.
+    const orphans = subfileRegistryViolations.filter((e) =>
+      e.message.includes('no operation establishes it'),
+    );
+    assert.equal(
+      orphans.length,
+      0,
+      JSON.stringify(subfileRegistryViolations, null, 2),
+    );
   });
 });
