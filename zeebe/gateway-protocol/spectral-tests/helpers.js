@@ -34,7 +34,11 @@ function lintFixtureFile(fixtureName, fileName) {
   const specFile = path.join(fixtureDir, fileName);
   const cmd = `spectral lint "${specFile}" --ruleset "${RULESET_FILE}" --format json`;
 
+  // Test isolation: each fixture lint must see the fixture's own registry,
+  // or no registry at all. Inheriting an ambient SPECTRAL_SEMANTIC_KINDS_REGISTRY
+  // from the parent process would make results order- and environment-dependent.
   const env = { ...process.env };
+  delete env.SPECTRAL_SEMANTIC_KINDS_REGISTRY;
   const fixtureRegistry = path.join(fixtureDir, 'semantic-kinds.json');
   if (fs.existsSync(fixtureRegistry)) {
     env.SPECTRAL_SEMANTIC_KINDS_REGISTRY = fixtureRegistry;
