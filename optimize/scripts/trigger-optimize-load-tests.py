@@ -176,8 +176,10 @@ def _gi(value: float) -> str:
     return f"{math.ceil(value)}Gi"
 
 
-def build_platform_helm_values(es: ESConfig, broker: BrokerNodePool, brokers: int) -> str:
+def build_platform_helm_values(es: ESConfig, broker: BrokerNodePool, brokers: int,
+                               partitions: int = 0) -> str:
     replication = min(3, brokers)
+    partition_count = partitions if partitions > 0 else brokers
     es_prefix = "elasticsearch.master"
     flags = [
         # ES — only override disk size; CPU/memory/heap use cluster defaults (7000m/8Gi/3Gi)
@@ -185,7 +187,7 @@ def build_platform_helm_values(es: ESConfig, broker: BrokerNodePool, brokers: in
         f"--set {es_prefix}.persistence.size={es.disk_gi}Gi",
         # Broker topology — chart schema requires strings for these numeric fields
         f"--set-string orchestration.clusterSize={brokers}",
-        f"--set-string orchestration.partitionCount={brokers}",
+        f"--set-string orchestration.partitionCount={partition_count}",
         f"--set-string orchestration.replicationFactor={replication}",
         # Broker resources
         f"--set orchestration.resources.requests.cpu={broker.cpu}",
@@ -327,10 +329,19 @@ def main():
         type=int,
         default=3,
         help=(
-            "Number of broker pods (clusterSize) and partitions (partitionCount). "
-            "Both are set to the same value; replicationFactor stays at 3. "
-            "Default: 3. Use 6 for ~1000 PI/s on n2-standard-8 (6 brokers × 6000m = "
-            "36 vCPU total vs 18 vCPU with 3 brokers)."
+            "Number of broker pods (clusterSize). replicationFactor = min(3, brokers). "
+            "Default: 3."
+        ),
+    )
+    parser.add_argument(
+        "--partitions",
+        type=int,
+        default=0,
+        help=(
+            "Number of partitions (partitionCount). Defaults to --brokers when not set. "
+            "Set higher than brokers to utilize all CPU threads on large nodes: each partition "
+            "gets its own actor thread, so partitions = brokers × 2 doubles per-cluster throughput "
+            "on n2-standard-16 (12 CPU threads per broker)."
         ),
     )
     args = parser.parse_args()
@@ -345,9 +356,10 @@ def main():
     broker = BROKER_NODE_POOLS[args.broker_node_pool]
     rates = [int(r.strip()) for r in args.rates.split(",")]
 
+    effective_partitions = args.partitions if args.partitions > 0 else args.brokers
     for rate in rates:
         cfg = build_test_config(rate, args.ttl, args.scenario, not args.no_optimize, args.brokers)
-        platform_values = build_platform_helm_values(cfg.es, broker, args.brokers)
+        platform_values = build_platform_helm_values(cfg.es, broker, args.brokers, effective_partitions)
         if args.extra_platform_values:
             platform_values = platform_values + " " + args.extra_platform_values
         load_values     = build_load_test_load(cfg.rate, args.scenario)
@@ -358,7 +370,7 @@ def main():
         print(f"  Rate:     {rate} PI/s")
         print(f"  Name:     {cfg.name}")
         print(f"  Workers:  {worker_replicas} pod(s)")
-        print(f"  Brokers:  {args.brokers} pods  partitions={args.brokers}  replication={min(3, args.brokers)}  "
+        print(f"  Brokers:  {args.brokers} pods  partitions={effective_partitions}  replication={min(3, args.brokers)}  "
               f"node={broker.name}  cpu={broker.cpu}  mem={broker.memory}  "
               f"cpu_threads={broker.cpu_threads}  io_threads={broker.io_threads}")
         print(f"  ES nodes: {cfg.es.replicas}x  {_es_display(args.extra_platform_values, cfg.es)}  disk={cfg.es.disk_gi}Gi")
