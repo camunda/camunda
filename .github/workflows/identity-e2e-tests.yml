@@ -44,12 +44,27 @@ permissions:
   contents: read # for git clone
 
 jobs:
+  generate-db-versions:
+    name: "Generate DB versions"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
   test:
+    needs: [ generate-db-versions ]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.18.8
+        image: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.generate-db-versions.outputs.elasticsearch-8 }}
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
