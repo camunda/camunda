@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="e2e-test" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <bpmn:process id="mcpProcessWithInputs" name="MCP Process With Inputs" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="With inputs tool triggered">
+      <bpmn:extensionElements>
+        <zeebe:properties>
+          <zeebe:property name="io.camunda.tool:name" value="mcp-process-with-inputs" />
+          <zeebe:property name="io.camunda.tool:purpose" value="Tool for executing a process with typed inputs triggered by MCP." />
+          <zeebe:property name="io.camunda.tool:input_1_name" value="firstName" />
+          <zeebe:property name="io.camunda.tool:input_1_type" value="string" />
+          <zeebe:property name="io.camunda.tool:input_1_description" value="The first name of the person." />
+          <zeebe:property name="io.camunda.tool:input_2_name" value="amount" />
+          <zeebe:property name="io.camunda.tool:input_2_type" value="integer" />
+          <zeebe:property name="io.camunda.tool:input_2_description" value="The amount to process." />
+          <zeebe:property name="io.camunda.tool:input_2_required" value="true" />
+        </zeebe:properties>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1" messageRef="Message_with_inputs" />
+    </bpmn:startEvent>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="EndEvent_1" />
+  </bpmn:process>
+  <bpmn:message id="Message_with_inputs" name="mcp-process-with-inputs" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="mcpProcessWithInputs">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds x="150" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="242" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="186" y="118" />
+        <di:waypoint x="242" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
