@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
@@ -25,6 +26,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -48,6 +50,10 @@ final class ExporterContainer implements Controller {
   private ActorControl actor;
   private final ExporterInitializationInfo initializationInfo;
   private final ExporterReplayControl replayControl;
+  private final Consumer<ExporterContainer> reopenRequestedCallback;
+
+  // Set to true when a non-recoverable export error is detected; cleared after successful reopen
+  private boolean exporterNeedsReopen = false;
 
   ExporterContainer(
       final ExporterDescriptor descriptor,
@@ -56,8 +62,20 @@ final class ExporterContainer implements Controller {
       final MeterRegistry meterRegistry,
       final InstantSource clock,
       final ExporterReplayControl replayControl) {
+    this(descriptor, partitionId, initializationInfo, meterRegistry, clock, replayControl, null);
+  }
+
+  ExporterContainer(
+      final ExporterDescriptor descriptor,
+      final int partitionId,
+      final ExporterInitializationInfo initializationInfo,
+      final MeterRegistry meterRegistry,
+      final InstantSource clock,
+      final ExporterReplayControl replayControl,
+      final Consumer<ExporterContainer> reopenRequestedCallback) {
     this.initializationInfo = initializationInfo;
     this.replayControl = replayControl;
+    this.reopenRequestedCallback = reopenRequestedCallback;
     context =
         new ExporterContext(
             Loggers.getExporterLogger(descriptor.getId()),
@@ -241,6 +259,10 @@ final class ExporterContainer implements Controller {
   }
 
   boolean exportRecord(final RecordMetadata rawMetadata, final TypedRecord<?> typedEvent) {
+    if (exporterNeedsReopen) {
+      // Reopen is in progress; stop trying until the exporter is ready again
+      return false;
+    }
     try {
       if (position < typedEvent.getPosition()) {
         if (acceptRecord(rawMetadata, typedEvent)) {
@@ -250,6 +272,20 @@ final class ExporterContainer implements Controller {
         }
       }
       return true;
+    } catch (final ExporterException ex) {
+      if (!ex.isRecoverable() && !exporterNeedsReopen) {
+        LOG.warn(
+            "Exporter '{}' encountered a non-recoverable error. Requesting reopen to recover.",
+            getId(),
+            ex);
+        exporterNeedsReopen = true;
+        if (reopenRequestedCallback != null) {
+          reopenRequestedCallback.accept(this);
+        }
+      } else {
+        context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
+      }
+      return false;
     } catch (final Exception ex) {
       context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
       return false;
@@ -283,5 +319,26 @@ final class ExporterContainer implements Controller {
     } catch (final Exception e) {
       context.getLogger().error("Error on context.close", e);
     }
+  }
+
+  /**
+   * Closes only the underlying exporter instance without closing the context. Used during reopen to
+   * reset exporter state while preserving the container's configuration.
+   */
+  void closeExporter() {
+    try {
+      ThreadContextUtil.runCheckedWithClassLoader(
+          exporter::close, exporter.getClass().getClassLoader());
+    } catch (final Exception e) {
+      context.getLogger().error("Error on closeExporter during reopen", e);
+    }
+  }
+
+  /**
+   * Marks the reopen as complete, allowing the container to resume normal export operations. Must
+   * be called after a successful reopen to clear the {@code exporterNeedsReopen} flag.
+   */
+  void markReopenComplete() {
+    exporterNeedsReopen = false;
   }
 }

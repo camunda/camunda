@@ -958,6 +958,52 @@ public final class ExporterDirectorTest {
             });
   }
 
+  @Test
+  public void shouldReopenExporterOnNonRecoverableException() throws Exception {
+    // given - start exporter director and export first event
+    startExporterDirector(exporterDescriptors);
+    final long eventPosition1 = writeEvent();
+    waitUntil(() -> exporters.get(0).getExportedRecords().size() == 1);
+
+    // when - make exporter 0 throw a non-recoverable ExporterException on the next export
+    final var failOnce = new AtomicBoolean(true);
+    exporters
+        .get(0)
+        .onExport(
+            r -> {
+              if (failOnce.compareAndSet(true, false)) {
+                throw new io.camunda.zeebe.exporter.api.ExporterException(
+                    "position mismatch – needs reopen", false);
+              }
+            });
+
+    final long eventPosition2 = writeEvent();
+
+    // then - the exporter should be reopened (open called a second time) and then resume exporting
+    Awaitility.await("exporter 0 is reopened after non-recoverable exception")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> verify(exporters.get(0), times(2)).open(any()));
+
+    Awaitility.await("exporter 0 exports the record after reopen")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(0).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .contains(eventPosition2));
+
+    // exporter 1 should not have been permanently affected — it still exports both records
+    Awaitility.await("exporter 1 exports both records")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(1).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .contains(eventPosition1, eventPosition2));
+
+    rule.closeExporterDirector();
+  }
+
   private long writeEvent() {
     final DeploymentRecord event = new DeploymentRecord();
     return rule.writeEvent(DeploymentIntent.CREATED, event);

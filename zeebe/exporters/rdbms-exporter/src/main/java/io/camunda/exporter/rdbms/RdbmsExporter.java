@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
+import io.camunda.db.rdbms.write.service.ExporterPositionMismatchException;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
 import io.camunda.exporter.rdbms.replication.ReplicationController;
@@ -267,6 +268,20 @@ public final class RdbmsExporter {
         if (flushed) {
           resetIntervalFlush();
         }
+      } catch (final ExporterPositionMismatchException e) {
+        LOG.warn(
+            "[RDBMS Exporter P{}] Exporter position mismatch detected while flushing positions {} to {}. "
+                + "The exporter will be closed and reopened to recover.",
+            partitionId,
+            lastFlushedPosition + 1,
+            lastPosition);
+        throw new ExporterException(
+            String.format(
+                "[RDBMS Exporter P%d] Exporter position mismatch detected. "
+                    + "The exporter needs to be reopened to recover.",
+                partitionId),
+            e,
+            false);
       } catch (final Exception e) {
         LOG.warn(
             "[RDBMS Exporter P{}] Failed to flush record for positions {} to {} to the database.",
