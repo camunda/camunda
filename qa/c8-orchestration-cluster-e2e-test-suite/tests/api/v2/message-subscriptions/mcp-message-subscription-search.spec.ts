@@ -15,11 +15,6 @@ import {
   assertUnauthorizedRequest,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
-import {
-  expectedMcpSubscriptionAlpha,
-  expectedMcpSubscriptionBravo,
-  expectedMcpSubscriptionWithInputs,
-} from '../../../../utils/beans/requestBeans';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
 
 test.beforeAll(async () => {
@@ -149,8 +144,7 @@ test.describe('MCP Message Subscription Search API Tests', () => {
           headers: jsonHeaders(),
           data: {
             filter: {
-              processDefinitionId:
-                expectedMcpSubscriptionAlpha.processDefinitionId,
+              processDefinitionId: 'mcpProcessAlpha',
               messageSubscriptionType: 'START_EVENT',
             },
           },
@@ -188,8 +182,7 @@ test.describe('MCP Message Subscription Search API Tests', () => {
           headers: jsonHeaders(),
           data: {
             filter: {
-              processDefinitionId:
-                expectedMcpSubscriptionBravo.processDefinitionId,
+              processDefinitionId: 'mcpProcessBravo',
               messageSubscriptionType: 'START_EVENT',
             },
           },
@@ -212,11 +205,15 @@ test.describe('MCP Message Subscription Search API Tests', () => {
           processDefinitionName: string;
           processDefinitionVersion: number;
         }) => {
-          assertEqualsForKeys(it, expectedMcpSubscriptionBravo, [
-            'processDefinitionName',
-            'messageName',
-            'tenantId',
-          ]);
+          assertEqualsForKeys(
+            it,
+            {
+              processDefinitionName: 'MCP Process Bravo',
+              messageName: 'bravo-tool-name',
+              tenantId: '<default>',
+            },
+            ['processDefinitionName', 'messageName', 'tenantId'],
+          );
           expect(it.processDefinitionVersion).toBeGreaterThanOrEqual(1);
         },
       );
@@ -300,8 +297,7 @@ test.describe('MCP Message Subscription Search API Tests', () => {
           headers: jsonHeaders(),
           data: {
             filter: {
-              processDefinitionId:
-                expectedMcpSubscriptionWithInputs.processDefinitionId,
+              processDefinitionId: 'mcpProcessWithInputs',
               messageSubscriptionType: 'START_EVENT',
             },
           },
@@ -321,11 +317,15 @@ test.describe('MCP Message Subscription Search API Tests', () => {
 
       json.items.forEach(
         (it: {extensionProperties: Record<string, string>}) => {
-          assertEqualsForKeys(it, expectedMcpSubscriptionWithInputs, [
-            'processDefinitionId',
-            'messageSubscriptionType',
-            'tenantId',
-          ]);
+          assertEqualsForKeys(
+            it,
+            {
+              processDefinitionId: 'mcpProcessWithInputs',
+              messageSubscriptionType: 'START_EVENT',
+              tenantId: '<default>',
+            },
+            ['processDefinitionId', 'messageSubscriptionType', 'tenantId'],
+          );
           expect(it.extensionProperties['io.camunda.tool:input_1_name']).toBe(
             'firstName',
           );
