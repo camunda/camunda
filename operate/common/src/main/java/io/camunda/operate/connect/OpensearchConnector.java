@@ -428,7 +428,6 @@ public class OpensearchConnector {
   private RequestConfig.Builder setTimeouts(
       final RequestConfig.Builder builder, final OpensearchProperties os) {
     if (os.getSocketTimeout() != null) {
-      // builder.setSocketTimeout(os.getSocketTimeout());
       builder.setResponseTimeout(Timeout.ofMilliseconds(os.getSocketTimeout()));
     }
     if (os.getConnectTimeout() != null) {

@@ -384,11 +384,19 @@ public class BackupManagerOpenSearch extends BackupManager {
                     Metadata.extractBackupIdFromSnapshotName(snapshotRequest.snapshot());
                 if (e.getCause() instanceof SocketTimeoutException) {
                   // This is thrown even if the backup is still running
+                  final Integer socketTimeout =
+                      tasklistProperties.getOpenSearch().getSocketTimeout();
                   LOGGER.warn(
                       format(
-                          "Timeout while creating snapshot [%s] for backup id [%d]. Need to keep waiting with polling...",
+                          "The OpenSearch HTTP connection timed out while waiting for snapshot [%s] "
+                              + "(backup id [%d]) to complete. The snapshot is likely still running in "
+                              + "OpenSearch. Polling will continue to check its status. If socket timeouts "
+                              + "occur repeatedly, consider increasing the socket timeout via "
+                              + "CAMUNDA_TASKLIST_OPENSEARCH_SOCKETTIMEOUT (current value: %s ms). "
+                              + "Consider doubling or tripling the current value.",
                           snapshotRequest.snapshot(),
-                          Metadata.extractBackupIdFromSnapshotName(snapshotRequest.snapshot())));
+                          backupId,
+                          socketTimeout != null ? socketTimeout : "not set"));
                   // Keep waiting
                   final List<SnapshotInfo> snapshotInfos = findSnapshots(backupId);
                   final Optional<SnapshotInfo> maybeCurrentSnapshot =
@@ -591,11 +599,24 @@ public class BackupManagerOpenSearch extends BackupManager {
     if (lastSnapshotFinishedTime == null) {
       return false;
     }
-    final var incompleteCheckTimeoutInMilliseconds =
-        tasklistProperties.getBackup().getIncompleteCheckTimeoutInSeconds() * 1000;
+    final var incompleteCheckTimeoutInSeconds =
+        tasklistProperties.getBackup().getIncompleteCheckTimeoutInSeconds();
+    final var incompleteCheckTimeoutInMilliseconds = incompleteCheckTimeoutInSeconds * 1000;
     try {
-      return Instant.now().toEpochMilli() - Long.valueOf(lastSnapshotFinishedTime)
-          < incompleteCheckTimeoutInMilliseconds;
+      final boolean withinGrace =
+          Instant.now().toEpochMilli() - Long.valueOf(lastSnapshotFinishedTime)
+              < incompleteCheckTimeoutInMilliseconds;
+      if (!withinGrace) {
+        LOGGER.warn(
+            "Backup is considered INCOMPLETE because no new snapshot was started within the "
+                + "incomplete-check timeout of {} seconds after the last snapshot finished. "
+                + "If backups are still in progress and snapshots are taking longer than expected, "
+                + "increase CAMUNDA_TASKLIST_BACKUP_INCOMPLETECHECKTIMEOUTINSECONDS "
+                + "(current value: {}, recommended: double or triple it).",
+            incompleteCheckTimeoutInSeconds,
+            incompleteCheckTimeoutInSeconds);
+      }
+      return withinGrace;
     } catch (final Exception e) {
       LOGGER.warn(
           "Couldn't check incomplete timeout for backup. Return incomplete check is timed out", e);
@@ -652,8 +673,13 @@ public class BackupManagerOpenSearch extends BackupManager {
     }
     LOGGER.error(
         String.format(
-            "Snapshot [%s] did not finish after configured timeout. Snapshot process won't continue.",
-            snapshotName));
+            "Snapshot [%s] did not finish within the configured snapshot timeout of %d seconds. "
+                + "Backup will not continue. To increase the timeout, set "
+                + "CAMUNDA_TASKLIST_BACKUP_SNAPSHOTTIMEOUT to a larger value in seconds (current value: %d), "
+                + "or set it to 0 to wait indefinitely.",
+            snapshotName,
+            tasklistProperties.getBackup().getSnapshotTimeout(),
+            tasklistProperties.getBackup().getSnapshotTimeout()));
     return false;
   }
 

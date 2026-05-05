@@ -22,21 +22,16 @@ public class OpenSearchProperties {
 
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
   public static final int DEFAULT_MAX_TERMS_COUNT = 10_000;
-
+  public static final int DEFAULT_SOCKET_TIMEOUT = 180_000;
   private String clusterName = "opensearch-cluster";
-
   @Deprecated private String host = "localhost";
-
   @Deprecated private int port = 9205;
-
   private String dateFormat = DATE_FORMAT_DEFAULT;
-
   private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
-
   private int batchSize = 200;
   private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
 
-  private Integer socketTimeout;
+  private Integer socketTimeout = DEFAULT_SOCKET_TIMEOUT;
   private Integer connectTimeout;
 
   private boolean createSchema = true;

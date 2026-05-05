@@ -21,20 +21,15 @@ public class ElasticsearchProperties {
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
-
+  public static final int DEFAULT_SOCKET_TIMEOUT = 180_000;
   private String clusterName = "elasticsearch";
-
   @Deprecated private String host = "localhost";
-
   @Deprecated private int port = 9200;
-
   private String dateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
-
   private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
-
   private int batchSize = 200;
 
-  private Integer socketTimeout;
+  private Integer socketTimeout = DEFAULT_SOCKET_TIMEOUT;
   private Integer connectTimeout;
 
   private boolean createSchema = true;
