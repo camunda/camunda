@@ -191,8 +191,7 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankUsername() {
     // given
-    final var request =
-        Map.of("username", "", "password", "zabraboof", "name", "Foo Bar", "email", "bar@baz.com");
+    final var request = userRequestWith("", "zabraboof", "bar@baz.com");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -232,8 +231,7 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankPassword() {
     // given
-    final var request =
-        Map.of("username", "foo", "password", "", "name", "Foo Bar", "email", "bar@baz.com");
+    final var request = userRequestWith("foo", "", "bar@baz.com");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -289,8 +287,7 @@ class SetupControllerTest extends RestControllerTest {
   void shouldRejectUserCreationWithInvalidEmail() {
     // given
     final var email = "invalid@email.reject";
-    final var request =
-        Map.of("username", "foo", "password", "zabraboof", "name", "Foo Bar", "email", email);
+    final var request = userRequestWith("foo", "zabraboof", email);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -311,16 +308,7 @@ class SetupControllerTest extends RestControllerTest {
   void shouldRejectUserCreationWithTooLongUsername() {
     // given
     final var username = "x".repeat(257);
-    final var request =
-        Map.of(
-            "username",
-            username,
-            "password",
-            "zabraboof",
-            "name",
-            "Foo Bar",
-            "email",
-            "bar@baz.com");
+    final var request = userRequestWith(username, "zabraboof", "bar@baz.com");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -346,16 +334,7 @@ class SetupControllerTest extends RestControllerTest {
       })
   void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
     // given
-    final var request =
-        Map.of(
-            "username",
-            username,
-            "password",
-            "zabraboof",
-            "name",
-            "Foo Bar",
-            "email",
-            "bar@baz.com");
+    final var request = userRequestWith(username, "zabraboof", "bar@baz.com");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -387,11 +366,16 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   private UserRequest validUserWithPasswordRequest() {
+    return userRequestWith("foo", "zabraboof", "bar@baz.com");
+  }
+
+  private UserRequest userRequestWith(
+      final String username, final String password, final String email) {
     return UserRequest.Builder.create()
-        .username("foo")
-        .password("zabraboof")
+        .username(username)
+        .password(password)
         .name("Foo Bar")
-        .email("bar@baz.com")
+        .email(email)
         .build();
   }
 
