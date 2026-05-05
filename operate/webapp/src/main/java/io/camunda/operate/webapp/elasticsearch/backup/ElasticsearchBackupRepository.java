@@ -372,8 +372,13 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     }
     LOGGER.error(
         String.format(
-            "Snapshot [%s] did not finish after configured timeout. Snapshot process won't continue.",
-            snapshotName));
+            "Snapshot [%s] did not finish within the configured snapshot timeout of %d seconds. "
+                + "Backup will not continue. To increase the timeout, set "
+                + "CAMUNDA_OPERATE_BACKUP_SNAPSHOTTIMEOUT to a larger value in seconds (current value: %d), "
+                + "or set it to 0 to wait indefinitely.",
+            snapshotName,
+            operateProperties.getBackup().getSnapshotTimeout(),
+            operateProperties.getBackup().getSnapshotTimeout()));
     return false;
   }
 
@@ -525,15 +530,18 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       try {
         if (ex instanceof SocketTimeoutException) {
           // This is thrown even if the backup is still running
-          final int snapshotTimeout = operateProperties.getBackup().getSnapshotTimeout();
+          final Integer socketTimeout = operateProperties.getElasticsearch().getSocketTimeout();
           LOGGER.warn(
               String.format(
-                  "Socket timeout while creating snapshot [%s] for backup id [%d]. Start waiting with polling timeout, %s",
+                  "The Elasticsearch HTTP connection timed out while waiting for snapshot [%s] "
+                      + "(backup id [%d]) to complete. The snapshot is likely still running in "
+                      + "Elasticsearch. Polling will continue to check its status. If socket timeouts "
+                      + "occur repeatedly, consider increasing the socket timeout via "
+                      + "CAMUNDA_OPERATE_ELASTICSEARCH_SOCKETTIMEOUT (current value: %s ms). "
+                      + "Consider doubling or tripling the current value.",
                   snapshotRequest.snapshotName(),
                   backupId,
-                  (snapshotTimeout == 0)
-                      ? "until completion."
-                      : "at most " + snapshotTimeout + " seconds."));
+                  socketTimeout != null ? socketTimeout : "not set"));
           if (isSnapshotFinishedWithinTimeout(
               snapshotRequest.repositoryName(), snapshotRequest.snapshotName())) {
             onSuccess.run();

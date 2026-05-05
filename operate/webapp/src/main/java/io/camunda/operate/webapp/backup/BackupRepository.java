@@ -58,7 +58,19 @@ public interface BackupRepository {
     final var incompleteCheckTimeoutInMilliseconds = incompleteCheckTimeoutInSeconds * 1000;
     try {
       final var now = Instant.now().toEpochMilli();
-      return (now - lastSnapshotFinishedTime) > (incompleteCheckTimeoutInMilliseconds);
+      final boolean timedOut =
+          (now - lastSnapshotFinishedTime) > incompleteCheckTimeoutInMilliseconds;
+      if (timedOut) {
+        LOGGER.warn(
+            "Backup is considered INCOMPLETE because no new snapshot was started within the "
+                + "incomplete-check timeout of {} seconds after the last snapshot finished. "
+                + "If backups are still in progress and snapshots are taking longer than expected, "
+                + "increase CAMUNDA_OPERATE_BACKUP_INCOMPLETECHECKTIMEOUTINSECONDS "
+                + "(current value: {}, recommended: double or triple it).",
+            incompleteCheckTimeoutInSeconds,
+            incompleteCheckTimeoutInSeconds);
+      }
+      return timedOut;
     } catch (final Exception e) {
       LOGGER.warn(
           "Couldn't check incomplete timeout for backup. Return incomplete check is timed out", e);

@@ -460,11 +460,24 @@ public class BackupManagerElasticSearch extends BackupManager {
   }
 
   private boolean isWithinGracePeriodForIncomplete(final long lastSnapshotFinishedTime) {
-    final var incompleteCheckTimeoutInMilliseconds =
-        tasklistProperties.getBackup().getIncompleteCheckTimeoutInSeconds() * 1000;
+    final var incompleteCheckTimeoutInSeconds =
+        tasklistProperties.getBackup().getIncompleteCheckTimeoutInSeconds();
+    final var incompleteCheckTimeoutInMilliseconds = incompleteCheckTimeoutInSeconds * 1000;
     try {
-      return Instant.now().toEpochMilli() - lastSnapshotFinishedTime
-          < incompleteCheckTimeoutInMilliseconds;
+      final boolean withinGrace =
+          Instant.now().toEpochMilli() - lastSnapshotFinishedTime
+              < incompleteCheckTimeoutInMilliseconds;
+      if (!withinGrace) {
+        LOGGER.warn(
+            "Backup is considered INCOMPLETE because no new snapshot was started within the "
+                + "incomplete-check timeout of {} seconds after the last snapshot finished. "
+                + "If backups are still in progress and snapshots are taking longer than expected, "
+                + "increase CAMUNDA_TASKLIST_BACKUP_INCOMPLETECHECKTIMEOUTINSECONDS "
+                + "(current value: {}, recommended: double or triple it).",
+            incompleteCheckTimeoutInSeconds,
+            incompleteCheckTimeoutInSeconds);
+      }
+      return withinGrace;
     } catch (final Exception e) {
       LOGGER.warn(
           "Couldn't check incomplete timeout for backup. Return incomplete check is timed out", e);
@@ -549,8 +562,13 @@ public class BackupManagerElasticSearch extends BackupManager {
     }
     LOGGER.error(
         String.format(
-            "Snapshot [%s] did not finish after configured timeout. Snapshot process won't continue.",
-            snapshotName));
+            "Snapshot [%s] did not finish within the configured snapshot timeout of %d seconds. "
+                + "Backup will not continue. To increase the timeout, set "
+                + "CAMUNDA_TASKLIST_BACKUP_SNAPSHOTTIMEOUT to a larger value in seconds (current value: %d), "
+                + "or set it to 0 to wait indefinitely.",
+            snapshotName,
+            tasklistProperties.getBackup().getSnapshotTimeout(),
+            tasklistProperties.getBackup().getSnapshotTimeout()));
     return false;
   }
 
@@ -614,15 +632,16 @@ public class BackupManagerElasticSearch extends BackupManager {
     public void onFailure(final Exception e) {
       if (e instanceof SocketTimeoutException) {
         // backup is still running
-        final int snapshotTimeout = tasklistProperties.getBackup().getSnapshotTimeout();
+        final Integer socketTimeout = tasklistProperties.getElasticsearch().getSocketTimeout();
         LOGGER.warn(
             String.format(
-                "Socket timeout while creating snapshot [%s]. Start waiting with polling timeout, %s",
-                snapshotRequest.snapshot(),
-                snapshotRequest.userMetadata().get("backupId"),
-                (snapshotTimeout == 0)
-                    ? "until completion."
-                    : "at most " + snapshotTimeout + " seconds."));
+                "The Elasticsearch HTTP connection timed out while waiting for snapshot [%s] "
+                    + "to complete. The snapshot is likely still running in Elasticsearch. "
+                    + "Polling will continue to check its status. If socket timeouts occur "
+                    + "repeatedly, consider increasing the socket timeout via "
+                    + "CAMUNDA_TASKLIST_ELASTICSEARCH_SOCKETTIMEOUT (current value: %s ms). "
+                    + "Consider doubling or tripling the current value.",
+                snapshotRequest.snapshot(), socketTimeout != null ? socketTimeout : "not set"));
         if (isSnapshotFinishedWithinTimeout(snapshotRequest.snapshot())) {
           onSuccess.run();
         } else {
