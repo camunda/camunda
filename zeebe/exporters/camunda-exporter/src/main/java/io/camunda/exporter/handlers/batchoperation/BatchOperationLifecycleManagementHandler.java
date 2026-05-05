@@ -152,7 +152,11 @@ public class BatchOperationLifecycleManagementHandler
       scriptParams.put(BatchOperationTemplate.ERRORS, entity.getErrors());
     }
     batchRequest.upsertWithScript(
-        indexName, entity.getId(), entity, CONDITIONAL_STATE_UPDATE_SCRIPT, scriptParams);
+        indexLocator.getIndexLocation(entity, indexName),
+        entity.getId(),
+        entity,
+        CONDITIONAL_STATE_UPDATE_SCRIPT,
+        scriptParams);
   }
 
   @Override

@@ -92,7 +92,7 @@ public class BatchOperationChunkCreatedHandler
     final String batchOperationKey = entity.getId().split(":")[0];
 
     batchRequest.updateWithScript(
-        indexName,
+        indexLocator.getIndexLocation(entity, indexName),
         batchOperationKey,
         """
             ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount;

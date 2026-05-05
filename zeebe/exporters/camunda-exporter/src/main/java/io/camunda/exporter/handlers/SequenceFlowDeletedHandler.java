@@ -77,7 +77,7 @@ public class SequenceFlowDeletedHandler
       final SequenceFlowEntity entity,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(indexLocator.getIndexLocation(entity, indexName), entity.getId());
   }
 
   @Override

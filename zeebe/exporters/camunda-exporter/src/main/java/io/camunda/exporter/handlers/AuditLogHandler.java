@@ -125,9 +125,10 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
       final IndexLocator indexLocator, final AuditLogBatch batch, final BatchRequest batchRequest)
       throws PersistenceException {
 
-    batchRequest.add(indexName, batch.auditLogEntity);
+    batchRequest.add(indexLocator.getIndexLocation(batch, indexName), batch.auditLogEntity);
     ofNullable(batch.auditLogCleanupEntity)
-        .ifPresent(e -> batchRequest.add(auditLogCleanupIndexName, e));
+        .ifPresent(
+            e -> batchRequest.add(indexLocator.getIndexLocation(e, auditLogCleanupIndexName), e));
   }
 
   @Override

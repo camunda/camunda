@@ -125,7 +125,7 @@ public class BatchOperationChunkCreatedItemHandler
       final OperationEntity entity,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

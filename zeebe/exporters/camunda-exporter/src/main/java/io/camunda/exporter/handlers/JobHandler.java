@@ -173,7 +173,11 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     if (FAILED_JOB_EVENTS.stream().anyMatch(i -> jobEntity.getState().equals(i.name()))) {
       updateFields.put(JOB_FAILED_WITH_RETRIES_LEFT, jobEntity.isJobFailedWithRetriesLeft());
     }
-    batchRequest.upsert(indexName, jobEntity.getId(), jobEntity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(jobEntity, indexName),
+        jobEntity.getId(),
+        jobEntity,
+        updateFields);
   }
 
   @Override

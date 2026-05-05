@@ -71,7 +71,8 @@ public class TenantEntityAddedHandler
       final TenantMemberEntity entity,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.addWithRouting(indexName, entity, entity.getJoin().parent());
+    batchRequest.addWithRouting(
+        indexLocator.getIndexLocation(entity, indexName), entity, entity.getJoin().parent());
   }
 
   @Override

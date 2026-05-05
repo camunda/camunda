@@ -122,7 +122,8 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
     updateFields.put(OperationTemplate.COMPLETED_DATE, entity.getCompletedDate());
     updateFields.put(OperationTemplate.ERROR_MSG, entity.getErrorMessage());
 
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(entity, indexName), entity.getId(), entity, updateFields);
     LOGGER.trace("Updated operation {} with fields {}", entity.getId(), updateFields);
   }
 

@@ -70,7 +70,8 @@ public class RoleMemberAddedHandler implements ExportHandler<RoleMemberEntity, R
       final RoleMemberEntity entity,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.addWithRouting(indexName, entity, entity.getJoin().parent());
+    batchRequest.addWithRouting(
+        indexLocator.getIndexLocation(entity, indexName), entity, entity.getJoin().parent());
   }
 
   @Override

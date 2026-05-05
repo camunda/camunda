@@ -68,7 +68,10 @@ public class RoleMemberRemovedHandler implements ExportHandler<RoleMemberEntity,
       final RoleMemberEntity entity,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.deleteWithRouting(indexName, entity.getId(), entity.getJoin().parent());
+    batchRequest.deleteWithRouting(
+        indexLocator.getIndexLocation(entity, indexName),
+        entity.getId(),
+        entity.getJoin().parent());
   }
 
   @Override

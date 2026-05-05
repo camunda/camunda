@@ -75,7 +75,7 @@ public class SequenceFlowHandler
       final IndexLocator indexLocator,
       final SequenceFlowEntity entity,
       final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

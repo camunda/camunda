@@ -85,7 +85,7 @@ public class DecisionHandler
       final IndexLocator indexLocator,
       final DecisionDefinitionEntity entity,
       final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

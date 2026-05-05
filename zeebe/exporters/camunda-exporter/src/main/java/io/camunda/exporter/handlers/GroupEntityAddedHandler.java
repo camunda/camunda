@@ -71,7 +71,10 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupMemberEntity,
       final GroupMemberEntity entity,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.addWithRouting(indexName, entity, String.valueOf(entity.getJoin().parent()));
+    batchRequest.addWithRouting(
+        indexLocator.getIndexLocation(entity, indexName),
+        entity,
+        String.valueOf(entity.getJoin().parent()));
   }
 
   @Override

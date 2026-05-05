@@ -88,7 +88,7 @@ public class BatchOperationInitializedHandler
     // current state is CREATED or null, preventing state regression.
     // If the document does not yet exist, the upsert creates it from the entity.
     batchRequest.upsertWithScript(
-        indexName,
+        indexLocator.getIndexLocation(entity, indexName),
         entity.getId(),
         entity,
         CONDITIONAL_UPDATE_SCRIPT,

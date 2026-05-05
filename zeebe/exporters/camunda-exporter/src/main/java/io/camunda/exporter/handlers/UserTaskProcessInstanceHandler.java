@@ -76,7 +76,7 @@ public class UserTaskProcessInstanceHandler
       final IndexLocator indexLocator,
       final TaskProcessInstanceEntity entity,
       final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

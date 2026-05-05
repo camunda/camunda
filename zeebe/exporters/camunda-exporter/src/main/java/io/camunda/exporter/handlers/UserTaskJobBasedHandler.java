@@ -165,7 +165,7 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
     final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
 
     batchRequest.upsertWithRouting(
-        indexName,
+        indexLocator.getIndexLocation(entity, indexName),
         previousVersionRecord ? String.valueOf(entity.getKey()) : taskEntityId,
         entity,
         updateFields,

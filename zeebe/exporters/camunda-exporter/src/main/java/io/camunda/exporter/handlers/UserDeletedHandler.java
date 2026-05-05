@@ -68,7 +68,7 @@ public class UserDeletedHandler implements ExportHandler<UserEntity, UserRecordV
   public void flush(
       final IndexLocator indexLocator, final UserEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(indexLocator.getIndexLocation(entity, indexName), entity.getId());
   }
 
   @Override

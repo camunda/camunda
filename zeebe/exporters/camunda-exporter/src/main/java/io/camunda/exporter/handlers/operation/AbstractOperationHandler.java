@@ -70,7 +70,8 @@ public abstract class AbstractOperationHandler<R extends RecordValue>
     updateFields.put(OperationTemplate.LOCK_OWNER, entity.getLockOwner());
     updateFields.put(OperationTemplate.LOCK_EXPIRATION_TIME, entity.getLockExpirationTime());
 
-    batchRequest.update(indexName, entity.getId(), updateFields);
+    batchRequest.update(
+        indexLocator.getIndexLocation(entity, indexName), entity.getId(), updateFields);
   }
 
   @Override

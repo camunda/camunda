@@ -118,7 +118,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
       final IndexLocator indexLocator,
       final ProcessEntity entity,
       final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

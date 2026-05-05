@@ -179,7 +179,8 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     if (entity.getPosition() != null) {
       updateFields.put(FlowNodeInstanceTemplate.POSITION, entity.getPosition());
     }
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(entity, indexName), entity.getId(), entity, updateFields);
   }
 
   @Override

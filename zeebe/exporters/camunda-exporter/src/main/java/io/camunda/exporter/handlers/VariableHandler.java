@@ -93,7 +93,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
       final IndexLocator indexLocator,
       final VariableEntity entity,
       final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override
