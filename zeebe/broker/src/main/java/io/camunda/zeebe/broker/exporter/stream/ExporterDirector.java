@@ -596,12 +596,14 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     container.closeExporter();
     container.initMetadata();
 
+    // 10 seconds matches the timeout used in startActiveExportingMode() for initial exporter open.
     final var openFuture =
         new BackOffRetryStrategy(actor, Duration.ofSeconds(10), Duration.ofMillis(150))
             .runWithRetry(
                 () -> {
                   if (!containers.contains(container)) {
-                    // Container was removed while we were trying to reopen; abort.
+                    // Container was removed while reopening; return true to stop retrying and let
+                    // the runOnCompletion handler clean up without triggering onFailure().
                     return true;
                   }
                   try {

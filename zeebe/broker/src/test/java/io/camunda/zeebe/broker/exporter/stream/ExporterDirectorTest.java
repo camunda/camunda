@@ -979,10 +979,16 @@ public final class ExporterDirectorTest {
 
     final long eventPosition2 = writeEvent();
 
-    // then - the exporter should be reopened (open called a second time) and then resume exporting
-    Awaitility.await("exporter 0 is reopened after non-recoverable exception")
+    // then - the exporter should be closed and then reopened (open called a second time)
+    Awaitility.await("exporter 0 is closed and reopened after non-recoverable exception")
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> verify(exporters.get(0), times(2)).open(any()));
+
+    // close() must have been called before the second open() to reset exporter state
+    final InOrder inOrder = inOrder(exporters.get(0));
+    inOrder.verify(exporters.get(0)).open(any()); // first open
+    inOrder.verify(exporters.get(0)).close(); // close during reopen
+    inOrder.verify(exporters.get(0)).open(any()); // second open after reopen
 
     Awaitility.await("exporter 0 exports the record after reopen")
         .atMost(Duration.ofSeconds(10))

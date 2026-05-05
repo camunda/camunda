@@ -278,19 +278,20 @@ final class ExporterContainer implements Controller {
       }
       return true;
     } catch (final ExporterException ex) {
-      if (!ex.isRecoverable() && !exporterNeedsReopen) {
+      if (ex.isRecoverable() || exporterNeedsReopen) {
+        // Recoverable error or reopen already in progress — log and retry normally.
+        context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
+      } else {
         LOG.warn(
             "Exporter '{}' encountered a non-recoverable error. Requesting reopen to recover.",
             getId(),
             ex);
-        // Set before calling the callback so that concurrent retries (which all run on the same
+        // Set before calling the callback so that subsequent retries (which all run on the same
         // actor thread) do not trigger a second reopen request.
         exporterNeedsReopen = true;
         if (reopenRequestedCallback != null) {
           reopenRequestedCallback.accept(this);
         }
-      } else {
-        context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
       }
       return false;
     } catch (final Exception ex) {
