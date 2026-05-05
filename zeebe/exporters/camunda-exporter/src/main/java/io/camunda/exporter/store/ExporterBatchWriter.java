@@ -15,7 +15,10 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.WrittenRecord;
+import io.camunda.zeebe.util.ObjectSizeEstimator;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,17 +27,22 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Caches exporter entities of different types and provide the method to flush them in a batch. */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class ExporterBatchWriter {
-  private final Map<EntityIdAndEntityType, ExporterEntity> cachedEntities = new HashMap<>();
+  private static final Logger LOG = LoggerFactory.getLogger(ExporterBatchWriter.class);
+  private boolean warnAboutMessageSizeEstimation = false;
+  private final Map<EntityIdAndEntityType, CachedEntity> cachedEntities = new HashMap<>();
   private final Map<EntityIdTypeAndHandler, ExporterEntity> cachedEntitiesToFlush =
       new LinkedHashMap<>();
   private final Map<Long, Long> cachedRecordTimestamps = new HashMap<>();
   private final Map<ValueType, List<ExportHandler>> handlers;
   private final BiConsumer<String, Error> customErrorHandler;
   private final CamundaExporterMetrics metrics;
+  private long totalMemoryEstimate = 0L;
 
   private ExporterBatchWriter(
       final Map<ValueType, List<ExportHandler>> handlers,
@@ -48,24 +56,32 @@ public final class ExporterBatchWriter {
   public void addRecord(final Record<?> record) {
     final ValueType valueType = record.getValueType();
 
+    final var serializedSize = recordSize(record);
+
     handlers
         .getOrDefault(valueType, Collections.emptyList())
         .forEach(
             handler -> {
               if (handler.handlesRecord(record)) {
                 final List<String> entityIds = handler.generateIds(record);
-                entityIds.forEach(id -> updateAndCacheEntity(record, handler, id));
+                entityIds.forEach(
+                    id -> {
+                      updateAndCacheEntity(record, handler, id, serializedSize);
+                    });
               }
             });
   }
 
   private void updateAndCacheEntity(
-      final Record<?> record, final ExportHandler handler, final String id) {
+      final Record<?> record, final ExportHandler handler, final String id, final long length) {
     final var cacheKey = new EntityIdAndEntityType(id, handler.getEntityType());
 
-    final var entity = cachedEntities.computeIfAbsent(cacheKey, k -> handler.createNewEntity(id));
+    totalMemoryEstimate += length;
+    final var cached =
+        cachedEntities.computeIfAbsent(
+            cacheKey, (k) -> new CachedEntity(handler.createNewEntity(id), length));
 
-    handler.updateEntity(record, entity);
+    handler.updateEntity(record, cached.entity());
     cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());
 
     // we store all handlers for an entity to make sure not to miss any flushes.
@@ -73,12 +89,32 @@ public final class ExporterBatchWriter {
     // in cases where we have bugs with writing to the same index + id, but with a different
     // entity, this helps avoid race conditions that make that behavior non-deterministic.
     // which would otherwise make spotting and fixing such bugs harder.
-    cachedEntitiesToFlush.put(new EntityIdTypeAndHandler(cacheKey, handler), entity);
+    cachedEntitiesToFlush.put(new EntityIdTypeAndHandler(cacheKey, handler), cached.entity());
   }
 
   public void flush(final BatchRequest batchRequest) throws PersistenceException {
     if (cachedEntities.isEmpty()) {
       return;
+    }
+
+    if (LOG.isTraceEnabled()) {
+      LOG.trace(
+          "Flushing batch: totalMemoryEstimation={} bytes ({} MB), cachedEntities={}, entitiesToFlush={}",
+          totalMemoryEstimate,
+          getBatchMemoryEstimateInMb(),
+          cachedEntities.size(),
+          cachedEntitiesToFlush.size());
+      for (final var entry : cachedEntitiesToFlush.entrySet()) {
+        final var key = entry.getKey();
+        final var entityKey = key.key();
+        final var cached = cachedEntities.get(entityKey);
+        LOG.trace(
+            "  entity: id={} type={} handler={} sourceRecordBytes={}",
+            entityKey.entityId(),
+            entityKey.entityType().getSimpleName(),
+            key.handler().getClass().getSimpleName(),
+            cached != null ? cached.sourceRecordBytes() : 0L);
+      }
     }
 
     // some handlers modify the same entity (e.g. list view flow node instances are
@@ -92,8 +128,13 @@ public final class ExporterBatchWriter {
     }
 
     batchRequest.execute(customErrorHandler);
+    metrics.recordBulkMemorySize(totalMemoryEstimate);
     observeRecordTimestamps();
     reset();
+  }
+
+  public int getBatchMemoryEstimateInMb() {
+    return (int) (totalMemoryEstimate / (1024 * 1024));
   }
 
   private void observeRecordTimestamps() {
@@ -111,9 +152,31 @@ public final class ExporterBatchWriter {
     return cachedEntitiesToFlush.size();
   }
 
+  @VisibleForTesting
+  long getMemoryEstimateInBytes() {
+    return totalMemoryEstimate;
+  }
+
   private void reset() {
     cachedEntities.clear();
     cachedEntitiesToFlush.clear();
+    totalMemoryEstimate = 0L;
+  }
+
+  private long recordSize(final Record<?> record) {
+    if (record instanceof final WrittenRecord writtenRecord) {
+      return writtenRecord.getRawLength();
+    } else if (record instanceof final BufferWriter writer) {
+      return writer.getLength();
+    } else {
+      if (!warnAboutMessageSizeEstimation) {
+        LOG.debug(
+            "Message size estimation is not supported for record type: {}, using ObjectSizeEstimator",
+            record.getClass().getSimpleName());
+        warnAboutMessageSizeEstimation = true;
+      }
+      return ObjectSizeEstimator.estimateSize(record);
+    }
   }
 
   public static final class Builder {
@@ -150,6 +213,8 @@ public final class ExporterBatchWriter {
       return this;
     }
   }
+
+  private record CachedEntity(ExporterEntity entity, long sourceRecordBytes) {}
 
   private record EntityIdAndEntityType(String entityId, Class<?> entityType) {}
 
