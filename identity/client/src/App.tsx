@@ -12,6 +12,7 @@ import { getBaseUrl } from "./configuration";
 import AppRoot from "./components/global/AppRoot";
 import GlobalRoutes from "src/components/global/GlobalRoutes";
 import { LoginPage } from "src/pages/login/LoginPage.tsx";
+import { IdpPickerPage } from "src/pages/login/IdpPickerPage.tsx";
 import Forbidden from "src/pages/forbidden/index.tsx";
 import { NotificationProvider } from "src/components/notifications";
 import { Paths } from "src/components/global/routePaths";
@@ -30,6 +31,11 @@ const App: FC = () => {
           <Routes>
             <Route key="setup" path={Paths.setup()} Component={SetupPage} />
             <Route key="login" path={Paths.login()} Component={LoginPage} />
+            <Route
+              key="tenant-login"
+              path={Paths.tenantLogin(":tenantId")}
+              Component={IdpPickerPage}
+            />
             <Route path={Paths.forbidden()} element={<Forbidden />} />
             <Route
               key="identity-ui"
