@@ -91,7 +91,8 @@ public class CopilotConversationManager {
         session.appendAi(ai);
 
         if (!ai.hasToolExecutionRequests()) {
-          session.emit(AgentEvent.executionComplete(session.id()));
+          final String finalText = ai.text() != null ? ai.text() : "";
+          session.emit(AgentEvent.executionComplete(session.id(), finalText));
           return;
         }
 

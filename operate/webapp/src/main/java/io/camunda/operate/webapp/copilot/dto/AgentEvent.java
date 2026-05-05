@@ -49,9 +49,9 @@ public record AgentEvent(
         result);
   }
 
-  public static AgentEvent executionComplete(String conversationId) {
+  public static AgentEvent executionComplete(String conversationId, String content) {
     return new AgentEvent(
-        conversationId, "EXECUTION_COMPLETE", "COMPLETED", null, null, null, null, null);
+        conversationId, "EXECUTION_COMPLETE", "COMPLETED", content, null, null, null, null);
   }
 
   public static AgentEvent error(String conversationId, String message) {
