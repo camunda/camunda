@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.InstantSource;
 
 public record RdbmsWriterConfig(
+    String physicalTenantId,
     int partitionId,
     int queueSize,
     /*
@@ -33,6 +34,12 @@ public record RdbmsWriterConfig(
     InsertBatchingConfig insertBatchingConfig,
     InstantSource clock) {
 
+  /**
+   * Mirrors {@code RdbmsDataSources.DEFAULT_PHYSICAL_TENANT_ID}; redeclared here to avoid a
+   * dependency from {@code db/rdbms} on the {@code dist} module.
+   */
+  public static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
+
   public static final int DEFAULT_QUEUE_SIZE = 1000;
   // Default memory limit: 20MB - aligned with CamundaExporter's default
   public static final int DEFAULT_QUEUE_MEMORY_LIMIT = 20;
@@ -46,6 +53,7 @@ public record RdbmsWriterConfig(
 
   public static class Builder implements ObjectBuilder<RdbmsWriterConfig> {
 
+    private String physicalTenantId = DEFAULT_PHYSICAL_TENANT_ID;
     private int partitionId;
     private int queueSize = DEFAULT_QUEUE_SIZE;
     private int queueMemoryLimit = DEFAULT_QUEUE_MEMORY_LIMIT;
@@ -55,6 +63,11 @@ public record RdbmsWriterConfig(
     private HistoryConfig history = new HistoryConfig.Builder().build();
     private InsertBatchingConfig insertBatchingConfig = new InsertBatchingConfig.Builder().build();
     private InstantSource clock = InstantSource.system();
+
+    public Builder physicalTenantId(final String physicalTenantId) {
+      this.physicalTenantId = physicalTenantId;
+      return this;
+    }
 
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
@@ -100,6 +113,7 @@ public record RdbmsWriterConfig(
     @Override
     public RdbmsWriterConfig build() {
       return new RdbmsWriterConfig(
+          physicalTenantId,
           partitionId,
           queueSize,
           queueMemoryLimit,

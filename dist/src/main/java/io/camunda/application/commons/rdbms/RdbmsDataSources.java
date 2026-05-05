@@ -12,6 +12,7 @@ import io.camunda.configuration.Rdbms;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.sql.DataSource;
@@ -94,6 +95,16 @@ public final class RdbmsDataSources implements AutoCloseable {
           "No VendorDatabaseProperties configured for physical tenant " + physicalTenantId);
     }
     return props;
+  }
+
+  /** An unmodifiable view of all configured per-physical-tenant {@link DataSource}s. */
+  public Map<String, ? extends DataSource> dataSourcesByTenant() {
+    return Collections.unmodifiableMap(dataSources);
+  }
+
+  /** An unmodifiable view of all detected per-physical-tenant {@link VendorDatabaseProperties}. */
+  public Map<String, VendorDatabaseProperties> vendorPropertiesByTenant() {
+    return Collections.unmodifiableMap(vendorProperties);
   }
 
   @Override
