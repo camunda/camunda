@@ -9,7 +9,8 @@
     { "name": "WidgetFrobLink", "shape": "edge", "$comment": "Edge whose endpoint Frob is unestablished — exercises derived-requires orphan." },
     { "name": "WidgetMysteryLink", "shape": "edge", "$comment": "Edge whose endpoint semanticType resolves to no entity at all — exercises the unresolved-endpoint check." },
     { "name": "ExternalThing", "shape": "external-entity", "identifiers": ["ExternalThingId"], "$comment": "External entity (camunda/camunda#52320). Has no producer in the fixture spec; the cross-reference check must skip it." },
-    { "name": "WidgetExternalLink", "shape": "edge", "$comment": "Edge from Widget to ExternalThing — establishes correctly without needing an ExternalThing producer." }
+    { "name": "WidgetExternalLink", "shape": "edge", "$comment": "Edge from Widget to ExternalThing — establishes correctly without needing an ExternalThing producer." },
+    { "name": "BrokenProducedKind", "shape": "entity", "identifiers": ["BrokenProducedId"], "$comment": "Established by a fixture op whose `establishes` block is invalid (broken identifiedBy). The producer-existence gate must NOT count it as established, so consumers get the orphan error." }
   ]
 }
 

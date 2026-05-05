@@ -81,3 +81,9 @@ paths:
     $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1{widgetId}~1wrong-shape-default~1{username}'
   /invalid/widgets/wrong-shape-explicit:
     $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1wrong-shape-explicit'
+
+  # ── Producer-existence gate (broken producer must not suppress consumer orphan) ──
+  /invalid/broken-establish:
+    $ref: 'widgets.yaml#/paths/~1invalid~1broken-establish'
+  /invalid/broken-establish-consumer/{brokenProducedId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1broken-establish-consumer~1{brokenProducedId}'

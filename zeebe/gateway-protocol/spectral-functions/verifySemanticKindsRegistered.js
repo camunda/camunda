@@ -253,7 +253,15 @@ module.exports = (input, _opts, _context) => {
 
       const est = op['x-semantic-establishes'];
       if (est && typeof est.kind === 'string') {
-        established.add(est.kind);
+        // Track per-op establishes errors so we can gate the
+        // `established.add(est.kind)` below: a producer with a broken
+        // establishes block (unknown kind, illegal external-entity,
+        // shape-vs-registry mismatch, or unresolved/multi-owner edge
+        // endpoint) does not actually produce a usable kind for
+        // downstream chain planning. Adding it eagerly would suppress
+        // the orphan error on every consumer of that kind, hiding the
+        // real downstream impact behind the local producer error.
+        const errorsBeforeEstablishes = errors.length;
         if (!registry.has(est.kind)) {
           errors.push({
             message: `Unknown semantic kind '${est.kind}' on ${method.toUpperCase()} ${pathKey} (x-semantic-establishes). Add it to zeebe/gateway-protocol/src/main/proto/v2/semantic-kinds.json or fix the typo.`,
@@ -369,6 +377,15 @@ module.exports = (input, _opts, _context) => {
               });
             }
           }
+        }
+
+        // Gate the producer-existence side of the cross-reference walk:
+        // only count this op as a producer of `est.kind` if its
+        // establishes block is well-formed (no errors pushed above).
+        // Otherwise consumers of this kind must still see the orphan
+        // error so the downstream impact is visible.
+        if (errors.length === errorsBeforeEstablishes) {
+          established.add(est.kind);
         }
       }
 

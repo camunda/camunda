@@ -446,6 +446,38 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
     });
   });
 
+  // ── Producer-existence gate ──────────────────────────────────
+  // A producer with a broken `establishes` block (unknown kind, illegal
+  // external-entity, shape-vs-registry mismatch, broken identifiedBy) is
+  // not a usable producer. The gate must keep that kind out of the
+  // `established` set so downstream consumers still report the orphan
+  // error and the real downstream impact is visible — not silently
+  // masked by the local producer error.
+  describe('verify-semantic-kinds-registered: producer-existence gate', () => {
+    it('reports orphan on the consumer when its only producer has a broken establishes block', () => {
+      // brokenEstablishProducer establishes BrokenProducedKind via an
+      // undeclared path parameter (a real establishes-side defect).
+      // brokenEstablishConsumer requires BrokenProducedKind. Without the
+      // gate, the local producer error would mask the consumer orphan.
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes("Semantic kind 'BrokenProducedKind'") &&
+          e.message.includes('no operation establishes it') &&
+          e.message.includes('/invalid/broken-establish-consumer'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+
+    it('still reports the local producer error too', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/invalid/broken-establish') &&
+          /references path parameter 'brokenProducedId'/.test(e.message),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+  });
+
   // ── Per-file pass: only the producer-existence cross-reference is gated ──
   // CI lints both the bundled entry (rest-api.yaml) and each domain file
   // independently. The cross-reference walk relies on every producer being

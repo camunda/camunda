@@ -655,3 +655,52 @@ paths:
       responses:
         '201':
           description: Created.
+
+  # ── Producer-existence gate: broken producer must not suppress consumer orphan ──
+  # Class-scoped: any defect in the establishes block (broken identifiedBy
+  # binding here) prevents the kind from being treated as produced, so
+  # downstream consumers still see the orphan error and the real
+  # downstream impact is visible.
+
+  # 24. Producer with broken identifiedBy (references undeclared path param).
+  /invalid/broken-establish:
+    put:
+      operationId: brokenEstablishProducer
+      summary: Establishes BrokenProducedKind via undeclared path param
+      description: |
+        Should fail establishes-side existence check — `brokenProducedId`
+        is not a declared parameter. The producer-existence gate must NOT
+        count BrokenProducedKind as established, so the consumer below
+        still gets the orphan error.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: BrokenProducedKind
+        identifiedBy:
+          - { in: path, name: brokenProducedId, semanticType: BrokenProducedId }
+      responses:
+        '204':
+          description: OK.
+
+  # 25. Consumer of BrokenProducedKind. Should report the orphan error
+  #     (no usable producer) — not be silently masked.
+  /invalid/broken-establish-consumer/{brokenProducedId}:
+    get:
+      operationId: brokenEstablishConsumer
+      summary: Requires BrokenProducedKind
+      description: Class-scoped guard for the producer-existence gate.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: brokenProducedId
+          in: path
+          required: true
+          description: The id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: BrokenProducedKind
+        bind:
+          brokenProducedId: { from: path, name: brokenProducedId }
+      responses:
+        '200':
+          description: OK.
