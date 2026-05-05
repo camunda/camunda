@@ -85,11 +85,13 @@ components:
       x-semantic-client-minted: true
       minLength: 1
       maxLength: 256
-      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
-      # The runtime allows a separate `groupIdPattern` for "bring your own
-      # groups" but defaults to the same regex; the schema reflects the
-      # default-deployment contract.
-      pattern: ^[a-zA-Z0-9_~@.+-]+$
+      # No `pattern` constraint: groupId validation is deployment-scoped.
+      # `SecurityConfiguration.getCompiledGroupIdValidationPattern()` returns
+      # `DEFAULT_EXTERNAL_ID_REGEX` (`.*`) when OIDC `groupsClaim` is
+      # configured ("bring your own groups"), and `DEFAULT_ID_REGEX`
+      # (`^[a-zA-Z0-9_~@.+-]+$`) otherwise. Advertising the strict regex
+      # here would falsely reject valid IdP-supplied group IDs in BYOG
+      # deployments.
 
     MappingRuleId:
       example: my-mapping-rule
