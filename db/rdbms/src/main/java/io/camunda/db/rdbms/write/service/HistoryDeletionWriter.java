@@ -33,7 +33,7 @@ public class HistoryDeletionWriter implements RdbmsWriter {
             ContextType.HISTORY_DELETION,
             WriteStatementType.INSERT,
             dbModel.getId(),
-            "io.camunda.db.rdbms.sql.HistoryDeletionMapper.insert",
+            "io.camunda.db.rdbms.sql.HistoryDeletionMapper.createIfNotExists",
             dbModel));
   }
 
