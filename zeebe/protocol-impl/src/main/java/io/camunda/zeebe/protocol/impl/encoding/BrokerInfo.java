@@ -87,8 +87,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     reset();
   }
 
-  public BrokerInfo(
-      final int nodeId, @Nullable final String zone, final String commandApiAddress) {
+  public BrokerInfo(final int nodeId, @Nullable final String zone, final String commandApiAddress) {
     reset();
     this.nodeId = nodeId;
     this.zone = zone;
@@ -136,7 +135,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   public @Nullable String zone() {
     return zone;
   }
-
 
   public int getPartitionsCount() {
     if (partitionsCountNullValue() == partitionsCount) {
