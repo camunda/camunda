@@ -9,8 +9,8 @@
 import {test} from '#/pw-modules/test-extend';
 
 // TODO: implement with https://github.com/camunda/camunda/issues/51318
-test.skip('should redirect to the initial page on success', async ({page: _page}) => {});
-test.skip('should redirect to the referrer page', async ({page: _page}) => {});
-test.skip('should show an error for wrong credentials', async ({page: _page}) => {});
-test.skip('should show a generic error message', async ({page: _page}) => {});
-test.skip('should show a loading state while the login form is submitting', async ({page: _page}) => {});
+test.skip('should redirect to the initial page on success', async () => {});
+test.skip('should redirect to the referrer page', async () => {});
+test.skip('should show an error for wrong credentials', async () => {});
+test.skip('should show a generic error message', async () => {});
+test.skip('should show a loading state while the login form is submitting', async () => {});
