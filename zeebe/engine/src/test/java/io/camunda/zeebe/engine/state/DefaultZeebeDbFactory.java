@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.inmemory.InMemoryZeebeDbFactory;
+import io.camunda.zeebe.db.impl.layered.LayeredZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -35,5 +36,13 @@ public final class DefaultZeebeDbFactory {
   public static ZeebeDbFactory<ZbColumnFamilies> inMemoryFactory() {
     return new InMemoryZeebeDbFactory<>(
         CONSISTENCY_CHECKS, ACCESS_METRICS_CONFIGURATION, SimpleMeterRegistry::new);
+  }
+
+  public static ZeebeDbFactory<ZbColumnFamilies> layeredFactory() {
+    return new LayeredZeebeDbFactory<>(
+        new RocksDbConfiguration(),
+        CONSISTENCY_CHECKS,
+        ACCESS_METRICS_CONFIGURATION,
+        SimpleMeterRegistry::new);
   }
 }
