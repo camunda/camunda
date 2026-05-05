@@ -15,6 +15,7 @@ dependencies {
     api(project(":camunda-security-protocol"))
     api(project(":zeebe-broker"))
     api(project(":camunda-db-rdbms-schema"))
+    api(project(":zeebe-bpmn-model"))
     api(project(":zeebe-util"))
     implementation(libs.org.slf4j.slf4j.api)
     implementation(libs.org.apache.commons.commons.lang3)

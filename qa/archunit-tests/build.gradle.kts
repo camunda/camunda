@@ -9,6 +9,9 @@ plugins {
 dependencies {
     testImplementation(project(":camunda-zeebe"))
     testImplementation(project(":zeebe-util"))
+    testImplementation(project(":zeebe-bpmn-model"))
+    testImplementation(project(":zeebe-protocol-impl"))
+    testImplementation(project(":zeebe-scheduler"))
     testImplementation(libs.com.tngtech.archunit.archunit)
     testImplementation(libs.com.tngtech.archunit.archunit.junit5.api)
     testImplementation(libs.com.tngtech.archunit.archunit.junit5.engine)

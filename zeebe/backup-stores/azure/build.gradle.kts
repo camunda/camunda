@@ -20,6 +20,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(project(":zeebe-backup-testkit", configuration = "tests"))
+    testImplementation(project(":zeebe-protocol"))
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)

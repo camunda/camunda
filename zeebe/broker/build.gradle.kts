@@ -10,7 +10,7 @@ plugins {
 tasks.named<JavaExec>("generateSbe") {
     args(
         "${project.projectDir}/src/main/resources/broker-protocol.xml",
-        "${project.projectDir}/src/main/resources/transfer-snapshot-schema.xml"
+        "${project.projectDir}/src/main/resources/transfer-snapshot-schema.xml",
     )
 }
 
@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":zeebe-logstreams"))
     implementation(project(":zeebe-msgpack-value"))
     implementation(project(":zeebe-protocol-impl"))
+    implementation(project(":dynamic-node-id-provider"))
     implementation(project(":zeebe-protocol"))
     implementation(project(":zeebe-snapshots"))
     implementation(project(":zeebe-transport"))

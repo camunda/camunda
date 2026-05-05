@@ -9,7 +9,6 @@ plugins {
 dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     api(project(":camunda-client-java"))
-    api(project(":zeebe-client-java"))
     api(libs.org.springframework.spring.context)
     api(libs.org.springframework.boot.spring.boot)
     api(libs.org.springframework.spring.core)

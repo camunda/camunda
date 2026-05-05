@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-process-test-dsl"))
+    api(project(":camunda-process-test-json-test-cases"))
     api(libs.org.testcontainers.testcontainers)
     api(libs.org.testcontainers.testcontainers.elasticsearch)
     api(libs.org.junit.jupiter.junit.jupiter.api.x1)
@@ -15,7 +15,6 @@ dependencies {
     api(libs.org.junit.jupiter.junit.jupiter.params.x1)
     implementation(libs.org.slf4j.slf4j.api)
     api(project(":camunda-client-java"))
-    api(project(":zeebe-client-java"))
     api(libs.org.assertj.assertj.core)
     api(libs.org.awaitility.awaitility)
     api(libs.org.apache.httpcomponents.client5.httpclient5)

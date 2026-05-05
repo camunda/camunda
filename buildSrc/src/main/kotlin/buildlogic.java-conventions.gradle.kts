@@ -10,7 +10,7 @@ plugins {
 // Repositories are centrally managed in settings.gradle.kts via dependencyResolutionManagement
 
 group = "io.camunda"
-version = "8.9.0-SNAPSHOT"
+version = "8.10.0-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
 publishing {
@@ -19,19 +19,19 @@ publishing {
     }
 }
 
-tasks.withType<JavaCompile>() {
+tasks.withType<JavaCompile> {
     options.encoding = "utf-8"
 }
 
-tasks.withType<Javadoc>() {
+tasks.withType<Javadoc> {
     options.encoding = "utf-8"
 }
 
-tasks.withType<Test>() {
+tasks.withType<Test> {
     jvmArgs(
         "--add-opens=java.base/java.io=ALL-UNNAMED",
         "--add-opens=java.base/java.nio=ALL-UNNAMED",
         "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
-        "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+        "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
     )
 }

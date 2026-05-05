@@ -12,6 +12,7 @@ dependencies {
     implementation(libs.com.google.guava.guava)
     implementation(libs.io.grpc.grpc.api)
     implementation(project(":camunda-client-java"))
+    implementation(project(":camunda-spring-boot-starter"))
     implementation(project(":zeebe-util"))
     implementation(libs.io.prometheus.prometheus.metrics.exporter.httpserver)
     implementation(libs.io.prometheus.prometheus.metrics.model)
@@ -25,6 +26,7 @@ dependencies {
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.awaitility.awaitility)
+    testImplementation(project(":camunda-process-test-java"))
 }
 
 description = "Camunda Load Tester"

@@ -32,6 +32,7 @@ dependencies {
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
+    testImplementation(project(":zeebe-msgpack-core"))
     compileOnly(libs.jakarta.servlet.jakarta.servlet.api)
 }
 
