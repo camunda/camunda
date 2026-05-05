@@ -117,17 +117,17 @@ jobs:
         run: |
           echo "Waiting for Keycloak to be ready..."
           for i in {1..60}; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" -m 5 http://localhost:9000/health/ready 2>/dev/null || echo "000")
-            if [[ "$code" == "200" ]]; then
-              echo "Keycloak is ready"
+            status=$(docker inspect --format='{{.State.Health.Status}}' keycloak 2>/dev/null || echo "missing")
+            if [[ "$status" == "healthy" ]]; then
+              echo "Keycloak is healthy"
               break
             fi
-            echo "Waiting for Keycloak... ($i/60), HTTP=$code"
+            echo "Waiting for Keycloak... ($i/60), status=$status"
             sleep 10
           done
           if [[ $i -eq 60 ]]; then
-            echo "Keycloak did not become ready in time"
-            curl -v http://localhost:9000/health/ready || true
+            echo "Keycloak did not become healthy in time"
+            docker inspect --format='{{json .State.Health}}' keycloak || true
             docker compose logs keycloak
             exit 1
           fi
