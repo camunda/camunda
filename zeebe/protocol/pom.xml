@@ -155,8 +155,8 @@
             <phase>generate-sources</phase>
             <configuration>
               <arguments>
-                <argument>${project.basedir}/src/main/resources/protocol.xml</argument>
-                <argument>${project.basedir}/src/main/resources/cluster-management-protocol.xml</argument>
+                <argument>${project.build.resources[0].directory}/protocol.xml</argument>
+                <argument>${project.build.resources[0].directory}/cluster-management-protocol.xml</argument>
               </arguments>
             </configuration>
           </execution>
