@@ -19,6 +19,7 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Eventually-consistent annotation validation (command operations must not be marked as eventually consistent)
   - Required property existence validation (entries in required array must exist in properties)
   - Operation versioning annotation validation (every operation must declare `x-added-in-version`)
+  - Semantic graph annotation shape + cross-reference validation (`x-semantic-establishes`, `x-semantic-requires`, `semantic-kinds.json` registry)
 
 ## Running Validation Locally
 
@@ -154,6 +155,16 @@ paths:
 ```
 
 Set the value to the version in which the endpoint **first** ships and do not update it on later changes. See §2.17 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md) for the full convention.
+
+### Semantic graph annotations (`x-semantic-establishes`, `x-semantic-requires`)
+
+Three rules validate the producer/consumer dependency annotations consumed by the API test generator:
+
+- `semantic-establishes-shape` — `x-semantic-establishes` must conform to the documented schema (`kind`, optional `shape`, `identifiedBy[]` with `in` / `name` / `semanticType` / optional `acceptsExternal: true`).
+- `semantic-requires-shape` — `x-semantic-requires` must conform to the documented schema (`kind`, `bind` map of `from` / `name`).
+- `verify-semantic-kinds-registered` (custom JS function in `spectral-functions/`) — every `kind:` appears in `semantic-kinds.json`; every required kind is established somewhere in the spec; every `identifiedBy` / `bind` member references a parameter or top-level body property that exists on the operation; operations must not directly establish/require kinds whose registry shape is `external-entity`; `identifiedBy[].acceptsExternal: true` skips the producer-existence cross-reference for that tuple while still running single-owner resolution.
+
+For the full annotation reference (including `x-semantic-provider`, `x-semantic-client-minted`, kind-level `shape: external-entity`, and the per-tuple `acceptsExternal` flag), see §2.18 of [`docs/rest-api-endpoint-guidelines.md`](../../docs/rest-api-endpoint-guidelines.md). The kind registry itself is [`src/main/proto/v2/semantic-kinds.json`](src/main/proto/v2/semantic-kinds.json) — its `$comment` block documents how to add a new kind.
 
 ## Testing Custom Spectral Functions
 
