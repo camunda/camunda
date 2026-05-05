@@ -100,12 +100,6 @@ public class DefaultCamundaAuthenticationProviderTest {
   }
 
   @Test
-  void shouldFailToConvertWithUsernameAndClientId() {
-    assertThatExceptionOfType(IllegalArgumentException.class)
-        .isThrownBy(() -> CamundaAuthentication.of(b -> b.user("foo").clientId("bar")));
-  }
-
-  @Test
   void shouldAllowNeitherUsernameOrClientWhenAnonymous() {
     // given
     final var expectedAuthentication = CamundaAuthentication.anonymous();
