@@ -259,22 +259,79 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
     });
   });
 
-  // ── Per-file pass: skip on fragment files (no `openapi:` at root) ──
+  // ── Per-file pass: only the producer-existence cross-reference is gated ──
   // CI lints both the bundled entry (rest-api.yaml) and each domain file
   // independently. The cross-reference walk relies on every producer being
   // visible in `paths`, which is true only for the bundled pass. Without
-  // the fragment skip, edges in tenants.yaml/roles.yaml/groups.yaml that
-  // bind User/MappingRule (whose producers live in users.yaml/
-  // mapping-rules.yaml) falsely report 'no operation establishes ...'.
-  describe('verify-semantic-kinds-registered: fragment skip', () => {
-    it('does not produce cross-reference errors when linting a fragment file standalone', () => {
+  // gating, edges in tenants.yaml/roles.yaml/groups.yaml that bind
+  // User/MappingRule (whose producers live in users.yaml/
+  // mapping-rules.yaml) would falsely report 'no operation establishes
+  // ...'. Per-operation checks (unknown kind, illegal direct
+  // establishes/requires of an external-entity, edge-endpoint
+  // single-owner resolution) must keep firing on fragments — they only
+  // need the registry plus the operation in front of them.
+  describe('verify-semantic-kinds-registered: fragment behaviour', () => {
+    it('does not produce cross-reference errors when linting a well-formed fragment standalone', () => {
       const results = lintFixtureFile(FIXTURE, 'fragment-only.yaml');
       const registry = filterByRule(results, REGISTRY_RULE);
       assert.equal(
         registry.length,
         0,
-        `Fragment lint should produce no verify-semantic-kinds-registered errors. Got: ${JSON.stringify(registry, null, 2)}`,
+        `Well-formed fragment lint should produce no verify-semantic-kinds-registered errors. Got: ${JSON.stringify(registry, null, 2)}`,
       );
+    });
+
+    describe('per-operation checks still fire on fragments', () => {
+      let v;
+      before(() => {
+        const results = lintFixtureFile(FIXTURE, 'fragment-bad.yaml');
+        v = filterByRule(results, REGISTRY_RULE);
+      });
+
+      it('flags unknown kind on x-semantic-establishes', () => {
+        const m = v.filter(
+          (e) =>
+            e.message.includes("Unknown semantic kind 'Wigdet'") &&
+            e.message.includes('x-semantic-establishes'),
+        );
+        assert.equal(m.length, 1, JSON.stringify(v, null, 2));
+      });
+
+      it('flags unknown kind on x-semantic-requires', () => {
+        const m = v.filter(
+          (e) =>
+            e.message.includes("Unknown semantic kind 'Wigdet'") &&
+            e.message.includes('x-semantic-requires'),
+        );
+        assert.equal(m.length, 1, JSON.stringify(v, null, 2));
+      });
+
+      it('flags direct x-semantic-establishes against an external entity', () => {
+        const m = v.filter(
+          (e) =>
+            e.message.includes("'ExternalThing'") &&
+            e.message.includes('cannot be established'),
+        );
+        assert.equal(m.length, 1, JSON.stringify(v, null, 2));
+      });
+
+      it('flags direct x-semantic-requires against an external entity', () => {
+        const m = v.filter(
+          (e) =>
+            e.message.includes("'ExternalThing'") &&
+            e.message.includes('cannot be required directly'),
+        );
+        assert.equal(m.length, 1, JSON.stringify(v, null, 2));
+      });
+
+      it('flags unresolved edge endpoint semanticType', () => {
+        const m = v.filter(
+          (e) =>
+            e.message.includes("Edge endpoint semanticType 'MysteryId'") &&
+            e.message.includes('not declared as an identifier'),
+        );
+        assert.equal(m.length, 1, JSON.stringify(v, null, 2));
+      });
     });
   });
 });

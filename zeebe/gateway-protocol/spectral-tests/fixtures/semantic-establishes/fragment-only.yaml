@@ -1,22 +1,25 @@
 # Fragment file (no `openapi:` at root) — mirrors the per-file CI pass over
-# the real spec's domain files (tenants.yaml, roles.yaml, etc.). The
-# verify-semantic-kinds-registered cross-reference walk must skip these
-# documents because producer ops live in sibling files that aren't visible
-# in this scope. Without the skip, edges binding User would falsely report
-# 'no operation establishes User'.
+# the real spec's domain files (tenants.yaml, roles.yaml, etc.). Only the
+# producer-existence cross-reference is skipped on fragments; per-operation
+# checks (unknown kind, illegal direct establishes/requires of an
+# external-entity, edge-endpoint single-owner resolution) must still run.
 
 paths:
-  /fragment/edges/{widgetId}/owners/{ownerId}:
+  /fragment/edges/{widgetId}/users/{username}:
     put:
-      operationId: assignOwnerInFragment
+      operationId: assignUserInFragment
       summary: Edge in a fragment file
-      description: Edge whose endpoint Widget is established in a sibling file (not visible here).
+      description: |
+        Edge whose endpoints (Widget, User) are established in sibling files
+        not visible in this scope. The bundled lint pass enforces producer
+        existence; this per-file pass must not falsely flag missing
+        producers.
       x-semantic-establishes:
-        kind: WidgetOwnerMembership
+        kind: WidgetOwnership
         shape: edge
         identifiedBy:
           - { in: path, name: widgetId, semanticType: WidgetId }
-          - { in: path, name: ownerId,  semanticType: OwnerId }
+          - { in: path, name: username, semanticType: Username }
       responses:
         '204':
           description: Done.
@@ -25,7 +28,10 @@ paths:
     get:
       operationId: getWidgetInFragment
       summary: Consumer in a fragment file
-      description: Requires Widget which is established in a sibling file.
+      description: |
+        Requires Widget which is established in a sibling file. The bundled
+        pass enforces producer existence; this per-file pass must not flag
+        Widget as unestablished here.
       x-semantic-requires:
         kind: Widget
         bind:

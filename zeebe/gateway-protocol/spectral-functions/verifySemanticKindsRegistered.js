@@ -117,12 +117,16 @@ module.exports = (input, _opts, _context) => {
 
   // The CI runs spectral twice: once on the bundled entry point
   // (rest-api.yaml) and once per-file across the glob. The cross-reference
-  // walk below relies on every producer op being visible in `paths` — true
-  // for the bundled pass, false for the per-file pass (e.g. tenants.yaml
-  // has edges binding User, but createUser lives in users.yaml). Run only
-  // on documents that look like a complete OpenAPI root — fragment files
-  // omit the `openapi:` field.
-  if (typeof input?.openapi !== 'string') return errors;
+  // walk at the end relies on every producer op being visible in `paths` —
+  // true for the bundled pass, false for the per-file pass (e.g.
+  // tenants.yaml has edges binding User, but createUser lives in
+  // users.yaml). On fragment files (no `openapi:` at root) we still run
+  // every per-operation check (unknown kind, illegal direct
+  // establishes/requires of an external-entity, edge-endpoint
+  // single-owner resolution) because those only need the registry plus
+  // the operation in front of them. Only the producer-existence
+  // cross-reference is gated.
+  const crossReferenceEnabled = typeof input?.openapi === 'string';
 
   const paths = input?.paths;
   if (!paths || typeof paths !== 'object') return errors;
@@ -232,6 +236,9 @@ module.exports = (input, _opts, _context) => {
   // is the actionable one. Skip external entities — by definition they
   // have no producer in this API, and the direct-reject above already
   // catches anyone trying to require one with x-semantic-requires.
+  // Skip entirely on fragment files: producers may live in sibling files
+  // not visible in this pass. The bundled pass enforces it.
+  if (!crossReferenceEnabled) return errors;
   for (const r of required) {
     if (!registry.has(r.kind)) continue;
     if (externalNames.has(r.kind)) continue;
