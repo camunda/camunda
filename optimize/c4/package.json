@@ -22,27 +22,27 @@
 		"@carbon/icons-react": "^11.41.0",
 		"@carbon/react": "^1.91.0",
 		"@chromatic-com/storybook": "^5.0.0",
-		"@storybook/addon-docs": "10.2.8",
-		"@storybook/addon-links": "10.2.8",
+		"@storybook/addon-docs": "10.2.19",
+		"@storybook/addon-links": "10.2.19",
 		"@storybook/addon-styling-webpack": "^3.0.0",
 		"@storybook/addon-webpack5-compiler-swc": "^4.0.1",
-		"@storybook/react-webpack5": "10.2.8",
+		"@storybook/react-webpack5": "10.2.19",
 		"@types/react": "^19.0.0",
 		"classnames": "^2.3.2",
 		"css-loader": "^7.1.2",
 		"prop-types": "^15.8.1",
-		"react": "19.0.0",
-		"react-dom": "19.0.0",
+		"react": "19.0.5",
+		"react-dom": "19.0.5",
 		"sass": "^1.81.0",
 		"sass-loader": "^16.0.3",
-		"storybook": "10.2.10",
+		"storybook": "10.2.19",
 		"style-loader": "^4.0.0",
 		"typescript": "5.9.3"
 	},
 	"peerDependencies": {
 		"@carbon/react": "^1.91.0",
-		"react": "19.0.0",
-		"react-dom": "19.0.0"
+		"react": "19.0.5",
+		"react-dom": "19.0.5"
 	},
 	"packageManager": "yarn@4.12.0"
 }
