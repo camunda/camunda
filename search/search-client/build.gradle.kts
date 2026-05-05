@@ -11,8 +11,6 @@ dependencies {
     implementation(project(":camunda-search-client-reader"))
     implementation(project(":camunda-security-core"))
     implementation(libs.org.slf4j.slf4j.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)

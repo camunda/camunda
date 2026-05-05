@@ -10,8 +10,6 @@ dependencies {
     api(libs.com.auth0.java.jwt)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
 }
 

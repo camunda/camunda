@@ -17,7 +17,6 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.jakarta.annotation.jakarta.annotation.api)
     implementation(libs.net.jcip.jcip.annotations)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.wiremock.wiremock.standalone)
     testImplementation(libs.org.mockito.mockito.core)

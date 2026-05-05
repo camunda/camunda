@@ -27,7 +27,6 @@ dependencies {
     api(libs.org.camunda.bpm.model.camunda.dmn.model)
     api(libs.org.camunda.bpm.model.camunda.xml.model)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.annotations)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine.x1)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.wiremock.wiremock.standalone)

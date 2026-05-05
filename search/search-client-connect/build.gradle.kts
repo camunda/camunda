@@ -30,13 +30,10 @@ dependencies {
     api(libs.jakarta.json.jakarta.json.api)
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.org.agrona.agrona)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.net.bytebuddy.byte.buddy)
     testImplementation(libs.org.wiremock.wiremock.standalone)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.opensearch.opensearch.testcontainers)
     testImplementation(project(":zeebe-test-util"))
 }

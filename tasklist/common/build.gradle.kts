@@ -45,8 +45,6 @@ dependencies {
     testImplementation(libs.org.wiremock.wiremock.standalone)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.assertj.assertj.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
     testImplementation(libs.org.junit.platform.junit.platform.suite)
 }

@@ -13,8 +13,6 @@ dependencies {
     implementation(project(":camunda-search-client-reader"))
     testImplementation(project(":zeebe-auth"))
     testImplementation(project(":zeebe-protocol"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.assertj.assertj.core)
 }
 

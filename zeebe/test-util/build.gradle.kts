@@ -49,7 +49,7 @@ dependencies {
     api(libs.org.opensearch.opensearch.testcontainers)
     api(libs.org.opensearch.client.opensearch.rest.client)
     api(libs.org.openjdk.jmh.jmh.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
+    testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
 }
 
 description = "Zeebe Test Util"

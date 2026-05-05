@@ -40,9 +40,6 @@ tasks.named<JavaCompile>("compileJava") {
 dependencies {
     implementation(project(":camunda-security-protocol"))
     api(libs.org.agrona.agrona)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.io.github.classgraph.classgraph)
     annotationProcessor(libs.org.immutables.value.processor)

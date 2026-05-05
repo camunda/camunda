@@ -24,10 +24,14 @@ dependencies {
     implementation(libs.io.micrometer.micrometer.registry.prometheus)
     implementation(libs.com.fasterxml.jackson.core.jackson.databind)
     implementation(libs.com.fasterxml.jackson.core.jackson.core)
+    testImplementation(libs.org.springframework.boot.spring.boot.starter.test)
+    testImplementation(libs.org.springframework.boot.spring.boot.test)
+    testImplementation(libs.org.springframework.spring.test)
     testImplementation(libs.org.assertj.assertj.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.awaitility.awaitility)
+    testImplementation(libs.org.mockito.mockito.core)
+    testImplementation(libs.org.testcontainers.testcontainers)
+    testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
     testImplementation(project(":camunda-process-test-java"))
 }
 

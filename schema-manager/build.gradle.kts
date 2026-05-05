@@ -24,8 +24,6 @@ dependencies {
     api(libs.org.apache.httpcomponents.httpcore)
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.testcontainers.testcontainers.elasticsearch)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.assertj.assertj.core)

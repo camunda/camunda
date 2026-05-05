@@ -28,11 +28,9 @@ dependencies {
     implementation(project(":zeebe-transport"))
     implementation(project(":zeebe-broker-client"))
     testImplementation(libs.org.assertj.assertj.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.net.jqwik.jqwik.api)
     testImplementation(libs.net.jqwik.jqwik)
 }

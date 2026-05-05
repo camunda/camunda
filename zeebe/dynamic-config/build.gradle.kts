@@ -26,17 +26,14 @@ dependencies {
     implementation(project(":zeebe-protocol"))
     implementation(libs.io.micrometer.micrometer.core)
     implementation(libs.io.micrometer.micrometer.commons)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.agrona.agrona)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.net.jqwik.jqwik)
     testImplementation(libs.net.jqwik.jqwik.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
 }
 
 description = "Zeebe Dynamic Cluster Configuration"

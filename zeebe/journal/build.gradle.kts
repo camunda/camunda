@@ -21,12 +21,10 @@ dependencies {
     implementation(project(":zeebe-util"))
     api(libs.com.github.jnr.jnr.ffi)
     api(libs.com.github.jnr.jnr.constants)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.com.github.jnr.jnr.posix)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(project(":zeebe-test-util"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
 }
 
 description = "Zeebe Journal"

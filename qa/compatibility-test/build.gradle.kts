@@ -21,8 +21,6 @@ dependencies {
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
     testImplementation(libs.io.micrometer.micrometer.core)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.assertj.assertj.core)
 }
 

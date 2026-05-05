@@ -84,11 +84,10 @@ dependencies {
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(libs.junit.junit)
+    testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.mockito.mockito.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.io.micrometer.micrometer.core)
 }

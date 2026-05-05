@@ -47,8 +47,6 @@ dependencies {
     testImplementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     testImplementation(libs.org.jetbrains.annotations)
     testImplementation(project(":operate-common"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.com.github.docker.java.docker.java.api)
     testImplementation(libs.org.springframework.security.spring.security.oauth2.jose)
     testImplementation(libs.org.slf4j.slf4j.api)

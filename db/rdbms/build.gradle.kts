@@ -22,13 +22,11 @@ dependencies {
     api(libs.io.micrometer.micrometer.core)
     api(libs.com.github.ben.manes.caffeine.caffeine)
     implementation(project(":camunda-db-rdbms-schema"))
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
     testImplementation(libs.org.instancio.instancio.core)
+    testImplementation(libs.com.h2database.h2)
 }
 
 description = "Camunda Secondary DB - RDBMS"

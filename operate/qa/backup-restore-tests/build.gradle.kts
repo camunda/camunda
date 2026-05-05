@@ -10,7 +10,6 @@ dependencies {
     testImplementation(project(":operate-qa-util"))
     testImplementation(libs.co.elastic.clients.elasticsearch.java)
     testImplementation(libs.org.springframework.spring.test)
-    testImplementation(libs.junit.junit)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":camunda-client-java"))
     testImplementation(project(":webapps-schema"))

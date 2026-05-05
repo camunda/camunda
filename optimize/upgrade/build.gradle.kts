@@ -19,8 +19,11 @@ dependencies {
     implementation(libs.com.fasterxml.jackson.core.jackson.annotations)
     runtimeOnly(libs.org.opensearch.client.opensearch.rest.client)
     testImplementation(project(":optimize-backend"))
+    testImplementation(project(":optimize-backend", configuration = "tests"))
+    testImplementation(project(":optimize-commons"))
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
     testImplementation(libs.org.junit.platform.junit.platform.suite)
+    testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.apache.httpcomponents.httpclient)
     testImplementation(libs.org.mock.server.mockserver.netty)
     testImplementation(libs.org.mock.server.mockserver.core)
@@ -28,6 +31,9 @@ dependencies {
     testImplementation(libs.org.springframework.spring.web)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.apache.httpcomponents.httpcore)
+    testImplementation(libs.org.apache.commons.commons.lang3)
+    testImplementation(libs.com.vdurmont.semver4j)
+    testImplementation(libs.com.google.guava.guava)
     compileOnly(project(":optimize-backend"))
     compileOnly(project(":optimize-commons"))
     compileOnly(libs.org.apache.commons.commons.lang3)
@@ -48,7 +54,7 @@ val generatePreviousVersionJava by tasks.registering(Sync::class) {
     filter<org.apache.tools.ant.filters.ReplaceTokens>(
         "beginToken" to "\${",
         "endToken" to "}",
-        "tokens" to tokenMap
+        "tokens" to tokenMap,
     )
 }
 

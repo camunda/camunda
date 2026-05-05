@@ -7,7 +7,6 @@ plugins {
 }
 
 dependencies {
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.assertj.assertj.core)
 }
 

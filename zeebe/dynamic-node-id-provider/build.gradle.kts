@@ -24,8 +24,6 @@ dependencies {
     testImplementation(libs.org.testcontainers.testcontainers)
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
     testImplementation(libs.org.testcontainers.testcontainers.localstack)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.awaitility.awaitility)
 }

@@ -28,10 +28,10 @@ dependencies {
     api(libs.jakarta.validation.jakarta.validation.api)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.springframework.spring.test)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
+    testImplementation(libs.org.mockito.mockito.junit.jupiter)
+    testImplementation(libs.org.skyscreamer.jsonassert)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
     testImplementation(libs.org.agrona.agrona)
 }

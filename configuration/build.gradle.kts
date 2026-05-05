@@ -40,8 +40,6 @@ dependencies {
     testImplementation(libs.org.springframework.spring.test)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.assertj.assertj.core)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(project(":zeebe-backup"))
 }
 

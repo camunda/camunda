@@ -59,8 +59,6 @@ dependencies {
     api(libs.io.grpc.grpc.api)
     api(libs.software.amazon.awssdk.sts)
     runtimeOnly(libs.jakarta.servlet.jakarta.servlet.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
     testImplementation(libs.org.junit.platform.junit.platform.suite.api)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)

@@ -22,7 +22,6 @@ dependencies {
     implementation(libs.com.google.code.gson.gson)
     implementation(libs.org.testcontainers.testcontainers)
     implementation(project(":zeebe-bpmn-model"))
-    implementation(libs.junit.junit)
     implementation(libs.jakarta.ws.rs.jakarta.ws.rs.api)
     implementation(libs.org.springframework.spring.beans)
     implementation(libs.org.keycloak.keycloak.client.common.synced)

@@ -28,10 +28,11 @@ dependencies {
     api(libs.io.micrometer.micrometer.core)
     runtimeOnly(libs.io.netty.netty.tcnative.boringssl.static)
     testImplementation(project(":zeebe-test-util"))
+    testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(libs.junit.junit)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
+    testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
     testImplementation(libs.org.assertj.assertj.core)
+    testImplementation(libs.org.mockito.mockito.core)
 }
 
 description = "Zeebe Gateway"

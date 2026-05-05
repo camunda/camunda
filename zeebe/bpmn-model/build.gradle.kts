@@ -10,9 +10,9 @@ dependencies {
     api(libs.org.camunda.bpm.model.camunda.xml.model)
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(libs.junit.junit)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
-    testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
+    testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine.x1)
     testImplementation(libs.org.assertj.assertj.core)
+    testImplementation(libs.org.mockito.mockito.core)
 }
 
 description = "Zeebe BPMN model API"
