@@ -96,40 +96,56 @@ public final class UserTaskDurationScriptUtil {
             + "     .collect(Collectors.toList());\n"
             +
 
+            // Deduplicate consecutive CLAIMs: keep only the first CLAIM in each unclaimed window.
+            // Consecutive CLAIMs (with no UNCLAIM between them) occur e.g. when the same user is
+            // re-assigned without unclaiming first. Only the first CLAIM opens a new work period;
+            // subsequent consecutive CLAIMs are redundant for duration calculation.
+            "   def effectiveClaimTimestamps = new ArrayList();\n"
+            + "   for (def claimTs : allClaimTimestamps) {\n"
+            + "     if (effectiveClaimTimestamps.isEmpty()) {\n"
+            + "       effectiveClaimTimestamps.add(claimTs);\n"
+            + "     } else {\n"
+            + "       def lastEffectiveClaim = effectiveClaimTimestamps.get(effectiveClaimTimestamps.size() - 1);\n"
+            + "       boolean hasUnclaimBetween = false;\n"
+            + "       for (def ut : allUnclaimTimestamps) {\n"
+            + "         if (ut.getTime() > lastEffectiveClaim.getTime() && ut.getTime() < claimTs.getTime()) {\n"
+            + "           hasUnclaimBetween = true;\n"
+            + "           break;\n"
+            + "         }\n"
+            + "       }\n"
+            + "       if (hasUnclaimBetween) { effectiveClaimTimestamps.add(claimTs); }\n"
+            + "     }\n"
+            + "   }\n"
+            +
+
             // Calculate idle time, which is the sum of differences between claim and unclaim
             // timestamp pairs, ie (claim_n - unclaim_n).
             // Note there will always be at least one unclaim (startDate).
-            // Stop when a claim does not follow its paired unclaim (e.g. consecutive CLAIMs with
-            // no UNCLAIM in between, caused by double-assigning the same user), as that pair
-            // would produce a negative duration.
-            "   for (def i = 0; i < allUnclaimTimestamps.size() &&  i < allClaimTimestamps.size(); i++) {\n"
+            "   for (def i = 0; i < allUnclaimTimestamps.size() && i < effectiveClaimTimestamps.size(); i++) {\n"
             + "     def unclaimDate = allUnclaimTimestamps.get(i);\n"
-            + "     def claimDate= allClaimTimestamps.get(i);\n"
-            + "     def idleTimeToAdd = claimDate.getTime() - unclaimDate.getTime();\n"
-            + "     if (idleTimeToAdd < 0) { break; }\n"
-            + "     totalIdleTimeInMs = totalIdleTimeInMs + idleTimeToAdd;\n"
+            + "     def claimDate = effectiveClaimTimestamps.get(i);\n"
+            + "     totalIdleTimeInMs = totalIdleTimeInMs + (claimDate.getTime() - unclaimDate.getTime());\n"
             + "     idleTimeHasChanged = true;\n"
             + "   }\n"
             +
 
             // Calculate work time, which is the sum of differences between unclaim and previous
-            // claim timestamp pairs, ie (unclaim_n+1 - claim_n)
-            // Note the startDate is the first unclaim, so can be disregarded for this calculation
-            "   for (def i = 0; i < allUnclaimTimestamps.size() - 1 &&  i < allClaimTimestamps.size(); i++) {\n"
-            + "     def claimDate = allClaimTimestamps.get(i);\n"
+            // claim timestamp pairs, ie (unclaim_n+1 - claim_n).
+            // Note the startDate is the first unclaim, so can be disregarded for this calculation.
+            "   for (def i = 0; i < allUnclaimTimestamps.size() - 1 && i < effectiveClaimTimestamps.size(); i++) {\n"
+            + "     def claimDate = effectiveClaimTimestamps.get(i);\n"
             + "     def unclaimDate = allUnclaimTimestamps.get(i + 1);\n"
-            + "     def workTimeToAdd = unclaimDate.getTime() - claimDate.getTime();\n"
-            + "     totalWorkTimeInMs = totalWorkTimeInMs + workTimeToAdd;\n"
+            + "     totalWorkTimeInMs = totalWorkTimeInMs + (unclaimDate.getTime() - claimDate.getTime());\n"
             + "     workTimeHasChanged = true;\n"
             + "   }\n"
             +
 
-            // Edge case: task was unclaimed and then completed without claim (== there are 2 more
-            // unclaims than claims)
-            // --> add time between end and last "real" unclaim as idle time
-            "   if (allUnclaimTimestamps.size() - allClaimTimestamps.size() == 2) {\n"
-            + "     def lastUnclaim = allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 1);\n"
+            // Edge case: task was unclaimed and then completed without re-claiming
+            // (== there are 2 more unclaims than effective claims)
+            // --> add idle time from last "real" unclaim to end
+            "   if (allUnclaimTimestamps.size() - effectiveClaimTimestamps.size() == 2) {\n"
             + "     def secondToLastUnclaim = allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 2);\n"
+            + "     def lastUnclaim = allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 1);\n"
             + "     totalIdleTimeInMs = totalIdleTimeInMs + (lastUnclaim.getTime() - secondToLastUnclaim.getTime());\n"
             + "     idleTimeHasChanged = true;\n"
             + "   }\n"
