@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Test;
 class ProcessInstanceIncidentExportHandlerTest {
 
   private static final long PARENT_PI_KEY = 100L;
+  private static final long LEAF_ELEMENT_KEY = 150L;
   private static final long CALL_ACTIVITY_KEY = 200L;
   private static final long CHILD_PI_KEY = 300L;
   private static final long CHILD_ELEMENT_KEY = 400L;
@@ -38,12 +40,12 @@ class ProcessInstanceIncidentExportHandlerTest {
 
   @Test
   void shouldCreateIncidentForRootProcessInstance() {
-    // given
+    // given an incident on a leaf element (LEAF_ELEMENT_KEY) inside a root PI (PARENT_PI_KEY)
     final var record =
         mockIncidentRecord(
             IncidentIntent.CREATED,
-            PARENT_PI_KEY,
-            List.of(List.of(PARENT_PI_KEY, CHILD_ELEMENT_KEY)));
+            LEAF_ELEMENT_KEY,
+            List.of(List.of(PARENT_PI_KEY, LEAF_ELEMENT_KEY)));
 
     // when
     handler.export(record);
@@ -59,8 +61,8 @@ class ProcessInstanceIncidentExportHandlerTest {
     final var record =
         mockIncidentRecord(
             IncidentIntent.RESOLVED,
-            PARENT_PI_KEY,
-            List.of(List.of(PARENT_PI_KEY, CHILD_ELEMENT_KEY)));
+            LEAF_ELEMENT_KEY,
+            List.of(List.of(PARENT_PI_KEY, LEAF_ELEMENT_KEY)));
 
     // when
     handler.export(record);
@@ -125,7 +127,7 @@ class ProcessInstanceIncidentExportHandlerTest {
     when(record.getIntent()).thenReturn(IncidentIntent.CREATED);
 
     // when - then
-    org.assertj.core.api.Assertions.assertThat(handler.canExport(record)).isFalse();
+    assertThat(handler.canExport(record)).isFalse();
   }
 
   @SuppressWarnings("unchecked")
