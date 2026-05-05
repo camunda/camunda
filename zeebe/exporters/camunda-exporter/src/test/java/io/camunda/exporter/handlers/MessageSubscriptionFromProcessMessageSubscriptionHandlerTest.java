@@ -372,7 +372,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     // then
     assertThat(entity.getToolName()).isEqualTo("myTool");
     assertThat(entity.getInboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
-    assertThat(entity.getExtensionProperties()).isEqualTo(extProps);
+    // TODO: Add an assertion for the extension properties once they are included in the entity
   }
 
   @Test
@@ -441,7 +441,6 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     expectedUpdateFields.put("processDefinitionKey", null);
     expectedUpdateFields.put("processDefinitionName", null);
     expectedUpdateFields.put("processDefinitionVersion", null);
-    expectedUpdateFields.put("extensionProperties", null);
     expectedUpdateFields.put("toolName", null);
     expectedUpdateFields.put("inboundConnectorType", null);
     expectedUpdateFields.put("metadata", metadataMap);
