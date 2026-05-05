@@ -190,6 +190,7 @@ import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.search.request.WaitingStateSearchRequest;
 import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
@@ -369,6 +370,7 @@ import io.camunda.client.impl.search.request.UsersByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
+import io.camunda.client.impl.search.request.WaitingStateSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.GlobalJobStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByErrorRequestImpl;
@@ -1066,6 +1068,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public IncidentSearchRequest newIncidentSearchRequest() {
     return new IncidentSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public WaitingStateSearchRequest newWaitingStateSearchRequest() {
+    return new WaitingStateSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override

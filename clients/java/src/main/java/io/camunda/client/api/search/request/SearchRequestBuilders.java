@@ -77,6 +77,7 @@ import io.camunda.client.api.search.sort.TenantUserSort;
 import io.camunda.client.api.search.sort.UserSort;
 import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.api.search.sort.VariableSort;
+import io.camunda.client.api.search.sort.WaitingStateSort;
 import io.camunda.client.api.statistics.filter.JobErrorStatisticsFilter;
 import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
@@ -142,6 +143,7 @@ import io.camunda.client.impl.search.sort.TenantUserSortImpl;
 import io.camunda.client.impl.search.sort.UserSortImpl;
 import io.camunda.client.impl.search.sort.UserTaskSortImpl;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
+import io.camunda.client.impl.search.sort.WaitingStateSortImpl;
 import io.camunda.client.impl.statistics.filter.JobErrorStatisticsFilterImpl;
 import io.camunda.client.impl.statistics.filter.JobTypeStatisticsFilterImpl;
 import io.camunda.client.impl.statistics.filter.ProcessDefinitionStatisticsFilterImpl;
@@ -200,6 +202,12 @@ public final class SearchRequestBuilders {
 
   public static IncidentSort incidentSort(final Consumer<IncidentSort> fn) {
     final IncidentSort sort = new IncidentSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static WaitingStateSort waitingStateSort(final Consumer<WaitingStateSort> fn) {
+    final WaitingStateSort sort = new WaitingStateSortImpl();
     fn.accept(sort);
     return sort;
   }

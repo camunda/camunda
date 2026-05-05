@@ -55,6 +55,7 @@ final class ProcessInstanceRoundRobinDispatchTest {
             mock(ProcessInstanceSearchClient.class),
             mock(SequenceFlowSearchClient.class),
             mock(IncidentServices.class),
+            mock(WaitingStateServices.class),
             executorProvider,
             mock(BrokerRequestAuthorizationConverter.class));
   }
