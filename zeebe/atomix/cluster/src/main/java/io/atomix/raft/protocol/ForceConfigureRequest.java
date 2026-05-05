@@ -32,7 +32,7 @@ import java.util.Set;
  * configuration is requested typically to remove a set of (unavailable) members when a quorum is
  * not possible without them.
  */
-public class ForceConfigureRequest extends AbstractRaftRequest {
+public final class ForceConfigureRequest extends AbstractRaftRequest {
 
   private final long term;
   private final long index;

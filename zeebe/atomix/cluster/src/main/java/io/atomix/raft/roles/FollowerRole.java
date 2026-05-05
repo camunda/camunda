@@ -37,6 +37,7 @@ import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.VoteQuorum;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -188,6 +189,18 @@ public final class FollowerRole extends ActiveRole {
       onHeartbeatFromLeader();
     }
     return future;
+  }
+
+  @Override
+  public void onBatchAppend(final List<BatchedAppend> batch) {
+    super.onBatchAppend(batch);
+    // Reset heartbeat once at the end for the whole batch
+    if (!batch.isEmpty()) {
+      final var lastRequest = batch.getLast().request();
+      if (isRequestFromCurrentLeader(lastRequest.term(), lastRequest.leader())) {
+        onHeartbeatFromLeader();
+      }
+    }
   }
 
   @Override

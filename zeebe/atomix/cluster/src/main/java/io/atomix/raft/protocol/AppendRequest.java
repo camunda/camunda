@@ -30,7 +30,7 @@ import java.util.Objects;
  * requests to followers to replicate and commit log entries, and followers sent append requests to
  * passive members to replicate committed log entries.
  */
-public class AppendRequest extends AbstractRaftRequest {
+public final class AppendRequest extends AbstractRaftRequest {
 
   private final long term;
   private final String leader;

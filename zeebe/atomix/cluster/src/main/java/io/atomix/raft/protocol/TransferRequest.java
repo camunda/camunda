@@ -23,7 +23,7 @@ import io.atomix.cluster.MemberId;
 import java.util.Objects;
 
 /** Leadership transfer request. */
-public class TransferRequest extends AbstractRaftRequest {
+public final class TransferRequest extends AbstractRaftRequest {
 
   protected final MemberId member;
 

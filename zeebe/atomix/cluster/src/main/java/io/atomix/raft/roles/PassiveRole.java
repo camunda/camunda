@@ -60,6 +60,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -570,27 +571,170 @@ public class PassiveRole extends InactiveRole {
     }
   }
 
+  /**
+   * Handles a batch of append requests with a single flush. Each request is validated and entries
+   * are appended (cheap mmap writes) without flushing. A single flush is performed at the end. If
+   * any request fails validation, it and all subsequent requests in the batch are failed.
+   */
+  protected void handleBatchAppend(final List<BatchedAppend> batch) {
+    // Phase 1: Validate and append entries without flushing
+    final var pending = new ArrayList<PendingAppendResult>(batch.size());
+    boolean cascadeFailed = false;
+
+    for (final var item : batch) {
+      if (cascadeFailed) {
+        failAppend(raft.getLog().getLastIndex(), item.future());
+        continue;
+      }
+
+      final var result = appendEntriesNoFlush(item.request(), item.future());
+      if (result == null) {
+        // Validation failed -- future already completed with error.
+        // Cascade-fail all remaining requests.
+        cascadeFailed = true;
+      } else if (!result.succeeded) {
+        // Append failed mid-iteration -- future already completed with error.
+        // Include this result so its entries get flushed, then cascade-fail the rest.
+        pending.add(result);
+        cascadeFailed = true;
+      } else {
+        pending.add(result);
+      }
+    }
+
+    if (pending.isEmpty()) {
+      return;
+    }
+
+    // Phase 2: Single flush for all appended entries
+    final long maxLastLogIndex = pending.getLast().lastLogIndex;
+    final long minPrevLogIndex = pending.getFirst().prevLogIndex;
+    try {
+      flush(maxLastLogIndex, minPrevLogIndex);
+    } catch (final Exception e) {
+      log.warn(
+          "Failed to flush batched appended entries, cannot guarantee durability; leader will retry",
+          e);
+      // Flush failed -- fail ALL pending requests
+      for (final var result : pending) {
+        failAppend(result.request.prevLogIndex(), result.future);
+      }
+      return;
+    }
+
+    // Phase 3: Complete futures -- update commit index and succeed (only for successful results)
+    for (final var result : pending) {
+      if (!result.succeeded) {
+        // This result's future was already completed with error by appendEntriesNoFlush;
+        // we only included it in pending so its entries would be flushed.
+        continue;
+      }
+      raft.setFirstCommitIndex(result.request.commitIndex(), result.lastLogIndex);
+      final long previousCommitIndex = raft.setCommitIndex(result.commitIndex);
+      if (previousCommitIndex < result.commitIndex) {
+        log.trace("Committed entries up to index {}", result.commitIndex);
+      }
+      succeedAppend(result.lastLogIndex, result.future);
+    }
+
+    // Abort pending snapshots once for the batch
+    abortPendingSnapshots();
+  }
+
+  /**
+   * Appends entries from the request without flushing. Returns a PendingAppendResult on success, or
+   * null if validation/append failed (the future is already completed with an error in that case).
+   */
+  private PendingAppendResult appendEntriesNoFlush(
+      final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
+
+    if (!checkConfiguration(request, future)) {
+      return null;
+    }
+    if (!checkTerm(request, future)) {
+      return null;
+    }
+    if (!checkPreviousEntry(request, future)) {
+      return null;
+    }
+
+    final long lastEntryIndex = request.prevLogIndex() + request.entries().size();
+    final long commitIndex = Math.min(request.commitIndex(), lastEntryIndex);
+    long lastLogIndex = request.prevLogIndex();
+
+    if (!request.entries().isEmpty()) {
+      if (request.prevLogTerm() == 0) {
+        log.debug("Reset first index to {}", request.prevLogIndex() + 1);
+        raft.getLog().reset(request.prevLogIndex() + 1);
+      }
+
+      for (final ReplicatableRaftRecord entry : request.entries()) {
+        final long index = ++lastLogIndex;
+        final IndexedRaftLogEntry lastEntry = raft.getLog().getLastEntry();
+        final boolean failedToAppend = tryToAppend(future, entry, index, lastEntry);
+        if (failedToAppend) {
+          // Return a failed result so the caller can still flush entries appended before
+          // the failure. lastLogIndex - 1 is the last successfully appended entry index.
+          return new PendingAppendResult(
+              request, future, lastLogIndex - 1, commitIndex, request.prevLogIndex(), false);
+        }
+        if (!role().active() && index == commitIndex) {
+          break;
+        }
+      }
+    }
+
+    return new PendingAppendResult(
+        request, future, lastLogIndex, commitIndex, request.prevLogIndex(), true);
+  }
+
   /** Handles an AppendRequest. */
   protected CompletableFuture<AppendResponse> handleAppend(final InternalAppendRequest request) {
     final CompletableFuture<AppendResponse> future = new CompletableFuture<>();
 
-    // Check that there is a configuration and reject the request if there isn't.
-    if (!checkConfiguration(request, future)) {
+    final PendingAppendResult result = appendEntriesNoFlush(request, future);
+    if (result == null) {
+      // Validation failed before any entries were appended; future already completed with error.
       return future;
     }
 
-    // Check that the term of the given request matches the local term or update the term.
-    if (!checkTerm(request, future)) {
+    if (!result.succeeded) {
+      // Append failed mid-iteration; future already completed with error.
+      // Best-effort flush of any entries written before the failure.
+      try {
+        flush(result.lastLogIndex, result.prevLogIndex);
+      } catch (final Exception e) {
+        log.warn(
+            "Failed to flush when append failed: lastFlushedIndex={}, prevEntryIndex={}",
+            result.lastLogIndex,
+            result.prevLogIndex);
+      }
       return future;
     }
 
-    // Check that the previous index/term matches the local log's last entry.
-    if (!checkPreviousEntry(request, future)) {
+    // Set the first commit index.
+    raft.setFirstCommitIndex(request.commitIndex(), result.lastLogIndex);
+
+    try {
+      // Make sure all entries are flushed before ack to ensure we have persisted what we
+      // acknowledge
+      flush(result.lastLogIndex, result.prevLogIndex);
+    } catch (final Exception e) {
+      log.warn(
+          "Failed to flush appended entries to the log, cannot guarantee durability; leader will retry the append operation",
+          e);
+      failAppend(request.prevLogIndex(), future);
       return future;
     }
 
-    // Append the entries to the log.
-    appendEntries(request, future);
+    // Update the context commit and global indices.
+    final long previousCommitIndex = raft.setCommitIndex(result.commitIndex);
+    if (previousCommitIndex < result.commitIndex) {
+      log.trace("Committed entries up to index {}", result.commitIndex);
+    }
+
+    // Return a successful append response.
+    succeedAppend(result.lastLogIndex, future);
 
     // If the request contains entries, abort any in-progress snapshot replication. The follower
     // is now receiving log entries and must not continue waiting for snapshot chunks. We skip this
@@ -716,82 +860,6 @@ public class PassiveRole extends InactiveRole {
       return failAppend(request.prevLogIndex() - 1, future);
     }
     return true;
-  }
-
-  /** Appends entries from the given AppendRequest. */
-  protected void appendEntries(
-      final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
-    // Compute the last entry index from the previous log index and request entry count.
-    final long lastEntryIndex = request.prevLogIndex() + request.entries().size();
-
-    // Ensure the commitIndex is not increased beyond the index of the last entry in the request.
-    final long commitIndex = Math.min(request.commitIndex(), lastEntryIndex);
-
-    // Track the last log index while entries are appended.
-    long lastLogIndex = request.prevLogIndex();
-
-    if (!request.entries().isEmpty()) {
-
-      // If the previous term is zero, that indicates the previous index represents the beginning of
-      // the log.
-      // Reset the log to the previous index plus one.
-      if (request.prevLogTerm() == 0) {
-        log.debug("Reset first index to {}", request.prevLogIndex() + 1);
-        raft.getLog().reset(request.prevLogIndex() + 1);
-      }
-
-      // Iterate through entries and append them.
-      for (final ReplicatableRaftRecord entry : request.entries()) {
-        final long index = ++lastLogIndex;
-
-        // Get the last entry written to the log by the writer.
-        final IndexedRaftLogEntry lastEntry = raft.getLog().getLastEntry();
-
-        final boolean failedToAppend = tryToAppend(future, entry, index, lastEntry);
-        if (failedToAppend) {
-          try {
-            flush(lastLogIndex - 1, request.prevLogIndex());
-          } catch (final Exception e) {
-            log.warn(
-                "Failed to flush when append failed: lastFlushedIndex={}, prevEntryIndex={}",
-                lastLogIndex - 1,
-                request.prevLogIndex());
-          }
-          return;
-        }
-
-        // If the last log index meets the commitIndex, break the append loop to avoid appending
-        // uncommitted entries.
-        if (!role().active() && index == commitIndex) {
-          break;
-        }
-      }
-    }
-
-    // Set the first commit index.
-    raft.setFirstCommitIndex(request.commitIndex(), lastLogIndex);
-
-    try {
-      //     Make sure all entries are flushed before ack to ensure we have persisted what we
-      //     acknowledge
-      flush(lastLogIndex, request.prevLogIndex());
-    } catch (final Exception e) {
-      log.warn(
-          "Failed to flush appended entries to the log, cannot guarantee durability; leader will retry the append operation",
-          e);
-      // Flush failed, return error to the leader so we can retry.
-      failAppend(request.prevLogIndex(), future);
-      return;
-    }
-
-    // Update the context commit and global indices.
-    final long previousCommitIndex = raft.setCommitIndex(commitIndex);
-    if (previousCommitIndex < commitIndex) {
-      log.trace("Committed entries up to index {}", commitIndex);
-    }
-
-    // Return a successful append response.
-    succeedAppend(lastLogIndex, future);
   }
 
   private void flush(final long lastFlushedIndex, final long previousEntryIndex)
@@ -997,4 +1065,12 @@ public class PassiveRole extends InactiveRole {
         snapshotIndex + 1);
     raftLog.reset(snapshotIndex + 1);
   }
+
+  private record PendingAppendResult(
+      InternalAppendRequest request,
+      CompletableFuture<AppendResponse> future,
+      long lastLogIndex,
+      long commitIndex,
+      long prevLogIndex,
+      boolean succeeded) {}
 }
