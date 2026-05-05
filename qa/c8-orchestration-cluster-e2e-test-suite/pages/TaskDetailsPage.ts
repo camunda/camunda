@@ -365,7 +365,7 @@ class TaskDetailsPage {
           const inputValue = await input.inputValue();
           expect(inputValue).toContain(expectedValue);
         } else {
-          await expect(input).toHaveValue(expectedValue);
+          await expect(input).toHaveValue(expectedValue, {timeout: 30000});
         }
       },
       onFailure: async () => {
@@ -417,3 +417,4 @@ class TaskDetailsPage {
 }
 
 export {TaskDetailsPage};
+

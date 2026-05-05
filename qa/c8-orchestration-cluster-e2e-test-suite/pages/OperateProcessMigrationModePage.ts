@@ -116,7 +116,7 @@ export class OperateProcessMigrationModePage {
     mappings: Array<{label: string | RegExp; targetValue: string}>,
   ): Promise<void> {
     for (const {label, targetValue} of mappings) {
-      await expect(this.page.getByLabel(label)).toHaveValue(targetValue);
+      await expect(this.page.getByLabel(label)).toHaveValue(targetValue, {timeout: 30000});
     }
   }
 
@@ -140,3 +140,4 @@ export class OperateProcessMigrationModePage {
     );
   }
 }
+

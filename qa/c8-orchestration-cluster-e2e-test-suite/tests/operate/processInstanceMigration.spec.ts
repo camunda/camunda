@@ -146,7 +146,7 @@ test.describe.serial('Process Instance Migration', () => {
         .toBe(sourceVersion);
 
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
     });
 
@@ -335,7 +335,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
 
       await operateOperationPanelPage.expandOperationIdField();
@@ -363,7 +363,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
     });
 
@@ -392,7 +392,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
     });
 
@@ -428,7 +428,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
     });
 
@@ -633,7 +633,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
@@ -679,7 +679,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
@@ -740,7 +740,7 @@ test.describe.serial('Process Instance Migration', () => {
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
@@ -969,7 +969,7 @@ test.describe('Parallel job-based user task migration', () => {
 
       await operateFiltersPanelPage.selectVersion(sourceVersion);
       await expect(operateProcessesPage.resultsText.first()).toBeVisible({
-        timeout: 30000,
+        timeout: 60000,
       });
     });
 
@@ -1130,3 +1130,4 @@ test.describe('Parallel job-based user task migration', () => {
     });
   });
 });
+

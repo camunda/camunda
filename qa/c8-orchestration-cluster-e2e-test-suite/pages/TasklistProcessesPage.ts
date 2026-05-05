@@ -59,7 +59,10 @@ class TasklistProcessesPage {
 
   async clickStartProcessSubButton(): Promise<void> {
     await this.startProcessSubButton.click();
+    // Wait for the process start modal to close before callers navigate away
+    await this.page.locator('.cds--modal-container').waitFor({state: 'hidden', timeout: 10000}).catch(() => {});
   }
 }
 
 export {TasklistProcessesPage};
+
