@@ -21,6 +21,7 @@ import MockBpmnJs from '__mocks__/bpmn-js';
 import MockBpmnIoElementTemplateIconRenderer from '__mocks__/@bpmn-io/element-template-icon-renderer';
 import MockReactMarkdown from '__mocks__/react-markdown';
 import ResizeObserverPolyfill from 'resize-observer-polyfill';
+import {elementInstancesTreeStore} from 'App/ProcessInstance/ElementInstanceLog/ElementInstancesTree/elementInstancesTreeStore';
 
 vi.mock('dmn-js-shared/lib/base/Manager', () => ({
   default: MockDmnJsSharedManager,
@@ -198,9 +199,16 @@ const localStorageMock = (function () {
   };
 })();
 
+beforeEach(() => (elementInstancesTreeStore.forceDisablePolling = true));
+afterEach(() => (elementInstancesTreeStore.forceDisablePolling = false));
+
+let unhandledRequestsCount = 0;
 beforeAll(() => {
   mockServer.listen({
-    onUnhandledRequest: 'error',
+    onUnhandledRequest: (_, print) => {
+      unhandledRequestsCount++;
+      return print.error();
+    },
   });
 
   // temporary fix while jsdom doesn't implement this: https://github.com/jsdom/jsdom/issues/1695
@@ -209,7 +217,16 @@ beforeAll(() => {
   // jsdom doesn't implement window.prompt, needed by copy-to-clipboard (used by Carbon CodeSnippet)
   window.prompt = vi.fn();
 });
-afterEach(() => mockServer.resetHandlers());
+afterEach(() => {
+  mockServer.resetHandlers();
+  if (unhandledRequestsCount !== 0) {
+    const reportCount = unhandledRequestsCount;
+    unhandledRequestsCount = 0;
+    throw new Error(
+      `[Unhandled Requests] The test produced ${reportCount} unhandled request(s).`,
+    );
+  }
+});
 afterAll(() => mockServer.close());
 beforeEach(async () => {
   vi.stubEnv('TZ', 'UTC');

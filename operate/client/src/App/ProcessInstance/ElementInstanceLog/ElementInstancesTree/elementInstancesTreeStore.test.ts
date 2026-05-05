@@ -108,6 +108,7 @@ const mockChildResponse = createMockResponse(mockChildInstances, 2);
 const mockEmptyResponse = createMockResponse([], 0);
 
 describe('elementInstancesTreeStore', () => {
+  beforeEach(() => (elementInstancesTreeStore.forceDisablePolling = false));
   afterEach(() => {
     elementInstancesTreeStore.reset();
     vi.clearAllTimers();
@@ -987,6 +988,40 @@ describe('elementInstancesTreeStore', () => {
     });
 
     vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('should skip polling when it is force disabled', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(mockFirstPageResponse);
+
+    elementInstancesTreeStore.forceDisablePolling = true;
+    elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
+      enablePolling: true,
+    });
+
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+          ?.pageMetadata.totalItems,
+      ).toBe(150);
+    });
+
+    mockSearchElementInstances().withSuccess(
+      createMockResponse(mockFirstPageItems, 160),
+    );
+
+    vi.advanceTimersByTime(5000);
+
+    await waitFor(() => {
+      expect(
+        elementInstancesTreeStore.state.nodes.get(mockProcessInstanceKey)
+          ?.pageMetadata.totalItems,
+      ).toBe(150);
+    });
+
+    elementInstancesTreeStore.forceDisablePolling = false;
     vi.useRealTimers();
   });
 

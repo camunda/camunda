@@ -44,6 +44,8 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     abortControllers: new Map(),
   };
 
+  /** **Warning:** Only use in tests to stabilize them in slow environments. */
+  forceDisablePolling: boolean = false;
   isPollRequestRunning: boolean = false;
   intervalId: ReturnType<typeof setInterval> | null = null;
   pollAbortController: AbortController | null = null;
@@ -407,7 +409,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
   };
 
   pollExpandedNodes = async () => {
-    if (document.visibilityState === 'hidden') {
+    if (this.forceDisablePolling || document.visibilityState === 'hidden') {
       return;
     }
 

@@ -19,6 +19,7 @@ import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import {elementInstancesTreeStore} from './elementInstancesTreeStore';
 
 const diagramModel = await parseDiagramXML(multiInstanceProcess);
 const businessObjects = businessObjectsParser({diagramModel});
@@ -210,6 +211,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should poll for instances on root level', async () => {
+    elementInstancesTreeStore.forceDisablePolling = false;
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchElementInstancesStatistics().withSuccess({
       items: [],
