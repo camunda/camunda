@@ -38,6 +38,8 @@ faces-config.NavData
 *.DS_Store
 .java-version
 .gradle
+gradle/gradle-wrapper.jar
+buildSrc/.kotlin/
 .worktree
 work/
 tngp-data
