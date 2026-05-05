@@ -77,32 +77,6 @@ public final class MsgPackConverter {
 
   // We serialize the CamundaAuthentication as JSON for batch operations.
   // To NOT have JsonProperty Annotations on the CamundaAuthentication record, use a mixin.
-  private abstract static class CamundaAuthenticationMixin {
-    @JsonProperty("authenticated_username")
-    abstract String authenticatedUsername();
-
-    @JsonProperty("authenticated_client_id")
-    abstract String authenticatedClientId();
-
-    @JsonProperty("anonymous_user")
-    abstract boolean anonymousUser();
-
-    @JsonProperty("authenticated_group_ids")
-    abstract java.util.List<String> authenticatedGroupIds();
-
-    @JsonProperty("authenticated_role_ids")
-    abstract java.util.List<String> authenticatedRoleIds();
-
-    @JsonProperty("authenticated_tenant_ids")
-    abstract java.util.List<String> authenticatedTenantIds();
-
-    @JsonProperty("authenticated_mapping_rule_ids")
-    abstract java.util.List<String> authenticatedMappingRuleIds();
-
-    @JsonProperty("claims")
-    abstract java.util.Map<String, Object> claims();
-  }
-
   private static final ObjectMapper MESSSAGE_PACK_OBJECT_MAPPER =
       new ObjectMapper(MESSAGE_PACK_FACTORY)
           .registerModule(new JavaTimeModule())
@@ -275,5 +249,31 @@ public final class MsgPackConverter {
     } catch (final IOException e) {
       throw new RuntimeException("Failed to deserialize MessagePack to Map", e);
     }
+  }
+
+  private abstract static class CamundaAuthenticationMixin {
+    @JsonProperty("authenticated_username")
+    abstract String authenticatedUsername();
+
+    @JsonProperty("authenticated_client_id")
+    abstract String authenticatedClientId();
+
+    @JsonProperty("anonymous_user")
+    abstract boolean anonymousUser();
+
+    @JsonProperty("authenticated_group_ids")
+    abstract java.util.List<String> authenticatedGroupIds();
+
+    @JsonProperty("authenticated_role_ids")
+    abstract java.util.List<String> authenticatedRoleIds();
+
+    @JsonProperty("authenticated_tenant_ids")
+    abstract java.util.List<String> authenticatedTenantIds();
+
+    @JsonProperty("authenticated_mapping_rule_ids")
+    abstract java.util.List<String> authenticatedMappingRuleIds();
+
+    @JsonProperty("claims")
+    abstract java.util.Map<String, Object> claims();
   }
 }
