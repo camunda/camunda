@@ -20,6 +20,12 @@ public abstract class BaseValue implements Recyclable {
 
   public abstract int getEncodedLength();
 
+  /**
+   * Copies the content of {@code source} into this value. Both must be the same concrete type.
+   * Field-level copy — no serialization. Every concrete subclass must implement this.
+   */
+  public abstract void copyFrom(final BaseValue source);
+
   @Override
   public String toString() {
     final StringBuilder stringBuilder = new StringBuilder();

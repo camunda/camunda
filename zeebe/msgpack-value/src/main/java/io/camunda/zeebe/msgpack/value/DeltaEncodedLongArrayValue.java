@@ -130,4 +130,10 @@ public final class DeltaEncodedLongArrayValue extends BaseValue {
   public void setValues(final long[] values) {
     this.values = values;
   }
+
+  @Override
+  public void copyFrom(final BaseValue source) {
+    final DeltaEncodedLongArrayValue src = (DeltaEncodedLongArrayValue) source;
+    values = src.values != null ? Arrays.copyOf(src.values, src.values.length) : null;
+  }
 }
