@@ -53,4 +53,14 @@ public class CompensationSubscription extends UnpackedObject implements DbValue 
     keyProp.setValue(key);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((CompensationSubscription) target);
+  }
+
+  @Override
+  public CompensationSubscription newInstance() {
+    return new CompensationSubscription();
+  }
 }

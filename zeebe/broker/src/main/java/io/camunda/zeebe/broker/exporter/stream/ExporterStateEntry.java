@@ -59,4 +59,14 @@ public class ExporterStateEntry extends UnpackedObject implements DbValue {
     metadataVersionProp.setValue(metadataVersion);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((ExporterStateEntry) target);
+  }
+
+  @Override
+  public ExporterStateEntry newInstance() {
+    return new ExporterStateEntry();
+  }
 }

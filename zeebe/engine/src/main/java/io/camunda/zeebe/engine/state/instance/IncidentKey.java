@@ -27,4 +27,14 @@ public class IncidentKey extends UnpackedObject implements DbValue {
   public void set(final long key) {
     keyProp.setValue(key);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((IncidentKey) target);
+  }
+
+  @Override
+  public IncidentKey newInstance() {
+    return new IncidentKey();
+  }
 }

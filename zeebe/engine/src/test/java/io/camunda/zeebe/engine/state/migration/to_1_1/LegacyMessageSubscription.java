@@ -56,4 +56,14 @@ public final class LegacyMessageSubscription extends UnpackedObject implements D
   public boolean isCorrelating() {
     return commandSentTimeProp.getValue() > 0;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((LegacyMessageSubscription) target);
+  }
+
+  @Override
+  public LegacyMessageSubscription newInstance() {
+    return new LegacyMessageSubscription();
+  }
 }

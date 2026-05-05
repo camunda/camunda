@@ -40,4 +40,14 @@ public final class VariableInstance extends UnpackedObject implements DbValue {
   public DirectBuffer getValue() {
     return valueProp.getValue();
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((VariableInstance) target);
+  }
+
+  @Override
+  public VariableInstance newInstance() {
+    return new VariableInstance();
+  }
 }

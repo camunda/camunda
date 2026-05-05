@@ -37,4 +37,14 @@ public class PersistedInputCollection extends UnpackedObject implements DbValue 
         element -> inputCollectionProperty.add().wrap(BufferUtil.cloneBuffer(element)));
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedInputCollection) target);
+  }
+
+  @Override
+  public PersistedInputCollection newInstance() {
+    return new PersistedInputCollection();
+  }
 }

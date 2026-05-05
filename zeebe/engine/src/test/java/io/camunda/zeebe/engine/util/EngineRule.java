@@ -802,6 +802,20 @@ public final class EngineRule extends ExternalResource {
       return genericBuffer.capacity();
     }
 
+    @Override
+    public void copyTo(final DbValue target) {
+      final int length = getLength();
+      final byte[] bytes = new byte[length];
+      final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+      write(buffer, 0);
+      target.wrap(buffer, 0, length);
+    }
+
+    @Override
+    public VersatileBlob newInstance() {
+      return new VersatileBlob();
+    }
+
     public DirectBuffer getDirectBuffer() {
       return genericBuffer;
     }

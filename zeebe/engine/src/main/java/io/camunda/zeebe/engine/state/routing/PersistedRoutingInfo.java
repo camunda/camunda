@@ -71,4 +71,14 @@ public final class PersistedRoutingInfo extends UnpackedObject implements DbValu
   enum MessageCorrelationStrategy {
     HASH_MOD,
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedRoutingInfo) target);
+  }
+
+  @Override
+  public PersistedRoutingInfo newInstance() {
+    return new PersistedRoutingInfo();
+  }
 }

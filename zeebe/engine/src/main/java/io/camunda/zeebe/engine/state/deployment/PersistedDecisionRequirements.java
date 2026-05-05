@@ -121,4 +121,14 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
   public void setDeploymentKey(final long deploymentKey) {
     deploymentKeyProp.setValue(deploymentKey);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedDecisionRequirements) target);
+  }
+
+  @Override
+  public PersistedDecisionRequirements newInstance() {
+    return new PersistedDecisionRequirements();
+  }
 }

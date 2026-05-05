@@ -24,7 +24,7 @@ public class PersistedUser extends UnpackedObject implements DbValue {
 
   public PersistedUser copy() {
     final var copy = new PersistedUser();
-    copy.copyFrom(this);
+    super.copyTo(copy);
     return copy;
   }
 
@@ -33,7 +33,7 @@ public class PersistedUser extends UnpackedObject implements DbValue {
   }
 
   public void setUser(final UserRecord record) {
-    userProp.getValue().copyFrom(record);
+    userProp.getValue().copyFrom((io.camunda.zeebe.msgpack.value.BaseValue) record);
   }
 
   public long getUserKey() {
@@ -54,5 +54,15 @@ public class PersistedUser extends UnpackedObject implements DbValue {
 
   public String getPassword() {
     return getUser().getPassword();
+  }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedUser) target);
+  }
+
+  @Override
+  public PersistedUser newInstance() {
+    return new PersistedUser();
   }
 }

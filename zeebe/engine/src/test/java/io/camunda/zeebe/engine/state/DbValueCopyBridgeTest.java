@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 final class DbValueCopyBridgeTest {
 
   @Test
-  void shouldCopyLatestProcessVersionViaDefaultDbValueBridge() {
+  void shouldCopyLatestProcessVersionViaExplicitDbValueImplementation() {
     // given
     final var source = new LatestProcessVersion();
     source.set(42L);
@@ -40,7 +40,7 @@ final class DbValueCopyBridgeTest {
   }
 
   @Test
-  void shouldCopyVersionInfoViaDefaultDbValueBridge() {
+  void shouldCopyVersionInfoViaExplicitDbValueImplementation() {
     // given
     final var source = new VersionInfo();
     source.addKnownVersion(1L);
@@ -60,7 +60,7 @@ final class DbValueCopyBridgeTest {
   }
 
   @Test
-  void shouldCopyPersistedUserViaDefaultDbValueBridge() {
+  void shouldCopyPersistedUserViaExplicitDbValueImplementation() {
     // given
     final var record =
         new UserRecord()
@@ -112,7 +112,7 @@ final class DbValueCopyBridgeTest {
   }
 
   @Test
-  void shouldCopyPersistedUsageMetricsViaDefaultDbValueBridge() {
+  void shouldCopyPersistedUsageMetricsViaExplicitDbValueImplementation() {
     // given
     final var source =
         new PersistedUsageMetrics()

@@ -66,7 +66,7 @@ final class InMemoryDbSnapshotSupport {
         final int valueLen = in.readInt();
         final byte[] valueBytes = new byte[valueLen];
         in.readFully(valueBytes);
-        // Restored values are raw bytes — the default copyTo (serialize+wrap) handles reads.
+        // Restored values are raw bytes and serialize themselves into the typed read target.
         data.put(key, new RestoredValue(new UnsafeBuffer(valueBytes)));
       }
     } catch (final IOException e) {
@@ -75,10 +75,9 @@ final class InMemoryDbSnapshotSupport {
   }
 
   /**
-   * A bytes-backed DbValue used only for snapshot restore. It holds serialized bytes and relies on
-   * the default {@link DbValue#copyTo} (serialize+wrap) to populate the real typed instance on
-   * read. On the first write via the ColumnFamily, it gets replaced by a properly typed instance
-   * created via {@link DbValue#newInstance()}.
+   * A bytes-backed DbValue used only for snapshot restore. It holds serialized bytes and serializes
+   * itself into the real typed instance on read. On the first write via the ColumnFamily, it gets
+   * replaced by a properly typed instance created via {@link DbValue#newInstance()}.
    */
   static final class RestoredValue implements DbValue {
     private final DirectBuffer data;
@@ -101,6 +100,20 @@ final class InMemoryDbSnapshotSupport {
     public int write(final MutableDirectBuffer buffer, final int offset) {
       buffer.putBytes(offset, data, 0, data.capacity());
       return data.capacity();
+    }
+
+    @Override
+    public void copyTo(final DbValue target) {
+      final int length = getLength();
+      final byte[] bytes = new byte[length];
+      final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+      write(buffer, 0);
+      target.wrap(buffer, 0, length);
+    }
+
+    @Override
+    public DbValue newInstance() {
+      return new RestoredValue(new UnsafeBuffer(new byte[0]));
     }
   }
 }

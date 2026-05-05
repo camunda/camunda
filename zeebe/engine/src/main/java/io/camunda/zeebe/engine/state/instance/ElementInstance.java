@@ -382,4 +382,14 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   public void setCompletionConditionFulfilled(final boolean fulfilled) {
     completionConditionFulfilledProp.setValue(fulfilled);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((ElementInstance) target);
+  }
+
+  @Override
+  public ElementInstance newInstance() {
+    return new ElementInstance();
+  }
 }

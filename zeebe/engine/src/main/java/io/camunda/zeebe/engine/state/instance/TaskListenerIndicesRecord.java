@@ -67,4 +67,14 @@ public final class TaskListenerIndicesRecord extends UnpackedObject implements D
           throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
     };
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((TaskListenerIndicesRecord) target);
+  }
+
+  @Override
+  public TaskListenerIndicesRecord newInstance() {
+    return new TaskListenerIndicesRecord();
+  }
 }

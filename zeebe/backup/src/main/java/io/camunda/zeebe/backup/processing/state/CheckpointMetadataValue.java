@@ -70,4 +70,14 @@ public final class CheckpointMetadataValue extends UnpackedObject implements DbV
     firstLogPositionProperty.setValue(firstLogPosition);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((CheckpointMetadataValue) target);
+  }
+
+  @Override
+  public CheckpointMetadataValue newInstance() {
+    return new CheckpointMetadataValue();
+  }
 }

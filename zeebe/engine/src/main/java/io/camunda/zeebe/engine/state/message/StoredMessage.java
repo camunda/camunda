@@ -42,4 +42,14 @@ public class StoredMessage extends UnpackedObject implements DbValue {
     messageProp.getValue().wrap(record);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((StoredMessage) target);
+  }
+
+  @Override
+  public StoredMessage newInstance() {
+    return new StoredMessage();
+  }
 }

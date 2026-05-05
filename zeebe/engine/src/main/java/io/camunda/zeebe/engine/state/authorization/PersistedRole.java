@@ -62,7 +62,7 @@ public class PersistedRole extends UnpackedObject implements DbValue {
 
   public PersistedRole copy() {
     final var copy = new PersistedRole();
-    copy.copyFrom(this);
+    super.copyTo(copy);
     return copy;
   }
 
@@ -78,5 +78,15 @@ public class PersistedRole extends UnpackedObject implements DbValue {
     roleIdProp.setValue(roleRecord.getRoleId());
     nameProp.setValue(roleRecord.getName());
     descriptionProp.setValue(roleRecord.getDescription());
+  }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedRole) target);
+  }
+
+  @Override
+  public PersistedRole newInstance() {
+    return new PersistedRole();
   }
 }
