@@ -118,6 +118,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     databaseTestService.deleteAllZeebeRecordsForPrefix(zeebeRecordPrefix);
   }
 
+  public void deleteAllZeebeIndicesForPrefix(final String zeebeRecordPrefix) {
+    databaseTestService.deleteAllZeebeIndicesForPrefix(zeebeRecordPrefix);
+  }
+
   public void deleteAllOtherZeebeRecordsWithPrefix(
       final String zeebeRecordPrefix, final String recordsToKeep) {
     databaseTestService.deleteAllOtherZeebeRecordsWithPrefix(zeebeRecordPrefix, recordsToKeep);
