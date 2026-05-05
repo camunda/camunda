@@ -266,7 +266,7 @@ test.describe('processes page', () => {
 
     await filtersPanel.displayOptionalFilter('Variable');
     await filtersPanel.displayOptionalFilter('Error Message');
-    await filtersPanel.displayOptionalFilter('Operation Id');
+    await filtersPanel.displayOptionalFilter('Operation ID');
     await filtersPanel.batchOperationIdFilter.type('aaa');
     await expect(
       page.getByText('Id has to be a 16 to 19 digit number or a UUID'),
