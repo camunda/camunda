@@ -145,10 +145,10 @@ End-to-end tests are executed using TestCafe to validate the functionality of th
 
 **Screenshot generation**: E2E tests can generate screenshots for documentation purposes by running `yarn screenshots`. The `e2e/browserMagic.js` module is sometimes used to add labels and arrows to screenshots, enhancing their utility for documentation.
 
-**CI jobs**: We have three workflows on the CI that run the E2E tests:
+**CI jobs**: We have two workflows and one job on the CI that run the E2E tests:
 
-1. `optimize-e2e-tests-sm-nightly.yml`: It runs the E2E tests in self-managed mode every night in a headless version of Firefox.
-1. `optimize-e2e-smoke` in `ci-optimize.yml`: It runs only the smoke E2E tests in self-managed mode on PR/push in a headless version of Firefox.
+1. `optimize-e2e-tests-sm-nightly.yml`: It runs the E2E tests in self-managed mode every night in a headless version of Chrome.
+1. `optimize-e2e-smoke` job in `ci-optimize.yml`: It runs only the smoke E2E tests in self-managed mode on PR/push in a headless version of Chrome.
 2. `optimize-e2e-tests-cloud.yml`: It runs the E2E tests in cloud mode on PR/push in a headless version of Chrome.
 
 ## Current migrations
