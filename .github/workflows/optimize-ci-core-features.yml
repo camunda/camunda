@@ -90,15 +90,9 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
-        with:
-          work-dir: ./optimize
-
-      - name: Expose Parsed Elastic Version
-        run: |
-          echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch_test_version }}" >> "$GITHUB_ENV"
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
 
       - name: Start Elasticsearch
         uses: ./.github/actions/compose
@@ -106,7 +100,7 @@ jobs:
           compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
           project_name: elasticsearch
         env:
-          ELASTIC_VERSION: ${{ env.ELASTIC_VERSION }}
+          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
           ELASTIC_JVM_MEMORY: 16
           ELASTIC_HTTP_PORT: 9200
 
@@ -174,14 +168,9 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
-        with:
-          work-dir: ./optimize
-
-      - name: Expose Parsed OpenSearch Version
-        run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
 
       - name: Start OpenSearch
         uses: ./.github/actions/compose
@@ -189,7 +178,7 @@ jobs:
           compose_file: .github/actions/compose/docker-compose.opensearch.yml
           project_name: opensearch
         env:
-          OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
+          OPENSEARCH_VERSION: ${{ steps.db-versions.outputs.opensearch-2 }}
           OPENSEARCH_JVM_MEMORY: 16
           OPENSEARCH_HTTP_PORT: 9200
 

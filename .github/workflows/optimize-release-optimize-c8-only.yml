@@ -229,6 +229,10 @@ jobs:
         with:
           work-dir: ./optimize
 
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
       - name: Clean release
         run: |
           ./mvnw release:clean
@@ -367,7 +371,7 @@ jobs:
           project_name: smoketest
         env:
           OPTIMIZE_IMAGE_TAG: ${{ env.RELEASE_VERSION }}
-          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
           ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_docker_version }}
           IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
 

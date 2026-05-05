@@ -1,0 +1,59 @@
+name: Read DB Versions
+description: |
+  Parses .ci/db-versions.yml and exposes every database version as a named output.
+  The repository must already be checked out before this action is called.
+
+outputs:
+  # ── Single-version outputs ────────────────────────────────────────────────────
+  # Resolves to the last (i.e. newest) entry in the corresponding list in
+  # db-versions.yml. Use these wherever a single representative version is needed
+  # for a major series — e.g. service container images, docker checks, optimize
+  # and identity workflow jobs that run against one version at a time.
+  elasticsearch-8:
+    value: ${{ steps.parse.outputs.elasticsearch-8 }}
+  elasticsearch-9:
+    value: ${{ steps.parse.outputs.elasticsearch-9 }}
+  opensearch-2:
+    value: ${{ steps.parse.outputs.opensearch-2 }}
+  opensearch-3:
+    value: ${{ steps.parse.outputs.opensearch-3 }}
+
+  # ── SaaS version ─────────────────────────────────────────────────────────────
+  # The Elasticsearch version recommended for SaaS deployments, as declared by
+  # the `saas` field in db-versions.yml. Always resolves to one of the es8 entries
+  # (enforced via a YAML anchor in the source file).
+  saas:
+    value: ${{ steps.parse.outputs.saas }}
+
+  # ── Matrix outputs ────────────────────────────────────────────────────────────
+  # Each is a JSON object ({ include: [...] }) ready for strategy.matrix via fromJSON().
+  # rdbms-matrix:   one entry per version of PostgreSQL, MySQL, MariaDB, MSSQL, Oracle.
+  #                 Fields: database-name, database-type, database-image-version, it-database-type.
+  #                 Used by zeebe-rdbms-integration-tests.yml.
+  # es-os-matrix:   min and max entries per supported major series of ES8, ES9, OS2, OS3.
+  #                 Fields: database-name, database-type, database-container, database-image-version, it-database-type.
+  #                 Used by zeebe-search-integration-tests.yml.
+  # ci-database-matrix: one entry per ES/OS major series (latest minor) plus H2.
+  #                 Fields: name, database-type, database-name, it-database-type, database-image-version (H2 omits this).
+  #                 Used by ci.yml (database-integration-tests, history-tests, identity-tests).
+  rdbms-matrix:
+    value: ${{ steps.parse.outputs.rdbms-matrix }}
+  es-os-matrix:
+    value: ${{ steps.parse.outputs.es-os-matrix }}
+  ci-database-matrix:
+    value: ${{ steps.parse.outputs.ci-database-matrix }}
+
+runs:
+  using: composite
+  steps:
+    - name: Python setup
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      with:
+        python-version: "3.x"
+    - name: Install Python dependencies
+      shell: bash
+      run: python3 -m pip install -q --disable-pip-version-check pyyaml==6.0.2
+    - name: Parse DB versions
+      id: parse
+      shell: bash
+      run: python3 .github/actions/read-db-versions/generate-db-versions.py >> "$GITHUB_OUTPUT"

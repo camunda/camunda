@@ -1,0 +1,73 @@
+---
+# Guards against accidentally downgrading the SaaS Elasticsearch version in
+# .ci/db-versions.yml. The saas field drives which image is deployed to SaaS,
+# so it should only ever move forward. Downgrades can go unnoticed until a
+# production deployment and are difficult to roll back safely.
+#
+# Only triggers on pull_request events so the escape-hatch label (see below)
+# is accessible via github.event.pull_request.labels. Labels are not available
+# in the merge_group context, and the check has already been enforced on the
+# PR before it enters the queue, so it intentionally does not run there.
+#
+# To enforce this as a merge requirement, add "Check SaaS version / Check SaaS
+# version does not decrease" to the required status checks in branch protection.
+
+name: Check SaaS version
+
+on:
+  pull_request:
+    paths:
+      - .ci/db-versions.yml
+
+jobs:
+  check-saas-version:
+    name: Check SaaS version does not decrease
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Install Python dependencies
+        run: python3 -m pip install -q --disable-pip-version-check pyyaml==6.0.2
+      - name: Compare SaaS version against main
+        env:
+          # Add the label ci:allow-saas-downgrade to the PR to bypass this
+          # check. Use only when intentionally downgrading — e.g. to retract
+          # a version that contains a security vulnerability. Remove the label
+          # once the PR is merged.
+          SKIP_LABEL: "ci:allow-saas-downgrade"
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        shell: bash
+        run: |
+          if echo "$PR_LABELS" | python3 -c "import json,sys; sys.exit(0 if '$SKIP_LABEL' in json.load(sys.stdin) else 1)"; then
+            echo "Label '$SKIP_LABEL' is set — skipping version check."
+            exit 0
+          fi
+
+          PR_VERSION=$(python3 -c "import yaml; print(yaml.safe_load(open('.ci/db-versions.yml'))['elasticsearch']['saas'])")
+          git fetch origin main --depth=1
+          MAIN_VERSION=$(git show origin/main:.ci/db-versions.yml | python3 -c "import yaml,sys; print(yaml.safe_load(sys.stdin)['elasticsearch']['saas'])")
+
+          echo "SaaS version on main:    $MAIN_VERSION"
+          echo "SaaS version on this PR: $PR_VERSION"
+
+          python3 - <<EOF
+          import sys
+
+          def parse(v):
+              return tuple(int(x) for x in v.split("."))
+
+          pr   = parse("$PR_VERSION")
+          main = parse("$MAIN_VERSION")
+
+          if pr < main:
+              print(f"::error::SaaS version decreased: {main} -> {pr}.")
+              print(f"::error::If this is intentional (e.g. security fix), add the label '$SKIP_LABEL' to the PR.")
+              sys.exit(1)
+
+          print(f"OK: {main} -> {pr}")
+          EOF
