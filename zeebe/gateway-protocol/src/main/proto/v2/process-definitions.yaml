@@ -459,8 +459,6 @@ components:
     ProcessElementStatisticsResult:
       description: Process element statistics response.
       type: object
-      x-semantic-provider:
-        - elementId
       required:
         - active
         - canceled

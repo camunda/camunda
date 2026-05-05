@@ -477,8 +477,6 @@ components:
 
     DeleteResourceResponse:
       type: object
-      x-semantic-provider:
-        - resourceKey
       required:
         - resourceKey
         - batchOperation
