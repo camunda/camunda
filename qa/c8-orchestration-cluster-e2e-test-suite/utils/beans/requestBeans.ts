@@ -225,6 +225,42 @@ export const messageSubscriptionRequiredFields = [
   'correlationKey',
   'tenantId',
 ];
+// All required fields for 8.10+ message subscription responses that include MCP new fields.
+// Used in follow-on MCP API test PRs that validate full response shapes.
+export const mcpMessageSubscriptionRequiredFields = [
+  ...messageSubscriptionRequiredFields,
+  'messageSubscriptionType',
+  'extensionProperties',
+  'processDefinitionName',
+  'processDefinitionVersion',
+  'toolName',
+  'inboundConnectorType',
+];
+
+export const expectedMcpSubscriptionAlpha = {
+  messageSubscriptionType: 'START_EVENT',
+  processDefinitionId: 'mcpProcessAlpha',
+  processDefinitionName: 'MCP Process Alpha',
+  messageName: 'alpha-tool-name',
+  tenantId: '<default>',
+};
+
+export const expectedMcpSubscriptionBravo = {
+  messageSubscriptionType: 'START_EVENT',
+  processDefinitionId: 'mcpProcessBravo',
+  processDefinitionName: 'MCP Process Bravo',
+  messageName: 'bravo-tool-name',
+  tenantId: '<default>',
+};
+
+export const expectedMcpSubscriptionWithInputs = {
+  messageSubscriptionType: 'START_EVENT',
+  processDefinitionId: 'mcpProcessWithInputs',
+  processDefinitionName: 'MCP Process With Inputs',
+  messageName: 'mcp-process-with-inputs',
+  tenantId: '<default>',
+};
+
 export const documentRequiredFields = [
   'camunda.document.type',
   'storeId',
