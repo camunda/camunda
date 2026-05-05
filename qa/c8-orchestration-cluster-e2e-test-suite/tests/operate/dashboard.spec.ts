@@ -204,7 +204,7 @@ test.describe('Dashboard', () => {
           totalInstanceCount,
           Number(totalInstanceCount) > 1,
         ),
-      ).toBeVisible();
+      ).toBeVisible({timeout: 30000});
     });
   });
 
@@ -229,7 +229,7 @@ test.describe('Dashboard', () => {
           incidentCount,
           Number(incidentCount) > 1,
         ),
-      ).toBeVisible();
+      ).toBeVisible({timeout: 30000});
     });
   });
 

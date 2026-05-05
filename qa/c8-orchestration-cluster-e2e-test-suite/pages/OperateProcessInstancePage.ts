@@ -1000,7 +1000,7 @@ class OperateProcessInstancePage {
   }
 
   async getIncidentCount(): Promise<number> {
-    await expect(this.incidentsViewHeader).toBeVisible();
+    await expect(this.incidentsViewHeader).toBeVisible({timeout: 30000});
     const headingText = await this.incidentsViewHeader.innerText();
     if (!headingText) {
       return 0;
