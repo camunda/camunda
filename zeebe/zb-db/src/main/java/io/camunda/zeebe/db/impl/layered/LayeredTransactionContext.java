@@ -13,23 +13,30 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 final class LayeredTransactionContext implements TransactionContext {
 
+  private final LayeredZeebeDb<?> db;
   private final TransactionContext activeContext;
   private final TransactionContext persistentContext;
   private final LayeredTransaction transaction;
-  private final Map<Enum<?>, BoundColumnFamily> columnFamilies = new HashMap<>();
+  private final Map<ColumnFamilyCacheKey, BoundColumnFamily> columnFamilies = new HashMap<>();
 
   LayeredTransactionContext(
-      final TransactionContext activeContext, final TransactionContext persistentContext) {
+      final LayeredZeebeDb<?> db,
+      final TransactionContext activeContext,
+      final TransactionContext persistentContext) {
+    this.db = db;
     this.activeContext = activeContext;
     this.persistentContext = persistentContext;
-    transaction = new LayeredTransaction(activeContext, persistentContext);
+    transaction = new LayeredTransaction(db, activeContext, persistentContext);
   }
 
   TransactionContext activeContext() {
@@ -40,6 +47,22 @@ final class LayeredTransactionContext implements TransactionContext {
     return persistentContext;
   }
 
+  boolean isTombstoned(final byte[] rawKey) {
+    return transaction.isTombstoned(rawKey);
+  }
+
+  NavigableSet<byte[]> visibleTombstones() {
+    return transaction.visibleTombstones();
+  }
+
+  void addTombstone(final byte[] rawKey) {
+    transaction.addTombstone(rawKey);
+  }
+
+  void clearTombstone(final byte[] rawKey) {
+    transaction.clearTombstone(rawKey);
+  }
+
   @SuppressWarnings("unchecked")
   synchronized <KeyType extends DbKey, ValueType extends DbValue>
       ColumnFamily<KeyType, ValueType> getOrCreateColumnFamily(
@@ -47,28 +70,21 @@ final class LayeredTransactionContext implements TransactionContext {
           final KeyType keyInstance,
           final ValueType valueInstance,
           final Supplier<ColumnFamily<KeyType, ValueType>> factory) {
-    final var keyType = keyInstance.getClass();
-    final var valueType = valueInstance.getClass();
-    final var existing = columnFamilies.get(columnFamily);
+    final var cacheKey =
+        new ColumnFamilyCacheKey(
+            columnFamily.getDeclaringClass(),
+            columnFamily.name(),
+            keyInstance.getClass(),
+            valueInstance.getClass());
+    final var existing = columnFamilies.get(cacheKey);
 
     if (existing != null) {
-      if (!existing.keyType.equals(keyType) || !existing.valueType.equals(valueType)) {
-        throw new IllegalStateException(
-            ("Column family %s was already created for key type %s and value type %s, "
-                    + "but was requested again with key type %s and value type %s")
-                .formatted(
-                    columnFamily,
-                    existing.keyType.getName(),
-                    existing.valueType.getName(),
-                    keyType.getName(),
-                    valueType.getName()));
-      }
-
       return (ColumnFamily<KeyType, ValueType>) existing.columnFamily;
     }
 
     final var created = factory.get();
-    columnFamilies.put(columnFamily, new BoundColumnFamily(created, keyType, valueType));
+    columnFamilies.put(
+        cacheKey, new BoundColumnFamily(created, keyInstance.getClass(), valueInstance.getClass()));
     return created;
   }
 
@@ -107,20 +123,34 @@ final class LayeredTransactionContext implements TransactionContext {
     }
   }
 
+  private record ColumnFamilyCacheKey(
+      Class<?> columnFamilyEnumType,
+      String columnFamilyName,
+      Class<?> keyType,
+      Class<?> valueType) {}
+
   private record BoundColumnFamily(
       ColumnFamily<?, ?> columnFamily, Class<?> keyType, Class<?> valueType) {}
 
   static final class LayeredTransaction implements ZeebeDbTransaction {
 
+    private final LayeredZeebeDb<?> db;
     private final TransactionContext activeContext;
     private final TransactionContext persistentContext;
+
+    private final NavigableSet<byte[]> pendingTombstones = new TreeSet<>(Arrays::compareUnsigned);
+    private final NavigableSet<byte[]> pendingTombstoneRemovals =
+        new TreeSet<>(Arrays::compareUnsigned);
 
     private @Nullable ZeebeDbTransaction activeTransaction;
     private @Nullable ZeebeDbTransaction persistentTransaction;
     private boolean inTransaction;
 
     LayeredTransaction(
-        final TransactionContext activeContext, final TransactionContext persistentContext) {
+        final LayeredZeebeDb<?> db,
+        final TransactionContext activeContext,
+        final TransactionContext persistentContext) {
+      this.db = db;
       this.activeContext = activeContext;
       this.persistentContext = persistentContext;
     }
@@ -129,9 +159,45 @@ final class LayeredTransactionContext implements TransactionContext {
       return inTransaction;
     }
 
+    boolean isTombstoned(final byte[] rawKey) {
+      if (pendingTombstones.contains(rawKey)) {
+        return true;
+      }
+      if (pendingTombstoneRemovals.contains(rawKey)) {
+        return false;
+      }
+      return db.isCommittedTombstoned(rawKey);
+    }
+
+    NavigableSet<byte[]> visibleTombstones() {
+      final NavigableSet<byte[]> visible = new TreeSet<>(Arrays::compareUnsigned);
+      visible.addAll(db.snapshotCommittedTombstones());
+      visible.removeAll(pendingTombstoneRemovals);
+      visible.addAll(pendingTombstones);
+      return visible;
+    }
+
+    void addTombstone(final byte[] rawKey) {
+      final var copy = Arrays.copyOf(rawKey, rawKey.length);
+      pendingTombstoneRemovals.remove(copy);
+      pendingTombstones.add(copy);
+    }
+
+    void clearTombstone(final byte[] rawKey) {
+      if (pendingTombstones.remove(rawKey)) {
+        return;
+      }
+
+      if (db.isCommittedTombstoned(rawKey)) {
+        pendingTombstoneRemovals.add(Arrays.copyOf(rawKey, rawKey.length));
+      }
+    }
+
     void reset() {
       activeTransaction = activeContext.getCurrentTransaction();
       persistentTransaction = persistentContext.getCurrentTransaction();
+      pendingTombstones.clear();
+      pendingTombstoneRemovals.clear();
       inTransaction = true;
     }
 
@@ -157,9 +223,12 @@ final class LayeredTransactionContext implements TransactionContext {
       try {
         persistent.commit();
         active.commit();
+        db.applyCommittedTombstoneChanges(pendingTombstones, pendingTombstoneRemovals);
       } finally {
         inTransaction = false;
         clearTransactions();
+        pendingTombstones.clear();
+        pendingTombstoneRemovals.clear();
       }
     }
 
@@ -188,6 +257,8 @@ final class LayeredTransactionContext implements TransactionContext {
 
       inTransaction = false;
       clearTransactions();
+      pendingTombstones.clear();
+      pendingTombstoneRemovals.clear();
 
       if (failure != null) {
         throw failure;
