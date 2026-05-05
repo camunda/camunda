@@ -588,3 +588,70 @@ paths:
       responses:
         '200':
           description: OK.
+
+  # ── Invalid: shape declared on operation contradicts the registry ──
+  # Class-scoped: covers both directions of the mismatch (edge kind
+  # annotated as entity — the dangerous case that bypasses edge-endpoint
+  # resolution and the implicit requires it derives — plus the symmetric
+  # entity-kind-annotated-as-edge for completeness).
+
+  # 22. Edge kind annotated with `shape:` omitted (defaults to entity).
+  /invalid/widgets/{widgetId}/wrong-shape-default/{username}:
+    put:
+      operationId: edgeKindShapeDefaulted
+      summary: Edge kind establishes with no `shape:` (defaults to entity)
+      description: |
+        Should fail — `WidgetOwnership` is registered with `shape: edge`,
+        but this op omits `shape:` so it defaults to `entity`. Without the
+        check, edge-endpoint resolution + derived requires would silently
+        skip this operation.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: username
+          in: path
+          required: true
+          description: The username.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: WidgetOwnership
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+          - { in: path, name: username, semanticType: Username }
+      responses:
+        '204':
+          description: Assigned.
+
+  # 23. Entity kind annotated with `shape: edge`.
+  /invalid/widgets/wrong-shape-explicit:
+    post:
+      operationId: entityKindShapeEdge
+      summary: Entity kind establishes with `shape: edge`
+      description: |
+        Should fail — `Widget` is registered with `shape: entity`, but
+        this op declares `shape: edge`. Class-scoped symmetric coverage
+        of the registry-mismatch check.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        shape: edge
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                widgetId: { type: string }
+              required: [widgetId]
+      responses:
+        '201':
+          description: Created.

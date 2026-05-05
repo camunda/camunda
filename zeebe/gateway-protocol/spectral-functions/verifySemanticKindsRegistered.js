@@ -177,6 +177,13 @@ function loadRegistry() {
   // check skips them, and the operation-walk below rejects any direct
   // `establishes`/`requires` against them.
   const externalNames = new Set();
+  // kind name -> registered shape ('entity' | 'edge' | 'external-entity').
+  // Used by the shape-vs-registry check: an op annotating an edge kind
+  // with `shape: entity` (or omitting `shape`, which defaults to entity)
+  // would otherwise bypass edge-endpoint resolution and the implicit
+  // requires it derives. The opposite (entity kind annotated as edge) is
+  // also flagged to keep the registry the single source of truth.
+  const kindShapes = new Map();
   // semanticType (string) -> array of entity kind names that declare it as an
   // identifier. Single-owner is the well-formed case; multi-owner is a
   // registry config error and surfaces as an error against the first edge
@@ -187,6 +194,7 @@ function loadRegistry() {
     if (typeof name !== 'string' || name.length === 0) continue;
     names.add(name);
     if (entry && typeof entry === 'object') {
+      if (typeof entry.shape === 'string') kindShapes.set(name, entry.shape);
       if (entry.shape === 'external-entity') externalNames.add(name);
       if (Array.isArray(entry.identifiers)) {
         for (const id of entry.identifiers) {
@@ -198,14 +206,14 @@ function loadRegistry() {
       }
     }
   }
-  cachedRegistry = { names, identifierToKinds, externalNames };
+  cachedRegistry = { names, identifierToKinds, externalNames, kindShapes };
   cachedFor = file;
   return cachedRegistry;
 }
 
 module.exports = (input, _opts, _context) => {
   const errors = [];
-  const { names: registry, identifierToKinds, externalNames } = loadRegistry();
+  const { names: registry, identifierToKinds, externalNames, kindShapes } = loadRegistry();
 
   // The CI runs spectral twice: once on the bundled entry point
   // (rest-api.yaml) and once per-file across the glob. The cross-reference
@@ -256,6 +264,31 @@ module.exports = (input, _opts, _context) => {
             message: `Semantic kind '${est.kind}' is registered as 'shape: external-entity' and cannot be established. External entities are minted outside the Camunda REST API and may only be referenced via membership-edge identifiedBy tuples.`,
             path: ['paths', pathKey, method, 'x-semantic-establishes', 'kind'],
           });
+        } else {
+          // Shape consistency: the operation's `shape` (defaulting to
+          // 'entity' when omitted, per semantic-establishes-shape) must
+          // match the registry. Otherwise an op annotating an edge kind
+          // as entity would silently skip edge-endpoint resolution and
+          // the implicit requires it derives, masking real coverage gaps.
+          const registeredShape = kindShapes.get(est.kind);
+          const declaredShape =
+            typeof est.shape === 'string' ? est.shape : 'entity';
+          if (
+            typeof registeredShape === 'string' &&
+            registeredShape !== 'external-entity' &&
+            registeredShape !== declaredShape
+          ) {
+            errors.push({
+              message: `Semantic kind '${est.kind}' is registered as 'shape: ${registeredShape}' but x-semantic-establishes on ${method.toUpperCase()} ${pathKey} declares 'shape: ${declaredShape}'${typeof est.shape === 'string' ? '' : ' (default)'}. Either fix the operation to use 'shape: ${registeredShape}' or update the registry entry in semantic-kinds.json.`,
+              path: [
+                'paths',
+                pathKey,
+                method,
+                'x-semantic-establishes',
+                ...(typeof est.shape === 'string' ? ['shape'] : ['kind']),
+              ],
+            });
+          }
         }
 
         // Edge endpoint resolution. For shape: edge, every identifiedBy entry's

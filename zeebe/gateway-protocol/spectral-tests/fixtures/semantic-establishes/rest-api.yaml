@@ -75,3 +75,9 @@ paths:
     $ref: 'widgets.yaml#/paths/~1invalid~1requires-body-missing-prop'
   /valid/widgets-pathitem/{widgetId}:
     $ref: 'widgets.yaml#/paths/~1valid~1widgets-pathitem~1{widgetId}'
+
+  # ── Invalid: shape vs registry ───────────────────────────────
+  /invalid/widgets/{widgetId}/wrong-shape-default/{username}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1{widgetId}~1wrong-shape-default~1{username}'
+  /invalid/widgets/wrong-shape-explicit:
+    $ref: 'widgets.yaml#/paths/~1invalid~1widgets~1wrong-shape-explicit'

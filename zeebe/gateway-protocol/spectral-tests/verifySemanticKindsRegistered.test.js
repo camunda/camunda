@@ -156,15 +156,24 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
     });
 
     it('does not flag the valid Widget consumer (Widget is established by createWidget)', () => {
-      const v = registryViolations.filter((e) =>
-        e.message.includes("Semantic kind 'Widget'"),
+      // Scope: orphan / unknown messages only. Other error families (e.g.
+      // shape-vs-registry mismatch) legitimately mention 'Widget' on
+      // dedicated mismatch fixtures and are exercised by their own tests.
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes("Semantic kind 'Widget'") &&
+          (e.message.includes('no operation establishes it') ||
+            /^Unknown semantic kind/.test(e.message)),
       );
       assert.equal(v.length, 0);
     });
 
     it('does not flag the valid WidgetOwnership consumer (established by assignOwnerToWidget)', () => {
-      const v = registryViolations.filter((e) =>
-        e.message.includes("Semantic kind 'WidgetOwnership'"),
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes("Semantic kind 'WidgetOwnership'") &&
+          (e.message.includes('no operation establishes it') ||
+            /^Unknown semantic kind/.test(e.message)),
       );
       assert.equal(v.length, 0);
     });
@@ -381,6 +390,57 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
           /references body member|references path parameter|references query parameter|references header parameter/.test(
             e.message,
           ) && happy.some((op) => e.message.includes(op)),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+  });
+
+  // ── Shape consistency vs registry ─────────────────────────────
+  // Class-scoped: covers both directions of the mismatch (edge kind
+  // annotated as entity, plus entity kind annotated as edge). The
+  // dangerous case is an edge kind silently treated as entity, which
+  // bypasses edge-endpoint resolution and the implicit requires it
+  // derives — a real coverage gap in #52322 review.
+  describe('verify-semantic-kinds-registered: shape vs registry', () => {
+    it('flags an edge kind establishes that omits `shape:` (defaults to entity)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('edgeKindShapeDefaulted') ||
+          e.message.includes('/invalid/widgets/{widgetId}/wrong-shape-default'),
+      );
+      assert.ok(
+        v.some(
+          (e) =>
+            /'WidgetOwnership' is registered as 'shape: edge'/.test(e.message) &&
+            /declares 'shape: entity' \(default\)/.test(e.message),
+        ),
+        JSON.stringify(v, null, 2),
+      );
+    });
+
+    it('flags an entity kind establishes that declares `shape: edge`', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('entityKindShapeEdge') ||
+          e.message.includes('/invalid/widgets/wrong-shape-explicit'),
+      );
+      assert.ok(
+        v.some(
+          (e) =>
+            /'Widget' is registered as 'shape: entity'/.test(e.message) &&
+            /declares 'shape: edge'/.test(e.message),
+        ),
+        JSON.stringify(v, null, 2),
+      );
+    });
+
+    it('does not flag the valid happy-path establishes (Widget as entity, WidgetOwnership as edge)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          /is registered as 'shape:/.test(e.message) &&
+          (e.message.includes('createWidget') ||
+            e.message.includes('createUser') ||
+            e.message.includes('assignOwnerToWidget')),
       );
       assert.equal(v.length, 0, JSON.stringify(v, null, 2));
     });
