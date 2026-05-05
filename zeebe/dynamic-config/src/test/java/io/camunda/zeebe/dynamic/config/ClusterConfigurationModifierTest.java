@@ -150,7 +150,8 @@ final class ClusterConfigurationModifierTest {
           enabledExporterRemoved(),
           exporterAddedAndRemoved(),
           disabledExporterConfigRemoved(),
-          exporterReadded());
+          exporterReadded(),
+          configNotFoundExporterNotReadded());
     }
 
     private static Arguments exporterAddedAndRemoved() {
@@ -248,6 +249,34 @@ final class ClusterConfigurationModifierTest {
               "Exporters Readded",
               new ExporterConfigParameter(
                   currentConfiguration, Set.of("expA", "expC"), expectedConfig)));
+    }
+
+    private static Arguments configNotFoundExporterNotReadded() {
+      final var initialConfig =
+          new DynamicPartitionConfig(
+              new ExportersConfig(
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expC",
+                      new ExporterState(1, State.CONFIG_NOT_FOUND, Optional.empty()))));
+
+      final ClusterConfiguration currentConfiguration =
+          ClusterConfiguration.init()
+              .addMember(
+                  LOCAL_MEMBER_ID,
+                  MemberState.initializeAsActive(
+                      Map.of(
+                          1,
+                          PartitionState.active(1, initialConfig),
+                          2,
+                          PartitionState.active(2, initialConfig))));
+
+      // expC is still absent from the application config — it must stay CONFIG_NOT_FOUND
+      return Arguments.of(
+          Named.of(
+              "CONFIG_NOT_FOUND Exporter Not Readded",
+              new ExporterConfigParameter(currentConfiguration, Set.of("expA"), initialConfig)));
     }
 
     private static Arguments disabledExporterConfigRemoved() {
