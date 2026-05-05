@@ -9,11 +9,17 @@ plugins {
 }
 
 // OpenAPI generation tasks for the dist module (3 executions matching Maven pom.xml)
-val openApiOutputDir = "${project.layout.buildDirectory.get()}/generated/openapi"
+// Each generator task gets its own output directory so Gradle can track them independently.
+// We then merge the generated Java sources into a single source directory for compilation.
+val openApiBackupsOutputDir = "${project.layout.buildDirectory.get()}/generated/openapi-backups"
+val openApiClusterOutputDir = "${project.layout.buildDirectory.get()}/generated/openapi-cluster"
+val openApiExporterOutputDir = "${project.layout.buildDirectory.get()}/generated/openapi-exporter"
+val mergedOpenApiJavaDir = "${project.layout.buildDirectory.get()}/generated/openapi-merged/src/main/java"
+
 val openApiGenerateBackups by tasks.registering(org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
     generatorName.set("spring")
     inputSpec.set("$projectDir/src/main/resources/api/backup-management-api.yaml")
-    outputDir.set(openApiOutputDir)
+    outputDir.set(openApiBackupsOutputDir)
     modelPackage.set("io.camunda.management.backups")
 
     globalProperties.set(
@@ -39,7 +45,7 @@ val openApiGenerateBackups by tasks.registering(org.openapitools.generator.gradl
 val openApiGenerateCluster by tasks.registering(org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
     generatorName.set("spring")
     inputSpec.set("$projectDir/src/main/resources/api/cluster/cluster-api.yaml")
-    outputDir.set(openApiOutputDir)
+    outputDir.set(openApiClusterOutputDir)
     modelPackage.set("io.camunda.zeebe.management.cluster")
 
     globalProperties.set(
@@ -65,7 +71,7 @@ val openApiGenerateCluster by tasks.registering(org.openapitools.generator.gradl
 val openApiGenerateExporter by tasks.registering(org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
     generatorName.set("spring")
     inputSpec.set("$projectDir/src/main/resources/api/cluster/exporter-api.yaml")
-    outputDir.set(openApiOutputDir)
+    outputDir.set(openApiExporterOutputDir)
     modelPackage.set("io.camunda.zeebe.management.cluster")
 
     globalProperties.set(
@@ -88,26 +94,27 @@ val openApiGenerateExporter by tasks.registering(org.openapitools.generator.grad
     )
 }
 
-// Add generated sources to the source set
+val syncOpenApiGeneratedSources by tasks.registering(Sync::class) {
+    dependsOn(openApiGenerateBackups, openApiGenerateCluster, openApiGenerateExporter)
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    into(mergedOpenApiJavaDir)
+    from("$openApiBackupsOutputDir/src/main/java")
+    from("$openApiClusterOutputDir/src/main/java")
+    from("$openApiExporterOutputDir/src/main/java")
+}
+
+// Add merged generated sources to the source set
 sourceSets {
     main {
         java {
-            srcDir("$openApiOutputDir/src/main/java")
+            srcDir(mergedOpenApiJavaDir)
         }
     }
 }
 
-openApiGenerateCluster {
-    mustRunAfter(openApiGenerateBackups)
-}
-
-openApiGenerateExporter {
-    mustRunAfter(openApiGenerateCluster)
-}
-
-// Make compileJava depend on all OpenAPI generation tasks
+// Make compileJava depend on the merged generated sources
 tasks.named("compileJava") {
-    dependsOn(openApiGenerateBackups, openApiGenerateCluster, openApiGenerateExporter)
+    dependsOn(syncOpenApiGeneratedSources)
 }
 
 dependencies {
