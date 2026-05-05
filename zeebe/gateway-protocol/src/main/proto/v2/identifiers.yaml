@@ -81,51 +81,24 @@ components:
 
     GroupId:
       example: engineering
-      description: |
-        The unique identifier of a group. The accepted character set is
-        deployment-scoped and operation-scoped — see `GroupIdStrict` for
-        the strict form enforced on group CRUD and group-as-subject path
-        parameters.
+      description: The unique identifier of a group.
       format: GroupId
       type: string
       x-semantic-type: GroupId
       x-semantic-client-minted: true
       minLength: 1
       maxLength: 256
-      # No `pattern`: this base schema is the *union* of forms accepted
-      # across (operation × deployment) cells. When a group is referenced
-      # as a member of a role or tenant (assignGroupToRole,
-      # assignGroupToTenant, RoleGroupResult.groupId, TenantGroupResult
-      # .groupId), the runtime applies
-      # IdentifierValidator.validateGroupId, which uses
-      # SecurityConfiguration.getCompiledGroupIdValidationPattern() —
+      # No `pattern` constraint: groupId validation is deployment-scoped.
+      # `SecurityConfiguration.getCompiledGroupIdValidationPattern()` returns
       # `DEFAULT_EXTERNAL_ID_REGEX` (`.*`) when OIDC `groupsClaim` is
-      # configured ("bring your own groups"), and the default ID regex
-      # otherwise. Member-reference sites therefore $ref this loose form.
-      # Group-as-subject sites (everything in groups.yaml) $ref
-      # `GroupIdStrict` instead, which adds the strict pattern that
-      # GroupValidator enforces on group CRUD even under BYOG.
-
-    GroupIdStrict:
-      description: |
-        The unique identifier of a group when the group is itself the
-        subject of the operation (group CRUD, `/groups/{groupId}/*` path
-        parameters, group-result echoes). Constrains `GroupId` with the
-        runtime regex applied by `GroupValidator.validate` /
-        `GroupValidator.validateMember` (group-as-subject paths) — both
-        route to `IdentifierValidator.validateId`, which uses
-        `SecurityConfiguration.getCompiledIdValidationPattern()`. This
-        constraint applies in every deployment, including BYOG/OIDC: the
-        BYOG relaxation only affects member-reference operations
-        (see the `GroupId` schema comment).
-      x-semantic-type: GroupId
-      x-semantic-client-minted: true
-      allOf:
-        - $ref: '#/components/schemas/GroupId'
-        - type: string
-          # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core
-          # (the default value of `idValidationPattern`).
-          pattern: ^[a-zA-Z0-9_~@.+-]+$
+      # configured ("bring your own groups"), and `DEFAULT_ID_REGEX`
+      # (`^[a-zA-Z0-9_~@.+-]+$`) otherwise. Advertising the strict regex
+      # here would falsely reject valid IdP-supplied group IDs in BYOG
+      # deployments. The runtime separately enforces the strict regex on
+      # group CRUD inputs via `IdentifierValidator.validateId` regardless
+      # of deployment, but that constraint is not expressed at the schema
+      # level so the wire contract remains accurate for every deployment
+      # and operation cell.
 
     MappingRuleId:
       example: my-mapping-rule

@@ -85,7 +85,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       responses:
         "200":
           description: The group is successfully returned.
@@ -124,7 +124,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       requestBody:
         required: true
         content:
@@ -171,7 +171,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       responses:
         "204":
           description: The group was deleted successfully.
@@ -211,7 +211,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: username
           in: path
           required: true
@@ -263,7 +263,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: username
           in: path
           required: true
@@ -307,7 +307,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       requestBody:
         required: false
         content:
@@ -359,7 +359,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: clientId
           in: path
           required: true
@@ -411,7 +411,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: clientId
           in: path
           required: true
@@ -455,7 +455,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       requestBody:
         required: false
         content:
@@ -505,7 +505,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: mappingRuleId
           in: path
           required: true
@@ -555,7 +555,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: mappingRuleId
           in: path
           required: true
@@ -599,7 +599,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       requestBody:
         required: false
         content:
@@ -647,7 +647,7 @@ paths:
           required: true
           description: The group ID.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       requestBody:
         required: false
         content:
@@ -687,7 +687,7 @@ components:
       properties:
         groupId:
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
           description: The ID of the new group.
         name:
           type: string
@@ -704,7 +704,7 @@ components:
       properties:
         groupId:
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
           description: The ID of the created group.
         name:
           description: The display name of the created group.
@@ -735,7 +735,7 @@ components:
       properties:
         groupId:
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
           description: The unique external group ID.
         name:
           type: string
@@ -758,7 +758,7 @@ components:
           description: The group name.
         groupId:
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/GroupIdStrict'
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
           description: The group ID.
         description:
           type: string
