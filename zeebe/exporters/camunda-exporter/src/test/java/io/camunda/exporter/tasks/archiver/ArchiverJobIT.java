@@ -29,12 +29,15 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +59,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   protected static final Logger LOGGER = LoggerFactory.getLogger(ArchiverJobIT.class);
   protected static final int PARTITION_ID = 1;
   protected static final AtomicLong ID_GENERATOR = new AtomicLong(1);
+  protected static final Instant NOW = Instant.parse("2026-05-01T10:26:00Z");
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
@@ -71,7 +75,8 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
 
   @BeforeEach
   void setup() {
-    context = new ExporterTestContext().setPartitionId(PARTITION_ID);
+    context =
+        new ExporterTestContext().setPartitionId(PARTITION_ID).setClock(InstantSource.fixed(NOW));
     exporterMetrics = new CamundaExporterMetrics(context.getMeterRegistry());
     executor = Executors.newSingleThreadExecutor();
   }
@@ -131,20 +136,20 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   }
 
   protected void store(
-      final IndexTemplateDescriptor template,
+      final IndexDescriptor indexDescriptor,
       final SearchClientAdapter client,
       final ExporterEntity<?> entity)
       throws IOException {
-    client.index(entity.getId(), template.getFullQualifiedName(), entity);
+    client.index(entity.getId(), indexDescriptor.getFullQualifiedName(), entity);
   }
 
   protected void store(
-      final IndexTemplateDescriptor template,
+      final IndexDescriptor indexDescriptor,
       final SearchClientAdapter client,
       final ExporterEntity<?> parent,
       final ExporterEntity<?> child)
       throws IOException {
-    client.index(child.getId(), parent.getId(), template.getFullQualifiedName(), child);
+    client.index(child.getId(), parent.getId(), indexDescriptor.getFullQualifiedName(), child);
   }
 
   protected void verifyMoved(
