@@ -48,8 +48,11 @@ components:
       x-semantic-type: TenantId
       x-semantic-client-minted: true
       minLength: 1
-      maxLength: 256
-      pattern: ^(<default>|[A-Za-z0-9_@.+-]+)$
+      maxLength: 31
+      # Mirrors IdentifierValidator.TENANT_ID_MASK in security-validation
+      # (^[\w\.-]{1,31}$), with the literal `<default>` admitted as the
+      # default-tenant alias the runtime accepts.
+      pattern: ^(<default>|[\w\.\-]{1,31})$
 
     Username:
       example: swillis
