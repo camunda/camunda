@@ -41,4 +41,14 @@ public class VariableDocumentState extends UnpackedObject implements DbValue {
     recordProp.getValue().wrap(record);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((VariableDocumentState) target);
+  }
+
+  @Override
+  public VariableDocumentState newInstance() {
+    return new VariableDocumentState();
+  }
 }

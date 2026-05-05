@@ -40,4 +40,14 @@ public class ConditionalSubscription extends UnpackedObject implements DbValue {
     keyProp.setValue(key);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((ConditionalSubscription) target);
+  }
+
+  @Override
+  public ConditionalSubscription newInstance() {
+    return new ConditionalSubscription();
+  }
 }

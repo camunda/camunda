@@ -107,4 +107,14 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
   public String getVersionTag() {
     return bufferAsString(versionTagProp.getValue());
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedDecision) target);
+  }
+
+  @Override
+  public PersistedDecision newInstance() {
+    return new PersistedDecision();
+  }
 }

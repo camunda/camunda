@@ -33,4 +33,14 @@ public class UserTaskRecordValue extends UnpackedObject implements DbValue {
   public void setRecord(final UserTaskRecord record) {
     recordProp.getValue().wrap(record);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((UserTaskRecordValue) target);
+  }
+
+  @Override
+  public UserTaskRecordValue newInstance() {
+    return new UserTaskRecordValue();
+  }
 }

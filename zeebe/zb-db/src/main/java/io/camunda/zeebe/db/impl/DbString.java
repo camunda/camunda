@@ -62,4 +62,18 @@ public final class DbString implements DbKey, DbValue {
   public DirectBuffer getBuffer() {
     return bytes;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    final DbString t = (DbString) target;
+    final int cap = bytes.capacity();
+    final byte[] data = new byte[cap];
+    bytes.getBytes(0, data);
+    t.bytes.wrap(data);
+  }
+
+  @Override
+  public DbString newInstance() {
+    return new DbString();
+  }
 }

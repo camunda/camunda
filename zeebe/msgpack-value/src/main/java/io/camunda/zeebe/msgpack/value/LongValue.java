@@ -56,6 +56,11 @@ public final class LongValue extends BaseValue {
   }
 
   @Override
+  public void copyFrom(final BaseValue source) {
+    value = ((LongValue) source).value;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(getValue());
   }

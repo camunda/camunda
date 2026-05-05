@@ -7,8 +7,21 @@
  */
 package io.camunda.zeebe.db;
 
+import io.camunda.zeebe.util.Copyable;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
-/** The value which should be stored together with a key. */
-public interface DbValue extends BufferWriter, BufferReader {}
+/**
+ * The value which should be stored together with a key.
+ *
+ * <p>Extends {@link Copyable} for zero-serialization in-memory storage. Implementations are
+ * expected to provide explicit {@link #copyTo(DbValue)} and {@link #newInstance()} methods.
+ */
+public interface DbValue extends BufferWriter, BufferReader, Copyable<DbValue> {
+
+  @Override
+  void copyTo(DbValue target);
+
+  @Override
+  DbValue newInstance();
+}

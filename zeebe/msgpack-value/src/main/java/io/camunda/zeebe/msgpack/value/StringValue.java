@@ -113,6 +113,14 @@ public final class StringValue extends BaseValue {
   }
 
   @Override
+  public void copyFrom(final BaseValue source) {
+    final StringValue src = (StringValue) source;
+    final byte[] copy = new byte[src.length];
+    src.bytes.getBytes(0, copy, 0, src.length);
+    wrap(copy);
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(bytes, getLength());
   }

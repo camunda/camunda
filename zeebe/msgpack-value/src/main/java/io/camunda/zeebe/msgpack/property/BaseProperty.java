@@ -60,6 +60,29 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     return isSet || defaultValue != null;
   }
 
+  /**
+   * Copies the value and state from {@code source} into this property. Both must have values of the
+   * same concrete type. Zero serialization — delegates to {@link BaseValue#copyFrom}.
+   *
+   * <p>If the source is unset but has a default value, the default value is copied into this
+   * property's default value. This preserves {@link #resolveValue()} semantics, which use {@code
+   * defaultValue} whenever {@code isSet == false}.
+   */
+  public void copyFrom(final BaseProperty<? extends BaseValue> source) {
+    isSet = source.isSet;
+    if (source.isSet) {
+      value.copyFrom(source.value);
+    } else if (source.defaultValue != null) {
+      if (defaultValue != null) {
+        defaultValue.copyFrom(source.defaultValue);
+      } else {
+        value.reset();
+      }
+    } else {
+      value.reset();
+    }
+  }
+
   public StringValue getKey() {
     return key;
   }

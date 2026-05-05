@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
@@ -76,6 +77,7 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -143,6 +145,21 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
     return new EnumMap<>(
         UnifiedRecordValue.allRecords()
             .collect(Collectors.toMap(UnifiedRecordValue::valueType, Function.identity())));
+  }
+
+  @Override
+  public void copyFrom(final BaseValue source) {
+    // UnifiedRecordValue is sometimes used as a generic raw record holder (e.g. in
+    // PersistedCommandDistribution and NestedRecord), not only as a concrete typed record value.
+    // Property-by-property copy only works when source and target are the same concrete subclass.
+    if (getClass() == UnifiedRecordValue.class || source.getClass() != getClass()) {
+      if (source instanceof final UnifiedRecordValue recordValue) {
+        wrap(BufferUtil.createCopy(recordValue));
+        return;
+      }
+    }
+
+    super.copyFrom(source);
   }
 
   public static UnifiedRecordValue fromValueType(final ValueType valueType) {

@@ -55,4 +55,14 @@ final class DbClockModification extends UnpackedObject implements DbValue {
     PIN,
     OFFSET
   };
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((DbClockModification) target);
+  }
+
+  @Override
+  public DbClockModification newInstance() {
+    return new DbClockModification();
+  }
 }

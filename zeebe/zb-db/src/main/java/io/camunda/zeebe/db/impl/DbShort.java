@@ -43,6 +43,16 @@ public final class DbShort implements DbKey, DbValue {
   }
 
   @Override
+  public void copyTo(final DbValue target) {
+    ((DbShort) target).shortValue = shortValue;
+  }
+
+  @Override
+  public DbShort newInstance() {
+    return new DbShort();
+  }
+
+  @Override
   public String toString() {
     return "DbShort{" + shortValue + '}';
   }

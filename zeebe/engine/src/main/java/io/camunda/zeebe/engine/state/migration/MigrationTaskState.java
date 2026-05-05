@@ -40,4 +40,14 @@ public final class MigrationTaskState extends UnpackedObject implements DbValue 
       this.value = (byte) value;
     }
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((MigrationTaskState) target);
+  }
+
+  @Override
+  public MigrationTaskState newInstance() {
+    return new MigrationTaskState();
+  }
 }

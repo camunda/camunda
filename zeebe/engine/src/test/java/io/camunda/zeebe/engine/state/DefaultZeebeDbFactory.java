@@ -11,6 +11,8 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.inmemory.InMemoryZeebeDbFactory;
+import io.camunda.zeebe.db.impl.layered.LayeredZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -18,13 +20,29 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 public final class DefaultZeebeDbFactory {
 
+  private static final ConsistencyChecksSettings CONSISTENCY_CHECKS =
+      new ConsistencyChecksSettings(true, true);
+  private static final AccessMetricsConfiguration ACCESS_METRICS_CONFIGURATION =
+      new AccessMetricsConfiguration(Kind.NONE, 1);
+
   public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
-    // enable consistency checks for tests
-    final var consistencyChecks = new ConsistencyChecksSettings(true, true);
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
-        consistencyChecks,
-        new AccessMetricsConfiguration(Kind.NONE, 1),
+        CONSISTENCY_CHECKS,
+        ACCESS_METRICS_CONFIGURATION,
+        SimpleMeterRegistry::new);
+  }
+
+  public static ZeebeDbFactory<ZbColumnFamilies> inMemoryFactory() {
+    return new InMemoryZeebeDbFactory<>(
+        CONSISTENCY_CHECKS, ACCESS_METRICS_CONFIGURATION, SimpleMeterRegistry::new);
+  }
+
+  public static ZeebeDbFactory<ZbColumnFamilies> layeredFactory() {
+    return new LayeredZeebeDbFactory<>(
+        new RocksDbConfiguration(),
+        CONSISTENCY_CHECKS,
+        ACCESS_METRICS_CONFIGURATION,
         SimpleMeterRegistry::new);
   }
 }

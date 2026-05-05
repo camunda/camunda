@@ -66,6 +66,14 @@ public class PackedValue extends BaseValue {
   }
 
   @Override
+  public void copyFrom(final BaseValue source) {
+    final PackedValue src = (PackedValue) source;
+    final byte[] copy = new byte[src.length];
+    src.buffer.getBytes(0, copy, 0, src.length);
+    wrap(new UnsafeBuffer(copy), 0, src.length);
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(buffer, length);
   }

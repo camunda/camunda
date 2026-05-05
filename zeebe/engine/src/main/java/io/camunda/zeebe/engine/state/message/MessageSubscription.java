@@ -54,4 +54,14 @@ public final class MessageSubscription extends UnpackedObject implements DbValue
     correlatingProp.setValue(correlating);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((MessageSubscription) target);
+  }
+
+  @Override
+  public MessageSubscription newInstance() {
+    return new MessageSubscription();
+  }
 }

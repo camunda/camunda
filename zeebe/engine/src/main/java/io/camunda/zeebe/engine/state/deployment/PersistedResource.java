@@ -111,4 +111,14 @@ public class PersistedResource extends UnpackedObject implements DbValue {
   public boolean isDuplicateOf(final DirectBuffer resourceName, final DirectBuffer checksum) {
     return getResourceName().equals(resourceName) && getChecksum().equals(checksum);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedResource) target);
+  }
+
+  @Override
+  public PersistedResource newInstance() {
+    return new PersistedResource();
+  }
 }

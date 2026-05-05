@@ -65,6 +65,14 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
     return decodedValue.getEncodedLength();
   }
 
+  @SuppressWarnings("unchecked")
+  @Override
+  public void copyFrom(final BaseValue source) {
+    final EnumValue<E> src = (EnumValue<E>) source;
+    value = src.value;
+    decodedValue.copyFrom(src.decodedValue);
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(getValue());

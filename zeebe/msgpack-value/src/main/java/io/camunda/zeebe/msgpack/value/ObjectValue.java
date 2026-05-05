@@ -51,6 +51,37 @@ public class ObjectValue extends BaseValue {
     }
   }
 
+  /**
+   * Copies all declared properties from {@code source} into this object, property by property,
+   * using {@link BaseProperty#copyFrom}. Both objects must have the same declared property
+   * structure. Zero msgpack serialization for value types that override {@link BaseValue#copyFrom}.
+   */
+  public void copyPropertiesFrom(final ObjectValue source) {
+    for (int i = 0; i < declaredProperties.size(); i++) {
+      declaredProperties.get(i).copyFrom(source.declaredProperties.get(i));
+    }
+
+    while (undeclaredProperties.size() > source.undeclaredProperties.size()) {
+      final UndeclaredProperty undeclaredProperty =
+          undeclaredProperties.remove(undeclaredProperties.size() - 1);
+      undeclaredProperty.reset();
+      recycledProperties.add(undeclaredProperty);
+    }
+
+    for (int i = 0; i < source.undeclaredProperties.size(); i++) {
+      final var sourceProperty = source.undeclaredProperties.get(i);
+      final UndeclaredProperty targetProperty;
+
+      if (i < undeclaredProperties.size()) {
+        targetProperty = undeclaredProperties.get(i);
+      } else {
+        targetProperty = newUndeclaredProperty(sourceProperty.getKey());
+      }
+
+      targetProperty.copyFrom(sourceProperty);
+    }
+  }
+
   private UndeclaredProperty newUndeclaredProperty(final StringValue key) {
     final int recycledSize = recycledProperties.size();
 
@@ -141,6 +172,11 @@ public class ObjectValue extends BaseValue {
     length += getEncodedLength(undeclaredProperties);
 
     return length;
+  }
+
+  @Override
+  public void copyFrom(final BaseValue source) {
+    copyPropertiesFrom((ObjectValue) source);
   }
 
   @Override

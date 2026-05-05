@@ -29,4 +29,14 @@ public class UserTaskLifecycleStateValue extends UnpackedObject implements DbVal
   public void setLifecycleState(final LifecycleState lifecycleState) {
     lifecycleStateProp.setValue(lifecycleState);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((UserTaskLifecycleStateValue) target);
+  }
+
+  @Override
+  public UserTaskLifecycleStateValue newInstance() {
+    return new UserTaskLifecycleStateValue();
+  }
 }

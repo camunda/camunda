@@ -58,8 +58,23 @@ public record DbForeignKey<K extends DbKey>(
     return Collections.singletonList((DbForeignKey<DbKey>) this);
   }
 
+  @Override
+  public void copyTo(final DbValue target) {
+    final var copy = (DbForeignKey<K>) target;
+    final int length = inner.getLength();
+    final byte[] bytes = new byte[length];
+    final MutableDirectBuffer buffer = new org.agrona.concurrent.UnsafeBuffer(bytes);
+    inner.write(buffer, 0);
+    copy.inner.wrap(buffer, 0, length);
+  }
+
   public boolean shouldSkipCheck() {
     return skip.test(inner);
+  }
+
+  @Override
+  public DbForeignKey<K> newInstance() {
+    return new DbForeignKey<>(DbKeyInstanceFactory.newInstance(inner), columnFamily, match, skip);
   }
 
   public enum MatchType {

@@ -56,6 +56,11 @@ public final class BooleanValue extends BaseValue {
   }
 
   @Override
+  public void copyFrom(final BaseValue source) {
+    val = ((BooleanValue) source).val;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(val);
   }

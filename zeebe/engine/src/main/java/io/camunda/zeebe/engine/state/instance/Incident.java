@@ -28,4 +28,14 @@ public class Incident extends UnpackedObject implements DbValue {
   public void setRecord(final IncidentRecord record) {
     recordProp.getValue().wrap(record);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((Incident) target);
+  }
+
+  @Override
+  public Incident newInstance() {
+    return new Incident();
+  }
 }
