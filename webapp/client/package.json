@@ -30,5 +30,11 @@
 		"globals": "17.5.0",
 		"prettier": "3.8.3",
 		"typescript-eslint": "8.59.0"
+	},
+	"dependencies": {
+		"@tailwindcss/vite": "^4.2.4",
+		"clsx": "^2.1.1",
+		"tailwind-merge": "^3.5.0",
+		"tailwindcss": "^4.2.4"
 	}
 }

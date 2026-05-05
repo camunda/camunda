@@ -7,6 +7,7 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {Button} from '#/components/button';
 
 type AboutData = {
 	message: string;
@@ -33,6 +34,9 @@ function About() {
 		<main>
 			<h1>About</h1>
 			<p>{message}</p>
+			<Button kind="primary">Primary</Button>
+			<Button kind="secondary">Secondary</Button>
+			<Button kind="danger">Danger</Button>
 		</main>
 	);
 }

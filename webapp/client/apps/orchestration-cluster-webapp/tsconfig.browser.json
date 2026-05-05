@@ -10,7 +10,11 @@
 		"moduleDetection": "force",
 		"types": ["vite/client"],
 		"paths": {
-			"#/modules/*": ["./src/modules/*"]
+			"#/modules/*": ["./src/modules/*"],
+			"#/components/*": ["./src/components/ui/*"],
+			"#/lib/*": ["./src/lib/*"],
+			"#/hooks/*": ["./src/hooks/*"],
+			"@/*": ["./src/*"]
 		}
 	}
 }
