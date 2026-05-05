@@ -225,20 +225,6 @@ export const messageSubscriptionRequiredFields = [
   'correlationKey',
   'tenantId',
 ];
-// All required fields for 8.10+ message subscription responses that include MCP new fields.
-// Used in follow-on MCP API test PRs that validate full response shapes.
-export const mcpMessageSubscriptionRequiredFields = [
-  ...messageSubscriptionRequiredFields,
-  'processDefinitionKey',
-  'rootProcessInstanceKey',
-  'messageSubscriptionType',
-  'extensionProperties',
-  'processDefinitionName',
-  'processDefinitionVersion',
-  'toolName',
-  'inboundConnectorType',
-];
-
 export const expectedMcpSubscriptionAlpha = {
   messageSubscriptionType: 'START_EVENT',
   processDefinitionId: 'mcpProcessAlpha',
