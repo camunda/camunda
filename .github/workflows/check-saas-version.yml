@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          fetch-depth: 0
+          fetch-depth: 1
       - name: Install Python dependencies
         run: python3 -m pip install -q --disable-pip-version-check pyyaml==6.0.2
       - name: Compare SaaS version against main
