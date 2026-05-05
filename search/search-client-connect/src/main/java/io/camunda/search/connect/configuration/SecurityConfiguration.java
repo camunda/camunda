@@ -49,4 +49,19 @@ public class SecurityConfiguration {
   public void setSelfSigned(boolean selfSigned) {
     this.selfSigned = selfSigned;
   }
+
+  @Override
+  public String toString() {
+    return "SecurityConfiguration{"
+        + "enabled="
+        + enabled
+        + ", certificatePath='"
+        + certificatePath
+        + '\''
+        + ", verifyHostname="
+        + verifyHostname
+        + ", selfSigned="
+        + selfSigned
+        + '}';
+  }
 }

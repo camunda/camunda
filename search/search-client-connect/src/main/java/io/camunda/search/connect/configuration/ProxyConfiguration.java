@@ -100,6 +100,9 @@ public class ProxyConfiguration {
         + ", username='"
         + username
         + '\''
+        + ", password='"
+        + (password != null ? "*****" : null)
+        + '\''
         + '}';
   }
 }

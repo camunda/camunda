@@ -8,8 +8,10 @@
 package io.camunda.search.connect.configuration;
 
 import io.camunda.search.connect.plugin.PluginConfiguration;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ConnectConfiguration {
 
@@ -158,5 +160,66 @@ public class ConnectConfiguration {
 
   public void setProxy(final ProxyConfiguration proxy) {
     this.proxy = proxy;
+  }
+
+  @Override
+  public String toString() {
+    return "ConnectConfiguration{"
+        + "type='"
+        + type
+        + '\''
+        + ", clusterName='"
+        + clusterName
+        + '\''
+        + ", dateFormat='"
+        + dateFormat
+        + '\''
+        + ", fieldDateFormat='"
+        + fieldDateFormat
+        + '\''
+        + ", socketTimeout="
+        + socketTimeout
+        + ", connectTimeout="
+        + connectTimeout
+        + ", url='"
+        + sanitizeUrl(url)
+        + '\''
+        + ", urls="
+        + urls.stream().map(ConnectConfiguration::sanitizeUrl).collect(Collectors.toList())
+        + ", username='"
+        + username
+        + '\''
+        + ", password='"
+        + (password != null ? "*****" : null)
+        + '\''
+        + ", security="
+        + security
+        + ", indexPrefix='"
+        + indexPrefix
+        + '\''
+        + ", interceptorPlugins="
+        + interceptorPlugins
+        + ", isAwsEnabled="
+        + isAwsEnabled
+        + ", proxy="
+        + proxy
+        + '}';
+  }
+
+  private static String sanitizeUrl(final String url) {
+    if (url == null) {
+      return null;
+    }
+    try {
+      final var uri = URI.create(url);
+      if (uri.getUserInfo() != null) {
+        return new URI(
+                uri.getScheme(), "*****", uri.getHost(), uri.getPort(), uri.getPath(), null, null)
+            .toString();
+      }
+    } catch (final Exception ignored) {
+      // not a valid URI — return as-is
+    }
+    return url;
   }
 }
