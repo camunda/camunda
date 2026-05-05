@@ -146,7 +146,6 @@ public abstract class AbstractEventHandler<R extends RecordValue>
               .map(p -> p.get(elementId))
               .orElse(Map.of());
       entity
-          .setExtensionProperties(ext)
           .setToolName(ProcessCacheUtil.getToolName(ext))
           .setInboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext));
     }
