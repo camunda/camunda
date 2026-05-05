@@ -200,7 +200,8 @@ test.describe('Batch Operations', () => {
         },
       });
       await operateOperationsDetailsPage.suspendButton.click();
-      await suspendBatchOperation(request, batchKey).catch(() => {});
+      // Wait for the UI action to complete - no need to also suspend via API
+      await expectBatchState(request, batchKey, 'SUSPENDED');
     });
 
     await test.step('Verify state indicator shows Suspended', async () => {
@@ -245,7 +246,8 @@ test.describe('Batch Operations', () => {
         },
       });
       await operateOperationsDetailsPage.clickCancelFromOptionsMenu();
-      await cancelBatchOperation(request, batchKey).catch(() => {});
+      // Wait for the UI action to complete - no need to also cancel via API
+      await expectBatchState(request, batchKey, 'CANCELED');
     });
 
     await test.step('Verify state indicator shows Canceled', async () => {

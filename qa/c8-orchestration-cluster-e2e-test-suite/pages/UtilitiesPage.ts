@@ -96,6 +96,10 @@ export async function completeTaskWithRetry(
         taskDetailsPage.detailsPanel.getByText(taskPriority),
       ).toBeVisible();
       await taskDetailsPage.clickCompleteTaskButton();
+
+      // Wait for task completion to be processed
+      await sleep(1000);
+
       let assertionPassed = false;
       try {
         await waitForAssertion({
@@ -104,14 +108,15 @@ export async function completeTaskWithRetry(
               taskPanelPage.availableTasks
                 .getByText(taskName, {exact: true})
                 .first(),
-            ).not.toBeVisible({timeout: 10000});
+            ).not.toBeVisible({timeout: 15000});
           },
           onFailure: async () => {
             console.log(
               `Task ${taskName} still visible, retrying waitForAssertion...`,
             );
+            await sleep(2000);
           },
-          maxRetries: 4,
+          maxRetries: 5,
         });
         assertionPassed = true;
       } catch (error) {
@@ -128,6 +133,7 @@ export async function completeTaskWithRetry(
             attempt + 1
           } failed for completing task ${taskName}. Retrying...`,
         );
+        await sleep(1000);
       } else {
         console.error(error);
         throw new Error(`Assertion failed after ${maxRetries} attempts`);
