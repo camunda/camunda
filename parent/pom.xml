@@ -42,7 +42,7 @@
     <version.bouncycastle>1.84</version.bouncycastle>
     <version.camunda>7.24.0</version.camunda>
     <version.camunda-license-check>2.11.2</version.camunda-license-check>
-    <version.camunda-security-library>0.1.0-alpha2</version.camunda-security-library>
+    <version.camunda-security-library>0.1.0-SNAPSHOT</version.camunda-security-library>
     <version.checkstyle>13.4.0</version.checkstyle>
     <version.commons-beanutils>1.11.0</version.commons-beanutils>
     <version.commons-lang>3.20.0</version.commons-lang>
@@ -650,10 +650,14 @@
         <version>${project.version}</version>
       </dependency>
 
-      <!-- External Libs -->
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-security-library-api</artifactId>
+        <version>${version.camunda-security-library}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-security-library-spring-boot-starter</artifactId>
         <version>${version.camunda-security-library}</version>
       </dependency>
 
