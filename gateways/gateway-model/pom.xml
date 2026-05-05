@@ -87,23 +87,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- snakeyaml is needed at test runtime so the EnrichSpec script (invoked via GroovyShell)
-         can load org.yaml.snakeyaml.Yaml. Managed in parent/pom.xml. -->
-    <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- Groovy 4.0.31 for Groovy test sources compiled by gmavenplus-plugin.
-         gmavenplus-plugin requires Groovy on the project (test) classpath to detect the version.
-         Not managed in parent/pom.xml, so version is pinned here. -->
-    <dependency>
-      <groupId>org.apache.groovy</groupId>
-      <artifactId>groovy</artifactId>
-      <version>4.0.31</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -112,39 +95,55 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
         <dependencies>
-          <!-- Groovy 4.x moved to org.apache.groovy groupId; 4.0.x is the first series
-               fully compatible with JDK 21. Not managed in parent/pom.xml, so pinned here. -->
+          <!-- snakeyaml powers ModelGenerator's spec loading; jspecify supplies @NullMarked
+               for the tool sources we javac in-line; roaster builds the emitted Java AST.
+               Pinned here because the antrun plugin classloader does not see project compile
+               dependencies. -->
           <dependency>
-            <groupId>org.apache.groovy</groupId>
-            <artifactId>groovy</artifactId>
-            <version>4.0.31</version>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.6</version>
           </dependency>
           <dependency>
-            <groupId>org.apache.groovy</groupId>
-            <artifactId>groovy-ant</artifactId>
-            <version>4.0.31</version>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>1.0.0</version>
           </dependency>
           <dependency>
-            <groupId>org.apache.groovy</groupId>
-            <artifactId>groovy-yaml</artifactId>
-            <version>4.0.31</version>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-api</artifactId>
+            <version>2.31.0.Final</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-jdt</artifactId>
+            <version>2.31.0.Final</version>
           </dependency>
         </dependencies>
         <!-- version managed in parent/pom.xml at ${plugin.version.antrun} (3.2.0) -->
         <executions>
           <execution>
-            <id>enrich-openapi-spec</id>
+            <id>generate-advanced-model</id>
             <goals>
               <goal>run</goal>
             </goals>
             <phase>generate-sources</phase>
             <configuration>
               <target>
-                <taskdef classname="org.codehaus.groovy.ant.Groovy" classpathref="maven.plugin.classpath" name="groovy"/>
-                <groovy src="${project.basedir}/src/build/groovy/EnrichSpec.groovy">
-                  <arg value="${openapi.dir}/rest-api.yaml"/>
-                  <arg value="${project.build.directory}/openapi/enriched-rest-api.yaml"/>
-                </groovy>
+                <property name="advanced.tool.classes" value="${project.build.directory}/tool-classes"/>
+                <property name="advanced.model.outDir" value="${project.build.directory}/generated-sources/openapi/src/main/java/io/camunda/gateway/protocol/model"/>
+                <mkdir dir="${advanced.tool.classes}"/>
+                <mkdir dir="${advanced.model.outDir}"/>
+                <javac classpathref="maven.plugin.classpath" debug="true" destdir="${advanced.tool.classes}" encoding="UTF-8" includeantruntime="false" release="21" srcdir="${project.basedir}/src/tool/java"/>
+                <java classname="io.camunda.gateway.protocol.model.tools.ModelGenerator" failonerror="true" fork="true">
+                  <classpath>
+                    <pathelement location="${advanced.tool.classes}"/>
+                    <path refid="maven.plugin.classpath"/>
+                  </classpath>
+                  <arg value="${openapi.dir}"/>
+                  <arg value="${advanced.model.outDir}"/>
+                  <arg value="${license.header.file}"/>
+                </java>
               </target>
             </configuration>
           </execution>
@@ -155,74 +154,6 @@
         <artifactId>openapi-generator-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>advanced</id>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
-              <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
-              <generatorName>spring</generatorName>
-              <templateDirectory>${project.basedir}/src/main/resources/templates/java-spring/advanced</templateDirectory>
-              <inputSpec>${project.build.directory}/openapi/rest-api.yaml</inputSpec>
-              <modelPackage>io.camunda.gateway.protocol.model</modelPackage>
-              <importMappings>
-                <!-- Redirect the Spring generator's default `@Nullable` (org.springframework.lang.Nullable)
-                     to JSpecify so NullAway on downstream modules sees JSpecify annotations. -->
-                <importMapping>Nullable=org.jspecify.annotations.Nullable</importMapping>
-              </importMappings>
-              <typeMappings>
-                <!-- map OffsetDateTime to String to avoid timezone issues and do validation manually -->
-                <typeMapping>OffsetDateTime=String</typeMapping>
-                <!-- map complex String schemas to String -->
-                <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
-                <typeMapping>ResourceKey=String</typeMapping>
-                <typeMapping>ScopeKey=String</typeMapping>
-                <typeMapping>ElementInstanceKey=String</typeMapping>
-                <!-- map specific filter properties to basic filter types -->
-                <typeMapping>AuditLogEntityKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>AuditLogKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionEvaluationInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionEvaluationKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionRequirementsKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DeploymentKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ElementIdFilterProperty=StringFilterProperty</typeMapping>
-                <typeMapping>ElementInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>FormKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>JobKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ProcessDefinitionIdFilterProperty=StringFilterProperty</typeMapping>
-                <typeMapping>ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ProcessInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ResourceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ScopeKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>VariableKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-              </typeMappings>
-              <generateApis>false</generateApis>
-              <generateSupportingFiles>false</generateSupportingFiles>
-              <generateModels>true</generateModels>
-              <generateModelDocumentation>false</generateModelDocumentation>
-              <generateModelTests>false</generateModelTests>
-              <!-- validate the spec on every generation -->
-              <skipValidateSpec>false</skipValidateSpec>
-              <!-- only write files whose content changed to avoid spurious recompilation -->
-              <minimalUpdate>true</minimalUpdate>
-              <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
-              <configOptions>
-                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS);@org.jspecify.annotations.NullMarked</additionalModelTypeAnnotations>
-                <serializationLibrary>jackson</serializationLibrary>
-                <library>spring-boot</library>
-                <jdk8>true</jdk8>
-                <openApiNullable>false</openApiNullable>
-                <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
-                <hideGenerationTimestamp>true</hideGenerationTimestamp>
-                <generateConstructorWithAllArgs>true</generateConstructorWithAllArgs>
-                <generateBuilders>true</generateBuilders>
-              </configOptions>
-            </configuration>
-          </execution>
-          <execution>
             <id>simple</id>
             <goals>
               <goal>generate</goal>
@@ -231,7 +162,7 @@
               <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
               <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
               <generatorName>spring</generatorName>
-              <inputSpec>${project.build.directory}/openapi/rest-api.yaml</inputSpec>
+              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.gateway.protocol.model.simple</modelPackage>
               <templateDirectory>${project.basedir}/src/main/resources/templates/java-spring/simple</templateDirectory>
               <typeMappings>
@@ -339,8 +270,6 @@
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
                 <useOneOfInterfaces>false</useOneOfInterfaces>
                 <hideGenerationTimestamp>true</hideGenerationTimestamp>
-                <generateConstructorWithAllArgs>true</generateConstructorWithAllArgs>
-                <generateBuilders>true</generateBuilders>
               </configOptions>
             </configuration>
           </execution>
@@ -365,42 +294,16 @@
         <artifactId>build-helper-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>add-groovy-test-sources</id>
+            <id>add-advanced-model-sources</id>
             <goals>
-              <goal>add-test-source</goal>
+              <goal>add-source</goal>
             </goals>
-            <phase>generate-test-sources</phase>
+            <phase>generate-sources</phase>
             <configuration>
               <sources>
-                <source>src/test/groovy</source>
+                <source>${project.build.directory}/generated-sources/openapi/src/main/java</source>
               </sources>
             </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <!-- Compiles Groovy test sources under src/test/groovy.
-           gmavenplus-plugin is NOT managed in parent/pom.xml, so version is pinned here.
-           4.3.1 is the current stable release compatible with Groovy 4.0.x and JDK 21. -->
-      <plugin>
-        <groupId>org.codehaus.gmavenplus</groupId>
-        <artifactId>gmavenplus-plugin</artifactId>
-        <version>4.3.1</version>
-        <dependencies>
-          <!-- Same Groovy 4.0.31 already used by maven-antrun-plugin above. -->
-          <dependency>
-            <groupId>org.apache.groovy</groupId>
-            <artifactId>groovy</artifactId>
-            <version>4.0.31</version>
-          </dependency>
-        </dependencies>
-        <executions>
-          <execution>
-            <id>compile-groovy-tests</id>
-            <goals>
-              <goal>compileTests</goal>
-            </goals>
-            <phase>test-compile</phase>
           </execution>
         </executions>
       </plugin>
