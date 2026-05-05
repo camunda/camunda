@@ -75,11 +75,10 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 @Conditional(OpensearchCondition.class)
 public class OpensearchConnector {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
   private PluginRepository osClientRepository = new PluginRepository();
   private final OperateProperties operateProperties;
-
   private final ObjectMapper objectMapper;
 
   public OpensearchConnector(
@@ -379,15 +378,10 @@ public class OpensearchConnector {
         proxyConfig.getPort());
   }
 
-  private RequestConfig.Builder setTimeouts(
+  RequestConfig.Builder setTimeouts(
       final RequestConfig.Builder builder, final OpensearchProperties os) {
-    if (os.getSocketTimeout() != null) {
-      // builder.setSocketTimeout(os.getSocketTimeout());
-      builder.setResponseTimeout(Timeout.ofMilliseconds(os.getSocketTimeout()));
-    }
-    if (os.getConnectTimeout() != null) {
-      builder.setConnectTimeout(Timeout.ofMilliseconds(os.getConnectTimeout()));
-    }
+    builder.setResponseTimeout(Timeout.ofMilliseconds(os.getSocketTimeout()));
+    builder.setConnectTimeout(Timeout.ofMilliseconds(os.getConnectTimeout()));
     return builder;
   }
 

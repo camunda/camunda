@@ -9,6 +9,7 @@ package io.camunda.tasklist.property;
 
 import static io.camunda.tasklist.util.ConversionUtils.stringIsEmpty;
 
+
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -17,6 +18,8 @@ import java.util.function.Function;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class ElasticsearchProperties {
+
+  static final int DEFAULT_SOCKET_TIMEOUT_MS = 180_000;
 
   public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
@@ -36,8 +39,8 @@ public class ElasticsearchProperties {
   private int batchSize = 200;
   private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
 
-  private Integer socketTimeout;
-  private Integer connectTimeout;
+  private Integer socketTimeout = DEFAULT_SOCKET_TIMEOUT_MS;
+  private Integer connectTimeout = DEFAULT_SOCKET_TIMEOUT_MS;
 
   private boolean createSchema = true;
 

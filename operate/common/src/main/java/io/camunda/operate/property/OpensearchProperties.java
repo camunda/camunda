@@ -10,6 +10,7 @@ package io.camunda.operate.property;
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
 import io.camunda.operate.connect.OperateDateTimeFormatter;
+
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -18,6 +19,8 @@ import java.util.function.Function;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class OpensearchProperties {
+  static final int DEFAULT_SOCKET_TIMEOUT_MS = 180_000;
+
   public static final String OS_DATE_FORMAT_DEFAULT = "date_time";
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
@@ -34,8 +37,8 @@ public class OpensearchProperties {
 
   private int batchSize = 200;
 
-  private Integer socketTimeout;
-  private Integer connectTimeout;
+  private Integer socketTimeout = DEFAULT_SOCKET_TIMEOUT_MS;
+  private Integer connectTimeout = DEFAULT_SOCKET_TIMEOUT_MS;
 
   private boolean createSchema = true;
 

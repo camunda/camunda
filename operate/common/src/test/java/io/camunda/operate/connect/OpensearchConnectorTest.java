@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.connect;
 
+import static io.camunda.search.connect.configuration.ConnectConfiguration.DEFAULT_SOCKET_TIMEOUT_MS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -30,6 +31,8 @@ import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.util.Timeout;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -162,6 +165,38 @@ public class OpensearchConnectorTest {
             credentialsProvider.getCredentials(
                 new AuthScope(new HttpHost("http", "opensearch-2", 9206)), context))
         .isNotNull();
+  }
+
+  @Test
+  void shouldUseDefaultResponseAndConnectTimeoutWhenNotConfigured() {
+    // given
+    final var config = new OperateOpensearchProperties();
+
+    // when
+    final var requestConfig =
+        opensearchConnector.setTimeouts(RequestConfig.custom(), config).build();
+
+    // then
+    assertThat(requestConfig.getResponseTimeout())
+        .isEqualTo(Timeout.ofMilliseconds(DEFAULT_SOCKET_TIMEOUT_MS));
+    assertThat(requestConfig.getConnectTimeout())
+        .isEqualTo(Timeout.ofMilliseconds(DEFAULT_SOCKET_TIMEOUT_MS));
+  }
+
+  @Test
+  void shouldUseConfiguredResponseAndConnectTimeoutWhenSet() {
+    // given
+    final var config = new OperateOpensearchProperties();
+    config.setSocketTimeout(5_000);
+    config.setConnectTimeout(3_000);
+
+    // when
+    final var requestConfig =
+        opensearchConnector.setTimeouts(RequestConfig.custom(), config).build();
+
+    // then
+    assertThat(requestConfig.getResponseTimeout()).isEqualTo(Timeout.ofMilliseconds(5_000));
+    assertThat(requestConfig.getConnectTimeout()).isEqualTo(Timeout.ofMilliseconds(3_000));
   }
 
   private static CloseableHttpAsyncClient getOpensearchApacheClient(

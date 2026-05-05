@@ -7,6 +7,7 @@
  */
 package io.camunda.search.connect.os;
 
+import static io.camunda.search.connect.configuration.ConnectConfiguration.DEFAULT_SOCKET_TIMEOUT_MS;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.KEY_CUSTOM_HEADER;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.VALUE_CUSTOM_HEADER;
 
@@ -25,8 +26,10 @@ import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.util.Timeout;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -171,6 +174,42 @@ class OpensearchConnectorTest {
             credentialsProvider.getCredentials(
                 new AuthScope(new HttpHost("http", "opensearch-2", 9206)), context))
         .isNotNull();
+  }
+
+  @Test
+  void shouldUseDefaultResponseAndConnectTimeoutWhenNotConfigured() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+
+    // when
+    final var requestConfig =
+        connector.setTimeouts(RequestConfig.custom(), configuration).build();
+
+    // then
+    Assertions.assertThat(requestConfig.getResponseTimeout())
+        .isEqualTo(Timeout.ofMilliseconds(DEFAULT_SOCKET_TIMEOUT_MS));
+    Assertions.assertThat(requestConfig.getConnectTimeout())
+        .isEqualTo(Timeout.ofMilliseconds(DEFAULT_SOCKET_TIMEOUT_MS));
+  }
+
+  @Test
+  void shouldUseConfiguredResponseAndConnectTimeoutWhenSet() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setSocketTimeout(5_000);
+    configuration.setConnectTimeout(3_000);
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+
+    // when
+    final var requestConfig =
+        connector.setTimeouts(RequestConfig.custom(), configuration).build();
+
+    // then
+    Assertions.assertThat(requestConfig.getResponseTimeout()).isEqualTo(Timeout.ofMilliseconds(5_000));
+    Assertions.assertThat(requestConfig.getConnectTimeout()).isEqualTo(Timeout.ofMilliseconds(3_000));
   }
 
   private static CloseableHttpAsyncClient getOpensearchApacheClient(

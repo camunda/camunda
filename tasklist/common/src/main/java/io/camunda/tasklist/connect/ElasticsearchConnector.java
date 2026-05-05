@@ -77,8 +77,8 @@ import org.springframework.util.StringUtils;
 @Conditional(ElasticSearchCondition.class)
 public class ElasticsearchConnector {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
   private final PluginRepository esClientRepository = new PluginRepository();
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -109,11 +109,8 @@ public class ElasticsearchConnector {
             .setHttpClientConfigCallback(
                 httpClientBuilder ->
                     configureHttpClient(
-                        httpClientBuilder, elsConfig, pluginRepository.asRequestInterceptor()));
-    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, elsConfig));
-    }
+                        httpClientBuilder, elsConfig, pluginRepository.asRequestInterceptor()))
+            .setRequestConfigCallback(configCallback -> setTimeouts(configCallback, elsConfig));
 
     final RestClientTransport transport =
         new RestClientTransport(
@@ -284,13 +281,9 @@ public class ElasticsearchConnector {
     }
   }
 
-  private Builder setTimeouts(final Builder builder, final ElasticsearchProperties elsConfig) {
-    if (elsConfig.getSocketTimeout() != null) {
-      builder.setSocketTimeout(elsConfig.getSocketTimeout());
-    }
-    if (elsConfig.getConnectTimeout() != null) {
-      builder.setConnectTimeout(elsConfig.getConnectTimeout());
-    }
+  Builder setTimeouts(final Builder builder, final ElasticsearchProperties elsConfig) {
+    builder.setSocketTimeout(elsConfig.getSocketTimeout());
+    builder.setConnectTimeout(elsConfig.getConnectTimeout());
     return builder;
   }
 

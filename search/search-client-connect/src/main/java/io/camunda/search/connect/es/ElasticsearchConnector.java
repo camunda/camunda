@@ -43,6 +43,8 @@ public final class ElasticsearchConnector {
   private final ObjectMapper objectMapper;
   private final PluginRepository pluginRepository;
 
+
+
   public ElasticsearchConnector(final ConnectConfiguration configuration) {
     this(
         configuration,
@@ -97,28 +99,19 @@ public final class ElasticsearchConnector {
 
   private RestClient createRestClient(final ConnectConfiguration configuration) {
     final var httpHosts = getHttpHosts(configuration);
-    final var restClientBuilder = RestClient.builder(httpHosts);
-
-    if (configuration.getConnectTimeout() != null || configuration.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, configuration));
-    }
-
     final Header[] defaultHeaders =
         new Header[] {
           new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"),
           new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8")
         };
-    final var restClient =
-        restClientBuilder
-            .setDefaultHeaders(defaultHeaders)
-            .setHttpClientConfigCallback(
-                httpClientBuilder ->
-                    configureHttpClient(
-                        httpClientBuilder, configuration, pluginRepository.asRequestInterceptor()))
-            .build();
-
-    return restClient;
+    return RestClient.builder(httpHosts)
+        .setDefaultHeaders(defaultHeaders)
+        .setRequestConfigCallback(configCallback -> setTimeouts(configCallback, configuration))
+        .setHttpClientConfigCallback(
+            httpClientBuilder ->
+                configureHttpClient(
+                    httpClientBuilder, configuration, pluginRepository.asRequestInterceptor()))
+        .build();
   }
 
   protected HttpAsyncClientBuilder configureHttpClient(
@@ -158,13 +151,9 @@ public final class ElasticsearchConnector {
     }
   }
 
-  private Builder setTimeouts(final Builder builder, final ConnectConfiguration elsConfig) {
-    if (elsConfig.getSocketTimeout() != null) {
-      builder.setSocketTimeout(elsConfig.getSocketTimeout());
-    }
-    if (elsConfig.getConnectTimeout() != null) {
-      builder.setConnectTimeout(elsConfig.getConnectTimeout());
-    }
+  Builder setTimeouts(final Builder builder, final ConnectConfiguration elsConfig) {
+    builder.setSocketTimeout(elsConfig.getSocketTimeout());
+    builder.setConnectTimeout(elsConfig.getConnectTimeout());
     return builder;
   }
 

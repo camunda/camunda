@@ -195,6 +195,61 @@ returns an error if it is not found.
 
 The backup executor uses a single-core thread pool with a queue capacity of 4096.
 
+#### Timeout Configuration
+
+Two independent timeout settings affect backup operations:
+
+**1. Socket timeout** (`socketTimeout`)
+
+Controls how long the HTTP client waits for a response from Elasticsearch/OpenSearch on any single
+request, including snapshot creation. Defaults to **0 (infinite)** — the HTTP connection will wait
+indefinitely for the snapshot call to return. This default is intentional: ES/OS snapshot
+operations on large datasets can legitimately take minutes or hours, and a finite socket timeout
+would cause spurious failures.
+
+> **Risk**: With an infinite socket timeout, if the ES/OS cluster becomes unresponsive mid-snapshot
+> (e.g. cluster restart, network partition, OOM), the backup thread will block indefinitely. The
+> only recovery is to restart the Camunda process. Monitor backup duration externally and alert if
+> a backup does not complete within the expected window.
+
+| Component | Property | Environment variable |
+|-----------|----------|----------------------|
+| Operate (ES) | `camunda.operate.elasticsearch.socketTimeout` | `CAMUNDA_OPERATE_ELASTICSEARCH_SOCKETTIMEOUT` |
+| Operate (OS) | `camunda.operate.opensearch.socketTimeout` | `CAMUNDA_OPERATE_OPENSEARCH_SOCKETTIMEOUT` |
+| Tasklist (ES) | `camunda.tasklist.elasticsearch.socketTimeout` | `CAMUNDA_TASKLIST_ELASTICSEARCH_SOCKETTIMEOUT` |
+| Tasklist (OS) | `camunda.tasklist.opensearch.socketTimeout` | `CAMUNDA_TASKLIST_OPENSEARCH_SOCKETTIMEOUT` |
+
+Value unit: **milliseconds**. Set to `0` for infinite (default). Only set a finite value if you
+have an external watchdog process that can restart Camunda on a stalled backup.
+
+**2. Snapshot polling timeout** (`snapshotTimeout`)
+
+When the socket timeout fires before the snapshot HTTP call returns (only relevant if `socketTimeout`
+is set to a finite value), Camunda falls back to a polling loop — repeatedly querying the ES/OS
+snapshot status until it completes. `snapshotTimeout` sets the maximum number of **seconds** the
+polling loop runs before giving up and marking the backup as failed.
+
+Defaults to **0 (infinite)** — polling continues until the snapshot completes or fails, regardless
+of how long it takes.
+
+| Component | Property | Environment variable |
+|-----------|----------|----------------------|
+| Orchestration Cluster (ES) | `camunda.data.secondary-storage.elasticsearch.backup.snapshot-timeout` | `CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_BACKUP_SNAPSHOT__TIMEOUT` |
+| Orchestration Cluster (OS) | `camunda.data.secondary-storage.opensearch.backup.snapshot-timeout` | `CAMUNDA_DATA_SECONDARY_STORAGE_OPENSEARCH_BACKUP_SNAPSHOT__TIMEOUT` |
+| Operate (legacy, still supported) | `camunda.operate.backup.snapshotTimeout` | `CAMUNDA_OPERATE_BACKUP_SNAPSHOTTIMEOUT` |
+
+Value unit: **seconds**. Set to `0` for infinite (default). If you set `socketTimeout` to a finite
+value, set `snapshotTimeout` to a value that covers the worst-case snapshot duration for your data
+volume (e.g. `3600` for one hour).
+
+**Recommended configuration for large datasets**:
+
+```yaml
+# Keep socket timeout infinite (default) — do not set socketTimeout
+# Set a finite snapshot polling timeout only if you want time-bounded backups:
+camunda.data.secondary-storage.elasticsearch.backup.snapshot-timeout: 3600  # seconds
+```
+
 ### 1.6 API / Actuator Endpoints
 
 Backups are triggered, monitored, and deleted via Spring Boot actuator endpoints:

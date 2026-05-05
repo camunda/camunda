@@ -7,6 +7,7 @@
  */
 package io.camunda.search.connect.es;
 
+import static io.camunda.search.connect.configuration.ConnectConfiguration.DEFAULT_SOCKET_TIMEOUT_MS;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.KEY_CUSTOM_HEADER;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.VALUE_CUSTOM_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,15 +15,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.plugin.PluginConfiguration;
-import io.camunda.search.connect.plugin.PluginRepository;
-import io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.List;
-import net.bytebuddy.ByteBuddy;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.concurrent.FutureCallback;
@@ -88,6 +83,40 @@ class ElasticsearchConnectorTest {
 
     assertThat(reqWrapper.getFirstHeader(KEY_CUSTOM_HEADER).getValue())
         .isEqualTo(VALUE_CUSTOM_HEADER);
+  }
+
+  @Test
+  void shouldUseDefaultSocketAndConnectTimeoutWhenNotConfigured() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
+
+    // when
+    final var requestConfig =
+        connector.setTimeouts(RequestConfig.custom(), configuration).build();
+
+    // then
+    assertThat(requestConfig.getSocketTimeout()).isEqualTo(DEFAULT_SOCKET_TIMEOUT_MS);
+    assertThat(requestConfig.getConnectTimeout()).isEqualTo(DEFAULT_SOCKET_TIMEOUT_MS);
+  }
+
+  @Test
+  void shouldUseConfiguredSocketAndConnectTimeoutWhenSet() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setSocketTimeout(5_000);
+    configuration.setConnectTimeout(3_000);
+    final var connector =
+        new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
+
+    // when
+    final var requestConfig =
+        connector.setTimeouts(RequestConfig.custom(), configuration).build();
+
+    // then
+    assertThat(requestConfig.getSocketTimeout()).isEqualTo(5_000);
+    assertThat(requestConfig.getConnectTimeout()).isEqualTo(3_000);
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {

@@ -75,6 +75,7 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 @Conditional(OpenSearchCondition.class)
 public class OpenSearchConnector {
 
+
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchConnector.class);
 
   private PluginRepository osClientRepository = new PluginRepository();
@@ -333,15 +334,10 @@ public class OpenSearchConnector {
     LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 
-  private RequestConfig.Builder setTimeouts(
+  RequestConfig.Builder setTimeouts(
       final RequestConfig.Builder builder, final OpenSearchProperties os) {
-    if (os.getSocketTimeout() != null) {
-      // builder.setSocketTimeout(os.getSocketTimeout());
-      builder.setResponseTimeout(Timeout.ofMilliseconds(os.getSocketTimeout()));
-    }
-    if (os.getConnectTimeout() != null) {
-      builder.setConnectTimeout(Timeout.ofMilliseconds(os.getConnectTimeout()));
-    }
+    builder.setResponseTimeout(Timeout.ofMilliseconds(os.getSocketTimeout()));
+    builder.setConnectTimeout(Timeout.ofMilliseconds(os.getConnectTimeout()));
     return builder;
   }
 

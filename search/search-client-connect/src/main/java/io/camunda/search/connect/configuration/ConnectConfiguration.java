@@ -14,6 +14,7 @@ import java.util.List;
 public class ConnectConfiguration {
 
   public static final DatabaseType DATABASE_TYPE_DEFAULT = DatabaseType.ELASTICSEARCH;
+  public static final int DEFAULT_SOCKET_TIMEOUT_MS = 180_000;
   private static final String CLUSTER_NAME_DEFAULT = "elasticsearch";
   private static final String DATE_FORMAT_FIELD = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
   private static final String FIELD_DATE_FORMAT_DEFAULT = "date_time";
@@ -22,8 +23,8 @@ public class ConnectConfiguration {
   private String clusterName = CLUSTER_NAME_DEFAULT;
   private String dateFormat = DATE_FORMAT_FIELD;
   private String fieldDateFormat = FIELD_DATE_FORMAT_DEFAULT;
-  private Integer socketTimeout;
-  private Integer connectTimeout;
+  private Integer socketTimeout = DEFAULT_SOCKET_TIMEOUT_MS;
+  private Integer connectTimeout = DEFAULT_SOCKET_TIMEOUT_MS;
   private String url = URL_DEFAULT;
   private List<String> urls = new ArrayList<>();
   private String username;

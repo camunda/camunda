@@ -295,12 +295,27 @@ public class OpensearchBackupRepository implements BackupRepository {
               }
               if (e instanceof SocketTimeoutException) {
                 // This is thrown even if the backup is still running
+                final int snapshotTimeout = backupProps.snapshotTimeout();
                 LOGGER.warn(
-                    "Timeout while creating snapshot [{}] for backup id [{}]. Need to keep waiting with polling...",
+                    "The OpenSearch HTTP connection timed out while waiting for snapshot [{}] "
+                        + "(backup id [{}]) to complete. The snapshot is likely still running in "
+                        + "OpenSearch. Polling will continue to check its status {}. If socket timeouts "
+                        + "occur repeatedly, consider increasing the socket timeout via "
+                        + "CAMUNDA_OPERATE_OPENSEARCH_SOCKETTIMEOUT or "
+                        + "CAMUNDA_TASKLIST_OPENSEARCH_SOCKETTIMEOUT.",
                     snapshotRequest.snapshotName(),
-                    backupId);
-                // Keep waiting
-                while (true) {
+                    backupId,
+                    snapshotTimeout == 0
+                        ? "indefinitely (snapshotTimeout=0)"
+                        : "for up to "
+                            + snapshotTimeout
+                            + " seconds (snapshotTimeout="
+                            + snapshotTimeout
+                            + ")");
+                final long startTime = System.currentTimeMillis();
+                int count = 0;
+                while (snapshotTimeout == 0
+                    || System.currentTimeMillis() - startTime <= snapshotTimeout * 1000L) {
                   final List<OpenSearchSnapshotInfo> snapshotInfos =
                       findSnapshots(snapshotRequest.repositoryName(), backupId);
                   final Optional<OpenSearchSnapshotInfo> maybeCurrentSnapshot =
@@ -323,10 +338,26 @@ public class OpensearchBackupRepository implements BackupRepository {
                     } catch (final InterruptedException ex) {
                       throw new RuntimeException(ex);
                     }
+                    count++;
+                    if (count % 600 == 0) { // approx. 1 minute
+                      LOGGER.info(
+                          "Waiting for snapshot [{}] to finish.", snapshotRequest.snapshotName());
+                    }
                   } else {
                     handleSnapshotReceived(maybeCurrentSnapshot.get(), onSuccess, onFailure);
                     break;
                   }
+                }
+                if (snapshotTimeout != 0
+                    && System.currentTimeMillis() - startTime > snapshotTimeout * 1000L) {
+                  LOGGER.error(
+                      "Snapshot [{}] did not finish within the configured snapshot timeout of {} "
+                          + "seconds. Backup will not continue. To increase the timeout, set "
+                          + "'camunda.data.secondary-storage.opensearch.backup.snapshot-timeout' "
+                          + "to a larger value in seconds, or set it to 0 to wait indefinitely.",
+                      snapshotRequest.snapshotName(),
+                      snapshotTimeout);
+                  onFailure.run();
                 }
               } else {
                 LOGGER.error(

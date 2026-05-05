@@ -46,12 +46,11 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 public final class OpensearchConnector {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
   private final PluginRepository pluginRepository;
-
   private final AwsCredentialsProvider credentialsProvider;
 
   public OpensearchConnector(final ConnectConfiguration configuration) {
@@ -205,15 +204,10 @@ public final class OpensearchConnector {
     return httpAsyncClientBuilder;
   }
 
-  private RequestConfig.Builder setTimeouts(
+  RequestConfig.Builder setTimeouts(
       final RequestConfig.Builder builder, final ConnectConfiguration os) {
-    if (os.getSocketTimeout() != null) {
-      // builder.setSocketTimeout(os.getSocketTimeout());
-      builder.setResponseTimeout(Timeout.ofMilliseconds(os.getSocketTimeout()));
-    }
-    if (os.getConnectTimeout() != null) {
-      builder.setConnectTimeout(Timeout.ofMilliseconds(os.getConnectTimeout()));
-    }
+    builder.setResponseTimeout(Timeout.ofMilliseconds(os.getSocketTimeout()));
+    builder.setConnectTimeout(Timeout.ofMilliseconds(os.getConnectTimeout()));
     return builder;
   }
 
