@@ -36,7 +36,8 @@ thread-scheduler starvation. You can recreate these conditions locally.
 
 #### Enable in-class parallel execution
 
-CI runs test methods within a class concurrently via `junit-platform.properties` (see e.g.
+Some modules configure test methods within a class to run concurrently via
+`junit-platform.properties` (see e.g.
 `zeebe/backup-stores/gcs/src/test/resources/junit-platform.properties`):
 
 ```properties
