@@ -15,7 +15,7 @@ import {expect, test} from '../test.ts';
 test.describe('Retrying processes', {tag: '@operate'}, () => {
   let process: DeploymentProcessResult;
 
-  test.beforeAll('Deploy resources', async ({camunda}) => {
+  test.beforeAll('deploy resources', async ({camunda}) => {
     process = await deployProcess(camunda, 'recoverable_process.bpmn');
   });
 
