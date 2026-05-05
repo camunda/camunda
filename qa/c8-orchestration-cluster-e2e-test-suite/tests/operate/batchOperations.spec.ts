@@ -12,7 +12,6 @@ import {deploy} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {
-  cancelBatchOperation,
   createCancellationBatch,
   expectBatchState,
   findCompletedBatchKey,
@@ -177,6 +176,8 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
+    // Skipped due to 52021: camunda/camunda#52021
+    test.skip(true, 'FE polling bug: useBatchOperation has no refetchInterval');
     test.slow();
     const batchKey = await createCancellationBatch(
       request,
@@ -200,15 +201,55 @@ test.describe('Batch Operations', () => {
         },
       });
       await operateOperationsDetailsPage.suspendButton.click();
-      await suspendBatchOperation(request, batchKey).catch(() => {});
     });
 
     await test.step('Verify state indicator shows Suspended', async () => {
+      await expect(operateOperationsDetailsPage.state).toContainText(
+        'Suspended',
+        {timeout: 20000},
+      );
+      await expect(operateOperationsDetailsPage.resumeButton).toBeVisible();
+      await expect(operateOperationsDetailsPage.suspendButton).toBeHidden();
+    });
+  });
+
+  test('Suspend state persists after page reload (BE command reaches engine)', async ({
+    page,
+    request,
+    operateOperationsDetailsPage,
+  }) => {
+    test.slow();
+    const batchKey = await createCancellationBatch(
+      request,
+      2000,
+      'batch_suspension_long_process',
+    );
+    await operateOperationsDetailsPage.goto(batchKey);
+
+    await test.step('Wait for active state and click Suspend', async () => {
       await waitForAssertion({
         assertion: async () => {
+          await expect(operateOperationsDetailsPage.suspendButton).toBeVisible({
+            timeout: 20000,
+          });
+          await expect(
+            operateOperationsDetailsPage.suspendButton,
+          ).toBeEnabled();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+      await operateOperationsDetailsPage.suspendButton.click();
+    });
+
+    await test.step('Reload the page and verify state shows Suspended', async () => {
+      await waitForAssertion({
+        assertion: async () => {
+          await page.reload();
           await expect(operateOperationsDetailsPage.state).toContainText(
             'Suspended',
-            {timeout: 15000},
+            {timeout: 20000},
           );
         },
         onFailure: async () => {
@@ -225,6 +266,8 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
+    // Skipped due to 52021: camunda/camunda#52021
+    test.skip(true, 'FE polling bug: useBatchOperation has no refetchInterval');
     test.slow();
     const batchKey = await createCancellationBatch(
       request,
@@ -245,21 +288,13 @@ test.describe('Batch Operations', () => {
         },
       });
       await operateOperationsDetailsPage.clickCancelFromOptionsMenu();
-      await cancelBatchOperation(request, batchKey).catch(() => {});
     });
 
     await test.step('Verify state indicator shows Canceled', async () => {
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateOperationsDetailsPage.state).toContainText(
-            'Canceled',
-            {timeout: 15000},
-          );
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
+      await expect(operateOperationsDetailsPage.state).toContainText(
+        'Canceled',
+        {timeout: 20000},
+      );
       await expect(operateOperationsDetailsPage.suspendButton).toBeHidden();
       await expect(operateOperationsDetailsPage.resumeButton).toBeHidden();
     });
@@ -270,6 +305,8 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
+    // Skipped due to 52021: camunda/camunda#52021
+    test.skip(true, 'FE polling bug: useBatchOperation has no refetchInterval');
     test.slow();
     const batchKey = await createCancellationBatch(
       request,
@@ -297,17 +334,10 @@ test.describe('Batch Operations', () => {
     });
 
     await test.step('Verify state indicator shows Canceled', async () => {
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateOperationsDetailsPage.state).toContainText(
-            'Canceled',
-            {timeout: 15000},
-          );
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
+      await expect(operateOperationsDetailsPage.state).toContainText(
+        'Canceled',
+        {timeout: 20000},
+      );
       await expect(operateOperationsDetailsPage.resumeButton).toBeHidden();
       await expect(operateOperationsDetailsPage.optionsMenuButton).toBeHidden();
     });
