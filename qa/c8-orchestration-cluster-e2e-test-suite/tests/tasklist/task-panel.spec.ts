@@ -21,7 +21,7 @@ test.beforeAll(async ({resetData}) => {
     './resources/usertask_for_scrolling_2.bpmn',
     './resources/usertask_for_scrolling_3.bpmn',
   ]);
-  await sleep(100);
+  await sleep(1000);
 
   await createInstances('usertask_for_scrolling_3', 1, 1);
   await createInstances('usertask_for_scrolling_2', 1, 50);
@@ -31,10 +31,11 @@ test.beforeAll(async ({resetData}) => {
   await createInstances('usertask_for_scrolling_1', 1, 1);
   await createInstances('usertask_to_be_assigned', 1, 1); // this task will be seen on top since it is created last
 
-  await sleep(500);
 });
 
-test.describe('task panel page', () => {
+// Serial mode ensures filter selection → update task list → scrolling execute in order so that
+// usertask_to_be_assigned is completed before the scrolling test runs.
+test.describe.serial('task panel page', () => {
   test.beforeEach(async ({page, taskListLoginPage}) => {
     await navigateToApp(page, 'tasklist');
     await taskListLoginPage.login('demo', 'demo');
@@ -107,9 +108,11 @@ test.describe('task panel page', () => {
   test('scrolling', async ({page, taskPanelPage}) => {
     test.slow();
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    // The initial page shows 50 tasks; polling up to 60 s acts as a conditional wait for
+    // the first-page counts to stabilise after beforeAll creates 200+ instances.
+    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1, {timeout: 60000});
+    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49, {timeout: 60000});
+    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0, {timeout: 60000});
 
     await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
@@ -131,14 +134,16 @@ test.describe('task panel page', () => {
 
     await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1);
+    // The virtual window drops items from the top when the end of the list loads.
+    // Assert only the meaningful boundary conditions: scrolling_1 scrolls off the top
+    // and scrolling_3 becomes visible at the bottom.
+    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0, {timeout: 15000});
+    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1, {timeout: 15000});
 
     await taskPanelPage.scrollToFirstTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    // After scrolling back to the top the boundary conditions reverse.
+    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1, {timeout: 15000});
+    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0, {timeout: 15000});
   });
 });

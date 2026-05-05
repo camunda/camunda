@@ -78,7 +78,7 @@ test.beforeAll(async () => {
     processV2,
     processV3,
   };
-  await sleep(3000);
+  await sleep(5000);
 });
 
 test.describe.serial('Process Instance Migration', () => {
@@ -98,6 +98,8 @@ test.describe.serial('Process Instance Migration', () => {
 
   test('Auto mapping migration', async ({
     page,
+    loginPage,
+    operateHomePage,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateProcessMigrationModePage,
@@ -133,6 +135,29 @@ test.describe.serial('Process Instance Migration', () => {
           await page.reload();
         },
       });
+    });
+
+    await test.step('Wait for target process version to be indexed in Operate', async () => {
+      // Confirm v2 is queryable in Operate before opening the migration modal so that
+      // the auto-mapping API has the target process available and can pre-select it.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateFiltersPanelPage.selectVersion(targetVersion);
+          await expect(operateProcessesPage.resultsText.first()).toBeVisible({
+            timeout: 10000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+          await loginPage.login('demo', 'demo');
+          await operateHomePage.clickProcessesTab();
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+        },
+        maxRetries: 5,
+      });
+      // Reset back to source version so instance selection targets v1
+      await operateFiltersPanelPage.selectVersion(sourceVersion);
+      await expect(page.getByText('10 results')).toBeVisible({timeout: 30000});
     });
 
     await test.step('Select first 6 process instances for migration', async () => {
