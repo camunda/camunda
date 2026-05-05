@@ -20,6 +20,8 @@ public interface BatchRequest {
 
   BatchRequest withMetrics(final CamundaExporterMetrics metrics);
 
+  BatchRequest withMaxBytes(long maxBulkBytes);
+
   BatchRequest add(String index, ExporterEntity entity);
 
   BatchRequest addWithId(String index, String id, ExporterEntity entity);

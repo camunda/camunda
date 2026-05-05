@@ -20,7 +20,6 @@ import co.elastic.clients.elasticsearch.core.bulk.UpdateAction;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateAction.Builder;
 import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.util.BinaryData;
-import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -41,36 +40,30 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("rawtypes")
 public class ElasticsearchBatchRequest implements BatchRequest {
   public static final int UPDATE_RETRY_COUNT = 3;
-  private static final long DEFAULT_MAX_BULK_BYTES = 20L * 1024 * 1024;
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
-  private final long maxBulkBytes;
   private final ElasticsearchClient esClient;
   private final ElasticsearchScriptBuilder scriptBuilder;
   private final JsonpMapper jsonpMapper;
   private final List<SizedOperation> operations = new ArrayList<>();
+  private long maxBulkBytes;
   private CamundaExporterMetrics metrics;
 
   public ElasticsearchBatchRequest(
-      final ElasticsearchClient esClient,
-      final BulkRequest.Builder bulkRequestBuilder,
-      final ElasticsearchScriptBuilder scriptBuilder) {
-    this(esClient, scriptBuilder, DEFAULT_MAX_BULK_BYTES);
-  }
-
-  @VisibleForTesting
-  public ElasticsearchBatchRequest(
-      final ElasticsearchClient esClient,
-      final ElasticsearchScriptBuilder scriptBuilder,
-      final long maxBulkBytes) {
+      final ElasticsearchClient esClient, final ElasticsearchScriptBuilder scriptBuilder) {
     this.esClient = esClient;
     this.scriptBuilder = scriptBuilder;
     jsonpMapper = esClient._jsonpMapper();
-    this.maxBulkBytes = maxBulkBytes;
   }
 
   @Override
   public BatchRequest withMetrics(final CamundaExporterMetrics metrics) {
     this.metrics = metrics;
+    return this;
+  }
+
+  @Override
+  public BatchRequest withMaxBytes(final long maxBulkBytes) {
+    this.maxBulkBytes = maxBulkBytes;
     return this;
   }
 
@@ -265,21 +258,32 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       return;
     }
     try {
-      final List<BulkOperation> chunk = new ArrayList<>();
-      long chunkBytes = 0L;
-      for (final SizedOperation sized : operations) {
-        if (chunkBytes + sized.sizeBytes() > maxBulkBytes && !chunk.isEmpty()) {
-          executeChunk(chunk, shouldRefresh, customErrorHandlers);
-          chunk.clear();
-          chunkBytes = 0L;
-        }
-        chunk.add(sized.operation());
-        chunkBytes += sized.sizeBytes();
+      for (final List<BulkOperation> chunk : chunkByBytes(operations, maxBulkBytes)) {
+        executeChunk(chunk, shouldRefresh, customErrorHandlers);
       }
-      executeChunk(chunk, shouldRefresh, customErrorHandlers);
     } finally {
       operations.clear();
     }
+  }
+
+  static List<List<BulkOperation>> chunkByBytes(
+      final List<SizedOperation> ops, final long maxBytes) {
+    final List<List<BulkOperation>> chunks = new ArrayList<>();
+    List<BulkOperation> current = new ArrayList<>();
+    long currentBytes = 0L;
+    for (final SizedOperation sized : ops) {
+      if (!current.isEmpty() && currentBytes + sized.sizeBytes() > maxBytes) {
+        chunks.add(current);
+        current = new ArrayList<>();
+        currentBytes = 0L;
+      }
+      current.add(sized.operation());
+      currentBytes += sized.sizeBytes();
+    }
+    if (!current.isEmpty()) {
+      chunks.add(current);
+    }
+    return chunks;
   }
 
   private void executeChunk(
@@ -394,7 +398,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     }
   }
 
-  private record SizedOperation(BulkOperation operation, long sizeBytes) {}
+  record SizedOperation(BulkOperation operation, long sizeBytes) {}
 
   private record ErrorValues(List<String> indexes, List<String> ids) {}
 
