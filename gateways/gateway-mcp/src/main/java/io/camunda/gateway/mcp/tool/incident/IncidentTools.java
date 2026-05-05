@@ -57,7 +57,8 @@ public class IncidentTools {
 
   @CamundaMcpTool(
       description = "Search for incidents. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true),
+      processesServer = true)
   public CallToolResult searchIncidents(
       @McpToolParamsUnwrapped @Valid final IncidentSearchQuery query) {
     try {
