@@ -44,9 +44,10 @@ public final class JudgeConfigResolver {
         .map(
             adapter ->
                 JudgeConfig.of(
-                    adapter,
-                    judgeConfiguration.getThreshold(),
-                    judgeConfiguration.getCustomPrompt()));
+                        adapter,
+                        judgeConfiguration.getThreshold(),
+                        judgeConfiguration.getCustomPrompt())
+                    .withResolveDocuments(judgeConfiguration.isResolveDocuments()));
   }
 
   private static Optional<ChatModelAdapter> resolveAdapter(

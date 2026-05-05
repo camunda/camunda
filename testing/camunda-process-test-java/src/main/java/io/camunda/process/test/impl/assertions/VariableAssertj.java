@@ -26,10 +26,14 @@ import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.VariableSelector;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
+import io.camunda.process.test.api.judge.ResolvedDocument;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
+import io.camunda.process.test.impl.judge.DocumentReferenceResolver;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -397,10 +401,28 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
   private void evaluateJudge(
       final VariableSelector variableSelector, final String expectation, final String rawValue) {
+    final List<ResolvedDocument> documents = resolveDocumentsIfEnabled(rawValue);
     judgeAssertj.evaluateExpectation(
         expectation,
         rawValue,
-        String.format(" for %s variable '%s'", actual, variableSelector.describe()));
+        String.format(" for %s variable '%s'", actual, variableSelector.describe()),
+        documents);
+  }
+
+  private List<ResolvedDocument> resolveDocumentsIfEnabled(final String rawValue) {
+    final JudgeConfig config = judgeAssertj.getJudgeConfig();
+    if (config == null || !config.isResolveDocuments()) {
+      return Collections.emptyList();
+    }
+    if (!(config.getChatModel() instanceof MultimodalChatModelAdapter)) {
+      LOG.warn(
+          "Judge document resolution is enabled but the configured ChatModelAdapter does not "
+              + "implement MultimodalChatModelAdapter. Skipping document resolution. Implement "
+              + "MultimodalChatModelAdapter or use one of the built-in LangChain4j providers to "
+              + "enable multimodal evaluation.");
+      return Collections.emptyList();
+    }
+    return new DocumentReferenceResolver(dataSource.getClient()).resolve(rawValue);
   }
 
   private String assertVariableExists(

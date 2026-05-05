@@ -28,6 +28,7 @@ public class BedrockChatModelAdapterProvider implements ChatModelAdapterProvider
 
   @Override
   public ChatModelAdapter create(final ProviderConfig config) {
-    return BedrockChatModelBuilder.build((BaseProviderConfig.AmazonBedrockConfig) config)::chat;
+    return new LangChain4jChatModelAdapter(
+        BedrockChatModelBuilder.build((BaseProviderConfig.AmazonBedrockConfig) config));
   }
 }

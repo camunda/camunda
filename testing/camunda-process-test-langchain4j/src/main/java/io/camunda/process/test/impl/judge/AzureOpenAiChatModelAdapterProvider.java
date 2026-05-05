@@ -28,6 +28,7 @@ public class AzureOpenAiChatModelAdapterProvider implements ChatModelAdapterProv
 
   @Override
   public ChatModelAdapter create(final ProviderConfig config) {
-    return AzureOpenAiChatModelBuilder.build((BaseProviderConfig.AzureOpenAiConfig) config)::chat;
+    return new LangChain4jChatModelAdapter(
+        AzureOpenAiChatModelBuilder.build((BaseProviderConfig.AzureOpenAiConfig) config));
   }
 }

@@ -18,7 +18,14 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.process.test.api.judge.ChatModelAdapter;
+import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
+import io.camunda.process.test.api.judge.ResolvedDocument;
+import io.camunda.process.test.impl.judge.ResolvedDocumentImpl;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class JudgeEvaluationTest {
@@ -114,5 +121,103 @@ class JudgeEvaluationTest {
         .hasCauseInstanceOf(IllegalArgumentException.class)
         .cause()
         .hasMessageContaining("Empty response from judge");
+  }
+
+  @Test
+  void shouldRouteToMultimodalAdapterWhenDocumentsPresent() {
+    // given
+    final AtomicReference<String> capturedPrompt = new AtomicReference<>();
+    final AtomicReference<List<ResolvedDocument>> capturedDocs = new AtomicReference<>();
+
+    final MultimodalChatModelAdapter adapter =
+        new TestMultimodalAdapter(
+            (prompt, docs) -> {
+              capturedPrompt.set(prompt);
+              capturedDocs.set(docs);
+              return "{\"score\": 1.0, \"reasoning\": \"ok\"}";
+            });
+
+    final JudgeEvaluation evaluation =
+        new JudgeEvaluation(adapter, "expectation", Optional.empty());
+
+    final ResolvedDocument doc =
+        ResolvedDocumentImpl.resolved("doc-1", "image.png", "image/png", new byte[] {1, 2, 3});
+
+    // when
+    final JudgeEvaluation.Result result =
+        evaluation.evaluate("value", Collections.singletonList(doc));
+
+    // then
+    assertThat(result.getScore()).isEqualTo(1.0);
+    assertThat(capturedDocs.get()).containsExactly(doc);
+    assertThat(capturedPrompt.get()).contains("<resolved_documents>");
+    assertThat(capturedPrompt.get()).contains("documentId=\"doc-1\"");
+  }
+
+  @Test
+  void shouldIncludeUnresolvedDocumentMarkerInPrompt() {
+    // given
+    final AtomicReference<String> capturedPrompt = new AtomicReference<>();
+    final MultimodalChatModelAdapter adapter =
+        new TestMultimodalAdapter(
+            (prompt, docs) -> {
+              capturedPrompt.set(prompt);
+              return "{\"score\": 0.5, \"reasoning\": \"ok\"}";
+            });
+
+    final JudgeEvaluation evaluation =
+        new JudgeEvaluation(adapter, "expectation", Optional.empty());
+
+    final ResolvedDocument failed =
+        ResolvedDocumentImpl.failed("doc-3", "missing.pdf", "application/pdf", "404 not found");
+
+    // when
+    evaluation.evaluate("value", Collections.singletonList(failed));
+
+    // then
+    assertThat(capturedPrompt.get()).contains("documentId=\"doc-3\"");
+    assertThat(capturedPrompt.get()).contains("status=\"unresolved\"");
+    assertThat(capturedPrompt.get()).contains("404 not found");
+  }
+
+  @Test
+  void shouldNotAddDocumentsSectionWhenNoDocuments() {
+    // given
+    final AtomicReference<String> capturedPrompt = new AtomicReference<>();
+    final ChatModelAdapter adapter =
+        prompt -> {
+          capturedPrompt.set(prompt);
+          return "{\"score\": 1.0, \"reasoning\": \"ok\"}";
+        };
+
+    final JudgeEvaluation evaluation =
+        new JudgeEvaluation(adapter, "expectation", Optional.empty());
+
+    // when
+    evaluation.evaluate("value");
+
+    // then
+    assertThat(capturedPrompt.get()).doesNotContain("<resolved_documents>");
+  }
+
+  /** Test double that implements MultimodalChatModelAdapter. */
+  private static final class TestMultimodalAdapter implements MultimodalChatModelAdapter {
+
+    private final java.util.function.BiFunction<String, List<ResolvedDocument>, String> handler;
+
+    TestMultimodalAdapter(
+        final java.util.function.BiFunction<String, List<ResolvedDocument>, String> handler) {
+      this.handler = handler;
+    }
+
+    @Override
+    public String generate(final String prompt) {
+      throw new AssertionError("string-only generate should not be called when documents present");
+    }
+
+    @Override
+    public String generate(final String prompt, final List<ResolvedDocument> documents) {
+      return handler.apply(prompt, documents);
+    }
   }
 }

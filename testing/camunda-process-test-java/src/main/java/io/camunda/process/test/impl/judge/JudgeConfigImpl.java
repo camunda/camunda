@@ -24,12 +24,17 @@ public final class JudgeConfigImpl implements JudgeConfig {
   private final ChatModelAdapter chatModel;
   private final double threshold;
   private final String customPrompt;
+  private final boolean resolveDocuments;
 
   public JudgeConfigImpl(
-      final ChatModelAdapter chatModel, final double threshold, final String customPrompt) {
+      final ChatModelAdapter chatModel,
+      final double threshold,
+      final String customPrompt,
+      final boolean resolveDocuments) {
     this.chatModel = chatModel;
     this.threshold = threshold;
     this.customPrompt = customPrompt;
+    this.resolveDocuments = resolveDocuments;
   }
 
   @Override
@@ -37,7 +42,7 @@ public final class JudgeConfigImpl implements JudgeConfig {
     if (chatModel == null) {
       throw new IllegalArgumentException("chatModel must not be null");
     }
-    return new JudgeConfigImpl(chatModel, threshold, customPrompt);
+    return new JudgeConfigImpl(chatModel, threshold, customPrompt, resolveDocuments);
   }
 
   @Override
@@ -46,12 +51,17 @@ public final class JudgeConfigImpl implements JudgeConfig {
       throw new IllegalArgumentException(
           "threshold must be between 0.0 and 1.0, was: " + threshold);
     }
-    return new JudgeConfigImpl(chatModel, threshold, customPrompt);
+    return new JudgeConfigImpl(chatModel, threshold, customPrompt, resolveDocuments);
   }
 
   @Override
   public JudgeConfig withCustomPrompt(final String customPrompt) {
-    return new JudgeConfigImpl(chatModel, threshold, customPrompt);
+    return new JudgeConfigImpl(chatModel, threshold, customPrompt, resolveDocuments);
+  }
+
+  @Override
+  public JudgeConfig withResolveDocuments(final boolean resolveDocuments) {
+    return new JudgeConfigImpl(chatModel, threshold, customPrompt, resolveDocuments);
   }
 
   @Override
@@ -67,5 +77,10 @@ public final class JudgeConfigImpl implements JudgeConfig {
   @Override
   public Optional<String> getCustomPrompt() {
     return Optional.ofNullable(customPrompt);
+  }
+
+  @Override
+  public boolean isResolveDocuments() {
+    return resolveDocuments;
   }
 }

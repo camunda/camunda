@@ -40,6 +40,7 @@ public class JudgePropertiesTest {
     // then
     assertThat(judgeProperties.getThreshold()).isEqualTo(0.5);
     assertThat(judgeProperties.getCustomPrompt()).isNull();
+    assertThat(judgeProperties.isResolveDocuments()).isFalse();
     assertThat(judgeProperties.hasProviderConfigured()).isFalse();
   }
 
@@ -56,6 +57,32 @@ public class JudgePropertiesTest {
     // then
     assertThat(judgeProperties.getThreshold()).isEqualTo(0.8);
     assertThat(judgeProperties.getCustomPrompt()).isEqualTo("Custom prompt text");
+  }
+
+  @Test
+  void shouldReadResolveDocumentsTrue() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.resolveDocuments", "true");
+
+    // when
+    final JudgeProperties judgeProperties = new JudgeProperties(properties);
+
+    // then
+    assertThat(judgeProperties.isResolveDocuments()).isTrue();
+  }
+
+  @Test
+  void shouldDefaultResolveDocumentsToFalseForInvalidValue() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.resolveDocuments", "not-a-boolean");
+
+    // when
+    final JudgeProperties judgeProperties = new JudgeProperties(properties);
+
+    // then: Boolean.parseBoolean returns false for any non-"true" string
+    assertThat(judgeProperties.isResolveDocuments()).isFalse();
   }
 
   @Test
