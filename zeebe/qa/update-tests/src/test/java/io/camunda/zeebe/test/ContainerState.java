@@ -11,30 +11,42 @@ import static io.camunda.application.commons.security.CamundaSecurityConfigurati
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.CamundaContainer;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.container.CamundaContainer.GatewayContainer;
 import io.camunda.container.ZeebeTopologyWaitStrategy;
 import io.camunda.container.volume.CamundaVolume;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.test.testcontainers.RemoteDebugger;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VersionUtil;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import org.agrona.LangUtil;
-import org.agrona.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.unit.DataSize;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.ContainerFetchException;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.Network;
@@ -50,8 +62,10 @@ final class ContainerState implements AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(ContainerState.class);
   private static final DockerImageName PREVIOUS_VERSION =
       DockerImageName.parse("camunda/camunda").withTag(VersionUtil.getPreviousVersion());
-  private static final DockerImageName CURRENT_VERSION =
-      ZeebeTestContainerDefaults.defaultTestImage();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper()
+          .registerModule(new JavaTimeModule())
+          .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
   static {
     CONTAINER_START_RETRY_POLICY
@@ -78,8 +92,9 @@ final class ContainerState implements AutoCloseable {
   private DockerImageName gatewayImage;
   private boolean withRemoteDebugging;
 
-  private String withUser;
-  private String withVersionOverride;
+  private boolean isSpring;
+  private TestStandaloneBroker springBroker;
+  private Path extractedDataDir;
 
   CamundaClient client() {
     return client;
@@ -91,8 +106,8 @@ final class ContainerState implements AutoCloseable {
   }
 
   ContainerState withNewBroker() {
-    withVersionOverride(VersionUtil.getVersion().replace("-SNAPSHOT", ""));
-    return broker(CURRENT_VERSION);
+    isSpring = true;
+    return this;
   }
 
   ContainerState withNetwork(final Network network) {
@@ -102,16 +117,6 @@ final class ContainerState implements AutoCloseable {
 
   ContainerState withOldGateway() {
     gatewayImage = PREVIOUS_VERSION;
-    return this;
-  }
-
-  ContainerState withUser(final String user) {
-    withUser = user;
-    return this;
-  }
-
-  ContainerState withVersionOverride(final String version) {
-    withVersionOverride = version;
     return this;
   }
 
@@ -125,6 +130,14 @@ final class ContainerState implements AutoCloseable {
   }
 
   public void start(final boolean enableDebug, final boolean withRemoteDebugging) {
+    if (isSpring) {
+      startSpringBroker(enableDebug);
+      if (gatewayImage != null) {
+        startOldGatewayForSpringBroker();
+      }
+      return;
+    }
+
     final URI grpcAddress;
     broker =
         new BrokerContainer(brokerImage)
@@ -170,15 +183,6 @@ final class ContainerState implements AutoCloseable {
       broker = broker.withEnv("ZEEBE_DEBUG", "true");
     }
 
-    if (!Strings.isEmpty(withUser)) {
-      broker.withCreateContainerCmdModifier(
-          createContainerCmd -> createContainerCmd.withUser(withUser));
-    }
-
-    if (!Strings.isEmpty(withVersionOverride)) {
-      broker.withEnv(VersionUtil.VERSION_OVERRIDE_ENV_NAME, withVersionOverride);
-    }
-
     Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.self().start());
 
     if (gatewayImage == null) {
@@ -218,18 +222,130 @@ final class ContainerState implements AutoCloseable {
     partitionsActuator = PartitionsActuator.of(broker);
   }
 
+  private void startSpringBroker(final boolean enableDebug) {
+    try {
+      extractedDataDir = Files.createTempDirectory("camunda-update-test-data");
+    } catch (final IOException e) {
+      LangUtil.rethrowUnchecked(e);
+      return;
+    }
+
+    try {
+      volume.extract(
+          extractedDataDir,
+          builder -> builder.withContainerPath(CamundaContainer.DEFAULT_CAMUNDA_DATA_PATH));
+    } catch (final IOException | InterruptedException e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      LangUtil.rethrowUnchecked(e);
+      return;
+    }
+
+    final var workingDir = extractedDataDir.resolve("usr/local/camunda");
+
+    RecordingExporter.reset();
+
+    springBroker =
+        new TestStandaloneBroker()
+            .withWorkingDirectory(workingDir)
+            .withUnauthenticatedAccess()
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getCluster().setPartitionCount(PARTITION_COUNT);
+                  cfg.getData().getPrimaryStorage().getLogStream().setLogIndexDensity(1);
+                  cfg.getData().setSnapshotPeriod(Duration.ofMinutes(1));
+                  cfg.getData()
+                      .getPrimaryStorage()
+                      .getLogStream()
+                      .setLogSegmentSize(DataSize.ofMegabytes(64));
+                  cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(128));
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                  cfg.getSystem().getUpgrade().setEnableVersionCheck(false);
+                  if (gatewayImage != null) {
+                    // Advertise a hostname that Docker containers can resolve to reach this broker
+                    cfg.getCluster().getNetwork().setAdvertisedHost("host.testcontainers.internal");
+                    cfg.getCluster()
+                        .getNetwork()
+                        .getInternalApi()
+                        .setAdvertisedHost("host.testcontainers.internal");
+                    cfg.getCluster()
+                        .getNetwork()
+                        .getCommandApi()
+                        .setAdvertisedHost("host.testcontainers.internal");
+                  }
+                });
+
+    if (enableDebug) {
+      springBroker.withRecordingExporter(true);
+    }
+
+    springBroker.start();
+
+    client = springBroker.newClientBuilder().preferRestOverGrpc(false).build();
+    partitionsActuator = PartitionsActuator.of(springBroker);
+  }
+
+  private void startOldGatewayForSpringBroker() {
+    final int clusterPort = springBroker.mappedPort(TestZeebePort.CLUSTER);
+    final int commandPort = springBroker.mappedPort(TestZeebePort.COMMAND);
+    Testcontainers.exposeHostPorts(clusterPort, commandPort);
+
+    gateway =
+        new GatewayContainer(gatewayImage)
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getCluster()
+                      .setInitialContactPoints(
+                          List.of("host.testcontainers.internal:" + clusterPort));
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                })
+            .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+            .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+            .withEnv(UNPROTECTED_API_ENV_VAR, "true")
+            .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
+            .withAccessToHost(true)
+            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
+            .withNetwork(network);
+
+    if (gatewayImage.equals(PREVIOUS_VERSION)) {
+      gateway
+          .withEnv(
+              "ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS",
+              "host.testcontainers.internal:" + clusterPort)
+          .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", "0.0.0.0")
+          .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", gateway.getInternalHost())
+          .withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", gateway.getInternalHost());
+    }
+
+    Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> gateway.self().start());
+
+    client.close();
+    client =
+        CamundaClient.newClientBuilder()
+            .grpcAddress(gateway.getGrpcAddress())
+            .preferRestOverGrpc(false)
+            .build();
+  }
+
   public PartitionsActuator getPartitionsActuator() {
     return partitionsActuator;
   }
 
   @SuppressWarnings("java:S2925") // allow Thread.sleep usage in test if remote debugging is enabled
   public void onFailure() {
-    if (broker != null) {
-      log("Broker", broker.getLogs());
-    }
-
-    if (gateway != null) {
-      log("Gateway", gateway.getLogs());
+    if (isSpring) {
+      log("SpringBroker", getLogs());
+      if (gateway != null) {
+        log("Gateway", gateway.getLogs());
+      }
+    } else {
+      if (broker != null) {
+        log("Broker", broker.getLogs());
+      }
+      if (gateway != null) {
+        log("Gateway", gateway.getLogs());
+      }
     }
 
     if (withRemoteDebugging) {
@@ -276,7 +392,7 @@ final class ContainerState implements AutoCloseable {
   }
 
   public String getLogContaining(final String... pieces) {
-    final String[] lines = broker.getLogs().split("\n");
+    final String[] lines = getLogs().split("\n");
 
     return Arrays.stream(lines)
         .filter(line -> Arrays.stream(pieces).allMatch(line::contains))
@@ -303,12 +419,49 @@ final class ContainerState implements AutoCloseable {
     return incidentKey;
   }
 
+  private String getLogs() {
+    if (!isSpring) {
+      return broker.getLogs();
+    }
+    return RecordingExporter.getRecords().stream()
+        .map(
+            r -> {
+              try {
+                return MAPPER.writeValueAsString(r);
+              } catch (final JsonProcessingException e) {
+                return "";
+              }
+            })
+        .collect(Collectors.joining("\n"));
+  }
+
   /** Close all opened resources. */
   @Override
   public void close() {
     if (client != null) {
       client.close();
       client = null;
+    }
+
+    if (isSpring) {
+      if (gateway != null) {
+        gateway.shutdownGracefully(CLOSE_TIMEOUT);
+        gateway = null;
+      }
+      if (springBroker != null) {
+        springBroker.close();
+        springBroker = null;
+      }
+      if (extractedDataDir != null) {
+        try {
+          FileUtil.deleteFolder(extractedDataDir);
+        } catch (final IOException e) {
+          throw new RuntimeException(e);
+        }
+        extractedDataDir = null;
+      }
+      isSpring = false;
+      return;
     }
 
     if (gateway != null) {
