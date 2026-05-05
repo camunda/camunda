@@ -45,6 +45,7 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
@@ -106,6 +107,10 @@ public class MyBatisConfiguration {
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
     moduleConfig.setDdlLockWaitTimeout(lockWaitTimeout);
+    // Inject the current application version for schema upgrade-path validation.
+    // When the version is not a valid semantic version (e.g. during local development),
+    // the version check is skipped inside LiquibaseSchemaManager.
+    moduleConfig.setApplicationVersion(VersionUtil.getVersion());
 
     return moduleConfig;
   }
