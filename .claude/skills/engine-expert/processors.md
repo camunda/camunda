@@ -1,0 +1,71 @@
+# Processors
+
+Processors are where the engine's logic lives. They consume commands and produce events, rejections, follow-up commands, and side-effects. The stream processor is **single-threaded** — only one command is processed at a time per partition.
+
+## Iron rules
+
+- **Bulk of logic lives here**, not in event appliers. Processors are easier to fix when bugs are found or behavior must be adjusted.
+- **Read-only state access only.** Mutation goes through events + appliers. Use the `*State` (read-only) interface from a processor, never the `Mutable*State` interface.
+- **Composition over inheritance.** Reuse logic via `Behavior` classes (e.g., `BpmnJobActivationBehavior`), not via subclasses.
+- **A processor must always end the command's processing by appending an event or a rejection.** A command is considered processed (after replay) when a follow-up record points to it.
+- **Exceptions are a last-resort rollback mechanism**, not a control-flow tool. They are expensive at engine throughput.
+  - Prefer pre-validation: validate the command before appending any events.
+  - Throw only when validation is only possible mid-processing, after some events have already been appended. The stream processor will roll back the appended records and call `tryHandleError`, where the processor typically appends a command rejection to recover.
+- **Don't trust data in a command's `RecordValue`** — it may be stale by the time the command is processed. Read the latest entity data from state. Use the command's data only as the *requested change* (e.g., new assignee), and use state as the *basis* for the change.
+- **Generated keys must be used as the record key of at least one appended record.** The key generator is rehydrated on replay by reading the keys of appended records. If a generated key is only stored inside a `RecordValue` (not used as a record key), the generator won't see it on replay and may hand out the same key again. Storing the key inside the record value as well is fine, but doesn't substitute for using it as a record key.
+- **Authorization checks belong on every user-triggered command**, before mutating state. Internal/engine-triggered events (e.g., `ProcessInstance.COMPLETE_ELEMENT` fired by the engine itself) do **not** require an authorization check — those state-machine transitions assume permissions were verified upstream.
+- **Inter-partition command receivers must be idempotent.** Prefer reject-redundant-command (write a rejection, no state change) over re-emitting the same events.
+- **Take small steps.** Append follow-up commands rather than doing everything in one processing cycle. The single thread is shared with every other command on this partition.
+
+## Reading state safely
+
+Values returned from `ColumnFamily.get(...)` — and from `*State` reads built on top of it — are backed by a **shared, mutable buffer owned by the column family**. Each column family holds a single `valueInstance` that gets re-wrapped on every read. There are two failure modes:
+
+- **Holding a value across another read of the same CF.** `final var a = cf.get(keyA); final var b = cf.get(keyB);` returns the same reference both times — `a` now also reads as B's data. Iteration (`forEach`, `whileTrue`) re-wraps the same instance on every step, so storing the value across iterations has the same effect.
+- **Caching a value past the immediate read** (e.g. into a `Map`, `List`, or field). Production incident: `DbFormState` cached the `persistedForm` returned from RocksDB, and form ids ended up pointing to the wrong form objects (INC-981, #16311).
+
+Two escape hatches:
+
+- `value.copyFrom(stateRead)` into an instance you own. See `ProcessInstanceMigrationCatchEventBehavior` for examples (`copy.copyFrom(timerInstance)`, `copySubscription.copyFrom(subscription)`).
+- `cf.get(key, valueSupplier)` allocates a fresh instance per call instead of returning the shared reference — useful when you'd otherwise immediately copy.
+
+Rule of thumb: if the value escapes the immediate read (passed to a helper that may itself read state, stored anywhere, or returned across another `get` on the same CF), copy it.
+
+## Non-transactional side effects
+
+State writes (`stateWriter.appendFollowUpEvent`, follow-up commands, response writes) are transactional — they roll back together if processing throws. **Inline side effects are not.** Direct calls to metrics (`metric.increment()`), post-commit hooks, or other external mutations execute immediately and are *not* undone when the transaction rolls back.
+
+Two asymmetries to remember:
+
+- **Forward** (already in `zeebe/engine/README.md` § *Side-effects are not guaranteed to be executed*): a side effect may not run — failover or commit failure can drop it. Don't put critical work in one.
+- **Inverse** (not in the README): a side effect that *did* run is not rolled back. If it executes before a later state write that throws, the state rolls back but the side effect stays — counters drift, sometimes negative.
+
+**Fix:** order matters. Inside a processor, do all state writes, follow-up commands, and response writes — and any helper calls that could throw — first. Run inline non-transactional side effects only after every potentially-throwing step has succeeded.
+
+Production example: `IncidentResolveProcessor.processRecord` called `incidentMetrics.incidentResolved()` before `publishIncidentRelatedJob(...)` and `attemptToContinueProcessProcessing(...)`, both of which can throw. On the throw path, the resolved-incident counter incremented while the state rolled back.
+
+## Error and rejection messages
+
+- **Follow the format** `Expected [X], but got [Y] [in CONTEXT]`. Include execution context (partition ID, entity key, etc.) when it helps the user act on the failure.
+- **Rejection reasons use the same pattern** — they surface to the user, so write them as remediation guidance, not as debug output.
+- Full guidance: https://github.com/camunda/camunda/wiki/Error-Guidelines
+
+## Logging
+
+- **Hot paths log at trace level only.** The engine processes thousands of commands per second; INFO/DEBUG on a hot path is a measurable performance regression.
+- **Use SLF4J's parameterized formatting** (`log.info("X {}", arg)`), never `String.format`. SLF4J skips formatting when the level is disabled; `String.format` allocates regardless.
+- Levels: `TRACE` = component execution detail (granular loggers only); `DEBUG` = developer diagnostics; `INFO` = operator-facing events (leader changes, membership updates); `WARN` = expected, self-resolving errors that need monitoring (timeouts, transient unavailability); `ERROR` = critical failures requiring immediate attention.
+- Full guidance: https://github.com/camunda/camunda/wiki/Logging
+
+## Templates
+
+- Processor: `zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/user/UserCreateProcessor.java`
+- Behavior class: `zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/behavior/BpmnJobActivationBehavior.java`
+- Registration: `zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/EngineProcessors.java`
+
+## Canonical docs
+
+- `zeebe/engine/README.md` § "Do's and Don'ts" — full list of stream-processor invariants.
+- `docs/zeebe/developer_handbook.md` § "Authorization Checks in the Engine" — when and how to add authorization to a processor.
+- `docs/zeebe/engine_questions.md` — variable scoping, joining gateways, token semantics.
+
