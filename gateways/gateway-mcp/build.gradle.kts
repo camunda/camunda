@@ -7,13 +7,13 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-gateway-model"))
-    api(project(":camunda-gateway-mapping-http"))
-    api(project(":camunda-search-domain"))
-    api(project(":camunda-security-core"))
-    api(project(":camunda-service"))
-    api(project(":zeebe-protocol-impl"))
-    api(project(":zeebe-util"))
+    implementation(project(":camunda-gateway-model"))
+    implementation(project(":camunda-gateway-mapping-http"))
+    implementation(project(":camunda-search-domain"))
+    implementation(project(":camunda-security-core"))
+    implementation(project(":camunda-service"))
+    implementation(project(":zeebe-protocol-impl"))
+    implementation(project(":zeebe-util"))
     api(libs.org.springframework.ai.spring.ai.starter.mcp.server.webmvc)
     api(libs.org.springaicommunity.mcp.annotations)
     api(libs.io.modelcontextprotocol.sdk.mcp.core)

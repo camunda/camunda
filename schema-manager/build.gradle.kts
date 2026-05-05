@@ -7,8 +7,8 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-search-client-connect"))
-    api(project(":webapps-schema"))
+    implementation(project(":camunda-search-client-connect"))
+    implementation(project(":webapps-schema"))
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.co.elastic.clients.elasticsearch.java)
     api(libs.org.opensearch.client.opensearch.java)
@@ -18,7 +18,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.google.guava.guava)
     api(libs.org.agrona.agrona)
-    api(project(":zeebe-util"))
+    implementation(project(":zeebe-util"))
     api(libs.io.micrometer.micrometer.core)
     api(libs.io.github.resilience4j.resilience4j.core)
     api(libs.org.apache.httpcomponents.httpcore)

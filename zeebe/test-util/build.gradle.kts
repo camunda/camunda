@@ -7,16 +7,16 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-util"))
-    api(project(":zeebe-protocol"))
-    api(project(":camunda-security-protocol"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-protocol"))
+    implementation(project(":camunda-security-protocol"))
     api(project(":zeebe-exporter-api"))
-    api(project(":camunda-client-java"))
+    implementation(project(":camunda-client-java"))
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.org.apache.logging.log4j.log4j.core)
     api(libs.org.msgpack.msgpack.core)
     implementation(libs.org.apache.commons.commons.lang3)
-    api(project(":zeebe-bpmn-model"))
+    implementation(project(":zeebe-bpmn-model"))
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.org.msgpack.jackson.dataformat.msgpack)

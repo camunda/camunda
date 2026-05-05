@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-protocol"))
+    implementation(project(":zeebe-protocol"))
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.com.fasterxml.jackson.core.jackson.core)

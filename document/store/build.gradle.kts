@@ -7,14 +7,17 @@ plugins {
 }
 
 dependencies {
-    api(project(":document-api"))
-    api(project(":zeebe-util"))
+    implementation(project(":document-api"))
+    implementation(project(":zeebe-util"))
     api(libs.com.google.cloud.google.cloud.storage)
     api(libs.com.google.cloud.google.cloud.core)
     api(libs.software.amazon.awssdk.sdk.core)
     api(libs.software.amazon.awssdk.http.client.spi)
     api(libs.software.amazon.awssdk.s3)
     api(libs.software.amazon.awssdk.aws.core)
+    implementation(libs.com.azure.azure.storage.blob)
+    implementation(libs.com.azure.azure.core)
+    implementation(libs.com.azure.azure.identity)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.com.fasterxml.jackson.core.jackson.core)

@@ -16,84 +16,133 @@ openApiGenerate {
 // Second OpenAPI generation: "simple" models with simplified type mappings
 val openApiGenerateSimple by tasks.registering(org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
     generatorName.set("spring")
-    inputSpec.set("${openapiDir}/rest-api.yaml")
+    inputSpec.set("$openapiDir/rest-api.yaml")
     outputDir.set("${project.layout.buildDirectory.get()}/generated/openapi-simple")
     modelPackage.set("io.camunda.gateway.protocol.model.simple")
 
-    globalProperties.set(mapOf(
-        "models" to "",
-        "apis" to "false",
-        "supportingFiles" to "false"
-    ))
+    globalProperties.set(
+        mapOf(
+            "models" to "",
+            "apis" to "false",
+            "supportingFiles" to "false",
+        ),
+    )
 
-    typeMappings.set(mapOf(
-        "OffsetDateTime" to "String",
-        "ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey" to "String",
-        "ResourceKey" to "String",
-        "ElementInstanceKey" to "String",
-        "AuditLogEntityKeyFilterProperty" to "String",
-        "AuditLogKeyFilterProperty" to "String",
-        "BasicStringFilterProperty" to "String",
-        "DecisionDefinitionKeyFilterProperty" to "String",
-        "DecisionEvaluationInstanceKeyFilterProperty" to "String",
-        "DecisionEvaluationKeyFilterProperty" to "String",
-        "DecisionRequirementsKeyFilterProperty" to "String",
-        "DeploymentKeyFilterProperty" to "String",
-        "ElementInstanceKeyFilterProperty" to "String",
-        "FormKeyFilterProperty" to "String",
-        "IntegerFilterProperty" to "Integer",
-        "JobKeyFilterProperty" to "String",
-        "MessageSubscriptionKeyFilterProperty" to "String",
-        "ProcessDefinitionKeyFilterProperty" to "String",
-        "ProcessInstanceKeyFilterProperty" to "String",
-        "ResourceKeyFilterProperty" to "String",
-        "ScopeKeyFilterProperty" to "String",
-        "StringFilterProperty" to "String",
-        "VariableKeyFilterProperty" to "String",
-        "DateTimeFilterProperty" to "SimpleDateTimeFilterProperty",
-        "AuditLogActorTypeFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogActorTypeEnum",
-        "AuditLogResultFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogResultEnum",
-        "BatchOperationItemStateFilterProperty" to "io.camunda.gateway.protocol.model.BatchOperationItemStateEnum",
-        "BatchOperationStateFilterProperty" to "io.camunda.gateway.protocol.model.BatchOperationStateEnum",
-        "BatchOperationTypeFilterProperty" to "io.camunda.gateway.protocol.model.BatchOperationTypeEnum",
-        "CategoryFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogCategoryEnum",
-        "ClusterVariableScopeFilterProperty" to "io.camunda.gateway.protocol.model.ClusterVariableScopeEnum",
-        "DecisionInstanceStateFilterProperty" to "io.camunda.gateway.protocol.model.DecisionInstanceStateEnum",
-        "EntityTypeFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum",
-        "ElementInstanceStateFilterProperty" to "io.camunda.gateway.protocol.model.ElementInstanceStateEnum",
-        "IncidentErrorTypeFilterProperty" to "io.camunda.gateway.protocol.model.IncidentErrorTypeEnum",
-        "IncidentStateFilterProperty" to "io.camunda.gateway.protocol.model.IncidentStateEnum",
-        "JobKindFilterProperty" to "io.camunda.gateway.protocol.model.JobKindEnum",
-        "JobListenerEventTypeFilterProperty" to "io.camunda.gateway.protocol.model.JobListenerEventTypeEnum",
-        "JobStateFilterProperty" to "io.camunda.gateway.protocol.model.JobStateEnum",
-        "MessageSubscriptionStateFilterProperty" to "io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum",
-        "ProcessInstanceStateFilterProperty" to "io.camunda.gateway.protocol.model.ProcessInstanceStateEnum",
-        "OperationTypeFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum",
-        "UserTaskStateFilterProperty" to "io.camunda.gateway.protocol.model.UserTaskStateEnum"
-    ))
+    typeMappings.set(
+        mapOf(
+            "OffsetDateTime" to "String",
+            "ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey" to "String",
+            "ResourceKey" to "String",
+            "ScopeKey" to "String",
+            "ElementInstanceKey" to "String",
+            "AuditLogEntityKeyFilterProperty" to "String",
+            "AuditLogKeyFilterProperty" to "String",
+            "BasicStringFilterProperty" to "String",
+            "DecisionDefinitionKeyFilterProperty" to "String",
+            "DecisionEvaluationInstanceKeyFilterProperty" to "String",
+            "DecisionEvaluationKeyFilterProperty" to "String",
+            "DecisionRequirementsKeyFilterProperty" to "String",
+            "DeploymentKeyFilterProperty" to "String",
+            "ElementIdFilterProperty" to "String",
+            "ElementInstanceKeyFilterProperty" to "String",
+            "FormKeyFilterProperty" to "String",
+            "IntegerFilterProperty" to "Integer",
+            "JobKeyFilterProperty" to "String",
+            "MessageSubscriptionKeyFilterProperty" to "String",
+            "ProcessDefinitionIdFilterProperty" to "String",
+            "ProcessDefinitionKeyFilterProperty" to "String",
+            "ProcessInstanceKeyFilterProperty" to "String",
+            "ResourceKeyFilterProperty" to "String",
+            "ScopeKeyFilterProperty" to "String",
+            "StringFilterProperty" to "String",
+            "VariableKeyFilterProperty" to "String",
+            "DateTimeFilterProperty" to "SimpleDateTimeFilterProperty",
+            "AuditLogActorTypeFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogActorTypeEnum",
+            "AuditLogResultFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogResultEnum",
+            "BatchOperationItemStateFilterProperty" to "io.camunda.gateway.protocol.model.BatchOperationItemStateEnum",
+            "BatchOperationStateFilterProperty" to "io.camunda.gateway.protocol.model.BatchOperationStateEnum",
+            "BatchOperationTypeFilterProperty" to "io.camunda.gateway.protocol.model.BatchOperationTypeEnum",
+            "CategoryFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogCategoryEnum",
+            "ClusterVariableScopeFilterProperty" to "io.camunda.gateway.protocol.model.ClusterVariableScopeEnum",
+            "DecisionInstanceStateFilterProperty" to "io.camunda.gateway.protocol.model.DecisionInstanceStateEnum",
+            "EntityTypeFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum",
+            "ElementInstanceStateFilterProperty" to "io.camunda.gateway.protocol.model.ElementInstanceStateEnum",
+            "IncidentErrorTypeFilterProperty" to "io.camunda.gateway.protocol.model.IncidentErrorTypeEnum",
+            "IncidentStateFilterProperty" to "io.camunda.gateway.protocol.model.IncidentStateEnum",
+            "JobKindFilterProperty" to "io.camunda.gateway.protocol.model.JobKindEnum",
+            "JobListenerEventTypeFilterProperty" to "io.camunda.gateway.protocol.model.JobListenerEventTypeEnum",
+            "JobStateFilterProperty" to "io.camunda.gateway.protocol.model.JobStateEnum",
+            "MessageSubscriptionStateFilterProperty" to "io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum",
+            "MessageSubscriptionTypeFilterProperty" to "io.camunda.gateway.protocol.model.MessageSubscriptionTypeEnum",
+            "ProcessInstanceStateFilterProperty" to "io.camunda.gateway.protocol.model.ProcessInstanceStateEnum",
+            "OperationTypeFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum",
+            "UserTaskStateFilterProperty" to "io.camunda.gateway.protocol.model.UserTaskStateEnum",
+            "AuditLogSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.AuditLogSearchQuerySortRequest",
+            "AuthorizationSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.AuthorizationSearchQuerySortRequest",
+            "BatchOperationItemSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.BatchOperationItemSearchQuerySortRequest",
+            "BatchOperationSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.BatchOperationSearchQuerySortRequest",
+            "ClusterVariableSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.ClusterVariableSearchQuerySortRequest",
+            "CorrelatedMessageSubscriptionSearchQuerySortRequest" to
+                "io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQuerySortRequest",
+            "DecisionDefinitionSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.DecisionDefinitionSearchQuerySortRequest",
+            "DecisionInstanceSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.DecisionInstanceSearchQuerySortRequest",
+            "DecisionRequirementsSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.DecisionRequirementsSearchQuerySortRequest",
+            "ElementInstanceSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.ElementInstanceSearchQuerySortRequest",
+            "GroupClientSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.GroupClientSearchQuerySortRequest",
+            "GroupSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.GroupSearchQuerySortRequest",
+            "GroupUserSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.GroupUserSearchQuerySortRequest",
+            "IncidentSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest",
+            "JobSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.JobSearchQuerySortRequest",
+            "MappingRuleSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.MappingRuleSearchQuerySortRequest",
+            "MessageSubscriptionSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.MessageSubscriptionSearchQuerySortRequest",
+            "ProcessDefinitionSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest",
+            "ProcessInstanceSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.ProcessInstanceSearchQuerySortRequest",
+            "ResourceSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.ResourceSearchQuerySortRequest",
+            "RoleClientSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.RoleClientSearchQuerySortRequest",
+            "RoleGroupSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.RoleGroupSearchQuerySortRequest",
+            "RoleSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.RoleSearchQuerySortRequest",
+            "RoleUserSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.RoleUserSearchQuerySortRequest",
+            "TenantClientSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.TenantClientSearchQuerySortRequest",
+            "TenantGroupSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.TenantGroupSearchQuerySortRequest",
+            "TenantSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.TenantSearchQuerySortRequest",
+            "TenantUserSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.TenantUserSearchQuerySortRequest",
+            "UserSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.UserSearchQuerySortRequest",
+            "UserTaskSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest",
+            "UserTaskVariableSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest",
+            "VariableSearchQuerySortRequest" to "io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest",
+        ),
+    )
 
     skipValidateSpec.set(true)
 
     // Map ElementInstanceKey import to String (see convention plugin for explanation)
-    importMappings.set(mapOf(
-        "ElementInstanceKey" to "java.lang.String"
-    ))
+    importMappings.set(
+        mapOf(
+            "ElementInstanceKey" to "java.lang.String",
+            "ScopeKey" to "java.lang.String",
+        ),
+    )
 
-    openapiNormalizer.set(mapOf(
-        "REF_AS_PARENT_IN_ALLOF" to "true"
-    ))
+    openapiNormalizer.set(
+        mapOf(
+            "REF_AS_PARENT_IN_ALLOF" to "true",
+        ),
+    )
 
-    configOptions.set(mapOf(
-        "additionalModelTypeAnnotations" to "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
-        "serializationLibrary" to "jackson",
-        "library" to "spring-boot",
-        "jdk8" to "true",
-        "openApiNullable" to "false",
-        "useEnumCaseInsensitive" to "true",
-        "useOneOfInterfaces" to "false",
-        "useSpringBoot3" to "true",
-        "sourceFolder" to "src/main/java"
-    ))
+    configOptions.set(
+        mapOf(
+            "additionalModelTypeAnnotations" to
+                "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+            "serializationLibrary" to "jackson",
+            "library" to "spring-boot",
+            "jdk8" to "true",
+            "openApiNullable" to "false",
+            "useEnumCaseInsensitive" to "true",
+            "useOneOfInterfaces" to "false",
+            "useSpringBoot3" to "true",
+            "sourceFolder" to "src/main/java",
+        ),
+    )
 }
 
 sourceSets {

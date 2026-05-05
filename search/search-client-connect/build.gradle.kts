@@ -7,9 +7,9 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-util"))
+    implementation(project(":zeebe-util"))
     api(project(":camunda-search-client"))
-    api(project(":camunda-search-client-plugin"))
+    implementation(project(":camunda-search-client-plugin"))
     api(libs.co.elastic.clients.elasticsearch.java)
     api(libs.org.apache.httpcomponents.httpclient)
     api(libs.org.elasticsearch.client.elasticsearch.rest.client)

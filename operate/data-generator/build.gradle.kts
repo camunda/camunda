@@ -7,16 +7,16 @@ plugins {
 }
 
 dependencies {
-    api(project(":operate-common"))
-    api(project(":operate-schema"))
-    api(project(":webapps-schema"))
-    api(project(":camunda-security-core"))
-    api(project(":camunda-spring-utils"))
+    implementation(project(":operate-common"))
+    implementation(project(":operate-schema"))
+    implementation(project(":webapps-schema"))
+    implementation(project(":camunda-security-core"))
+    implementation(project(":camunda-spring-utils"))
     api(libs.org.springframework.spring.context)
     api(libs.org.springframework.spring.web)
     api(libs.org.springframework.spring.beans)
     api(libs.org.springframework.boot.spring.boot.autoconfigure)
-    api(project(":camunda-client-java"))
+    implementation(project(":camunda-client-java"))
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.jakarta.annotation.jakarta.annotation.api)
     api(libs.com.fasterxml.jackson.core.jackson.databind)

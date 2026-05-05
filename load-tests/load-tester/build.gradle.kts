@@ -14,6 +14,8 @@ dependencies {
     implementation(project(":camunda-client-java"))
     implementation(project(":camunda-spring-boot-starter"))
     implementation(project(":zeebe-util"))
+    implementation(libs.jakarta.annotation.jakarta.annotation.api)
+    implementation(libs.org.apache.commons.commons.lang3)
     implementation(libs.io.prometheus.prometheus.metrics.exporter.httpserver)
     implementation(libs.io.prometheus.prometheus.metrics.model)
     implementation(libs.org.slf4j.slf4j.api)

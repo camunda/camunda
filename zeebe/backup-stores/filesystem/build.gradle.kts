@@ -7,9 +7,9 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-util"))
-    api(project(":zeebe-backup"))
-    api(project(":zeebe-backup-store-common"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-backup"))
+    implementation(project(":zeebe-backup-store-common"))
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jdk8)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)

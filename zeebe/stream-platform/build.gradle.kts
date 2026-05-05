@@ -7,16 +7,16 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-util"))
-    api(project(":zeebe-scheduler"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-scheduler"))
     api(libs.org.agrona.agrona)
     implementation(libs.org.slf4j.slf4j.api)
-    api(project(":zeebe-protocol"))
-    api(project(":zeebe-db"))
-    api(project(":zeebe-protocol-impl"))
-    api(project(":zeebe-logstreams"))
+    implementation(project(":zeebe-protocol"))
+    implementation(project(":zeebe-db"))
+    implementation(project(":zeebe-protocol-impl"))
+    implementation(project(":zeebe-logstreams"))
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
-    api(project(":zeebe-msgpack-value"))
+    implementation(project(":zeebe-msgpack-value"))
     api(libs.io.micrometer.micrometer.core)
     api(libs.io.micrometer.micrometer.commons)
     testImplementation(project(":zeebe-bpmn-model"))

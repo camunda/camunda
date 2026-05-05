@@ -7,11 +7,11 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-process-test-spring"))
-    api(project(":camunda-process-test-java"))
-    api(project(":camunda-process-test-json-test-cases"))
-    api(project(":camunda-spring-boot-3-starter"))
-    api(project(":camunda-client-java"))
+    implementation(project(":camunda-process-test-spring"))
+    implementation(project(":camunda-process-test-java"))
+    implementation(project(":camunda-process-test-json-test-cases"))
+    implementation(project(":camunda-spring-boot-3-starter"))
+    implementation(project(":camunda-client-java"))
 
     testImplementation(project(":zeebe-bpmn-model"))
 }

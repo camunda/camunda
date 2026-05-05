@@ -20,7 +20,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.org.msgpack.jackson.dataformat.msgpack)
     api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
-    api(project(":zeebe-auth"))
+    implementation(project(":zeebe-auth"))
     testImplementation(project(":zeebe-test-util"))
     testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)

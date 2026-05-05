@@ -7,7 +7,10 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-spring-boot-starter"))
+    implementation(enforcedPlatform("org.springframework.boot:spring-boot-dependencies:3.5.14"))
+    implementation(project(":camunda-spring-boot-starter")) {
+        exclude(group = "org.springframework.boot", module = "spring-boot-health")
+    }
     api(project(":camunda-client-java"))
     api(libs.io.micrometer.micrometer.core)
     api(libs.org.springframework.spring.beans)

@@ -8,6 +8,8 @@ plugins {
 
 dependencies {
     implementation(libs.org.codehaus.janino.janino)
+    implementation(libs.org.apache.logging.log4j.log4j.core)
+    implementation(libs.org.apache.logging.log4j.log4j.layout.template.json)
     implementation(project(":optimize-commons"))
     implementation(libs.org.camunda.bpm.model.camunda.bpmn.model)
     implementation(libs.org.camunda.bpm.model.camunda.dmn.model)

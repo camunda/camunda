@@ -8,8 +8,8 @@ plugins {
 
 dependencies {
     api(libs.org.agrona.agrona)
-    api(project(":zeebe-msgpack-core"))
-    api(project(":zeebe-util"))
+    implementation(project(":zeebe-msgpack-core"))
+    implementation(project(":zeebe-util"))
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(project(":zeebe-test-util"))

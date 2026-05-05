@@ -76,10 +76,10 @@ tasks.named<JavaExec>("generateSbe") {
 }
 
 dependencies {
-    api(project(":zeebe-atomix-cluster"))
-    api(project(":zeebe-atomix-utils"))
-    api(project(":zeebe-util"))
-    api(project(":zeebe-scheduler"))
+    implementation(project(":zeebe-atomix-cluster"))
+    implementation(project(":zeebe-atomix-utils"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-scheduler"))
     api(libs.org.agrona.agrona)
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))

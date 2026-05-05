@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-search-client-connect"))
+    implementation(project(":camunda-search-client-connect"))
     api(libs.jakarta.validation.jakarta.validation.api)
     api(libs.org.springframework.spring.context)
     api(libs.co.elastic.clients.elasticsearch.java)

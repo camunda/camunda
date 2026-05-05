@@ -6,58 +6,39 @@ plugins {
     id("buildlogic.sbe-conventions")
 }
 
-// Configure resource filtering to replace Maven property placeholders
-val protocolVersion = "6"
-val projectVersionForFilter = version.toString()
-
-tasks.named<ProcessResources>("processResources") {
-    // Enable filtering for XML files to replace ${protocol.version} and ${project.version} placeholders
-    val tokens = mapOf(
-        "protocol.version" to protocolVersion,
-        "project.version" to projectVersionForFilter
-    )
-
-    inputs.properties(tokens)
-
-    filesMatching("*.xml") {
-        filter { line ->
-            var result = line
-            tokens.forEach { (key, value) ->
-                result = result.replace("\${$key}", value)
-            }
-            result
-        }
-    }
-}
-
 // Configure SBE input files for caching
 sbe {
     inputFiles.from(
-        layout.buildDirectory.file("resources/main/protocol.xml"),
-        layout.buildDirectory.file("resources/main/cluster-management-protocol.xml")
+        layout.projectDirectory.file("src/main/resources/protocol.xml"),
+        layout.projectDirectory.file("src/main/resources/cluster-management-protocol.xml"),
+        layout.projectDirectory.file("src/main/resources/common-types.xml"),
     )
 }
 
-// Configure SBE generation with the XML schema files from resources
+// Configure SBE generation with the XML schema files directly from source resources
+// so generateSbe does not need processResources anymore.
 tasks.named<JavaExec>("generateSbe") {
     args(
-        layout.buildDirectory.file("resources/main/protocol.xml").get().asFile.absolutePath,
-        layout.buildDirectory.file("resources/main/cluster-management-protocol.xml").get().asFile.absolutePath
+        layout.projectDirectory
+            .file("src/main/resources/protocol.xml")
+            .asFile.absolutePath,
+        layout.projectDirectory
+            .file("src/main/resources/cluster-management-protocol.xml")
+            .asFile.absolutePath,
     )
-    // Need to process resources first to get the XML files
-    dependsOn(tasks.processResources)
 }
 
 // Configure compiler for Immutables annotation processor
 tasks.named<JavaCompile>("compileJava") {
     options.isFork = true
-    options.forkOptions.jvmArgs = listOf(
-        "--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED"
-    )
+    options.forkOptions.jvmArgs =
+        listOf(
+            "--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+        )
 }
 
 dependencies {
-    api(project(":camunda-security-protocol"))
+    implementation(project(":camunda-security-protocol"))
     api(libs.org.agrona.agrona)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)

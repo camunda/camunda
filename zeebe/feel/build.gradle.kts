@@ -7,10 +7,10 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-util"))
-    api(project(":zeebe-msgpack-core"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-msgpack-core"))
     api(libs.org.camunda.feel.feel.engine)
-    api(project(":zeebe-feel-tagged-parameters"))
+    implementation(project(":zeebe-feel-tagged-parameters"))
     api(libs.org.scala.lang.scala.library)
     api(libs.org.agrona.agrona)
     implementation(libs.org.slf4j.slf4j.api)

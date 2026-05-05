@@ -7,10 +7,10 @@ plugins {
 }
 
 dependencies {
-    api(project(":configuration"))
-    api(project(":camunda-client-java"))
-    api(project(":zeebe-broker"))
-    api(project(":zeebe-test-util"))
+    implementation(project(":configuration"))
+    implementation(project(":camunda-client-java"))
+    implementation(project(":zeebe-broker"))
+    implementation(project(":zeebe-test-util"))
     api(libs.org.apache.commons.commons.compress)
     api(libs.org.testcontainers.testcontainers)
     api(libs.com.fasterxml.jackson.core.jackson.core)

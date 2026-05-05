@@ -7,10 +7,10 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-security-core"))
-    api(project(":camunda-security-protocol"))
-    api(project(":camunda-search-domain"))
-    api(project(":camunda-search-client-reader"))
+    implementation(project(":camunda-security-core"))
+    implementation(project(":camunda-security-protocol"))
+    implementation(project(":camunda-search-domain"))
+    implementation(project(":camunda-search-client-reader"))
     testImplementation(project(":zeebe-auth"))
     testImplementation(project(":zeebe-protocol"))
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)

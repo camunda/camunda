@@ -7,14 +7,14 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-process-test-json-test-cases"))
+    implementation(project(":camunda-process-test-json-test-cases"))
     api(libs.org.testcontainers.testcontainers)
     api(libs.org.testcontainers.testcontainers.elasticsearch)
     api(libs.org.junit.jupiter.junit.jupiter.api.x1)
     api(libs.org.junit.platform.junit.platform.commons)
     api(libs.org.junit.jupiter.junit.jupiter.params.x1)
     implementation(libs.org.slf4j.slf4j.api)
-    api(project(":camunda-client-java"))
+    implementation(project(":camunda-client-java"))
     api(libs.org.assertj.assertj.core)
     api(libs.org.awaitility.awaitility)
     api(libs.org.apache.httpcomponents.client5.httpclient5)
@@ -23,7 +23,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     implementation(libs.org.apache.commons.commons.lang3)
     implementation(libs.commons.io.commons.io)
-    api(project(":zeebe-bpmn-model"))
+    implementation(project(":zeebe-bpmn-model"))
     api(libs.org.camunda.bpm.model.camunda.dmn.model)
     api(libs.org.camunda.bpm.model.camunda.xml.model)
     testImplementation(libs.com.fasterxml.jackson.core.jackson.annotations)

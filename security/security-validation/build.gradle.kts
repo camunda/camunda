@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":camunda-security-protocol"))
+    implementation(project(":camunda-security-protocol"))
     implementation(libs.commons.validator.commons.validator)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)

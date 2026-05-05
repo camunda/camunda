@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-backup"))
+    implementation(project(":zeebe-backup"))
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     testImplementation(project(":zeebe-protocol"))
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)

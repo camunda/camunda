@@ -7,16 +7,16 @@ plugins {
 }
 
 dependencies {
-    api(project(":zeebe-util"))
-    api(project(":zeebe-scheduler"))
+    implementation(project(":zeebe-util"))
+    implementation(project(":zeebe-scheduler"))
     api(libs.org.agrona.agrona)
     implementation(libs.org.slf4j.slf4j.api)
-    api(project(":zeebe-protocol"))
-    api(project(":zeebe-protocol-impl"))
+    implementation(project(":zeebe-protocol"))
+    implementation(project(":zeebe-protocol-impl"))
     api(libs.com.netflix.concurrency.limits.concurrency.limits.core)
     api(libs.io.micrometer.micrometer.core)
     api(libs.io.micrometer.micrometer.commons)
-    api(project(":zeebe-msgpack-value"))
+    implementation(project(":zeebe-msgpack-value"))
     api(libs.com.google.guava.guava)
     api(libs.com.fasterxml.jackson.core.jackson.core)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
