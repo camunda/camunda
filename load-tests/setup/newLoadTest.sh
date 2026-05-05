@@ -122,6 +122,9 @@ fi
 # Label to easily find related namespaces
 kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
 
+# Label to easily find related namespaces
+kubectl label namespace "$namespace" "camunda.io/purpose=load-test" --overwrite
+
 # Label namespace with author (based on git author)
 git_author=$(compute_git_author)
 kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
