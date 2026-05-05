@@ -60,8 +60,25 @@ public class ObjectValue extends BaseValue {
     for (int i = 0; i < declaredProperties.size(); i++) {
       declaredProperties.get(i).copyFrom(source.declaredProperties.get(i));
     }
-    for (int i = 0; i < undeclaredProperties.size(); i++) {
-      undeclaredProperties.get(i).copyFrom(source.undeclaredProperties.get(i));
+
+    while (undeclaredProperties.size() > source.undeclaredProperties.size()) {
+      final UndeclaredProperty undeclaredProperty =
+          undeclaredProperties.remove(undeclaredProperties.size() - 1);
+      undeclaredProperty.reset();
+      recycledProperties.add(undeclaredProperty);
+    }
+
+    for (int i = 0; i < source.undeclaredProperties.size(); i++) {
+      final var sourceProperty = source.undeclaredProperties.get(i);
+      final UndeclaredProperty targetProperty;
+
+      if (i < undeclaredProperties.size()) {
+        targetProperty = undeclaredProperties.get(i);
+      } else {
+        targetProperty = newUndeclaredProperty(sourceProperty.getKey());
+      }
+
+      targetProperty.copyFrom(sourceProperty);
     }
   }
 

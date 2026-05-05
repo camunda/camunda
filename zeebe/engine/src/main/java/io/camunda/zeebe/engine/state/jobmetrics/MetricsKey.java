@@ -87,6 +87,19 @@ public final class MetricsKey implements DbKey, DbValue {
   }
 
   @Override
+  public void copyTo(final DbValue target) {
+    final MetricsKey copy = (MetricsKey) target;
+    copy.jobTypeIndex = jobTypeIndex;
+    copy.tenantIdIndex = tenantIdIndex;
+    copy.workerNameIndex = workerNameIndex;
+  }
+
+  @Override
+  public MetricsKey newInstance() {
+    return new MetricsKey();
+  }
+
+  @Override
   public String toString() {
     return "MetricsKey{"
         + "jobTypeIndex="

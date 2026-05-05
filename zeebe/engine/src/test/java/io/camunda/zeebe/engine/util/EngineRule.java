@@ -168,8 +168,7 @@ public final class EngineRule extends ExternalResource {
     return new EngineRule(1);
   }
 
-  public static EngineRule singlePartition(
-      final ZeebeDbFactory<ZbColumnFamilies> zeebeDbFactory) {
+  public static EngineRule singlePartition(final ZeebeDbFactory<ZbColumnFamilies> zeebeDbFactory) {
     return new EngineRule(1, null, zeebeDbFactory);
   }
 
@@ -187,8 +186,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   public static EngineRule withSharedStorage(
-      final ListLogStorage listLogStorage,
-      final ZeebeDbFactory<ZbColumnFamilies> zeebeDbFactory) {
+      final ListLogStorage listLogStorage, final ZeebeDbFactory<ZbColumnFamilies> zeebeDbFactory) {
     return new EngineRule(1, listLogStorage, zeebeDbFactory);
   }
 

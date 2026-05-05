@@ -115,7 +115,9 @@ public final class StringValue extends BaseValue {
   @Override
   public void copyFrom(final BaseValue source) {
     final StringValue src = (StringValue) source;
-    wrap(src.bytes, 0, src.length);
+    final byte[] copy = new byte[src.length];
+    src.bytes.getBytes(0, copy, 0, src.length);
+    wrap(copy);
   }
 
   @Override
