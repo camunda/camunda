@@ -126,6 +126,7 @@ const mockCalledProcessInstance = {
   tags: [],
   processDefinitionVersionTag: null,
   endDate: null,
+  businessId: null,
 } satisfies ProcessInstance;
 
 const mockProcessInstance = {
@@ -144,6 +145,7 @@ const mockProcessInstance = {
   tags: [],
   processDefinitionVersionTag: null,
   endDate: null,
+  businessId: null,
 } satisfies ProcessInstance;
 
 const mockCalledDecisionInstance = {
