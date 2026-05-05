@@ -26,7 +26,7 @@
     <!-- Override Spring Boot version for 4.x compatibility -->
     <version.spring-boot>4.0.6</version.spring-boot>
     <!-- Spring Framework 7.x is required for Spring Boot 4.0 -->
-    <version.spring>7.0.6</version.spring>
+    <version.spring>7.0.7</version.spring>
     <!-- JUnit 6.x is required for Spring Boot 4.0 compatibility -->
     <version.junit>6.0.3</version.junit>
     <spring-boot-starter-camunda-sdk.sourcedir>${project.basedir}/../spring-boot-starter-camunda-sdk/src</spring-boot-starter-camunda-sdk.sourcedir>
