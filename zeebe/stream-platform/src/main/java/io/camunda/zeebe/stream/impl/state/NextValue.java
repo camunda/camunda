@@ -30,4 +30,14 @@ public class NextValue extends UnpackedObject implements DbValue {
   public long get() {
     return nextValueProp.getValue();
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((NextValue) target);
+  }
+
+  @Override
+  public NextValue newInstance() {
+    return new NextValue();
+  }
 }

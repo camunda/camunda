@@ -494,4 +494,14 @@ public class PersistedBatchOperation extends UnpackedObject
     CANCELED,
     FAILED
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedBatchOperation) target);
+  }
+
+  @Override
+  public PersistedBatchOperation newInstance() {
+    return new PersistedBatchOperation();
+  }
 }

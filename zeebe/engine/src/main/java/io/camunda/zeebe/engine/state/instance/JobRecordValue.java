@@ -29,4 +29,14 @@ public class JobRecordValue extends UnpackedObject implements DbValue {
   public void setRecordWithoutVariables(final JobRecord record) {
     recordProp.getValue().wrapWithoutVariables(record);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((JobRecordValue) target);
+  }
+
+  @Override
+  public JobRecordValue newInstance() {
+    return new JobRecordValue();
+  }
 }

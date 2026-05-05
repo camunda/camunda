@@ -26,4 +26,14 @@ public class LastProcessedPosition extends UnpackedObject implements DbValue {
   public long get() {
     return positionProp.getValue();
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((LastProcessedPosition) target);
+  }
+
+  @Override
+  public LastProcessedPosition newInstance() {
+    return new LastProcessedPosition();
+  }
 }

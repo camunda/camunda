@@ -168,4 +168,14 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
     elementTypeProp.setValue(elementType);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((TimerInstance) target);
+  }
+
+  @Override
+  public TimerInstance newInstance() {
+    return new TimerInstance();
+  }
 }

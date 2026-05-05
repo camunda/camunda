@@ -64,4 +64,14 @@ public class UserTaskIntermediateStateValue extends UnpackedObject implements Db
   public void setLifecycleState(final LifecycleState lifecycleState) {
     lifecycleStateProp.setValue(lifecycleState);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((UserTaskIntermediateStateValue) target);
+  }
+
+  @Override
+  public UserTaskIntermediateStateValue newInstance() {
+    return new UserTaskIntermediateStateValue();
+  }
 }

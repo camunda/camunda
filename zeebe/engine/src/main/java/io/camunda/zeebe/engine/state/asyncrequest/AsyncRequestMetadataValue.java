@@ -46,4 +46,13 @@ public class AsyncRequestMetadataValue extends UnpackedObject
     wrap(source.getRight(), source.getLeft());
     return this;
   }
+
+  public void copyTo(final DbValue target) {
+    super.copyTo((AsyncRequestMetadataValue) target);
+  }
+
+  @Override
+  public AsyncRequestMetadataValue newInstance() {
+    return new AsyncRequestMetadataValue();
+  }
 }

@@ -96,4 +96,14 @@ public final class VersionInfo extends UnpackedObject implements DbValue {
       }
     }
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((VersionInfo) target);
+  }
+
+  @Override
+  public VersionInfo newInstance() {
+    return new VersionInfo();
+  }
 }

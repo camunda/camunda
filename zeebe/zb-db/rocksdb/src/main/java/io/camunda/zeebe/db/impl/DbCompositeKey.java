@@ -60,6 +60,13 @@ public class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends Db
     return written;
   }
 
+  @Override
+  public void copyTo(final DbValue target) {
+    final var copy = (DbCompositeKey<FirstKeyType, SecondKeyType>) target;
+    copyKey(first, copy.first);
+    copyKey(second, copy.second);
+  }
+
   private static Collection<DbForeignKey<DbKey>> collectContainedForeignKeys(
       final DbKey first, final DbKey second) {
     final var result = new ArrayList<DbForeignKey<DbKey>>();
@@ -70,6 +77,14 @@ public class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends Db
       result.addAll(secondForeignKeyProvider.containedForeignKeys());
     }
     return Collections.unmodifiableList(result);
+  }
+
+  private static void copyKey(final DbKey source, final DbKey target) {
+    final int length = source.getLength();
+    final byte[] bytes = new byte[length];
+    final MutableDirectBuffer buffer = new org.agrona.concurrent.UnsafeBuffer(bytes);
+    source.write(buffer, 0);
+    target.wrap(buffer, 0, length);
   }
 
   @Override

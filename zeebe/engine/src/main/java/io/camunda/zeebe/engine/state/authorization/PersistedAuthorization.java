@@ -151,4 +151,14 @@ public class PersistedAuthorization extends UnpackedObject
     permissionTypesProp.add().wrap(BufferUtil.wrapString(permission.name()));
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedAuthorization) target);
+  }
+
+  @Override
+  public PersistedAuthorization newInstance() {
+    return new PersistedAuthorization();
+  }
 }

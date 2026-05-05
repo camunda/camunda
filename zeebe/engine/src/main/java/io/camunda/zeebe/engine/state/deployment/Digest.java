@@ -28,4 +28,14 @@ public class Digest extends UnpackedObject implements DbValue {
     digestProp.setValue(digest);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((Digest) target);
+  }
+
+  @Override
+  public Digest newInstance() {
+    return new Digest();
+  }
 }

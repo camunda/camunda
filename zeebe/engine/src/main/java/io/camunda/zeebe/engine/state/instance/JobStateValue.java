@@ -29,4 +29,14 @@ public class JobStateValue extends UnpackedObject implements DbValue {
   public void setState(final JobState.State state) {
     stateProp.setValue(state);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((JobStateValue) target);
+  }
+
+  @Override
+  public JobStateValue newInstance() {
+    return new JobStateValue();
+  }
 }

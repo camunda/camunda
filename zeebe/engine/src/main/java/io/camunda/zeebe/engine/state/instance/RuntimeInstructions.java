@@ -38,4 +38,14 @@ public class RuntimeInstructions extends UnpackedObject implements DbValue {
           newInstruction.setAfterElementId(instruction.getAfterElementId());
         });
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((RuntimeInstructions) target);
+  }
+
+  @Override
+  public RuntimeInstructions newInstance() {
+    return new RuntimeInstructions();
+  }
 }

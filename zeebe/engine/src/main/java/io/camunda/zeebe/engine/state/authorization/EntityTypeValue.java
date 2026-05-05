@@ -29,4 +29,14 @@ public class EntityTypeValue extends UnpackedObject implements DbValue {
   public void setEntityType(final EntityType entityType) {
     entityTypeProp.setValue(entityType);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((EntityTypeValue) target);
+  }
+
+  @Override
+  public EntityTypeValue newInstance() {
+    return new EntityTypeValue();
+  }
 }

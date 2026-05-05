@@ -24,7 +24,9 @@ public final class ClusterVariableInstance extends UnpackedObject implements DbV
   }
 
   public void setRecord(final ClusterVariableRecord clusterVariableRecord) {
-    clusterVariable.getValue().copyFrom(clusterVariableRecord);
+    clusterVariable
+        .getValue()
+        .copyFrom((io.camunda.zeebe.msgpack.value.BaseValue) clusterVariableRecord);
   }
 
   public ClusterVariableRecord getRecord() {
@@ -37,5 +39,15 @@ public final class ClusterVariableInstance extends UnpackedObject implements DbV
 
   public DirectBuffer getMetadataBuffer() {
     return clusterVariable.getValue().getMetadataBuffer();
+  }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((ClusterVariableInstance) target);
+  }
+
+  @Override
+  public ClusterVariableInstance newInstance() {
+    return new ClusterVariableInstance();
   }
 }

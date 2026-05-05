@@ -96,4 +96,14 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
     return BufferUtil.equals(getElementId(), that.getElementId())
         && BufferUtil.equals(getVariables(), that.getVariables());
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((EventTrigger) target);
+  }
+
+  @Override
+  public EventTrigger newInstance() {
+    return new EventTrigger();
+  }
 }

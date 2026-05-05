@@ -40,4 +40,14 @@ public class SignalSubscription extends UnpackedObject implements DbValue {
     keyProp.setValue(key);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((SignalSubscription) target);
+  }
+
+  @Override
+  public SignalSubscription newInstance() {
+    return new SignalSubscription();
+  }
 }

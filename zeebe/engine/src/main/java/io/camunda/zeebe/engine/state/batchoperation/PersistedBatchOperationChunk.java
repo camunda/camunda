@@ -119,4 +119,14 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
 
   /** One item of the chunk: its key and the storage ordinal its entity lives under. */
   public record ChunkItem(long itemKey, int storageOrdinal) {}
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedBatchOperationChunk) target);
+  }
+
+  @Override
+  public PersistedBatchOperationChunk newInstance() {
+    return new PersistedBatchOperationChunk();
+  }
 }

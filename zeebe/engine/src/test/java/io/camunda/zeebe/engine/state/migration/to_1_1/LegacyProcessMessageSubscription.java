@@ -81,4 +81,14 @@ public final class LegacyProcessMessageSubscription extends UnpackedObject imple
     STATE_OPENED,
     STATE_CLOSING,
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((LegacyProcessMessageSubscription) target);
+  }
+
+  @Override
+  public LegacyProcessMessageSubscription newInstance() {
+    return new LegacyProcessMessageSubscription();
+  }
 }

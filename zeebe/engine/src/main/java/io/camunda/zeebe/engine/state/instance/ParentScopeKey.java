@@ -26,4 +26,14 @@ public class ParentScopeKey extends UnpackedObject implements DbValue {
   public long get() {
     return keyProp.getValue();
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((ParentScopeKey) target);
+  }
+
+  @Override
+  public ParentScopeKey newInstance() {
+    return new ParentScopeKey();
+  }
 }

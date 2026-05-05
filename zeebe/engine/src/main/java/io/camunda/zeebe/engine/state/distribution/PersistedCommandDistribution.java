@@ -92,4 +92,14 @@ public class PersistedCommandDistribution extends UnpackedObject
   public AuthInfo getAuthInfo() {
     return authInfoProperty.getValue();
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedCommandDistribution) target);
+  }
+
+  @Override
+  public PersistedCommandDistribution newInstance() {
+    return new PersistedCommandDistribution();
+  }
 }

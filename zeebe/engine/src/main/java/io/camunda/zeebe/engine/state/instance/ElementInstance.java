@@ -393,4 +393,14 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   public void setAgentInstanceKey(final long agentInstanceKey) {
     agentInstanceKeyProp.setValue(agentInstanceKey);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((ElementInstance) target);
+  }
+
+  @Override
+  public ElementInstance newInstance() {
+    return new ElementInstance();
+  }
 }

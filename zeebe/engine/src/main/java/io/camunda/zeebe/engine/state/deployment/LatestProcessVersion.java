@@ -26,4 +26,14 @@ public class LatestProcessVersion extends UnpackedObject implements DbValue {
   public long get() {
     return latestProcessVersionProp.getValue();
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((LatestProcessVersion) target);
+  }
+
+  @Override
+  public LatestProcessVersion newInstance() {
+    return new LatestProcessVersion();
+  }
 }

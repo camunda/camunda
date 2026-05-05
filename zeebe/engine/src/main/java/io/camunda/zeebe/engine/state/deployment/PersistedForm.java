@@ -127,4 +127,14 @@ public final class PersistedForm extends UnpackedObject
   public boolean isDuplicateOf(final DirectBuffer resourceName, final DirectBuffer checksum) {
     return getResourceName().equals(resourceName) && getChecksum().equals(checksum);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((PersistedForm) target);
+  }
+
+  @Override
+  public PersistedForm newInstance() {
+    return new PersistedForm();
+  }
 }
