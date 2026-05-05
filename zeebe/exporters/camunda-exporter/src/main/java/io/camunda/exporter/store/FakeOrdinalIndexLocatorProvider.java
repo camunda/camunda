@@ -14,6 +14,7 @@ import java.util.Set;
 
 public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
   private final Set<String> ordinalBasedIndexes;
+  private final NoopIndexLocator noopIndexLocator = new NoopIndexLocator();
 
   public FakeOrdinalIndexLocatorProvider(final Set<String> ordinalBasedIndexes) {
     this.ordinalBasedIndexes = ordinalBasedIndexes;
@@ -23,9 +24,11 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
   public IndexLocator createIndexLocator(final Record<?> record) {
     if (record.getValue() instanceof final AuditLogProcessInstanceRelated processInstanceRelated) {
       final long rootProcessInstanceKey = processInstanceRelated.getRootProcessInstanceKey();
-      return new FixedOrdinalIndexLocator((int) (rootProcessInstanceKey % 2));
+      if (rootProcessInstanceKey > 0) {
+        return new FixedOrdinalIndexLocator((int) (rootProcessInstanceKey % 2));
+      }
     }
-    return new NoopIndexLocator();
+    return noopIndexLocator;
   }
 
   static class NoopIndexLocator implements IndexLocator {
