@@ -8,7 +8,6 @@
 package io.camunda.authentication.config.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
 import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder;
@@ -18,6 +17,7 @@ import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationHolder;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.autoconfigure.spring.context.DefaultCamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.ApiServicesExecutorProvider;
