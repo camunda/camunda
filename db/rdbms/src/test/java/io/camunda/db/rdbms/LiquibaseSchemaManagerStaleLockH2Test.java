@@ -93,6 +93,7 @@ class LiquibaseSchemaManagerStaleLockH2Test {
   private LiquibaseSchemaManager buildSchemaManager(final Duration ddlLockWaitTimeout) {
     final var manager = new LiquibaseSchemaManager();
     manager.setDataSource(dataSource);
+    manager.setApplicationVersion("8.10.0");
     manager.setDatabaseChangeLogLockTable(LOCK_TABLE);
     manager.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
     manager.setParameters(
