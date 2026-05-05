@@ -32,9 +32,6 @@ public class ZeebeJobPriorityDefinitionValidator
       final ZeebeJobPriorityDefinition element,
       final ValidationResultCollector validationResultCollector) {
     final String priority = element.getPriority();
-    if (priority == null || priority.isEmpty()) {
-      return; // already reported by the non-empty ZeebeElementValidator
-    }
     if (priority.startsWith("=")) {
       // FEEL expression — syntax validation is deferred to the engine transformer
       return;

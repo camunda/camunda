@@ -82,6 +82,36 @@ public class ZeebeJobPriorityDefinitionValidationTest {
     ProcessValidationUtil.assertThatProcessIsValid(process);
   }
 
+  @Test
+  void shouldBeValidWithBareEqualsAsFeelExpressionOnProcess() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .zeebeJobPriority("=")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void shouldBeValidWithEmptyPriorityAttributeOnProcess() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .zeebeJobPriority("")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {"high", "not-a-number", "2147483648", "-2147483649"})
   void shouldRejectInvalidLiteralOnProcess(final String priority) {
@@ -150,6 +180,34 @@ public class ZeebeJobPriorityDefinitionValidationTest {
     ProcessValidationUtil.assertThatProcessIsValid(process);
   }
 
+  @Test
+  void shouldBeValidWithBareEqualsAsFeelExpressionOnServiceTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("="))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void shouldBeValidWithEmptyPriorityAttributeOnServiceTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("type").zeebeJobPriority(""))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {"high", "not-a-number", "2147483648", "-2147483649"})
   void shouldRejectInvalidLiteralOnServiceTask(final String priority) {
@@ -203,6 +261,34 @@ public class ZeebeJobPriorityDefinitionValidationTest {
   }
 
   @Test
+  void shouldBeValidWithBareEqualsAsFeelExpressionOnSendTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .sendTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("="))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void shouldBeValidWithEmptyPriorityAttributeOnSendTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .sendTask("task", t -> t.zeebeJobType("type").zeebeJobPriority(""))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
   void shouldRejectDuplicatedJobPriorityDefinitionOnSendTask() {
     // given
     final BpmnModelInstance process =
@@ -226,6 +312,34 @@ public class ZeebeJobPriorityDefinitionValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .businessRuleTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("42"))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void shouldBeValidWithBareEqualsAsFeelExpressionOnBusinessRuleTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("="))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void shouldBeValidWithEmptyPriorityAttributeOnBusinessRuleTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask("task", t -> t.zeebeJobType("type").zeebeJobPriority(""))
             .endEvent()
             .done();
 
@@ -258,6 +372,34 @@ public class ZeebeJobPriorityDefinitionValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .scriptTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("42"))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void shouldBeValidWithBareEqualsAsFeelExpressionOnScriptTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .scriptTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("="))
+            .endEvent()
+            .done();
+
+    // when / then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void shouldBeValidWithEmptyPriorityAttributeOnScriptTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .scriptTask("task", t -> t.zeebeJobType("type").zeebeJobPriority(""))
             .endEvent()
             .done();
 
