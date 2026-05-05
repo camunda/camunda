@@ -536,7 +536,7 @@ jobs:
           fi
 
       - name: Add debugging guidance on failure
-        if: failure()
+        if: steps.wait-downstream.outcome == 'failure'
         run: |
           DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
           COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
@@ -547,7 +547,7 @@ jobs:
             if [ -n "$DOWNSTREAM_URL" ]; then
               echo "**Downstream run:** [$DOWNSTREAM_URL]($DOWNSTREAM_URL)"
               echo ""
-              echo "**Artifacts (HTML report, screenshots, traces):** ${DOWNSTREAM_URL}#artifacts"
+              echo "**Artifacts (HTML report, screenshots, traces):** [playwright-report, screenshots, traces]($DOWNSTREAM_URL#artifacts)"
             fi
             echo ""
             echo "**Quick steps:**"
