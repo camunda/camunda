@@ -287,14 +287,14 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
   @VisibleForTesting
   protected String readSchemaVersion(final Connection connection, final String prefix) {
     final var tableName = prefix + SCHEMA_VERSION_TABLE;
-    try (final var stmt =
-        connection.prepareStatement(
-            "SELECT VERSION FROM " + tableName + " FETCH FIRST 1 ROWS ONLY")) {
-      final var rs = stmt.executeQuery();
-      if (rs.next()) {
-        return rs.getString(1);
+    try (final var stmt = connection.prepareStatement("SELECT VERSION FROM " + tableName)) {
+      stmt.setMaxRows(1);
+      try (final var rs = stmt.executeQuery()) {
+        if (rs.next()) {
+          return rs.getString(1);
+        }
+        return null;
       }
-      return null;
     } catch (final SQLException e) {
       // Table does not exist or is not accessible.
       return null;
