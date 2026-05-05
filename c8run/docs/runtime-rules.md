@@ -10,7 +10,7 @@ Always load `configuration/application.yaml` first, then append the user-provide
 
 ## H2 Secondary Storage
 
-H2 is the default secondary storage for C8Run. It is supported for local development convenience only — not for production workloads. On stop, C8Run automatically deletes the H2 data directory when the active RDBMS URL is in-memory H2 (`jdbc:h2:mem`). File-based H2 and other storage types are not cleaned up. See [Configuration — H2 Data Directory Cleanup](configuration.md#h2-data-directory-cleanup) for the full decision logic.
+H2 is the default secondary storage for C8Run. It is supported for local development convenience only — not for production workloads. The default URL is `jdbc:h2:file:./camunda-data/h2db`, so data persists across stop/start cycles. On stop, C8Run only deletes the H2 data directory when the active RDBMS URL is explicitly an in-memory H2 URL (`jdbc:h2:mem`). File-based H2 (the default) and other storage types are not cleaned up. See [Configuration — H2 Data Directory Cleanup](configuration.md#h2-data-directory-cleanup) for the full decision logic.
 
 ## Connectors Launcher Compatibility
 

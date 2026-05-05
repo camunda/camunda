@@ -125,6 +125,8 @@ go version
 | `docs/process-lifecycle.md` | PID locking semantics, 4-state restart machine, signal handling, graceful shutdown, detached mode stub |
 | `docs/configuration.md` | JAVA_HOME fallback chain, config directory handling, H2 cleanup decision tree, RDBMS driver detection |
 | `docs/platform-differences.md` | Unix vs Windows: process groups, kill implementation, path/classpath conventions, archive formats, test tags |
+| `docs/release.md` | Release process: RC and public release steps, workflow inputs, artifact naming, post-release cleanup |
+| `docs/versions.md` | Branch layout, per-version feature matrix, backport policy |
 | `.env` | Local credentials and version pins — never committed |
 | `configuration/application.yaml` | Default runtime config loaded on every start |
 
