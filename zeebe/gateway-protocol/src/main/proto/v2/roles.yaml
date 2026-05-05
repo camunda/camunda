@@ -295,7 +295,7 @@ paths:
       summary: Search role users
       description: Search users with assigned role.
       x-semantic-requires:
-        kind: RoleUserMembership
+        kind: Role
         bind:
           roleId: { from: path, name: roleId }
       parameters:
