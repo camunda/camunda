@@ -172,6 +172,7 @@ components:
         - definition
         - metrics
         - limits
+        - tools
         - elementId
         - processInstanceKey
         - processDefinitionKey
@@ -198,6 +199,11 @@ components:
           description: The configured limits for this agent instance, set once at creation.
           allOf:
             - $ref: '#/components/schemas/AgentInstanceLimits'
+        tools:
+          description: The tools available to the agent.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentTool'
         elementId:
           description: The BPMN element ID of the ad-hoc sub-process or AI agent task that owns this agent instance.
           allOf:
@@ -245,6 +251,22 @@ components:
         systemPrompt:
           type: string
           description: The system prompt configured for this agent instance.
+
+    AgentTool:
+      description: A tool available to the agent.
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The tool name as visible to the LLM.
+        description:
+          type: string
+          description: A human-readable description of the tool.
+        elementId:
+          type: string
+          description: The BPMN element ID of the tool element within the ad-hoc sub-process.
 
     AgentInstanceMetrics:
       description: Aggregated metrics for an agent instance across all model calls.
