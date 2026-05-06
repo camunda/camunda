@@ -36,10 +36,11 @@ public class TenantRequestValidatorTest {
   void shouldPassTenantIdForCreateRequest(final String tenantId) {
     // given
     final TenantCreateRequest request =
-        new TenantCreateRequest()
+        TenantCreateRequest.Builder.create()
             .tenantId(tenantId)
             .name("New tenant")
-            .description("A new tenant for testing");
+            .description("A new tenant for testing")
+            .build();
 
     // when
     final var validationResult = VALIDATOR.validateCreateRequest(request);
@@ -67,10 +68,11 @@ public class TenantRequestValidatorTest {
   void shouldFailTenantIdForCreateRequest(final String tenantId, final String errorMessage) {
     // given
     final TenantCreateRequest request =
-        new TenantCreateRequest()
+        TenantCreateRequest.Builder.create()
             .tenantId(tenantId)
             .name("New tenant")
-            .description("A new tenant for testing");
+            .description("A new tenant for testing")
+            .build();
 
     // when
     final var validationResult = VALIDATOR.validateCreateRequest(request);

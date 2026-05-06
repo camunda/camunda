@@ -53,7 +53,8 @@ public class GlobalListenerMapper {
         () -> {
           final var record = new GlobalListenerRecord();
           // Ensure basic data for a task listener request is set
-          fillDataFromGlobalTaskListenerRequest(record, new GlobalTaskListenerBase());
+          fillDataFromGlobalTaskListenerRequest(
+              record, GlobalTaskListenerBase.Builder.create().build());
           // Add ID from the actual request
           record.setId(id);
           return record;
@@ -80,7 +81,8 @@ public class GlobalListenerMapper {
         () -> {
           final var record = new GlobalListenerRecord();
           // Ensure basic data for a task listener request is set
-          fillDataFromGlobalTaskListenerRequest(record, new GlobalTaskListenerBase());
+          fillDataFromGlobalTaskListenerRequest(
+              record, GlobalTaskListenerBase.Builder.create().build());
           // Add ID from the actual request
           record.setId(id);
           return record;
@@ -123,7 +125,7 @@ public class GlobalListenerMapper {
   //
 
   public GlobalTaskListenerResult toGlobalListenerResponse(final GlobalListenerRecord record) {
-    return new GlobalTaskListenerResult()
+    return GlobalTaskListenerResult.Builder.create()
         .id(record.getId())
         .type(record.getType())
         .retries(record.getRetries())
@@ -133,6 +135,7 @@ public class GlobalListenerMapper {
                 .toList())
         .afterNonGlobal(record.isAfterNonGlobal())
         .priority(record.getPriority())
-        .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()));
+        .source(GlobalListenerSourceEnum.valueOf(record.getSource().name()))
+        .build();
   }
 }

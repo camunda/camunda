@@ -24,8 +24,8 @@ class EvaluateDecisionRequestValidatorTest {
   @Test
   @DisplayName("Should accept valid decisionDefinitionKey format")
   void shouldAcceptValidDecisionDefinitionKey() {
-    final var request = new DecisionEvaluationByKey();
-    request.setDecisionDefinitionKey("123456789");
+    final var request =
+        DecisionEvaluationByKey.Builder.create().decisionDefinitionKey("123456789").build();
 
     final Optional<ProblemDetail> result =
         EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
@@ -37,8 +37,8 @@ class EvaluateDecisionRequestValidatorTest {
   @ValueSource(strings = {"abc", "12.34", "12abc", "", " "})
   @DisplayName("Should reject invalid decisionDefinitionKey formats")
   void shouldRejectInvalidDecisionDefinitionKey(final String invalidKey) {
-    final var request = new DecisionEvaluationByKey();
-    request.setDecisionDefinitionKey(invalidKey);
+    final var request =
+        DecisionEvaluationByKey.Builder.create().decisionDefinitionKey(invalidKey).build();
 
     final Optional<ProblemDetail> result =
         EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
@@ -53,42 +53,39 @@ class EvaluateDecisionRequestValidatorTest {
   }
 
   @Test
-  @DisplayName("Should reject when both decisionDefinitionId is null")
+  @DisplayName("Should reject when decisionDefinitionId is blank (null-like invalid value)")
   void shouldRejectNullDecisionDefinitionId() {
-    final var request = new DecisionEvaluationById();
-    request.setDecisionDefinitionId(null);
+    final var request = DecisionEvaluationById.Builder.create().decisionDefinitionId("").build();
 
     final Optional<ProblemDetail> result =
         EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
 
     assertThat(result).isPresent();
     final ProblemDetail problem = result.get();
-    assertThat(problem.getDetail())
-        .contains("At least one of [decisionDefinitionId, decisionDefinitionKey] is required");
+    assertThat(problem.getDetail()).contains("decisionDefinitionId");
   }
 
   @Test
-  @DisplayName("Should reject when both decisionDefinitionKey is null")
+  @DisplayName("Should reject when decisionDefinitionKey is blank (null-like invalid value)")
   void shouldRejectNullDecisionDefinitionKey() {
-    final var request = new DecisionEvaluationByKey();
-    request.setDecisionDefinitionKey(null);
+    final var request = DecisionEvaluationByKey.Builder.create().decisionDefinitionKey("").build();
 
     final Optional<ProblemDetail> result =
         EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
 
     assertThat(result).isPresent();
     final ProblemDetail problem = result.get();
-    assertThat(problem.getDetail())
-        .contains("At least one of [decisionDefinitionId, decisionDefinitionKey] is required");
+    assertThat(problem.getDetail()).contains("decisionDefinitionKey");
   }
 
   @Test
   @DisplayName("Should handle edge case Long values")
   void shouldHandleEdgeCaseLongValues() {
-    final var request = new DecisionEvaluationByKey();
-
     // Test with maximum Long value
-    request.setDecisionDefinitionKey(String.valueOf(Long.MAX_VALUE));
+    final var request =
+        DecisionEvaluationByKey.Builder.create()
+            .decisionDefinitionKey(String.valueOf(Long.MAX_VALUE))
+            .build();
 
     final Optional<ProblemDetail> result =
         EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
@@ -99,9 +96,11 @@ class EvaluateDecisionRequestValidatorTest {
   @Test
   @DisplayName("Should reject Long values that are too large")
   void shouldRejectLongValuesTooLarge() {
-    final var request = new DecisionEvaluationByKey();
     // Create a number larger than Long.MAX_VALUE
-    request.setDecisionDefinitionKey("99999999999999999999999999999");
+    final var request =
+        DecisionEvaluationByKey.Builder.create()
+            .decisionDefinitionKey("99999999999999999999999999999")
+            .build();
 
     final Optional<ProblemDetail> result =
         EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
@@ -118,8 +117,7 @@ class EvaluateDecisionRequestValidatorTest {
   @Test
   @DisplayName("Should accept zero as valid Long value")
   void shouldAcceptZeroAsValidLong() {
-    final var request = new DecisionEvaluationByKey();
-    request.setDecisionDefinitionKey("0");
+    final var request = DecisionEvaluationByKey.Builder.create().decisionDefinitionKey("0").build();
 
     final Optional<ProblemDetail> result =
         EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
@@ -130,8 +128,8 @@ class EvaluateDecisionRequestValidatorTest {
   @Test
   @DisplayName("Should accept negative Long values")
   void shouldAcceptNegativeLongValues() {
-    final var request = new DecisionEvaluationByKey();
-    request.setDecisionDefinitionKey("-123456789");
+    final var request =
+        DecisionEvaluationByKey.Builder.create().decisionDefinitionKey("-123456789").build();
 
     final Optional<ProblemDetail> result =
         EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
@@ -143,8 +141,8 @@ class EvaluateDecisionRequestValidatorTest {
   @DisplayName("Should accept valid decisionDefinitionId format")
   void shouldAcceptValidDecisionDefinitionId() {
     // given
-    final var request = new DecisionEvaluationById();
-    request.setDecisionDefinitionId("my-decision_v1.0");
+    final var request =
+        DecisionEvaluationById.Builder.create().decisionDefinitionId("my-decision_v1.0").build();
 
     // when
     final Optional<ProblemDetail> result =
@@ -158,8 +156,8 @@ class EvaluateDecisionRequestValidatorTest {
   @DisplayName("Should accept Unicode decisionDefinitionId")
   void shouldAcceptUnicodeDecisionDefinitionId() {
     // given
-    final var request = new DecisionEvaluationById();
-    request.setDecisionDefinitionId("üöäßÜÖÄ");
+    final var request =
+        DecisionEvaluationById.Builder.create().decisionDefinitionId("üöäßÜÖÄ").build();
 
     // when
     final Optional<ProblemDetail> result =
@@ -174,8 +172,8 @@ class EvaluateDecisionRequestValidatorTest {
   @DisplayName("Should reject invalid decisionDefinitionId format")
   void shouldRejectInvalidDecisionDefinitionIdFormat(final String invalidId) {
     // given
-    final var request = new DecisionEvaluationById();
-    request.setDecisionDefinitionId(invalidId);
+    final var request =
+        DecisionEvaluationById.Builder.create().decisionDefinitionId(invalidId).build();
 
     // when
     final Optional<ProblemDetail> result =

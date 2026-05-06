@@ -69,19 +69,25 @@ import org.springframework.http.ProblemDetail;
 public final class SearchQueryRequestMapper {
 
   public static final AdvancedStringFilter EMPTY_ADVANCED_STRING_FILTER =
-      new AdvancedStringFilter();
-  public static final BasicStringFilter EMPTY_BASIC_STRING_FILTER = new BasicStringFilter();
+      AdvancedStringFilter.Builder.create().build();
+  public static final BasicStringFilter EMPTY_BASIC_STRING_FILTER =
+      BasicStringFilter.Builder.create().build();
   public static final io.camunda.gateway.protocol.model.ProcessInstanceFilter
-      EMPTY_PROCESS_INSTANCE_FILTER = new io.camunda.gateway.protocol.model.ProcessInstanceFilter();
+      EMPTY_PROCESS_INSTANCE_FILTER =
+          io.camunda.gateway.protocol.model.ProcessInstanceFilter.Builder.create().build();
   public static final io.camunda.gateway.protocol.model.DecisionInstanceFilter
       EMPTY_DECISION_INSTANCE_FILTER =
-          new io.camunda.gateway.protocol.model.DecisionInstanceFilter();
+          io.camunda.gateway.protocol.model.DecisionInstanceFilter.Builder.create().build();
 
+  @SuppressWarnings("NullAway") // errorHashCode is @Nullable in the field but not in the stage;
+  // the empty-sentinel must have null errorHashCode to match the no-criteria case
   public static final io.camunda.gateway.protocol.model
           .IncidentProcessInstanceStatisticsByDefinitionFilter
       EMPTY_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_FILTER =
-          new io.camunda.gateway.protocol.model
-              .IncidentProcessInstanceStatisticsByDefinitionFilter();
+          io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter
+              .Builder.create()
+              .errorHashCode(null)
+              .build();
 
   private SearchQueryRequestMapper() {}
 
@@ -171,10 +177,11 @@ public final class SearchQueryRequestMapper {
     return toProcessDefinitionQuery(
         query == null
             ? null
-            : new ProcessDefinitionSearchQuery()
+            : ProcessDefinitionSearchQuery.Builder.create()
                 .filter(SimpleSearchQueryMapper.toProcessDefinitionFilter(query.getFilter()))
                 .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
-                .sort(query.getSort() == null ? List.of() : query.getSort()));
+                .sort(query.getSort() == null ? List.of() : query.getSort())
+                .build());
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
@@ -226,10 +233,11 @@ public final class SearchQueryRequestMapper {
     return toProcessInstanceQuery(
         query == null
             ? null
-            : new ProcessInstanceSearchQuery()
+            : ProcessInstanceSearchQuery.Builder.create()
                 .filter(SimpleSearchQueryMapper.toProcessInstanceFilter(query.getFilter()))
                 .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
-                .sort(query.getSort() == null ? List.of() : query.getSort()));
+                .sort(query.getSort() == null ? List.of() : query.getSort())
+                .build());
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
@@ -512,10 +520,11 @@ public final class SearchQueryRequestMapper {
     return toUserTaskQuery(
         query == null
             ? null
-            : new UserTaskSearchQuery()
+            : UserTaskSearchQuery.Builder.create()
                 .filter(SimpleSearchQueryMapper.toUserTaskFilter(query.getFilter()))
                 .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
-                .sort(query.getSort() == null ? List.of() : query.getSort()));
+                .sort(query.getSort() == null ? List.of() : query.getSort())
+                .build());
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
@@ -539,10 +548,11 @@ public final class SearchQueryRequestMapper {
       final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
       final List<UserTaskVariableSearchQuerySortRequest> sort) {
     return toUserTaskVariableQuery(
-        new UserTaskVariableSearchQueryRequest()
+        UserTaskVariableSearchQueryRequest.Builder.create()
             .filter(SimpleSearchQueryMapper.toUserTaskVariableFilter(filter))
             .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort == null ? List.of() : sort));
+            .sort(sort == null ? List.of() : sort)
+            .build());
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
@@ -568,10 +578,11 @@ public final class SearchQueryRequestMapper {
       final io.camunda.gateway.protocol.model.simple.OffsetPagination page,
       final List<UserTaskVariableSearchQuerySortRequest> sort) {
     return toUserTaskEffectiveVariableQuery(
-        new UserTaskEffectiveVariableSearchQueryRequest()
+        UserTaskEffectiveVariableSearchQueryRequest.Builder.create()
             .filter(SimpleSearchQueryMapper.toUserTaskVariableFilter(filter))
             .page(SimpleSearchQueryMapper.toOffsetPagination(page))
-            .sort(sort == null ? List.of() : sort));
+            .sort(sort == null ? List.of() : sort)
+            .build());
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskEffectiveVariableQuery(
@@ -597,10 +608,11 @@ public final class SearchQueryRequestMapper {
       final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
       final List<VariableSearchQuerySortRequest> sort) {
     return toVariableQuery(
-        new VariableSearchQuery()
+        VariableSearchQuery.Builder.create()
             .filter(SimpleSearchQueryMapper.toVariableFilter(filter))
             .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort == null ? List.of() : sort));
+            .sort(sort == null ? List.of() : sort)
+            .build());
   }
 
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(
@@ -657,10 +669,11 @@ public final class SearchQueryRequestMapper {
     return toIncidentQuery(
         query == null
             ? null
-            : new IncidentSearchQuery()
+            : IncidentSearchQuery.Builder.create()
                 .filter(SimpleSearchQueryMapper.toIncidentFilter(query.getFilter()))
                 .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
-                .sort(query.getSort() == null ? List.of() : query.getSort()));
+                .sort(query.getSort() == null ? List.of() : query.getSort())
+                .build());
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
@@ -913,7 +926,7 @@ public final class SearchQueryRequestMapper {
     // Create empty request if not provided, then pass through normal transformation to apply
     // default values
     final GlobalTaskListenerSearchQueryRequest actualRequest =
-        request == null ? new GlobalTaskListenerSearchQueryRequest() : request;
+        request == null ? GlobalTaskListenerSearchQueryRequest.Builder.create().build() : request;
 
     final var page = SearchQueryRequestMapper.toSearchQueryPage(actualRequest.getPage());
     final var sort =

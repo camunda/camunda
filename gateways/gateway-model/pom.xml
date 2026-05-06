@@ -21,6 +21,9 @@
 
   <properties>
     <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/v2</openapi.dir>
+    <!-- Roaster builds the emitted Java AST inside the maven-antrun-plugin classpath;
+         only used by this module so the version is local. -->
+    <version.roaster>2.31.0.Final</version.roaster>
   </properties>
 
   <dependencies>
@@ -70,80 +73,88 @@
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
     </dependency>
+
   </dependencies>
 
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <dependencies>
+          <!-- snakeyaml powers ModelGenerator's spec loading; jspecify supplies @NullMarked
+               for the tool sources we javac in-line; roaster builds the emitted Java AST.
+               Listed here because the antrun plugin classloader does not see project compile
+               dependencies. snakeyaml and jspecify versions come from parent's
+               dependencyManagement; roaster is local to this module so we define its version
+               via the property below. -->
+          <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>${version.snakeyaml}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>${version.jspecify}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-api</artifactId>
+            <version>${version.roaster}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-jdt</artifactId>
+            <version>${version.roaster}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>generate-advanced-model</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <target>
+                <property name="advanced.tool.classes" value="${project.build.directory}/tool-classes"/>
+                <property name="advanced.model.outDir" value="${project.build.directory}/generated-sources/openapi/src/main/java/io/camunda/gateway/protocol/model"/>
+                <property name="advanced.model.timestamp" value="${project.build.directory}/generated-sources/openapi/.advanced-model-timestamp"/>
+                <mkdir dir="${advanced.tool.classes}"/>
+                <mkdir dir="${advanced.model.outDir}"/>
+                <!-- Skip the generator run when the inputs haven't changed since the last
+                     successful generation. The marker file is <touch>-ed after a successful run;
+                     ant's <uptodate> compares mtimes against srcfiles. The output dir itself is
+                     also a srcfile: if any other tool (e.g. an older branch's openapi-generator
+                     run after a `git checkout` without `mvn clean`) wrote into it, those files
+                     will be newer than the marker and we re-run. -->
+                <uptodate property="advanced.model.skip" targetfile="${advanced.model.timestamp}">
+                  <srcfiles dir="${openapi.dir}" includes="*.yaml"/>
+                  <srcfiles dir="${project.basedir}/src/tool/java" includes="**/*.java"/>
+                  <srcfiles file="${project.basedir}/pom.xml"/>
+                  <srcfiles dir="${advanced.model.outDir}" includes="**/*.java"/>
+                </uptodate>
+                <javac xmlns:unless="ant:unless" classpathref="maven.plugin.classpath" debug="true" destdir="${advanced.tool.classes}" encoding="UTF-8" includeantruntime="false" release="21" unless:set="advanced.model.skip" srcdir="${project.basedir}/src/tool/java"></javac>
+                <java xmlns:unless="ant:unless" classname="io.camunda.gateway.protocol.model.tools.ModelGenerator" failonerror="true" fork="true" unless:set="advanced.model.skip">
+                  <classpath>
+                    <pathelement location="${advanced.tool.classes}"/>
+                    <path refid="maven.plugin.classpath"/>
+                  </classpath>
+                  <arg value="${openapi.dir}"/>
+                  <arg value="${advanced.model.outDir}"/>
+                </java>
+                <touch xmlns:unless="ant:unless" file="${advanced.model.timestamp}" mkdirs="true" unless:set="advanced.model.skip"></touch>
+                <echo xmlns:if="ant:if" message="[ModelGenerator] inputs unchanged, skipping" if:set="advanced.model.skip"></echo>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
         <executions>
-          <execution>
-            <id>advanced</id>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
-              <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
-              <generatorName>spring</generatorName>
-              <templateDirectory>${project.basedir}/src/main/resources/templates/java-spring/advanced</templateDirectory>
-              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
-              <modelPackage>io.camunda.gateway.protocol.model</modelPackage>
-              <importMappings>
-                <!-- Redirect the Spring generator's default `@Nullable` (org.springframework.lang.Nullable)
-                     to JSpecify so NullAway on downstream modules sees JSpecify annotations. -->
-                <importMapping>Nullable=org.jspecify.annotations.Nullable</importMapping>
-              </importMappings>
-              <typeMappings>
-                <!-- map OffsetDateTime to String to avoid timezone issues and do validation manually -->
-                <typeMapping>OffsetDateTime=String</typeMapping>
-                <!-- map complex String schemas to String -->
-                <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
-                <typeMapping>ResourceKey=String</typeMapping>
-                <typeMapping>ScopeKey=String</typeMapping>
-                <typeMapping>ElementInstanceKey=String</typeMapping>
-                <!-- map specific filter properties to basic filter types -->
-                <typeMapping>AuditLogEntityKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>AuditLogKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionEvaluationInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionEvaluationKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DecisionRequirementsKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>DeploymentKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ElementIdFilterProperty=StringFilterProperty</typeMapping>
-                <typeMapping>ElementInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>FormKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>JobKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ProcessDefinitionIdFilterProperty=StringFilterProperty</typeMapping>
-                <typeMapping>ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ProcessInstanceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ResourceKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>ScopeKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-                <typeMapping>VariableKeyFilterProperty=BasicStringFilterProperty</typeMapping>
-              </typeMappings>
-              <generateApis>false</generateApis>
-              <generateSupportingFiles>false</generateSupportingFiles>
-              <generateModels>true</generateModels>
-              <generateModelDocumentation>false</generateModelDocumentation>
-              <generateModelTests>false</generateModelTests>
-              <!-- validate the spec on every generation -->
-              <skipValidateSpec>false</skipValidateSpec>
-              <!-- only write files whose content changed to avoid spurious recompilation -->
-              <minimalUpdate>true</minimalUpdate>
-              <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
-              <configOptions>
-                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS);@org.jspecify.annotations.NullMarked</additionalModelTypeAnnotations>
-                <serializationLibrary>jackson</serializationLibrary>
-                <library>spring-boot</library>
-                <jdk8>true</jdk8>
-                <openApiNullable>false</openApiNullable>
-                <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
-                <hideGenerationTimestamp>true</hideGenerationTimestamp>
-              </configOptions>
-            </configuration>
-          </execution>
           <execution>
             <id>simple</id>
             <goals>
@@ -276,6 +287,25 @@
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
           </usedDependencies>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-advanced-model-sources</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources/openapi/src/main/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

@@ -26,8 +26,6 @@ public class JobStateFilterPropertyDeserializer
 
   @Override
   protected JobStateFilterProperty createFromImplicitValue(final JobStateEnum value) {
-    final var filter = new AdvancedJobStateFilter();
-    filter.set$Eq(value);
-    return filter;
+    return AdvancedJobStateFilter.Builder.create().$eq(value).build();
   }
 }
