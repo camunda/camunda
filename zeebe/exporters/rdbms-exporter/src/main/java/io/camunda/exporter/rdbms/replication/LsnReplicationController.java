@@ -113,16 +113,25 @@ public class LsnReplicationController implements ReplicationController {
 
       final long confirmedLsn = computeConfirmedLsn(statuses);
       final var confirmedEntry = removeConfirmedLsnEntries(confirmedLsn);
-      final Duration dbReportedLag = getCurrentDbLag();
-      final boolean dbLagExceeded = isMaxLagExceeded(dbReportedLag);
+      final Duration dbReplicationLag = getCurrentDbLag();
 
       LOG.debug(
           "[RDBMS Exporter P{}] Confirmed LSN {}, current lag is {}",
           partitionId,
           confirmedLsn,
-          dbReportedLag);
+          dbReplicationLag);
 
-      updatePausedState(pauseOnMaxLagExceeded && dbLagExceeded, dbReportedLag, connectedReplicas);
+      final boolean dbLagExceeded = isMaxLagExceeded(dbReplicationLag);
+      final boolean quorumNotMet = pendingEntries.isEmpty() && connectedReplicas < minSyncReplicas;
+
+      // pause when:
+      // - pauseOnMaxLagExceeded is true
+      // - either the replicas have not confirmed for long time
+      // - or there are no pending entries and there are not enough replicas connected
+      updatePausedState(
+          pauseOnMaxLagExceeded && (dbLagExceeded || quorumNotMet),
+          dbReplicationLag,
+          connectedReplicas);
 
       if (confirmedEntry != null) {
         LOG.info(
@@ -138,9 +147,12 @@ public class LsnReplicationController implements ReplicationController {
           replicationConfiguration.getPollingInterval(),
           e);
     } finally {
-      replicationCheckTask =
-          controller.scheduleCancellableTask(
-              replicationConfiguration.getPollingInterval(), this::checkReplication);
+      // if null, controller was closed during check
+      if (replicationCheckTask != null) {
+        replicationCheckTask =
+            controller.scheduleCancellableTask(
+                replicationConfiguration.getPollingInterval(), this::checkReplication);
+      }
     }
   }
 
@@ -207,13 +219,13 @@ public class LsnReplicationController implements ReplicationController {
     final boolean wasPaused = paused.getAndSet(shouldPause);
     if (shouldPause && !wasPaused) {
       LOG.warn(
-          "[RDBMS Exporter P{}] Pausing exporter: DB-reported replication lag ({}) exceeded maxLag ({})",
+          "[RDBMS Exporter P{}] Pausing exporter: replication lag ({}) exceeded maxLag ({})",
           partitionId,
           dbReportedLag,
           maxLag);
     } else if (!shouldPause && wasPaused) {
       LOG.info(
-          "[RDBMS Exporter P{}] Resuming exporter: replication quorum met ({}/{} replicas) and DB-reported lag ({}) within maxLag ({})",
+          "[RDBMS Exporter P{}] Resuming exporter: replication quorum met ({}/{} replicas) and lag ({}) within maxLag ({})",
           partitionId,
           connectedReplicas,
           minSyncReplicas,
@@ -247,6 +259,7 @@ public class LsnReplicationController implements ReplicationController {
   @Override
   public void close() throws Exception {
     replicationCheckTask.cancel();
+    replicationCheckTask = null;
   }
 
   record LsnPositionEntry(long position, long lsn, long enqueueTimeMs) {}

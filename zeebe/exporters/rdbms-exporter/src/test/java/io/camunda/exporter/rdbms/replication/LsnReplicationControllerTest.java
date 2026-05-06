@@ -251,6 +251,19 @@ class LsnReplicationControllerTest {
   }
 
   @Test
+  void shouldPauseWhenEmptyQueueButQuorumNotMetOnCheck() {
+    // given – no entries enqueued at all
+    final var sut = createController();
+    when(lsnProvider.getReplicationStatuses()).thenReturn(List.of());
+
+    // when
+    sut.checkReplication();
+
+    // then – empty queue → lag = ZERO → no pause
+    assertThat(sut.isReplicationInSync()).isFalse();
+  }
+
+  @Test
   void shouldRescheduleAfterCheck() {
     // given
     final var sut = createController();

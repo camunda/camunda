@@ -135,7 +135,9 @@ public class RdbmsExporterWrapper implements Exporter {
               .getReplicationLogStatusProvider()
               .orElseThrow(
                   () ->
-                      new IllegalStateException("Not LSN provider found for configured database"));
+                      new IllegalStateException(
+                          "No LSN provider found for configured databaseId "
+                              + vendorDatabaseProperties.databaseId()));
       builder.replicationControllerFactory(
           new LsnReplicationControllerFactory(
               replicationLogStatusProvider,
