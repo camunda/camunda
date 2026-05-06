@@ -27,12 +27,16 @@ import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDesc
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
+import org.springframework.session.web.http.SessionRepositoryFilter;
 
 @Configuration
 @EnableSpringHttpSession
@@ -91,6 +95,46 @@ public class WebSessionRepositoryConfiguration {
         new SpringBasedWebSessionAttributeConverter(conversionService);
     final var webSessionMapper = new WebSessionMapper(webSessionAttributeConverter);
     return new WebSessionRepository(persistentWebSessionClient, webSessionMapper, request);
+  }
+
+  /**
+   * Pin {@link SessionRepositoryFilter} to webapp paths only.
+   *
+   * <p>{@link EnableSpringHttpSession} auto-registers the filter against {@code /*}, so it runs on
+   * every servlet request — including stateless Bearer-token API calls under {@code /v1/**}, {@code
+   * /v2/**}, {@code /api/**}, {@code /mcp/**}. The filter wraps the request and triggers a session
+   * lookup via {@link PersistentWebSessionClient}, which on the API hot path means a per-request
+   * I/O hit against secondary storage that the request does not need.
+   *
+   * <p>Sessions are only meaningful on webapp endpoints (login, the bundled UIs, OAuth2
+   * redirection). Restricting the filter to those URL patterns removes the per-request session
+   * lookup from the API request path while keeping webapp session behavior unchanged. Spring Boot
+   * suppresses the default global registration when a {@link FilterRegistrationBean} wrapping the
+   * same filter bean is present.
+   *
+   * <p>The patterns are intentionally a strict subset of {@code WebSecurityConfig.WEBAPP_PATHS}
+   * (translated from Spring's {@code /**} matchers to servlet {@code /*} prefix mappings). Any
+   * webapp path not listed here will lose session support; if a new webapp path is added, this list
+   * must be updated.
+   */
+  @Bean
+  public FilterRegistrationBean<SessionRepositoryFilter<?>> sessionRepositoryFilterRegistration(
+      @Qualifier("springSessionRepositoryFilter") final SessionRepositoryFilter<?> filter) {
+    final FilterRegistrationBean<SessionRepositoryFilter<?>> registration =
+        new FilterRegistrationBean<>(filter);
+    registration.setOrder(SessionRepositoryFilter.DEFAULT_ORDER);
+    registration.setUrlPatterns(
+        List.of(
+            "/operate/*",
+            "/tasklist/*",
+            "/admin/*",
+            "/webapp/*",
+            "/login/*",
+            "/logout",
+            "/sso-callback/*",
+            "/oauth2/*",
+            "/"));
+    return registration;
   }
 
   @Bean("persistentWebSessionDeletionTaskExecutor")
