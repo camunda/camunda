@@ -43,7 +43,7 @@ Full explanation and rule of thumb: `processors.md` § *Reading state safely*.
 
 1. **Don't edit the existing class.** Create the next version, e.g. `XxxV2Applier.java`.
 2. **Register the new version in `EventAppliers`** alongside the existing version.
-3. **Forward-port to all newer minor branches before their next release.**
+3. **Forward-port to all newer minor branches before their next release.** A new applier version that ships in a patch of an older minor but misses the next minor's initial release breaks the upgrade path: the new minor cannot replay events written with that version, leaving partitions dead until an ad-hoc patch ships (this hit 8.9.0 with `ProcessEvent.TRIGGERING` v2). Full context: `docs/zeebe/event-applier-golden-files.md`.
    - First check whether a release branch already exists for any newer minor (skip the fetch if working offline):
 
      ```bash
@@ -55,7 +55,6 @@ Full explanation and rule of thumb: `processors.md` § *Reading state safely*.
      - the corresponding stable branch (so it lives in future patches/minors).
        Alert the user explicitly when this case is detected — it's easy to miss.
    - **If no release branch exists** for a newer minor → port to the stable branch only.
-   - **Skill-only pitfall** (not yet documented in `docs/zeebe/event-applier-golden-files.md`): a v2 shipped in `8.7.x` patch but missed in `8.8.0` breaks the upgrade path for `8.7.x` → `8.8.0`. The new version must reach every newer minor that ships next.
 4. **Format, then run `NoChangesTest`.** A new golden file should appear; create it from the failure message's `cp` command.
 
 ## Templates
