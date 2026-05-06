@@ -90,14 +90,33 @@ public final class BrokerTopologyManagerImpl extends Actor
         });
   }
 
-  private void checkForMissingEvents() {
+  /**
+   * Seeds the topology with all brokers currently visible in the membership service. Safe to call
+   * from any thread; mutations are routed through the actor. Idempotent.
+   *
+   * <p>Callers wiring this up against a {@code ClusterMembershipService} must invoke this AFTER
+   * registering this instance as a listener, to close the race where a {@code MEMBER_ADDED} event
+   * fires between the actor starting and the listener being attached.
+   */
+  public void checkForMissingEvents() {
     final Set<Member> members = membersSupplier.get();
+    LOG.info(
+        "[FLAKE-DEBUG] checkForMissingEvents called on thread={} memberPropertiesSize={} membersSupplier returned {} members ids={}",
+        Thread.currentThread().getName(),
+        memberProperties.size(),
+        members == null ? -1 : members.size(),
+        members == null ? "null" : members.stream().map(m -> m.id().toString()).sorted().toList());
     if (members == null || members.isEmpty()) {
       return;
     }
 
     for (final Member member : members) {
       final BrokerInfo brokerInfo = BrokerInfo.fromProperties(member.properties());
+      LOG.info(
+          "[FLAKE-DEBUG] checkForMissingEvents inspect member={} propertyKeys={} brokerInfo={}",
+          member.id(),
+          member.properties().keySet(),
+          brokerInfo == null ? "null" : "nodeId=" + brokerInfo.getNodeId());
       if (brokerInfo != null) {
         addBroker(member, brokerInfo);
       }
@@ -105,9 +124,21 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   private void addBroker(final Member member, final BrokerInfo brokerInfo) {
+    LOG.info(
+        "[FLAKE-DEBUG] addBroker invoked (queueing actor task) member={} nodeId={} thread={}",
+        member.id(),
+        brokerInfo.getNodeId(),
+        Thread.currentThread().getName());
     actor.run(
         () -> {
-          if (!memberProperties.containsKey(member.id())) {
+          final boolean isNew = !memberProperties.containsKey(member.id());
+          LOG.info(
+              "[FLAKE-DEBUG] addBroker actor-task running member={} nodeId={} isNew={} memberPropertiesBefore={}",
+              member.id(),
+              brokerInfo.getNodeId(),
+              isNew,
+              memberProperties.keySet());
+          if (isNew) {
             topologyListeners.forEach(l -> l.brokerAdded(member.id()));
           }
 
@@ -140,8 +171,14 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   @Override
   protected void onActorStarted() {
-    // Get the initial member state before the listener is registered
+    LOG.info("[FLAKE-DEBUG] onActorStarted entry thread={}", Thread.currentThread().getName());
+    // Defense-in-depth seed. Callers must also invoke checkForMissingEvents()
+    // AFTER registering this as a membership listener, to cover the window
+    // between the snapshot here and listener attachment.
     checkForMissingEvents();
+    LOG.info(
+        "[FLAKE-DEBUG] onActorStarted exit memberPropertiesAfterInitialSeed={}",
+        memberProperties.keySet());
   }
 
   @Override
@@ -149,6 +186,14 @@ public final class BrokerTopologyManagerImpl extends Actor
     final Member subject = event.subject();
     final Type eventType = event.type();
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(subject.properties());
+
+    LOG.info(
+        "[FLAKE-DEBUG] event() entry type={} subject={} propertyKeys={} brokerInfoExtracted={} thread={}",
+        eventType,
+        subject.id(),
+        subject.properties().keySet(),
+        brokerInfo == null ? "null" : "nodeId=" + brokerInfo.getNodeId(),
+        Thread.currentThread().getName());
 
     if (brokerInfo == null) {
       return;

@@ -21,6 +21,9 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
@@ -28,6 +31,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DynamicClusterServices {
+
+  private static final Logger LOG = LoggerFactory.getLogger(DynamicClusterServices.class);
 
   private final ActorScheduler scheduler;
   private final ClusterMembershipService clusterMembershipService;
@@ -74,8 +79,15 @@ public class DynamicClusterServices {
   public BrokerTopologyManager brokerTopologyManagerForEmbeddedBrokerClient() {
     final var brokerTopologyManager =
         new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
+    logFlakeMembers("[broker profile] BEFORE submitActor");
     scheduler.submitActor(brokerTopologyManager).join();
+    logFlakeMembers("[broker profile] AFTER submitActor.join() / BEFORE addListener");
     clusterMembershipService.addListener(brokerTopologyManager);
+    logFlakeMembers("[broker profile] AFTER addListener / BEFORE post-listener seed");
+    // Re-seed after the listener is attached: closes the race where a MEMBER_ADDED
+    // event fires between the actor's initial snapshot and listener registration.
+    brokerTopologyManager.checkForMissingEvents();
+    logFlakeMembers("[broker profile] AFTER post-listener checkForMissingEvents");
     return brokerTopologyManager;
   }
 
@@ -85,10 +97,40 @@ public class DynamicClusterServices {
       final GatewayClusterConfigurationService gatewayClusterConfigurationService) {
     final var brokerTopologyManager =
         new BrokerTopologyManagerImpl(clusterMembershipService::getMembers, brokerTopologyMetrics);
+    logFlakeMembers("[!broker profile] BEFORE submitActor");
     scheduler.submitActor(brokerTopologyManager).join();
+    logFlakeMembers("[!broker profile] AFTER submitActor.join() / BEFORE addListener");
     clusterMembershipService.addListener(brokerTopologyManager);
+    logFlakeMembers("[!broker profile] AFTER addListener / BEFORE post-listener seed");
+    // Re-seed after the listener is attached: closes the race where a MEMBER_ADDED
+    // event fires between the actor's initial snapshot and listener registration.
+    // brokerTopologyManager.checkForMissingEvents();
+    logFlakeMembers("[!broker profile] AFTER post-listener checkForMissingEvents");
     gatewayClusterConfigurationService.addUpdateListener(brokerTopologyManager);
     return brokerTopologyManager;
+  }
+
+  private void logFlakeMembers(final String stage) {
+    final var localId = clusterMembershipService.getLocalMember().id();
+    final var members = clusterMembershipService.getMembers();
+    final String memberDump =
+        members.stream()
+            .map(
+                m ->
+                    m.id().toString()
+                        + "(props="
+                        + m.properties().keySet()
+                        + ",hasBrokerInfo="
+                        + m.properties().containsKey("brokerInfo")
+                        + ")")
+            .sorted()
+            .collect(Collectors.joining(", "));
+    LOG.info(
+        "[FLAKE-DEBUG] {} localMember={} membersCount={} members=[{}]",
+        stage,
+        localId,
+        members.size(),
+        memberDump);
   }
 
   @Bean
