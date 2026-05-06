@@ -95,16 +95,10 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
             () -> {
               final var activeColumnFamily =
                   activeDb.createColumnFamily(
-                      columnFamily,
-                      layeredContext.activeContext(),
-                      keyInstance,
-                      newValueInstance(valueInstance));
+                      columnFamily, layeredContext.activeContext(), keyInstance, valueInstance);
               final var persistentColumnFamily =
                   persistentDb.createColumnFamily(
-                      columnFamily,
-                      layeredContext.persistentContext(),
-                      keyInstance,
-                      newValueInstance(valueInstance));
+                      columnFamily, layeredContext.persistentContext(), keyInstance, valueInstance);
 
               return new LayeredColumnFamily<>(
                   this,

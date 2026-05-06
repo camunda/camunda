@@ -103,17 +103,21 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   @Override
   public @Nullable ValueType get(final KeyType key) {
     final var result = new Holder<ValueType>();
-    context.runInTransaction(() -> result.value = getOrLoad(key));
-    if (result.value == null) {
-      return null;
-    }
-    // In contrast to rocksDB we always need to allocate a new instance since mutating it,
-    // will mutate the state.
-    // In rocksDB mutating the return from get() only returns the "cache" in memory, not the rocksDB
-    // state
-    final var allocated = newValueInstance();
-    result.value.copyTo(allocated);
-    return allocated;
+    context.runInTransaction(
+        () -> {
+          if (context.isTombstoned(serializeKey(key))) {
+            return;
+          }
+          result.value = activeColumnFamily.get(key);
+          if (result.value == null) {
+            final var persistentValue = persistentColumnFamily.get(key, this::newValueInstance);
+            if (persistentValue != null) {
+              activeColumnFamily.upsert(key, persistentValue);
+              result.value = activeColumnFamily.get(key);
+            }
+          }
+        });
+    return result.value;
   }
 
   @Override
@@ -129,15 +133,14 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
 
           final var activeValue = activeColumnFamily.get(key, valueSupplier);
           if (activeValue != null) {
-            result.value = valueSupplier.get();
-            activeValue.copyTo(result.value);
+            result.value = activeValue;
             return;
           }
 
           final var persistentValue = persistentColumnFamily.get(key, valueSupplier);
           if (persistentValue != null) {
             activeColumnFamily.upsert(key, persistentValue);
-            result.value = activeColumnFamily.get(key, valueSupplier);
+            result.value = activeColumnFamily.get(key, () -> persistentValue);
           }
         });
     return result.value;
@@ -391,26 +394,6 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
     }
 
     return activeColumnFamily.exists(key) || persistentColumnFamily.exists(key);
-  }
-
-  private @Nullable ValueType getOrLoad(final KeyType key) {
-    final var rawKey = serializeKey(key);
-    if (context.isTombstoned(rawKey)) {
-      return null;
-    }
-
-    final var activeValue = activeColumnFamily.get(key);
-    if (activeValue != null) {
-      return activeValue;
-    }
-
-    final var persistentValue = persistentColumnFamily.get(key, this::newValueInstance);
-    if (persistentValue == null) {
-      return null;
-    }
-
-    activeColumnFamily.upsert(key, persistentValue);
-    return activeColumnFamily.get(key);
   }
 
   private NavigableMap<byte[], DbValue> mergedEntriesInOrder(final PrefixRange prefixRange) {
