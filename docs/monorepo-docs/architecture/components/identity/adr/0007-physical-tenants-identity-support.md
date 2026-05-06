@@ -8,7 +8,7 @@ Proposed
 
 Camunda 8.9 multi-tenancy is logical: all tenants share one engine and one authorization scope, so a user's role in any logical tenant applies cluster-wide. **Physical Tenants (PT)** introduce a new boundary for the 8.10 release where each tenant is an isolated execution unit within a single Orchestration Cluster — separate data, independent backup/restore, no runtime interference. The umbrella epic is [camunda/product-hub#3430 — *Strong Tenant Isolation in Camunda 8 OC (Self-Managed)*](https://github.com/camunda/product-hub/issues/3430).
 
-This ADR is scoped narrowly to the **identity (authN/authZ) slice** of that epic — the line item *"Per-Physical-Tenant authentication and authorization (incl. IDP)"* under *Scope – Milestone 1 → Security and observability*. Per the requirements clarification, this slice **includes** browser login/logout (mandatory) and gRPC `Camunda-Physical-Tenant` header handling (mandatory). Sibling slices — per-PT primary/secondary storage isolation (Strong Isolation), per-PT backup/restore controllers, `/v2/cluster/topology` and `/v2/cluster/backup` controllers, Connectors multi-PT, observability — are **not** delivered here. The cluster-admin filter-chain matcher this slice provides is the auth contract those downstream controllers consume.
+This ADR covers the **identity (authN/authZ) slice** of that epic — the line item *"Per-Physical-Tenant authentication and authorization (incl. IDP)"* under *Scope – Milestone 1 → Security and observability*. The slice covers per-PT REST authentication and authorization, browser login/logout, and gRPC `Camunda-Physical-Tenant` header handling. Sibling slices — per-PT primary/secondary storage isolation (Strong Isolation), Connectors multi-PT, observability — are **not** delivered here. The cluster-admin filter-chain matcher this slice provides is the auth contract those downstream controllers consume.
 
 Per the epic body, **canonical naming** is fixed: API and config use `physicalTenantId` / `physical-tenants`; Hub UX surfaces this concept as **Environment**; the existing logical-tenant `tenantId` is unchanged. This ADR uses `physicalTenantId` and `physical-tenants` throughout.
 
@@ -143,10 +143,6 @@ The existing `TopologyController` (`/v1/topology`, `/v2/topology`) is untouched.
 ### Login and logout — 🚨 DECISION PENDING (CTA) 🚨
 
 > **Login/logout is mandatory in 8.10** per the requirements clarification — Option C ("defer login") was removed. The remaining decision is **A vs B**.
->
-> **gRPC parity is also mandatory** — the `Camunda-Physical-Tenant` metadata header interceptor ships in this slice (not deferred to a sibling).
->
-> The API surface (PT-scoped JWT chain, cluster-admin chain, topology/backup pattern, gRPC interceptor) is locked. Login/logout has two viable options; the team must pick one before tickets for the login surface are cut.
 
 PoC PR [camunda/camunda#51959](https://github.com/camunda/camunda/pull/51959) demonstrates a tenant-aware OIDC login picker that **binds the HTTP session to a chosen PT** via `?tenant=` query parameter on `/oauth2/authorization/{idpId}`. A four-perspective review (Spring Security, Java/architecture, devil's advocate, TDD) found three security defects structural to the choice of HTTP session as the binding store:
 
@@ -179,9 +175,7 @@ Once the team chooses, this section is rewritten to record the chosen design as 
 
 ### What is deliberately not in this slice
 
-- **Login/logout design** is **pending team decision** between Options A, B, C above. Pick one before M2c starts; the API surface ships independently regardless.
 - **Per-PT session cookie scoping** (so two browser tabs can hold sessions for different PTs simultaneously) — only relevant under Option A; explicitly excluded even from A's scope.
-- **gRPC `Camunda-Physical-Tenant` header handling.** REST resolves PT from the path; gRPC resolves from this canonical metadata header (fixed by the epic body). Both will share `PhysicalTenantRegistry` and `PhysicalTenantJwtAuthenticationConverterFactory` so the two protocols converge on a single source of truth — but the gRPC interceptor itself is owned by a sibling slice of the same epic.
 - **Bulk migration tooling** from 8.9 logical-tenant authorizations to 8.10 PT authorizations.
 - **Persisted cluster-admin grant store, audit, dynamic management APIs, Hub policy distribution.**
 
@@ -203,7 +197,6 @@ Once the team chooses, this section is rewritten to record the chosen design as 
 - **Cluster-admin has no revocation, no audit, and no rotation primitive in 8.10.** A fired employee retains cluster-admin access until the token expires; a typo in the configured claim value bricks ops. Operators are expected to monitor the token lifetime of their cluster-admin IdP and to keep the BASIC break-glass user on a rotated password. A minimal grant-on-first-use record is a documented follow-up.
 - **Reserved-ID list is a maintenance landmine.** Every future top-level path (`/v2/billing`, `/v2/console`, …) must be added to the reserved set, or a customer will eventually configure a colliding PT id and silently break. The list is a static constant in the registry and carries a unit test, but a build-time scanner over `@RequestMapping` annotations is a documented follow-up.
 - **Login flow remains cluster-uniform.** Webapp users land on the cluster-level login page that lists every IdP, not just the IdPs assigned to their target PT. Tenant-aware login is owned by the Webapps PT routing slice and is a customer-visible gap in 8.10.
-- **gRPC and REST will temporarily diverge.** REST gets per-PT handling in this slice; gRPC keeps the cluster-uniform behavior until the parity slice lands. Java client users who mix REST and gRPC against the same cluster will see different authorization semantics across protocols during that window. Both slices share `PhysicalTenantRegistry` to bound the divergence to dispatch logic only.
 - **The "skip everything else" instruction was scoped narrowly.** CSRF, security headers, and the request firewall remain active on the PT chain. An interpretation that strips them would simplify the chain definition by ~10 lines but introduce a defense-in-depth regression that this ADR rejects.
 - **Storage model depends on Strong Isolation.** Per-PT primary + secondary storage is a hard prerequisite (per requirements clarification). Identity slice consumes per-PT `MembershipService` / `ResourceAccessProvider` beans from a registry-backed map; Strong Isolation provides those beans. If Strong Isolation slips, identity falls back to legacy single-storage mode (one synthetic `default` PT, 8.9-byte-identical behaviour).
 - **Two PT-related config trees may coexist short-term.** This slice owns `camunda.physical-tenants.{physicalTenantId}` for identity attributes. Sibling slices need to attach non-security per-PT properties (secondary storage, backup repository, broker client) and will likely choose a different top-level location — the placeholder javadoc in `TenantConnectConfigResolver` already references `camunda.physical-tenants` for that purpose. A future cross-slice agreement on a unified top-level tree (e.g. `camunda.physical-tenants` for non-security and a sibling `camunda.physical-tenants` for security, or a single tree with `security:` and `secondary-storage:` sub-blocks) is **not** in this ADR's scope. The shared concept across slices is the **set of configured PT ids**, and the registry abstracts that set.
@@ -211,7 +204,6 @@ Once the team chooses, this section is rewritten to record the chosen design as 
 ### Out of scope for this ADR
 
 - Tenant-aware OIDC login picker, `sso-callback/{physicalTenantId}`, per-PT session cookie scoping (Webapps PT routing).
-- gRPC tenant header (`Camunda-Physical-Tenant`) handling.
 - Per-PT `BrokerClient` and `TopologyServices` instances (Strong Isolation).
 - Migration tooling from 8.9 logical-tenant authorizations to 8.10 PT authorizations.
 - Persisted cluster-admin grant store, audit, dynamic PT/IdP management APIs, Hub policy distribution.
