@@ -165,8 +165,23 @@ jobs:
         run: pipx install 'zizmor==1.24.1'
 
       # -----------------------------------------------------------------------
-      # Step 4 — Run zizmor on the changed files only.
+      # Step 4 — Run zizmor once and split its output into errors + warnings.
       # -----------------------------------------------------------------------
+      # We run zizmor a single time with the full default audit set enabled,
+      # then post-process the GitHub annotations so that:
+      #   - `unpinned-uses` findings stay as `::error::` and FAIL the job
+      #     (this is the gate for issue #25934).
+      #   - Every other audit's `::error::` and `::notice::` is demoted to
+      #     `::warning::` — visible in the PR diff as a yellow annotation,
+      #     but never blocks merge.
+      #
+      # Why one run instead of two: zizmor has no flag to scope which audits
+      # contribute to the exit code, so we'd otherwise need either two
+      # invocations (gate + advisory) or per-audit `disable: true` in the
+      # config. Splitting the output is cleaner: one zizmor invocation, one
+      # config file, and the audit-id is preserved in the `title=` field of
+      # GitHub's documented workflow-command format — stable to grep/awk.
+      #
       # `xargs -a changed.txt -r zizmor ...`:
       #   `-a changed.txt` reads file paths from the file (one per line).
       #   `-r` (--no-run-if-empty) prevents xargs from invoking zizmor with
@@ -175,28 +190,35 @@ jobs:
       #         the behavior we DON'T want for this incremental check.
       #
       # `--config .github/zizmor.yml` points at our policy file, which
-      #   defines the per-org pinning rules (camunda/* and actions/* may
-      #   use tags; everyone else must hash-pin). See that file for details.
+      #   defines the per-org pinning rules for the unpinned-uses audit.
       #
-      # `--min-severity=high` filters out informational/low/medium audits.
-      #   The `unpinned-uses` rule fires at "high" severity when our policy
-      #   says hash-pin is required and a tag is used, so a `high` floor
-      #   lets only real policy violations fail the job — no noise from
-      #   zizmor's other audits (template-injection, excessive-permissions,
-      #   etc.) which we haven't tuned for this repo.
+      # `--format=github` makes zizmor emit
+      #     ::error file=PATH,line=N,title=AUDIT_ID::MESSAGE
+      #   annotations. The `title=AUDIT_ID` part is what we filter on.
       #
-      # `--format=github` makes zizmor emit `::error file=...::` annotations,
-      #   so violations show up inline in the PR's "Files changed" view —
-      #   reviewers see exactly which line is unpinned without digging
-      #   into raw logs.
-      #
-      # The exit code from zizmor (non-zero on findings >= min-severity)
-      # propagates out and fails the job — that's what makes this a gate.
+      # `set +e` (and the `|| true` after the xargs) keep this step alive
+      #   even when zizmor exits non-zero on findings — we need the captured
+      #   output for post-processing, and we run our own gate logic at the
+      #   bottom.
       - name: Run zizmor on changed files
         if: steps.changed.outputs.count != '0'
         run: |
-          set -euo pipefail
-          xargs -a changed.txt -r zizmor \
-            --config .github/zizmor.yml \
-            --min-severity=high \
-            --format=github
+          set -uo pipefail   # NOT -e — zizmor's non-zero on findings is expected
+          out=$(xargs -a changed.txt -r zizmor --config .github/zizmor.yml --format=github 2>&1) || true
+
+          # Stream the captured annotations to GitHub Actions, transforming
+          # everything that isn't unpinned-uses into a warning. Order of
+          # awk patterns matters: the unpinned-uses match must come first
+          # so it isn't caught by the broader `^::error /` rewrite below it.
+          echo "$out" | awk '
+            /^::error /  && /title=unpinned-uses/ { print; next }
+            /^::error /                           { sub(/^::error /,  "::warning "); print; next }
+            /^::notice /                          { sub(/^::notice /, "::warning "); print; next }
+                                                  { print }
+          '
+
+          # Gate: fail only if at least one unpinned-uses error appeared.
+          if echo "$out" | grep -qE '^::error.*title=unpinned-uses'; then
+            echo "::error::Unpinned 3rd-party action(s) detected — see annotations above"
+            exit 1
+          fi
