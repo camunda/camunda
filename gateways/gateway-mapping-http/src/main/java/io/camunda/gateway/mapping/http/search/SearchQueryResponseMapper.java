@@ -1517,7 +1517,7 @@ public final class SearchQueryResponseMapper {
         .processInstanceKey(KeyUtil.keyToString(processInstanceEntity.processInstanceKey()))
         .processDefinitionKey(KeyUtil.keyToString(processInstanceEntity.processDefinitionKey()))
         .processDefinitionName(
-            processInstanceEntity.processDefinitionName().isBlank()
+            StringUtils.isBlank(processInstanceEntity.processDefinitionName())
                 ? processInstanceEntity.processDefinitionId()
                 : processInstanceEntity.processDefinitionName());
   }
