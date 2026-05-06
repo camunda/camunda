@@ -50,9 +50,10 @@ public class CopilotToolRegistry {
     @SuppressWarnings("unchecked")
     final Map<String, Object> args;
     try {
-      args = argumentsJson == null || argumentsJson.isBlank()
-          ? Map.of()
-          : objectMapper.readValue(argumentsJson, Map.class);
+      args =
+          argumentsJson == null || argumentsJson.isBlank()
+              ? Map.of()
+              : objectMapper.readValue(argumentsJson, Map.class);
     } catch (Exception e) {
       throw new IllegalArgumentException("invalid arguments JSON: " + e.getMessage(), e);
     }
@@ -90,7 +91,8 @@ public class CopilotToolRegistry {
     return new Tool(
         ToolSpecification.builder()
             .name("count_failed_instances")
-            .description("Count process instances with active incidents, optionally filtered by process id.")
+            .description(
+                "Count process instances with active incidents, optionally filtered by process id.")
             .parameters(
                 JsonObjectSchema.builder()
                     .addProperty(
@@ -103,8 +105,10 @@ public class CopilotToolRegistry {
         // TODO: replace with IncidentReader.search(...) + group by process
         (args, auth) ->
             Map.of(
-                "processId", args.getOrDefault("processId", "*"),
-                "count", 12,
+                "processId",
+                args.getOrDefault("processId", "*"),
+                "count",
+                12,
                 "byErrorType",
                 Map.of("JOB_NO_RETRIES", 7, "EXTRACT_VALUE_ERROR", 5)));
   }
@@ -148,7 +152,8 @@ public class CopilotToolRegistry {
         // TODO: proxy to Kapa AI search endpoint
         (args, auth) ->
             Map.of(
-                "query", args.get("query"),
+                "query",
+                args.get("query"),
                 "results",
                 List.of(
                     Map.of(

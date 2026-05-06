@@ -22,8 +22,14 @@ public record AgentEvent(
 
   public static AgentEvent thinking(String conversationId, String delta, boolean completed) {
     return new AgentEvent(
-        conversationId, "THINKING", completed ? "COMPLETED" : "IN_PROGRESS", delta, null, null,
-        null, null);
+        conversationId,
+        "THINKING",
+        completed ? "COMPLETED" : "IN_PROGRESS",
+        delta,
+        null,
+        null,
+        null,
+        null);
   }
 
   public static AgentEvent toolInvoke(
@@ -33,11 +39,7 @@ public record AgentEvent(
   }
 
   public static AgentEvent toolResult(
-      String conversationId,
-      String toolName,
-      String toolCallId,
-      String result,
-      boolean success) {
+      String conversationId, String toolName, String toolCallId, String result, boolean success) {
     return new AgentEvent(
         conversationId,
         "TOOL_RESULT",
@@ -55,7 +57,6 @@ public record AgentEvent(
   }
 
   public static AgentEvent error(String conversationId, String message) {
-    return new AgentEvent(
-        conversationId, "ERROR", "ERROR", message, null, null, null, null);
+    return new AgentEvent(conversationId, "ERROR", "ERROR", message, null, null, null, null);
   }
 }
