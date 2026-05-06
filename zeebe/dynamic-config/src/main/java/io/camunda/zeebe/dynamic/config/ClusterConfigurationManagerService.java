@@ -265,7 +265,8 @@ public final class ClusterConfigurationManagerService
   }
 
   public void startBpmnWorkers(final URI grpcAddress) {
-    camundaClient = CamundaClient.newClientBuilder().grpcAddress(grpcAddress).build();
+    camundaClient =
+        CamundaClient.newClientBuilder().restAddress(grpcAddress).preferRestOverGrpc(true).build();
 
     bpmnJobWorker =
         new BpmnConfigurationChangeJobWorker(

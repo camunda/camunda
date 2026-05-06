@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
@@ -18,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +38,9 @@ import java.util.Set;
 public final class RedistributionCalculationJobWorker implements AutoCloseable {
 
   static final String JOB_TYPE = "redistribution-calculation";
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
   private final CamundaClient camundaClient;
   private JobWorker worker;
@@ -54,10 +60,9 @@ public final class RedistributionCalculationJobWorker implements AutoCloseable {
     try {
       final var membersToAdd = (List<Number>) vars.getOrDefault("membersToAdd", List.of());
       final var membersToRemove = (List<Number>) vars.getOrDefault("membersToRemove", List.of());
-      final var clusterConfigMap = (Map<String, Object>) vars.get("clusterConfiguration");
-
       final ClusterConfiguration currentConfig =
-          BpmnClusterConfigurationMapper.fromMap(clusterConfigMap);
+          BpmnClusterConfigurationMapper.fromMap(
+              toConfigMap(vars.get("currentClusterConfiguration")));
 
       final Set<MemberId> newMembers = new HashSet<>(currentConfig.members().keySet());
       membersToAdd.forEach(id -> newMembers.add(MemberId.from(String.valueOf(id.intValue()))));
@@ -89,6 +94,19 @@ public final class RedistributionCalculationJobWorker implements AutoCloseable {
           .errorMessage(e.getMessage())
           .send();
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> toConfigMap(final Object raw) throws IOException {
+    if (raw instanceof final Map<?, ?> map) {
+      return (Map<String, Object>) map;
+    }
+    if (raw instanceof final String json) {
+      return OBJECT_MAPPER.readValue(json, MAP_TYPE);
+    }
+    throw new IllegalArgumentException(
+        "clusterConfiguration must be a JSON object or string, got: "
+            + (raw == null ? "null" : raw.getClass().getName()));
   }
 
   /**
@@ -135,6 +153,13 @@ public final class RedistributionCalculationJobWorker implements AutoCloseable {
         .toList();
   }
 
+  @Override
+  public void close() {
+    if (worker != null) {
+      worker.close();
+    }
+  }
+
   private record PartitionOps(
       int partitionId,
       List<Map<String, Object>> join,
@@ -142,13 +167,6 @@ public final class RedistributionCalculationJobWorker implements AutoCloseable {
       List<Map<String, Object>> reconfigure) {
     PartitionOps(final int partitionId) {
       this(partitionId, new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-    }
-  }
-
-  @Override
-  public void close() {
-    if (worker != null) {
-      worker.close();
     }
   }
 }

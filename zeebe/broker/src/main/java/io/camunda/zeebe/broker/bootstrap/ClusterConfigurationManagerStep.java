@@ -38,8 +38,7 @@ public class ClusterConfigurationManagerStep
             brokerStartupContext.getNodeIdProvider(),
             brokerStartupContext.getMeterRegistry());
     final var gatewayCfg = brokerStartupContext.getBrokerConfiguration().getGateway().getNetwork();
-    final URI camundaGrpcAddress =
-        URI.create("http://" + gatewayCfg.getHost() + ":" + gatewayCfg.getPort());
+    final URI camundaGrpcAddress = URI.create("http://localhost:8080");
     final ClusterConfigurationService clusterConfigurationService =
         new DynamicClusterConfigurationService(clusterChangeExecutor, camundaGrpcAddress);
     return clusterConfigurationService
