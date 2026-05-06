@@ -8,11 +8,16 @@ const RULE = 'no-ambiguous-identifier-property';
 const RULE_INLINE = 'no-ambiguous-identifier-property-inline';
 const FIXTURE = 'ambiguous-identifier';
 
-describe('verifyNoAmbiguousIdentifierProperty', () => {
-  let violations;
+// Lint once and share results across both describe blocks.
+let allResults;
+let violations;
+let inlineViolations;
 
+describe('verifyNoAmbiguousIdentifierProperty', () => {
   before(() => {
-    const allResults = lintFixtureFile(FIXTURE, 'things.yaml');
+    if (!allResults) {
+      allResults = lintFixtureFile(FIXTURE, 'things.yaml');
+    }
     violations = filterByRule(allResults, RULE);
   });
 
@@ -95,10 +100,10 @@ describe('verifyNoAmbiguousIdentifierProperty', () => {
 });
 
 describe('verifyNoAmbiguousIdentifierProperty (inline schemas)', () => {
-  let inlineViolations;
-
   before(() => {
-    const allResults = lintFixtureFile(FIXTURE, 'things.yaml');
+    if (!allResults) {
+      allResults = lintFixtureFile(FIXTURE, 'things.yaml');
+    }
     inlineViolations = filterByRule(allResults, RULE_INLINE);
   });
 
