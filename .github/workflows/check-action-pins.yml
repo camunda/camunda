@@ -225,11 +225,18 @@ jobs:
           '
 
           # Capture unpinned-uses violations as JSON for the comment step.
-          # `jq -R . | jq -s` reads the raw lines and wraps them into an array;
-          # the inner sed extracts {path,line} objects from the github-format
-          # error annotations. Empty file == "[]" so downstream steps see a
-          # well-formed JSON array regardless of whether anything fired.
-          echo "$out" | grep -E '^::error.*title=unpinned-uses' \
+          # The inner sed extracts {path,line} objects from the github-format
+          # error annotations; jq -s wraps them into an array. Empty input to
+          # jq -s yields `[]`, so downstream steps always see a well-formed
+          # JSON array regardless of whether anything fired.
+          #
+          # The brace group `{ ... || true; }` is critical: when there are
+          # no unpinned-uses violations, grep exits 1 (no match), and the
+          # GitHub Actions default `bash -e` would abort the whole step
+          # before the JSON file is written. The `|| true` shield makes
+          # "no match" indistinguishable from "match with zero results"
+          # from the pipeline's exit-code perspective.
+          { echo "$out" | grep -E '^::error.*title=unpinned-uses' || true; } \
             | sed -E 's|^::error file=([^,]+),line=([0-9]+),title=unpinned-uses::.*$|{"path":"\1","line":\2}|' \
             | jq -s '.' > unpinned-violations.json
           echo "Captured violations:"
