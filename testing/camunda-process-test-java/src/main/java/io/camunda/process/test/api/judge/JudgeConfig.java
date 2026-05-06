@@ -35,6 +35,9 @@ public interface JudgeConfig {
   /** The default threshold score (0-1) above which a judge evaluation passes. */
   double DEFAULT_THRESHOLD = 0.5;
 
+  /** The default value for {@link #isResolveDocuments()}. */
+  boolean DEFAULT_RESOLVE_DOCUMENTS = false;
+
   /**
    * Creates a new JudgeConfig with default settings and no chat model. A chat model must be set via
    * {@link #withChatModelAdapter(ChatModelAdapter)} before using the config for judge evaluations.
@@ -42,7 +45,7 @@ public interface JudgeConfig {
    * @return a new JudgeConfig instance with default settings
    */
   static JudgeConfig defaults() {
-    return new JudgeConfigImpl(null, DEFAULT_THRESHOLD, null);
+    return new JudgeConfigImpl(null, DEFAULT_THRESHOLD, null, DEFAULT_RESOLVE_DOCUMENTS);
   }
 
   /**
@@ -55,7 +58,7 @@ public interface JudgeConfig {
     if (chatModel == null) {
       throw new IllegalArgumentException("chatModel must not be null");
     }
-    return new JudgeConfigImpl(chatModel, DEFAULT_THRESHOLD, null);
+    return new JudgeConfigImpl(chatModel, DEFAULT_THRESHOLD, null, DEFAULT_RESOLVE_DOCUMENTS);
   }
 
   /**
@@ -99,6 +102,28 @@ public interface JudgeConfig {
   JudgeConfig withCustomPrompt(String customPrompt);
 
   /**
+   * Returns a new JudgeConfig with the given document-resolution toggle, keeping all other
+   * settings.
+   *
+   * <p>When enabled, Camunda document references found in the asserted variable are resolved and
+   * their content is provided to the judge as additional context. This allows the judge to reason
+   * about binary artifacts (images, PDFs, etc.) that the agent produced as tool call results or
+   * received as user input.
+   *
+   * <p>Disabled by default to avoid unnecessary token cost. Enable on demand for assertions that
+   * need to reason about document content.
+   *
+   * <p>True multimodal evaluation (binary content sent as structured content blocks) is only
+   * available when using one of the built-in LangChain4j {@link ChatModelAdapter} providers. When a
+   * custom adapter is configured, documents are appended to the prompt as text where possible
+   * (text-mime types) and binaries are referenced by metadata only.
+   *
+   * @param resolveDocuments {@code true} to resolve and include document content
+   * @return a new JudgeConfig instance with the updated toggle
+   */
+  JudgeConfig withResolveDocuments(boolean resolveDocuments);
+
+  /**
    * Returns the chat model adapter, or {@code null} if not yet configured.
    *
    * @return the chat model adapter, or {@code null}
@@ -118,4 +143,13 @@ public interface JudgeConfig {
    * @return the custom prompt
    */
   Optional<String> getCustomPrompt();
+
+  /**
+   * Returns whether Camunda document references found in the asserted variable should be resolved
+   * and their content provided to the judge as additional context.
+   *
+   * @return {@code true} if document resolution is enabled
+   * @see #withResolveDocuments(boolean)
+   */
+  boolean isResolveDocuments();
 }

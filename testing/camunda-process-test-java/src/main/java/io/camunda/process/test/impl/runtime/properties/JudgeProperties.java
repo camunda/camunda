@@ -36,6 +36,7 @@ public class JudgeProperties {
 
   public static final String PROPERTY_NAME_JUDGE_THRESHOLD = "judge.threshold";
   public static final String PROPERTY_NAME_JUDGE_CUSTOM_PROMPT = "judge.customPrompt";
+  public static final String PROPERTY_NAME_JUDGE_RESOLVE_DOCUMENTS = "judge.resolveDocuments";
   public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_PROVIDER = "judge.chatModel.provider";
   public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_MODEL = "judge.chatModel.model";
   public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_API_KEY = "judge.chatModel.apiKey";
@@ -54,9 +55,11 @@ public class JudgeProperties {
       "judge.chatModel.customProperties";
 
   private static final double DEFAULT_THRESHOLD = JudgeConfig.DEFAULT_THRESHOLD;
+  private static final boolean DEFAULT_RESOLVE_DOCUMENTS = JudgeConfig.DEFAULT_RESOLVE_DOCUMENTS;
 
   private final double threshold;
   private final String customPrompt;
+  private final boolean resolveDocuments;
   private final String chatModelProvider;
   private final String chatModelModel;
   private final String chatModelApiKey;
@@ -81,6 +84,12 @@ public class JudgeProperties {
     threshold = parsedThreshold;
 
     customPrompt = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CUSTOM_PROMPT);
+    resolveDocuments =
+        getPropertyOrDefault(
+            properties,
+            PROPERTY_NAME_JUDGE_RESOLVE_DOCUMENTS,
+            Boolean::parseBoolean,
+            DEFAULT_RESOLVE_DOCUMENTS);
     chatModelProvider = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_PROVIDER);
     chatModelModel = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_MODEL);
     chatModelApiKey = getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_API_KEY);
@@ -111,6 +120,10 @@ public class JudgeProperties {
 
   public String getCustomPrompt() {
     return customPrompt;
+  }
+
+  public boolean isResolveDocuments() {
+    return resolveDocuments;
   }
 
   public ProviderConfig toProviderConfig() {

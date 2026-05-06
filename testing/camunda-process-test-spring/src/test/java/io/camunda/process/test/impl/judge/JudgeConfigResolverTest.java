@@ -56,6 +56,7 @@ class JudgeConfigResolverTest {
     final JudgeConfiguration config = new JudgeConfiguration();
     config.setThreshold(0.8);
     config.setCustomPrompt("Custom criteria");
+    config.setResolveDocuments(true);
 
     final Optional<JudgeConfig> result = JudgeConfigResolver.resolve(applicationContext, config);
 
@@ -63,6 +64,7 @@ class JudgeConfigResolverTest {
     assertThat(result.get().getChatModel()).isSameAs(ADAPTER_A);
     assertThat(result.get().getThreshold()).isEqualTo(0.8);
     assertThat(result.get().getCustomPrompt()).hasValue("Custom criteria");
+    assertThat(result.get().isResolveDocuments()).isTrue();
   }
 
   @Test
@@ -77,6 +79,7 @@ class JudgeConfigResolverTest {
     assertThat(result.get().getChatModel()).isSameAs(ADAPTER_A);
     assertThat(result.get().getThreshold()).isEqualTo(0.5);
     assertThat(result.get().getCustomPrompt()).isEmpty();
+    assertThat(result.get().isResolveDocuments()).isFalse();
   }
 
   @Test
