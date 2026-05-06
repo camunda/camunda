@@ -102,8 +102,12 @@ public class CamundaClientAuthProperties {
   /** The truststore password for the OAuth identity provider. */
   private String truststorePassword;
 
-  /** The path to the credentials cache file. */
-  private String credentialsCachePath = DEFAULT_CREDENTIALS_CACHE_PATH;
+  /**
+   * The path to the credentials cache file. If unset or empty, the OAuth provider caches
+   * credentials only in memory and does not persist them across restarts. Set this to a writable
+   * path to opt in to persistent file-based caching. See issue #13124.
+   */
+  private String credentialsCachePath;
 
   /** The connection timeout for requests to the OAuth credentials provider. */
   private Duration connectTimeout = DEFAULT_CONNECT_TIMEOUT;
