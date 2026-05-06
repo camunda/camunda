@@ -42,12 +42,6 @@ public class MessageSubscriptionExportHandler
 
   public MessageSubscriptionExportHandler(
       final MessageSubscriptionWriter messageSubscriptionWriter,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
-    this(messageSubscriptionWriter, processCache, new ToolsConfiguration());
-  }
-
-  public MessageSubscriptionExportHandler(
-      final MessageSubscriptionWriter messageSubscriptionWriter,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final ToolsConfiguration toolConfig) {
     this.messageSubscriptionWriter = messageSubscriptionWriter;
