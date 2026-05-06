@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -396,6 +397,53 @@ final class BulkIndexRequestTest {
           .describedAs(
               "Expect that decisionEvaluationInstanceKey is suppressed via @JsonIgnore on the impl class")
           .isNull();
+    }
+
+    @Test
+    void shouldIndexJobRecordWithoutPriorityOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new JobRecord().setPriority(50)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("priority"))
+          .describedAs(
+              "Expect that job records are NOT serialized with priority on previous version")
+          .isNull();
+    }
+
+    @Test
+    void shouldIndexJobRecordWithPriorityOnCurrentVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new JobRecord().setPriority(50)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations()).hasSize(1);
+      final Map<String, Object> value = getValueFromFirstOperation(request);
+      assertThat(value.get("priority"))
+          .describedAs("Expect that job records are serialized with priority on current version")
+          .isEqualTo(50);
     }
 
     private static Map<String, Object> getDocumentAsMap(final BulkOperation operation)

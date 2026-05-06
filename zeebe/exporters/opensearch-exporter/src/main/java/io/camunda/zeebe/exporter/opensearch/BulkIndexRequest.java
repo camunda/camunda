@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import jakarta.json.spi.JsonProvider;
@@ -47,6 +48,7 @@ final class BulkIndexRequest {
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
+          .addMixIn(JobRecordValue.class, JobMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -56,6 +58,7 @@ final class BulkIndexRequest {
   private static final String RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY =
       "decisionEvaluationInstanceKey";
   private static final String AUTH_INFO_PROPERTY = "authInfo";
+  private static final String PRIORITY_PROPERTY = "priority";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -185,4 +188,7 @@ final class BulkIndexRequest {
 
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
   private static final class CommandDistributionMixin {}
+
+  @JsonIgnoreProperties({PRIORITY_PROPERTY})
+  private static final class JobMixin {}
 }
