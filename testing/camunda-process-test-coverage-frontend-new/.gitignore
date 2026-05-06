@@ -11,4 +11,4 @@ node/
 target/
 
 # Build output (managed by Maven, not git)
-# The actual output goes to camunda-process-test-java/target/
+# The actual output goes to this module's target/ directory
