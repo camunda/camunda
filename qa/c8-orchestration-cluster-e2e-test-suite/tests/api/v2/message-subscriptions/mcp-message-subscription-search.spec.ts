@@ -139,7 +139,7 @@ test.describe('MCP Message Subscription Search API Tests', () => {
       expect(types).toContain('PROCESS_EVENT');
     });
 
-    //Skipped due to bug: 52532 https://github.com/camunda/camunda/issues/52532
+    //Skipped due to bug: 52514 https://github.com/camunda/camunda/issues/52514
     await test.step.skip(
       'SC-API-04 — extensionProperties contains tool metadata',
       async () => {
@@ -282,17 +282,11 @@ test.describe('MCP Message Subscription Search API Tests', () => {
       const json = await res.json();
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
 
+      // TODO(camunda/camunda#52534, camunda/camunda#52514): restore extensionProperties assertion below
       json.items.forEach(
-        (it: {
-          processDefinitionId: string;
-          toolName: string;
-          extensionProperties: Record<string, string>;
-        }) => {
+        (it: {processDefinitionId: string; toolName: string}) => {
           expect(it.processDefinitionId).toBe('mcpProcessAlpha');
           expect(it.toolName).toBe('alpha-tool-name');
-          expect(it.extensionProperties['io.camunda.tool:name']).toBe(
-            'alpha-tool-name',
-          );
         },
       );
     });
@@ -325,6 +319,7 @@ test.describe('MCP Message Subscription Search API Tests', () => {
         const json = await res.json();
         expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
 
+<<<<<<< HEAD
         json.items.forEach(
           (it: {extensionProperties: Record<string, string>}) => {
             assertEqualsForKeys(
@@ -352,6 +347,21 @@ test.describe('MCP Message Subscription Search API Tests', () => {
         );
       },
     );
+=======
+      // TODO(camunda/camunda#52534, camunda/camunda#52514): restore extensionProperties assertions below
+      json.items.forEach((it: object) => {
+        assertEqualsForKeys(
+          it,
+          {
+            processDefinitionId: 'mcpProcessWithInputs',
+            messageSubscriptionType: 'START_EVENT',
+            tenantId: '<default>',
+          },
+          ['processDefinitionId', 'messageSubscriptionType', 'tenantId'],
+        );
+      });
+    });
+>>>>>>> 0865368c020 (fix: skip/trim extensionProperties tests while field is temporarily removed)
 
     await test.step('SC-API-09 — Sort by processDefinitionName ascending', async () => {
       const res = await request.post(
@@ -437,4 +447,5 @@ test.describe('MCP Message Subscription Search API Tests', () => {
       });
     });
   });
+
 });
