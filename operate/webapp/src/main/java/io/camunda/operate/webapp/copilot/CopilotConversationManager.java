@@ -146,6 +146,18 @@ public class CopilotConversationManager {
     }
   }
 
+  private String buildInstanceContext(Map<String, Object> context) {
+    final Object instanceId = context.get("processInstanceId");
+    if (instanceId == null) {
+      return null;
+    }
+    return "The user is currently viewing process instance "
+        + instanceId
+        + ". When they refer to 'this instance', 'this process', or use deictic pronouns, "
+        + "they mean this instance. Default to answering in that context unless they explicitly "
+        + "ask about something else.";
+  }
+
   private ChatResponse streamOnce(ConversationSession session, Map<String, Object> context)
       throws InterruptedException {
     final CountDownLatch done = new CountDownLatch(1);
@@ -154,7 +166,9 @@ public class CopilotConversationManager {
 
     chatModel.chat(
         ChatRequest.builder()
-            .messages(session.messagesWithSystem(properties.getSystemPrompt()))
+            .messages(
+                session.messagesWithSystem(
+                    properties.getSystemPrompt(), buildInstanceContext(context)))
             .toolSpecifications(toolRegistry.specifications())
             .build(),
         new StreamingChatResponseHandler() {
@@ -217,9 +231,13 @@ public class CopilotConversationManager {
       history.add(ToolExecutionResultMessage.from(request, result));
     }
 
-    synchronized List<ChatMessage> messagesWithSystem(String systemPrompt) {
-      final List<ChatMessage> withSystem = new ArrayList<>(history.size() + 1);
+    synchronized List<ChatMessage> messagesWithSystem(String systemPrompt, String instanceContext) {
+      final boolean hasContext = instanceContext != null && !instanceContext.isBlank();
+      final List<ChatMessage> withSystem = new ArrayList<>(history.size() + (hasContext ? 2 : 1));
       withSystem.add(SystemMessage.from(systemPrompt));
+      if (hasContext) {
+        withSystem.add(SystemMessage.from(instanceContext));
+      }
       withSystem.addAll(history);
       return withSystem;
     }
