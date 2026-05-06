@@ -4,6 +4,7 @@
 
 plugins {
     id("buildlogic.openapi-java-client-conventions")
+    id("buildlogic.netty-tcnative-runtime-conventions")
 }
 
 // Configure OpenAPI generation for this module
