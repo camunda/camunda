@@ -90,6 +90,7 @@ jobs:
     outputs:
       releaseTagRevision: ${{ steps.maven-perform-release.outputs.tagRevision }}
       releaseBranch: ${{ env.RELEASE_BRANCH }}
+      deploymentId: ${{ steps.maven-perform-release.outputs.deploymentId }}
     env:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
       PUSH_CHANGES: ${{ !inputs.dryRun }}
@@ -236,6 +237,16 @@ jobs:
             ARGUMENTS_PROFILE="-P!include-optimize"
           fi
 
+          # Ensure the Maven Central deployment ID is captured even if the step fails
+          # (e.g. upload succeeds but validation times out). The trap runs on any exit.
+          trap 'if [[ -f /tmp/deployment-id.txt ]]; then
+            echo "deploymentId=$(</tmp/deployment-id.txt)" >> "$GITHUB_OUTPUT"
+          elif [[ "${SKIP_CENTRAL_RELEASE}" == "true" ]]; then
+            echo "deploymentId=dry-run-${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploymentId=not-found" >> "$GITHUB_OUTPUT"
+          fi' EXIT
+
           # shellcheck disable=SC2016
           ./mvnw release:perform -B \
             -DreleaseVersion="${RELEASE_VERSION}" \
@@ -244,7 +255,17 @@ jobs:
             -DskipQaBuild=true \
             -P-autoFormat \
             ${PROFILE_FLAGS} \
-            -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -DwaitMaxTime=${CENTRAL_WAIT_MAX_TIME} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\""
+            -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -DwaitMaxTime=${CENTRAL_WAIT_MAX_TIME} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\"" \
+            2>&1 | awk '{print} /deploymentId:/{for(i=1;i<=NF;i++) if($i ~ /^[0-9a-f]+-[0-9a-f-]+/) {gsub(/[^0-9a-f-]/,"",$i); print $i > "/tmp/deployment-id.txt"}}'
+
+          # Log the extracted deployment ID (the trap above handles writing to GITHUB_OUTPUT)
+          if [[ -f /tmp/deployment-id.txt ]]; then
+            echo "✅ Maven Central deployment ID: $(</tmp/deployment-id.txt)"
+          elif [[ "${SKIP_CENTRAL_RELEASE}" == "true" ]]; then
+            echo "ℹ️ Dry run — using mock deployment ID" >&2
+          else
+            echo "ℹ️ No Maven Central deployment ID found in build output" >&2
+          fi
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
@@ -1224,6 +1245,7 @@ jobs:
             {
               "is_camunda_release_successful": "true",
               "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_maven_central_deployment_id": "${{ needs.release.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
       - name: Send success Slack notification
@@ -1318,6 +1340,7 @@ jobs:
             {
               "is_camunda_release_successful": "false",
               "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_maven_central_deployment_id": "${{ needs.release.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
       - name: Send failure Slack notification
