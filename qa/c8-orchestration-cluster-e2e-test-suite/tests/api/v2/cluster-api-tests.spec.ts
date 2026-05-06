@@ -33,7 +33,7 @@ test.describe('Cluster API Tests', () => {
       );
       const result = await res.json();
       expect(result.brokers).toHaveLength(1);
-      expect(result.brokers[0].partitions).toHaveLength(1);
+      expect(result.brokers[0].partitions).toHaveLength(2);
     }).toPass({
       intervals: [2_000, 5_000, 10_000],
       timeout: 20_000,
