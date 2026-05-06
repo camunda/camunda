@@ -149,7 +149,6 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
 
   @Override
   public void close() throws Exception {
-    LayeredSnapshotFlusher.flush(this);
     try {
       activeDb.close();
     } finally {
