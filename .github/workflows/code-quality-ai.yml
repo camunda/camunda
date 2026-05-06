@@ -10,9 +10,10 @@ name: Code Quality AI Pipeline
 
 on:
   workflow_dispatch:
-  schedule:
-    # 03:00 UTC nightly. Aligned with other nightly workflows.
-    - cron: "0 3 * * *"
+  # Nightly schedule disabled while the pipeline is under team review.
+  # Re-enable by uncommenting the block below once the scaffold is approved.
+  # schedule:
+  #   - cron: "0 3 * * *"
 
 defaults:
   run:
