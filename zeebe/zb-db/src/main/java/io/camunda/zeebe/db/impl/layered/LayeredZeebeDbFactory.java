@@ -14,8 +14,10 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.inmemory.InMemoryZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.function.Supplier;
@@ -29,23 +31,46 @@ public final class LayeredZeebeDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDbFactory<ColumnFamilyType> {
 
-  private final ZeebeDbFactory<ColumnFamilyType> persistentFactory;
+  private final ZeebeRocksDbFactory<ColumnFamilyType> persistentFactory;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration accessMetricsConfiguration;
 
+  @VisibleForTesting
   public LayeredZeebeDbFactory(
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final AccessMetricsConfiguration accessMetricsConfiguration,
       final Supplier<MeterRegistry> meterRegistryFactory) {
+    this(
+        rocksDbConfiguration,
+        consistencyChecksSettings,
+        accessMetricsConfiguration,
+        meterRegistryFactory,
+        new SharedRocksDbResources(rocksDbConfiguration.getMemoryLimit()),
+        3);
+  }
+
+  public LayeredZeebeDbFactory(
+      final RocksDbConfiguration rocksDbConfiguration,
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final AccessMetricsConfiguration accessMetricsConfiguration,
+      final Supplier<MeterRegistry> meterRegistryFactory,
+      final SharedRocksDbResources sharedRocksDbResources,
+      final int partitionCount) {
     persistentFactory =
         new ZeebeRocksDbFactory<>(
             rocksDbConfiguration,
             consistencyChecksSettings,
             accessMetricsConfiguration,
-            meterRegistryFactory);
+            meterRegistryFactory,
+            sharedRocksDbResources,
+            partitionCount);
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.accessMetricsConfiguration = accessMetricsConfiguration;
+  }
+
+  public ZeebeRocksDbFactory<ColumnFamilyType> persistentFactory() {
+    return persistentFactory;
   }
 
   @Override

@@ -56,8 +56,8 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionS
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.layered.LayeredZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
@@ -170,7 +170,7 @@ public final class ZeebePartitionFactory {
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
     final var partitionId = raftPartition.id().id();
     final var zeebeFactory =
-        new ZeebeRocksDbFactory<ZbColumnFamilies>(
+        new LayeredZeebeDbFactory<ZbColumnFamilies>(
             databaseCfg.createRocksDbConfiguration(),
             consistencyChecks.getSettings(),
             new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), partitionId),
@@ -181,7 +181,7 @@ public final class ZeebePartitionFactory {
     final StateController stateController =
         createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
 
-    final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory);
+    final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory.persistentFactory());
     final var context =
         new PartitionStartupAndTransitionContextImpl(
             localBroker.getNodeId(),
