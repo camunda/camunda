@@ -28,7 +28,7 @@ dependencies {
     implementation(libs.io.micrometer.micrometer.core)
     implementation(libs.org.jeasy.easy.random.core)
     implementation(libs.io.github.classgraph.classgraph)
-    testImplementation(project(":zeebe-protocol-asserts"))
+    testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
 }
 
 description = "Zeebe Protocol Test Util"

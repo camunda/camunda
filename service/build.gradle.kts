@@ -37,7 +37,7 @@ dependencies {
     implementation(project(":camunda-security-services"))
     testImplementation(project(":zeebe-auth"))
     testImplementation(project(":zeebe-gateway", configuration = "tests"))
-    testImplementation(project(":zeebe-protocol-asserts"))
+    testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)

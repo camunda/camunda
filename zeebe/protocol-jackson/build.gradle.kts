@@ -13,7 +13,7 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.core)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-protocol-test-util"))
-    testImplementation(project(":zeebe-protocol-asserts"))
+    testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
 }
 
 description = "Zeebe Protocol Jackson"
