@@ -40,7 +40,7 @@ public class Write {
   @NestedConfigurationProperty private Throttle throttle = new Throttle();
 
   public boolean isEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enabled",
         enabled,
         Boolean.class,
@@ -53,7 +53,7 @@ public class Write {
   }
 
   public int getLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".limit",
         limit,
         Integer.class,
@@ -66,7 +66,7 @@ public class Write {
   }
 
   public Duration getRampUp() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".ramp-up",
         rampUp,
         Duration.class,

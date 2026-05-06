@@ -122,7 +122,7 @@ public class Limit {
   @NestedConfigurationProperty private final LegacyVegas legacyVegas = new LegacyVegas();
 
   public boolean isEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enabled",
         enabled,
         Boolean.class,
@@ -135,7 +135,7 @@ public class Limit {
   }
 
   public boolean isWindowed() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".windowed",
         windowed,
         Boolean.class,
@@ -148,7 +148,7 @@ public class Limit {
   }
 
   public String getAlgorithm() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".algorithm",
         algorithm,
         String.class,
@@ -186,7 +186,7 @@ public class Limit {
 
   // Legacy property getters for backward compatibility validation
   public Duration getAimdRequestTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".aimd.request-timeout",
         aimd.getRequestTimeout(),
         Duration.class,
@@ -195,7 +195,7 @@ public class Limit {
   }
 
   public int getAimdInitialLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".aimd.initial-limit",
         aimd.getInitialLimit(),
         Integer.class,
@@ -204,7 +204,7 @@ public class Limit {
   }
 
   public int getAimdMinLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".aimd.min-limit",
         aimd.getMinLimit(),
         Integer.class,
@@ -213,7 +213,7 @@ public class Limit {
   }
 
   public int getAimdMaxLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".aimd.max-limit",
         aimd.getMaxLimit(),
         Integer.class,
@@ -222,7 +222,7 @@ public class Limit {
   }
 
   public double getAimdBackoffRatio() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".aimd.backoff-ratio",
         aimd.getBackoffRatio(),
         Double.class,
@@ -231,7 +231,7 @@ public class Limit {
   }
 
   public int getFixedLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".fixed.limit",
         fixed.getLimit(),
         Integer.class,
@@ -240,7 +240,7 @@ public class Limit {
   }
 
   public int getVegasAlpha() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".vegas.alpha",
         vegas.getAlpha(),
         Integer.class,
@@ -249,7 +249,7 @@ public class Limit {
   }
 
   public int getVegasBeta() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".vegas.beta",
         vegas.getBeta(),
         Integer.class,
@@ -258,7 +258,7 @@ public class Limit {
   }
 
   public int getVegasInitialLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".vegas.initial-limit",
         vegas.getInitialLimit(),
         Integer.class,
@@ -267,7 +267,7 @@ public class Limit {
   }
 
   public int getGradientMinLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gradient.min-limit",
         gradient.getMinLimit(),
         Integer.class,
@@ -276,7 +276,7 @@ public class Limit {
   }
 
   public int getGradientInitialLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gradient.initial-limit",
         gradient.getInitialLimit(),
         Integer.class,
@@ -285,7 +285,7 @@ public class Limit {
   }
 
   public double getGradientRttTolerance() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gradient.rtt-tolerance",
         gradient.getRttTolerance(),
         Double.class,
@@ -294,7 +294,7 @@ public class Limit {
   }
 
   public int getGradient2MinLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gradient2.min-limit",
         gradient2.getMinLimit(),
         Integer.class,
@@ -303,7 +303,7 @@ public class Limit {
   }
 
   public int getGradient2InitialLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gradient2.initial-limit",
         gradient2.getInitialLimit(),
         Integer.class,
@@ -312,7 +312,7 @@ public class Limit {
   }
 
   public double getGradient2RttTolerance() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gradient2.rtt-tolerance",
         gradient2.getRttTolerance(),
         Double.class,
@@ -321,7 +321,7 @@ public class Limit {
   }
 
   public int getGradient2LongWindow() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gradient2.long-window",
         gradient2.getLongWindow(),
         Integer.class,
@@ -330,7 +330,7 @@ public class Limit {
   }
 
   public int getLegacyVegasInitialLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".legacy-vegas.initial-limit",
         legacyVegas.getInitialLimit(),
         Integer.class,
@@ -339,7 +339,7 @@ public class Limit {
   }
 
   public int getLegacyVegasMaxConcurrency() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".legacy-vegas.max-concurrency",
         legacyVegas.getMaxConcurrency(),
         Integer.class,
@@ -348,7 +348,7 @@ public class Limit {
   }
 
   public double getLegacyVegasAlphaLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".legacy-vegas.alpha-limit",
         legacyVegas.getAlphaLimit(),
         Double.class,
@@ -357,7 +357,7 @@ public class Limit {
   }
 
   public double getLegacyVegasBetaLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".legacy-vegas.beta-limit",
         legacyVegas.getBetaLimit(),
         Double.class,

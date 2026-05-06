@@ -26,7 +26,7 @@ public class Restore {
       List.of("lost+found", VersionedDirectoryLayout.DIRECTORY_INITIALIZED_FILE);
 
   public boolean isValidateConfig() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".validate-config",
         validateConfig,
         Boolean.class,
@@ -39,7 +39,7 @@ public class Restore {
   }
 
   public List<String> getIgnoreFilesInTarget() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".ignore-files-in-target",
         ignoreFilesInTarget,
         List.class,

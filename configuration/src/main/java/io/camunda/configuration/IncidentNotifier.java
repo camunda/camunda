@@ -32,7 +32,7 @@ public class IncidentNotifier {
   }
 
   public String getWebhook() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".webhook",
         webhook,
         String.class,
@@ -45,7 +45,7 @@ public class IncidentNotifier {
   }
 
   public String getAuth0Domain() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".auth0-domain",
         auth0Domain,
         String.class,
@@ -58,7 +58,7 @@ public class IncidentNotifier {
   }
 
   public String getAuth0Protocol() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".auth0-protocol",
         auth0Protocol,
         String.class,
@@ -71,7 +71,7 @@ public class IncidentNotifier {
   }
 
   public String getM2mClientId() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".m2m-client-id",
         m2mClientId,
         String.class,
@@ -84,7 +84,7 @@ public class IncidentNotifier {
   }
 
   public String getM2mClientSecret() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
         prefix() + ".m2m-client-secret",
         m2mClientSecret,
         String.class,
@@ -97,7 +97,7 @@ public class IncidentNotifier {
   }
 
   public String getM2mAudience() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".m2m-audience",
         m2mAudience,
         String.class,

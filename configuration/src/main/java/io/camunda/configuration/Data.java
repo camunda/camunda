@@ -57,7 +57,7 @@ public class Data {
   }
 
   public Duration getSnapshotPeriod() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".snapshot-period",
         snapshotPeriod,
         Duration.class,
