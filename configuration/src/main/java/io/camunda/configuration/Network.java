@@ -26,7 +26,7 @@ public class Network {
   private String host = null; // Do not set a default value.
 
   public String getHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".host",
         host,
         String.class,

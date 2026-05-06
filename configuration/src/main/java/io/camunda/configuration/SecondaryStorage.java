@@ -49,7 +49,7 @@ public class SecondaryStorage {
   }
 
   public SecondaryStorageType getType() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".type",
         type,
         SecondaryStorageType.class,

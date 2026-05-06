@@ -54,7 +54,7 @@ public class Gcs {
   private int bufferSize = 2 * 1024 * 1024;
 
   public String getBucketName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".bucket-name",
         bucketName,
         String.class,
@@ -67,7 +67,7 @@ public class Gcs {
   }
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".base-path",
         basePath,
         String.class,
@@ -80,7 +80,7 @@ public class Gcs {
   }
 
   public String getHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".host",
         host,
         String.class,
@@ -93,7 +93,7 @@ public class Gcs {
   }
 
   public GcsBackupStoreAuth getAuth() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".auth",
         auth,
         GcsBackupStoreAuth.class,

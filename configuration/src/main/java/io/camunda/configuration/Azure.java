@@ -69,7 +69,7 @@ public class Azure {
   private SasToken sasToken;
 
   public String getEndpoint() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".endpoint",
         endpoint,
         String.class,
@@ -82,7 +82,7 @@ public class Azure {
   }
 
   public String getAccountName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".account-name",
         accountName,
         String.class,
@@ -95,7 +95,7 @@ public class Azure {
   }
 
   public String getAccountKey() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
         PREFIX + ".account-key",
         accountKey,
         String.class,
@@ -108,7 +108,7 @@ public class Azure {
   }
 
   public String getConnectionString() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
         PREFIX + ".connection-string",
         connectionString,
         String.class,
@@ -121,7 +121,7 @@ public class Azure {
   }
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".base-path",
         basePath,
         String.class,
@@ -134,7 +134,7 @@ public class Azure {
   }
 
   public boolean isCreateContainer() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".create-container",
         createContainer,
         Boolean.class,

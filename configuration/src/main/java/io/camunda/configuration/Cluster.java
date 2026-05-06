@@ -64,7 +64,7 @@ public class Cluster {
   }
 
   public int getNodeId() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".node-id",
         nodeId,
         Integer.class,
@@ -77,7 +77,7 @@ public class Cluster {
   }
 
   public int getPartitionCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".partition-count",
         partitionCount,
         Integer.class,
@@ -90,7 +90,7 @@ public class Cluster {
   }
 
   public int getReplicationFactor() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".replication-factor",
         replicationFactor,
         Integer.class,
@@ -103,7 +103,7 @@ public class Cluster {
   }
 
   public int getSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".size",
         size,
         Integer.class,

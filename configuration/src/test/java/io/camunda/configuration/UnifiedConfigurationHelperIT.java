@@ -30,7 +30,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesMultilineListSyntax() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".multilinelistsyntax",
               List.of("newItem1", "newItem2"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -42,7 +42,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesInlineListSyntax() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".inlinelistsyntax",
               List.of("newItem3", "newItem4"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -54,7 +54,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesInlineListSyntaxWithoutQuotes() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".inlinelistsyntaxwithoutqoutes",
               List.of("newItem7", "newItem8"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -66,7 +66,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesCommaSeparatedString() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".commaseparatedstring",
               List.of("newItem5", "newItem6"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -81,7 +81,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromLegacyWhenLegacyConfigUsesMultilineListSyntax() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -93,7 +93,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromLegacyWhenLegacyConfigUsesInlineListSyntax() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -105,7 +105,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromLegacyWhenLegacyConfigUsesInlineListSyntaxWithoutQuotes() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -117,7 +117,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromLegacyWhenLegacyConfigUsesCommaSeparatedString() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -129,7 +129,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDurationListFromLegacyWhenLegacyConfigUsesMultilineListSyntax() {
       final List<Duration> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, Duration.class),
@@ -143,7 +143,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDurationListFromLegacyWhenLegacyConfigUsesInlineListSyntax() {
       final List<Duration> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, Duration.class),
@@ -157,7 +157,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDurationListFromLegacyWhenLegacyConfigUsesCommaSeparatedString() {
       final List<Duration> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, Duration.class),
@@ -171,7 +171,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDataSizeListFromLegacyWhenLegacyConfigUsesMultilineListSyntax() {
       final List<DataSize> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, DataSize.class),
@@ -185,7 +185,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDataSizeListFromLegacyWhenLegacyConfigUsesInlineListSyntax() {
       final List<DataSize> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, DataSize.class),
@@ -199,7 +199,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDataSizeListFromLegacyWhenLegacyConfigUsesCommaSeparatedString() {
       final List<DataSize> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, DataSize.class),
@@ -216,7 +216,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesMultilineListSyntax() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".multilinelistsyntax",
               List.of("newItem1", "newItem2"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -228,7 +228,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesInlineListSyntax() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".inlinelistsyntax",
               List.of("newItem3", "newItem4"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -240,7 +240,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesInlineListSyntaxWithoutQuotes() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".inlinelistsyntaxwithoutqoutes",
               List.of("newItem7", "newItem8"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -252,7 +252,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesCommaSeparatedString() {
       final List<String> legacyList =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".commaseparatedstring",
               List.of("newItem5", "newItem6"),
               ResolvableType.forClassWithGenerics(List.class, String.class),

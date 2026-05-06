@@ -32,7 +32,7 @@ public class SasToken {
   }
 
   public SasTokenType getType() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".type",
         type,
         SasTokenType.class,
@@ -45,7 +45,7 @@ public class SasToken {
   }
 
   public String getValue() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
         PREFIX + ".value",
         value,
         String.class,

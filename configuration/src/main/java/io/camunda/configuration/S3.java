@@ -118,7 +118,7 @@ public class S3 {
   private String basePath;
 
   public String getBucketName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".bucket-name",
         bucketName,
         String.class,
@@ -131,7 +131,7 @@ public class S3 {
   }
 
   public String getEndpoint() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".endpoint",
         endpoint,
         String.class,
@@ -144,7 +144,7 @@ public class S3 {
   }
 
   public String getRegion() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".region",
         region,
         String.class,
@@ -157,7 +157,7 @@ public class S3 {
   }
 
   public String getAccessKey() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".access-key",
         accessKey,
         String.class,
@@ -170,7 +170,7 @@ public class S3 {
   }
 
   public String getSecretKey() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
         PREFIX + ".secret-key",
         secretKey,
         String.class,
@@ -183,7 +183,7 @@ public class S3 {
   }
 
   public Duration getApiCallTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".api-call-timeout",
         apiCallTimeout,
         Duration.class,
@@ -196,7 +196,7 @@ public class S3 {
   }
 
   public boolean isForcePathStyleAccess() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".force-path-style-access",
         forcePathStyleAccess,
         Boolean.class,
@@ -209,7 +209,7 @@ public class S3 {
   }
 
   public String getCompression() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".compression",
         compression,
         String.class,
@@ -222,7 +222,7 @@ public class S3 {
   }
 
   public int getMaxConcurrentConnections() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-concurrent-connections",
         maxConcurrentConnections,
         Integer.class,
@@ -235,7 +235,7 @@ public class S3 {
   }
 
   public Duration getConnectionAcquisitionTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".connection-acquisition-timeout",
         connectionAcquisitionTimeout,
         Duration.class,
@@ -248,7 +248,7 @@ public class S3 {
   }
 
   public boolean isSupportLegacyMd5() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".support-legacy-md5",
         supportLegacyMd5,
         Boolean.class,
@@ -261,7 +261,7 @@ public class S3 {
   }
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".base-path",
         basePath,
         String.class,
