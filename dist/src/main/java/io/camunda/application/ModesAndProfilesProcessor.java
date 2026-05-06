@@ -64,7 +64,7 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
       setProperty("zeebe.broker.gateway.security.enabled", false); // embedded gateway
       setProperty("zeebe.gateway.security.enabled", false); // dedicated gateway
       setProperty("camunda.security.authentication.unprotected-api", true);
-      setProperty("camunda.security.authentication.authorizations.enabled", false);
+      setProperty("camunda.security.authorizations.enabled", false);
     }
 
     switch (getMode().toLowerCase()) {
