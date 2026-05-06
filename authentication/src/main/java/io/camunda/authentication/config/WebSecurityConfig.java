@@ -12,6 +12,7 @@ import static io.camunda.security.configuration.headers.ContentSecurityPolicyCon
 import static java.util.stream.Collectors.toMap;
 
 import com.nimbusds.jose.JOSEObjectType;
+import io.camunda.authentication.BearerAwareSecurityContextRepository;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
@@ -132,6 +133,7 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AuthenticationEntryPointFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -1032,6 +1034,18 @@ public class WebSecurityConfig {
               .sessionManagement(
                   (sessionManagement) ->
                       sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+              // Route SecurityContext lookups by request shape: bearer requests get a no-op
+              // repository (no session lookup at all), session-cookie-bearing requests still go
+              // through HttpSessionSecurityContextRepository so webapp users hitting the API stay
+              // authenticated. STATELESS would force the no-op for everyone and break the latter
+              // flow; NEVER on its own consults the session repository for every request,
+              // including bearer ones, where it has nothing to do. See
+              // {@link BearerAwareSecurityContextRepository}.
+              .securityContext(
+                  (securityContext) ->
+                      securityContext.securityContextRepository(
+                          new BearerAwareSecurityContextRepository(
+                              new HttpSessionSecurityContextRepository(), SESSION_COOKIE)))
               .requestCache((cache) -> cache.requestCache(new NullRequestCache()))
               .exceptionHandling(
                   (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))

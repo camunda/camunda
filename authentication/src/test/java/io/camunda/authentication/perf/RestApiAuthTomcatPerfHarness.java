@@ -129,7 +129,7 @@ import org.springframework.test.context.DynamicPropertySource;
 @EnableAutoConfiguration(
     exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class})
 @ActiveProfiles("consolidated-auth")
-@Disabled("Local perf harness — enable manually; see ROOT_CAUSE.md")
+// @Disabled("Local perf harness — enable manually; see ROOT_CAUSE.md")
 public class RestApiAuthTomcatPerfHarness {
 
   private static final int WARMUP_REQUESTS = 1_000;
