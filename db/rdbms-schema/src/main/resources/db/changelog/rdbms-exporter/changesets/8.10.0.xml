@@ -99,4 +99,17 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="create_rdbms_schema_version_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}RDBMS_SCHEMA_VERSION"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}RDBMS_SCHEMA_VERSION">
+      <column name="VERSION" type="VARCHAR(32)">
+        <constraints nullable="false" primaryKey="true"/>
+      </column>
+    </createTable>
+  </changeSet>
+
 </databaseChangeLog>
