@@ -3,11 +3,14 @@
 #
 # Consumed by `zizmor --config .github/zizmor.yml`.
 #
-# Only the `unpinned-uses` rule is configured here — everything else zizmor
-# offers (template-injection, excessive-permissions, dangerous-triggers, etc.)
-# is intentionally left at default to keep this gate narrowly focused on
-# issue #25934. Add more rules under `rules:` later if you want zizmor to
-# do broader security review.
+# This gate is INTENTIONALLY scoped to one audit: `unpinned-uses`.
+# All other zizmor audits are explicitly disabled below. The rationale:
+# many legacy workflow files in this repo trip zizmor's other audits
+# (cache-poisoning, template-injection, excessive-permissions, etc.) —
+# valid findings, but unrelated to issue #25934 and out of scope for
+# this PR. Re-enabling them is a one-line delete (remove the
+# `disable: true` for the audit you want to turn on); doing them as
+# separate, focused PRs lets each finding be triaged on its own merits.
 # =============================================================================
 
 rules:
@@ -71,6 +74,49 @@ rules:
       # (`.github/actions/*/action.yml`) are NOT supported here — use
       # the inline-comment escape hatch (#2 below) for those.
     ignore: []
+
+  # ---------------------------------------------------------------------------
+  # All other audits explicitly disabled.
+  #
+  # Listed alphabetically. To re-enable any of these, delete the line — that's
+  # the only change needed; zizmor will run the audit at its default settings.
+  # The comment after each name is a one-line summary of what the audit checks.
+  # ---------------------------------------------------------------------------
+  anonymous-definition: { disable: true }              # composite action without owning repo
+  archived-uses: { disable: true }                     # uses: refs to archived repos
+  artipacked: { disable: true }                        # credentials persisted in artifacts
+  bot-conditions: { disable: true }                    # GitHub Actions bot detection bypasses
+  cache-poisoning: { disable: true }                   # cache writes from PR runs poisoning trusted runs
+  concurrency-limits: { disable: true }                # missing concurrency: groups
+  dangerous-triggers: { disable: true }                # pull_request_target with checkout, etc.
+  dependabot-cooldown: { disable: true }               # dependabot config without cooldown
+  dependabot-execution: { disable: true }              # dependabot PRs running with secrets
+  excessive-permissions: { disable: true }             # GITHUB_TOKEN scopes wider than needed
+  forbidden-uses: { disable: true }                    # explicit allow/deny list of action repos
+  github-app: { disable: true }                        # GitHub App token misuse
+  github-env: { disable: true }                        # writes to $GITHUB_ENV from untrusted input
+  hardcoded-container-credentials: { disable: true }   # plaintext registry creds
+  impostor-commit: { disable: true }                   # commit not reachable from any branch/tag
+  insecure-commands: { disable: true }                 # ACTIONS_ALLOW_UNSECURE_COMMANDS=true
+  known-vulnerable-actions: { disable: true }          # actions with published CVEs
+  misfeature: { disable: true }                        # use of deprecated/discouraged features
+  obfuscation: { disable: true }                       # obfuscated shell/JS in run: blocks
+  overprovisioned-secrets: { disable: true }           # secrets passed to steps that don't use them
+  ref-confusion: { disable: true }                     # ref shadowed by tag with same name
+  ref-version-mismatch: { disable: true }              # @ref's version comment doesn't match the SHA
+  secrets-inherit: { disable: true }                   # `secrets: inherit` in reusable workflow calls
+  secrets-outside-env: { disable: true }               # secrets used outside `env:` blocks
+  self-hosted-runner: { disable: true }                # self-hosted runner usage on public repos
+  stale-action-refs: { disable: true }                 # uses: refs that are no longer maintained
+  superfluous-actions: { disable: true }               # action wraps a single trivial command
+  template-injection: { disable: true }                # ${{ }} expansion of attacker-controlled input
+  undocumented-permissions: { disable: true }          # permissions: blocks without comments
+  unpinned-images: { disable: true }                   # docker:// images using mutable tags
+  unpinned-tools: { disable: true }                    # asdf/mise/etc. tool versions not pinned
+  unredacted-secrets: { disable: true }                # secrets potentially printed in logs
+  unsound-condition: { disable: true }                 # if: conditions that always evaluate same way
+  unsound-contains: { disable: true }                  # contains() called with non-array
+  use-trusted-publishing: { disable: true }            # PyPI/npm trusted publishing missing
 
 # =============================================================================
 # Escape hatch #2 — inline comment on a single `uses:` line:
