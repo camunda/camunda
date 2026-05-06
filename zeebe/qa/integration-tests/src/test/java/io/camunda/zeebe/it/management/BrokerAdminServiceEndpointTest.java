@@ -94,7 +94,6 @@ public class BrokerAdminServiceEndpointTest {
     assertThat(response.statusCode()).isEqualTo(200);
 
     final var partitions = readPartitions(response);
-    System.out.println(partitions);
     assertThat(partitions).containsOnlyKeys(1);
     assertPartitionStatus(partitions.get(1));
   }
