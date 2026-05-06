@@ -384,28 +384,38 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
   private void upsertSingleSchemaVersionRow(
       final Connection connection, final String tableName, final String stableVersion)
       throws SQLException {
-    final var schemaVersionState = readSchemaVersionState(connection, tableName);
-
-    if (schemaVersionState.rowCount() == 0) {
-      insertSchemaVersion(connection, tableName, stableVersion);
+    if (updateSchemaVersionById(connection, tableName, stableVersion) > 0) {
       return;
     }
 
-    if (schemaVersionState.rowCount() == 1) {
-      try (final var updateStmt =
-          connection.prepareStatement(
-              "UPDATE " + tableName + " SET VERSION = ? WHERE VERSION = ?")) {
-        updateStmt.setString(1, stableVersion);
-        updateStmt.setString(2, schemaVersionState.version());
-        updateStmt.executeUpdate();
+    try {
+      insertSchemaVersionById(connection, tableName, stableVersion);
+    } catch (final SQLException insertException) {
+      if (updateSchemaVersionById(connection, tableName, stableVersion) == 0) {
+        throw insertException;
       }
-      return;
     }
+  }
 
-    try (final var deleteStmt = connection.prepareStatement("DELETE FROM " + tableName)) {
-      deleteStmt.executeUpdate();
+  private int updateSchemaVersionById(
+      final Connection connection, final String tableName, final String stableVersion)
+      throws SQLException {
+    try (final var updateStmt =
+        connection.prepareStatement("UPDATE " + tableName + " SET VERSION = ? WHERE ID = 1")) {
+      updateStmt.setString(1, stableVersion);
+      return updateStmt.executeUpdate();
     }
-    insertSchemaVersion(connection, tableName, stableVersion);
+  }
+
+  private void insertSchemaVersionById(
+      final Connection connection, final String tableName, final String stableVersion)
+      throws SQLException {
+    try (final var insertStmt =
+        connection.prepareStatement(
+            "INSERT INTO " + tableName + " (ID, VERSION) VALUES (1, ?)")) {
+      insertStmt.setString(1, stableVersion);
+      insertStmt.executeUpdate();
+    }
   }
 
   private SchemaVersionState readSchemaVersionState(
