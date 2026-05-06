@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_orchestrator" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.44.0">
+  <bpmn:message id="Msg_workRequested" name="work-requested">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=orchestratorKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Msg_jobCompleted" name="job-completed">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=orchestratorKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:process id="Process_Orchestrator" name="Singleton Orchestrator" isExecutable="true">
+    <bpmn:startEvent id="Event_Start" name="Start">
+      <bpmn:outgoing>Flow_StartToSetKey</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Task_SetKey" name="Set Correlation Key">
+      <bpmn:extensionElements>
+        <zeebe:script expression="= &#34;singleton&#34;" resultVariable="orchestratorKey" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToSetKey</bpmn:incoming>
+      <bpmn:outgoing>Flow_SetKeyToInitQueue</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Task_InitQueue" name="Initialize Modification Queue">
+      <bpmn:extensionElements>
+        <zeebe:script expression="= []" resultVariable="queue" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_SetKeyToInitQueue</bpmn:incoming>
+      <bpmn:outgoing>Flow_InitQueueToInitRunning</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Task_InitRunning" name="Initialize Running Jobs">
+      <bpmn:extensionElements>
+        <zeebe:script expression="= []" resultVariable="running" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_InitQueueToInitRunning</bpmn:incoming>
+      <bpmn:outgoing>Flow_InitRunningToEBG</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:eventBasedGateway id="Gateway_EventBased" name="Wait for Event">
+      <bpmn:incoming>Flow_InitRunningToEBG</bpmn:incoming>
+      <bpmn:incoming>Flow_DispatchNo</bpmn:incoming>
+      <bpmn:outgoing>Flow_EBGToWorkRequested</bpmn:outgoing>
+      <bpmn:outgoing>Flow_EBGToJobCompleted</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="Catch_WorkRequested" name="Work Requested">
+      <bpmn:incoming>Flow_EBGToWorkRequested</bpmn:incoming>
+      <bpmn:outgoing>Flow_WorkRequestedToEnqueue</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Msg_workRequested" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:scriptTask id="Task_Enqueue" name="Enqueue Modification">
+      <bpmn:extensionElements>
+        <zeebe:script expression="= append(queue, workPayload)" resultVariable="queue" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_WorkRequestedToEnqueue</bpmn:incoming>
+      <bpmn:outgoing>Flow_EnqueueToMerge</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:intermediateCatchEvent id="Catch_JobCompleted" name="Job Completed">
+      <bpmn:incoming>Flow_EBGToJobCompleted</bpmn:incoming>
+      <bpmn:outgoing>Flow_JobCompletedToRemove</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Msg_jobCompleted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:scriptTask id="Task_RemoveRunning" name="Remove from Running Jobs">
+      <bpmn:extensionElements>
+        <zeebe:script expression="= running[item.jobId != completedJobId]" resultVariable="running" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_JobCompletedToRemove</bpmn:incoming>
+      <bpmn:outgoing>Flow_RemoveToMerge</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_Merge">
+      <bpmn:incoming>Flow_EnqueueToMerge</bpmn:incoming>
+      <bpmn:incoming>Flow_RemoveToMerge</bpmn:incoming>
+      <bpmn:incoming>Flow_StartToMerge</bpmn:incoming>
+      <bpmn:outgoing>Flow_MergeToEval</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:scriptTask id="Task_EvalDispatch" name="Evaluate Dispatch">
+      <bpmn:extensionElements>
+        <zeebe:script expression="= if count(queue) = 0 then false else not(some r in running satisfies ((some t in (queue[1].exclusiveTypes default []) satisfies t = r.type) or (some t in (queue[1].exclusiveTenants default []) satisfies t = r.tenant)))" resultVariable="canDispatch" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_MergeToEval</bpmn:incoming>
+      <bpmn:outgoing>Flow_EvalToCheck</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_CanDispatch" name="Can dispatch?">
+      <bpmn:incoming>Flow_EvalToCheck</bpmn:incoming>
+      <bpmn:outgoing>Flow_DispatchYes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_DispatchNo</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:scriptTask id="Task_PeekHead" name="Peek Queue Head">
+      <bpmn:extensionElements>
+        <zeebe:script expression="= queue[1]" resultVariable="currentWork" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_DispatchYes</bpmn:incoming>
+      <bpmn:outgoing>Flow_PeekToPop</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Task_PopQueue" name="Pop Modification">
+      <bpmn:extensionElements>
+        <zeebe:script expression="= tail(queue)" resultVariable="queue" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_PeekToPop</bpmn:incoming>
+      <bpmn:outgoing>Flow_PopToAdd</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Task_AddToRunning" name="Add to Running Jobs">
+      <bpmn:extensionElements>
+        <zeebe:script expression="= append(running, {jobId: currentWork.jobId, type: currentWork.type, tenant: currentWork.tenant})" resultVariable="running" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_PopToAdd</bpmn:incoming>
+      <bpmn:outgoing>Flow_AddToStart</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:serviceTask id="Task_StartWorker" name="Start Worker Process">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="start-modification-job" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=currentWork" target="workPayload" />
+          <zeebe:input source="=orchestratorKey" target="orchestratorKey" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_AddToStart</bpmn:incoming>
+      <bpmn:outgoing>Flow_StartToMerge</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_StartToSetKey" sourceRef="Event_Start" targetRef="Task_SetKey" />
+    <bpmn:sequenceFlow id="Flow_SetKeyToInitQueue" sourceRef="Task_SetKey" targetRef="Task_InitQueue" />
+    <bpmn:sequenceFlow id="Flow_InitQueueToInitRunning" sourceRef="Task_InitQueue" targetRef="Task_InitRunning" />
+    <bpmn:sequenceFlow id="Flow_InitRunningToEBG" sourceRef="Task_InitRunning" targetRef="Gateway_EventBased" />
+    <bpmn:sequenceFlow id="Flow_EBGToWorkRequested" sourceRef="Gateway_EventBased" targetRef="Catch_WorkRequested" />
+    <bpmn:sequenceFlow id="Flow_EBGToJobCompleted" sourceRef="Gateway_EventBased" targetRef="Catch_JobCompleted" />
+    <bpmn:sequenceFlow id="Flow_WorkRequestedToEnqueue" sourceRef="Catch_WorkRequested" targetRef="Task_Enqueue" />
+    <bpmn:sequenceFlow id="Flow_EnqueueToMerge" sourceRef="Task_Enqueue" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_JobCompletedToRemove" sourceRef="Catch_JobCompleted" targetRef="Task_RemoveRunning" />
+    <bpmn:sequenceFlow id="Flow_RemoveToMerge" sourceRef="Task_RemoveRunning" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_StartToMerge" sourceRef="Task_StartWorker" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_MergeToEval" sourceRef="Gateway_Merge" targetRef="Task_EvalDispatch" />
+    <bpmn:sequenceFlow id="Flow_EvalToCheck" sourceRef="Task_EvalDispatch" targetRef="Gateway_CanDispatch" />
+    <bpmn:sequenceFlow id="Flow_DispatchYes" name="yes" sourceRef="Gateway_CanDispatch" targetRef="Task_PeekHead">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= canDispatch</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_DispatchNo" name="no — wait" sourceRef="Gateway_CanDispatch" targetRef="Gateway_EventBased">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= not(canDispatch)</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_PeekToPop" sourceRef="Task_PeekHead" targetRef="Task_PopQueue" />
+    <bpmn:sequenceFlow id="Flow_PopToAdd" sourceRef="Task_PopQueue" targetRef="Task_AddToRunning" />
+    <bpmn:sequenceFlow id="Flow_AddToStart" sourceRef="Task_AddToRunning" targetRef="Task_StartWorker" />
+    <bpmn:textAnnotation id="TextAnnotation_worker">
+      <bpmn:text>Worker contract:
+- receives workPayload + orchestratorKey
+- must publish job-completed with {completedJobId} on finish</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_worker" associationDirection="None" sourceRef="Task_StartWorker" targetRef="TextAnnotation_worker" />
+    <bpmn:textAnnotation id="TextAnnotation_payload">
+      <bpmn:text>workPayload schema:
+{ jobId, type, tenant,
+  exclusiveTypes: [],
+  exclusiveTenants: [] }</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_payload" associationDirection="None" sourceRef="Catch_WorkRequested" targetRef="TextAnnotation_payload" />
+    <bpmn:textAnnotation id="TextAnnotation_queue">
+      <bpmn:text>Use a FEEL queue expression</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_queue" associationDirection="None" sourceRef="Task_InitQueue" targetRef="TextAnnotation_queue" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_Orchestrator">
+      <bpmndi:BPMNShape id="Event_Start_di" bpmnElement="Event_Start">
+        <dc:Bounds x="152" y="362" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="405" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SetKey_di" bpmnElement="Task_SetKey">
+        <dc:Bounds x="240" y="340" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_InitQueue_di" bpmnElement="Task_InitQueue">
+        <dc:Bounds x="390" y="340" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_InitRunning_di" bpmnElement="Task_InitRunning">
+        <dc:Bounds x="540" y="340" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_EventBased_di" bpmnElement="Gateway_EventBased">
+        <dc:Bounds x="690" y="355" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="682" y="412" width="69" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Catch_WorkRequested_di" bpmnElement="Catch_WorkRequested">
+        <dc:Bounds x="762" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="739" y="245" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Enqueue_di" bpmnElement="Task_Enqueue">
+        <dc:Bounds x="848" y="180" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Catch_JobCompleted_di" bpmnElement="Catch_JobCompleted">
+        <dc:Bounds x="762" y="522" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="743" y="565" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RemoveRunning_di" bpmnElement="Task_RemoveRunning">
+        <dc:Bounds x="848" y="500" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Merge_di" bpmnElement="Gateway_Merge" isMarkerVisible="true">
+        <dc:Bounds x="1005" y="355" width="50" height="50" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EvalDispatch_di" bpmnElement="Task_EvalDispatch">
+        <dc:Bounds x="1115" y="340" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_CanDispatch_di" bpmnElement="Gateway_CanDispatch" isMarkerVisible="true">
+        <dc:Bounds x="1270" y="355" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1260" y="412" width="71" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PeekHead_di" bpmnElement="Task_PeekHead">
+        <dc:Bounds x="1380" y="340" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PopQueue_di" bpmnElement="Task_PopQueue">
+        <dc:Bounds x="1540" y="340" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AddToRunning_di" bpmnElement="Task_AddToRunning">
+        <dc:Bounds x="1700" y="340" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_StartWorker_di" bpmnElement="Task_StartWorker">
+        <dc:Bounds x="1860" y="340" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_worker_di" bpmnElement="Association_worker">
+        <di:waypoint x="1924" y="340" />
+        <di:waypoint x="1963" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_payload_di" bpmnElement="TextAnnotation_payload">
+        <dc:Bounds x="820" y="80" width="200" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_queue_di" bpmnElement="TextAnnotation_queue">
+        <dc:Bounds x="390" y="240" width="100" height="55" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_StartToSetKey_di" bpmnElement="Flow_StartToSetKey">
+        <di:waypoint x="188" y="380" />
+        <di:waypoint x="240" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SetKeyToInitQueue_di" bpmnElement="Flow_SetKeyToInitQueue">
+        <di:waypoint x="340" y="380" />
+        <di:waypoint x="390" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InitQueueToInitRunning_di" bpmnElement="Flow_InitQueueToInitRunning">
+        <di:waypoint x="490" y="380" />
+        <di:waypoint x="540" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_InitRunningToEBG_di" bpmnElement="Flow_InitRunningToEBG">
+        <di:waypoint x="640" y="380" />
+        <di:waypoint x="690" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EBGToWorkRequested_di" bpmnElement="Flow_EBGToWorkRequested">
+        <di:waypoint x="715" y="355" />
+        <di:waypoint x="715" y="220" />
+        <di:waypoint x="762" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EBGToJobCompleted_di" bpmnElement="Flow_EBGToJobCompleted">
+        <di:waypoint x="715" y="405" />
+        <di:waypoint x="715" y="540" />
+        <di:waypoint x="762" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_WorkRequestedToEnqueue_di" bpmnElement="Flow_WorkRequestedToEnqueue">
+        <di:waypoint x="798" y="220" />
+        <di:waypoint x="848" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EnqueueToMerge_di" bpmnElement="Flow_EnqueueToMerge">
+        <di:waypoint x="948" y="220" />
+        <di:waypoint x="1030" y="220" />
+        <di:waypoint x="1030" y="355" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_JobCompletedToRemove_di" bpmnElement="Flow_JobCompletedToRemove">
+        <di:waypoint x="798" y="540" />
+        <di:waypoint x="848" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RemoveToMerge_di" bpmnElement="Flow_RemoveToMerge">
+        <di:waypoint x="948" y="540" />
+        <di:waypoint x="1030" y="540" />
+        <di:waypoint x="1030" y="405" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StartToMerge_di" bpmnElement="Flow_StartToMerge">
+        <di:waypoint x="1910" y="340" />
+        <di:waypoint x="1910" y="270" />
+        <di:waypoint x="1030" y="270" />
+        <di:waypoint x="1030" y="355" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_MergeToEval_di" bpmnElement="Flow_MergeToEval">
+        <di:waypoint x="1055" y="380" />
+        <di:waypoint x="1115" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EvalToCheck_di" bpmnElement="Flow_EvalToCheck">
+        <di:waypoint x="1215" y="380" />
+        <di:waypoint x="1270" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DispatchYes_di" bpmnElement="Flow_DispatchYes">
+        <di:waypoint x="1320" y="380" />
+        <di:waypoint x="1380" y="380" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1334" y="362" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DispatchNo_di" bpmnElement="Flow_DispatchNo">
+        <di:waypoint x="1295" y="405" />
+        <di:waypoint x="1295" y="650" />
+        <di:waypoint x="715" y="650" />
+        <di:waypoint x="715" y="405" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="981" y="632" width="49" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PeekToPop_di" bpmnElement="Flow_PeekToPop">
+        <di:waypoint x="1480" y="380" />
+        <di:waypoint x="1540" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PopToAdd_di" bpmnElement="Flow_PopToAdd">
+        <di:waypoint x="1640" y="380" />
+        <di:waypoint x="1700" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AddToStart_di" bpmnElement="Flow_AddToStart">
+        <di:waypoint x="1800" y="380" />
+        <di:waypoint x="1860" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_payload_di" bpmnElement="Association_payload">
+        <di:waypoint x="780" y="202" />
+        <di:waypoint x="870" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_queue_di" bpmnElement="Association_queue">
+        <di:waypoint x="440" y="340" />
+        <di:waypoint x="440" y="295" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_worker_di" bpmnElement="TextAnnotation_worker">
+        <dc:Bounds x="1930" y="130" width="210" height="100" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

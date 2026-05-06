@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_scale" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.44.0">
+  <bpmn:process id="scale_operation_executor" name="Broker Scale Operation" isExecutable="true">
+    <bpmn:startEvent id="Event_Start" name="Scale Request Received">
+      <bpmn:outgoing>Flow_StartToPre</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gateway_Direction" name="Scale direction?">
+      <bpmn:incoming>Flow_PreToDirection</bpmn:incoming>
+      <bpmn:outgoing>Flow_ScaleUp</bpmn:outgoing>
+      <bpmn:outgoing>Flow_05chzo7</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_MemberJoin" name="Broker Nodes Join Cluster">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="=&#34;config-change-&#34;+brokerId" />
+        <zeebe:ioMapping>
+          <zeebe:input source="member-join" target="operationType" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ScaleUp</bpmn:incoming>
+      <bpmn:outgoing>Flow_0u4g912</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=membersToAdd" inputElement="brokerId" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_MemberLeave" name="Broker Nodes Leave Cluster">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="=&#34;config-change-&#34;+brokerId" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=member-leave" target="operationType" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0rg2qak</bpmn:incoming>
+      <bpmn:outgoing>Flow_MemberLeaveToMerge</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=membersToRemove" inputElement="brokerId" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_Merge" name="">
+      <bpmn:incoming>Flow_MemberLeaveToMerge</bpmn:incoming>
+      <bpmn:incoming>Flow_119ruxa</bpmn:incoming>
+      <bpmn:outgoing>Flow_1p4kr9b</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="Event_End" name="Scale Complete">
+      <bpmn:incoming>Flow_06mm4kl</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToPre" sourceRef="Event_Start" targetRef="Activity_012gcds" />
+    <bpmn:sequenceFlow id="Flow_PreToDirection" sourceRef="Task_PreScaling" targetRef="Gateway_Direction" />
+    <bpmn:sequenceFlow id="Flow_ScaleUp" name="up" sourceRef="Gateway_Direction" targetRef="Task_MemberJoin">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">= workPayload.direction = "up"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_MemberLeaveToMerge" sourceRef="Task_MemberLeave" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_06mm4kl" sourceRef="Task_PostScaling" targetRef="Event_End" />
+    <bpmn:subProcess id="Activity_1jiekgu">
+      <bpmn:incoming>Flow_0u4g912</bpmn:incoming>
+      <bpmn:outgoing>Flow_119ruxa</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=workPayload.redistribution" inputElement="partitionOperations" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="Event_0ub50d4">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:output source="=workPayload.redistribution[partitionId]" target="operations" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:outgoing>Flow_025dcc9</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_025dcc9" sourceRef="Event_0ub50d4" targetRef="Activity_0tbm4xa" />
+      <bpmn:sequenceFlow id="Flow_1vbgjbt" sourceRef="Activity_0tbm4xa" targetRef="Activity_19ytvu9" />
+      <bpmn:endEvent id="Event_1ne0qxt">
+        <bpmn:incoming>Flow_0szdp1z</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_12v18sw" sourceRef="Activity_19ytvu9" targetRef="Activity_0usxe4f" />
+      <bpmn:sequenceFlow id="Flow_0szdp1z" sourceRef="Activity_0usxe4f" targetRef="Event_1ne0qxt" />
+      <bpmn:serviceTask id="Activity_0tbm4xa" name="Join">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+joinOperation.brokerId" />
+          <zeebe:ioMapping>
+            <zeebe:input source="partition-join" target="operationType" />
+            <zeebe:input source="partitionOperations.partitionId" target="partitionId" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_025dcc9</bpmn:incoming>
+        <bpmn:outgoing>Flow_1vbgjbt</bpmn:outgoing>
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:extensionElements>
+            <zeebe:loopCharacteristics inputCollection="=partitionOperations.join" inputElement="joinOperation" />
+          </bpmn:extensionElements>
+        </bpmn:multiInstanceLoopCharacteristics>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="Activity_19ytvu9" name="Leave">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+leaveOperation.brokerId" />
+          <zeebe:ioMapping>
+            <zeebe:input source="partitionOperations.partitionId" target="partitionId" />
+            <zeebe:input source="partition-leave" target="operationType" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_1vbgjbt</bpmn:incoming>
+        <bpmn:outgoing>Flow_12v18sw</bpmn:outgoing>
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:extensionElements>
+            <zeebe:loopCharacteristics inputCollection="=partitionOperations.leaves" inputElement="leaveOperation" />
+          </bpmn:extensionElements>
+        </bpmn:multiInstanceLoopCharacteristics>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="Activity_0usxe4f" name="Reconfigure">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+reconfigureOperation.brokerId" />
+          <zeebe:ioMapping>
+            <zeebe:input target="partitionId" />
+            <zeebe:input source="partition-reconfigure-priority" target="operationType" />
+            <zeebe:input source="priority" target="prioirity" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_12v18sw</bpmn:incoming>
+        <bpmn:outgoing>Flow_0szdp1z</bpmn:outgoing>
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:extensionElements>
+            <zeebe:loopCharacteristics inputCollection="=partitionOperations.reconfigure" inputElement="reconfigureOperation" />
+          </bpmn:extensionElements>
+        </bpmn:multiInstanceLoopCharacteristics>
+      </bpmn:serviceTask>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_0u4g912" sourceRef="Task_MemberJoin" targetRef="Activity_1jiekgu" />
+    <bpmn:sequenceFlow id="Flow_119ruxa" sourceRef="Activity_1jiekgu" targetRef="Gateway_Merge" />
+    <bpmn:scriptTask id="Task_PostScaling" name="Post-Scaling">
+      <bpmn:extensionElements>
+        <zeebe:script />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1p4kr9b</bpmn:incoming>
+      <bpmn:outgoing>Flow_06mm4kl</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:subProcess id="Activity_10y55xc">
+      <bpmn:incoming>Flow_05chzo7</bpmn:incoming>
+      <bpmn:outgoing>Flow_0rg2qak</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=workPayload.redistribution" inputElement="partitionOperations" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="Event_032u3iu">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:output source="=workPayload.redistribution[partitionId]" target="operations" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:outgoing>Flow_1s0rssj</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:endEvent id="Event_08yjlag">
+        <bpmn:incoming>Flow_1k0h6ck</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:serviceTask id="Activity_0bdy8cs" name="Join">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+joinOperation.brokerId" />
+          <zeebe:ioMapping>
+            <zeebe:input source="partition-join" target="operationType" />
+            <zeebe:input source="partitionOperations.partitionId" target="partitionId" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_1s0rssj</bpmn:incoming>
+        <bpmn:outgoing>Flow_03edrm4</bpmn:outgoing>
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:extensionElements>
+            <zeebe:loopCharacteristics inputCollection="=partitionOperations.join" inputElement="joinOperation" />
+          </bpmn:extensionElements>
+        </bpmn:multiInstanceLoopCharacteristics>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="Activity_02wmy05" name="Leave">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+leaveOperation.brokerId" />
+          <zeebe:ioMapping>
+            <zeebe:input source="partitionOperations.partitionId" target="partitionId" />
+            <zeebe:input source="partition-leave" target="operationType" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_03edrm4</bpmn:incoming>
+        <bpmn:outgoing>Flow_0t8jpz4</bpmn:outgoing>
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:extensionElements>
+            <zeebe:loopCharacteristics inputCollection="=partitionOperations.leaves" inputElement="leaveOperation" />
+          </bpmn:extensionElements>
+        </bpmn:multiInstanceLoopCharacteristics>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="Activity_0dxj5x2" name="Reconfigure">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+reconfigureOperation.brokerId" />
+          <zeebe:ioMapping>
+            <zeebe:input target="partitionId" />
+            <zeebe:input source="partition-reconfigure-priority" target="operationType" />
+            <zeebe:input source="priority" target="prioirity" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_0t8jpz4</bpmn:incoming>
+        <bpmn:outgoing>Flow_1k0h6ck</bpmn:outgoing>
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:extensionElements>
+            <zeebe:loopCharacteristics inputCollection="=partitionOperations.reconfigure" inputElement="reconfigureOperation" />
+          </bpmn:extensionElements>
+        </bpmn:multiInstanceLoopCharacteristics>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_1s0rssj" sourceRef="Event_032u3iu" targetRef="Activity_0bdy8cs" />
+      <bpmn:sequenceFlow id="Flow_1k0h6ck" sourceRef="Activity_0dxj5x2" targetRef="Event_08yjlag" />
+      <bpmn:sequenceFlow id="Flow_03edrm4" sourceRef="Activity_0bdy8cs" targetRef="Activity_02wmy05" />
+      <bpmn:sequenceFlow id="Flow_0t8jpz4" sourceRef="Activity_02wmy05" targetRef="Activity_0dxj5x2" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_05chzo7" sourceRef="Gateway_Direction" targetRef="Activity_10y55xc" />
+    <bpmn:sequenceFlow id="Flow_0rg2qak" sourceRef="Activity_10y55xc" targetRef="Task_MemberLeave" />
+    <bpmn:sequenceFlow id="Flow_1p4kr9b" sourceRef="Gateway_Merge" targetRef="Task_PostScaling" />
+    <bpmn:scriptTask id="Task_PreScaling" name="Pre-Scaling">
+      <bpmn:extensionElements>
+        <zeebe:script />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0mgfh4m</bpmn:incoming>
+      <bpmn:outgoing>Flow_PreToDirection</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:sequenceFlow id="Flow_0mgfh4m" sourceRef="Activity_012gcds" targetRef="Task_PreScaling" />
+    <bpmn:serviceTask id="Activity_012gcds" name="Calculate Redistribution steps">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="redistribution-calculation" />
+        <zeebe:ioMapping>
+          <zeebe:input target="membersToAdd" />
+          <zeebe:input target="membersToRemove" />
+          <zeebe:input source="clusterConfiguration" target="clusterConfiguration" />
+          <zeebe:input source="direction" target="direction" />
+          <zeebe:output source="=workPayload" target="workPayload" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToPre</bpmn:incoming>
+      <bpmn:outgoing>Flow_0mgfh4m</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="scale_operation_executor">
+      <bpmndi:BPMNShape id="Gateway_Direction_di" bpmnElement="Gateway_Direction" isMarkerVisible="true">
+        <dc:Bounds x="685" y="295" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="745" y="313" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MemberJoin_di" bpmnElement="Task_MemberJoin">
+        <dc:Bounds x="770" y="130" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_Start_di" bpmnElement="Event_Start">
+        <dc:Bounds x="172" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="154" y="345" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1j4tus6_di" bpmnElement="Activity_012gcds">
+        <dc:Bounds x="320" y="280" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_10891c5_di" bpmnElement="Task_PreScaling">
+        <dc:Bounds x="530" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MemberLeave_di" bpmnElement="Task_MemberLeave">
+        <dc:Bounds x="1500" y="400" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Merge_di" bpmnElement="Gateway_Merge" isMarkerVisible="true">
+        <dc:Bounds x="1735" y="295" width="50" height="50" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_End_di" bpmnElement="Event_End">
+        <dc:Bounds x="2032" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2011" y="352" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_14os1g9_di" bpmnElement="Task_PostScaling">
+        <dc:Bounds x="1850" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1jiekgu_di" bpmnElement="Activity_1jiekgu" isExpanded="true">
+        <dc:Bounds x="970" y="70" width="630" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0ub50d4_di" bpmnElement="Event_0ub50d4">
+        <dc:Bounds x="1010" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ne0qxt_di" bpmnElement="Event_1ne0qxt">
+        <dc:Bounds x="1512" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1t6wpwy_di" bpmnElement="Activity_0tbm4xa">
+        <dc:Bounds x="1090" y="130" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1sat4d7_di" bpmnElement="Activity_19ytvu9">
+        <dc:Bounds x="1230" y="130" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0v23hnb_di" bpmnElement="Activity_0usxe4f">
+        <dc:Bounds x="1360" y="130" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_025dcc9_di" bpmnElement="Flow_025dcc9">
+        <di:waypoint x="1046" y="170" />
+        <di:waypoint x="1090" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0szdp1z_di" bpmnElement="Flow_0szdp1z">
+        <di:waypoint x="1460" y="170" />
+        <di:waypoint x="1512" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1vbgjbt_di" bpmnElement="Flow_1vbgjbt">
+        <di:waypoint x="1190" y="170" />
+        <di:waypoint x="1230" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12v18sw_di" bpmnElement="Flow_12v18sw">
+        <di:waypoint x="1330" y="170" />
+        <di:waypoint x="1360" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BPMNShape_195x1fc" bpmnElement="Activity_10y55xc" isExpanded="true">
+        <dc:Bounds x="760" y="370" width="630" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1k7sxsa" bpmnElement="Event_032u3iu">
+        <dc:Bounds x="800" y="452" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0ncgkxo" bpmnElement="Event_08yjlag">
+        <dc:Bounds x="1302" y="452" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0ex62kc" bpmnElement="Activity_0bdy8cs">
+        <dc:Bounds x="880" y="430" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1r6q1f1" bpmnElement="Activity_02wmy05">
+        <dc:Bounds x="1020" y="430" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1auc01s" bpmnElement="Activity_0dxj5x2">
+        <dc:Bounds x="1150" y="430" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_1t03mw7" bpmnElement="Flow_1s0rssj">
+        <di:waypoint x="836" y="470" />
+        <di:waypoint x="880" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1lh4nih" bpmnElement="Flow_1k0h6ck">
+        <di:waypoint x="1250" y="470" />
+        <di:waypoint x="1302" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0jtlhom" bpmnElement="Flow_03edrm4">
+        <di:waypoint x="980" y="470" />
+        <di:waypoint x="1020" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1vfdum3" bpmnElement="Flow_0t8jpz4">
+        <di:waypoint x="1120" y="470" />
+        <di:waypoint x="1150" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PreToDirection_di" bpmnElement="Flow_PreToDirection">
+        <di:waypoint x="630" y="320" />
+        <di:waypoint x="685" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ScaleUp_di" bpmnElement="Flow_ScaleUp">
+        <di:waypoint x="710" y="295" />
+        <di:waypoint x="710" y="170" />
+        <di:waypoint x="770" y="170" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="673" y="228" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_05chzo7_di" bpmnElement="Flow_05chzo7">
+        <di:waypoint x="710" y="345" />
+        <di:waypoint x="710" y="470" />
+        <di:waypoint x="760" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0u4g912_di" bpmnElement="Flow_0u4g912">
+        <di:waypoint x="890" y="170" />
+        <di:waypoint x="970" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StartToPre_di" bpmnElement="Flow_StartToPre">
+        <di:waypoint x="208" y="320" />
+        <di:waypoint x="320" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0mgfh4m_di" bpmnElement="Flow_0mgfh4m">
+        <di:waypoint x="420" y="320" />
+        <di:waypoint x="530" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0rg2qak_di" bpmnElement="Flow_0rg2qak">
+        <di:waypoint x="1390" y="440" />
+        <di:waypoint x="1500" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_MemberLeaveToMerge_di" bpmnElement="Flow_MemberLeaveToMerge">
+        <di:waypoint x="1620" y="440" />
+        <di:waypoint x="1760" y="440" />
+        <di:waypoint x="1760" y="345" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_119ruxa_di" bpmnElement="Flow_119ruxa">
+        <di:waypoint x="1600" y="150" />
+        <di:waypoint x="1760" y="150" />
+        <di:waypoint x="1760" y="295" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1p4kr9b_di" bpmnElement="Flow_1p4kr9b">
+        <di:waypoint x="1785" y="320" />
+        <di:waypoint x="1850" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06mm4kl_di" bpmnElement="Flow_06mm4kl">
+        <di:waypoint x="1950" y="320" />
+        <di:waypoint x="2032" y="320" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
