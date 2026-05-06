@@ -25,6 +25,7 @@ import org.junit.rules.TestWatcher;
 public class RpaReexportMigrationTest {
 
   private static final String TEST_RPA_RESOURCE = "/resource/test-rpa-1.rpa";
+  private static final String TEST_RPA_RESOURCE_2 = "/resource/test-rpa-2.rpa";
   private static final String TEST_GENERIC_RESOURCE = "/resource/test-generic-1.txt";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
@@ -73,6 +74,52 @@ public class RpaReexportMigrationTest {
     assertThat(reexported.getTenantId()).isEqualTo(created.getTenantId());
     assertThat(reexported.getDeploymentKey()).isEqualTo(created.getDeploymentKey());
     assertThat(reexported.getChecksum()).isEqualTo(created.getChecksum());
+  }
+
+  @Test
+  public void shouldReexportAllRpaResources() {
+    // given - two RPA resources deployed before migration runs
+    engine
+        .deployment()
+        .withJsonClasspathResource(TEST_RPA_RESOURCE)
+        .withJsonClasspathResource(TEST_RPA_RESOURCE_2)
+        .deploy();
+    final var createdRecords =
+        RecordingExporter.resourceRecords().withIntent(ResourceIntent.CREATED).limit(2).asList();
+
+    // when - enable migration and restart the engine
+    engine.stop();
+    engine.withEngineConfig(cfg -> cfg.setEnableRpaReexportMigration(true));
+    engine.start();
+
+    // then - migration completes with FINISHED event
+    RecordingExporter.resourceReexportRecords(ResourceReexportIntent.FINISHED).getFirst();
+
+    // verify one REEXPORT command per resource plus one final REEXPORT that finds nothing
+    // and triggers FINISHED (i.e. n+1 REEXPORTs for n resources)
+    final var reexportIntents =
+        RecordingExporter.resourceReexportRecords()
+            .limit(r -> r.getIntent() == ResourceReexportIntent.FINISHED)
+            .asList()
+            .stream()
+            .map(Record::getIntent)
+            .toList();
+    assertThat(reexportIntents)
+        .containsExactly(
+            ResourceReexportIntent.START,
+            ResourceReexportIntent.STARTED,
+            ResourceReexportIntent.REEXPORT,
+            ResourceReexportIntent.REEXPORT,
+            ResourceReexportIntent.REEXPORT,
+            ResourceReexportIntent.FINISHED);
+
+    // verify a REEXPORTED event was written for each deployed resource
+    final var reexportedRecords =
+        RecordingExporter.resourceRecords().withIntent(ResourceIntent.REEXPORTED).limit(2).asList();
+    assertThat(reexportedRecords)
+        .extracting(r -> r.getValue().getResourceKey())
+        .containsExactlyInAnyOrderElementsOf(
+            createdRecords.stream().map(r -> r.getValue().getResourceKey()).toList());
   }
 
   @Test
