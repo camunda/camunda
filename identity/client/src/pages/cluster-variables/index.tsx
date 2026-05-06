@@ -10,8 +10,16 @@ import { FC } from "react";
 import PageRoutes from "src/components/router/PageRoutes.tsx";
 import Lazy from "src/components/router/Lazy.tsx";
 
-const ClusterVariables: FC = () => (
-  <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
+type ClusterVariablesProps = {
+  isSaaS: boolean;
+};
+
+const ClusterVariables: FC<ClusterVariablesProps> = ({ isSaaS }) => (
+  <PageRoutes
+    indexElement={
+      <Lazy load={() => import("./List")} elementProps={{ isSaaS }} />
+    }
+  />
 );
 
 export default ClusterVariables;

@@ -19,7 +19,6 @@ import OperationsLog from "src/pages/operations-log";
 import GlobalTaskListeners from "src/pages/global-task-listeners";
 import McpProcesses from "src/pages/mcp-processes";
 import {
-  docsUrl,
   isCamundaGroupsEnabled,
   isOIDC,
   isSaaS,
@@ -73,7 +72,6 @@ export const useGlobalRoutes = () => {
             <Tenants
               isOIDC={isOIDC}
               isCamundaGroupsEnabled={isCamundaGroupsEnabled}
-              docsUrl={docsUrl}
             />
           ),
         },
@@ -118,7 +116,7 @@ export const useGlobalRoutes = () => {
       path: `${Paths.clusterVariables()}/*`,
       key: Paths.clusterVariables(),
       label: t("clusterVariables"),
-      element: <ClusterVariables />,
+      element: <ClusterVariables isSaaS={isSaaS} />,
     },
     {
       path: `${Paths.mcpProcesses()}/*`,

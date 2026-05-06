@@ -10,7 +10,7 @@ import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { Add } from "@carbon/react/icons";
 import { FC } from "react";
 import { documentationHref } from "src/components/documentation";
-import { docsUrl } from "src/configuration";
+import { useDocsUrl } from "../documentation/DocsUrlContext";
 import useTranslate from "src/utility/localization";
 
 type PageEmptyStateProps = {
@@ -25,6 +25,7 @@ const PageEmptyState: FC<PageEmptyStateProps> = ({
   handleClick,
 }) => {
   const { t } = useTranslate();
+  const docsUrl = useDocsUrl();
 
   const resourceTypeText = t(resourceTypeTranslationKey).toLowerCase();
 

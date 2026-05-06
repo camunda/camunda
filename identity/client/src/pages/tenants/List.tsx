@@ -24,10 +24,9 @@ import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type ListProps = {
   isOIDC: boolean;
-  docsUrl: string;
 };
 
-const List: FC<ListProps> = ({ isOIDC, docsUrl }) => {
+const List: FC<ListProps> = ({ isOIDC }) => {
   const { t } = useTranslate("tenants");
   const navigate = useNavigate();
   const {
@@ -41,7 +40,6 @@ const List: FC<ListProps> = ({ isOIDC, docsUrl }) => {
 
   const [addTenant, addTenantModal] = useModal(AddModal, reload, {
     isOIDC,
-    docsUrl,
   });
   const [editTenant, editTenantModal] = useEntityModal(EditModal, reload);
   const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, reload);

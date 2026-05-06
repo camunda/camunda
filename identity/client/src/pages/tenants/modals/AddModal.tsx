@@ -27,6 +27,7 @@ import { createTenant } from "src/utility/api/tenants";
 import useTranslate from "src/utility/localization";
 import { isValidTenantId } from "src/utility/validate";
 import { InfoHint, RightAlignedButtonSet } from "src/pages/tenants/styled.ts";
+import { useDocsUrl } from "../../../components/documentation/DocsUrlContext";
 
 type FormData = {
   name: string;
@@ -55,7 +56,6 @@ const OIDC_ASSIGN_ENTITY_ITEMS = [
 
 type AddTenantModalProps = UseModalProps & {
   isOIDC: boolean;
-  docsUrl: string;
 };
 
 const AddTenantModal: FC<AddTenantModalProps> = ({
@@ -63,13 +63,13 @@ const AddTenantModal: FC<AddTenantModalProps> = ({
   onClose,
   onSuccess,
   isOIDC,
-  docsUrl,
 }) => {
   const ASSIGN_ENTITY_ITEMS = isOIDC
     ? ([...BASE_ASSIGN_ENTITY_ITEMS, ...OIDC_ASSIGN_ENTITY_ITEMS] as const)
     : BASE_ASSIGN_ENTITY_ITEMS;
   const { t, Translate } = useTranslate("tenants");
   const navigate = useNavigate();
+  const docsUrl = useDocsUrl();
   const [createdTenant, setCreatedTenant] = useState<{
     name: string;
     tenantId: string;

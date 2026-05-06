@@ -14,17 +14,12 @@ import Detail from "src/pages/tenants/detail";
 type TenantsProps = {
   isOIDC: boolean;
   isCamundaGroupsEnabled: boolean;
-  docsUrl: string;
 };
 
-const Tenants: FC<TenantsProps> = ({
-  isOIDC,
-  isCamundaGroupsEnabled,
-  docsUrl,
-}) => (
+const Tenants: FC<TenantsProps> = ({ isOIDC, isCamundaGroupsEnabled }) => (
   <PageRoutes
     indexElement={
-      <Lazy load={() => import("./List")} elementProps={{ isOIDC, docsUrl }} />
+      <Lazy load={() => import("./List")} elementProps={{ isOIDC }} />
     }
     detailElement={
       <Detail isOIDC={isOIDC} isCamundaGroupsEnabled={isCamundaGroupsEnabled} />

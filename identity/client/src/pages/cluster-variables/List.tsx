@@ -25,7 +25,7 @@ import { usePollingReload } from "src/utility/hooks/usePollingReload";
 import { type QueryClusterVariablesResponseBody } from "@camunda/camunda-api-zod-schemas/8.10";
 import { useCallback } from "react";
 
-export default function List() {
+export default function List({ isSaaS }: { isSaaS: boolean }) {
   const { t } = useTranslate("clusterVariables");
   const {
     data: clusterVariables,
@@ -74,6 +74,7 @@ export default function List() {
   const [addClusterVariable, addClusterVariableModal] = useModal(
     AddModal,
     reloadWithPolling,
+    { isSaaS },
   );
   const [deleteClusterVariable, deleteClusterVariableModal] = useEntityModal(
     DeleteModal,
