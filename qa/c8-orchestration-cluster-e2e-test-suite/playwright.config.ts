@@ -101,6 +101,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/optimize/**',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -120,6 +121,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/optimize/**',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -139,6 +141,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/optimize/**',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -170,6 +173,12 @@ const normalProjects = [
   {
     name: 'operate-e2e',
     testMatch: ['tests/operate/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+  },
+  {
+    name: 'optimize-e2e',
+    testMatch: ['tests/optimize/*.spec.ts'],
     use: devices['Desktop Chrome'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },

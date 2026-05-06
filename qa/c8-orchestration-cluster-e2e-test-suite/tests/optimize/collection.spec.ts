@@ -12,6 +12,8 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import type {OptimizeHomePage} from '@pages/OptimizeHomePage';
 import type {Page} from '@playwright/test';
+import {deploy} from 'utils/zeebeClient';
+import {sleep} from 'utils/sleep';
 
 async function createCollection(
   page: Page,
@@ -21,31 +23,35 @@ async function createCollection(
   await optimizeHomePage.clickCreateNew('Collection');
   await optimizeHomePage.modalNameInput.fill(name);
   await optimizeHomePage.modalConfirmButton.click();
-  // Data sources selection step: confirm without selecting any sources
   await optimizeHomePage.modalConfirmButton.click();
 }
 
-test.beforeEach(async ({page, optimizeLoginPage, optimizeHomePage}) => {
-  await navigateToApp(page, 'optimize');
-  await optimizeLoginPage.login('demo', 'demo');
-  await expect(optimizeHomePage.createNewButton).toBeVisible({timeout: 60000});
-});
-
-test.afterEach(async ({page}, testInfo) => {
-  await captureScreenshot(page, testInfo);
-  await captureFailureVideo(page, testInfo);
+test.beforeAll(async () => {
+  await deploy(['./resources/orderProcess_v_1.bpmn']);
+  await sleep(30000);
 });
 
 test.describe('Collection', () => {
+  test.beforeEach(async ({page, optimizeLoginPage, optimizeHomePage}) => {
+    await navigateToApp(page, 'optimize');
+    await optimizeLoginPage.login('demo', 'demo');
+    await expect(optimizeHomePage.createNewButton).toBeVisible({
+      timeout: 60000,
+    });
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
   test('shouldCreateCollection', async ({
     page,
     optimizeHomePage,
     optimizeCollectionPage,
   }) => {
-    // given / when
     await createCollection(page, optimizeHomePage, 'Test Collection');
 
-    // then
     await expect(optimizeCollectionPage.collectionTitle).toContainText(
       'Test Collection',
     );
@@ -56,14 +62,11 @@ test.describe('Collection', () => {
     optimizeHomePage,
     optimizeCollectionPage,
   }) => {
-    // given
     await createCollection(page, optimizeHomePage);
     await expect(optimizeCollectionPage.collectionTitle).toBeVisible();
 
-    // when
     await optimizeCollectionPage.editName('Renamed Collection');
 
-    // then
     await expect(optimizeCollectionPage.collectionTitle).toContainText(
       'Renamed Collection',
     );
@@ -74,14 +77,11 @@ test.describe('Collection', () => {
     optimizeHomePage,
     optimizeCollectionPage,
   }) => {
-    // given
     await createCollection(page, optimizeHomePage);
     await expect(optimizeCollectionPage.collectionTitle).toBeVisible();
 
-    // when
     await optimizeCollectionPage.copyCollection('Copied Collection');
 
-    // then
     await expect(optimizeCollectionPage.collectionTitle).toContainText(
       'Copied Collection',
     );
@@ -92,45 +92,97 @@ test.describe('Collection', () => {
     optimizeHomePage,
     optimizeCollectionPage,
   }) => {
-    // given
     await createCollection(page, optimizeHomePage, 'Collection To Delete');
     await expect(optimizeCollectionPage.collectionTitle).toContainText(
       'Collection To Delete',
     );
 
-    // when
     await optimizeCollectionPage.deleteCollection();
 
-    // then - back on home page with the collection removed
     await expect(optimizeHomePage.entityList).toBeVisible();
     await expect(
-      optimizeHomePage.listItem('collection').filter({hasText: 'Collection To Delete'}),
-    ).not.toBeVisible();
+      optimizeHomePage
+        .listItem('collection')
+        .filter({hasText: 'Collection To Delete'}),
+    ).toBeHidden();
   });
 
-  test.fixme(
-    'shouldAddAndDeleteDataSources',
-    async ({page, optimizeHomePage, optimizeCollectionPage}) => {
-      // Requires process definitions deployed to Zeebe and imported by Optimize.
-      // TODO: Deploy 'Big variable process' and 'Order process' BPMNs via
-      // deploy() utility, wait for Optimize data import, then enable.
-    },
-  );
+  test('shouldAddAndDeleteDataSources', async ({
+    page,
+    optimizeHomePage,
+    optimizeCollectionPage,
+  }) => {
+    await createCollection(page, optimizeHomePage);
+    await expect(optimizeCollectionPage.collectionTitle).toBeVisible();
+    await optimizeCollectionPage.sourcesTab.click();
+    await optimizeCollectionPage.emptyStateAddButton.click();
+    await optimizeCollectionPage.sourceModalSearchField.fill('Order process');
+    await expect(
+      page
+        .locator('.SourcesModal .cds--list-box__menu-item')
+        .filter({hasText: 'Order process'}),
+    ).toBeVisible({timeout: 60000});
+    await optimizeCollectionPage.selectAllCheckbox.click();
+    await optimizeCollectionPage.modalConfirmButton.click();
 
-  test.fixme(
-    'shouldCreateKpiReport',
-    async ({page, optimizeHomePage, optimizeCollectionPage}) => {
-      // Requires 'Order process' deployed and imported by Optimize.
-      // TODO: Enable after process data seeding is implemented.
-    },
-  );
+    const sourceRow = page
+      .locator('.EntityList tbody tr')
+      .filter({hasText: 'Order process'});
+    await expect(sourceRow).toBeVisible();
 
-  test.fixme(
-    'shouldManageUserPermissions',
-    async ({page, optimizeHomePage, optimizeCollectionPage}) => {
-      // Requires 'Order process' deployed and imported by Optimize.
-      // Also requires additional test users configured in Keycloak.
-      // TODO: Enable after process data seeding is implemented.
-    },
-  );
+    await optimizeCollectionPage.selectAllCheckbox.click();
+    await optimizeCollectionPage.bulkRemoveButton.click();
+    await optimizeCollectionPage.modalConfirmButton.click();
+
+    await expect(sourceRow).toBeHidden();
+  });
+
+  test('shouldCreateKpiReport', async ({
+    page,
+    optimizeHomePage,
+    optimizeCollectionPage,
+  }) => {
+    await createCollection(page, optimizeHomePage);
+    await expect(optimizeCollectionPage.collectionTitle).toBeVisible();
+    await optimizeHomePage.createNewButton.click();
+    await optimizeHomePage.menuOption('Process KPI').click();
+    await page.locator('input#KpiSelectionComboBox').fill('Automation rate');
+    await page
+      .locator('.cds--list-box__menu-item')
+      .filter({hasText: 'Automation rate'})
+      .click();
+    await page
+      .locator('.Modal .DefinitionSelection input')
+      .fill('Order process');
+    await expect(
+      page
+        .locator('.cds--list-box__menu-item')
+        .filter({hasText: 'Order process'}),
+    ).toBeVisible({timeout: 60000});
+    await page
+      .locator('.cds--list-box__menu-item')
+      .filter({hasText: 'Order process'})
+      .click();
+    await optimizeHomePage.modalConfirmButton.click();
+    await optimizeHomePage.modalConfirmButton.click();
+
+    await expect(page.locator('.edit-button')).toBeVisible({timeout: 10000});
+  });
+
+  test('shouldManageUserPermissions', async ({
+    page,
+    optimizeHomePage,
+    optimizeCollectionPage,
+  }) => {
+    await createCollection(page, optimizeHomePage);
+    await expect(optimizeCollectionPage.collectionTitle).toBeVisible();
+    await optimizeCollectionPage.userTab.click();
+
+    const demoUserRow = page
+      .locator('.EntityList tbody tr')
+      .filter({hasText: 'demo'});
+    await expect(demoUserRow).toBeVisible();
+    await expect(demoUserRow).toContainText('Manager');
+    await expect(optimizeCollectionPage.addButton).toBeVisible();
+  });
 });

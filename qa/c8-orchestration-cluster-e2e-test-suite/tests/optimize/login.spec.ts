@@ -18,10 +18,8 @@ test.describe('Optimize Login', () => {
   });
 
   test('shouldRedirectToKeycloakLoginPage', async ({page}) => {
-    // when
     await navigateToApp(page, 'optimize');
 
-    // then - Keycloak login form is visible
     await expect(page.locator('input[name="username"]')).toBeVisible({
       timeout: 30000,
     });
@@ -34,13 +32,9 @@ test.describe('Optimize Login', () => {
     optimizeLoginPage,
     optimizeHomePage,
   }) => {
-    // given
     await navigateToApp(page, 'optimize');
-
-    // when
     await optimizeLoginPage.login('demo', 'demo');
 
-    // then - Optimize home page is shown with Create New button
     await expect(optimizeHomePage.createNewButton).toBeVisible({
       timeout: 60000,
     });

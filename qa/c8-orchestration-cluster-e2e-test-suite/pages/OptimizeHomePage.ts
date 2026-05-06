@@ -58,7 +58,9 @@ export class OptimizeHomePage {
       .filter({hasNot: this.page.locator('[hidden]')});
   }
 
-  async clickCreateNew(entityType: 'Collection' | 'Dashboard' | 'Report'): Promise<void> {
+  async clickCreateNew(
+    entityType: 'Collection' | 'Dashboard' | 'Report',
+  ): Promise<void> {
     await this.createNewButton.click();
     await this.menuOption(entityType).click();
   }
