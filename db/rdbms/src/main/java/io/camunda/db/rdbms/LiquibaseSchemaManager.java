@@ -335,22 +335,18 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
     final var tableName = prefix + SCHEMA_VERSION_TABLE;
 
     try (final var connection = getDataSource().getConnection()) {
-      final int updated;
-      try (final var updateStmt =
-          connection.prepareStatement("UPDATE " + tableName + " SET VERSION = ?")) {
-        updateStmt.setString(1, applicationVersion);
-        updated = updateStmt.executeUpdate();
+      final var autoCommit = connection.getAutoCommit();
+      connection.setAutoCommit(false);
+      try {
+        upsertSingleSchemaVersionRow(connection, tableName);
+        connection.commit();
+        LOG.debug("[RDBMS Schema] Updated schema version to {}.", applicationVersion);
+      } catch (final SQLException e) {
+        connection.rollback();
+        throw e;
+      } finally {
+        connection.setAutoCommit(autoCommit);
       }
-
-      if (updated == 0) {
-        try (final var insertStmt =
-            connection.prepareStatement("INSERT INTO " + tableName + " (VERSION) VALUES (?)")) {
-          insertStmt.setString(1, applicationVersion);
-          insertStmt.executeUpdate();
-        }
-      }
-
-      LOG.debug("[RDBMS Schema] Updated schema version to {}.", applicationVersion);
     } catch (final Exception e) {
       LOG.warn(
           "[RDBMS Schema] Could not update schema version in {}. Reason: {}",
@@ -358,6 +354,63 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
           e.getMessage());
     }
   }
+
+  private void upsertSingleSchemaVersionRow(final Connection connection, final String tableName)
+      throws SQLException {
+    final var schemaVersionState = readSchemaVersionState(connection, tableName);
+
+    if (schemaVersionState.rowCount() == 0) {
+      insertSchemaVersion(connection, tableName);
+      return;
+    }
+
+    if (schemaVersionState.rowCount() == 1) {
+      try (final var updateStmt =
+          connection.prepareStatement(
+              "UPDATE "
+                  + tableName
+                  + " SET VERSION = ? WHERE VERSION = ?")) {
+        updateStmt.setString(1, applicationVersion);
+        updateStmt.setString(2, schemaVersionState.version());
+        updateStmt.executeUpdate();
+      }
+      return;
+    }
+
+    try (final var deleteStmt = connection.prepareStatement("DELETE FROM " + tableName)) {
+      deleteStmt.executeUpdate();
+    }
+    insertSchemaVersion(connection, tableName);
+  }
+
+  private SchemaVersionState readSchemaVersionState(
+      final Connection connection, final String tableName) throws SQLException {
+    var rowCount = 0;
+    String version = null;
+
+    try (final var selectStmt = connection.prepareStatement("SELECT VERSION FROM " + tableName);
+        final var resultSet = selectStmt.executeQuery()) {
+      while (resultSet.next()) {
+        rowCount++;
+        if (rowCount == 1) {
+          version = resultSet.getString(1);
+        }
+      }
+    }
+
+    return new SchemaVersionState(rowCount, version);
+  }
+
+  private void insertSchemaVersion(final Connection connection, final String tableName)
+      throws SQLException {
+    try (final var insertStmt =
+        connection.prepareStatement("INSERT INTO " + tableName + " (VERSION) VALUES (?)")) {
+      insertStmt.setString(1, applicationVersion);
+      insertStmt.executeUpdate();
+    }
+  }
+
+  private record SchemaVersionState(int rowCount, String version) {}
 
   private String getPrefix() {
     final var params = getParameters();
