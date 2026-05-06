@@ -214,7 +214,20 @@ jobs:
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
 
-          
+          # Clear any stale deployment-id file left by a previous run on this self-hosted runner.
+          rm -f /tmp/deployment-id.txt
+
+          # Ensure the Maven Central deployment ID is captured even if the step fails
+          # (e.g. upload succeeds but validation times out). The trap runs on any exit.
+          trap 'if [[ -f /tmp/deployment-id.txt ]]; then
+            echo "deploymentId=$(</tmp/deployment-id.txt)" >> "$GITHUB_OUTPUT"
+          elif [[ "${SKIP_CENTRAL_RELEASE}" == "true" ]]; then
+            echo "deploymentId=dry-run-${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploymentId=not-found" >> "$GITHUB_OUTPUT"
+          fi' EXIT
+
+          # shellcheck disable=SC2016
           ./mvnw release:perform -B \
             -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
             -DlocalCheckout=${{ inputs.dryRun }} \
