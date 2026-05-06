@@ -202,6 +202,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>dynamic-node-id-provider</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

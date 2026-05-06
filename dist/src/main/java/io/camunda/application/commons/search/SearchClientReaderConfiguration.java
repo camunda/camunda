@@ -7,15 +7,16 @@
  */
 package io.camunda.application.commons.search;
 
+import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.SearchClientReaders;
-import io.camunda.search.connect.tenant.TenantConnectConfigResolver;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -35,15 +36,20 @@ public class SearchClientReaderConfiguration {
 
   @Bean
   public Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors(
-      final TenantConnectConfigResolver tenantConnectConfigResolver) {
-    return tenantConnectConfigResolver.tenantConfigs().entrySet().stream()
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey,
-                entry ->
-                    new IndexDescriptors(
-                        entry.getValue().getIndexPrefix(),
-                        entry.getValue().getTypeEnum().isElasticSearch())));
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return physicalTenantResolver.mapValues(
+        camunda -> {
+          final var secondaryStorage = camunda.getData().getSecondaryStorage();
+          return new IndexDescriptors(
+              secondaryStorage
+                  .getElasticsearchOrOpensearch()
+                  .orElseThrow(
+                      () ->
+                          new IllegalStateException(
+                              "Secondary storage is not Elasticsearch or OpenSearch"))
+                  .getIndexPrefix(),
+              secondaryStorage.getType().isElasticSearch());
+        });
   }
 
   @Bean
@@ -64,13 +70,10 @@ public class SearchClientReaderConfiguration {
   }
 
   private static <T> T requireDefault(final Map<String, T> beansByTenant, final String beanName) {
-    final var defaultBean = beansByTenant.get(TenantConnectConfigResolver.DEFAULT_TENANT_ID);
+    final var defaultBean = beansByTenant.get(DEFAULT_PHYSICAL_TENANT_ID);
     if (defaultBean == null) {
       throw new IllegalStateException(
-          "Missing '"
-              + TenantConnectConfigResolver.DEFAULT_TENANT_ID
-              + "' tenant entry in "
-              + beanName);
+          "Missing '" + DEFAULT_PHYSICAL_TENANT_ID + "' tenant entry in " + beanName);
     }
     return defaultBean;
   }
