@@ -162,17 +162,13 @@ test.describe('MCP Message Subscription Search API Tests', () => {
       const json = await res.json();
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
 
-      json.items.forEach(
-        (it: {toolProperties: Record<string, string>}) => {
-          expect(it.toolProperties).toBeDefined();
-          expect(it.toolProperties['io.camunda.tool:name']).toBe(
-            'alpha-tool-name',
-          );
-          expect(
-            it.toolProperties['io.camunda.tool:purpose'],
-          ).toBeDefined();
-        },
-      );
+      json.items.forEach((it: {toolProperties: Record<string, string>}) => {
+        expect(it.toolProperties).toBeDefined();
+        expect(it.toolProperties['io.camunda.tool:name']).toBe(
+          'alpha-tool-name',
+        );
+        expect(it.toolProperties['io.camunda.tool:purpose']).toBeDefined();
+      });
     });
 
     await test.step('SC-API-05 — processDefinitionName and processDefinitionVersion returned', async () => {
@@ -315,31 +311,29 @@ test.describe('MCP Message Subscription Search API Tests', () => {
       const json = await res.json();
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
 
-      json.items.forEach(
-        (it: {toolProperties: Record<string, string>}) => {
-          assertEqualsForKeys(
-            it,
-            {
-              processDefinitionId: 'mcpProcessWithInputs',
-              messageSubscriptionType: 'START_EVENT',
-              tenantId: '<default>',
-            },
-            ['processDefinitionId', 'messageSubscriptionType', 'tenantId'],
-          );
-          expect(it.toolProperties['io.camunda.tool:input_1_name']).toBe(
-            'firstName',
-          );
-          expect(it.toolProperties['io.camunda.tool:input_1_type']).toBe(
-            'string',
-          );
-          expect(it.toolProperties['io.camunda.tool:input_2_name']).toBe(
-            'amount',
-          );
-          expect(
-            it.toolProperties['io.camunda.tool:input_2_required'],
-          ).toBe('true');
-        },
-      );
+      json.items.forEach((it: {toolProperties: Record<string, string>}) => {
+        assertEqualsForKeys(
+          it,
+          {
+            processDefinitionId: 'mcpProcessWithInputs',
+            messageSubscriptionType: 'START_EVENT',
+            tenantId: '<default>',
+          },
+          ['processDefinitionId', 'messageSubscriptionType', 'tenantId'],
+        );
+        expect(it.toolProperties['io.camunda.tool:input_1_name']).toBe(
+          'firstName',
+        );
+        expect(it.toolProperties['io.camunda.tool:input_1_type']).toBe(
+          'string',
+        );
+        expect(it.toolProperties['io.camunda.tool:input_2_name']).toBe(
+          'amount',
+        );
+        expect(it.toolProperties['io.camunda.tool:input_2_required']).toBe(
+          'true',
+        );
+      });
     });
 
     await test.step('SC-API-09 — Sort by processDefinitionName ascending', async () => {
