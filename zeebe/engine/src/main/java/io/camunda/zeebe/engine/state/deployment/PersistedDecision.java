@@ -16,9 +16,11 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.ProjectionOf;
 import org.agrona.DirectBuffer;
 
-public final class PersistedDecision extends UnpackedObject implements DbValue {
+public final class PersistedDecision extends UnpackedObject
+    implements DbValue, ProjectionOf<DecisionRecord, PersistedDecision> {
 
   private static final long NO_DEPLOYMENT_KEY = -1L;
   private final StringProperty decisionIdProp = new StringProperty("decisionId");
@@ -48,7 +50,8 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
         .declareProperty(versionTagProp);
   }
 
-  public void wrap(final DecisionRecord record) {
+  @Override
+  public PersistedDecision wrap(final DecisionRecord record) {
     decisionIdProp.setValue(record.getDecisionId());
     decisionNameProp.setValue(record.getDecisionName());
     versionProp.setValue(record.getVersion());
@@ -58,6 +61,7 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
     tenantIdProp.setValue(record.getTenantId());
     deploymentKeyProp.setValue(record.getDeploymentKey());
     versionTagProp.setValue(record.getVersionTag());
+    return this;
   }
 
   public DirectBuffer getDecisionId() {
