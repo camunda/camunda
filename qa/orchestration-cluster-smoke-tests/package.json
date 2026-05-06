@@ -5,12 +5,15 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "cluster:up": "cd ./config && DATABASE=elasticsearch docker compose up -d camunda",
+    "cluster:down": "cd ./config && DATABASE=elasticsearch docker compose down",
     "format": "prettier --write .",
     "lint": "tsc --noEmit && eslint . && prettier -c .",
     "test": "playwright test",
     "test:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@camunda8/orchestration-cluster-api": "9.1.0",
     "@playwright/test": "1.59.1"
   },
   "devDependencies": {
