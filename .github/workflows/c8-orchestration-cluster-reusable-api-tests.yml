@@ -13,13 +13,18 @@ on:
         description: "Branch to test (e.g. stable/8.8, main)"
         required: true
         type: string
+      camunda_mode:
+        description: "Camunda deployment mode: 'profiles' (default Spring profiles) or 'all-in-one'"
+        required: false
+        type: string
+        default: profiles
 
 permissions:
   contents: read
 
 jobs:
   nightly-api-tests:
-    name: API Tests (${{ inputs.branch }})
+    name: API Tests (${{ inputs.branch }} - Mode ${{ inputs.camunda_mode }})
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -45,6 +50,13 @@ jobs:
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
+            if [[ "${{ inputs.camunda_mode }}" == "all-in-one" ]]; then
+              export CAMUNDA_MODE="all-in-one"
+              echo "Starting with CAMUNDA_MODE=all-in-one"
+            else
+              unset CAMUNDA_MODE
+              echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
+            fi
             DATABASE=elasticsearch docker compose up -d camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
@@ -194,7 +206,7 @@ jobs:
             --key "$TESTRAIL_KEY" \
             --batch-size 500 \
             parse_junit --suite-id 17050 \
-            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME (Mode ${{ inputs.camunda_mode }}) - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
@@ -211,7 +223,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: json-report-nightly-api-${{ steps.sanitize.outputs.safe_branch }}
+          name: json-report-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
           retention-days: 60
 
@@ -220,7 +232,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "c8-orchestration-cluster-e2e-nightly-api-tests/${{ inputs.branch }}"
+          job_name: "c8-orchestration-cluster-e2e-nightly-api-tests/${{ inputs.branch }} (Mode ${{ inputs.camunda_mode }})"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

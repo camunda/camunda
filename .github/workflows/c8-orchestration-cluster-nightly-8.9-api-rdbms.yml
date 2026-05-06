@@ -20,3 +20,10 @@ jobs:
     with:
       branch: stable/8.9
     secrets: inherit
+
+  nightly-api-tests-rdbms-all-in-one:
+    uses: ./.github/workflows/c8-orchestration-cluster-reusable-rdbms-api-tests.yml
+    with:
+      branch: stable/8.9
+      camunda_mode: all-in-one
+    secrets: inherit

@@ -18,10 +18,13 @@ permissions:
 jobs:
   validate-branch:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
     outputs:
       base: ${{ steps.detect-base.outputs.base }}
     steps:
       - name: Check if branch exists
+        shell: bash
         run: |
           echo "Checking if branch '${{ github.event.inputs.branch }}' exists..."
           branch_name="${{ github.event.inputs.branch }}"
@@ -34,10 +37,11 @@ jobs:
           fi
           echo "Branch '$branch_name' exists."
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
 
       - name: Detect base branch
         id: detect-base
+        shell: bash
         run: |
           branch="${{ github.event.inputs.branch }}"
           echo "Detecting base branch for input branch: $branch"
@@ -53,21 +57,28 @@ jobs:
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
   c8-orchestration-cluster-api-tests:
-    name: C8 Orchestration Cluster API Tests
+    name: C8 Orchestration Cluster API Tests (Mode ${{ matrix.camunda_mode }})
     needs: validate-branch
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions: {}
+    strategy:
+      fail-fast: false
+      matrix:
+        camunda_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
     steps:
       - name: Print input and base branch
+        shell: bash
         run: |
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
-
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+          echo "Camunda mode: ${{ matrix.camunda_mode }}"
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.branch }}
 
       - name: Set NON_STANDALONE variable
+        shell: bash
         run: |
           base="${{ needs.validate-branch.outputs.base }}"
           if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
@@ -75,30 +86,37 @@ jobs:
           else
             echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
           fi
-          if [[ "$base" == "main" ]]; then
-            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
-          elif [[ "$base" == stable/* ]]; then
-            minor="${base#stable/}"
-            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
-          fi
 
       - name: Start Camunda
+        shell: bash
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             echo "Using single services for older branches (8.6/8.7)"
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
+            
+            # Set CAMUNDA_MODE based on matrix parameter
+            if [[ "${{ matrix.camunda_mode }}" == "all-in-one" ]]; then
+              export CAMUNDA_MODE="all-in-one"
+              echo "Starting with CAMUNDA_MODE=all-in-one"
+            else
+              unset CAMUNDA_MODE
+              echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
+            fi
+            
             DATABASE=elasticsearch docker compose up -d camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers
+        shell: bash
         run: docker ps -a
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Wait for services to be ready
         id: wait-for-services
+        shell: bash
         run: |
           echo "Checking if services are up..."
           ready=false
@@ -137,6 +155,7 @@ jobs:
 
       - name: Print Docker logs before failing
         if: failure()
+        shell: bash
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             docker compose logs tasklist
@@ -147,7 +166,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -179,7 +198,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 
@@ -190,7 +209,7 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -215,21 +234,20 @@ jobs:
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
-          pip install trcli==1.14.1
+          pip install trcli
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
             parse_junit --suite-id 17050 \
-            --title "On Demand C8 Orchestration Cluster API Test Run Results - ${{ github.event.inputs.branch }} - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --title "On Demand C8 Orchestration Cluster API Test Run Results - ${{ github.event.inputs.branch }} (Mode ${{ matrix.camunda_mode }}) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: C8 Orchestration Cluster API Test Result
+          name: C8 Orchestration Cluster API Test Result (Mode ${{ matrix.camunda_mode }})
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
 
@@ -239,24 +257,31 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          job_name: ${{ format('{0} (Mode {1})', github.job, matrix.camunda_mode) }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   c8-orchestration-cluster-api-tests-rdbms:
     if: ${{ needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main' }}
-    name: C8 Orchestration Cluster API Tests (H2/RDBMS)
+    name: C8 Orchestration Cluster API Tests (H2/RDBMS, Mode ${{ matrix.camunda_mode }})
     needs: validate-branch
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions: {}
+    strategy:
+      fail-fast: false
+      matrix:
+        camunda_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
     steps:
       - name: Print input and base branch
+        shell: bash
         run: |
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
+          echo "Camunda mode: ${{ matrix.camunda_mode }}"
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -268,9 +293,11 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       - name: Build Camunda distribution
+        shell: bash
         run: ./mvnw install -Dquickly -T1C
 
       - name: Extract distribution
+        shell: bash
         run: |
           mkdir -p dev-dist
           exploded="dist/target/camunda-zeebe"
@@ -286,10 +313,19 @@ jobs:
           fi
 
       - name: Start Camunda with H2/RDBMS
+        shell: bash
         run: |
           chmod +x dev-dist/bin/camunda
 
-          export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin"
+          if [[ "${{ matrix.camunda_mode }}" == "all-in-one" ]]; then
+            export CAMUNDA_MODE="all-in-one"
+            echo "Starting with CAMUNDA_MODE=all-in-one"
+          else
+            unset CAMUNDA_MODE
+            export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,tasklist,operate"
+            echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
+          fi
+
           export ZEEBE_CLOCK_CONTROLLED="true"
 
           # Auth configuration
@@ -329,14 +365,12 @@ jobs:
           export CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_0="ADMIN"
           export CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES_0="PROCESS_INSTANCE"
 
-          # Business ID uniqueness enforcement toggle
-          export CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED="true"
-
           dev-dist/bin/camunda > dev-dist/camunda.log 2>&1 &
           echo $! > dev-dist/camunda.pid
           echo "Camunda starting (PID $(cat dev-dist/camunda.pid))..."
 
       - name: Wait for Camunda to be ready
+        shell: bash
         run: |
           echo "Waiting for Camunda to be ready..."
           for i in $(seq 1 90); do
@@ -353,23 +387,26 @@ jobs:
           exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
       - name: Clean install dependencies
+        shell: bash
         run: |
           rm -rf node_modules package-lock.json
           npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Install Playwright Browsers
+        shell: bash
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Run API tests
+        shell: bash
         env:
           LOCAL_TEST: "false"
           CORE_APPLICATION_URL: "http://localhost:8080"
@@ -377,7 +414,7 @@ jobs:
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           DATABASE: "RDBMS"
         run: |
           echo "Running API tests against H2/RDBMS backend"
@@ -386,19 +423,21 @@ jobs:
 
       - name: Print Camunda logs on failure
         if: failure()
+        shell: bash
         run: |
           echo "=== Camunda logs ==="
           cat dev-dist/camunda.log
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: C8 Orchestration Cluster API Test Result (H2-RDBMS)
+          name: C8 Orchestration Cluster API Test Result (H2-RDBMS, Mode ${{ matrix.camunda_mode }})
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
 
       - name: Stop Camunda
         if: always()
+        shell: bash
         run: |
           if [ -f dev-dist/camunda.pid ]; then
             kill "$(cat dev-dist/camunda.pid)" 2>/dev/null || true
@@ -410,30 +449,37 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          job_name: ${{ format('{0} (Mode {1})', github.job, matrix.camunda_mode) }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   c8-orchestration-cluster-e2e-tests:
-    name: C8 Orchestration Cluster E2E Tests (Tasklist ${{ matrix.tasklist_mode }} mode)
+    name: C8 Orchestration Cluster E2E Tests (Mode ${{ matrix.camunda_mode }}, Tasklist ${{ matrix.tasklist_mode }})
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || needs.validate-branch.outputs.base == 'main' && '["v2"]' || '["v1","v2"]' ) }}
+        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || '["v1","v2"]' ) }}
+        camunda_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.9' || needs.validate-branch.outputs.base == 'main') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
     needs: [validate-branch]
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions: {}
     steps:
       - name: Print input and base branch
+        shell: bash
         run: |
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
+          echo "Camunda mode: ${{ matrix.camunda_mode }}"
           echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.branch }}
 
       - name: Set NON_STANDALONE variable
+        shell: bash
         run: |
           base="${{ needs.validate-branch.outputs.base }}"
           if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
@@ -441,20 +487,26 @@ jobs:
           else
             echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
           fi
-          if [[ "$base" == "main" ]]; then
-            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
-          elif [[ "$base" == stable/* ]]; then
-            minor="${base#stable/}"
-            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
-          fi
 
       - name: Start Camunda
+        shell: bash
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             echo "Using single services for older branches (8.6/8.7)"
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
+            
+            # Set CAMUNDA_MODE based on matrix parameter
+            if [[ "${{ matrix.camunda_mode }}" == "all-in-one" ]]; then
+              export CAMUNDA_MODE="all-in-one"
+              echo "Starting with CAMUNDA_MODE=all-in-one"
+            else
+              unset CAMUNDA_MODE
+              echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
+            fi
+            
+            # Set Tasklist mode
             if [[ "${{ matrix.tasklist_mode }}" == "v1" ]]; then
               echo "Starting with Tasklist V1 mode enabled"
               CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
@@ -509,6 +561,7 @@ jobs:
 
       - name: Print Docker logs before failing
         if: failure()
+        shell: bash
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             docker compose logs tasklist
@@ -519,7 +572,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -551,7 +604,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 
@@ -576,14 +629,11 @@ jobs:
 
             if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
               echo "Running V2 mode tests"
-              if [[ "${{ needs.validate-branch.outputs.base }}" == "main" ]]; then
-                # main: V1 directories removed, run all tests
-                TEST_ARGS+=(tests/)
-              elif [[ "${{ needs.validate-branch.outputs.base }}" == "stable/8.8" ]]; then
+              if [[ "${{ needs.validate-branch.outputs.base }}" == "stable/8.8" ]]; then
                 # stable/8.8: run all tests excluding @v1-only tagged tests
                 TEST_ARGS+=(tests/ --grep-invert '@v1-only')
               else
-                # stable/8.9: run all tests excluding v1/ directories
+                # main: run all tests excluding v1/ directories
                 TEST_ARGS+=(tests/ --grep-invert 'v1/')
               fi
             else
@@ -592,7 +642,7 @@ jobs:
                 # stable/8.8: no v1/ directories, run regular directories for V1 mode
                 TEST_ARGS+=(tests/tasklist/ tests/common-flows/)
               else
-                # stable/8.9: has v1/ directories for V1 mode
+                # main: has v1/ directories for V1 mode
                 TEST_ARGS+=(tests/tasklist/v1/ tests/common-flows/v1/)
               fi
             fi
@@ -610,21 +660,20 @@ jobs:
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
-          pip install trcli==1.14.1
+          pip install trcli
           trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
-            --batch-size 500 \
             parse_junit --suite-id 17050 \
-            --title "On Demand C8 Orchestration Cluster Test Run Results - ${{ github.event.inputs.branch }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --title "On Demand C8 Orchestration Cluster Test Run Results - ${{ github.event.inputs.branch }} (Mode ${{ matrix.camunda_mode }}, Tasklist ${{ matrix.tasklist_mode }}) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: C8 Orchestration Cluster E2E Test Result (Tasklist ${{ matrix.tasklist_mode }} mode)
+          name: C8 Orchestration Cluster E2E Test Result (Mode ${{ matrix.camunda_mode }}, Tasklist ${{ matrix.tasklist_mode }})
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
 
