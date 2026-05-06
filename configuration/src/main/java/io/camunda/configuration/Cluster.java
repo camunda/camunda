@@ -179,7 +179,7 @@ public class Cluster implements Cloneable {
   }
 
   public List<String> getInitialContactPoints() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY,
         initialContactPoints,
         ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -200,7 +200,7 @@ public class Cluster implements Cloneable {
   }
 
   public int getPartitionCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".partition-count",
         partitionCount,
         Integer.class,
@@ -213,7 +213,7 @@ public class Cluster implements Cloneable {
   }
 
   public int getReplicationFactor() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".replication-factor",
         replicationFactor,
         Integer.class,
@@ -226,7 +226,7 @@ public class Cluster implements Cloneable {
   }
 
   public int getSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".size",
         size,
         Integer.class,
@@ -247,7 +247,7 @@ public class Cluster implements Cloneable {
   }
 
   public String getName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".name",
         name,
         String.class,
@@ -260,7 +260,7 @@ public class Cluster implements Cloneable {
   }
 
   public String getClusterId() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".cluster-id",
         clusterId,
         String.class,
@@ -273,7 +273,7 @@ public class Cluster implements Cloneable {
   }
 
   public String getGatewayId() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gateway-id",
         gatewayId,
         String.class,
@@ -294,7 +294,7 @@ public class Cluster implements Cloneable {
   }
 
   public CompressionAlgorithm getCompressionAlgorithm() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".compression-algorithm",
         compressionAlgorithm,
         CompressionAlgorithm.class,

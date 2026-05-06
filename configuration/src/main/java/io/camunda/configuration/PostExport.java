@@ -42,7 +42,7 @@ public class PostExport {
   }
 
   public int getBatchSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".batch-size",
         batchSize,
         Integer.class,
@@ -55,7 +55,7 @@ public class PostExport {
   }
 
   public Duration getDelayBetweenRuns() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".delay-between-runs",
         delayBetweenRuns,
         Duration.class,
@@ -68,7 +68,7 @@ public class PostExport {
   }
 
   public Duration getMaxDelayBetweenRuns() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".max-delay-between-runs",
         maxDelayBetweenRuns,
         Duration.class,
@@ -81,7 +81,7 @@ public class PostExport {
   }
 
   public boolean isIgnoreMissingData() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".ignore-missing-data",
         ignoreMissingData,
         Boolean.class,

@@ -35,7 +35,7 @@ public class FreeSpace {
   private DataSize replication = DataSize.ofGigabytes(1);
 
   public DataSize getProcessing() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".processing",
         processing,
         DataSize.class,
@@ -48,7 +48,7 @@ public class FreeSpace {
   }
 
   public DataSize getReplication() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".replication",
         replication,
         DataSize.class,

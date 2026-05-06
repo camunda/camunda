@@ -30,7 +30,7 @@ public class Metrics {
   @NestedConfigurationProperty private JobMetricsConfig jobMetrics = new JobMetricsConfig();
 
   public boolean isActor() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".actor",
         actor,
         Boolean.class,
@@ -43,7 +43,7 @@ public class Metrics {
   }
 
   public boolean isEnableExporterExecutionMetrics() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enable-exporter-execution-metrics",
         enableExporterExecutionMetrics,
         Boolean.class,
