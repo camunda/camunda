@@ -53,12 +53,12 @@ The endgame is *automated remediation of the long tail of code-quality issues*, 
 │  2. Create branch, apply diff      │   │  issue: rule, location,      │
 │  3. mvn install -pl <module> -am   │   │  why-not-auto-fix, suggested │
 │     -Dquickly + module tests       │   │  approach.                   │
-│  4. ─► INFER GATE on the diff ◄─   │   │  Tag: `ai-triage:auto-       │
-│  5. spotless:apply + license       │   │        detected`             │
-│  6. Open PR, assign reviewer       │   │  Component owner assigned.   │
-│     Label: `ai-fix:auto-pr`        │   │                              │
-│  7. Human review REQUIRED before   │   │                              │
+│  4. spotless:apply + license       │   │  Tag: `ai-triage:auto-       │
+│  5. Open PR, assign reviewer       │   │        detected`             │
+│     Label: `ai-fix:auto-pr`        │   │  Component owner assigned.   │
+│  6. Human review REQUIRED before   │   │                              │
 │     merge (branch protection)      │   │                              │
+│  (Infer gate deferred — see §3)    │   │                              │
 └────────────────────────────────────┘   └──────────────────────────────┘
 ```
 
@@ -66,7 +66,7 @@ The endgame is *automated remediation of the long tail of code-quality issues*, 
 
 - **Hotspot-first scoping** keeps Stage 2 tractable on a monorepo of this size and biases toward bugs in actively-developed code.
 - **Two-track output** prevents the most common failure mode of AI auto-fix systems: plausible-looking fixes for architectural / concurrency bugs that introduce subtle regressions.
-- **Infer is a *gate*, not a scanner** — it analyses only the small AI-generated diff, exploiting its strength (deep race / NPE / leak detection) without paying its full-scan cost.
+- **Infer is a *gate*, not a scanner** — it analyses only the small AI-generated diff, exploiting its strength (deep race / NPE / leak detection) without paying its full-scan cost. **Deferred for the hackday MVP** — see §3 Stage 4a.
 - **Human review is mandatory** via branch protection. The pipeline never merges autonomously.
 
 ---
@@ -155,15 +155,16 @@ When in doubt → issue-only.
 
 For each PR-eligible finding:
 
-1. AI generates the fix (Claude Code action).
+1. AI generates the fix (Claude via AWS Bedrock).
 2. Create branch `ai-fix/<finding-id>`; apply the diff.
 3. Run `./mvnw install -pl <module> -am -Dquickly -T1C` followed by module tests.
-4. **Infer verification gate:** run `infer capture -- mvn compile -pl <module>` then `infer analyze --pulse --racerd-only` on the changed files. If Infer flags any *new* issue introduced by the diff (vs. baseline), abort and fall through to issue track.
-5. Run `./mvnw license:format spotless:apply -T1C`.
-6. Open PR; auto-assign a CODEOWNERS reviewer; apply label `ai-fix:auto-pr`.
-7. Branch protection enforces approving review on `main`.
+4. Run `./mvnw license:format spotless:apply -T1C`.
+5. Open PR; auto-assign a CODEOWNERS reviewer; apply label `ai-fix:auto-pr`.
+6. Branch protection enforces approving review on `main`.
 
 **Volume cap:** max 5 auto-PRs per day during hackday to prevent flooding the review queue. Configured as a job-level guard.
+
+**Infer verification gate — deferred.** The plan originally had Infer running on the AI-generated diff to catch fixes that look right but introduce subtle races, NPEs, or leaks. For the hackday MVP, the only PR-eligible rule is `java/deprecated-call` (a pure rename to a non-deprecated successor), which essentially cannot introduce that class of bug. The mandatory human review covers the remaining risk. Light up the Infer gate when the PR-eligible allowlist expands beyond pure renames into rules where Infer's depth pays off (resource leaks, complex null derefs).
 
 ### Stage 4b — Issue track
 
@@ -183,7 +184,7 @@ What we build in 1–2 days:
 1. **GitHub Actions workflow** `.github/workflows/code-quality-ai.yml` (manual dispatch + scheduled).
 2. **CodeQL setup**: `github/codeql-action` invocations in the workflow with a `codeql-config.yml` scoped to `zeebe/engine` and the `security-and-quality` query pack.
 3. **AI triage script** (Python): consumes SARIF, classifies findings, emits JSON. Stub or real Claude depending on key availability.
-4. **PR-track runner** (Python or shell): for each PR-eligible finding, generate fix → run module build + tests → run Infer gate → open PR.
+4. **PR-track runner**: for each PR-eligible finding, generate fix → run module build + tests → spotless → open PR. (Infer gate deferred; see §3.)
 5. **Issue-track runner**: opens GitHub issues from the AI's structured output.
 6. **Demo write-up** showing input findings → classification → resulting PRs and issues, with sample output.
 
@@ -224,10 +225,9 @@ Person B: Hotspot stub + repo helpers
 
 ### Phase 2 — AI triage stub (hackday Day 1 afternoon)
 
-Person A: Infer verification gate
-- Add Infer to runner image (Docker)
-- Script: `infer capture` + `analyze` on a diff; compare against committed baseline
-- Wire as a gate step that fails the PR job on new Infer findings
+Person A: PR-track scaffolding
+- Volume cap helper, branch-naming convention, draft PR body templating
+- Infer verification gate is deferred (see §3); do not build it for the MVP
 
 Person B: AI triage script
 - Without Claude API key: rule-ID-based classifier (`java/deprecated-call` → PR-eligible; everything else → issue-only)
@@ -239,7 +239,7 @@ Person B: AI triage script
 ### Phase 3 — Track runners (hackday Day 2 morning)
 
 Person A: PR track runner
-- Branch creation, diff application, build + test run, Infer gate, spotless, PR open
+- Branch creation, diff application, build + test run, spotless, PR open
 - Volume cap enforcement
 
 Person B: Issue track runner
@@ -252,7 +252,7 @@ Person B: Issue track runner
 ### Phase 4 — Demo + write-up (hackday Day 2 afternoon)
 
 - Run the pipeline on `zeebe/engine` with real findings.
-- Capture metrics: findings classified, PRs opened, Infer gate hits, build failures.
+- Capture metrics: findings classified, PRs opened, build failures.
 - Write up the demo and propose graduation criteria.
 
 ---
@@ -288,7 +288,7 @@ CodeQL needs no token (it uses `GITHUB_TOKEN` automatically on public repos), so
 | Auto-PRs flood the review queue | Medium | Volume cap (5/day) + dedicated label so they're easy to filter |
 | CodeQL `manual` build mode fails on the monorepo (annotation processors, Spring Boot) | Medium | Run Phase 0 sanity check locally before hackday; fall back to `autobuild` or scope-down |
 | `security-and-quality` pack produces too many findings to triage on first run | Medium | Run with empty baseline first to size the volume; fall back to `security-extended` if overwhelming |
-| Infer fails to capture our build (annotation processors, Spring Boot) | Medium | Run Phase 0 sanity check locally before hackday |
+| Infer gate not in place when PR allowlist expands | Low (now) → High (later) | Deferred for MVP; revisit before adding non-rename rules to the PR-eligible allowlist |
 | Bot has too much repo write access | Medium | Scoped GitHub App; cannot bypass branch protection; cannot write to `main` |
 | Cost (Claude API tokens) | Low for hackday | Cap on number of triages per run; usage observed in demo |
 | Reviewer fatigue if PRs are low-quality | Medium | Start with one rule type (`java/deprecated-call` — deprecated rename); expand based on merge rate |
@@ -297,10 +297,10 @@ CodeQL needs no token (it uses `GITHUB_TOKEN` automatically on public repos), so
 
 ## 9. Success metrics for the demo
 
-- ≥ 1 AI-generated PR opens against `zeebe/engine` and passes the Infer gate.
+- ≥ 1 AI-generated PR opens against `zeebe/engine` and passes the module build + tests.
 - ≥ 1 issue is created for an architectural finding with a useful AI analysis.
 - 0 PRs merged without human review (mandatory branch protection).
-- Demo write-up captures: total findings → classification split → PRs opened → build pass/fail → Infer gate hits.
+- Demo write-up captures: total findings → classification split → PRs opened → build pass/fail.
 
 **Graduation criteria** (post-hackday, before this becomes part of `ci.yml`):
 
