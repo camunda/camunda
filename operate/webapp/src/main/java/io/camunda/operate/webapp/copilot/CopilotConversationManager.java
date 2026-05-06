@@ -91,9 +91,7 @@ public class CopilotConversationManager {
   }
 
   private void runAgentLoop(
-      ConversationSession session,
-      CamundaAuthentication auth,
-      Map<String, Object> context) {
+      ConversationSession session, CamundaAuthentication auth, Map<String, Object> context) {
     try {
       for (int turn = 0; turn < MAX_TOOL_TURNS; turn++) {
         if (session.isCancelled()) {
@@ -148,8 +146,8 @@ public class CopilotConversationManager {
     }
   }
 
-  private ChatResponse streamOnce(
-      ConversationSession session, Map<String, Object> context) throws InterruptedException {
+  private ChatResponse streamOnce(ConversationSession session, Map<String, Object> context)
+      throws InterruptedException {
     final CountDownLatch done = new CountDownLatch(1);
     final AtomicReference<ChatResponse> result = new AtomicReference<>();
     final AtomicReference<Throwable> failure = new AtomicReference<>();
