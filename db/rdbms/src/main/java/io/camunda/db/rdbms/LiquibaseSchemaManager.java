@@ -323,8 +323,9 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
 
   /**
    * Upserts the current application version into {@code RDBMS_SCHEMA_VERSION} after a successful
-   * Liquibase migration. If the table does not exist (e.g. when the Liquibase changelog has not
-   * created it yet), the update is skipped silently.
+   * Liquibase migration. Any failure aborts startup with an {@link IllegalStateException} because a
+   * missing or incorrect schema-version record would cause the next startup to perform an incorrect
+   * compatibility check.
    */
   protected void updateSchemaVersion() {
     if (applicationVersion == null || getDataSource() == null) {
@@ -348,10 +349,11 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
         connection.setAutoCommit(autoCommit);
       }
     } catch (final Exception e) {
-      LOG.warn(
-          "[RDBMS Schema] Could not update schema version in {}. Reason: {}",
-          tableName,
-          e.getMessage());
+      LOG.error(
+          "[RDBMS Schema] Failed to update schema version in {}. Startup aborted.", tableName, e);
+      throw new IllegalStateException(
+          "[RDBMS Schema] Failed to update schema version in " + tableName + ". Startup aborted.",
+          e);
     }
   }
 
@@ -367,9 +369,7 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
     if (schemaVersionState.rowCount() == 1) {
       try (final var updateStmt =
           connection.prepareStatement(
-              "UPDATE "
-                  + tableName
-                  + " SET VERSION = ? WHERE VERSION = ?")) {
+              "UPDATE " + tableName + " SET VERSION = ? WHERE VERSION = ?")) {
         updateStmt.setString(1, applicationVersion);
         updateStmt.setString(2, schemaVersionState.version());
         updateStmt.executeUpdate();

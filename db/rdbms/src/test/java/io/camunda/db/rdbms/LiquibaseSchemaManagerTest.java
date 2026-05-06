@@ -374,6 +374,22 @@ class LiquibaseSchemaManagerTest {
         .hasMessageContaining("Failed to determine current schema version");
   }
 
+  @Test
+  void shouldFailStartupWhenSchemaVersionUpdateFails() throws Exception {
+    // given: datasource throws when obtaining a connection for the version update
+    final var schemaManager = new TestLiquibaseSchemaManager();
+    schemaManager.setApplicationVersion("8.10.0");
+
+    final var mockDataSource = mock(DataSource.class);
+    when(mockDataSource.getConnection()).thenThrow(new RuntimeException("DB write refused"));
+    schemaManager.setDataSource(mockDataSource);
+
+    // when / then - a failure in updateSchemaVersion must abort startup
+    assertThatThrownBy(schemaManager::updateSchemaVersion)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Failed to update schema version");
+  }
+
   // ---- helpers ----
 
   /**
