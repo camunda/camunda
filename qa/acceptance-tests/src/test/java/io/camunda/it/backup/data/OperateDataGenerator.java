@@ -14,21 +14,17 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongConsumer;
 import org.awaitility.Awaitility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public final class OperateDataGenerator implements AutoCloseable {
+public final class OperateDataGenerator extends AbstractBackupDataGenerator {
 
   static final String PROCESS_BPMN_PROCESS_ID = "basicProcess";
   static final int PROCESS_INSTANCE_COUNT = 51;
@@ -45,30 +41,22 @@ public final class OperateDataGenerator implements AutoCloseable {
           + NEW_PROCESS_INSTANCES_COUNT
           - CANCELLED_PROCESS_INSTANCES;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(OperateDataGenerator.class);
-  private static final Duration DATA_TIMEOUT = Duration.ofSeconds(90);
-  private static final int SEARCH_LIMIT = 200;
   private static final int SEQUENCE_FLOW_COUNT_PER_PROCESS_INSTANCE = 2;
   private static final int MAX_RETRY_ATTEMPTS = 100;
 
   private final Random random = new Random();
-
-  private CamundaClient camundaClient;
   private List<Long> processInstanceKeys = new ArrayList<>();
 
   public OperateDataGenerator(final CamundaClient camundaClient) {
-    this.camundaClient = camundaClient;
+    super(camundaClient);
   }
 
-  public void setCamundaClient(final CamundaClient camundaClient) {
-    this.camundaClient = camundaClient;
-  }
-
+  @Override
   public void createData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
-    LOGGER.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
+    logger.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
 
-    deployProcess(PROCESS_BPMN_PROCESS_ID);
+    deployProcess(PROCESS_BPMN_PROCESS_ID, createModel(PROCESS_BPMN_PROCESS_ID));
     processInstanceKeys = startProcessInstances(PROCESS_BPMN_PROCESS_ID, PROCESS_INSTANCE_COUNT);
     completeTasks("task1");
     createIncidents("task2");
@@ -78,18 +66,19 @@ public final class OperateDataGenerator implements AutoCloseable {
     for (int i = 0; i < COUNT_OF_CANCEL_OPERATION; i++) {
       createCancelOperation(processInstanceKeys.size() * 10);
     }
-    LOGGER.info("{} operations of type CANCEL_PROCESS_INSTANCE started", COUNT_OF_CANCEL_OPERATION);
+    logger.info("{} operations of type CANCEL_PROCESS_INSTANCE started", COUNT_OF_CANCEL_OPERATION);
 
     for (int i = 0; i < COUNT_OF_RESOLVE_OPERATION; i++) {
       createResolveIncidentOperation(processInstanceKeys.size() * 10);
     }
-    LOGGER.info("{} operations of type RESOLVE_INCIDENT started", COUNT_OF_RESOLVE_OPERATION);
+    logger.info("{} operations of type RESOLVE_INCIDENT started", COUNT_OF_RESOLVE_OPERATION);
 
-    LOGGER.info(
+    logger.info(
         "Data generation completed in: {} s",
         ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
   }
 
+  @Override
   public void assertData() {
     Awaitility.await("should expose the original backup data")
         .atMost(DATA_TIMEOUT)
@@ -97,11 +86,12 @@ public final class OperateDataGenerator implements AutoCloseable {
         .untilAsserted(this::assertDataOneAttempt);
   }
 
+  @Override
   public void changeData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
-    LOGGER.info("Starting changing the data...");
+    logger.info("Starting changing the data...");
 
-    deployProcess(NEW_BPMN_PROCESS_ID);
+    deployProcess(NEW_BPMN_PROCESS_ID, createModel(NEW_BPMN_PROCESS_ID));
     startProcessInstances(NEW_BPMN_PROCESS_ID, NEW_PROCESS_INSTANCES_COUNT);
 
     for (int i = 0; i < 10; i++) {
@@ -112,11 +102,12 @@ public final class OperateDataGenerator implements AutoCloseable {
       createOperationFromIncidentProcessInstances(this::cancelInstance, "CANCEL_PROCESS_INSTANCE");
     }
 
-    LOGGER.info(
+    logger.info(
         "Data changing completed in: {} s",
         ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
   }
 
+  @Override
   public void assertDataAfterChange() {
     Awaitility.await("should expose the changed data")
         .atMost(DATA_TIMEOUT)
@@ -140,13 +131,9 @@ public final class OperateDataGenerator implements AutoCloseable {
             });
   }
 
-  @Override
-  public void close() {
-    camundaClient = null;
-  }
-
   private void assertDataOneAttempt() {
-    final List<ProcessInstance> processInstances = searchProcessInstances(PROCESS_BPMN_PROCESS_ID);
+    final List<ProcessInstance> processInstances =
+        searchProcessInstances(PROCESS_BPMN_PROCESS_ID, ProcessInstanceState.ACTIVE);
     assertThat(processInstances)
         .extracting(ProcessInstance::getProcessDefinitionId)
         .containsOnly(PROCESS_BPMN_PROCESS_ID);
@@ -171,13 +158,15 @@ public final class OperateDataGenerator implements AutoCloseable {
   }
 
   private void waitUntilAllDataAreImported() {
-    LOGGER.info("Wait until all data is imported.");
+    logger.info("Wait until all data is imported.");
     Awaitility.await("should import all active process instances")
         .atMost(DATA_TIMEOUT)
         .ignoreExceptions()
         .untilAsserted(
             () ->
-                assertThat(searchProcessInstances(PROCESS_BPMN_PROCESS_ID))
+                assertThat(
+                        searchProcessInstances(
+                            PROCESS_BPMN_PROCESS_ID, ProcessInstanceState.ACTIVE))
                     .hasSize(PROCESS_INSTANCE_COUNT));
   }
 
@@ -191,7 +180,7 @@ public final class OperateDataGenerator implements AutoCloseable {
 
   private void createOperationFromIncidentProcessInstances(
       final LongConsumer operation, final String operationName) {
-    LOGGER.debug(
+    logger.debug(
         "Try to create change operation {} against incident instances ({} attempts)",
         operationName,
         MAX_RETRY_ATTEMPTS);
@@ -201,7 +190,7 @@ public final class OperateDataGenerator implements AutoCloseable {
     while (!operationStarted && attempts < MAX_RETRY_ATTEMPTS) {
       final List<ProcessInstance> incidentProcessInstances = searchIncidentProcessInstances();
       if (incidentProcessInstances.isEmpty()) {
-        LOGGER.debug(
+        logger.debug(
             "Skip change operation {} because no incident process instances were found",
             operationName);
         return;
@@ -211,7 +200,7 @@ public final class OperateDataGenerator implements AutoCloseable {
         operation.accept(chooseProcessInstanceKey(incidentProcessInstances));
         operationStarted = true;
       } catch (final RuntimeException e) {
-        LOGGER.debug(
+        logger.debug(
             "Failed to create change operation {} on attempt {}", operationName, attempts + 1, e);
       }
       attempts++;
@@ -224,7 +213,7 @@ public final class OperateDataGenerator implements AutoCloseable {
 
   private void createOperation(
       final int maxAttempts, final LongConsumer operation, final String operationName) {
-    LOGGER.debug("Try to create operation {} ({} attempts)", operationName, maxAttempts);
+    logger.debug("Try to create operation {} ({} attempts)", operationName, maxAttempts);
     boolean operationStarted = false;
     int attempts = 0;
     while (!operationStarted && attempts < maxAttempts) {
@@ -232,7 +221,7 @@ public final class OperateDataGenerator implements AutoCloseable {
         operation.accept(chooseStoredProcessInstanceKey(processInstanceKeys));
         operationStarted = true;
       } catch (final RuntimeException e) {
-        LOGGER.debug("Failed to create operation {} on attempt {}", operationName, attempts + 1, e);
+        logger.debug("Failed to create operation {} on attempt {}", operationName, attempts + 1, e);
       }
       attempts++;
     }
@@ -280,7 +269,7 @@ public final class OperateDataGenerator implements AutoCloseable {
               assertThat(failedJobKeys).hasSize(INCIDENT_COUNT);
             });
 
-    LOGGER.info("{} incidents in {} created", INCIDENT_COUNT, jobType);
+    logger.info("{} incidents in {} created", INCIDENT_COUNT, jobType);
   }
 
   private void completeTasks(final String jobType) {
@@ -320,40 +309,10 @@ public final class OperateDataGenerator implements AutoCloseable {
               assertThat(completedJobKeys).hasSize(PROCESS_INSTANCE_COUNT);
             });
 
-    LOGGER.info("{} tasks {} completed", PROCESS_INSTANCE_COUNT, jobType);
+    logger.info("{} tasks {} completed", PROCESS_INSTANCE_COUNT, jobType);
   }
 
-  private List<Long> startProcessInstances(
-      final String bpmnProcessId, final int numberOfProcessInstances) {
-    final List<Long> keys = new ArrayList<>();
-    for (int i = 0; i < numberOfProcessInstances; i++) {
-      final long processInstanceKey =
-          camundaClient
-              .newCreateInstanceCommand()
-              .bpmnProcessId(bpmnProcessId)
-              .latestVersion()
-              .variables(Map.of("var1", "value1"))
-              .send()
-              .join()
-              .getProcessInstanceKey();
-      LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
-      keys.add(processInstanceKey);
-    }
-    LOGGER.info("{} processInstances started", keys.size());
-    return keys;
-  }
-
-  private void deployProcess(final String bpmnProcessId) {
-    final var deploymentEvent =
-        camundaClient
-            .newDeployResourceCommand()
-            .addProcessModel(createModel(bpmnProcessId), bpmnProcessId + ".bpmn")
-            .send()
-            .join();
-    LOGGER.info("Deployed process {} with key {}", bpmnProcessId, deploymentEvent.getKey());
-  }
-
-  private BpmnModelInstance createModel(final String bpmnProcessId) {
+  private static BpmnModelInstance createModel(final String bpmnProcessId) {
     return Bpmn.createExecutableProcess(bpmnProcessId)
         .startEvent("start")
         .serviceTask("task1")
@@ -373,20 +332,10 @@ public final class OperateDataGenerator implements AutoCloseable {
   }
 
   private List<ProcessInstance> searchAllRelevantActiveProcessInstances() {
-    final List<ProcessInstance> processInstances = new ArrayList<>();
-    processInstances.addAll(searchProcessInstances(PROCESS_BPMN_PROCESS_ID));
-    processInstances.addAll(searchProcessInstances(NEW_BPMN_PROCESS_ID));
-    return processInstances;
-  }
-
-  private List<ProcessInstance> searchProcessInstances(final String processDefinitionId) {
-    return camundaClient
-        .newProcessInstanceSearchRequest()
-        .filter(f -> f.processDefinitionId(processDefinitionId).state(ProcessInstanceState.ACTIVE))
-        .page(p -> p.limit(SEARCH_LIMIT).from(0))
-        .send()
-        .join()
-        .items();
+    final List<ProcessInstance> all = new ArrayList<>();
+    all.addAll(searchProcessInstances(PROCESS_BPMN_PROCESS_ID, ProcessInstanceState.ACTIVE));
+    all.addAll(searchProcessInstances(NEW_BPMN_PROCESS_ID, ProcessInstanceState.ACTIVE));
+    return all;
   }
 
   private List<ProcessInstance> searchIncidentProcessInstances() {

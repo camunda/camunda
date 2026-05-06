@@ -16,46 +16,36 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public final class TasklistDataGenerator implements AutoCloseable {
+public final class TasklistDataGenerator extends AbstractBackupDataGenerator {
 
   static final String PROCESS_BPMN_PROCESS_ID = "tasklist-backup-process";
   static final String PROCESS_BPMN_PROCESS_ID_2 = "tasklist-backup-process-2";
   static final int PROCESS_INSTANCE_COUNT = 49;
   static final int COMPLETED_TASKS_COUNT = 11;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TasklistDataGenerator.class);
-  private static final Duration DATA_TIMEOUT = Duration.ofSeconds(90);
-  private static final int SEARCH_LIMIT = 200;
   private static final String ASSIGNEE = "demo";
 
-  private CamundaClient camundaClient;
-
   public TasklistDataGenerator(final CamundaClient camundaClient) {
-    this.camundaClient = camundaClient;
+    super(camundaClient);
   }
 
-  public void setCamundaClient(final CamundaClient camundaClient) {
-    this.camundaClient = camundaClient;
-  }
-
+  @Override
   public void createData() {
-    LOGGER.info("Starting Tasklist backup test data generation");
+    logger.info("Starting Tasklist backup test data generation");
 
-    deployProcess(createModel1(), PROCESS_BPMN_PROCESS_ID);
-    startProcessInstances(PROCESS_BPMN_PROCESS_ID);
+    deployProcess(PROCESS_BPMN_PROCESS_ID, createModel1());
+    startProcessInstances(PROCESS_BPMN_PROCESS_ID, PROCESS_INSTANCE_COUNT);
 
     waitForTaskCount();
     assignAllTasks();
   }
 
+  @Override
   public void assertData() {
     Awaitility.await("should expose the backed up Tasklist data")
         .atMost(DATA_TIMEOUT)
@@ -63,24 +53,21 @@ public final class TasklistDataGenerator implements AutoCloseable {
         .untilAsserted(this::assertDataOneAttempt);
   }
 
+  @Override
   public void changeData() {
-    LOGGER.info("Changing Tasklist backup test data");
+    logger.info("Changing Tasklist backup test data");
 
     completeTasks();
-    deployProcess(createModel2(), PROCESS_BPMN_PROCESS_ID_2);
-    startProcessInstances(PROCESS_BPMN_PROCESS_ID_2);
+    deployProcess(PROCESS_BPMN_PROCESS_ID_2, createModel2());
+    startProcessInstances(PROCESS_BPMN_PROCESS_ID_2, PROCESS_INSTANCE_COUNT);
   }
 
+  @Override
   public void assertDataAfterChange() {
     Awaitility.await("should expose the changed Tasklist data")
         .atMost(DATA_TIMEOUT)
         .ignoreExceptions()
         .untilAsserted(this::assertDataAfterChangeOneAttempt);
-  }
-
-  @Override
-  public void close() {
-    camundaClient = null;
   }
 
   private void assertDataOneAttempt() {
@@ -180,32 +167,6 @@ public final class TasklistDataGenerator implements AutoCloseable {
         .items();
   }
 
-  private void startProcessInstances(final String bpmnProcessId) {
-    for (int i = 0; i < PROCESS_INSTANCE_COUNT; i++) {
-      final long processInstanceKey =
-          camundaClient
-              .newCreateInstanceCommand()
-              .bpmnProcessId(bpmnProcessId)
-              .latestVersion()
-              .variables(Map.of("var1", "value1"))
-              .send()
-              .join()
-              .getProcessInstanceKey();
-      LOGGER.debug("Started process instance {} for process {}", processInstanceKey, bpmnProcessId);
-    }
-  }
-
-  private void deployProcess(
-      final BpmnModelInstance bpmnModelInstance, final String bpmnProcessId) {
-    final var deploymentEvent =
-        camundaClient
-            .newDeployResourceCommand()
-            .addProcessModel(bpmnModelInstance, bpmnProcessId + ".bpmn")
-            .send()
-            .join();
-    LOGGER.info("Deployed process {} with key {}", bpmnProcessId, deploymentEvent.getKey());
-  }
-
   private BpmnModelInstance createModel1() {
     return Bpmn.createExecutableProcess(PROCESS_BPMN_PROCESS_ID)
         .startEvent("start")
@@ -219,7 +180,7 @@ public final class TasklistDataGenerator implements AutoCloseable {
         .done();
   }
 
-  private BpmnModelInstance createModel2() {
+  private static BpmnModelInstance createModel2() {
     return Bpmn.createExecutableProcess(PROCESS_BPMN_PROCESS_ID_2)
         .startEvent("start")
         .userTask("task2", AbstractUserTaskBuilder::zeebeUserTask)

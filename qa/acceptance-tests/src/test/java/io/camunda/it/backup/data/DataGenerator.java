@@ -25,51 +25,82 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class DataGenerator implements AutoCloseable {
+public class DataGenerator extends AbstractBackupDataGenerator {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(DataGenerator.class);
-  // process id -> process instance key
+  private static final int PROCESS_INSTANCE_NUMBER = 10;
+  private static final String ASSIGNEE = "user";
+
   public final ConcurrentSkipListSet<Long> instanceKeys = new ConcurrentSkipListSet<>();
-  final String assignee = "user";
-  private CamundaClient camundaClient;
-  private final OneTaskProcess process;
+
+  private final String bpmnProcessId;
   private final Duration timeout;
+  private final String[] taskTypes = {"task1", "userTask"};
 
   public DataGenerator(
-      final CamundaClient camundaClient, final String processId, final Duration timeout) {
-    this.camundaClient = camundaClient;
-    process = new OneTaskProcess(processId);
+      final CamundaClient camundaClient, final String bpmnProcessId, final Duration timeout) {
+    super(camundaClient);
+    this.bpmnProcessId = bpmnProcessId;
     this.timeout = timeout;
   }
 
-  public void generateCompletedProcesses(final int processNumber) {
-    generateUncompletedProcesses(processNumber);
+  @Override
+  public void createData() {
+    deployProcess(bpmnProcessId, createModel());
+    for (int i = 0; i < PROCESS_INSTANCE_NUMBER; i++) {
+      final var evt =
+          camundaClient
+              .newCreateInstanceCommand()
+              .bpmnProcessId(bpmnProcessId)
+              .latestVersion()
+              .variables(Map.of("var1", i))
+              .send()
+              .join();
+      logger.debug("Process instance started with key {}", evt.getProcessInstanceKey());
+      instanceKeys.add(evt.getProcessInstanceKey());
+    }
     completeProcesses();
     verifyAllExported(ProcessInstanceState.COMPLETED);
 
-    // wait for everything to be exported
-    LOGGER.info("Finished generating data");
-  }
-
-  public void generateUncompletedProcesses(final int processNumber) {
-    process.deploy();
-    for (int i = 0; i < processNumber; i++) {
-      process.startProcessInstance(i);
+    // generate uncompleted processes that will be restored to ACTIVE state after restore
+    for (int i = 0; i < PROCESS_INSTANCE_NUMBER; i++) {
+      final var evt =
+          camundaClient
+              .newCreateInstanceCommand()
+              .bpmnProcessId(bpmnProcessId)
+              .latestVersion()
+              .variables(Map.of("var1", i))
+              .send()
+              .join();
+      logger.debug("Process instance started with key {}", evt.getProcessInstanceKey());
+      instanceKeys.add(evt.getProcessInstanceKey());
     }
+
+    logger.info("Finished generating data");
   }
 
-  /**
-   * Completes all process instances that are present in {@link DataGenerator#instanceKeys}. Once
-   * completed, the processes will be removed that map.
-   */
+  @Override
+  public void assertData() {
+    verifyAllExported(ProcessInstanceState.ACTIVE);
+    completeProcesses();
+    verifyAllExported(ProcessInstanceState.COMPLETED);
+  }
+
+  @Override
+  public void changeData() {
+    // no state change between backup and restore for this generator
+  }
+
+  @Override
+  public void assertDataAfterChange() {
+    // no post-change verification needed
+  }
+
   public void completeProcesses() {
-    completeTask(process.tasks[0], "var1");
-    LOGGER.debug("Service task completed");
+    completeServiceTask(taskTypes[0], "var1");
+    logger.debug("Service task completed");
     completeUserTasks();
-    LOGGER.debug("User task completed");
+    logger.debug("User task completed");
   }
 
   public void verifyAllExported(final ProcessInstanceState state) {
@@ -92,7 +123,6 @@ public class DataGenerator implements AutoCloseable {
                   .asInstanceOf(InstanceOfAssertFactories.LIST)
                   .hasSameSizeAs(instanceKeys);
 
-              // remove all completed instances
               response.get().items().stream()
                   .filter(inst -> inst.getState().equals(ProcessInstanceState.COMPLETED))
                   .map(ProcessInstance::getProcessInstanceKey)
@@ -100,10 +130,10 @@ public class DataGenerator implements AutoCloseable {
             });
   }
 
-  private void completeTask(final String jobType, final String varName) {
+  private void completeServiceTask(final String jobType, final String varName) {
     final var completedJobs = new ConcurrentHashMap<Long, Object>();
-    LOGGER.debug(
-        "Starting to {} complete tasks of type {} with processInstanceKeys={}",
+    logger.debug(
+        "Starting to complete {} tasks of type {} with processInstanceKeys={}",
         instanceKeys.size(),
         jobType,
         instanceKeys);
@@ -126,7 +156,7 @@ public class DataGenerator implements AutoCloseable {
   }
 
   private void completeUserTasks() {
-    LOGGER.debug("Starting to {} complete user tasks", instanceKeys.size());
+    logger.debug("Starting to complete {} user tasks", instanceKeys.size());
     final List<UserTask> items =
         Awaitility.await("all user tasks are ready")
             .atMost(timeout)
@@ -136,23 +166,23 @@ public class DataGenerator implements AutoCloseable {
                     final var itemsFromQuery =
                         camundaClient
                             .newUserTaskSearchRequest()
-                            .filter(f -> f.assignee(assignee).state(UserTaskState.CREATED))
+                            .filter(f -> f.assignee(ASSIGNEE).state(UserTaskState.CREATED))
                             .send()
                             .join()
                             .items();
-                    LOGGER.debug("Found {} user tasks", itemsFromQuery.size());
+                    logger.debug("Found {} user tasks", itemsFromQuery.size());
                     return itemsFromQuery;
                   } catch (final RuntimeException e) {
-                    LOGGER.warn("Failed to complete user tasks, will retry", e);
+                    logger.warn("Failed to complete user tasks, will retry", e);
                     return List.of();
                   }
                 },
                 l -> l.size() == instanceKeys.size());
-    LOGGER.debug("Fetched {} user tasks", items.size());
+    logger.debug("Fetched {} user tasks", items.size());
 
     items.forEach(
         item -> {
-          LOGGER.debug("Completing user task {}", item.getUserTaskKey());
+          logger.debug("Completing user task {}", item.getUserTaskKey());
           assertThat(
                   camundaClient
                       .newCompleteUserTaskCommand(item.getUserTaskKey())
@@ -162,55 +192,17 @@ public class DataGenerator implements AutoCloseable {
         });
   }
 
-  @Override
-  public void close() throws Exception {
-    camundaClient = null;
-  }
-
-  class OneTaskProcess {
-
-    final String bpmnProcessId;
-
-    private final String[] tasks = {"task1", "userTask"};
-
-    OneTaskProcess(final String bpmnProcessId) {
-      this.bpmnProcessId = bpmnProcessId;
-    }
-
-    private BpmnModelInstance createModel() {
-      return Bpmn.createExecutableProcess(bpmnProcessId)
-          .startEvent("start")
-          .serviceTask(tasks[0])
-          .zeebeJobType(tasks[0])
-          .zeebeInput("=var1", "varIn")
-          .userTask(tasks[1])
-          .zeebeUserTask()
-          .zeebeInput("=var3", "varIn")
-          .zeebeAssignee(assignee)
-          .endEvent()
-          .done();
-    }
-
-    private void startProcessInstance(final Object payload) {
-      final var evt =
-          camundaClient
-              .newCreateInstanceCommand()
-              .bpmnProcessId(bpmnProcessId)
-              .latestVersion()
-              .variables(Map.of("var1", payload))
-              .send()
-              .join();
-      LOGGER.debug("Process instance started with key {}", evt.getProcessInstanceKey());
-      instanceKeys.add(evt.getProcessInstanceKey());
-    }
-
-    private void deploy() {
-      final var deployResourceCmd =
-          camundaClient
-              .newDeployResourceCommand()
-              .addProcessModel(process.createModel(), bpmnProcessId + ".bpmn");
-      final var deploymentEvent = deployResourceCmd.send().join();
-      LOGGER.debug("Deployed process {} with key {}", bpmnProcessId, deploymentEvent.getKey());
-    }
+  private BpmnModelInstance createModel() {
+    return Bpmn.createExecutableProcess(bpmnProcessId)
+        .startEvent("start")
+        .serviceTask(taskTypes[0])
+        .zeebeJobType(taskTypes[0])
+        .zeebeInput("=var1", "varIn")
+        .userTask(taskTypes[1])
+        .zeebeUserTask()
+        .zeebeInput("=var3", "varIn")
+        .zeebeAssignee(ASSIGNEE)
+        .endEvent()
+        .done();
   }
 }
