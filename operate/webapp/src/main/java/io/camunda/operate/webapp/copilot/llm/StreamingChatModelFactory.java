@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.copilot.llm;
 
 import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
+import dev.langchain4j.model.bedrock.BedrockStreamingChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiStreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
@@ -23,9 +24,10 @@ public class StreamingChatModelFactory {
 
   @Bean
   public StreamingChatModel copilotStreamingChatModel(CopilotProperties props) {
-    if (props.getApiKey() == null || props.getApiKey().isBlank()) {
+    if (props.getProvider() != CopilotProperties.Provider.BEDROCK
+        && (props.getApiKey() == null || props.getApiKey().isBlank())) {
       throw new IllegalStateException(
-          "camunda.operate.copilot.api-key is required when the copilot endpoint is enabled");
+          "camunda.operate.copilot.api-key is required for provider " + props.getProvider());
     }
     return switch (props.getProvider()) {
       case ANTHROPIC ->
@@ -43,6 +45,11 @@ public class StreamingChatModelFactory {
               .apiKey(props.getApiKey())
               .modelName(props.resolvedModel())
               .build();
+      case BEDROCK ->
+          // AWS credentials picked up from the standard chain:
+          // AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY + AWS_REGION env vars,
+          // or ~/.aws/credentials, or instance profile.
+          BedrockStreamingChatModel.builder().modelId(props.resolvedModel()).build();
     };
   }
 }

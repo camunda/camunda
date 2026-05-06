@@ -15,7 +15,8 @@ public class CopilotProperties {
   public enum Provider {
     ANTHROPIC,
     OPENAI,
-    GOOGLE
+    GOOGLE,
+    BEDROCK
   }
 
   private Provider provider = Provider.ANTHROPIC;
@@ -67,6 +68,7 @@ public class CopilotProperties {
       case ANTHROPIC -> "claude-sonnet-4-5";
       case OPENAI -> "gpt-4o";
       case GOOGLE -> "gemini-2.0-flash";
+      case BEDROCK -> "anthropic.claude-3-5-sonnet-20241022-v2:0";
     };
   }
 }

@@ -186,6 +186,10 @@
       <groupId>dev.langchain4j</groupId>
       <artifactId>langchain4j-google-ai-gemini</artifactId>
     </dependency>
+    <dependency>
+      <groupId>dev.langchain4j</groupId>
+      <artifactId>langchain4j-bedrock</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -265,6 +269,7 @@
             <dependency>dev.langchain4j:langchain4j-anthropic</dependency>
             <dependency>dev.langchain4j:langchain4j-open-ai</dependency>
             <dependency>dev.langchain4j:langchain4j-google-ai-gemini</dependency>
+            <dependency>dev.langchain4j:langchain4j-bedrock</dependency>
             <!-- This dependency is indirectly used by the awssk auth plugin. It requires these
      classes on the classpath in order to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
