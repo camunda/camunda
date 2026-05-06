@@ -19,7 +19,8 @@ import java.util.List;
 
 public class ResourceCreatedHandler implements ExportHandler<DeployedResourceEntity, Resource> {
 
-  private static final ResourceIntent SUPPORTED_INTENT = ResourceIntent.CREATED;
+  private static final List<ResourceIntent> SUPPORTED_INTENTS =
+      List.of(ResourceIntent.CREATED, ResourceIntent.REEXPORTED);
   private final String indexName;
 
   public ResourceCreatedHandler(final String indexName) {
@@ -39,7 +40,7 @@ public class ResourceCreatedHandler implements ExportHandler<DeployedResourceEnt
   @Override
   public boolean handlesRecord(final Record<Resource> record) {
     return getHandledValueType().equals(record.getValueType())
-        && SUPPORTED_INTENT.equals(record.getIntent());
+        && SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override

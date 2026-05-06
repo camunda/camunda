@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
@@ -25,11 +26,12 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 
 public class DbResourceState implements MutableResourceState {
 
+  public static final String RPA_REEXPORT_MIGRATION_KEY_VALUE = "rpa-reexport-migration";
   private static final int DEFAULT_VERSION_VALUE = 0;
-
   private final DbString tenantIdKey;
   private final DbLong dbResourceKey;
   private final DbTenantAwareKey<DbLong> tenantAwareResourceKey;
@@ -64,6 +66,9 @@ public class DbResourceState implements MutableResourceState {
           DbTenantAwareKey<DbCompositeKey<DbString, DbString>>,
           DbForeignKey<DbTenantAwareKey<DbLong>>>
       resourceKeyByResourceIdAndVersionTagColumnFamily;
+
+  private final DbString rpaReexportMigrationKey;
+  private final ColumnFamily<DbString, DbNil> rpaReexportMigrationColumnFamily;
 
   private final LoadingCache<TenantIdAndResourceId, PersistedResource>
       resourcesByTenantIdAndIdCache;
@@ -122,6 +127,12 @@ public class DbResourceState implements MutableResourceState {
     versionManager =
         new VersionManager(
             DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.RESOURCE_VERSION, transactionContext);
+
+    rpaReexportMigrationKey = new DbString();
+    rpaReexportMigrationKey.wrapString(RPA_REEXPORT_MIGRATION_KEY_VALUE);
+    rpaReexportMigrationColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DEFAULT, transactionContext, rpaReexportMigrationKey, DbNil.INSTANCE);
 
     resourcesByTenantIdAndIdCache =
         CacheBuilder.newBuilder()
@@ -231,6 +242,12 @@ public class DbResourceState implements MutableResourceState {
   }
 
   @Override
+  public void markRpaReexportMigrationAsRan() {
+    rpaReexportMigrationKey.wrapString(RPA_REEXPORT_MIGRATION_KEY_VALUE);
+    rpaReexportMigrationColumnFamily.upsert(rpaReexportMigrationKey, DbNil.INSTANCE);
+  }
+
+  @Override
   public Optional<PersistedResource> findLatestResourceById(
       final String resourceId, final String tenantId) {
     return getResourceFromCache(tenantId, resourceId);
@@ -271,6 +288,28 @@ public class DbResourceState implements MutableResourceState {
   @Override
   public int getNextResourceVersion(final String resourceId, final String tenantId) {
     return (int) versionManager.getHighestResourceVersion(resourceId, tenantId) + 1;
+  }
+
+  @Override
+  public boolean hasRanRpaReexportMigration() {
+    rpaReexportMigrationKey.wrapString(RPA_REEXPORT_MIGRATION_KEY_VALUE);
+    return rpaReexportMigrationColumnFamily.exists(rpaReexportMigrationKey);
+  }
+
+  @Override
+  public void visitResourcesByKey(
+      final String tenantId,
+      final long startResourceKey,
+      final Predicate<PersistedResource> visitor) {
+    // Use an empty tenant prefix so the start key sorts before all real tenant entries,
+    // ensuring the iteration covers resources across all tenants.
+    tenantIdKey.wrapString(tenantId);
+    dbResourceKey.wrapLong(startResourceKey);
+    resourcesByKey.whileTrue(
+        tenantAwareResourceKey,
+        (key, value) -> {
+          return visitor.test(value);
+        });
   }
 
   @Override
