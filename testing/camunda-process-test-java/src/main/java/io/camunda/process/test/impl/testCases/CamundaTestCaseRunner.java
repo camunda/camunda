@@ -27,38 +27,8 @@ import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
-import io.camunda.process.test.impl.testCases.instructions.AssertDecisionInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.AssertElementInstanceInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.AssertElementInstancesInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.AssertProcessInstanceInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.AssertProcessInstanceMessageSubscriptionInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.AssertUserTaskInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.AssertVariablesInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.BroadcastSignalInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.CompleteJobAdHocSubProcessInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.CompleteJobInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.CompleteJobUserTaskListenerInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.CompleteUserTaskInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.CorrelateMessageInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.CreateProcessInstanceInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.EvaluateConditionalStartEventInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.EvaluateDecisionInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.IncreaseTimeInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.MockChildProcessInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.MockDmnDecisionInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.MockJobWorkerCompleteJobInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.MockJobWorkerThrowBpmnErrorInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.PublishMessageInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.ResolveIncidentInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.SetTimeInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.ThrowBpmnErrorFromJobInstructionHandler;
-import io.camunda.process.test.impl.testCases.instructions.UpdateVariablesInstructionHandler;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,41 +36,9 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaTestCaseRunner.class);
 
-  private static final Map<Class<? extends TestCaseInstruction>, TestCaseInstructionHandler<?>>
-      INSTRUCTION_HANDLERS = new HashMap<>();
-
-  static {
-    // register instruction handlers here
-    registerHandler(new AssertDecisionInstructionHandler());
-    registerHandler(new AssertElementInstanceInstructionHandler());
-    registerHandler(new AssertElementInstancesInstructionHandler());
-    registerHandler(new AssertProcessInstanceInstructionHandler());
-    registerHandler(new AssertProcessInstanceMessageSubscriptionInstructionHandler());
-    registerHandler(new AssertUserTaskInstructionHandler());
-    registerHandler(new AssertVariablesInstructionHandler());
-    registerHandler(new BroadcastSignalInstructionHandler());
-    registerHandler(new CompleteJobInstructionHandler());
-    registerHandler(new CompleteJobAdHocSubProcessInstructionHandler());
-    registerHandler(new CompleteJobUserTaskListenerInstructionHandler());
-    registerHandler(new CompleteUserTaskInstructionHandler());
-    registerHandler(new CreateProcessInstanceInstructionHandler());
-    registerHandler(new EvaluateConditionalStartEventInstructionHandler());
-    registerHandler(new EvaluateDecisionInstructionHandler());
-    registerHandler(new IncreaseTimeInstructionHandler());
-    registerHandler(new MockChildProcessInstructionHandler());
-    registerHandler(new MockDmnDecisionInstructionHandler());
-    registerHandler(new MockJobWorkerCompleteJobInstructionHandler());
-    registerHandler(new MockJobWorkerThrowBpmnErrorInstructionHandler());
-    registerHandler(new PublishMessageInstructionHandler());
-    registerHandler(new CorrelateMessageInstructionHandler());
-    registerHandler(new ResolveIncidentInstructionHandler());
-    registerHandler(new SetTimeInstructionHandler());
-    registerHandler(new ThrowBpmnErrorFromJobInstructionHandler());
-    registerHandler(new UpdateVariablesInstructionHandler());
-  }
-
   private final CamundaProcessTestContext context;
   private final AssertionFacade assertionFacade;
+  private final TestCaseInstructionHandlerRegistry registry;
 
   public CamundaTestCaseRunner(final CamundaProcessTestContext context) {
     this(context, new TestCaseAssertionFacade());
@@ -108,13 +46,16 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
 
   public CamundaTestCaseRunner(
       final CamundaProcessTestContext context, final AssertionFacade assertionFacade) {
-    this.context = context;
-    this.assertionFacade = assertionFacade;
+    this(context, assertionFacade, TestCaseInstructionHandlerRegistry.defaultRegistry());
   }
 
-  private static void registerHandler(
-      final TestCaseInstructionHandler<? extends TestCaseInstruction> handler) {
-    INSTRUCTION_HANDLERS.put(handler.getInstructionType(), handler);
+  public CamundaTestCaseRunner(
+      final CamundaProcessTestContext context,
+      final AssertionFacade assertionFacade,
+      final TestCaseInstructionHandlerRegistry registry) {
+    this.context = context;
+    this.assertionFacade = assertionFacade;
+    this.registry = registry;
   }
 
   @Override
@@ -139,7 +80,7 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
     LOGGER.debug("Executing instruction: {}", instruction);
 
     //noinspection rawtypes
-    final TestCaseInstructionHandler instructionHandler = getInstructionHandler(instruction);
+    final TestCaseInstructionHandler instructionHandler = registry.getHandler(instruction);
 
     try {
       //noinspection unchecked
@@ -151,26 +92,6 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
               "Failed to execute instruction '%s': %s", instruction.getType(), instruction),
           e);
     }
-  }
-
-  private static TestCaseInstructionHandler<?> getInstructionHandler(
-      final TestCaseInstruction instruction) {
-    final Class<?> instructionInterface = getInstructionInterface(instruction);
-    return Optional.ofNullable(INSTRUCTION_HANDLERS.get(instructionInterface))
-        .orElseThrow(
-            () ->
-                new RuntimeException(
-                    "No handler found for instruction: " + instruction.getClass()));
-  }
-
-  private static Class<?> getInstructionInterface(final TestCaseInstruction instruction) {
-    return Arrays.stream(instruction.getClass().getInterfaces())
-        .filter(TestCaseInstruction.class::isAssignableFrom)
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new RuntimeException(
-                    "Could not determine instruction interface of: " + instruction));
   }
 
   private static final class TestCaseAssertionFacade implements AssertionFacade {
