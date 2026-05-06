@@ -212,6 +212,14 @@
       <artifactId>spring-webmvc</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- For RestApiAuthTomcatPerfHarness: brings embedded Tomcat onto the test classpath
+         so @SpringBootTest(webEnvironment = RANDOM_PORT) can start a real servlet container.
+         Test-scope only. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-tomcat</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-test</artifactId>
