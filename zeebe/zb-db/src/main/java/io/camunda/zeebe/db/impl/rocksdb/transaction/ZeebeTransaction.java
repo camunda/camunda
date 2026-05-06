@@ -12,7 +12,6 @@ import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRoc
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
-import io.camunda.zeebe.util.VisibleForTesting;
 import org.agrona.LangUtil;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
@@ -33,13 +32,11 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   private boolean inCurrentTransaction;
 
   public ZeebeTransaction(final RocksDB db, final WriteOptions writeOptions) {
-    this(new WriteBatchWithIndex(), db, writeOptions);
-  }
-
-  @VisibleForTesting
-  ZeebeTransaction(
-      final WriteBatchWithIndex writeBatch, final RocksDB db, final WriteOptions writeOptions) {
-    this.writeBatch = writeBatch;
+    // overwriteKey=true collapses repeated writes for the same key into a single index entry.
+    // This ensures the delta-only WriteBatchWithIndex#newIterator does not return duplicates per
+    // key. While we don't use it, it's still good to be prepared for it, and there is no cost to
+    // setting this flag.
+    writeBatch = new WriteBatchWithIndex(true);
     this.db = db;
     this.writeOptions = writeOptions;
     try {

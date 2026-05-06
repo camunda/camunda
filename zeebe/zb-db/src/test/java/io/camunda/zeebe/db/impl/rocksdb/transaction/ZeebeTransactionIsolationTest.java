@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import java.io.File;
 import org.agrona.collections.MutableBoolean;
+import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -204,6 +205,26 @@ final class ZeebeTransactionIsolationTest {
 
     // when + then - the original value must still be present after the rolled-back delete
     readCtx.runInTransaction(() -> assertThat(readCf.get(key)).isNotNull());
+  }
+
+  @Test
+  void shouldDedupeIterationWhenSameKeyIsWrittenMultipleTimes() {
+    // given - the same key written twice within one transaction
+    final var secondValue = new DbString();
+    secondValue.wrapString("second");
+
+    writeCtx.runInTransaction(
+        () -> {
+          writeCf.upsert(key, value);
+          writeCf.upsert(key, secondValue);
+
+          // when - iterating from the writing transaction
+          final var hits = new MutableInteger(0);
+          writeCf.forEach((k, v) -> hits.increment());
+
+          // then - the iterator yields the key exactly once
+          assertThat(hits.get()).isOne();
+        });
   }
 
   @Test
