@@ -118,6 +118,8 @@ jobs:
       - name: Capture docker logs
         if: failure()
         run: docker compose logs camunda
+        env:
+          DATABASE: elasticsearch
         working-directory: qa/orchestration-cluster-smoke-tests/config
 
       - name: Upload smoke test reports
