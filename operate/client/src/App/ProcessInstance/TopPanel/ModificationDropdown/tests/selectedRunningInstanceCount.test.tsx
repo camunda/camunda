@@ -33,6 +33,7 @@ const mockProcessInstance: ProcessInstance = {
   parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
+  businessId: null,
 };
 
 describe('selectedRunningInstanceCount', () => {

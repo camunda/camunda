@@ -56,6 +56,9 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
     const hasVersionTags = processInstances.some(
       ({processDefinitionVersionTag}) => !!processDefinitionVersionTag,
     );
+    const hasBusinessIds = processInstances.some(
+      ({businessId}) => !!businessId,
+    );
 
     const filters = useFilters();
     const location = useLocation();
@@ -185,6 +188,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
               ),
               processVersion: instance.processDefinitionVersion,
               versionTag: instance.processDefinitionVersionTag ?? '--',
+              businessId: instance.businessId ?? '--',
               tenant: isTenantColumnVisible ? instance.tenantId : undefined,
               ...(isOperationStateColumnVisible && {
                 instanceOperationState: isLoadingOperationItems ? (
@@ -262,6 +266,15 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                     header: 'Version Tag',
                     key: 'versionTag',
                     isDisabled: true,
+                  },
+                ]
+              : []),
+            ...(hasBusinessIds
+              ? [
+                  {
+                    header: 'Business ID',
+                    key: 'businessId',
+                    sortKey: 'businessId',
                   },
                 ]
               : []),

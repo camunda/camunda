@@ -42,6 +42,7 @@ describe('Optional Filters', () => {
       screen.queryByLabelText(/process instance key\(s\)/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/business id/i)).not.toBeInTheDocument();
     expect(
       screen.queryByLabelText(/Parent Process Instance Key/i),
     ).not.toBeInTheDocument();
@@ -103,6 +104,21 @@ describe('Optional Filters', () => {
     expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
     expect(
       screen.queryByTestId('optional-filter-menuitem-batchOperationId'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display business id field on click', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-businessId'));
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+
+    expect(screen.getByLabelText(/^business id$/i)).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('optional-filter-menuitem-businessId'),
     ).not.toBeInTheDocument();
   });
 
@@ -194,6 +210,8 @@ describe('Optional Filters', () => {
       screen.getByTestId('optional-filter-menuitem-batchOperationId'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-businessId'));
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
       screen.getByTestId('optional-filter-menuitem-parentProcessInstanceKey'),
     );
@@ -240,6 +258,7 @@ describe('Optional Filters', () => {
       incidents: 'true',
       completed: 'true',
       canceled: 'true',
+      businessId: 'order-12345',
     } as const;
 
     const {user} = render(<Filters />, {
@@ -268,6 +287,7 @@ describe('Optional Filters', () => {
     expect(screen.getByLabelText(/^start date range$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^end date range$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^business id$/i)).toBeInTheDocument();
 
     await removeOptionalFilter({
       user,
@@ -296,6 +316,7 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
+            businessId: 'order-12345',
           }),
         ).toString()}`,
       ),
@@ -330,6 +351,7 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
+            businessId: 'order-12345',
           }),
         ).toString()}`,
       ),
@@ -358,6 +380,7 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
+            businessId: 'order-12345',
           }),
         ).toString()}`,
       ),
@@ -382,6 +405,7 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
+            businessId: 'order-12345',
           }),
         ).toString()}`,
       ),
@@ -404,6 +428,7 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
+            businessId: 'order-12345',
           }),
         ).toString()}`,
       ),
@@ -426,6 +451,7 @@ describe('Optional Filters', () => {
           incidents: 'true',
           completed: 'true',
           canceled: 'true',
+          businessId: 'order-12345',
         }),
       ).toString()}`,
     );
@@ -454,11 +480,33 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
+            businessId: 'order-12345',
           }),
         ).toString()}`,
       ),
     );
     expect(screen.queryByLabelText('Operation Id')).not.toBeInTheDocument();
+
+    await removeOptionalFilter({user, screen, label: 'Business ID'});
+
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            processDefinitionId: 'bigVarProcess',
+            processDefinitionVersion: '1',
+            elementId: 'ServiceTask_0kt6c5i',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+          }),
+        ).toString()}`,
+      ),
+    );
+    expect(screen.queryByLabelText('Business ID')).not.toBeInTheDocument();
   });
 
   it('should remove optional filters on filter reset', async () => {
@@ -478,6 +526,7 @@ describe('Optional Filters', () => {
       incidents: 'true',
       completed: 'true',
       canceled: 'true',
+      businessId: 'order-12345',
     } as const;
 
     const {user} = render(<Filters />, {
@@ -509,6 +558,8 @@ describe('Optional Filters', () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/^value$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^business id$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^business id$/i)).toHaveValue('order-12345');
 
     await user.click(screen.getByRole('button', {name: /reset filters/i}));
 
@@ -536,5 +587,6 @@ describe('Optional Filters', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^value$/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^operation id$/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^business id$/i)).not.toBeInTheDocument();
   });
 });

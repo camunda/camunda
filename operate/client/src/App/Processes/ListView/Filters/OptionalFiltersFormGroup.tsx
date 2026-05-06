@@ -42,6 +42,7 @@ type OptionalFilter =
   | 'variable'
   | 'processInstanceKey'
   | 'parentProcessInstanceKey'
+  | 'businessId'
   | 'batchOperationId'
   | 'errorMessage'
   | 'hasRetriesLeft'
@@ -51,6 +52,7 @@ type OptionalFilter =
 const optionalFilters: Array<OptionalFilter> = [
   'variable',
   'processInstanceKey',
+  'businessId',
   'batchOperationId',
   'parentProcessInstanceKey',
   'errorMessage',
@@ -84,6 +86,11 @@ const OPTIONAL_FILTER_FIELDS: Record<
       validateIdsLength,
       validatesIdsComplete,
     ),
+  },
+  businessId: {
+    keys: ['businessId'],
+    label: 'Business ID',
+    type: 'text',
   },
   batchOperationId: {
     keys: ['batchOperationId'],

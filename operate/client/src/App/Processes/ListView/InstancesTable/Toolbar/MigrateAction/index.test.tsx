@@ -40,6 +40,7 @@ const mockCalledProcessInstancesV2: ProcessInstance[] = [
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
   },
 ];
 

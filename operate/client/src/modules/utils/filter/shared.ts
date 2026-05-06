@@ -26,7 +26,8 @@ type ProcessInstanceFilterField =
   | 'endDateFrom'
   | 'endDateTo'
   | 'tenantId'
-  | 'hasRetriesLeft';
+  | 'hasRetriesLeft'
+  | 'businessId';
 
 type ProcessInstanceFilters = {
   processDefinitionId?: string;
@@ -49,6 +50,7 @@ type ProcessInstanceFilters = {
   endDateTo?: string;
   tenantId?: string;
   hasRetriesLeft?: boolean;
+  businessId?: string;
 };
 
 const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
@@ -72,6 +74,7 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'endDateTo',
   'tenantId',
   'hasRetriesLeft',
+  'businessId',
 ];
 
 const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
