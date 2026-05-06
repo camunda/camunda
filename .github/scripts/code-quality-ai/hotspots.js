@@ -7,75 +7,29 @@
  * by `revisions × lines-of-code` — the canonical hotspot heuristic
  * from Adam Tornhill's "Your Code as a Crime Scene".
  *
- * The code-maat JAR is downloaded once and cached at
- * `$CODE_MAAT_CACHE` (default `<tmp>/code-maat-cache/`).
+ * The code-maat JAR is provisioned by the caller. In CI the workflow
+ * downloads it via `robinraju/release-downloader` and exports its path
+ * as `CODE_MAAT_JAR`. For local runs, pass `--jar <path>` or set the
+ * same env var.
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import https from "node:https";
 import os from "node:os";
 import path from "node:path";
 
-export const CODE_MAAT_VERSION = "1.0.4";
-const CODE_MAAT_URL =
-  `https://github.com/adamtornhill/code-maat/releases/download/v${CODE_MAAT_VERSION}` +
-  `/code-maat-${CODE_MAAT_VERSION}-standalone.jar`;
-const CACHE_DIR =
-  process.env.CODE_MAAT_CACHE ?? path.join(os.tmpdir(), "code-maat-cache");
-const JAR_PATH = path.join(
-  CACHE_DIR,
-  `code-maat-${CODE_MAAT_VERSION}-standalone.jar`,
-);
-
 const MAX_BUFFER = 256 * 1024 * 1024;
 
-function followRedirect(res, resolve, reject, depth = 0) {
-  if (depth > 5) {
-    reject(new Error("Too many redirects fetching code-maat JAR"));
-    return;
+function resolveJarPath(explicit) {
+  const jar = explicit ?? process.env.CODE_MAAT_JAR;
+  if (!jar) {
+    throw new Error(
+      "code-maat JAR not provided. Set CODE_MAAT_JAR or pass --jar <path>.",
+    );
   }
-  if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
-    https
-      .get(res.headers.location, (next) =>
-        followRedirect(next, resolve, reject, depth + 1),
-      )
-      .on("error", reject);
-    return;
+  if (!fs.existsSync(jar)) {
+    throw new Error(`code-maat JAR not found at ${jar}.`);
   }
-  if (res.statusCode !== 200) {
-    reject(new Error(`code-maat download failed with status ${res.statusCode}`));
-    return;
-  }
-  resolve(res);
-}
-
-async function downloadCodeMaat() {
-  fs.mkdirSync(CACHE_DIR, { recursive: true });
-  const tmp = `${JAR_PATH}.partial`;
-  await new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(tmp);
-    https
-      .get(CODE_MAAT_URL, (res) =>
-        followRedirect(
-          res,
-          (real) => {
-            real.pipe(file);
-            file.on("finish", () => file.close(() => resolve()));
-            file.on("error", reject);
-          },
-          reject,
-        ),
-      )
-      .on("error", reject);
-  });
-  fs.renameSync(tmp, JAR_PATH);
-}
-
-async function ensureCodeMaat() {
-  if (!fs.existsSync(JAR_PATH)) {
-    await downloadCodeMaat();
-  }
-  return JAR_PATH;
+  return jar;
 }
 
 function generateGitLog(repoRoot, sinceDate) {
@@ -153,6 +107,7 @@ function countLines(filePath) {
  * Identify hotspots in a Git repository.
  *
  * @param {Object} [opts]
+ * @param {string|null} [opts.jarPath]    Path to code-maat JAR. Falls back to CODE_MAAT_JAR env var.
  * @param {number|null} [opts.topN]       Limit results to top N. null = all.
  * @param {string|null} [opts.sinceDate]  Git --since value, e.g. "90 days ago".
  * @param {string} [opts.repoRoot]        Repo working tree, defaults to cwd.
@@ -161,15 +116,16 @@ function countLines(filePath) {
  * @returns {Promise<Hotspot[]>}
  */
 export async function getHotspots({
+  jarPath = null,
   topN = null,
   sinceDate = "90 days ago",
   repoRoot = process.cwd(),
   extensions = [".java"],
   pathPrefix = null,
 } = {}) {
-  await ensureCodeMaat();
+  const jar = resolveJarPath(jarPath);
   const log = generateGitLog(repoRoot, sinceDate);
-  const csv = runCodeMaat(JAR_PATH, log);
+  const csv = runCodeMaat(jar, log);
   const revs = parseRevisionsCsv(csv);
 
   const scored = [];
@@ -188,6 +144,7 @@ export async function getHotspots({
 
 function parseArgs(argv) {
   const args = {
+    jar: null,
     top: null,
     since: "90 days ago",
     extensions: [".java"],
@@ -197,6 +154,9 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
+      case "--jar":
+        args.jar = argv[++i];
+        break;
       case "--top":
         args.top = parseInt(argv[++i], 10);
         break;
@@ -217,6 +177,7 @@ function parseArgs(argv) {
         console.log(
           [
             "Usage: hotspots.js [options]",
+            "  --jar PATH          code-maat JAR (or set CODE_MAAT_JAR)",
             "  --top N             keep top N hotspots",
             "  --since S           git --since value (default: '90 days ago')",
             "  --extensions LIST   comma-separated list (default: .java)",
@@ -237,6 +198,7 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const hotspots = await getHotspots({
+    jarPath: args.jar,
     topN: args.top,
     sinceDate: args.since,
     extensions: args.extensions,
