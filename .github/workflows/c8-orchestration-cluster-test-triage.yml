@@ -8,6 +8,9 @@
 name: C8 Orchestration Cluster Test Triage Agent
 
 on:
+  push:
+    branches:
+      - claude/test-triage-agent-3JsD9 # temporary — remove before merging to main
   schedule:
     - cron: "0 5 * * *" # 5:00 AM UTC — after the 4:00 AM metrics report
   workflow_dispatch:
@@ -134,16 +137,18 @@ jobs:
 
           # Expose counts for later steps
           total=$(jq '.summary.total_unique_failures' triage-report.json)
-          test_code=$(jq '.summary.test_code'            triage-report.json)
-          product=$(jq  '.summary.product_regression'    triage-report.json)
-          timing=$(jq   '.summary.timing'                triage-report.json)
-          unknown=$(jq  '.summary.needs_investigation'   triage-report.json)
+          test_code=$(jq '.summary.test_code'          triage-report.json)
+          product=$(jq  '.summary.product_regression'  triage-report.json)
+          timing=$(jq   '.summary.timing'              triage-report.json)
+          unknown=$(jq  '.summary.needs_investigation' triage-report.json)
+          flaky=$(jq    '.flaky_tests | length'        triage-report.json)
 
           echo "total=${total}"         >> "$GITHUB_OUTPUT"
           echo "test_code=${test_code}" >> "$GITHUB_OUTPUT"
           echo "product=${product}"     >> "$GITHUB_OUTPUT"
           echo "timing=${timing}"       >> "$GITHUB_OUTPUT"
           echo "unknown=${unknown}"     >> "$GITHUB_OUTPUT"
+          echo "flaky=${flaky}"         >> "$GITHUB_OUTPUT"
 
       # ── Auto-fix flaky tests (per branch) ──────────────────────────────────
       # Each stable branch and main is checked out in turn.  Only tests that
@@ -162,7 +167,7 @@ jobs:
 
       - name: Apply flaky-test fixes per branch and open PRs
         id: fix
-        if: steps.analyse.outputs.flaky != '0'
+        if: steps.analyse.outputs.flaky != '0' && steps.analyse.outputs.flaky != ''
         env:
           GH_TOKEN: ${{ github.token }}
           DRY_RUN:  ${{ inputs.dry_run || 'false' }}
@@ -315,18 +320,7 @@ Closes no issue — maintenance fix. Link any follow-up issues in a comment.")
           set -euo pipefail
           TODAY=$(date -u +"%d.%m.%Y")
 
-          # Overall health emoji
-          if [[ "$TOTAL" == "0" ]]; then
-            HEALTH=":white_check_mark: All green — no failures"
-          elif [[ "$PRODUCT" != "0" ]]; then
-            HEALTH=":red_circle: Product regression(s) detected"
-          elif [[ "$UNKNOWN" != "0" ]]; then
-            HEALTH=":large_orange_circle: Failures need investigation"
-          else
-            HEALTH=":yellow_circle: Test code / timing issues only"
-          fi
-
-          # Fix summary
+          # Build fix-text (only safe scalar values — no backticks)
           if [[ "$FIXED" != "0" && -n "$PR_URLS" ]]; then
             pr_links=""
             for url in $PR_URLS; do
@@ -339,93 +333,87 @@ Closes no issue — maintenance fix. Link any follow-up issues in a comment.")
             FIX_TEXT=":information_source: No automated fixes applied"
           fi
 
-          # Per-hint failure blocks (top 8 each, with reasons)
-          # helper: format one failure entry for Slack mrkdwn
-          format_failure() {
-            local hint="$1"
-            jq -r --arg h "$hint" '
-              [ .failures[] | select(.root_cause_hint == $h) ] | .[:8]
-              | map(
-                  "• `" + (.name | split(" > ")[-1]) + "`"
-                  + " — " + (.versions | join(", "))
-                  + " — _" + (.error_type) + "_"
-                  + "\n  › " + (.root_cause_reasons | join("; "))
-                )
-              | join("\n")
-            ' triage-report.json
-          }
+          export TODAY FIX_TEXT
 
-          TC_LINES=$(format_failure "test_code");         [ -z "$TC_LINES" ] && TC_LINES="None :white_check_mark:"
-          PR_LINES=$(format_failure "product_regression"); [ -z "$PR_LINES" ] && PR_LINES="None :white_check_mark:"
-          TM_LINES=$(format_failure "timing");             [ -z "$TM_LINES" ] && TM_LINES="None :white_check_mark:"
-          UN_LINES=$(format_failure "needs_investigation"); [ -z "$UN_LINES" ] && UN_LINES="None :white_check_mark:"
+          # Use <<'PYEOF' (single-quoted) so bash performs zero expansion inside
+          # the heredoc. Python reads triage-report.json directly, avoiding the
+          # backtick-in-shell-variable problem entirely.
+          python3 - > slack-payload.json <<'PYEOF'
+import json, os
 
-          # Write payload as a file via Python (avoids shell quoting issues with JSON)
-          python3 - > slack-payload.json <<PYEOF
-          import json, os
+report    = json.load(open("triage-report.json"))
+today     = os.environ["TODAY"]
+total     = os.environ["TOTAL"]
+test_code = os.environ["TEST_CODE"]
+product   = os.environ["PRODUCT"]
+timing    = os.environ["TIMING"]
+unknown   = os.environ["UNKNOWN"]
+fixed     = os.environ["FIXED"]
+fix_text  = os.environ["FIX_TEXT"]
+run_url   = os.environ["RUN_URL"]
 
-          today      = "$TODAY"
-          total      = "$TOTAL"
-          test_code  = "$TEST_CODE"
-          product    = "$PRODUCT"
-          timing     = "$TIMING"
-          unknown    = "$UNKNOWN"
-          fixed      = "$FIXED"
-          health     = """$HEALTH"""
-          run_url    = "$RUN_URL"
-          fix_text   = """$FIX_TEXT"""
-          tc_lines   = """$TC_LINES"""
-          pr_lines   = """$PR_LINES"""
-          tm_lines   = """$TM_LINES"""
-          un_lines   = """$UN_LINES"""
 
-          summary = (
-              f"{health}\n"
-              f"Total: *{total}* | "
-              f":hammer_and_wrench: Test code: *{test_code}* | "
-              f":red_circle: Product regression: *{product}* | "
-              f":hourglass: Timing: *{timing}* | "
-              f":question: Needs investigation: *{unknown}*\n"
-              f"{fix_text}\n"
-              f"<{run_url}|:mag: View triage run>"
-          )
+def fmt_failures(hint, limit=8):
+    items = [f for f in report["failures"] if f["root_cause_hint"] == hint][:limit]
+    if not items:
+        return "None :white_check_mark:"
+    lines = []
+    for f in items:
+        leaf = f["name"].split(" > ")[-1]
+        versions = ", ".join(f["versions"])
+        reasons = "; ".join(f["root_cause_reasons"])
+        lines.append(f"• `{leaf}` — {versions} — _{f['error_type']}_\n  › {reasons}")
+    return "\n".join(lines)
 
-          def section(text):
-              return {"type": "section", "text": {"type": "mrkdwn", "text": text}}
 
-          payload = {
-              "channel": "c8-orchestration-cluster-e2e-test-results",
-              "text": f"C8 Orchestration Cluster Triage Report — {today}",
-              "blocks": [
-                  {"type": "header", "text": {
-                      "type": "plain_text",
-                      "text": f":microscope: C8 Orchestration Cluster Triage — {today}"
-                  }},
-                  section(summary),
-                  {"type": "divider"},
-                  section(
-                      f"*:hammer_and_wrench: Test Code Issues* "
-                      f"_(outdated locator, data isolation, wrong assertion)_\n{tc_lines}"
-                  ),
-                  {"type": "divider"},
-                  section(
-                      f"*:red_circle: Product Regressions* "
-                      f"_(HTTP errors or assertion failures on a single version)_\n{pr_lines}"
-                  ),
-                  {"type": "divider"},
-                  section(
-                      f"*:hourglass: Timing / Race Conditions* "
-                      f"_(timeout or intermittent — needs human judgement)_\n{tm_lines}"
-                  ),
-                  {"type": "divider"},
-                  section(
-                      f"*:question: Needs Investigation* "
-                      f"_(conflicting or insufficient signals)_\n{un_lines}"
-                  ),
-              ]
-          }
-          print(json.dumps(payload))
-          PYEOF
+if int(total) == 0:
+    health = ":white_check_mark: All green — no failures"
+elif int(product) > 0:
+    health = ":red_circle: Product regression(s) detected"
+elif int(unknown) > 0:
+    health = ":large_orange_circle: Failures need investigation"
+else:
+    health = ":yellow_circle: Test code / timing issues only"
+
+summary = (
+    f"{health}\n"
+    f"Total: *{total}* | "
+    f":hammer_and_wrench: Test code: *{test_code}* | "
+    f":red_circle: Product regression: *{product}* | "
+    f":hourglass: Timing: *{timing}* | "
+    f":question: Needs investigation: *{unknown}*\n"
+    f"{fix_text}\n"
+    f"<{run_url}|:mag: View triage run>"
+)
+
+
+def section(text):
+    return {"type": "section", "text": {"type": "mrkdwn", "text": text}}
+
+
+payload = {
+    "channel": "c8-orchestration-cluster-e2e-test-results",
+    "text": f"C8 Orchestration Cluster Triage Report — {today}",
+    "blocks": [
+        {"type": "header", "text": {"type": "plain_text",
+            "text": f":microscope: C8 Orchestration Cluster Triage — {today}"}},
+        section(summary),
+        {"type": "divider"},
+        section("*:hammer_and_wrench: Test Code Issues* _(outdated locator, data isolation, wrong assertion)_\n"
+                + fmt_failures("test_code")),
+        {"type": "divider"},
+        section("*:red_circle: Product Regressions* _(HTTP errors or assertion failures on a single version)_\n"
+                + fmt_failures("product_regression")),
+        {"type": "divider"},
+        section("*:hourglass: Timing / Race Conditions* _(timeout or intermittent — needs human judgement)_\n"
+                + fmt_failures("timing")),
+        {"type": "divider"},
+        section("*:question: Needs Investigation* _(conflicting or insufficient signals)_\n"
+                + fmt_failures("needs_investigation")),
+    ],
+}
+print(json.dumps(payload))
+PYEOF
 
           echo "payload_file=slack-payload.json" >> "$GITHUB_OUTPUT"
 
