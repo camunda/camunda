@@ -7,6 +7,7 @@
 name: Orchestration Cluster Smoke Tests
 
 on:
+  workflow_dispatch: {}
   workflow_call: {}
 
 permissions: {}
@@ -48,9 +49,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
-          node-version: qa/orchestration-cluster-smoke-tests/.nvmrc
-          cache: npm
-          cache-dependency-path: qa/orchestration-cluster-smoke-tests/package-lock.json
+          node-version-file: qa/orchestration-cluster-smoke-tests/.nvmrc
 
       - name: Install dependencies
         run: npm ci
@@ -139,7 +138,6 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "ci-orchestration-cluster-smoke-tests/run-smoke-tests"
           build_status: ${{ job.status }}
           detailed_junit_tests: true
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
