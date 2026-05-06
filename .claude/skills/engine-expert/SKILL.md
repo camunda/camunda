@@ -15,6 +15,7 @@ These are summaries. The reference files (linked below) are authoritative — th
 
 - No state mutation from processors. State changes only through events applied by event appliers.
 - Released event appliers — and any method on a `Mutable*State` interface or anything transitively called from an applier — must not change in logic. Add a new version/method instead. Cosmetic changes (formatting, imports, comments, behavior-equivalent renames) are fine. No golden file protects state class methods — extra care required.
+- New event applier versions must reach every newer minor before its initial release. A version that ships only in an older minor's patch breaks upgrade replay — dead partitions, unrecoverable without an ad-hoc patch. See `event-appliers.md`.
 - Processors must end the command's processing by appending an event or a rejection. Exceptions are a last-resort rollback mechanism and are expensive — prefer pre-validation.
 - Generated keys must be used as the record key of at least one appended record. Otherwise the key generator can't be rehydrated on replay and may hand out a duplicate.
 - Inter-partition command receivers must be idempotent. Prefer reject-redundant-command over re-emitting events.
