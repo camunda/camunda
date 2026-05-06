@@ -70,6 +70,7 @@ public final class ClusterConfigurationManagerService
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
   private final MemberId localMemberId;
+  private final ClusterConfigurationManagementRequestsHandler requestsHandler;
   private ConfigurationChangeAppliers currentAppliers;
   private CamundaClient camundaClient;
   private BpmnConfigurationChangeJobWorker bpmnJobWorker;
@@ -116,12 +117,12 @@ public final class ClusterConfigurationManagerService
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
             clusterConfigurationManager, localMemberId, managerActor);
+    requestsHandler =
+        new ClusterConfigurationManagementRequestsHandler(
+            configurationChangeCoordinator, localMemberId, managerActor);
     configurationRequestServer =
         new ClusterConfigurationRequestServer(
-            communicationService,
-            new ProtoBufSerializer(),
-            new ClusterConfigurationManagementRequestsHandler(
-                configurationChangeCoordinator, localMemberId, managerActor));
+            communicationService, new ProtoBufSerializer(), requestsHandler);
 
     clusterConfigurationManager.setConfigurationGossiper(
         clusterConfigurationGossiper::updateClusterConfiguration);
@@ -293,6 +294,10 @@ public final class ClusterConfigurationManagerService
 
     clusterVariableUpdateWorker = new ClusterVariableUpdateJobWorker(camundaClient);
     clusterVariableUpdateWorker.start();
+
+    // Wire the CamundaClient into the requests handler so that scale operations
+    // go through the BPMN process instead of the coordinator directly.
+    requestsHandler.setCamundaClient(camundaClient);
 
     if (isCoordinator) {
       initClusterVariable();

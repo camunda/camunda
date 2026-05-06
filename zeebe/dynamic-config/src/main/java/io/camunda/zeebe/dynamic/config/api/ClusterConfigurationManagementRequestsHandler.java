@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
@@ -34,8 +35,13 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the requests for the configuration management. This is expected be running on the
@@ -43,9 +49,15 @@ import java.util.function.Function;
  */
 public final class ClusterConfigurationManagementRequestsHandler
     implements ClusterConfigurationManagementApi {
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ClusterConfigurationManagementRequestsHandler.class);
+  private static final String SCALE_MESSAGE_NAME = "cluster_modification";
+  private static final String SCALE_PROCESS_ID = "scale_operation_executor";
+
   private final ConfigurationChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
+  private volatile CamundaClient camundaClient;
 
   public ClusterConfigurationManagementRequestsHandler(
       final ConfigurationChangeCoordinator coordinator,
@@ -56,19 +68,29 @@ public final class ClusterConfigurationManagementRequestsHandler
     this.localMemberId = localMemberId;
   }
 
+  /** Enables BPMN-orchestrated scale operations. Must be called after the process engine starts. */
+  public void setCamundaClient(final CamundaClient client) {
+    this.camundaClient = client;
+  }
+
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> addMembers(
       final AddMembersRequest addMembersRequest) {
-    return handleRequest(
-        addMembersRequest.dryRun(), new AddMembersTransformer(addMembersRequest.members()));
+    final var transformer = new AddMembersTransformer(addMembersRequest.members());
+    if (!addMembersRequest.dryRun() && camundaClient != null) {
+      return handleBpmnScale(transformer);
+    }
+    return handleRequest(addMembersRequest.dryRun(), transformer);
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> removeMembers(
       final RemoveMembersRequest removeMembersRequest) {
-    return handleRequest(
-        removeMembersRequest.dryRun(),
-        new RemoveMembersTransformer(removeMembersRequest.members()));
+    final var transformer = new RemoveMembersTransformer(removeMembersRequest.members());
+    if (!removeMembersRequest.dryRun() && camundaClient != null) {
+      return handleBpmnScale(transformer);
+    }
+    return handleRequest(removeMembersRequest.dryRun(), transformer);
   }
 
   @Override
@@ -111,9 +133,12 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> scaleMembers(
       final BrokerScaleRequest scaleRequest) {
-    return handleRequest(
-        scaleRequest.dryRun(),
-        new ScaleRequestTransformer(scaleRequest.members(), scaleRequest.newReplicationFactor()));
+    final var transformer =
+        new ScaleRequestTransformer(scaleRequest.members(), scaleRequest.newReplicationFactor());
+    if (!scaleRequest.dryRun() && camundaClient != null) {
+      return handleBpmnScale(transformer);
+    }
+    return handleRequest(scaleRequest.dryRun(), transformer);
   }
 
   @Override
@@ -151,14 +176,16 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
       final ClusterPatchRequest clusterPatchRequest) {
-
-    return handleRequest(
-        clusterPatchRequest.dryRun(),
+    final var transformer =
         new ClusterPatchRequestTransformer(
             clusterPatchRequest.membersToAdd(),
             clusterPatchRequest.membersToRemove(),
             clusterPatchRequest.newPartitionCount(),
-            clusterPatchRequest.newReplicationFactor()));
+            clusterPatchRequest.newReplicationFactor());
+    if (!clusterPatchRequest.dryRun() && camundaClient != null) {
+      return handleBpmnScale(transformer);
+    }
+    return handleRequest(clusterPatchRequest.dryRun(), transformer);
   }
 
   @Override
@@ -218,6 +245,71 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfiguration> getTopology() {
     return coordinator.getClusterConfiguration();
+  }
+
+  /**
+   * Validates the scale request via simulation, then fires a BPMN message to run the actual
+   * operation. The response reflects the planned change so the caller can see what will happen.
+   */
+  private ActorFuture<ClusterConfigurationChangeResponse> handleBpmnScale(
+      final ConfigurationChangeRequest request) {
+    return coordinator
+        .simulateOperations(request)
+        .thenApply(
+            result -> {
+              final var currentMembers = result.currentConfiguration().members().keySet();
+              final var finalMembers = result.finalConfiguration().members().keySet();
+
+              final var toAdd =
+                  finalMembers.stream()
+                      .filter(m -> !currentMembers.contains(m))
+                      .map(MemberId::nodeIdx)
+                      .sorted()
+                      .collect(Collectors.toList());
+              final var toRemove =
+                  currentMembers.stream()
+                      .filter(m -> !finalMembers.contains(m))
+                      .map(MemberId::nodeIdx)
+                      .sorted()
+                      .collect(Collectors.toList());
+
+              final String direction = toRemove.isEmpty() ? "up" : "down";
+              final String requestId = UUID.randomUUID().toString();
+
+              final var client = camundaClient;
+              if (client != null) {
+                client
+                    .newPublishMessageCommand()
+                    .messageName(SCALE_MESSAGE_NAME)
+                    .correlationKey(requestId)
+                    .variables(
+                        Map.of(
+                            "request_id", requestId,
+                            "processor_id", SCALE_PROCESS_ID,
+                            "membersToAdd", toAdd,
+                            "membersToRemove", toRemove,
+                            "direction", direction))
+                    .send()
+                    .exceptionally(
+                        e -> {
+                          LOG.warn(
+                              "Failed to publish scale BPMN message for request {}", requestId, e);
+                          return null;
+                        });
+                LOG.info(
+                    "Scale request {} dispatched to BPMN: add={} remove={}",
+                    requestId,
+                    toAdd,
+                    toRemove);
+              }
+
+              return new ClusterConfigurationChangeResponse(
+                  result.changeId(),
+                  result.currentConfiguration().members(),
+                  result.finalConfiguration().members(),
+                  result.operations());
+            },
+            executor);
   }
 
   private ActorFuture<ClusterConfigurationChangeResponse> handleRequest(
