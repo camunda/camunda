@@ -7,7 +7,6 @@
  */
 
 import {QueryClientProvider} from '@tanstack/react-query';
-import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
 import {reactQueryClient} from 'modules/react-query/reactQueryClient';
 
 type Props = {
@@ -18,7 +17,6 @@ const ReactQueryProvider: React.FC<Props> = ({children}) => {
   return (
     <QueryClientProvider client={reactQueryClient}>
       {children}
-      <ReactQueryDevtools buttonPosition="bottom-right" />
     </QueryClientProvider>
   );
 };
