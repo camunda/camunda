@@ -36,6 +36,10 @@ public interface ZeebeExecutionListenersBuilder<B> {
 
   B zeebeEndExecutionListener(String type);
 
+  B zeebeCancelExecutionListener(String type, String retries);
+
+  B zeebeCancelExecutionListener(String type);
+
   B zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer);
 }

@@ -46,7 +46,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   public static final String NO_INCIDENT_FOUND_MSG =
       "Expected to resolve incident with key '%d', but no such incident was found";
   private static final String ELEMENT_NOT_IN_SUPPORTED_STATE_MSG =
-      "Expected incident to refer to element in state ELEMENT_ACTIVATING or ELEMENT_COMPLETING, but element is in state %s";
+      "Expected incident to refer to element in state ELEMENT_ACTIVATING, ELEMENT_COMPLETING, or ELEMENT_TERMINATING, but element is in state %s";
   private static final String UNEXPECTED_LIFECYCLE_STATE_CONVERSION_MSG =
       "Unexpected user task lifecycle state: '%s' encountered during conversion to failed user task command.";
 
@@ -268,6 +268,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     return switch (instanceState) {
       case ELEMENT_ACTIVATING -> Either.right(ProcessInstanceIntent.ACTIVATE_ELEMENT);
       case ELEMENT_COMPLETING -> Either.right(ProcessInstanceIntent.COMPLETE_ELEMENT);
+      case ELEMENT_TERMINATING -> Either.right(ProcessInstanceIntent.TERMINATE_ELEMENT);
       default -> Either.left(String.format(ELEMENT_NOT_IN_SUPPORTED_STATE_MSG, instanceState));
     };
   }

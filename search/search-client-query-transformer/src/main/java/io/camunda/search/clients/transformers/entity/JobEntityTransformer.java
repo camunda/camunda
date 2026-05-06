@@ -56,6 +56,7 @@ public class JobEntityTransformer
       case "BEFORE_ALL" -> ListenerEventType.BEFORE_ALL;
       case "START" -> ListenerEventType.START;
       case "END" -> ListenerEventType.END;
+      case "CANCEL" -> ListenerEventType.CANCEL;
       case "CREATING" -> ListenerEventType.CREATING;
       case "ASSIGNING" -> ListenerEventType.ASSIGNING;
       case "UPDATING" -> ListenerEventType.UPDATING;

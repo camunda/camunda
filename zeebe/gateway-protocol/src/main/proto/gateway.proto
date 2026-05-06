@@ -83,6 +83,7 @@ message ActivatedJob {
     UNSPECIFIED = 6;
     UPDATING = 7;
     BEFORE_ALL = 8;
+    CANCEL = 9;
   }
 
   // the key, a unique identifier for the job

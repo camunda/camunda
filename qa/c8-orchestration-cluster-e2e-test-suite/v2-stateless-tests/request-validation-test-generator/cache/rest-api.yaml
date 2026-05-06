@@ -10263,6 +10263,7 @@ components:
       description: The listener event type of the job.
       enum:
         - ASSIGNING
+        - CANCEL
         - CANCELING
         - COMPLETING
         - CREATING
