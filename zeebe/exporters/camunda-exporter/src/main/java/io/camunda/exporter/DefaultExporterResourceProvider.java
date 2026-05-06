@@ -26,6 +26,7 @@ import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromProcessMess
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
+import io.camunda.exporter.handlers.DocumentReferenceHandler;
 import io.camunda.exporter.handlers.EmbeddedFormHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromIncidentHandler;
@@ -104,6 +105,7 @@ import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex;
+import io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
@@ -261,6 +263,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new VariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
+            new DocumentReferenceHandler(
+                indexDescriptors.get(DocumentReferenceIndex.class).getFullQualifiedName(),
+                objectMapper),
             new DecisionRequirementsHandler(
                 indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName(),
                 decisionRequirementsCache),
