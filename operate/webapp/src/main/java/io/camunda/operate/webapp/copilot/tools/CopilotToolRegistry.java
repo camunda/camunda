@@ -12,6 +12,7 @@ import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.service.ProcessInstanceServices;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +29,13 @@ import org.springframework.stereotype.Component;
 public class CopilotToolRegistry {
 
   private final ObjectMapper objectMapper;
+  private final ProcessInstanceServices processInstanceServices;
   private final Map<String, Tool> tools = new LinkedHashMap<>();
 
-  public CopilotToolRegistry(ObjectMapper objectMapper) {
+  public CopilotToolRegistry(
+      ObjectMapper objectMapper, ProcessInstanceServices processInstanceServices) {
     this.objectMapper = objectMapper;
+    this.processInstanceServices = processInstanceServices;
     register(listProcesses());
     register(countFailedInstances());
     register(getProcessInstance());
@@ -126,14 +130,20 @@ public class CopilotToolRegistry {
                     .required("processInstanceKey")
                     .build())
             .build(),
-        // TODO: replace with ProcessInstanceReader.byKey(...)
-        (args, auth) ->
-            Map.of(
-                "processInstanceKey", args.get("processInstanceKey"),
-                "processId", "order-process",
-                "state", "ACTIVE",
-                "currentElement", "validate-payment",
-                "incidents", 1));
+        (args, auth) -> {
+          final long key = parseLong(args.get("processInstanceKey"), "processInstanceKey");
+          final var entity = processInstanceServices.getByKey(key, auth);
+          return Map.of(
+              "processInstanceKey", entity.processInstanceKey(),
+              "processDefinitionId", entity.processDefinitionId(),
+              "processDefinitionName", entity.processDefinitionName(),
+              "processDefinitionVersion", entity.processDefinitionVersion(),
+              "state", String.valueOf(entity.state()),
+              "startDate", entity.startDate(),
+              "endDate", entity.endDate(),
+              "hasIncident", entity.hasIncident(),
+              "tenantId", entity.tenantId());
+        });
   }
 
   private Tool searchCamundaDocs() {
@@ -160,6 +170,20 @@ public class CopilotToolRegistry {
                         "title", "Camunda 8 docs",
                         "url", "https://docs.camunda.io/",
                         "snippet", "Placeholder result for: " + args.get("query")))));
+  }
+
+  private static long parseLong(Object raw, String name) {
+    if (raw == null) {
+      throw new IllegalArgumentException(name + " is required");
+    }
+    if (raw instanceof Number n) {
+      return n.longValue();
+    }
+    try {
+      return Long.parseLong(String.valueOf(raw));
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException(name + " must be numeric, got: " + raw);
+    }
   }
 
   private record Tool(
