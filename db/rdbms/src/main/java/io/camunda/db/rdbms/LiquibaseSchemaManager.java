@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
@@ -15,6 +16,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
@@ -224,21 +226,32 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
         return;
       }
 
-      final var result = VersionCompatibilityCheck.check(currentSchemaVersion, applicationVersion);
+      final var stableAppVersion = toStableVersion(applicationVersion);
+      if (stableAppVersion.isEmpty()) {
+        LOG.warn(
+            "[RDBMS Schema] Cannot parse application version '{}' as a semantic version; "
+                + "skipping schema version compatibility check.",
+            applicationVersion);
+        return;
+      }
+
+      final var result =
+          VersionCompatibilityCheck.check(currentSchemaVersion, stableAppVersion.get());
       if (result instanceof Incompatible) {
         LOG.error(
             "[RDBMS Schema] Illegal upgrade path: schema={}, app={}. "
                 + "Upgrade sequentially ({} → next minor). Skipping minors is not supported.",
             currentSchemaVersion,
-            applicationVersion,
+            stableAppVersion.get(),
             currentSchemaVersion);
-        throw new RdbmsSchemaVersionIncompatibleException(currentSchemaVersion, applicationVersion);
+        throw new RdbmsSchemaVersionIncompatibleException(
+            currentSchemaVersion, stableAppVersion.get());
       }
 
       LOG.debug(
           "[RDBMS Schema] Version check passed: schema={}, app={}, result={}",
           currentSchemaVersion,
-          applicationVersion,
+          stableAppVersion.get(),
           result.getClass().getSimpleName());
     } catch (final RdbmsSchemaVersionIncompatibleException e) {
       throw e;
@@ -323,12 +336,23 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
 
   /**
    * Upserts the current application version into {@code RDBMS_SCHEMA_VERSION} after a successful
-   * Liquibase migration. Any failure aborts startup with an {@link IllegalStateException} because a
-   * missing or incorrect schema-version record would cause the next startup to perform an incorrect
-   * compatibility check.
+   * Liquibase migration. The version is normalized to stable {@code major.minor.patch} before
+   * storage (pre-release suffixes such as {@code -SNAPSHOT} are stripped). If the version cannot be
+   * parsed as a semantic version (e.g. {@code "development"}), the write is skipped with a warning.
+   * Any failure aborts startup with an {@link IllegalStateException} because a missing or incorrect
+   * schema-version record would cause the next startup to perform an incorrect compatibility check.
    */
   protected void updateSchemaVersion() {
     if (applicationVersion == null || getDataSource() == null) {
+      return;
+    }
+
+    final var stableVersion = toStableVersion(applicationVersion);
+    if (stableVersion.isEmpty()) {
+      LOG.warn(
+          "[RDBMS Schema] Cannot parse application version '{}' as a semantic version; "
+              + "skipping schema version storage.",
+          applicationVersion);
       return;
     }
 
@@ -339,9 +363,9 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
       final var autoCommit = connection.getAutoCommit();
       connection.setAutoCommit(false);
       try {
-        upsertSingleSchemaVersionRow(connection, tableName);
+        upsertSingleSchemaVersionRow(connection, tableName, stableVersion.get());
         connection.commit();
-        LOG.debug("[RDBMS Schema] Updated schema version to {}.", applicationVersion);
+        LOG.debug("[RDBMS Schema] Updated schema version to {}.", stableVersion.get());
       } catch (final SQLException e) {
         connection.rollback();
         throw e;
@@ -357,12 +381,13 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
     }
   }
 
-  private void upsertSingleSchemaVersionRow(final Connection connection, final String tableName)
+  private void upsertSingleSchemaVersionRow(
+      final Connection connection, final String tableName, final String stableVersion)
       throws SQLException {
     final var schemaVersionState = readSchemaVersionState(connection, tableName);
 
     if (schemaVersionState.rowCount() == 0) {
-      insertSchemaVersion(connection, tableName);
+      insertSchemaVersion(connection, tableName, stableVersion);
       return;
     }
 
@@ -370,7 +395,7 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
       try (final var updateStmt =
           connection.prepareStatement(
               "UPDATE " + tableName + " SET VERSION = ? WHERE VERSION = ?")) {
-        updateStmt.setString(1, applicationVersion);
+        updateStmt.setString(1, stableVersion);
         updateStmt.setString(2, schemaVersionState.version());
         updateStmt.executeUpdate();
       }
@@ -380,7 +405,7 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
     try (final var deleteStmt = connection.prepareStatement("DELETE FROM " + tableName)) {
       deleteStmt.executeUpdate();
     }
-    insertSchemaVersion(connection, tableName);
+    insertSchemaVersion(connection, tableName, stableVersion);
   }
 
   private SchemaVersionState readSchemaVersionState(
@@ -401,11 +426,12 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
     return new SchemaVersionState(rowCount, version);
   }
 
-  private void insertSchemaVersion(final Connection connection, final String tableName)
+  private void insertSchemaVersion(
+      final Connection connection, final String tableName, final String stableVersion)
       throws SQLException {
     try (final var insertStmt =
         connection.prepareStatement("INSERT INTO " + tableName + " (VERSION) VALUES (?)")) {
-      insertStmt.setString(1, applicationVersion);
+      insertStmt.setString(1, stableVersion);
       insertStmt.executeUpdate();
     }
   }
@@ -415,6 +441,19 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
   private String getPrefix() {
     final var params = getParameters();
     return params != null ? params.getOrDefault("prefix", "") : "";
+  }
+
+  /**
+   * Normalizes {@code version} to a stable {@code major.minor.patch} string by stripping any
+   * pre-release or build-metadata suffix (e.g. {@code 8.11.0-SNAPSHOT} → {@code 8.11.0}).
+   *
+   * @return the stable version string, or {@link Optional#empty()} if {@code version} cannot be
+   *     parsed as a semantic version (e.g. {@code "development"})
+   */
+  @VisibleForTesting
+  protected static Optional<String> toStableVersion(final String version) {
+    return SemanticVersion.parse(version)
+        .map(sv -> sv.major() + "." + sv.minor() + "." + sv.patch());
   }
 
   /**

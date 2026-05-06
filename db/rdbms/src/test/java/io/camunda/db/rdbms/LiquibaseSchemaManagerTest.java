@@ -390,6 +390,62 @@ class LiquibaseSchemaManagerTest {
         .hasMessageContaining("Failed to update schema version");
   }
 
+  @Test
+  void shouldStripSnapshotSuffixBeforeVersionCheck() throws Exception {
+    // given: schema=8.9.0, app=8.10.0-SNAPSHOT → normalized to 8.10.0 → valid minor upgrade
+    final var schemaManager = versionCheckManager("8.9.0", "8.10.0-SNAPSHOT");
+
+    // when / then - no exception; SNAPSHOT is stripped before the check
+    schemaManager.checkSchemaVersionCompatibility();
+  }
+
+  @Test
+  void shouldRejectSkippedMinorVersionAfterSnapshotStripping() {
+    // given: schema=8.9.0, app=8.11.0-SNAPSHOT → normalized to 8.11.0 → skipped minor
+    final var schemaManager = versionCheckManager("8.9.0", "8.11.0-SNAPSHOT");
+
+    // when / then
+    assertThatThrownBy(schemaManager::checkSchemaVersionCompatibility)
+        .isInstanceOf(RdbmsSchemaVersionIncompatibleException.class);
+  }
+
+  @Test
+  void shouldSkipVersionCheckForUnparseableApplicationVersion() throws Exception {
+    // given: app=development (not a semantic version)
+    final var schemaManager = versionCheckManager("8.9.0", "development");
+
+    // when / then - no exception; unparseable versions skip the check
+    schemaManager.checkSchemaVersionCompatibility();
+  }
+
+  @Test
+  void shouldSkipVersionStorageForUnparseableApplicationVersion() {
+    // given: app=development → updateSchemaVersion must skip silently (no exception)
+    final var schemaManager = new TestLiquibaseSchemaManager();
+    schemaManager.setApplicationVersion("development");
+
+    final var mockDataSource = mock(DataSource.class);
+    schemaManager.setDataSource(mockDataSource);
+
+    // when / then - no exception, datasource is never touched
+    schemaManager.updateSchemaVersion();
+  }
+
+  @Test
+  void shouldNormalizeSnapshotVersionToStableBeforeStorage() {
+    assertThat(LiquibaseSchemaManager.toStableVersion("8.11.0-SNAPSHOT")).contains("8.11.0");
+  }
+
+  @Test
+  void shouldReturnEmptyForUnparseableVersion() {
+    assertThat(LiquibaseSchemaManager.toStableVersion("development")).isEmpty();
+  }
+
+  @Test
+  void shouldReturnStableVersionUnchanged() {
+    assertThat(LiquibaseSchemaManager.toStableVersion("8.10.0")).contains("8.10.0");
+  }
+
   // ---- helpers ----
 
   /**
