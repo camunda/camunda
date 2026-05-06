@@ -42,7 +42,6 @@ import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
-import java.util.Objects;
 
 public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
     implements AggregationTransformer<ProcessDefinitionInstanceVersionStatisticsAggregation> {
@@ -127,17 +126,13 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
                         AGG_MAX_PROCESS_DEFINITION_KEY + ".value";
                     case AGGREGATION_NAME_PROCESS_DEFINITION_VERSION ->
                         AGG_MAX_PROCESS_VERSION + ".value";
-                    // processDefinitionName is a keyword field; max() does not support keyword
-                    // types in ES/OS. Name-based ordering is applied in Java after fetching
-                    // results.
-                    case AGGREGATION_FIELD_PROCESS_DEFINITION_NAME -> null;
+                    // processDefinitionName is embedded as the first segment of the terms bucket
+                    // key (processName::processVersion::tenantId), so _key sorts by name.
+                    case AGGREGATION_FIELD_PROCESS_DEFINITION_NAME -> AGGREGATION_FIELD_KEY;
                     default -> ordering.field() + "._count";
                   };
-              return bucketSortField != null
-                  ? new FieldSorting(bucketSortField, ordering.order())
-                  : null;
+              return new FieldSorting(bucketSortField, ordering.order());
             })
-        .filter(Objects::nonNull)
         .toList();
   }
 }

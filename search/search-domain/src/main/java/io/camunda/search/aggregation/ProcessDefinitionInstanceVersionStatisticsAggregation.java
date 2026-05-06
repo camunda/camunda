@@ -35,5 +35,5 @@ public record ProcessDefinitionInstanceVersionStatisticsAggregation(
   public static final String AGGREGATION_FIELD_PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String AGGREGATION_FIELD_PROCESS_DEFINITION_NAME = "processDefinitionName";
   public static final String PROCESS_DEFINITION_AND_TENANT_KEY =
-      "doc['processVersion'].value + '::' + doc['tenantId'].value";
+      "doc['processName'].value + '::' + doc['processVersion'].value + '::' + doc['tenantId'].value";
 }
