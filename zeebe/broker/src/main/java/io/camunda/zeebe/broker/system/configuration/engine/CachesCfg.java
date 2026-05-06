@@ -19,6 +19,9 @@ public final class CachesCfg implements ConfigurationEntry {
   private int authorizationsCacheCapacity =
       EngineConfiguration.DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
   private Duration authorizationsCacheTtl = EngineConfiguration.DEFAULT_AUTHORIZATIONS_CACHE_TTL;
+  private int variableNamesCacheCapacity =
+      EngineConfiguration.DEFAULT_VARIABLE_NAMES_CACHE_CAPACITY;
+  private Duration variableNamesCacheTtl = EngineConfiguration.DEFAULT_VARIABLE_NAMES_CACHE_TTL;
 
   public int getDrgCacheCapacity() {
     return drgCacheCapacity;
@@ -68,6 +71,22 @@ public final class CachesCfg implements ConfigurationEntry {
     this.authorizationsCacheTtl = authorizationsCacheTtl;
   }
 
+  public int getVariableNamesCacheCapacity() {
+    return variableNamesCacheCapacity;
+  }
+
+  public void setVariableNamesCacheCapacity(final int variableNamesCacheCapacity) {
+    this.variableNamesCacheCapacity = variableNamesCacheCapacity;
+  }
+
+  public Duration getVariableNamesCacheTtl() {
+    return variableNamesCacheTtl;
+  }
+
+  public void setVariableNamesCacheTtl(final Duration variableNamesCacheTtl) {
+    this.variableNamesCacheTtl = variableNamesCacheTtl;
+  }
+
   @Override
   public String toString() {
     return "CachesCfg{"
@@ -83,6 +102,10 @@ public final class CachesCfg implements ConfigurationEntry {
         + authorizationsCacheCapacity
         + ", authorizationsCacheTtl="
         + authorizationsCacheTtl
+        + ", variableNamesCacheCapacity="
+        + variableNamesCacheCapacity
+        + ", variableNamesCacheTtl="
+        + variableNamesCacheTtl
         + '}';
   }
 }

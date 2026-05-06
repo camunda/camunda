@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.variable;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
@@ -20,10 +24,13 @@ import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -35,6 +42,7 @@ import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class DbVariableState implements MutableVariableState {
+
 
   private final MsgPackWriter writer = new MsgPackWriter();
   private final ExpandableArrayBuffer documentResultBuffer = new ExpandableArrayBuffer();
@@ -63,12 +71,34 @@ public class DbVariableState implements MutableVariableState {
   private final VariableInstance newVariable = new VariableInstance();
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
 
+  // (scope key) => (set of variable names on that scope) — LRU cache for fast removeAllVariables
+  private final Cache<Long, Set<DirectBuffer>> variableNameCache;
+
   // collecting variables
   private final ObjectHashSet<DirectBuffer> collectedVariables = new ObjectHashSet<>();
   private final ObjectHashSet<DirectBuffer> variablesToCollect = new ObjectHashSet<>();
 
+  @VisibleForTesting
   public DbVariableState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    this(
+        zeebeDb,
+        transactionContext,
+        EngineConfiguration.DEFAULT_VARIABLE_NAMES_CACHE_CAPACITY,
+        EngineConfiguration.DEFAULT_VARIABLE_NAMES_CACHE_TTL);
+  }
+
+  public DbVariableState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final int variableNamesCacheCapacity,
+      final Duration variableNamesCacheTtl) {
+    variableNameCache =
+        Caffeine.newBuilder()
+            .maximumSize(variableNamesCacheCapacity)
+            .expireAfterAccess(variableNamesCacheTtl)
+            .build();
+
     childKey = new DbLong();
     childParentColumnFamily =
         zeebeDb.createColumnFamily(
@@ -127,6 +157,10 @@ public class DbVariableState implements MutableVariableState {
     variableName.wrapBuffer(variableNameView);
 
     variablesColumnFamily.upsert(scopeKeyVariableNameKey, newVariable);
+
+    variableNameCache
+        .get(scopeKey, k -> new HashSet<>())
+        .add(BufferUtil.cloneBuffer(variableNameView));
   }
 
   @Override
@@ -142,6 +176,7 @@ public class DbVariableState implements MutableVariableState {
     this.scopeKey.wrapLong(scopeKey);
 
     removeAllVariables(scopeKey);
+    variableNameCache.invalidate(scopeKey);
 
     childKey.wrapLong(scopeKey);
     // TODO: Could be deleteExisting except for tests
@@ -150,11 +185,37 @@ public class DbVariableState implements MutableVariableState {
 
   @Override
   public void removeAllVariables(final long scopeKey) {
-    visitVariablesLocal(
-        scopeKey,
-        dbString -> true,
-        (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
-        () -> false);
+    final Set<DirectBuffer> cachedNames = variableNameCache.getIfPresent(scopeKey);
+    if (cachedNames != null) {
+      try {
+        this.scopeKey.wrapLong(scopeKey);
+        for (final DirectBuffer name : cachedNames) {
+          variableName.wrapBuffer(name);
+          variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey);
+        }
+      } finally {
+        cachedNames.clear();
+      }
+    } else {
+      visitVariablesLocal(
+          scopeKey,
+          dbString -> true,
+          (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
+          () -> false);
+    }
+  }
+
+  @Override
+  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
+    scopeKey.wrapLong(record.getScopeKey());
+    variableDocumentStateToWrite.setKey(key).setRecord(record);
+    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
+  }
+
+  @Override
+  public void removeVariableDocumentState(final long scopeKey) {
+    this.scopeKey.wrapLong(scopeKey);
+    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
   }
 
   @Override
@@ -323,19 +384,6 @@ public class DbVariableState implements MutableVariableState {
 
     final ParentScopeKey parentScopeKey = childParentColumnFamily.get(childKey);
     return parentScopeKey != null ? parentScopeKey.get() : NO_PARENT;
-  }
-
-  @Override
-  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
-    scopeKey.wrapLong(record.getScopeKey());
-    variableDocumentStateToWrite.setKey(key).setRecord(record);
-    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
-  }
-
-  @Override
-  public void removeVariableDocumentState(final long scopeKey) {
-    this.scopeKey.wrapLong(scopeKey);
-    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
   }
 
   @Override

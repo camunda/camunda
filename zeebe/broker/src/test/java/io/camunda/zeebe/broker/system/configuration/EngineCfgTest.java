@@ -67,6 +67,10 @@ final class EngineCfgTest {
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(5));
     assertThat(configuration.isBusinessIdUniquenessEnabled())
         .isEqualTo(EngineConfiguration.DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED);
+    assertThat(configuration.getVariableNamesCacheCapacity())
+        .isEqualTo(EngineConfiguration.DEFAULT_VARIABLE_NAMES_CACHE_CAPACITY);
+    assertThat(configuration.getVariableNamesCacheTtl())
+        .isEqualTo(EngineConfiguration.DEFAULT_VARIABLE_NAMES_CACHE_TTL);
   }
 
   @Test
@@ -105,6 +109,8 @@ final class EngineCfgTest {
         taskListeners.get(1), "test2", new String[] {"assigning", "canceling"}, "2", true);
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(2));
     assertThat(configuration.isBusinessIdUniquenessEnabled()).isTrue();
+    assertThat(configuration.getVariableNamesCacheCapacity()).isEqualTo(5000);
+    assertThat(configuration.getVariableNamesCacheTtl()).isEqualTo(Duration.ofMinutes(10));
   }
 
   void assertListenerCfg(

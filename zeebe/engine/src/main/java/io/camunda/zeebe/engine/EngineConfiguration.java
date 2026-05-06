@@ -63,6 +63,8 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
   public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
   public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
+  public static final int DEFAULT_VARIABLE_NAMES_CACHE_CAPACITY = 1000;
+  public static final Duration DEFAULT_VARIABLE_NAMES_CACHE_TTL = Duration.ofMinutes(5);
 
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
@@ -119,6 +121,9 @@ public final class EngineConfiguration {
    * </ul>
    */
   private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
+
+  private int variableNamesCacheCapacity = DEFAULT_VARIABLE_NAMES_CACHE_CAPACITY;
+  private Duration variableNamesCacheTtl = DEFAULT_VARIABLE_NAMES_CACHE_TTL;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -485,6 +490,23 @@ public final class EngineConfiguration {
   public EngineConfiguration setIncludeVariablesInJobCompletedEvent(
       final boolean includeVariablesInJobCompletedEvent) {
     this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
+  }
+
+  public int getVariableNamesCacheCapacity() {
+    return variableNamesCacheCapacity;
+  }
+
+  public EngineConfiguration setVariableNamesCacheCapacity(final int variableNamesCacheCapacity) {
+    this.variableNamesCacheCapacity = variableNamesCacheCapacity;
+    return this;
+  }
+
+  public Duration getVariableNamesCacheTtl() {
+    return variableNamesCacheTtl;
+  }
+
+  public EngineConfiguration setVariableNamesCacheTtl(final Duration variableNamesCacheTtl) {
+    this.variableNamesCacheTtl = variableNamesCacheTtl;
     return this;
   }
 }
