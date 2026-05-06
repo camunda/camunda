@@ -105,13 +105,13 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
         .extensionProperties(
             ProcessCacheUtil.getToolProperties(
-                ext, messageSubscriptionConfig.getExtensionPropertyAttributePrefixToolProperties()))
+                ext, messageSubscriptionConfig.getExtensionPropertyPrefixToolProperties()))
         .toolName(
             ProcessCacheUtil.getToolName(
-                ext, messageSubscriptionConfig.getExtensionPropertyAttributeToolName()))
+                ext, messageSubscriptionConfig.getExtensionPropertyToolName()))
         .inboundConnectorType(
             ProcessCacheUtil.getInboundConnectorType(
-                ext, messageSubscriptionConfig.getExtensionPropertyAttributeInboundConnectorType()))
+                ext, messageSubscriptionConfig.getExtensionPropertyInboundConnectorType()))
         .build();
   }
 }

@@ -988,16 +988,15 @@ public class BrokerBasedPropertiesOverride {
                       unifiedConfiguration.getCamunda().getData().getToolProperties();
                   config
                       .getMessageSubscription()
-                      .setExtensionPropertyAttributeToolName(
-                          msgSub.getExtensionPropertyAttributeToolName());
+                      .setExtensionPropertyToolName(msgSub.getExtensionPropertyToolName());
                   config
                       .getMessageSubscription()
-                      .setExtensionPropertyAttributeInboundConnectorType(
-                          msgSub.getExtensionPropertyAttributeInboundConnectorType());
+                      .setExtensionPropertyInboundConnectorType(
+                          msgSub.getExtensionPropertyInboundConnectorType());
                   config
                       .getMessageSubscription()
-                      .setExtensionPropertyAttributePrefixToolProperties(
-                          msgSub.getExtensionPropertyAttributePrefixToolProperties());
+                      .setExtensionPropertyPrefixToolProperties(
+                          msgSub.getExtensionPropertyPrefixToolProperties());
                 })
             .toArgs());
   }

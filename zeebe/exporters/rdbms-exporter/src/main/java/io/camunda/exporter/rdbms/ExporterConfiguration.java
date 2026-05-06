@@ -709,37 +709,34 @@ public class ExporterConfiguration {
   }
 
   public static class MessageSubscriptionConfiguration {
-    private String extensionPropertyAttributeToolName = "io.camunda.tool:name";
-    private String extensionPropertyAttributeInboundConnectorType = "inbound.type";
-    private String extensionPropertyAttributePrefixToolProperties = "io.camunda.tool:";
+    private String extensionPropertyToolName = "io.camunda.tool:name";
+    private String extensionPropertyInboundConnectorType = "inbound.type";
+    private String extensionPropertyPrefixToolProperties = "io.camunda.tool:";
 
-    public String getExtensionPropertyAttributeToolName() {
-      return extensionPropertyAttributeToolName;
+    public String getExtensionPropertyToolName() {
+      return extensionPropertyToolName;
     }
 
-    public void setExtensionPropertyAttributeToolName(
-        final String extensionPropertyAttributeToolName) {
-      this.extensionPropertyAttributeToolName = extensionPropertyAttributeToolName;
+    public void setExtensionPropertyToolName(final String extensionPropertyToolName) {
+      this.extensionPropertyToolName = extensionPropertyToolName;
     }
 
-    public String getExtensionPropertyAttributeInboundConnectorType() {
-      return extensionPropertyAttributeInboundConnectorType;
+    public String getExtensionPropertyInboundConnectorType() {
+      return extensionPropertyInboundConnectorType;
     }
 
-    public void setExtensionPropertyAttributeInboundConnectorType(
-        final String extensionPropertyAttributeInboundConnectorType) {
-      this.extensionPropertyAttributeInboundConnectorType =
-          extensionPropertyAttributeInboundConnectorType;
+    public void setExtensionPropertyInboundConnectorType(
+        final String extensionPropertyInboundConnectorType) {
+      this.extensionPropertyInboundConnectorType = extensionPropertyInboundConnectorType;
     }
 
-    public String getExtensionPropertyAttributePrefixToolProperties() {
-      return extensionPropertyAttributePrefixToolProperties;
+    public String getExtensionPropertyPrefixToolProperties() {
+      return extensionPropertyPrefixToolProperties;
     }
 
-    public void setExtensionPropertyAttributePrefixToolProperties(
-        final String extensionPropertyAttributePrefixToolProperties) {
-      this.extensionPropertyAttributePrefixToolProperties =
-          extensionPropertyAttributePrefixToolProperties;
+    public void setExtensionPropertyPrefixToolProperties(
+        final String extensionPropertyPrefixToolProperties) {
+      this.extensionPropertyPrefixToolProperties = extensionPropertyPrefixToolProperties;
     }
   }
 }

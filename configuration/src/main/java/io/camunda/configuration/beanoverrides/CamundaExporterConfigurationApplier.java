@@ -12,7 +12,7 @@ import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.Opensearch;
 import io.camunda.configuration.Retention;
 import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.ToolPropertiesConfig;
+import io.camunda.configuration.Tools;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.BulkConfiguration;
@@ -251,15 +251,14 @@ public final class CamundaExporterConfigurationApplier {
       final ExporterConfiguration exporterConfiguration,
       final UnifiedConfiguration unifiedConfiguration) {
 
-    final ToolPropertiesConfig source =
-        unifiedConfiguration.getCamunda().getData().getToolProperties();
+    final Tools source = unifiedConfiguration.getCamunda().getData().getToolProperties();
     final MessageSubscriptionConfiguration target = exporterConfiguration.getMessageSubscription();
 
-    target.setExtensionPropertyAttributeToolName(source.getExtensionPropertyAttributeToolName());
-    target.setExtensionPropertyAttributeInboundConnectorType(
-        source.getExtensionPropertyAttributeInboundConnectorType());
-    target.setExtensionPropertyAttributePrefixToolProperties(
-        source.getExtensionPropertyAttributePrefixToolProperties());
+    target.setExtensionPropertyToolName(source.getExtensionPropertyToolName());
+    target.setExtensionPropertyInboundConnectorType(
+        source.getExtensionPropertyInboundConnectorType());
+    target.setExtensionPropertyPrefixToolProperties(
+        source.getExtensionPropertyPrefixToolProperties());
   }
 
   private static DocumentBasedSecondaryStorageDatabase getDocumentBasedDatabase(

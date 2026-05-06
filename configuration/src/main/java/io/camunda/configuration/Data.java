@@ -41,8 +41,7 @@ public class Data {
   private Map<String, Exporter> exporters = new HashMap<>();
 
   /** This section allows configuring tool property extension mapping. */
-  @NestedConfigurationProperty
-  private ToolPropertiesConfig toolProperties = new ToolPropertiesConfig();
+  @NestedConfigurationProperty private Tools toolProperties = new Tools();
 
   public AuditLog getAuditLog() {
     return auditLog;
@@ -105,11 +104,11 @@ public class Data {
     this.exporters = exporters;
   }
 
-  public ToolPropertiesConfig getToolProperties() {
+  public Tools getToolProperties() {
     return toolProperties;
   }
 
-  public void setToolProperties(final ToolPropertiesConfig toolProperties) {
+  public void setToolProperties(final Tools toolProperties) {
     this.toolProperties = toolProperties;
   }
 }

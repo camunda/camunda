@@ -158,15 +158,13 @@ public abstract class AbstractEventHandler<R extends RecordValue>
       entity
           .setToolName(
               ProcessCacheUtil.getToolName(
-                  ext, messageSubscriptionConfig.getExtensionPropertyAttributeToolName()))
+                  ext, messageSubscriptionConfig.getExtensionPropertyToolName()))
           .setInboundConnectorType(
               ProcessCacheUtil.getInboundConnectorType(
-                  ext,
-                  messageSubscriptionConfig.getExtensionPropertyAttributeInboundConnectorType()))
+                  ext, messageSubscriptionConfig.getExtensionPropertyInboundConnectorType()))
           .setToolProperties(
               ProcessCacheUtil.getToolProperties(
-                  ext,
-                  messageSubscriptionConfig.getExtensionPropertyAttributePrefixToolProperties()));
+                  ext, messageSubscriptionConfig.getExtensionPropertyPrefixToolProperties()));
     }
   }
 }
