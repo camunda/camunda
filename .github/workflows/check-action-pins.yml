@@ -336,11 +336,8 @@ jobs:
               '- uses: foo/bar@a1b2c3d4e5f60123456789abcdef0123456789ab # v1.2.3',
               '```',
               '',
-              '### Escape hatches',
-              '- Inline ignore on a single line — `# zizmor: ignore[unpinned-uses] <reason>`',
-              '- Per-file ignore in `.github/zizmor.yml` under `rules.unpinned-uses.ignore`',
-              '',
-              'Full per-org policy in [`.github/zizmor.yml`](../blob/main/.github/zizmor.yml) — `actions/*`, `github/*`, and `camunda/*` are exempt at `ref-pin`.',
+              '### Need an exception?',
+              'If this action genuinely cannot be SHA-pinned (e.g. the vendor publishes only tags, or there is a policy reason), please contact the **monorepo-devops team on Slack**. The team owns the pinning policy and can apply the right exception centrally.',
             ].join('\n');
 
             const resolvedBody = () => [
