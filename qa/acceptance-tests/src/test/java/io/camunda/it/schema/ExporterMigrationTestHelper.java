@@ -531,7 +531,9 @@ public class ExporterMigrationTestHelper {
       throws IOException, InterruptedException {
     final List<String> allVersions = fetchAllPatchesFromPreviousMinor();
     final int len = allVersions.size();
-    return List.of(allVersions.get(len - 2)); // skip SNAPSHOT from the end of the list
+    final String latestVersion = allVersions.get(len - 1);
+    final int latestReleaseIndex = latestVersion.endsWith("-SNAPSHOT") ? len - 2 : len - 1;
+    return List.of(allVersions.get(latestReleaseIndex));
   }
 
   public static List<String> fetchAllPatchesFromPreviousMinor()
