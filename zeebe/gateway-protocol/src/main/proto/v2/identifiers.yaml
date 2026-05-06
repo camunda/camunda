@@ -39,6 +39,14 @@ components:
       format: GlobalListenerId
       x-semantic-type: GlobalListenerId
       x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      # `GlobalListenerRequestValidator` routes `id` through
+      # `IdentifierValidator.validateId` on create/get/update/delete.
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
+      pattern: ^[a-zA-Z0-9_~@.+\-]+$
       example: GlobalListener_1
 
     TenantId:

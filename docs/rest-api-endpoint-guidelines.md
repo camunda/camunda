@@ -1008,7 +1008,7 @@ TenantId:
 
 - `semantic-establishes-shape` (severity `error`) — `x-semantic-establishes` matches the documented schema (`kind`, optional `shape`, `identifiedBy[]` with `in` / `name` / `semanticType` / optional `acceptsExternal`).
 - `semantic-requires-shape` (severity `error`) — `x-semantic-requires` matches the documented schema (`kind`, `bind` map of `from` / `name`).
-- `verify-semantic-kinds-registered` (severity `error`, custom JS function) — every referenced `kind:` appears in `semantic-kinds.json`; every required kind is established somewhere in the spec; every `identifiedBy` / `bind` member references a parameter or top-level requestBody property that exists; no operation directly establishes/requires an `external-entity` kind; per-tuple `acceptsExternal: true` skips the producer-existence cross-reference for that tuple while still running single-owner resolution.
+- `verify-semantic-kinds-registered` (severity `error`, custom JS function) — every referenced `kind:` appears in `semantic-kinds.json`; every required kind is established somewhere in the spec; an operation's `x-semantic-establishes.shape` (defaulting to `entity` when omitted) must match the kind's registered shape, so e.g. forgetting `shape: edge` on a membership operation is a lint error rather than a style issue; every `identifiedBy` / `bind` member references a parameter or top-level requestBody property that exists; no operation directly establishes/requires an `external-entity` kind; per-tuple `acceptsExternal: true` skips the producer-existence cross-reference for that tuple while still running single-owner resolution.
 
 `x-semantic-provider` and `x-semantic-client-minted` are **not** lint-enforced — they're consumer-only signals. Add them by review.
 
