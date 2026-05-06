@@ -67,7 +67,7 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   public void insert(final KeyType key, final ValueType value) {
     context.runInTransaction(
         () -> {
-          if (existsInternal(key)) {
+          if (consistencyChecksSettings.enablePreconditions() && existsInternal(key)) {
             throw new ZeebeDbInconsistentException(
                 "Key " + key + " in ColumnFamily " + columnFamily + " already exists");
           }
@@ -81,7 +81,7 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   public void update(final KeyType key, final ValueType value) {
     context.runInTransaction(
         () -> {
-          if (!existsInternal(key)) {
+          if (consistencyChecksSettings.enablePreconditions() && !existsInternal(key)) {
             throw new ZeebeDbInconsistentException(
                 "Key " + key + " in ColumnFamily " + columnFamily + " does not exist");
           }
