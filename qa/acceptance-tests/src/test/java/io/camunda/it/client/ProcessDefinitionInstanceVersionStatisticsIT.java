@@ -25,6 +25,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
+import io.camunda.client.api.statistics.sort.ProcessDefinitionInstanceVersionStatisticsSort;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -34,9 +35,14 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.InitializationConfiguration;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
 @CompatibilityTest(enableAuthorization = true, enableMultiTenancy = true)
@@ -615,26 +621,15 @@ public class ProcessDefinitionInstanceVersionStatisticsIT {
             .send()
             .join();
 
-    // then — extract version statistics in returned order
-    final var items = result.items();
-
-    // They should appear in this order:
-    // v2 → 3 incidents
-    // v3 → 2 incidents
-    // v1 → 1 incidents
-    assertThat(items).hasSize(3);
-
-    assertThat(items.get(0).getProcessDefinitionVersion())
-        .isEqualTo(v2.getProcesses().getFirst().getVersion());
-    assertThat(items.get(0).getActiveInstancesWithIncidentCount()).isEqualTo(3);
-
-    assertThat(items.get(1).getProcessDefinitionVersion())
-        .isEqualTo(v3.getProcesses().getFirst().getVersion());
-    assertThat(items.get(1).getActiveInstancesWithIncidentCount()).isEqualTo(2);
-
-    assertThat(items.get(2).getProcessDefinitionVersion())
-        .isEqualTo(v1.getProcesses().getFirst().getVersion());
-    assertThat(items.get(2).getActiveInstancesWithIncidentCount()).isEqualTo(1);
+    // then — v2 (3 incidents) first, v3 (2 incidents) second, v1 (1 incident) last
+    assertThat(result.items())
+        .extracting(
+            ProcessDefinitionInstanceVersionStatistics::getProcessDefinitionVersion,
+            ProcessDefinitionInstanceVersionStatistics::getActiveInstancesWithIncidentCount)
+        .containsExactly(
+            tuple(v2.getProcesses().getFirst().getVersion(), 3L),
+            tuple(v3.getProcesses().getFirst().getVersion(), 2L),
+            tuple(v1.getProcesses().getFirst().getVersion(), 1L));
 
     assertThat(result.page().totalItems()).isEqualTo(3);
     assertThat(result.page().hasMoreTotalItems()).isFalse();
@@ -676,13 +671,12 @@ public class ProcessDefinitionInstanceVersionStatisticsIT {
             .join();
 
     // then — v3 (version 3) first, v1 (version 1) last
-    assertThat(result.items()).hasSize(3);
-    assertThat(result.items().get(0).getProcessDefinitionVersion())
-        .isEqualTo(v3.getProcesses().getFirst().getVersion());
-    assertThat(result.items().get(1).getProcessDefinitionVersion())
-        .isEqualTo(v2.getProcesses().getFirst().getVersion());
-    assertThat(result.items().get(2).getProcessDefinitionVersion())
-        .isEqualTo(v1.getProcesses().getFirst().getVersion());
+    assertThat(result.items())
+        .extracting(ProcessDefinitionInstanceVersionStatistics::getProcessDefinitionVersion)
+        .containsExactly(
+            v3.getProcesses().getFirst().getVersion(),
+            v2.getProcesses().getFirst().getVersion(),
+            v1.getProcesses().getFirst().getVersion());
 
     assertThat(result.page().totalItems()).isEqualTo(3);
     assertThat(result.page().hasMoreTotalItems()).isFalse();
@@ -724,20 +718,38 @@ public class ProcessDefinitionInstanceVersionStatisticsIT {
             .join();
 
     // then — keys are monotonically increasing per deployment, so v1Key < v2Key < v3Key
-    assertThat(result.items()).hasSize(3);
-    assertThat(result.items().get(0).getProcessDefinitionKey()).isEqualTo(v1Key);
-    assertThat(result.items().get(1).getProcessDefinitionKey()).isEqualTo(v2Key);
-    assertThat(result.items().get(2).getProcessDefinitionKey()).isEqualTo(v3Key);
+    assertThat(result.items())
+        .extracting(ProcessDefinitionInstanceVersionStatistics::getProcessDefinitionKey)
+        .containsExactly(v1Key, v2Key, v3Key);
 
     assertThat(result.page().totalItems()).isEqualTo(3);
     assertThat(result.page().hasMoreTotalItems()).isFalse();
   }
 
-  @Test
-  void shouldSortByProcessDefinitionNameAsc() {
-    // given — deploy three versions of the same processDefinitionId with distinct names,
-    // deployed in reverse alphabetical order so that ASC sort changes the result order
-    final var processDefinitionId = "sort_by_name_asc_proc";
+  private static Stream<Arguments> nameSortDirections() {
+    return Stream.of(
+        Arguments.of(
+            "ASC",
+            (Consumer<ProcessDefinitionInstanceVersionStatisticsSort>)
+                s -> s.processDefinitionName().asc(),
+            List.of("Aardvark Sort Process", "Badger Sort Process", "Capybara Sort Process")),
+        Arguments.of(
+            "DESC",
+            (Consumer<ProcessDefinitionInstanceVersionStatisticsSort>)
+                s -> s.processDefinitionName().desc(),
+            List.of("Capybara Sort Process", "Badger Sort Process", "Aardvark Sort Process")));
+  }
+
+  @ParameterizedTest(name = "processDefinitionName sort {0}")
+  @MethodSource("nameSortDirections")
+  void shouldSortByProcessDefinitionName(
+      final String direction,
+      final Consumer<ProcessDefinitionInstanceVersionStatisticsSort> sortFn,
+      final List<String> expectedNames) {
+    // given — three versions deployed in reverse alphabetical name order.
+    // For ASC this means deployment order is opposite to expected sort order,
+    // which would expose any bug that sorts within the page rather than globally.
+    final var processDefinitionId = "sort_by_name_" + direction.toLowerCase() + "_proc";
 
     final var v1 =
         deployServiceTaskProcess(camundaClient, processDefinitionId, "Capybara Sort Process", "3");
@@ -760,63 +772,18 @@ public class ProcessDefinitionInstanceVersionStatisticsIT {
         f -> f.processDefinitionId(processDefinitionId).state(ProcessInstanceState.ACTIVE),
         3);
 
-    // when — request sorted ASC by processDefinitionName
+    // when
     final var result =
         camundaClient
             .newProcessDefinitionInstanceVersionStatisticsRequest(processDefinitionId)
-            .sort(s -> s.processDefinitionName().asc())
+            .sort(sortFn)
             .send()
             .join();
 
-    // then — alphabetical order: Aardvark (v3), Badger (v2), Capybara (v1)
-    assertThat(result.items()).hasSize(3);
-    assertThat(result.items().get(0).getProcessDefinitionName()).isEqualTo("Aardvark Sort Process");
-    assertThat(result.items().get(1).getProcessDefinitionName()).isEqualTo("Badger Sort Process");
-    assertThat(result.items().get(2).getProcessDefinitionName()).isEqualTo("Capybara Sort Process");
-
-    assertThat(result.page().totalItems()).isEqualTo(3);
-    assertThat(result.page().hasMoreTotalItems()).isFalse();
-  }
-
-  @Test
-  void shouldSortByProcessDefinitionNameDesc() {
-    // given — deploy three versions in alphabetical order so that DESC sort reverses them
-    final var processDefinitionId = "sort_by_name_desc_proc";
-
-    final var v1 =
-        deployServiceTaskProcess(camundaClient, processDefinitionId, "Aardvark Desc Process", "3");
-    final var v1Key = v1.getProcesses().getFirst().getProcessDefinitionKey();
-
-    final var v2 =
-        deployServiceTaskProcess(camundaClient, processDefinitionId, "Badger Desc Process", "3");
-    final var v2Key = v2.getProcesses().getFirst().getProcessDefinitionKey();
-
-    final var v3 =
-        deployServiceTaskProcess(camundaClient, processDefinitionId, "Capybara Desc Process", "3");
-    final var v3Key = v3.getProcesses().getFirst().getProcessDefinitionKey();
-
-    startProcessInstance(camundaClient, v1Key);
-    startProcessInstance(camundaClient, v2Key);
-    startProcessInstance(camundaClient, v3Key);
-
-    waitForProcessInstances(
-        camundaClient,
-        f -> f.processDefinitionId(processDefinitionId).state(ProcessInstanceState.ACTIVE),
-        3);
-
-    // when — request sorted DESC by processDefinitionName
-    final var result =
-        camundaClient
-            .newProcessDefinitionInstanceVersionStatisticsRequest(processDefinitionId)
-            .sort(s -> s.processDefinitionName().desc())
-            .send()
-            .join();
-
-    // then — reverse alphabetical order: Capybara (v3), Badger (v2), Aardvark (v1)
-    assertThat(result.items()).hasSize(3);
-    assertThat(result.items().get(0).getProcessDefinitionName()).isEqualTo("Capybara Desc Process");
-    assertThat(result.items().get(1).getProcessDefinitionName()).isEqualTo("Badger Desc Process");
-    assertThat(result.items().get(2).getProcessDefinitionName()).isEqualTo("Aardvark Desc Process");
+    // then
+    assertThat(result.items())
+        .extracting(ProcessDefinitionInstanceVersionStatistics::getProcessDefinitionName)
+        .containsExactlyElementsOf(expectedNames);
 
     assertThat(result.page().totalItems()).isEqualTo(3);
     assertThat(result.page().hasMoreTotalItems()).isFalse();
