@@ -542,6 +542,7 @@ org-springdoc-springdoc-openapi-starter-webmvc-ui = { module = "org.springdoc:sp
 org-springframework-ai-spring-ai-starter-mcp-server-webmvc = { module = "org.springframework.ai:spring-ai-starter-mcp-server-webmvc", version.ref = "org-springframework-ai-spring-ai-starter-mcp-server-webmvc" }
 org-springframework-boot-spring-boot = { module = "org.springframework.boot:spring-boot", version.ref = "org-springframework-boot-spring-boot" }
 org-springframework-boot-spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "org-springframework-boot-spring-boot" }
+org-springframework-boot-spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "org-springframework-boot-spring-boot" }
 org-springframework-boot-spring-boot-actuator = { module = "org.springframework.boot:spring-boot-actuator", version.ref = "org-springframework-boot-spring-boot-actuator" }
 org-springframework-boot-spring-boot-actuator-autoconfigure = { module = "org.springframework.boot:spring-boot-actuator-autoconfigure", version.ref = "org-springframework-boot-spring-boot-actuator-autoconfigure" }
 org-springframework-boot-spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "org-springframework-boot-spring-boot-autoconfigure" }

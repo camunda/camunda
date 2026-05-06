@@ -6,8 +6,17 @@ plugins {
     id("buildlogic.java-conventions")
 }
 
+sourceSets {
+    main {
+        java {
+            srcDir("src/build")
+        }
+    }
+}
+
 dependencies {
     api(libs.org.springframework.boot.spring.boot)
+    annotationProcessor(libs.org.springframework.boot.spring.boot.configuration.processor)
     api(libs.org.springframework.spring.beans)
     api(libs.org.springframework.spring.context)
     implementation(project(":tasklist-common"))

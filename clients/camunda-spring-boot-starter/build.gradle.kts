@@ -30,6 +30,7 @@ val generateJobWorkerPermutations by tasks.registering(JavaExec::class) {
 
 dependencies {
     implementation(libs.org.slf4j.slf4j.api)
+    annotationProcessor(libs.org.springframework.boot.spring.boot.configuration.processor)
     api(project(":camunda-client-java"))
     api(libs.org.springframework.spring.context)
     api(libs.org.springframework.boot.spring.boot)
