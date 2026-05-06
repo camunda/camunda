@@ -1,0 +1,78 @@
+# SkeletonText — Carbon → shadcn migration guide
+
+## Same primitive as SkeletonIcon
+
+Carbon's `SkeletonText` and `SkeletonIcon` are siblings in the same family — `SkeletonText` is sized as a horizontal line, `SkeletonIcon` as a square. Both map to **shadcn's single generic `Skeleton`** primitive.
+
+For full background on Carbon's per-content-type skeleton family vs. shadcn's one-size-fits-all primitive, see the `skeleton-icon/migration_guide.md`. This guide focuses on the text-specific migration.
+
+## Mapping
+
+| Carbon `SkeletonText` prop | shadcn |
+|---|---|
+| default (single line) | `<Skeleton className="h-4 w-full" />` (or fixed width) |
+| `width="180px"` | `<Skeleton className="h-4 w-[180px]" />` |
+| `paragraph` + `lineCount={n}` | render `n` `<Skeleton>` divs in a vertical flex stack; vary widths for realism |
+| `heading` | taller Skeleton: `<Skeleton className="h-7 w-2/3" />` |
+| `lineCount` (without `paragraph`) | not directly supported; use `paragraph` semantics |
+| `className` | passes through; Tailwind on `<Skeleton>` |
+
+## Composition recipes
+
+**Single line** (default Carbon):
+```tsx
+<Skeleton className="h-4 w-full" />
+```
+
+**Multi-line paragraph** (matches Carbon `<SkeletonText paragraph lineCount={4} />`):
+```tsx
+<div className="flex flex-col gap-2">
+  <Skeleton className="h-4 w-full" />
+  <Skeleton className="h-4 w-11/12" />
+  <Skeleton className="h-4 w-full" />
+  <Skeleton className="h-4 w-3/4" />
+</div>
+```
+The varying widths (`w-full`, `w-11/12`, `w-3/4`) avoid the artificial-looking "perfect rectangle" of equal-width lines.
+
+**Heading** (matches Carbon `<SkeletonText heading />`):
+```tsx
+<Skeleton className="h-7 w-2/3" />
+```
+
+**Common "card row" pattern** (icon + label):
+```tsx
+<div className="flex items-center gap-3">
+  <Skeleton className="size-4" />
+  <Skeleton className="h-4 w-[180px]" />
+</div>
+```
+
+**List of rows**:
+```tsx
+<div className="flex flex-col gap-3">
+  {Array.from({length: 5}).map((_, i) => (
+    <div key={i} className="flex items-center gap-3">
+      <Skeleton className="size-4" />
+      <Skeleton className="h-4 flex-1" />
+    </div>
+  ))}
+</div>
+```
+
+## Carbon features missing in shadcn
+
+- **`paragraph` + `lineCount` props** — Carbon renders the multi-line layout for you. shadcn: render multiple Skeletons yourself.
+- **`heading` prop** — Carbon's taller line variant. shadcn: taller `h-N` class.
+- **Pre-baked variation in line widths** — Carbon's `paragraph` mode renders the last line shorter. shadcn: vary `w-N` classes manually.
+- **Per-component skeletons** (`<DataTableSkeleton>`, `<DropdownSkeleton>`, `<ButtonSkeleton>`, etc.) — Carbon ships dozens. shadcn: assemble them by composing `<Skeleton>` divs to match the shape of the loading content.
+
+## Migration checklist
+
+1. Replace `<SkeletonText />` with `<Skeleton className="h-4 w-full" />` (single line) or a fixed width.
+2. Replace `<SkeletonText paragraph lineCount={n} />` with a flex column of `n` Skeletons; vary widths for realism (e.g. `w-full`, `w-11/12`, `w-full`, `w-3/4`).
+3. Replace `<SkeletonText heading />` with `<Skeleton className="h-7 w-2/3" />` (or taller height to match your heading scale).
+4. For `width="200px"`: `<Skeleton className="h-4 w-[200px]" />` (arbitrary value) or use a Tailwind size token (`w-48` = 192px).
+5. For Carbon's automatic last-line-shorter behaviour in paragraphs: hard-code `w-3/4` or `w-2/3` on the last Skeleton in the stack.
+6. If you used a per-component `<XSkeleton>` (e.g., `<DataTableSkeleton>`, `<DropdownSkeleton>`): there's no shadcn equivalent — assemble the skeleton from `<Skeleton>` rectangles to match the shape of the rendered component.
+7. For announcing loading state to screen readers: wrap the skeleton group in `<div role="status" aria-busy="true" aria-label="Loading">`.

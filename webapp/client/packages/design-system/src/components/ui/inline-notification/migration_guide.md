@@ -1,0 +1,74 @@
+# InlineNotification — Carbon → shadcn migration guide
+
+## Where it sits among the notification family
+
+Carbon ships three closely-related notification components:
+- **`Callout`** — permanent, non-dismissible, no close button (covered separately).
+- **`InlineNotification`** — dismissible by default, has an X close button. **This guide.**
+- **`ActionableNotification`** — like `InlineNotification` but with a CTA button (covered separately).
+
+shadcn ships **one** primitive — `Alert` — and you compose dismissibility, status icons, and the CTA button yourself. The canonical Alert lives at `alert/alert.shadcn.tsx`; this wrapper re-exports it.
+
+## Structural differences
+
+Carbon's `InlineNotification` is **monolithic**: pass `kind`, `title`, `subtitle`, `hideCloseButton`, `onCloseButtonClick`, and the component renders the icon + status colour + close button + state.
+
+shadcn's `Alert` is **decomposed**: assemble the icon, title, description, and (optionally) close button yourself. Track open/closed state in your component.
+
+| Concept | Carbon | shadcn |
+|---|---|---|
+| Wrapper | `<InlineNotification kind="error" />` | `<Alert variant="destructive">…</Alert>` |
+| Icon | implicit (chosen from `kind`) | render manually as a child |
+| Title | `title` prop | `<AlertTitle>` |
+| Subtitle / body | `subtitle` prop | `<AlertDescription>` |
+| Close button | built-in (X icon, top-right) | render `<Button variant="ghost" size="icon">` with X icon manually |
+| Open state | self-managed (component unmounts on close) | track in your component (`useState`) |
+| Status / kind | `error` / `info` / `info-square` / `success` / `warning` / `warning-alt` (6 kinds) | `default` / `destructive` (2 variants) — restyle for other kinds via `className` |
+| Status icon a11y | `statusIconDescription` | render the icon as decorative; title is announced by `role="alert"` |
+| Hide close button | `hideCloseButton` | just don't render the close button |
+| Low contrast | `lowContrast` | restyle via `className` |
+| Layout (icon-content-action) | fixed | you compose with flex |
+
+## Carbon features missing in shadcn `Alert`
+
+- **6 status variants with built-in icons** — Carbon ships `error`, `info`, `info-square`, `success`, `warning`, `warning-alt`, each with its own colour palette and Lucide-equivalent icon. shadcn ships only `default` + `destructive`. To match Carbon:
+  - `kind="error"` → `<Alert variant="destructive">` + `<XCircle />` icon
+  - `kind="info"` → `<Alert>` + `<Info />` icon (default look is fine)
+  - `kind="success"` → `<Alert className="border-green-500/50 text-green-700 [&>svg]:text-green-600">` + `<CheckCircle2 />`
+  - `kind="warning"` → `<Alert className="border-yellow-500/50 text-yellow-700 [&>svg]:text-yellow-600">` + `<AlertTriangle />`
+  - For multiple-callsite use, extend `alertVariants` in a project-local `alert.tsx` with `success` and `warning` entries.
+- **Built-in close button** — Carbon manages dismiss state, the X icon, and `onCloseButtonClick`. shadcn requires you to: track `useState`, render a `<Button variant="ghost" size="icon">` with `<X />` icon, wire `onClick={() => setOpen(false)}`.
+- **`hideCloseButton`** — Carbon prop to render the notification without the X. shadcn: just don't render it; opt-in.
+- **`statusIconDescription`** (a11y) — Carbon's SR label for the status icon. shadcn: rely on `role="alert"` announcing the title; for explicit icon SR text add `<span className="sr-only">…</span>`.
+- **`role="status"` for non-error kinds** — Carbon switches to `role="status"` for `info`/`success`/`warning` (less assertive announcement). shadcn always uses `role="alert"`.
+- **`lowContrast`** — Carbon's quieter visual treatment. shadcn requires `className` overrides.
+- **Skeleton state** — Carbon ships `<NotificationSkeleton>`. shadcn has none; use the generic `skeleton` primitive.
+- **`timeout`** — Carbon's auto-dismiss after N ms. shadcn: manage with `useEffect` + `setTimeout`.
+
+## shadcn features missing in Carbon
+
+- **Tailwind composability** — extend `alertVariants` to add new kinds in a few lines, or restyle ad-hoc per call-site. Carbon's CSS is fixed.
+- **Universal primitive** — same `Alert` powers `Callout`, `InlineNotification`, and `ActionableNotification` (inline). One thing to learn.
+- **Decomposed structure** — render icon + title + description + close + custom action button in any layout you want. Carbon's slot order is fixed.
+
+## Behavioural differences
+
+- **Default element** — Carbon: `<div role="alert">` for errors, `<div role="status">` for non-errors. shadcn: always `<div role="alert">`.
+- **Default border** — Carbon: solid border in the kind colour. shadcn: 1px theme border (override per kind).
+- **Animation** — Carbon: built-in fade/slide on mount + dismiss. shadcn: none — add Tailwind transitions via `data-[state]:animate-in` if needed.
+- **Dismiss focus management** — Carbon focuses a fallback element when notification closes. shadcn: you own this (typically not an issue for inline notifications).
+
+## Migration checklist
+
+1. Replace `<InlineNotification>` with `<Alert>` + flex layout (icon, title/description, close button).
+2. Map `kind`:
+   - `error` → `<Alert variant="destructive">` + `<XCircle />`
+   - `info` / `info-square` → `<Alert>` + `<Info />`
+   - `success` → `<Alert>` + custom green classes + `<CheckCircle2 />`
+   - `warning` / `warning-alt` → `<Alert>` + custom amber classes + `<AlertTriangle />`
+3. Move `title` to `<AlertTitle>`, `subtitle` to `<AlertDescription>`.
+4. For dismissibility: track `const [open, setOpen] = useState(true)`, render `<Button variant="ghost" size="icon" onClick={() => setOpen(false)}><X /></Button>` inside the Alert. Return `null` when `!open`.
+5. For `hideCloseButton`: just don't render the close button — no prop needed.
+6. For `lowContrast`: add `className="border-transparent bg-muted"` to mute the visual weight.
+7. For `timeout`: add `useEffect(() => { const t = setTimeout(() => setOpen(false), timeout); return () => clearTimeout(t); }, [timeout])`.
+8. If multiple callsites: extract a tiny app-local `<DismissibleAlert>` helper that takes `kind`/`title`/`subtitle` and handles open state internally.

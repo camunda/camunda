@@ -1,0 +1,58 @@
+# Popover — Carbon → shadcn migration guide
+
+## Structural differences
+
+Carbon's `Popover` is a **wrapper component** that takes the trigger and content as ordered children: the first child is the trigger, the last child is `<PopoverContent>`. Open state is controlled via the `open` prop on the wrapper.
+
+shadcn's `Popover` is a **Radix-based slot composition**: explicit `<PopoverTrigger>` (typically `asChild`) and `<PopoverContent>` (Portal'd). Open state is owned by Radix internally; supply `open`/`onOpenChange` for controlled mode or `defaultOpen` for uncontrolled.
+
+| Concept | Carbon | shadcn |
+|---|---|---|
+| Wrapper | `<Popover open>{trigger}{content}</Popover>` | `<Popover><PopoverTrigger>{trigger}</PopoverTrigger><PopoverContent>{…}</PopoverContent></Popover>` |
+| Trigger | first child (any element) | `<PopoverTrigger asChild>{element}</PopoverTrigger>` |
+| Content | `<PopoverContent>` as last child | `<PopoverContent>` (rendered via Radix Portal) |
+| Position | `align` prop (`top`, `top-start`, `top-end`, `right`, `right-start`, …) | `side` prop (`top`/`right`/`bottom`/`left`) + `align` (`start`/`center`/`end`) |
+| Open state | `open` prop on wrapper | `open` + `onOpenChange` (controlled) or `defaultOpen` (uncontrolled) |
+| Caret / arrow | `caret` boolean (shows triangle) | not modeled — render `<PopoverPrimitive.Arrow>` from Radix manually |
+| High contrast | `highContrast` prop (dark popover) | none — set `bg-foreground text-background` via `className` |
+| Dropshadow | `dropShadow` prop (toggle) | always on (`shadow-md`); strip via `className="shadow-none"` |
+| Auto-align | `autoAlign` (Carbon's collision detection) | always on via Radix's `Positioner` (no opt-out) |
+| Tab tip variant | `isTabTip` (renders as a tab) | not modeled — would require custom composition |
+
+## Carbon features missing in shadcn
+
+- **`caret` prop** — Carbon renders a CSS-drawn caret/arrow pointing to the trigger. shadcn requires you to import `@radix-ui/react-popover`'s `Arrow` and place it inside `<PopoverContent>`.
+- **`highContrast`** — Carbon's "dark popover on light background" treatment. shadcn has no toggle; override classes (`bg-foreground text-background border-foreground`).
+- **`isTabTip`** — Carbon's tab-style popover variant (used for inline help, looks like a tab attached to the trigger). No shadcn primitive; would need a custom shape.
+- **`dropShadow={false}`** — Carbon offers a flat (no-shadow) variant. shadcn always carries `shadow-md`; remove with `className="shadow-none"`.
+- **Compound `align` values** — Carbon's `top-start`, `top-end`, `right-start`, etc. are a single token. shadcn splits into `side` + `align` (which is more flexible but verbose to translate).
+- **`autoAlign={false}`** — Carbon lets you disable collision-aware repositioning. shadcn's Radix backbone always repositions; opt out by setting `avoidCollisions={false}` on `<PopoverContent>` (Radix prop, accepted via spread).
+
+## shadcn features missing in Carbon
+
+- **`asChild` slot** — `<PopoverTrigger asChild><RouterLink>…</RouterLink></PopoverTrigger>` lets you keep your trigger as any element without losing Radix's open/close wiring. Carbon expects raw children.
+- **Explicit `Portal` rendering** — shadcn's content always renders into a portal at the end of `<body>`. Avoids `overflow:hidden` parent clipping by default. Carbon's popover renders inline.
+- **`onOpenAutoFocus` / `onCloseAutoFocus`** — Radix exposes lifecycle hooks for focus management. Useful for forms; Carbon has none.
+- **`onEscapeKeyDown` / `onPointerDownOutside`** — fine-grained dismissal control (e.g., prevent closing on outside click for long forms). Carbon collapses these into a single `onClose`.
+- **`align` granularity** — `start` / `center` / `end` independent of `side`. Lets you align a `bottom` popover to either edge of the trigger.
+- **`sideOffset` / `alignOffset`** — pixel-perfect spacing. Carbon offers no offset prop.
+- **Animation primitives** — entry/exit animations driven by `data-state` attributes; tweak via Tailwind's `data-[state=open]:animate-in` etc. Carbon's CSS transitions are baked in.
+
+## Behavioural differences
+
+- **Open semantics** — Carbon: fully controlled (`open` is required). shadcn: uncontrolled by default; pass `open` only if you need to drive it from React state.
+- **Default content width** — Carbon: hugs the content. shadcn: `w-72` (288px) by default. Override with `className="w-auto"` for content-hugging.
+- **Dismissal** — Both close on outside click and Escape. shadcn additionally respects `onPointerDownOutside` for pointer-vs-keyboard differentiation.
+- **Focus trap** — Both trap focus inside the open content for keyboard users (Radix) and Carbon's Floating-UI-based engine.
+
+## Migration checklist
+
+1. Wrap children: replace `<Popover open>{trigger}{content}</Popover>` with `<Popover><PopoverTrigger asChild>{trigger}</PopoverTrigger><PopoverContent>…</PopoverContent></Popover>`.
+2. Move open-state from `open` on the wrapper to `open`/`onOpenChange` (controlled) or `defaultOpen` (uncontrolled).
+3. Translate `align`: `top` → `side="top" align="center"`, `top-start` → `side="top" align="start"`, etc.
+4. Replace `<PopoverContent>` Carbon child markers — same name, but in shadcn it's the actual Radix content, not a marker. Check that any layout you put inside still makes sense without Carbon's default padding.
+5. If you used `caret`: import `<PopoverPrimitive.Arrow>` from `@radix-ui/react-popover` and render it inside `<PopoverContent>` (style with `fill-popover`).
+6. If you used `highContrast`: override classes — `bg-foreground text-background border-foreground`.
+7. If you used `isTabTip`: build a custom compound (a button with attached tab-shaped panel); no primitive exists.
+8. If you used `dropShadow={false}`: add `className="shadow-none"`.
+9. If trigger is not a real button (e.g., a `div`): wrap it in `<PopoverTrigger asChild>` so Radix can attach handlers.

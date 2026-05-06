@@ -1,0 +1,61 @@
+# Button — Carbon → shadcn migration guide
+
+## Variants
+
+Carbon's `kind` and shadcn's `variant` overlap conceptually but the value sets diverge.
+
+| Carbon `kind` | Closest shadcn `variant` | Notes |
+|---|---|---|
+| `primary` | `default` | Same role (filled, brand colour). |
+| `secondary` | `secondary` | Same name; different palette token (Carbon uses a darker grey, shadcn uses the secondary token). |
+| `tertiary` | `outline` | Carbon's tertiary = transparent fill + primary border; shadcn's outline is more neutral (input-coloured border). |
+| `ghost` | `ghost` | Both are transparent backgrounds, hover-only fill. |
+| `danger` | `destructive` | Same role; renamed. |
+| `danger--tertiary` | — | **Missing** in shadcn. Compose by hand: `variant="outline"` + danger-coloured tailwind classes, or extend `buttonVariants`. |
+| `danger--ghost` | — | **Missing** in shadcn. Compose with `variant="ghost"` + danger colours. |
+| — | `link` | shadcn-only — renders as a text link with underline-on-hover. Carbon uses the `Link` component for this. |
+
+## Sizes
+
+| Carbon `size` | shadcn `size` | Notes |
+|---|---|---|
+| `sm` (32px) | `sm` (36px) | Close but Carbon is denser. |
+| `md` (40px) | `default` (40px) | Same height. |
+| `lg` (48px) | `lg` (44px) | Carbon is taller. |
+| `xl` (64px) | — | **Missing** in shadcn — add a custom size in `buttonVariants`. |
+| `2xl` (80px, expressive) | — | **Missing** — same workaround. |
+| — | `icon` (40×40 square) | shadcn-only — Carbon expresses this with `hasIconOnly`. |
+
+## Carbon features missing in shadcn
+
+- **`hasIconOnly` + `iconDescription`** — Carbon collapses padding to a square and renders a tooltip with the description. shadcn requires manual composition: use `size="icon"` and wrap with `<Tooltip>` for the label. `aria-label` must be set yourself.
+- **`renderIcon` prop** — Carbon accepts a component to render the icon inline. shadcn expects icons as children (`<Button><Icon />Label</Button>`).
+- **`isExpressive`** — Carbon's expressive type scale (16px). No shadcn equivalent — extend variants with a custom class.
+- **`isSelected`** — Carbon's pressed/toggled state for ghost icon buttons. shadcn has no equivalent; use `<Toggle>` from shadcn instead, or add `data-selected` styling manually.
+- **Tooltip auto-wiring** (`tooltipPosition`, `tooltipAlignment`, `tooltipDropShadow`, `tooltipHighContrast`) — N/A in shadcn; compose with `<Tooltip>` explicitly.
+- **`href` / link rendering** — Carbon's `Button` morphs into an `<a>` when `href` is passed. shadcn's `Button` is always a `<button>` unless you use `asChild` and pass a custom anchor.
+- **Skeleton state** — Carbon ships `ButtonSkeleton`; shadcn has no built-in skeleton (use the generic `skeleton` primitive).
+- **`dangerDescription`** — Carbon adds an SR-only description for danger buttons. Not in shadcn — add `<span className="sr-only">…</span>` manually.
+
+## shadcn features missing in Carbon
+
+- **`asChild` slot pattern** — `<Button asChild><RouterLink to="…">…</RouterLink></Button>` lets you compose with router libraries without losing styles. Carbon has no slot equivalent.
+- **`link` variant** — A button styled as a text link. In Carbon you would use the separate `Link` component instead.
+- **Tailwind composability** — every prop accepts a `className` that merges via `cn()`, making one-off tweaks trivial. Carbon discourages overriding styles.
+
+## Behavioural differences
+
+- **Default type** — Carbon's `Button` defaults `type="button"` (preventing accidental form submits). shadcn's `Button` does **not** set a default `type`, so inside a `<form>` it acts as `type="submit"`. Add `type="button"` explicitly when you don't want submit behaviour.
+- **Disabled styling** — Carbon greys background + border; shadcn drops opacity to 50% via `disabled:opacity-50`.
+- **Focus ring** — Carbon: inset double border. shadcn: outset 2px ring with offset.
+- **Border radius** — Carbon: 0 (square). shadcn: 6px (`rounded-md`).
+- **Font weight** — Carbon: 400 (normal). shadcn: 500 (`font-medium`).
+
+## Migration checklist
+
+1. Swap import path; update `kind` → `variant` and remap values per the table above.
+2. Add `type="button"` to any non-submit buttons inside forms.
+3. For icon-only buttons: switch `hasIconOnly` to `size="icon"`, set `aria-label`, and wrap in `<Tooltip>` if a visible description is needed.
+4. Replace `renderIcon={Icon}` with `<Icon />` as a child.
+5. Replace `href` usage with `asChild` + an anchor or router link.
+6. Add custom `xl`/`2xl`/`danger--tertiary`/`danger--ghost` variants to `buttonVariants` only if those Carbon variants are actually used.

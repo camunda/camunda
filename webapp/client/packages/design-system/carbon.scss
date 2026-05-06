@@ -5,12 +5,47 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-
-@use '@carbon/react' as * with (
-  $font-path: '@ibm/plex'
-);
 @use '@carbon/react/scss/themes';
 @use '@carbon/react/scss/theme';
+
+@use '@carbon/react/scss/layer';
+@use '@carbon/react/scss/grid';
+
+
+@use '@carbon/react/scss/components/breadcrumb';
+@use '@carbon/react/scss/components/button';
+@use '@carbon/react/scss/components/checkbox';
+@use '@carbon/react/scss/components/code-snippet';
+@use '@carbon/react/scss/components/combo-box';
+@use '@carbon/react/scss/components/contained-list';
+@use '@carbon/react/scss/components/data-table';
+@use '@carbon/react/scss/components/date-picker';
+@use '@carbon/react/scss/components/dropdown';
+@use '@carbon/react/scss/components/inline-loading';
+@use '@carbon/react/scss/components/link';
+@use '@carbon/react/scss/components/list';
+@use '@carbon/react/scss/components/loading';
+@use '@carbon/react/scss/components/menu';
+@use '@carbon/styles/scss/components/menu-button';
+@use '@carbon/react/scss/components/modal';
+@use '@carbon/react/scss/components/multiselect';
+@use '@carbon/react/scss/components/notification';
+@use '@carbon/react/scss/components/overflow-menu';
+@use '@carbon/react/scss/components/pagination';
+@use '@carbon/react/scss/components/popover';
+@use '@carbon/react/scss/components/select';
+@use '@carbon/react/scss/components/skeleton-styles';
+@use '@carbon/react/scss/components/stack';
+@use '@carbon/react/scss/components/structured-list';
+@use '@carbon/react/scss/components/tabs';
+@use '@carbon/react/scss/components/tag';
+@use '@carbon/react/scss/components/text-area';
+@use '@carbon/react/scss/components/text-input';
+@use '@carbon/react/scss/components/tile';
+@use '@carbon/react/scss/components/toggle';
+@use '@carbon/react/scss/components/tooltip';
+@use '@carbon/react/scss/components/treeview';
+@use '@carbon/react/scss/components/ui-shell';
 
 :root {
   @include theme.theme(themes.$g10);
