@@ -30,6 +30,7 @@ public class ExporterConfiguration {
   private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
   private boolean createSchema = true;
   private boolean skipVariableWriteWithoutUserTasks = false;
+  private ToolsConfiguration tools = new ToolsConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -150,6 +151,14 @@ public class ExporterConfiguration {
 
   public void setBatchOperation(final BatchOperationConfiguration batchOperation) {
     this.batchOperation = batchOperation;
+  }
+
+  public ToolsConfiguration getTools() {
+    return tools;
+  }
+
+  public void setTools(final ToolsConfiguration tools) {
+    this.tools = tools;
   }
 
   @Override
@@ -579,6 +588,38 @@ public class ExporterConfiguration {
           + "exportItemsOnCreation="
           + exportItemsOnCreation
           + '}';
+    }
+  }
+
+  public static class ToolsConfiguration {
+    private String extensionPropertyToolName;
+    private String extensionPropertyInboundConnectorType;
+    private String extensionPropertyPrefixToolProperties;
+
+    public String getExtensionPropertyToolName() {
+      return extensionPropertyToolName;
+    }
+
+    public void setExtensionPropertyToolName(final String extensionPropertyToolName) {
+      this.extensionPropertyToolName = extensionPropertyToolName;
+    }
+
+    public String getExtensionPropertyInboundConnectorType() {
+      return extensionPropertyInboundConnectorType;
+    }
+
+    public void setExtensionPropertyInboundConnectorType(
+        final String extensionPropertyInboundConnectorType) {
+      this.extensionPropertyInboundConnectorType = extensionPropertyInboundConnectorType;
+    }
+
+    public String getExtensionPropertyPrefixToolProperties() {
+      return extensionPropertyPrefixToolProperties;
+    }
+
+    public void setExtensionPropertyPrefixToolProperties(
+        final String extensionPropertyPrefixToolProperties) {
+      this.extensionPropertyPrefixToolProperties = extensionPropertyPrefixToolProperties;
     }
   }
 }

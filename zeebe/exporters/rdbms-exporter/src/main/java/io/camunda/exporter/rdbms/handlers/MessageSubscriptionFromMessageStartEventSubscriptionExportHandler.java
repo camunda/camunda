@@ -11,6 +11,7 @@ import static io.camunda.exporter.rdbms.utils.DateUtil.toOffsetDateTime;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
@@ -37,12 +38,15 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
 
   private final MessageSubscriptionWriter messageSubscriptionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final ToolsConfiguration toolConfig;
 
   public MessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
       final MessageSubscriptionWriter messageSubscriptionWriter,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final ToolsConfiguration toolConfig) {
     this.messageSubscriptionWriter = messageSubscriptionWriter;
     this.processCache = processCache;
+    this.toolConfig = toolConfig;
   }
 
   @Override
@@ -93,9 +97,13 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
         .processDefinitionName(
             cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null))
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
-        .toolProperties(ProcessCacheUtil.getToolProperties(ext))
-        .toolName(ProcessCacheUtil.getToolName(ext))
-        .inboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext))
+        .toolProperties(
+            ProcessCacheUtil.getToolProperties(
+                ext, toolConfig.getExtensionPropertyPrefixToolProperties()))
+        .toolName(ProcessCacheUtil.getToolName(ext, toolConfig.getExtensionPropertyToolName()))
+        .inboundConnectorType(
+            ProcessCacheUtil.getInboundConnectorType(
+                ext, toolConfig.getExtensionPropertyInboundConnectorType()))
         .build();
   }
 }

@@ -32,6 +32,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_NAME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_PROPERTIES;
 
+import io.camunda.exporter.config.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
@@ -49,9 +50,15 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     implements ExportHandler<MessageSubscriptionEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
+  protected final ToolsConfiguration toolConfig;
 
   public AbstractEventHandler(final String indexName) {
+    this(indexName, new ToolsConfiguration());
+  }
+
+  public AbstractEventHandler(final String indexName, final ToolsConfiguration toolConfig) {
     this.indexName = indexName;
+    this.toolConfig = toolConfig;
   }
 
   @Override
@@ -148,9 +155,13 @@ public abstract class AbstractEventHandler<R extends RecordValue>
               .map(p -> p.get(elementId))
               .orElse(Map.of());
       entity
-          .setToolName(ProcessCacheUtil.getToolName(ext))
-          .setInboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext))
-          .setToolProperties(ProcessCacheUtil.getToolProperties(ext));
+          .setToolName(ProcessCacheUtil.getToolName(ext, toolConfig.getExtensionPropertyToolName()))
+          .setInboundConnectorType(
+              ProcessCacheUtil.getInboundConnectorType(
+                  ext, toolConfig.getExtensionPropertyInboundConnectorType()))
+          .setToolProperties(
+              ProcessCacheUtil.getToolProperties(
+                  ext, toolConfig.getExtensionPropertyPrefixToolProperties()));
     }
   }
 }

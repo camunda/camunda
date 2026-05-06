@@ -44,6 +44,7 @@ public class ExporterConfiguration {
   private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
   private ReplicationConfiguration asyncReplication = new ReplicationConfiguration();
+  private ToolsConfiguration tools = new ToolsConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -148,6 +149,14 @@ public class ExporterConfiguration {
 
   public void setAsyncReplication(final ReplicationConfiguration asyncReplication) {
     this.asyncReplication = asyncReplication;
+  }
+
+  public ToolsConfiguration getTools() {
+    return tools;
+  }
+
+  public void setTools(final ToolsConfiguration tools) {
+    this.tools = tools;
   }
 
   public void validate() {
@@ -695,6 +704,38 @@ public class ExporterConfiguration {
                 "asyncReplication.maxLag must be a positive duration but was %s", maxLag));
       }
       return errors;
+    }
+  }
+
+  public static class ToolsConfiguration {
+    private String extensionPropertyToolName;
+    private String extensionPropertyInboundConnectorType;
+    private String extensionPropertyPrefixToolProperties;
+
+    public String getExtensionPropertyToolName() {
+      return extensionPropertyToolName;
+    }
+
+    public void setExtensionPropertyToolName(final String extensionPropertyToolName) {
+      this.extensionPropertyToolName = extensionPropertyToolName;
+    }
+
+    public String getExtensionPropertyInboundConnectorType() {
+      return extensionPropertyInboundConnectorType;
+    }
+
+    public void setExtensionPropertyInboundConnectorType(
+        final String extensionPropertyInboundConnectorType) {
+      this.extensionPropertyInboundConnectorType = extensionPropertyInboundConnectorType;
+    }
+
+    public String getExtensionPropertyPrefixToolProperties() {
+      return extensionPropertyPrefixToolProperties;
+    }
+
+    public void setExtensionPropertyPrefixToolProperties(
+        final String extensionPropertyPrefixToolProperties) {
+      this.extensionPropertyPrefixToolProperties = extensionPropertyPrefixToolProperties;
     }
   }
 }

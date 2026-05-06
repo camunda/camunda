@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.utils.DateUtil;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
@@ -51,7 +52,15 @@ final class MessageSubscriptionExportHandlerTest {
       mock(ExporterEntityCache.class);
 
   private final MessageSubscriptionExportHandler underTest =
-      new MessageSubscriptionExportHandler(writer, processCache);
+      new MessageSubscriptionExportHandler(writer, processCache, buildToolsConfig());
+
+  private static ToolsConfiguration buildToolsConfig() {
+    final var config = new ToolsConfiguration();
+    config.setExtensionPropertyToolName("io.camunda.tool:name");
+    config.setExtensionPropertyInboundConnectorType("inbound.type");
+    config.setExtensionPropertyPrefixToolProperties("io.camunda.tool:");
+    return config;
+  }
 
   @ParameterizedTest
   @EnumSource(
