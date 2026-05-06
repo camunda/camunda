@@ -87,7 +87,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
   },
   batchOperationId: {
     keys: ['batchOperationId'],
-    label: 'Operation Id',
+    label: 'Operation ID',
     type: 'text',
     validate: mergeValidators(
       validateOperationIdCharacters,
