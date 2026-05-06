@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The AuthorizationChecker class provides methods for checking resource authorization by
@@ -34,6 +36,8 @@ import java.util.stream.Collectors;
  * checks if a specific authorization scope is authorized, based on the provided SecurityContext.
  */
 public class AuthorizationChecker {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AuthorizationChecker.class);
 
   private final AuthorizationReader authorizationReader;
 
@@ -67,10 +71,17 @@ public class AuthorizationChecker {
                                       .resourceType(resourceType.name())
                                       .permissionTypes(permissionType))
                           .unlimited());
-          return authorizationReader.search(query, ResourceAccessChecks.disabled()).items().stream()
-              .filter(e -> e.permissionTypes().contains(permissionType))
-              .map(this::toAuthorizationScope)
-              .toList();
+          final var scopes =
+              authorizationReader.search(query, ResourceAccessChecks.disabled()).items().stream()
+                  .filter(e -> e.permissionTypes().contains(permissionType))
+                  .map(this::toAuthorizationScope)
+                  .toList();
+          LOG.debug(
+              "Retrieved {} authorization scope(s) for resource type [{}], permission [{}]",
+              scopes.size(),
+              resourceType,
+              permissionType);
+          return scopes;
         },
         List::of);
   }
@@ -197,6 +208,7 @@ public class AuthorizationChecker {
       ownerTypeToOwnerIds.put(EntityType.MAPPING_RULE, new HashSet<>(authenticatedMappingRuleIds));
     }
 
+    LOG.debug("Resolved authorization principals: {}", ownerTypeToOwnerIds);
     return ownerTypeToOwnerIds;
   }
 }
