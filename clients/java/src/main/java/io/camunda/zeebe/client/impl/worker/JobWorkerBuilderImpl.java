@@ -20,6 +20,7 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensurePositive;
 
+<<<<<<< HEAD:clients/java/src/main/java/io/camunda/zeebe/client/impl/worker/JobWorkerBuilderImpl.java
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobClient;
@@ -29,6 +30,20 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
+=======
+import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.command.enums.TenantFilter;
+import io.camunda.client.api.worker.BackoffSupplier;
+import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobExceptionHandler;
+import io.camunda.client.api.worker.JobHandler;
+import io.camunda.client.api.worker.JobWorker;
+import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
+import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.client.api.worker.JobWorkerMetrics;
+import io.camunda.client.impl.Loggers;
+>>>>>>> dcb426b2 (fix: relax streamInactivityTimeout vs streamTimeout validation to info log):clients/java/src/main/java/io/camunda/client/impl/worker/JobWorkerBuilderImpl.java
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -36,6 +51,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import org.slf4j.Logger;
 
 public final class JobWorkerBuilderImpl
     implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3 {
@@ -43,6 +59,11 @@ public final class JobWorkerBuilderImpl
   public static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().build();
   public static final Duration DEFAULT_STREAM_TIMEOUT = Duration.ofHours(8);
+<<<<<<< HEAD:clients/java/src/main/java/io/camunda/zeebe/client/impl/worker/JobWorkerBuilderImpl.java
+=======
+  public static final Duration DEFAULT_STREAM_INACTIVITY_TIMEOUT = Duration.ofMinutes(10);
+  private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
+>>>>>>> dcb426b2 (fix: relax streamInactivityTimeout vs streamTimeout validation to info log):clients/java/src/main/java/io/camunda/client/impl/worker/JobWorkerBuilderImpl.java
   private final JobClient jobClient;
   private final ScheduledExecutorService executorService;
   private final List<Closeable> closeables;
@@ -190,6 +211,18 @@ public final class JobWorkerBuilderImpl
       if (streamTimeout != null) {
         ensurePositive("streamTimeout", streamTimeout);
       }
+<<<<<<< HEAD:clients/java/src/main/java/io/camunda/zeebe/client/impl/worker/JobWorkerBuilderImpl.java
+=======
+      if (streamInactivityTimeout != null) {
+        ensurePositive("streamInactivityTimeout", streamInactivityTimeout);
+        if (streamTimeout != null && streamInactivityTimeout.compareTo(streamTimeout) >= 0) {
+          LOG.info(
+              "streamInactivityTimeout ({}) is not less than streamTimeout ({}); inactivity-based stream recreation will not fire because streamTimeout will always preempt it.",
+              streamInactivityTimeout,
+              streamTimeout);
+        }
+      }
+>>>>>>> dcb426b2 (fix: relax streamInactivityTimeout vs streamTimeout validation to info log):clients/java/src/main/java/io/camunda/client/impl/worker/JobWorkerBuilderImpl.java
 
       jobStreamer =
           new JobStreamerImpl(
