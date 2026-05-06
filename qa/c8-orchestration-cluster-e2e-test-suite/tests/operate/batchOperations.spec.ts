@@ -176,7 +176,7 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
-    // Skipped due to 52021: camunda/camunda#52021
+    // Skipped due to bug #52021: https://github.com/camunda/camunda/issues/52021
     test.skip(true, 'FE polling bug: useBatchOperation has no refetchInterval');
     test.slow();
     const batchKey = await createCancellationBatch(
@@ -266,7 +266,7 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
-    // Skipped due to 52021: camunda/camunda#52021
+    // Skipped due to bug #52021: https://github.com/camunda/camunda/issues/52021
     test.skip(true, 'FE polling bug: useBatchOperation has no refetchInterval');
     test.slow();
     const batchKey = await createCancellationBatch(
@@ -305,7 +305,7 @@ test.describe('Batch Operations', () => {
     request,
     operateOperationsDetailsPage,
   }) => {
-    // Skipped due to 52021: camunda/camunda#52021
+    // Skipped due to bug #52021: https://github.com/camunda/camunda/issues/52021
     test.skip(true, 'FE polling bug: useBatchOperation has no refetchInterval');
     test.slow();
     const batchKey = await createCancellationBatch(
