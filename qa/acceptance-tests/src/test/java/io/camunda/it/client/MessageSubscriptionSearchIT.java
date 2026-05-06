@@ -236,9 +236,49 @@ public class MessageSubscriptionSearchIT {
     // then
     assertThat(result.items()).hasSize(1);
     final var sub = result.items().getFirst();
-    // toolProperties only includes keys prefixed with "io.camunda.tool:";
-    // the test process has no such keys, so the map is empty.
-    assertThat(sub.getToolProperties()).isEmpty();
+    // toolProperties only includes keys prefixed with "io.camunda.tool:"; "inbound.type" is
+    // excluded
+    assertThat(sub.getToolProperties())
+        .containsEntry("io.camunda.tool:name", "myWebhookTool")
+        .doesNotContainKey("inbound.type")
+        .doesNotContainKey("customKey");
+    assertThat(sub.getToolName()).isEqualTo("myWebhookTool");
+    assertThat(sub.getInboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
+  }
+
+  @Test
+  void shouldFilterByToolName() {
+    // when
+    final var result =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.toolName("myWebhookTool"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getMessageSubscriptionType())
+        .isEqualTo(MessageSubscriptionType.START_EVENT);
+    assertThat(result.items().getFirst().getToolName()).isEqualTo("myWebhookTool");
+  }
+
+  @Test
+  void shouldFilterByInboundConnectorType() {
+    // when
+    final var result =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.inboundConnectorType("io.camunda:http-webhook:1"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getMessageSubscriptionType())
+        .isEqualTo(MessageSubscriptionType.START_EVENT);
+    assertThat(result.items().getFirst().getInboundConnectorType())
+        .isEqualTo("io.camunda:http-webhook:1");
   }
 
   @Test

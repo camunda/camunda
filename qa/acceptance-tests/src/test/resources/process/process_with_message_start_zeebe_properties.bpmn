@@ -11,8 +11,9 @@
     <bpmn:startEvent id="StartEvent_msg">
       <bpmn:extensionElements>
         <zeebe:properties>
+          <zeebe:property name="io.camunda.tool:name" value="myWebhookTool" />
+          <zeebe:property name="inbound.type" value="io.camunda:http-webhook:1" />
           <zeebe:property name="customKey" value="customValue" />
-          <zeebe:property name="env" value="test" />
         </zeebe:properties>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
