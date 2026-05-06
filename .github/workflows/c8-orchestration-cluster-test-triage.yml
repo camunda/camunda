@@ -8,6 +8,9 @@
 name: C8 Orchestration Cluster Test Triage Agent
 
 on:
+  push:
+    branches:
+      - claude/test-triage-agent-3JsD9 # temporary — remove before merging to main
   schedule:
     - cron: "0 5 * * *" # 5:00 AM UTC — after the 4:00 AM metrics report
   workflow_dispatch:
