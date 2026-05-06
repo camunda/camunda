@@ -1,6 +1,47 @@
 ## Endpoint definitions
 
 paths:
+  /agent-instances:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Agent instance
+      operationId: createAgentInstance
+      summary: Create agent instance
+      description: |
+        Creates a new agent instance. The returned key identifies the instance and must
+        be used in subsequent update and query calls.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentInstanceCreationRequest'
+      responses:
+        "200":
+          description: The agent instance was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentInstanceCreationResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            The elementInstanceKey does not correspond to an active element instance.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
   /agent-instances/{agentInstanceKey}:
     get:
       x-eventually-consistent: true
@@ -325,6 +366,42 @@ components:
         - THINKING
         - TOOL_CALLING
         - TOOL_DISCOVERY
+
+    AgentInstanceCreationRequest:
+      description: Request to create a new agent instance.
+      type: object
+      required:
+        - elementInstanceKey
+        - definition
+      properties:
+        elementInstanceKey:
+          description: |
+            The key of the AHSP or AI Agent Task element instance.
+            The engine uses this key to infer processInstanceKey, elementId,
+            processDefinitionKey, and tenantId.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+        definition:
+          description: Static definition set once at creation.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceDefinition'
+        limits:
+          description: |
+            Limits for the agent execution. When omitted, all limits default to -1
+            (no limit).
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceLimits'
+
+    AgentInstanceCreationResult:
+      description: Response returned after successfully creating an agent instance.
+      type: object
+      required:
+        - agentInstanceKey
+      properties:
+        agentInstanceKey:
+          description: The system-generated key for the created agent instance.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
 
     ## Filters
 
