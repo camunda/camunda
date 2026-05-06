@@ -43,7 +43,6 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
     correlationKey: '3838383',
     elementId: 'Event_17u9bac',
     messageName: 'Message_3tvi9o8',
-    partitionId: 1,
     processDefinitionId: 'messageCatchEvent3',
     tenantId: '<default>',
   };
@@ -165,7 +164,6 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           'correlationKey',
           'elementId',
           'messageName',
-          'partitionId',
           'processDefinitionId',
           'tenantId',
         ],
