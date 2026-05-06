@@ -18,6 +18,7 @@ public interface SearchClientsProxy
         DecisionDefinitionSearchClient,
         DecisionInstanceSearchClient,
         DecisionRequirementSearchClient,
+        DocumentReferenceSearchClient,
         FlowNodeInstanceSearchClient,
         FormSearchClient,
         GroupSearchClient,

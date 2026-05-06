@@ -45,6 +45,7 @@ public record SearchClientReaders(
     UserTaskReader userTaskReader,
     VariableReader variableReader,
     ClusterVariableReader clusterVariableReader,
+    DocumentReferenceReader documentReferenceReader,
     AuditLogReader auditLogReader,
     IncidentProcessInstanceStatisticsByErrorReader incidentProcessInstanceStatisticsByErrorReader,
     IncidentProcessInstanceStatisticsByDefinitionReader
