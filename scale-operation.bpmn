@@ -11,7 +11,7 @@
     </bpmn:exclusiveGateway>
     <bpmn:serviceTask id="Task_MemberJoin" name="Broker Nodes Join Cluster">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="=&#34;config-change-&#34;+brokerId" />
+        <zeebe:taskDefinition type="=&#34;config-change-&#34;+string(brokerId)" />
         <zeebe:ioMapping>
           <zeebe:input source="member-join" target="operationType" />
         </zeebe:ioMapping>
@@ -26,7 +26,7 @@
     </bpmn:serviceTask>
     <bpmn:serviceTask id="Task_MemberLeave" name="Broker Nodes Leave Cluster">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="=&#34;config-change-&#34;+brokerId" />
+        <zeebe:taskDefinition type="=&#34;config-change-&#34;+string(brokerId)" />
         <zeebe:ioMapping>
           <zeebe:input source="member-leave" target="operationType" />
         </zeebe:ioMapping>
@@ -79,7 +79,7 @@
       <bpmn:sequenceFlow id="Flow_0szdp1z" sourceRef="Activity_0usxe4f" targetRef="Event_1ne0qxt" />
       <bpmn:serviceTask id="Activity_0tbm4xa" name="Join">
         <bpmn:extensionElements>
-          <zeebe:taskDefinition type="=&#34;config-change-&#34;+joinOperation.brokerId" />
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+string(joinOperation.brokerId)" />
           <zeebe:ioMapping>
             <zeebe:input source="partition-join" target="operationType" />
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
@@ -95,7 +95,7 @@
       </bpmn:serviceTask>
       <bpmn:serviceTask id="Activity_19ytvu9" name="Leave">
         <bpmn:extensionElements>
-          <zeebe:taskDefinition type="=&#34;config-change-&#34;+leaveOperation.brokerId" />
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+string(leaveOperation.brokerId)" />
           <zeebe:ioMapping>
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="partition-leave" target="operationType" />
@@ -111,7 +111,7 @@
       </bpmn:serviceTask>
       <bpmn:serviceTask id="Activity_0usxe4f" name="Reconfigure">
         <bpmn:extensionElements>
-          <zeebe:taskDefinition type="=&#34;config-change-&#34;+reconfigureOperation.brokerId" />
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+string(reconfigureOperation.brokerId)" />
           <zeebe:ioMapping>
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="partition-reconfigure-priority" target="operationType" />
@@ -157,7 +157,7 @@
       </bpmn:endEvent>
       <bpmn:serviceTask id="Activity_0bdy8cs" name="Join">
         <bpmn:extensionElements>
-          <zeebe:taskDefinition type="=&#34;config-change-&#34;+joinOperation.brokerId" />
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+string(joinOperation.brokerId)" />
           <zeebe:ioMapping>
             <zeebe:input source="partition-join" target="operationType" />
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
@@ -173,7 +173,7 @@
       </bpmn:serviceTask>
       <bpmn:serviceTask id="Activity_02wmy05" name="Leave">
         <bpmn:extensionElements>
-          <zeebe:taskDefinition type="=&#34;config-change-&#34;+leaveOperation.brokerId" />
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+string(leaveOperation.brokerId)" />
           <zeebe:ioMapping>
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="partition-leave" target="operationType" />
@@ -189,7 +189,7 @@
       </bpmn:serviceTask>
       <bpmn:serviceTask id="Activity_0dxj5x2" name="Reconfigure">
         <bpmn:extensionElements>
-          <zeebe:taskDefinition type="=&#34;config-change-&#34;+reconfigureOperation.brokerId" />
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+string(reconfigureOperation.brokerId)" />
           <zeebe:ioMapping>
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="partition-reconfigure-priority" target="operationType" />
