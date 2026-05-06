@@ -41,7 +41,7 @@ let dockerProcess;
 let backendVersion;
 let elasticSearchVersion;
 let opensearchVersion;
-let zeebeVersion;
+let camundaVersion;
 let identityVersion;
 
 const commonEnv = {
@@ -152,7 +152,7 @@ async function setupEnvironment() {
   await Promise.all([
     startDocker(),
     buildBackend().catch(() => {
-      console.err('Optimize build interrupted');
+      console.error('Optimize build interrupted');
     }),
   ]);
 }
@@ -168,7 +168,10 @@ function buildBackend() {
     );
 
     buildBackendProcess.stdout.on('data', (data) => server.addLog(data, 'backend'));
-    buildBackendProcess.stderr.on('data', (data) => server.addLog(data, 'backend', true));
+    buildBackendProcess.stderr.on('data', (data) => {
+      console.error(`backend build stderr: ${data}`);
+      server.addLog(data, 'backend', true);
+    });
     buildBackendProcess.on('close', (code) => {
       buildBackendProcess = null;
       if (code === 0) {
@@ -181,6 +184,7 @@ function buildBackend() {
 }
 
 function startDocker() {
+  console.log(`Starting docker with profile ${mode}:${database}...`);
   if (dockerProcess) {
     return Promise.resolve();
   }
@@ -193,10 +197,9 @@ function startDocker() {
         ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
         ES_VERSION: elasticSearchVersion,
         OS_VERSION: opensearchVersion,
-        ZEEBE_VERSION: zeebeVersion,
         IDENTITY_VERSION: identityVersion,
         // we assume that the version of operate is the same as zeebe
-        OPERATE_VERSION: zeebeVersion,
+        CAMUNDA_VERSION: camundaVersion,
         // to start only the opensearch services, we create profiles for mode + database
         // so we can better control which services are started
         COMPOSE_PROFILES: [`${mode}:${database}`].join(','),
@@ -204,7 +207,10 @@ function startDocker() {
     });
 
     dockerProcess.stdout.on('data', (data) => server.addLog(data, 'docker'));
-    dockerProcess.stderr.on('data', (data) => server.addLog(data, 'docker', true));
+    dockerProcess.stderr.on('data', (data) => {
+      process.stdout.write(`docker stderr: ${data}`);
+      server.addLog(data, 'docker', true);
+    });
 
     process.on('SIGINT', stopDocker);
     process.on('SIGTERM', stopDocker);
@@ -226,8 +232,11 @@ function setVersionInfo() {
         const properties = data.project.properties;
         elasticSearchVersion = properties['elasticsearch.test.version'];
         opensearchVersion = properties['opensearch.test.version'];
-        zeebeVersion = properties['zeebe.version'];
+        camundaVersion = properties['zeebe.docker.version'];
         identityVersion = properties['identity.version'];
+        console.log(
+          `backend version: ${backendVersion}, elasticsearch version: ${elasticSearchVersion}, opensearch version: ${opensearchVersion}, zeebe version: ${camundaVersion}, identity version: ${identityVersion}`
+        );
         resolve();
       });
     });
