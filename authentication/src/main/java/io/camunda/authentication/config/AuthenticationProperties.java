@@ -24,8 +24,9 @@ public final class AuthenticationProperties {
       final SecurityConfiguration securityConfig, final String key, final Object value) {
     switch (key) {
       case METHOD ->
-          AuthenticationMethod.parse(String.valueOf(value))
-              .ifPresent(securityConfig.getAuthentication()::setMethod);
+          securityConfig
+              .getAuthentication()
+              .setMethod(AuthenticationMethod.parse(String.valueOf(value)));
       case API_UNPROTECTED ->
           securityConfig
               .getAuthentication()

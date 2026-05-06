@@ -34,9 +34,7 @@ public class TasklistProfileService {
   public boolean isLoginDelegated() {
     final var consolidatedAuthVariation =
         AuthenticationMethod.parse(environment.getProperty(METHOD));
-
-    return consolidatedAuthVariation.isPresent()
-        && AuthenticationMethod.OIDC.equals(consolidatedAuthVariation.get());
+    return AuthenticationMethod.OIDC.equals(consolidatedAuthVariation);
   }
 
   private boolean isDevelopmentProfileActive() {

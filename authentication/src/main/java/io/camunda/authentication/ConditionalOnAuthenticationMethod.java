@@ -8,7 +8,6 @@
 package io.camunda.authentication;
 
 import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -43,7 +42,6 @@ public @interface ConditionalOnAuthenticationMethod {
       }
       final Environment env = context.getEnvironment();
       return AuthenticationMethod.parse(env.getProperty(AuthenticationProperties.METHOD))
-              .orElse(AuthenticationConfiguration.DEFAULT_METHOD)
           == attributes.get("value");
     }
   }

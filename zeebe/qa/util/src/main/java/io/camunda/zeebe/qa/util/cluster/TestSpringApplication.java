@@ -224,9 +224,12 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     if (property(AuthenticationProperties.API_UNPROTECTED, Boolean.class, true)) {
       return Optional.empty();
     } else {
-      return AuthenticationMethod.parse(
-          property(
-              AuthenticationProperties.METHOD, String.class, AuthenticationMethod.BASIC.name()));
+      return Optional.of(
+          AuthenticationMethod.parse(
+              property(
+                  AuthenticationProperties.METHOD,
+                  String.class,
+                  AuthenticationMethod.BASIC.name())));
     }
   }
 

@@ -134,7 +134,6 @@ public class WebappsConfigurationInitializer
   private boolean isLoginDelegated(final ConfigurableApplicationContext context) {
     final var authenticationMethodProperty = context.getEnvironment().getProperty(METHOD);
     final var authenticationMethod = AuthenticationMethod.parse(authenticationMethodProperty);
-    return authenticationMethod.isPresent()
-        && AuthenticationMethod.OIDC.equals(authenticationMethod.get());
+    return AuthenticationMethod.OIDC.equals(authenticationMethod);
   }
 }
