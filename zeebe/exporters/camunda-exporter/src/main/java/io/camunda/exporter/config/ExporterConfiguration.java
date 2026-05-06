@@ -12,6 +12,7 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 
 public class ExporterConfiguration {
 
@@ -588,38 +589,6 @@ public class ExporterConfiguration {
           + "exportItemsOnCreation="
           + exportItemsOnCreation
           + '}';
-    }
-  }
-
-  public static class ToolsConfiguration {
-    private String extensionPropertyToolName = "io.camunda.tool:name";
-    private String extensionPropertyInboundConnectorType = "inbound.type";
-    private String extensionPropertyPrefixToolProperties = "io.camunda.tool:";
-
-    public String getExtensionPropertyToolName() {
-      return extensionPropertyToolName;
-    }
-
-    public void setExtensionPropertyToolName(final String extensionPropertyToolName) {
-      this.extensionPropertyToolName = extensionPropertyToolName;
-    }
-
-    public String getExtensionPropertyInboundConnectorType() {
-      return extensionPropertyInboundConnectorType;
-    }
-
-    public void setExtensionPropertyInboundConnectorType(
-        final String extensionPropertyInboundConnectorType) {
-      this.extensionPropertyInboundConnectorType = extensionPropertyInboundConnectorType;
-    }
-
-    public String getExtensionPropertyPrefixToolProperties() {
-      return extensionPropertyPrefixToolProperties;
-    }
-
-    public void setExtensionPropertyPrefixToolProperties(
-        final String extensionPropertyPrefixToolProperties) {
-      this.extensionPropertyPrefixToolProperties = extensionPropertyPrefixToolProperties;
     }
   }
 }

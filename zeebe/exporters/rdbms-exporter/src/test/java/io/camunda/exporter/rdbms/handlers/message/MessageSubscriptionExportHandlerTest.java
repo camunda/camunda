@@ -15,13 +15,13 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
-import io.camunda.exporter.rdbms.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.utils.DateUtil;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;

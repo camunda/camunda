@@ -990,7 +990,7 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void applyRdbmsToolsConfiguration(
-      final io.camunda.exporter.rdbms.ExporterConfiguration.ToolsConfiguration tools,
+      final io.camunda.zeebe.exporter.common.tools.ToolsConfiguration tools,
       final io.camunda.configuration.Tools source) {
     tools.setExtensionPropertyToolName(source.getExtensionPropertyToolName());
     tools.setExtensionPropertyInboundConnectorType(

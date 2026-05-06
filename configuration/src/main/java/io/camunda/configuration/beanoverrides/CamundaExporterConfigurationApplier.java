@@ -19,10 +19,10 @@ import io.camunda.exporter.config.ExporterConfiguration.BulkConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.PostExportConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

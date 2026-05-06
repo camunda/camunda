@@ -11,12 +11,12 @@ import static io.camunda.exporter.rdbms.utils.DateUtil.toOffsetDateTime;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
-import io.camunda.exporter.rdbms.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;

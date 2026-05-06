@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
+
 /**
  * Configuration for which extension property names are exported as tool properties.
  *
@@ -17,26 +19,30 @@ package io.camunda.configuration;
  */
 public class Tools {
 
-  public static final String DEFAULT_EXTENSION_PROPERTY_TOOL_NAME = "io.camunda.tool:name";
-  public static final String DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE = "inbound.type";
-  public static final String DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES = "io.camunda.tool:";
+  public static final String DEFAULT_EXTENSION_PROPERTY_TOOL_NAME =
+      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_TOOL_NAME;
+  public static final String DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE =
+      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE;
+  public static final String DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES =
+      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES;
 
   /** The extension property name whose value is exported as the {@code toolName} attribute. */
-  private String extensionPropertyToolName = DEFAULT_EXTENSION_PROPERTY_TOOL_NAME;
+  private String extensionPropertyToolName =
+      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_TOOL_NAME;
 
   /**
    * The extension property name whose value is exported as the {@code inboundConnectorType}
    * attribute.
    */
   private String extensionPropertyInboundConnectorType =
-      DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE;
+      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_INBOUND_CONNECTOR_TYPE;
 
   /**
    * The extension property name prefix for properties exported as the {@code toolProperties}
    * key-value attribute. Only extension properties whose names start with this prefix are exported.
    */
   private String extensionPropertyPrefixToolProperties =
-      DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES;
+      ToolsConfiguration.DEFAULT_EXTENSION_PROPERTY_PREFIX_TOOL_PROPERTIES;
 
   public String getExtensionPropertyToolName() {
     return extensionPropertyToolName;

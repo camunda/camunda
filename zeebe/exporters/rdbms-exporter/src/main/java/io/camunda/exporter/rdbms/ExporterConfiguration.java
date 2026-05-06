@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig.InsertBatchingConfig;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -704,38 +705,6 @@ public class ExporterConfiguration {
                 "asyncReplication.maxLag must be a positive duration but was %s", maxLag));
       }
       return errors;
-    }
-  }
-
-  public static class ToolsConfiguration {
-    private String extensionPropertyToolName = "io.camunda.tool:name";
-    private String extensionPropertyInboundConnectorType = "inbound.type";
-    private String extensionPropertyPrefixToolProperties = "io.camunda.tool:";
-
-    public String getExtensionPropertyToolName() {
-      return extensionPropertyToolName;
-    }
-
-    public void setExtensionPropertyToolName(final String extensionPropertyToolName) {
-      this.extensionPropertyToolName = extensionPropertyToolName;
-    }
-
-    public String getExtensionPropertyInboundConnectorType() {
-      return extensionPropertyInboundConnectorType;
-    }
-
-    public void setExtensionPropertyInboundConnectorType(
-        final String extensionPropertyInboundConnectorType) {
-      this.extensionPropertyInboundConnectorType = extensionPropertyInboundConnectorType;
-    }
-
-    public String getExtensionPropertyPrefixToolProperties() {
-      return extensionPropertyPrefixToolProperties;
-    }
-
-    public void setExtensionPropertyPrefixToolProperties(
-        final String extensionPropertyPrefixToolProperties) {
-      this.extensionPropertyPrefixToolProperties = extensionPropertyPrefixToolProperties;
     }
   }
 }

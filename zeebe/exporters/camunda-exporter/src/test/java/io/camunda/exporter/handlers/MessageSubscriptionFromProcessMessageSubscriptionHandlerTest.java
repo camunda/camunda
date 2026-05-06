@@ -15,7 +15,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.ExporterMetadata;
-import io.camunda.exporter.config.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
@@ -25,6 +24,7 @@ import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptio
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;

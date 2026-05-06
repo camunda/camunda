@@ -32,13 +32,13 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_NAME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_PROPERTIES;
 
-import io.camunda.exporter.config.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;

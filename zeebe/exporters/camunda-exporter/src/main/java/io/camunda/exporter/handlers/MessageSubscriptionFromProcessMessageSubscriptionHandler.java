@@ -10,13 +10,13 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.ExporterMetadata;
-import io.camunda.exporter.config.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionMetadataEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
