@@ -31,7 +31,10 @@ test.describe('Cluster API Tests', () => {
     );
     const result = await res.json();
     expect(result.brokers).toHaveLength(1);
-    expect(result.brokers[0].partitions).toHaveLength(2);
+    // Elasticsearch uses 2 partitions, other databases use the default of 1
+    const expectedPartitionCount =
+      process.env.DATABASE === 'elasticsearch' ? 2 : 1;
+    expect(result.brokers[0].partitions).toHaveLength(expectedPartitionCount);
   });
 
   test('Get Cluster Topology - Unauthorized', async ({request}) => {

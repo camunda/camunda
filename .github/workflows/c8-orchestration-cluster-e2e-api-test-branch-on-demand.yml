@@ -305,7 +305,6 @@ jobs:
 
           export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin"
           export ZEEBE_CLOCK_CONTROLLED="true"
-          export ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT="2"
 
           # Auth configuration
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI="false"
