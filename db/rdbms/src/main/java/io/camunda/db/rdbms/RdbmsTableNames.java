@@ -66,7 +66,8 @@ public final class RdbmsTableNames {
           "USER_TASK",
           "USER_",
           "VARIABLE",
-          "WEB_SESSION");
+          "WEB_SESSION",
+          "RDBMS_SCHEMA_VERSION");
 
   private RdbmsTableNames() {
     // Utility class - prevent instantiation
