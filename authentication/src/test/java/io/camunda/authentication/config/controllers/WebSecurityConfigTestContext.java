@@ -8,7 +8,6 @@
 package io.camunda.authentication.config.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
@@ -20,6 +19,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.core.context.holder.CamundaAuthenticationDelegatingHolder;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.spring.context.DefaultCamundaAuthenticationProvider;
+import io.camunda.security.spring.converter.CamundaSpringAuthenticationDelegatingConverter;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
@@ -109,7 +109,7 @@ public class WebSecurityConfigTestContext {
       final List<CamundaAuthenticationConverter<Authentication>> converters) {
     return new DefaultCamundaAuthenticationProvider(
         new CamundaAuthenticationDelegatingHolder(holders),
-        new CamundaAuthenticationDelegatingConverter(converters));
+        new CamundaSpringAuthenticationDelegatingConverter(converters));
   }
 
   @Bean
