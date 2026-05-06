@@ -65,7 +65,7 @@ dependencies {
     testImplementation(libs.software.amazon.awssdk.s3)
     testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
     testImplementation(libs.org.testcontainers.testcontainers.localstack)
-    testImplementation(project(":zeebe-protocol-asserts"))
+    testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
     testImplementation(libs.org.hamcrest.hamcrest)
     testImplementation(libs.org.springframework.spring.core)
     testImplementation(libs.org.springframework.spring.test)

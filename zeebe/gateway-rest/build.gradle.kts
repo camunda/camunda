@@ -69,7 +69,7 @@ dependencies {
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(project(":zeebe-atomix-cluster"))
     testImplementation(project(":zeebe-msgpack-core"))
-    testImplementation(project(":zeebe-protocol-asserts"))
+    testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
     testImplementation(project(":zeebe-scheduler"))
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(project(":zeebe-test-util"))

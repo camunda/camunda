@@ -43,7 +43,7 @@ dependencies {
     testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(project(":zeebe-logstreams"))
     testImplementation(project(":zeebe-logstreams", configuration = "tests"))
-    testImplementation(project(":zeebe-protocol-asserts"))
+    testImplementation(project(":zeebe-protocol-asserts", configuration = "generatedAssertions"))
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.junit.vintage.junit.vintage.engine)
     testImplementation(libs.org.assertj.assertj.core)
