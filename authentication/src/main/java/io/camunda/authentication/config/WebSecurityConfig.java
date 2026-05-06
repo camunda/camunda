@@ -78,10 +78,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+
 import org.springframework.boot.ssl.NoSuchSslBundleException;
 import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -627,6 +629,13 @@ public class WebSecurityConfig {
         throw new IllegalStateException(
             "Creation of initial users is not supported with `OIDC` authentication method");
       }
+    }
+
+    @Bean
+    @Primary
+    public JwtDecoder noopJwtDecoder() {
+      LOG.warn("JWT signature validation is disabled. Never use in production.");
+      return new NoopJwtDecoder();
     }
 
     @Bean
