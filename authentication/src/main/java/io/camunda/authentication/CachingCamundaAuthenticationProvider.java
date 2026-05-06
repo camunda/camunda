@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -67,8 +68,17 @@ public class CachingCamundaAuthenticationProvider implements CamundaAuthenticati
   private static final Logger LOG =
       LoggerFactory.getLogger(CachingCamundaAuthenticationProvider.class);
 
+  /**
+   * Number of misses between INFO-level cache-stats summary log lines. Tuned to surface a working
+   * cache without flooding logs — at 1k misses per summary, a 100 RPS workload with no hits emits
+   * ~6 lines/min; a 95 % hit rate at the same RPS emits one line per ~3 minutes.
+   */
+  private static final long MISS_LOG_INTERVAL = 1_000L;
+
   private final CamundaAuthenticationProvider delegate;
   private final Cache<String, CachedEntry> cache;
+  private final AtomicLong missCounter = new AtomicLong();
+  private final AtomicLong hitCounter = new AtomicLong();
 
   public CachingCamundaAuthenticationProvider(
       final CamundaAuthenticationProvider delegate, final long maxSize, final Duration maxTtl) {
@@ -77,6 +87,9 @@ public class CachingCamundaAuthenticationProvider implements CamundaAuthenticati
         Caffeine.newBuilder()
             .maximumSize(maxSize)
             .expireAfter(new TokenExpiry(Objects.requireNonNull(maxTtl, "maxTtl")))
+            // Record stats so cache.stats() returns hit/miss/eviction counters; useful for
+            // ad-hoc diagnostics without needing to interpret the log-driven counters below.
+            .recordStats()
             .build();
     LOG.info(
         "Caching CamundaAuthentication provider enabled: maxSize={} maxTtl={} (delegate {})",
@@ -95,7 +108,19 @@ public class CachingCamundaAuthenticationProvider implements CamundaAuthenticati
     }
     final CachedEntry cached = cache.getIfPresent(info.cacheKey());
     if (cached != null) {
+      hitCounter.incrementAndGet();
       return cached.authentication();
+    }
+    final long misses = missCounter.incrementAndGet();
+    if (LOG.isDebugEnabled()) {
+      // Log first 12 hex chars of the SHA-256 key — enough to correlate misses for the same
+      // token across requests, not enough to reconstruct the token.
+      LOG.debug(
+          "CamundaAuthentication cache miss (key={}…)",
+          info.cacheKey().substring(0, Math.min(12, info.cacheKey().length())));
+    }
+    if (misses % MISS_LOG_INTERVAL == 0) {
+      logCacheStats(misses);
     }
     final CamundaAuthentication result = delegate.getCamundaAuthentication();
     // Skip caching anonymous / null outcomes — these typically indicate a transient resolution
@@ -104,6 +129,24 @@ public class CachingCamundaAuthenticationProvider implements CamundaAuthenticati
       cache.put(info.cacheKey(), new CachedEntry(result, info.exp()));
     }
     return result;
+  }
+
+  /**
+   * Emit an INFO-level summary of cache effectiveness — request count split into hits / misses,
+   * resulting hit rate, current entry count, and the underlying Caffeine stats record. Called from
+   * the miss path every {@link #MISS_LOG_INTERVAL} misses so the rate is bounded by miss volume.
+   */
+  private void logCacheStats(final long misses) {
+    final long hits = hitCounter.get();
+    final long total = hits + misses;
+    final double hitRate = total == 0 ? 0.0 : (double) hits / total;
+    LOG.info(
+        "CamundaAuthentication cache stats: hits={} misses={} hitRate={} size={} stats={}",
+        hits,
+        misses,
+        String.format("%.3f", hitRate),
+        cache.estimatedSize(),
+        cache.stats());
   }
 
   /**
