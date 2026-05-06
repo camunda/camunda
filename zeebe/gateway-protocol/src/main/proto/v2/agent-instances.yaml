@@ -82,6 +82,51 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
 
+    patch:
+      x-eventually-consistent: false
+      tags:
+        - Agent instance
+      operationId: updateAgentInstance
+      summary: Update agent instance
+      description: |
+        Updates the mutable fields of an agent instance: status, metric counters, and
+        tools. Metric values are treated as deltas and applied immediately to the
+        aggregate counters. Tool updates replace the existing tool list. At least one of
+        status, metrics, or tools must be provided.
+      parameters:
+        - name: agentInstanceKey
+          in: path
+          required: true
+          description: The key of the agent instance to update.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentInstanceUpdateRequest'
+      responses:
+        "204":
+          description: The agent instance was updated successfully.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            The agent instance with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
   /agent-instances/search:
     post:
       x-eventually-consistent: true
@@ -402,6 +447,57 @@ components:
           description: The system-generated key for the created agent instance.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/AgentInstanceKey'
+
+    AgentInstanceMetricsDelta:
+      description: |
+        Metric increments to apply to the agent instance aggregate counters. The engine
+        accumulates these deltas into running totals on each UPDATED event. All fields
+        are optional; omit a field to leave the corresponding counter unchanged.
+      type: object
+      properties:
+        inputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Increment to apply to the total input token counter.
+        outputTokens:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Increment to apply to the total output token counter.
+        modelCalls:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Increment to apply to the total model call counter.
+        toolCalls:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Increment to apply to the total tool call counter.
+
+    AgentInstanceUpdateRequest:
+      description: |
+        Request to update the mutable state of an agent instance. At least one of
+        status, metrics, or tools must be provided.
+      type: object
+      properties:
+        status:
+          description: The new status of the agent instance.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceStatusEnum'
+        metrics:
+          description: Metric increments to apply to the aggregate counters.
+          allOf:
+            - $ref: '#/components/schemas/AgentInstanceMetricsDelta'
+        tools:
+          description: |
+            The complete list of tools available to the agent, replacing any previously
+            stored tools. When provided, the engine replaces the existing tool list with
+            this value.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentTool'
 
     ## Filters
 
