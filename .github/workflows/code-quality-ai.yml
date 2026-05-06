@@ -1,0 +1,72 @@
+# description: AI-assisted code quality pipeline. Runs CodeQL on hotspot modules,
+#              then (in later phases) feeds findings to an AI agent that classifies
+#              them and either opens a PR with a fix (PR track) or a GitHub issue
+#              for human triage (issue track). All AI-generated PRs require a
+#              human reviewer before merge.
+# type: CI / Quality
+# owner: @camunda/monorepo-devops-team
+
+name: Code Quality AI Pipeline
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 03:00 UTC nightly. Aligned with other nightly workflows.
+    - cron: "0 3 * * *"
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+concurrency:
+  group: code-quality-ai-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  codeql-scan:
+    name: CodeQL scan (Java)
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: code-quality-ai
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          languages: java-kotlin
+          build-mode: manual
+          config-file: ./.github/codeql/codeql-config.yml
+
+      # Build only the target module (and its dependencies via -am).
+      # CodeQL observes the compile step to build its database.
+      - name: Build target module
+        run: ./mvnw install -pl zeebe/engine -am -Dquickly -T1C
+
+      - name: Perform CodeQL analysis
+        id: analyze
+        uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          category: "/language:java-kotlin"
+          output: codeql-results
+          # Default upload to GitHub Security tab is on; we also keep a SARIF
+          # artifact for the AI triage stage to consume in later phases.
+          upload: always
+
+      - name: Upload SARIF artifact
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codeql-sarif
+          path: codeql-results/
+          retention-days: 30

@@ -1,0 +1,20 @@
+# CodeQL configuration for the Code Quality AI Pipeline.
+#
+# Scope: limited to a small set of "hotspot" modules for the hackday.
+# This list is hardcoded for now; in a follow-up step it will be generated
+# dynamically by the Stage 1 hotspot detection script.
+#
+# Query pack: security-and-quality (broad). Switch to security-extended
+# if the volume of findings is unmanageable.
+
+name: "Code Quality AI Pipeline — CodeQL configuration"
+
+queries:
+  - uses: security-and-quality
+
+paths:
+  - zeebe/engine
+
+paths-ignore:
+  - "**/target/**"
+  - "**/generated-sources/**"
