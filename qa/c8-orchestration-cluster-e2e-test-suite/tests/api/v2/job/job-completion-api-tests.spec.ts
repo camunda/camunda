@@ -103,7 +103,7 @@ test.describe('Job Completion API Tests', () => {
       );
     });
 
-    await test.step('First completion (should succeed)', async () => {
+    await test.step('Fail the job (drains retries to produce conflict)', async () => {
       // Job activation is observed before the job is fully visible to the
       // /jobs/{jobKey}/failure endpoint. Retry on 404 until visibility catches up.
       await expect(async () => {
@@ -121,7 +121,7 @@ test.describe('Job Completion API Tests', () => {
       }).toPass(defaultAssertionOptions);
     });
 
-    await test.step('Second completion (should conflict)', async () => {
+    await test.step('Attempt completion (should conflict 409)', async () => {
       const completeAgainRes = await request.post(
         buildUrl(`/jobs/${localState['jobKey']}/completion`),
         {
