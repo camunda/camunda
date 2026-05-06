@@ -98,6 +98,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.HstsConfig;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.config.observation.SecurityObservationSettings;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -212,6 +213,37 @@ public class WebSecurityConfig {
       "camunda_authentication_external_requests";
   private static final KeyValues CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS =
       KeyValues.of("domain", "identity");
+
+  /**
+   * Disable Spring Security's built-in Micrometer observation wrapping for the auth chain.
+   *
+   * <p>When an {@link io.micrometer.observation.ObservationRegistry} bean is present in the
+   * application context (which it is here, via Spring Boot's Micrometer auto-configuration), Spring
+   * Security defaults to wrapping every {@link
+   * org.springframework.security.authentication.AuthenticationManager}, {@link
+   * org.springframework.security.authorization.AuthorizationManager}, and individual filter call in
+   * an observation. On a local Tomcat-served harness against this branch, that wrapping accounted
+   * for ~23% of the inclusive CPU time on Tomcat worker threads when actually serving a request
+   * (visible in the profile as {@code ObservationAuthenticationManager.authenticate} and the
+   * per-filter {@code SimpleAroundFilterObservation.lambda$wrap$0} indirection chain).
+   *
+   * <p>Publishing a {@link SecurityObservationSettings} bean is how callers opt out — defaults are
+   * applied otherwise, which on this Spring Security version means observations are recorded.
+   * Authentication/authorization/request observations are turned off here because the equivalent
+   * data is already produced by upstream Spring Boot HTTP request observations and downstream
+   * Camunda metrics; the per-filter wrapping is structurally hot per request and adds no
+   * information that isn't covered elsewhere.
+   *
+   * <p>Refs camunda/camunda#35067.
+   */
+  @Bean
+  public SecurityObservationSettings disableSecurityFilterChainObservations() {
+    return SecurityObservationSettings.withDefaults()
+        .shouldObserveAuthentications(false)
+        .shouldObserveAuthorizations(false)
+        .shouldObserveRequests(false)
+        .build();
+  }
 
   @Bean
   @Order(ORDER_UNPROTECTED)
