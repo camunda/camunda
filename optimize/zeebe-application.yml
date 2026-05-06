@@ -43,7 +43,6 @@ zeebe:
             processInstanceCreation: false
             processMessageSubscription: true
             processInstanceModification: false
-            bulkSize: 1
 camunda:
   data:
     secondary-storage:
