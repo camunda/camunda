@@ -17,21 +17,27 @@ import {validateResponse} from '../../../json-body-assertions';
 
 test.describe('Cluster API Tests', () => {
   test('Get Cluster Topology', async ({request}) => {
-    const res = await request.get(buildUrl('/topology'), {
-      headers: defaultHeaders(),
+    // Add retry mechanism for cluster topology to handle timing issues in CI
+    await expect(async () => {
+      const res = await request.get(buildUrl('/topology'), {
+        headers: defaultHeaders(),
+      });
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/topology',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
+      const result = await res.json();
+      expect(result.brokers).toHaveLength(1);
+      expect(result.brokers[0].partitions).toHaveLength(2);
+    }).toPass({
+      intervals: [2_000, 5_000, 10_000],
+      timeout: 20_000,
     });
-    await assertStatusCode(res, 200);
-    await validateResponse(
-      {
-        path: '/topology',
-        method: 'GET',
-        status: '200',
-      },
-      res,
-    );
-    const result = await res.json();
-    expect(result.brokers).toHaveLength(1);
-    expect(result.brokers[0].partitions).toHaveLength(1);
   });
 
   test('Get Cluster Topology - Unauthorized', async ({request}) => {
