@@ -778,9 +778,80 @@ public class ProcessDefinitionInstanceVersionStatisticsIT {
     assertThat(result.page().hasMoreTotalItems()).isFalse();
   }
 
-  // Note: shouldSortByProcessDefinitionIdAsc is intentionally omitted.
-  // The endpoint always filters by a single processDefinitionId (see
-  // ProcessDefinitionInstanceVersionStatisticsRequestImpl.ensureProcessDefinitionIdInFilter),
-  // so every result in one query shares the same processDefinitionId value. Sorting by
-  // processDefinitionId within such a query is a no-op and cannot be meaningfully tested.
+  @Test
+  void shouldSortByProcessDefinitionNameAscWithPagination() {
+    // given — three versions deployed in reverse alphabetical name order so that
+    // natural (deployment/version) order and alphabetical order are opposite.
+    // This ensures the test would fail if pagination were applied before sorting
+    // (i.e. the old Java-sort approach that sorted within each page slice).
+    final var processDefinitionId = "sort_by_name_paged_proc";
+
+    // v1 (version 1) — "Capybara" is last alphabetically
+    final var v1 =
+        deployServiceTaskProcess(camundaClient, processDefinitionId, "Capybara Paged Process", "3");
+    final var v1Key = v1.getProcesses().getFirst().getProcessDefinitionKey();
+
+    // v2 (version 2) — "Badger" is middle alphabetically
+    final var v2 =
+        deployServiceTaskProcess(camundaClient, processDefinitionId, "Badger Paged Process", "3");
+    final var v2Key = v2.getProcesses().getFirst().getProcessDefinitionKey();
+
+    // v3 (version 3) — "Aardvark" is first alphabetically
+    final var v3 =
+        deployServiceTaskProcess(camundaClient, processDefinitionId, "Aardvark Paged Process", "3");
+    final var v3Key = v3.getProcesses().getFirst().getProcessDefinitionKey();
+
+    startProcessInstance(camundaClient, v1Key);
+    startProcessInstance(camundaClient, v2Key);
+    startProcessInstance(camundaClient, v3Key);
+
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionId(processDefinitionId).state(ProcessInstanceState.ACTIVE),
+        3);
+
+    // when — sorted ASC by name, one item per page
+    // Correct global order: Aardvark (v3/version 3), Badger (v2/version 2), Capybara (v1/version 1)
+    final var page1 =
+        camundaClient
+            .newProcessDefinitionInstanceVersionStatisticsRequest(processDefinitionId)
+            .sort(s -> s.processDefinitionName().asc())
+            .page(p -> p.from(0).limit(1))
+            .send()
+            .join();
+
+    final var page2 =
+        camundaClient
+            .newProcessDefinitionInstanceVersionStatisticsRequest(processDefinitionId)
+            .sort(s -> s.processDefinitionName().asc())
+            .page(p -> p.from(1).limit(1))
+            .send()
+            .join();
+
+    final var page3 =
+        camundaClient
+            .newProcessDefinitionInstanceVersionStatisticsRequest(processDefinitionId)
+            .sort(s -> s.processDefinitionName().asc())
+            .page(p -> p.from(2).limit(1))
+            .send()
+            .join();
+
+    // then — each page must reflect the globally-sorted order, not deployment order.
+    // An incorrect sort-within-page approach would return version-order items
+    // (Capybara on page 1, Badger on page 2, Aardvark on page 3).
+    assertThat(page1.items()).hasSize(1);
+    assertThat(page1.items().getFirst().getProcessDefinitionName())
+        .isEqualTo("Aardvark Paged Process");
+    assertThat(page1.page().totalItems()).isEqualTo(3);
+
+    assertThat(page2.items()).hasSize(1);
+    assertThat(page2.items().getFirst().getProcessDefinitionName())
+        .isEqualTo("Badger Paged Process");
+    assertThat(page2.page().totalItems()).isEqualTo(3);
+
+    assertThat(page3.items()).hasSize(1);
+    assertThat(page3.items().getFirst().getProcessDefinitionName())
+        .isEqualTo("Capybara Paged Process");
+    assertThat(page3.page().totalItems()).isEqualTo(3);
+  }
 }
