@@ -5076,7 +5076,12 @@
                   "nullable": true
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "extensionProperties",
+                  "type": "object"
+                }
+              ]
             }
           },
           {
