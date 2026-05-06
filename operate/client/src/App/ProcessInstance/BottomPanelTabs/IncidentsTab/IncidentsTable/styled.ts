@@ -35,6 +35,7 @@ const ErrorMessageCell = styled.div`
 const FlexContainer = styled.div`
   display: flex;
   align-items: center;
+  gap: var(--cds-spacing-03);
 `;
 
 const ChildIncidentContainer = styled.div`
