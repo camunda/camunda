@@ -779,6 +779,50 @@ public class ProcessDefinitionInstanceVersionStatisticsIT {
   }
 
   @Test
+  void shouldSortByProcessDefinitionNameDesc() {
+    // given — deploy three versions in alphabetical order so that DESC sort reverses them
+    final var processDefinitionId = "sort_by_name_desc_proc";
+
+    final var v1 =
+        deployServiceTaskProcess(camundaClient, processDefinitionId, "Aardvark Desc Process", "3");
+    final var v1Key = v1.getProcesses().getFirst().getProcessDefinitionKey();
+
+    final var v2 =
+        deployServiceTaskProcess(camundaClient, processDefinitionId, "Badger Desc Process", "3");
+    final var v2Key = v2.getProcesses().getFirst().getProcessDefinitionKey();
+
+    final var v3 =
+        deployServiceTaskProcess(camundaClient, processDefinitionId, "Capybara Desc Process", "3");
+    final var v3Key = v3.getProcesses().getFirst().getProcessDefinitionKey();
+
+    startProcessInstance(camundaClient, v1Key);
+    startProcessInstance(camundaClient, v2Key);
+    startProcessInstance(camundaClient, v3Key);
+
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionId(processDefinitionId).state(ProcessInstanceState.ACTIVE),
+        3);
+
+    // when — request sorted DESC by processDefinitionName
+    final var result =
+        camundaClient
+            .newProcessDefinitionInstanceVersionStatisticsRequest(processDefinitionId)
+            .sort(s -> s.processDefinitionName().desc())
+            .send()
+            .join();
+
+    // then — reverse alphabetical order: Capybara (v3), Badger (v2), Aardvark (v1)
+    assertThat(result.items()).hasSize(3);
+    assertThat(result.items().get(0).getProcessDefinitionName()).isEqualTo("Capybara Desc Process");
+    assertThat(result.items().get(1).getProcessDefinitionName()).isEqualTo("Badger Desc Process");
+    assertThat(result.items().get(2).getProcessDefinitionName()).isEqualTo("Aardvark Desc Process");
+
+    assertThat(result.page().totalItems()).isEqualTo(3);
+    assertThat(result.page().hasMoreTotalItems()).isFalse();
+  }
+
+  @Test
   void shouldSortByProcessDefinitionNameAscWithPagination() {
     // given — three versions deployed in reverse alphabetical name order so that
     // natural (deployment/version) order and alphabetical order are opposite.
