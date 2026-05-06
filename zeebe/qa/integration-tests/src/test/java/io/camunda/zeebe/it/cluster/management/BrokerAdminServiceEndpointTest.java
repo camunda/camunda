@@ -8,20 +8,32 @@
 package io.camunda.zeebe.it.cluster.management;
 
 import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.zeebe.broker.system.management.HealthTree;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.util.health.HealthStatus;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -29,163 +41,22 @@ import org.junit.jupiter.api.Test;
 public class BrokerAdminServiceEndpointTest {
 
   static RequestSpecification brokerServerSpec;
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new JavaTimeModule());
+  private static final Duration ENDPOINT_TIMEOUT = Duration.ofSeconds(60);
+  private static final String PARTITION_HEALTH_ID = "Partition-1";
+  private static final List<String> EXPECTED_HEALTH_CHILDREN =
+      List.of(
+          "SnapshotDirector-1",
+          "ZeebePartitionHealth-1",
+          "StreamProcessor-1",
+          "Exporter-1",
+          "MigrationSnapshotDirector",
+          "RaftPartition-1");
 
   @TestZeebe
   private static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withProperty("management.server.base-path", "/foo");
-
-  private static final String EXPECTED_PARTITIONS_JSON =
-      // language=JSON
-      """
-          {
-            "1": {
-              "role": "LEADER",
-              "processedPosition": 2,
-              "snapshotId": "2-1-2-9223372036854775807-0-a06ff57d",
-              "processedPositionInSnapshot": 2,
-              "streamProcessorPhase": "PROCESSING",
-              "exporterPhase": "EXPORTING",
-              "exportedPosition": -1,
-              "clock": {
-                "instant": "2024-10-29T07:10:02.688Z",
-                "modificationType": "None",
-                "modification": {}
-              },
-              "health": {
-                "id": "Partition-1",
-                "name": "Partition-1",
-                "status": "HEALTHY",
-                "componentsState": "HEALTHY",
-                "children": [
-                    {
-                     "id": "SnapshotDirector-1",
-                     "name": "SnapshotDirector-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                     "id": "ZeebePartitionHealth-1",
-                     "name": "ZeebePartitionHealth-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                     "id": "StreamProcessor-1",
-                     "name": "StreamProcessor-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                     "id": "Exporter-1",
-                     "name": "Exporter-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                     "id":"MigrationSnapshotDirector",
-                     "name":"MigrationSnapshotDirector",
-                     "status":"HEALTHY",
-                     "children":[]
-                   },
-                   {
-                     "id": "RaftPartition-1",
-                     "name": "RaftPartition-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   }
-                 ]
-               }
-            }
-          }
-          """;
-  private static final String EXPECTED_PARTITION_JSON =
-      // language=JSON
-      """
-          {
-            "role": "LEADER",
-            "processedPosition": 2,
-            "snapshotId": "2-1-2-9223372036854775807-0-a06ff57d",
-            "processedPositionInSnapshot": 2,
-            "streamProcessorPhase": "PROCESSING",
-            "exporterPhase": "EXPORTING",
-            "exportedPosition": -1,
-            "clock": {
-              "instant": "2024-10-29T07:24:41.576Z",
-              "modificationType": "None",
-              "modification": {}
-            },
-            "health": {
-                 "id": "Partition-1",
-                 "name": "Partition-1",
-                 "status": "HEALTHY",
-                 "componentsState": "HEALTHY",
-                 "children": [
-                   {
-                     "id": "SnapshotDirector-1",
-                     "name": "SnapshotDirector-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                     "id": "ZeebePartitionHealth-1",
-                     "name": "ZeebePartitionHealth-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                     "id": "StreamProcessor-1",
-                     "name": "StreamProcessor-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                     "id": "Exporter-1",
-                     "name": "Exporter-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                     "id":"MigrationSnapshotDirector",
-                     "name":"MigrationSnapshotDirector",
-                     "status":"HEALTHY",
-                     "children":[]
-                   },
-                   {
-                     "id": "RaftPartition-1",
-                     "name": "RaftPartition-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   }
-                 ]
-               }
-          }
-          """;
-
-  private static String sanitizeJson(final String json) {
-    final var timestampPattern =
-        Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
-    final var timestampReplacement = "2024-10-29T07:10:02.688Z";
-
-    // snapshot checksum is not deterministic, so we replace it with a constant value
-    final var snapshotChecksumPattern = Pattern.compile("\\d+-\\d+-\\d+-\\d+-\\d+-\\w+");
-    final var snapshotChecksumReplacement = "2-1-2-9223372036854775807-0-a06ff57d";
-
-    // processed positions are also not deterministic
-    final var processedPositionPattern = Pattern.compile("\"processedPosition\": *\\d+");
-    final var processedPositionInSnapshotPattern =
-        Pattern.compile("\"processedPositionInSnapshot\": *\\d+");
-
-    return json
-        // map timestamp into the same value
-        .replaceAll(timestampPattern.pattern(), timestampReplacement)
-        // map snapshot checksum into a constant value
-        .replaceAll(snapshotChecksumPattern.pattern(), snapshotChecksumReplacement)
-        .replaceAll(processedPositionPattern.pattern(), "\"processedPosition\": 2")
-        .replaceAll(
-            processedPositionInSnapshotPattern.pattern(), "\"processedPositionInSnapshot\": 2")
-        // remove all whitespaces from the pretty printing
-        .replaceAll("\\s", "");
-  }
 
   @BeforeAll
   static void setUpClass() {
@@ -201,26 +72,111 @@ public class BrokerAdminServiceEndpointTest {
 
   @Test
   void shouldReturnPartitions() {
-    await("Partitions up")
-        .atMost(60, TimeUnit.SECONDS)
-        .until(
-            () -> {
-              final var response = given().spec(brokerServerSpec).when().get("actuator/partitions");
-              final var bodyString = new String(response.body().asByteArray());
-              assertThat(sanitizeJson(bodyString))
-                  .isEqualTo(sanitizeJson(EXPECTED_PARTITIONS_JSON));
-              return response.statusCode() == 200;
-            });
-    await("Single partitions route is up")
-        .atMost(5, TimeUnit.SECONDS)
-        .until(
-            () -> {
-              final var response =
-                  given().spec(brokerServerSpec).when().get("actuator/partitions/1");
+    // given - the broker is started by the test extension
 
-              final var bodyString = new String(response.body().asByteArray());
-              assertThat(sanitizeJson(bodyString)).isEqualTo(sanitizeJson(EXPECTED_PARTITION_JSON));
-              return response.statusCode() == 200;
+    // when + then
+    await("partitions route is up")
+        .atMost(ENDPOINT_TIMEOUT)
+        .untilAsserted(
+            () ->
+                assertPartitionsResponse(
+                    given().spec(brokerServerSpec).when().get("actuator/partitions")));
+
+    await("single partition route is up")
+        .atMost(ENDPOINT_TIMEOUT)
+        .untilAsserted(
+            () ->
+                assertPartitionResponse(
+                    given().spec(brokerServerSpec).when().get("actuator/partitions/1")));
+  }
+
+  private static void assertPartitionsResponse(final Response response) {
+    assertThat(response.statusCode()).isEqualTo(200);
+
+    final var partitions = readPartitions(response);
+    assertThat(partitions).containsOnlyKeys(1);
+    assertPartitionStatus(partitions.get(1));
+  }
+
+  private static void assertPartitionResponse(final Response response) {
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertPartitionStatus(readPartition(response));
+  }
+
+  private static void assertPartitionStatus(final PartitionStatusResponse partition) {
+    assertThat(partition).isNotNull();
+    assertThat(partition.role()).isEqualTo("LEADER");
+    assertThat(partition.snapshotId()).matches("\\d+-\\d+-\\d+-\\d+-\\d+-\\w+");
+    assertThat(partition.processedPosition()).isNotNull().isGreaterThanOrEqualTo(0L);
+    assertThat(partition.processedPositionInSnapshot()).isNotNull().isGreaterThanOrEqualTo(0L);
+    assertThat(partition.processedPosition())
+        .isGreaterThanOrEqualTo(partition.processedPositionInSnapshot());
+    assertThat(partition.streamProcessorPhase()).isEqualTo("PROCESSING");
+    assertThat(partition.exporterPhase()).isEqualTo("EXPORTING");
+    assertThat(partition.exportedPosition()).isEqualTo(-1L);
+    assertThat(partition.clock()).isNotNull();
+    assertThat(partition.clock().instant()).isNotNull();
+    assertThat(partition.clock().modificationType()).isEqualTo("None");
+    assertThat(partition.clock().modification()).isEmpty();
+    assertPartitionHealth(partition.health());
+  }
+
+  private static void assertPartitionHealth(final HealthTree health) {
+    assertThat(health.id()).isEqualTo(PARTITION_HEALTH_ID);
+    assertThat(health.name()).isEqualTo(PARTITION_HEALTH_ID);
+    assertThat(health.status()).isEqualTo(HealthStatus.HEALTHY);
+    assertThat(health.message()).isEmpty();
+    assertThat(health.since()).isEmpty();
+    assertThat(health.componentsState()).hasValue(HealthStatus.HEALTHY);
+    assertThat(health.children()).hasSize(EXPECTED_HEALTH_CHILDREN.size());
+    assertThat(health.children())
+        .extracting(HealthTree::id)
+        .containsExactlyInAnyOrderElementsOf(EXPECTED_HEALTH_CHILDREN);
+    assertThat(health.children())
+        .extracting(HealthTree::name)
+        .containsExactlyInAnyOrderElementsOf(EXPECTED_HEALTH_CHILDREN);
+    assertThat(health.children())
+        .allSatisfy(
+            child -> {
+              assertThat(child.status()).isEqualTo(HealthStatus.HEALTHY);
+              assertThat(child.message()).isEmpty();
+              assertThat(child.since()).isEmpty();
+              assertThat(child.componentsState()).isEmpty();
+              assertThat(child.children()).isEmpty();
             });
   }
+
+  private static Map<Integer, PartitionStatusResponse> readPartitions(final Response response) {
+    try {
+      return MAPPER.readValue(
+          response.body().asByteArray(),
+          new TypeReference<Map<Integer, PartitionStatusResponse>>() {});
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static PartitionStatusResponse readPartition(final Response response) {
+    try {
+      return MAPPER.readValue(response.body().asByteArray(), PartitionStatusResponse.class);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private record PartitionStatusResponse(
+      String role,
+      Long processedPosition,
+      String snapshotId,
+      Long processedPositionInSnapshot,
+      String streamProcessorPhase,
+      String exporterPhase,
+      Long exportedPosition,
+      ClockStatusResponse clock,
+      HealthTree health) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private record ClockStatusResponse(
+      Instant instant, String modificationType, Map<String, Object> modification) {}
 }
