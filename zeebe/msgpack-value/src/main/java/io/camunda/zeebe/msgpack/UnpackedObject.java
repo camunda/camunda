@@ -61,15 +61,6 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
     return getEncodedLength();
   }
 
-  /**
-   * Resolves the otherwise ambiguous {@code copyFrom} overload for values that are both {@link
-   * BaseValue} and {@link BufferWriter}. Delegates to {@link BaseValue#copyFrom(BaseValue)} so
-   * subclasses such as {@code UnifiedRecordValue} keep their specialized copy behavior.
-   */
-  public void copyFrom(final UnpackedObject source) {
-    copyFrom((BaseValue) source);
-  }
-
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
     if (writer == null) {
@@ -77,6 +68,15 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
     }
     writer.wrap(buffer, offset);
     return write(writer);
+  }
+
+  /**
+   * Resolves the otherwise ambiguous {@code copyFrom} overload for values that are both {@link
+   * BaseValue} and {@link BufferWriter}. Uses serialize+wrap to preserve msgpack normalization
+   * semantics for unpacked objects.
+   */
+  public void copyFrom(final UnpackedObject source) {
+    copyFrom((BaseValue) source);
   }
 
   /**
