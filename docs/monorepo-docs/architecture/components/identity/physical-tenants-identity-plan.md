@@ -1059,16 +1059,26 @@ public final class PhysicalTenantContext {
 
 ## 14. Implementation Milestones
 
-> Estimates are rough engineering days assuming one engineer per stream, with the existing test infrastructure available.
+> Estimates assume **2 engineers** working in parallel after the sequential M0 → M1 prefix, with the existing test infrastructure available. Cluster controllers (`/v2/cluster/topology`, `/v2/cluster/backup`) are **not** delivered by this slice — only the cluster-admin filter-chain matcher and the no-cross-tenant rule.
 >
-> **The login/logout option (A or B) chosen in §6.4 changes the total** — the milestone set forks at M2c. **gRPC parity is mandatory** in M2-grpc. — this slice ships the cluster-admin filter-chain *matcher* and the no-cross-tenant rule, downstream slices ship the controllers.
+> | Option | Engineering days (sum) | Calendar duration (2 engineers) |
+> |---|---|---|
+> | **A — refined PoC** | ~20-22 | **~3.5-4 weeks** |
+> | **B — claim-based RBAC** | ~26-30 | **~5 weeks** |
 >
-> | Option | API auth surface (M0–M2b) | gRPC parity (M2-grpc) | Login surface (M2c) | Tests + docs (M4–M5) | **Total (eng-days)** |
-> |---|---|---|---|---|---|
-> | **A — refined PoC** | ~7 | ~3 | ~5-7 | ~5 | **~20-22** |
-> | **B — claim-based RBAC** | ~7 | ~3 | ~10-14 | ~6 | **~26-30** |
+> Per-milestone breakdown:
 >
-> Calendar duration depends on engineer count — see the parallelisation map at the end of this section.
+> | Milestone | Effort | Critical path? |
+> |---|---|---|
+> | M0 — Config foundation | ~2d | Sequential prefix |
+> | M1 — Registry + validation | ~2d | Sequential prefix |
+> | M2a — PT API filter chain | ~3d | Eng 1 stream |
+> | M2b — Cluster-admin chain | ~2d | Eng 1 stream |
+> | M2-grpc — gRPC interceptor | ~3d | Eng 1 stream |
+> | M2c-A — Login (state binding) | ~5-7d | Eng 2 stream (Option A) |
+> | M2c-B — Login (claim RBAC) | ~10-14d | Eng 2 stream (Option B) |
+> | M4 — Integration tests | ~4d (A) / ~5d (B) | Joint after M2 streams |
+> | M5 — Documentation | ~2d (A) / ~3d (B) | Parallel with M4 |
 
 ### M0 — Configuration foundation (sequential prerequisite, ~2 days)
 
@@ -1246,58 +1256,69 @@ flowchart LR
     classDef optB fill:#fce7f3,stroke:#be185d,stroke-width:2px;
 ```
 
-Gantt schedule per option (illustrative; assumes 3 engineers for A, 4 engineers for B; immediate hand-offs):
+**Stream assignment for 2 engineers:**
+- **Eng 1 (API + cluster + gRPC):** M0 → M1 → M2a → M2b → M2-grpc → integration-test fragments + doc fragments.
+- **Eng 2 (login + docs):** waits for M0+M1 (could pair on those) → M2c → M5 → integration-test fragments.
 
 ```mermaid
 gantt
-    title Option A — Refined PoC (3 engineers, ~3 calendar weeks)
+    title Option A — Refined PoC (2 engineers, ~3.5-4 calendar weeks)
     dateFormat  YYYY-MM-DD
     axisFormat  W%V
-    section Sequential
+    section Sequential (both engs)
     M0 Config foundation        :m0a, 2026-05-04, 2d
     M1 Registry + validation    :m1a, after m0a, 2d
-    section Eng 1 — REST API
+    section Eng 1 — API + cluster + gRPC
     M2a PT API filter chain     :m2aa, after m1a, 3d
-    M4 Integration tests        :m4a, after m2cA, 4d
-    section Eng 2 — Cluster + login
-    M2b Cluster-admin chain     :m2ba, after m1a, 2d
-    M2c-A Login (state)         :m2cA, after m2ba, 7d
+    M2b Cluster-admin chain     :m2ba, after m2aa, 2d
+    M2-grpc gRPC interceptor    :m2ga, after m2ba, 3d
+    M4 Integration tests (API+gRPC) :m4a1, after m2cA, 2d
+    section Eng 2 — Login + docs
+    M2c-A Login (state)         :m2cA, after m1a, 7d
     M5 Documentation            :m5a, after m2cA, 2d
-    section Eng 3 — gRPC
-    M2-grpc gRPC interceptor    :m2g_a, after m1a, 3d
+    M4 Integration tests (login) :m4a2, after m5a, 2d
 ```
 
 ```mermaid
 gantt
-    title Option B — Claim-based RBAC (4 engineers, ~3.5 calendar weeks)
+    title Option B — Claim-based RBAC (2 engineers, ~5 calendar weeks)
     dateFormat  YYYY-MM-DD
     axisFormat  W%V
-    section Sequential
+    section Sequential (both engs)
     M0 Config foundation        :m0b, 2026-05-04, 2d
     M1 Registry + validation    :m1b, after m0b, 2d
-    section Eng 1 — REST API
+    section Eng 1 — API + cluster + gRPC
     M2a PT API filter chain     :m2ab, after m1b, 3d
-    M4 Integration tests        :m4b, after m2cB, 5d
-    section Eng 2 — Cluster + docs
-    M2b Cluster-admin chain     :m2bb, after m1b, 2d
-    M5 Documentation            :m5b, after m2cB, 3d
-    section Eng 3 — gRPC
-    M2-grpc gRPC interceptor    :m2g_b, after m1b, 3d
-    section Eng 4 — Login
+    M2b Cluster-admin chain     :m2bb, after m2ab, 2d
+    M2-grpc gRPC interceptor    :m2gb, after m2bb, 3d
+    M4 Integration tests (API+gRPC) :m4b1, after m2cB, 2d
+    section Eng 2 — Login + docs
     M2c-B Login (claim RBAC)    :m2cB, after m1b, 14d
+    M5 Documentation            :m5b, after m2cB, 3d
+    M4 Integration tests (login) :m4b2, after m5b, 3d
 ```
 
 - **M0 → M1** is the only strict sequential prefix.
-- **M2a, M2b, M2-grpc, M2c-{A|B}** are independent after M1 — split across engineers if available.
-- **M3** is the integration-test merge point and depends on every chain (REST PT, cluster-admin, gRPC, login) being in place.
-- **M4** runs in parallel with M4 — its content grows under A (picker UX, Entra notes) and B (claim contract, per-IdP recipes, migration ramp).
+- **M2a, M2b, M2-grpc** form one stream (Eng 1); **M2c-{A|B}** is the other (Eng 2). Both run in parallel after M1.
+- **M4** is the integration-test merge point and depends on every M2 stream (REST PT, cluster-admin, gRPC, login) being in place; it can be split between the two engineers along their stream lines.
+- **M5** runs in parallel with M4 — its content grows under A (picker UX, Entra notes) and B (claim contract, per-IdP recipes, migration ramp).
 
-### Rough total per option
+### Critical path (2 engineers)
 
-| Option | 2 engineers | 3 engineers | 4 engineers |
-|---|---|---|---|
-| **A — refined PoC** | ~4 weeks | ~3 weeks | ~2.5-3 weeks |
-| **B — claim-based RBAC** | ~5 weeks | ~4 weeks | ~3.5 weeks |
+**Option A:**
+- Eng 1: M0 (2d) + M1 (2d) + M2a (3d) + M2b (2d) + M2-grpc (3d) + M4-API/gRPC (2d) = **14d**
+- Eng 2: waits for M0+M1 (4d) + M2c-A (7d) + M5 (2d) + M4-login (2d) = **15d** ← critical path
+- **Total elapsed: ~3.5-4 calendar weeks** (15-16 working days plus buffer)
+
+**Option B:**
+- Eng 1: M0 (2d) + M1 (2d) + M2a (3d) + M2b (2d) + M2-grpc (3d) + M4-API/gRPC (2d) = **14d**
+- Eng 2: waits for M0+M1 (4d) + M2c-B (14d) + M5 (3d) + M4-login (3d) = **24d** ← critical path
+- **Total elapsed: ~5 calendar weeks**
+
+The critical path under both options is **Eng 2's login stream**. Practical implications:
+- M2c-B is the longest single milestone — it gates the calendar regardless of engineer count.
+- Eng 1 finishes API/cluster/gRPC well before Eng 2 finishes login. Eng 1 absorbs M4 integration-test groundwork (containers, fixtures, realm setup) during the slack so the test merge is cheap.
+- Adding a third engineer would only meaningfully shorten Option B (split M2c-B sub-streams: backend vs frontend, claim contract docs vs implementation). For Option A the M2c-A stream is short enough that the second engineer is the binding constraint.
 
 ---
 
@@ -1313,8 +1334,8 @@ gantt
 | `/v2/topology` | Untouched | Existing endpoint stays. |
 | `/v2/cluster/topology` and `/v2/cluster/backup` controllers | **Not identity deliverables** | This slice ships the cluster-admin filter-chain matcher `/v2/cluster/**`; controllers are owned by their respective slices (gateway/topology team, backup/restore team). Identity slice provides the auth contract and the no-cross-tenant rule. |
 | **Storage model** | **Cluster: in-memory. PT: primary + secondary storage** (per-PT, isolated) | Per requirements clarification — inverted from earlier draft. Cluster-admin auth is stateless and reads YAML at runtime; PT-scope authorization uses the existing 8.9 seeder + `MembershipService` / `ResourceAccessProvider` against per-PT storage. |
-| **No cross-tenant authorization** | `ROLE_CLUSTER_ADMIN` does not authorise PT-scoped resources; topology aggregator uses a read-only marker authority | Per requirements clarification. PT-side `ResourceAccessProvider` whitelists the marker only for topology read; rejects it elsewhere. No cross-PT data path even with cluster-admin privilege. |
-| Filter-chain strategy | New chains: PT API, cluster-admin, login (modified existing OIDC webapp chain), gRPC interceptor | Spring Security canonical multi-tenant pattern. Login chain modified in place; not duplicated. |
+| **No cross-tenant authorization** | `ROLE_CLUSTER_ADMIN` does not authorise PT-scoped resources. Cluster-scoped controllers (delivered by other slices) must use single-purpose marker authorities for any per-PT call. | Per requirements clarification. PT-side `ResourceAccessProvider` whitelists each marker only for its specific code path. No cross-PT data path even with cluster-admin privilege. Identity slice's job is to make the rule obligatory; downstream controllers enforce per-call. |
+| Filter-chain strategy | Two new REST chains (PT API at `/v2/physical-tenants/{id}/**`, cluster-admin at `/v2/cluster/**`); existing OIDC webapp chain modified in place for login; new gRPC interceptor for `Camunda-Physical-Tenant`. No `/v2/cluster/*` controllers shipped here. | Spring Security canonical multi-tenant pattern. Login chain modified in place; not duplicated. |
 | `JwtDecoder` strategy | One shared issuer-aware decoder; per-PT *converter* selecting per-PT `MembershipService`/`ResourceAccessProvider` | Keeps decoder cardinality at 1 regardless of PT count. |
 | "Skip everything else" | Scoped to authentication mechanisms only; CSRF/headers retained | Defense-in-depth not sacrificed. |
 | **gRPC parity** | **Mandatory in this slice** | Per requirements clarification — gRPC is no longer a follow-up. New `PhysicalTenantGrpcInterceptor` reuses `PhysicalTenantRegistry` and converter factory. M2-grpc, ~3 days. |
