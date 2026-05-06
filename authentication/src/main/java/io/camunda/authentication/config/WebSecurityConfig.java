@@ -535,10 +535,10 @@ public class WebSecurityConfig {
                           .authenticationEntryPoint(authFailureHandler)
                           .accessDeniedHandler(authFailureHandler))
               // do not create a session on api authentication, that's to be done on webapp login
-              // only
+              // only; STATELESS ensures no session is created or used for authentication
               .sessionManagement(
                   (sessionManagement) ->
-                      sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+                      sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
               .requestCache((cache) -> cache.requestCache(new NullRequestCache()));
 
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
@@ -975,16 +975,13 @@ public class WebSecurityConfig {
                           headers,
                           securityConfiguration.getHttpHeaders(),
                           securityConfiguration.getSaas().isConfigured()))
-              // do not create a session on api authentication, that's to be done on webapp login
-              // only
+              // disabled for performance debugging
               .sessionManagement(
                   (sessionManagement) ->
-                      sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+                      sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
               .requestCache((cache) -> cache.requestCache(new NullRequestCache()))
               .exceptionHandling(
                   (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
-              .sessionManagement(
-                  configurer -> configurer.sessionCreationPolicy(SessionCreationPolicy.NEVER))
               .cors(AbstractHttpConfigurer::disable)
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
