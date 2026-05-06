@@ -85,15 +85,12 @@
   }
 
   .tileNumber {
-    font-weight: bold;
-    font-size: 28px;
-    line-height: 36px;
+    @include type-style('productive-heading-04');
     color: $text-primary;
     padding: $spacing-03;
 
     @include breakpoint(md) {
-      font-size: 36px;
-      line-height: 44px;
+      @include type-style('productive-heading-05');
     }
   }
 
