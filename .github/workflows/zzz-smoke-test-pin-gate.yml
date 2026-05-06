@@ -1,10 +1,11 @@
 # DO NOT MERGE — smoke-test fixture for PR #52554
 #
-# Introduces a deliberately unpinned external action (foo/bar@v1) so the
-# `check-action-pins` gate can be observed firing in CI. The workflow itself
-# never runs (manual `workflow_dispatch` trigger only, on a non-existent action).
-# This file is created on a throwaway branch and is meant to be deleted along
-# with that branch once the smoke test is confirmed.
+# Originally introduced an unpinned `foo/bar@v1` to exercise the gate's
+# violation comment. Now SHA-pinned (with a placeholder SHA that satisfies
+# the 40-char hex format the policy requires) to exercise the gate's
+# "resolved" transition — the bot comment on this PR should update from
+# "❌ Unpinned 3rd-party GitHub Action(s) detected" to "✅ Pinning issue
+# resolved". This branch will be deleted once the parent PR (#52554) merges.
 name: zzz-smoke-test-pin-gate
 on: workflow_dispatch
 
@@ -12,4 +13,6 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
-      - uses: foo/bar@v1
+      - uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
+        with:
+          name: smoke-test-fixture-not-real
