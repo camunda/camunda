@@ -183,6 +183,19 @@ jobs:
         working-directory: e2e-tests
         run: npx playwright install chromium --with-deps
 
+      - name: Import E2E Test Secrets
+        id: e2e-secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD;
+            secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;
+            secret/data/products/qa/ci/cross-component-e2e-test-suite DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD;
+
       - name: Run Smoke Tests
         working-directory: e2e-tests
         env:
@@ -191,9 +204,9 @@ jobs:
           PLAYWRIGHT_BASE_URL: https://${{ matrix.deployment.host }}
           PROJECT: chromium
           CI: true
-          DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: demo
-          DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: admin
-          DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD: admin
+          DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: ${{ steps.e2e-secrets.outputs.DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD }}
+          DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: ${{ steps.e2e-secrets.outputs.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}
+          DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD: ${{ steps.e2e-secrets.outputs.DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD }}
           TASKLIST_VERSION: v2
         run: |
           npx playwright test "tests/${MINOR_VERSION}/smoke-tests.spec.ts" \
