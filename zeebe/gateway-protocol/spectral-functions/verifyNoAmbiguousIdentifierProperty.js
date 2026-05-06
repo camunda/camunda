@@ -41,7 +41,7 @@ module.exports = (input, opts, context) => {
 /**
  * Derives a human-readable label for an inline schema from its JSON path.
  * Example path: ['paths', '/things', 'post', 'requestBody', 'content', 'application/json', 'schema']
- * Produces: "POST /things (inline request body)"
+ * Produces: "POST /things (inline schema)"
  */
 function deriveInlineLabel(pathSegments) {
   const pathStr = pathSegments[1] || '?';
