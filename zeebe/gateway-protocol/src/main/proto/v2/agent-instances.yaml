@@ -343,15 +343,19 @@ components:
       type: object
       required:
         - name
+        - description
+        - elementId
       properties:
         name:
           type: string
           description: The tool name as visible to the LLM.
         description:
           type: string
+          nullable: true
           description: A human-readable description of the tool.
         elementId:
           type: string
+          nullable: true
           description: The BPMN element ID of the tool element within the ad-hoc sub-process.
 
     AgentInstanceMetrics:
