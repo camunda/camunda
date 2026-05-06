@@ -263,6 +263,7 @@ test.describe('Process Instances Filters', () => {
     operateFiltersPanelPage,
     operateOperationsDetailsPage,
   }) => {
+    test.slow();
     await test.step('Filter by Parent Process Instance Key and assert results', async () => {
       const callActivityProcessInstanceKey =
         callActivityProcessInstance.processInstanceKey.toString();

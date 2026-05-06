@@ -72,7 +72,8 @@ test.describe('Process Instance History', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Verify history of instance with an incident', async ({
+    // TODO(triage-agent): flaky – timing: assertion mismatch — expected vs actual value differ
+test('Verify history of instance with an incident', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
