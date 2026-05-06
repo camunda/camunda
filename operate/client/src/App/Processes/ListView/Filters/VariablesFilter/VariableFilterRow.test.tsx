@@ -81,9 +81,7 @@ describe('<VariableFilterRow />', () => {
       />,
       {wrapper: getWrapper()},
     );
-    expect(
-      screen.getByTestId('delete-variable-filter-test-id'),
-    ).not.toBeVisible();
+    expect(screen.getByTestId('delete-variable-filter-0')).not.toBeVisible();
   });
 
   it('should show delete button when isDeleteHidden is false', () => {
@@ -97,7 +95,7 @@ describe('<VariableFilterRow />', () => {
       {wrapper: getWrapper()},
     );
 
-    expect(screen.getByTestId('delete-variable-filter-test-id')).toBeVisible();
+    expect(screen.getByTestId('delete-variable-filter-0')).toBeVisible();
   });
 
   it('should update name input when user types', async () => {
