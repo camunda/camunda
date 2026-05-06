@@ -138,4 +138,120 @@ public class CamundaProcessInstanceContextTest {
 
     assertThat(job.getVariables()).containsEntry("ref", "id-" + processInstanceKey);
   }
+
+  @Test
+  public void shouldResolveProcessInstanceBusinessIdInInputMapping() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("processWithBid")
+            .startEvent()
+            .serviceTask(
+                "task",
+                b ->
+                    b.zeebeJobType("bidType")
+                        .zeebeInputExpression("camunda.processInstance.businessId", "bidVar"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("processWithBid")
+            .withBusinessId("ORDER-42")
+            .create();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.jobs().withType("bidType").activate();
+
+    // then
+    final var job =
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+            .withType("bidType")
+            .getFirst()
+            .getValue()
+            .getJobs()
+            .get(0);
+
+    assertThat(job.getVariables()).containsEntry("bidVar", "ORDER-42");
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceBusinessIdAsNullWhenNotSet() {
+    // given - process started without an explicit businessId
+    final var process =
+        Bpmn.createExecutableProcess("processWithoutBid")
+            .startEvent()
+            .serviceTask(
+                "task",
+                b ->
+                    b.zeebeJobType("noBidType")
+                        .zeebeInputExpression("camunda.processInstance.businessId", "bidVar"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("processWithoutBid").create();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.jobs().withType("noBidType").activate();
+
+    // then - unset businessId resolves to null so users can detect absence
+    final var job =
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+            .withType("noBidType")
+            .getFirst()
+            .getValue()
+            .getJobs()
+            .get(0);
+
+    assertThat(job.getVariables()).containsEntry("bidVar", null);
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceBusinessIdInSubProcessInputMapping() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("processBidSub")
+            .startEvent()
+            .subProcess(
+                "sub",
+                s -> {
+                  s.embeddedSubProcess()
+                      .startEvent()
+                      .serviceTask("inner", b -> b.zeebeJobType("innerBidType"))
+                      .endEvent();
+                  s.zeebeInputExpression("camunda.processInstance.businessId + \"-child\"", "ref");
+                })
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("processBidSub").withBusinessId("PARENT").create();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.jobs().withType("innerBidType").activate();
+
+    // then
+    final var job =
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+            .withType("innerBidType")
+            .getFirst()
+            .getValue()
+            .getJobs()
+            .get(0);
+
+    assertThat(job.getVariables()).containsEntry("ref", "PARENT-child");
+  }
 }

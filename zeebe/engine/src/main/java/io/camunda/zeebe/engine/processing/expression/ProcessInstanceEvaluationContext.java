@@ -18,21 +18,26 @@ import org.agrona.DirectBuffer;
  * Evaluation context exposing properties of the current process instance via the {@code
  * camunda.processInstance} namespace.
  *
- * <p>Currently provides {@code key}, the process instance key.
+ * <p>Provides {@code key} (the process instance key) and {@code businessId} (the business id, or
+ * {@code null} when none was set on creation).
  */
 public final class ProcessInstanceEvaluationContext implements ScopedEvaluationContext {
 
   private final ElementInstanceState elementInstanceState;
   private final long processInstanceKey;
+  private final String businessId;
 
   public ProcessInstanceEvaluationContext(final ElementInstanceState elementInstanceState) {
-    this(elementInstanceState, -1);
+    this(elementInstanceState, -1, null);
   }
 
   private ProcessInstanceEvaluationContext(
-      final ElementInstanceState elementInstanceState, final long processInstanceKey) {
+      final ElementInstanceState elementInstanceState,
+      final long processInstanceKey,
+      final String businessId) {
     this.elementInstanceState = elementInstanceState;
     this.processInstanceKey = processInstanceKey;
+    this.businessId = businessId;
   }
 
   @Override
@@ -41,8 +46,12 @@ public final class ProcessInstanceEvaluationContext implements ScopedEvaluationC
     if (elementInstance == null) {
       return this;
     }
+    final var record = elementInstance.getValue();
+    final var rawBusinessId = record.getBusinessId();
     return new ProcessInstanceEvaluationContext(
-        elementInstanceState, elementInstance.getValue().getProcessInstanceKey());
+        elementInstanceState,
+        record.getProcessInstanceKey(),
+        rawBusinessId == null || rawBusinessId.isEmpty() ? null : rawBusinessId);
   }
 
   @Override
@@ -50,10 +59,15 @@ public final class ProcessInstanceEvaluationContext implements ScopedEvaluationC
     if (processInstanceKey < 0) {
       return Either.left(null);
     }
-    if ("key".equals(variableName)) {
-      return Either.left(
-          BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(processInstanceKey)));
-    }
-    return Either.left(null);
+    return switch (variableName) {
+      case "key" ->
+          Either.left(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(processInstanceKey)));
+      case "businessId" ->
+          businessId == null
+              ? Either.left(null)
+              : Either.left(
+                  BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack((Object) businessId)));
+      default -> Either.left(null);
+    };
   }
 }
