@@ -31,7 +31,14 @@ test.describe('Cluster API Tests', () => {
     );
     const result = await res.json();
     expect(result.brokers).toHaveLength(1);
-    expect(result.brokers[0].partitions).toHaveLength(1);
+    // Partition count is environment-dependent (single-broker clusters can be
+    // configured with 1 or more partitions). Assert health/role rather than
+    // a hard-coded count to keep the test stable across environments.
+    expect(result.brokers[0].partitions.length).toBeGreaterThanOrEqual(1);
+    for (const partition of result.brokers[0].partitions) {
+      expect(partition.health).toBe('healthy');
+      expect(partition.role).toBe('leader');
+    }
   });
 
   test('Get Cluster Topology - Unauthorized', async ({request}) => {

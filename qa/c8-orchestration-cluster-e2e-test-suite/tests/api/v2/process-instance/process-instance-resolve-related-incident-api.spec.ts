@@ -88,6 +88,10 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
 
     await test.step('Search for incidents related to created process instance', async () => {
       await expect(async () => {
+        // Reset accumulators on every retry so leftover state from a prior
+        // (failed) iteration does not pollute the assertion.
+        elementInstanceKey = '';
+        incidentKeys = [];
         const incidents = await request.post(
           buildUrl(
             `/process-instances/${processInstanceKeyWithIncidentToResolve}/incidents/search`,
