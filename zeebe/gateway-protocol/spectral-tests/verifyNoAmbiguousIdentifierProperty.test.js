@@ -71,9 +71,17 @@ describe('verifyNoAmbiguousIdentifierProperty', () => {
     });
   });
 
+  describe('invalid: bare id inside an allOf member', () => {
+    it('flags AllOfBadIdSchema', () => {
+      const v = filterByPathSegment(violations, 'AllOfBadIdSchema');
+      assert.equal(v.length, 1);
+      assert.match(v[0].message, /ambiguous property "id"/);
+    });
+  });
+
   describe('total violation count', () => {
-    it('produces exactly 6 violations total', () => {
-      assert.equal(violations.length, 6);
+    it('produces exactly 7 violations total', () => {
+      assert.equal(violations.length, 7);
     });
   });
 });

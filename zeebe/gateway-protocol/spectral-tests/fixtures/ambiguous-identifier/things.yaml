@@ -6,6 +6,8 @@ info:
   title: Ambiguous identifier test schemas
   version: "1.0"
 
+paths: {}
+
 components:
   schemas:
     # ── Valid: uses qualified property names ─────────────────────
@@ -83,3 +85,13 @@ components:
         name:
           type: string
           description: Bare name.
+
+    # ── Invalid: bare `id` inside an allOf member ───────────────
+    AllOfBadIdSchema:
+      type: object
+      allOf:
+        - type: object
+          properties:
+            id:
+              type: string
+              description: Bare id hidden inside allOf.
