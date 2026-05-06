@@ -43,7 +43,7 @@ public class DbGroupState implements MutableGroupState {
     groupId.wrapString(group.getGroupId());
     final var persistedGroup = groupColumnFamily.get(groupId);
     if (persistedGroup != null) {
-      persistedGroup.copyFrom(group);
+      persistedGroup.wrap(group);
       groupColumnFamily.update(groupId, persistedGroup);
     }
   }

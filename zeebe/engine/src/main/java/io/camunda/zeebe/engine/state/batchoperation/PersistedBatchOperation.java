@@ -33,13 +33,15 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceMigrationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceModificationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.util.ProjectionOf;
 import java.util.Comparator;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** The persisted record for a batch operation in the rocksDb state. */
-public class PersistedBatchOperation extends UnpackedObject implements DbValue {
+public class PersistedBatchOperation extends UnpackedObject
+    implements DbValue, ProjectionOf<BatchOperationCreationRecord, PersistedBatchOperation> {
 
   /** The key of the batch operation. This is a unique identifier for the batch operation. */
   private final LongProperty keyProp = new LongProperty("key");
@@ -153,6 +155,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(followUpCommandProp);
   }
 
+  @Override
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
     setKey(record.getBatchOperationKey());
     setBatchOperationType(record.getBatchOperationType());

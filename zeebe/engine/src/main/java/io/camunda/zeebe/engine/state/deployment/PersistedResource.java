@@ -17,11 +17,13 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PersistedResource extends UnpackedObject implements DbValue {
+public class PersistedResource extends UnpackedObject
+    implements DbValue, ProjectionOf<ResourceRecord, PersistedResource> {
   private final StringProperty resourceIdProp = new StringProperty("resourceId");
   private final IntegerProperty versionProp = new IntegerProperty("version");
   private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
@@ -96,7 +98,8 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     return bufferAsString(resourceProp.getValue());
   }
 
-  public void wrap(final ResourceRecord record) {
+  @Override
+  public PersistedResource wrap(final ResourceRecord record) {
     resourceIdProp.setValue(record.getResourceId());
     versionProp.setValue(record.getVersion());
     resourceKeyProp.setValue(record.getResourceKey());
@@ -106,6 +109,7 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     deploymentKeyProp.setValue(record.getDeploymentKey());
     versionTagProp.setValue(record.getVersionTag());
     resourceProp.setValue(record.getResourceProp());
+    return this;
   }
 
   public boolean isDuplicateOf(final DirectBuffer resourceName, final DirectBuffer checksum) {
