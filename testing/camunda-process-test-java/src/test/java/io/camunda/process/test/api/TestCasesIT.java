@@ -23,8 +23,10 @@ import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.TestCaseSource;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 
+@Disabled("Requires localhost:5000 Docker registry; see #51653")
 @CamundaProcessTest
 public class TestCasesIT {
 

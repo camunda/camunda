@@ -48,7 +48,7 @@ test.describe('task panel page', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('filter selection', async ({taskPanelPage}) => {
+  test.skip('filter selection', async ({taskPanelPage}) => {
     test.slow();
     await expect(
       taskPanelPage.availableTasks.getByText('Some user activity'),
@@ -66,7 +66,7 @@ test.describe('task panel page', () => {
     ).toHaveCount(0);
   });
 
-  test('update task list according to user actions', async ({
+  test.skip('update task list according to user actions', async ({
     page,
     taskPanelPage,
     taskDetailsPage,

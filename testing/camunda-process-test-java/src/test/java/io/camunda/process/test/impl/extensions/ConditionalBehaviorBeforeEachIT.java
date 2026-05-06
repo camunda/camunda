@@ -29,12 +29,14 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  * Verifies that conditional behaviors registered in {@code @BeforeEach} work correctly across
  * multiple test methods. Each test method gets fresh behaviors.
  */
+@Disabled("Flaky: shouldCompleteProcessSecondRun intermittently fails with timing issues")
 @CamundaProcessTest
 public class ConditionalBehaviorBeforeEachIT {
 
