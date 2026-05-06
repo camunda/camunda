@@ -8,8 +8,10 @@
 package io.camunda.zeebe.dynamic.config;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -23,10 +25,14 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class BpmnClusterConfigurationMapper {
 
@@ -36,7 +42,8 @@ public final class BpmnClusterConfigurationMapper {
           .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
           .registerModule(new Jdk8Module())
           .registerModule(new JavaTimeModule())
-          .registerModule(memberIdModule());
+          .registerModule(memberIdModule())
+          .registerModule(routingStateModule());
 
   @SuppressWarnings("unchecked")
   public static ClusterConfiguration fromMap(final Map<String, Object> map) {
@@ -67,13 +74,58 @@ public final class BpmnClusterConfigurationMapper {
       }
       final boolean nullLastUpdated = memberState.lastUpdated() == null;
       if (partitionsChanged || nullLastUpdated) {
-        final Instant lastUpdated =
-            nullLastUpdated ? Instant.EPOCH : memberState.lastUpdated();
+        final Instant lastUpdated = nullLastUpdated ? Instant.EPOCH : memberState.lastUpdated();
         result =
             result.updateMember(
                 memberId,
                 ms -> new MemberState(ms.version(), lastUpdated, ms.state(), fixedPartitions));
       }
+    }
+    return result;
+  }
+
+  private static SimpleModule routingStateModule() {
+    final var module = new SimpleModule();
+    module.addDeserializer(
+        RoutingState.RequestHandling.class,
+        new JsonDeserializer<>() {
+          @Override
+          @SuppressWarnings("unchecked")
+          public RoutingState.RequestHandling deserialize(
+              final JsonParser p, final DeserializationContext ctxt) throws IOException {
+            final Map<String, Object> map = p.readValueAs(Map.class);
+            if (map.containsKey("basePartitionCount")) {
+              final int base = ((Number) map.get("basePartitionCount")).intValue();
+              final Set<Integer> additional =
+                  toIntSet(
+                      (List<?>) map.getOrDefault("additionalActivePartitions", List.of()));
+              final Set<Integer> inactive =
+                  toIntSet((List<?>) map.getOrDefault("inactivePartitions", List.of()));
+              return new RoutingState.RequestHandling.ActivePartitions(base, additional, inactive);
+            } else {
+              return new RoutingState.RequestHandling.AllPartitions(
+                  ((Number) map.get("partitionCount")).intValue());
+            }
+          }
+        });
+    module.addDeserializer(
+        RoutingState.MessageCorrelation.class,
+        new JsonDeserializer<>() {
+          @Override
+          public RoutingState.MessageCorrelation deserialize(
+              final JsonParser p, final DeserializationContext ctxt) throws IOException {
+            final Map<String, Object> map = p.readValueAs(Map.class);
+            return new RoutingState.MessageCorrelation.HashMod(
+                ((Number) map.get("partitionCount")).intValue());
+          }
+        });
+    return module;
+  }
+
+  private static Set<Integer> toIntSet(final List<?> list) {
+    final var result = new LinkedHashSet<Integer>();
+    for (final var item : list) {
+      result.add(((Number) item).intValue());
     }
     return result;
   }

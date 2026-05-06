@@ -45,6 +45,8 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
@@ -52,6 +54,8 @@ public final class ClusterConfigurationManagerService
   // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
   // dynamically.
   private static final int COORDINATOR_NODE_ID = 0;
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ClusterConfigurationManagerService.class);
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
   private final boolean isCoordinator;
@@ -71,6 +75,7 @@ public final class ClusterConfigurationManagerService
   private BpmnConfigurationChangeJobWorker bpmnJobWorker;
   private RedistributionCalculationJobWorker redistributionCalculationWorker;
   private ExporterCalculationJobWorker exporterCalculationWorker;
+  private ClusterVariableUpdateJobWorker clusterVariableUpdateWorker;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -246,6 +251,9 @@ public final class ClusterConfigurationManagerService
     if (exporterCalculationWorker != null) {
       exporterCalculationWorker.close();
     }
+    if (clusterVariableUpdateWorker != null) {
+      clusterVariableUpdateWorker.close();
+    }
     if (camundaClient != null) {
       camundaClient.close();
     }
@@ -282,6 +290,74 @@ public final class ClusterConfigurationManagerService
 
     exporterCalculationWorker = new ExporterCalculationJobWorker(camundaClient);
     exporterCalculationWorker.start();
+
+    clusterVariableUpdateWorker = new ClusterVariableUpdateJobWorker(camundaClient);
+    clusterVariableUpdateWorker.start();
+
+    if (isCoordinator) {
+      initClusterVariable();
+    }
+  }
+
+  private void initClusterVariable() {
+    clusterConfigurationManager
+        .getClusterConfiguration()
+        .onComplete(
+            (config, err) -> {
+              if (err != null || config == null) {
+                LOG.warn("Failed to read cluster configuration for cluster variable init", err);
+                return;
+              }
+              final var configMap = BpmnClusterConfigurationMapper.toMap(config);
+              // Run in a virtual thread so the retry loop doesn't block any actor thread
+              Thread.ofVirtual()
+                  .name("cluster-variable-init")
+                  .start(() -> createClusterVariableWithRetry(configMap));
+            });
+  }
+
+  private void createClusterVariableWithRetry(final java.util.Map<String, Object> configMap) {
+    final int maxAttempts = 30;
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        camundaClient
+            .newGloballyScopedClusterVariableCreateRequest()
+            .create(ClusterVariableUpdateJobWorker.VARIABLE_NAME, configMap)
+            .send()
+            .join();
+        LOG.info(
+            "Cluster variable '{}' initialized on bootstrap",
+            ClusterVariableUpdateJobWorker.VARIABLE_NAME);
+        return;
+      } catch (final Exception e) {
+        final String msg = e.getMessage();
+        if (msg != null
+            && (msg.contains("409")
+                || msg.contains("ALREADY_EXISTS")
+                || msg.contains("Conflict"))) {
+          // Variable already exists — expected on restart, nothing to do
+          LOG.debug(
+              "Cluster variable '{}' already exists (expected on restart)",
+              ClusterVariableUpdateJobWorker.VARIABLE_NAME);
+          return;
+        }
+        LOG.debug(
+            "Cluster variable init attempt {}/{} failed, retrying in 5s: {}",
+            attempt,
+            maxAttempts,
+            msg);
+        try {
+          Thread.sleep(5_000);
+        } catch (final InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          return;
+        }
+      }
+    }
+    LOG.warn(
+        "Failed to initialize cluster variable '{}' after {} attempts",
+        ClusterVariableUpdateJobWorker.VARIABLE_NAME,
+        maxAttempts);
   }
 
   public void removePartitionChangeExecutor() {

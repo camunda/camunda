@@ -5,6 +5,13 @@
     <bpmn:callActivity id="Activity_0nqm2bx" name="Invoke Processor">
       <bpmn:extensionElements>
         <zeebe:calledElement processId="=processor_id" propagateAllChildVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=camunda.vars.cluster.clusterConfiguration" target="currentClusterConfiguration" />
+          <zeebe:input source="=membersToAdd" target="membersToAdd" />
+          <zeebe:input source="=membersToRemove" target="membersToRemove" />
+          <zeebe:input source="=direction" target="direction" />
+          <zeebe:input source="=request_id" target="request_id" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0it81hm</bpmn:incoming>
       <bpmn:outgoing>Flow_1diieq1</bpmn:outgoing>
@@ -14,7 +21,11 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1diieq1" sourceRef="Activity_0nqm2bx" targetRef="Event_13r8rej" />
     <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <zeebe:subscription correlationKey="=request_id" />
+      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0it81hm</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1" messageRef="Message_0sf7vgm" />
     </bpmn:startEvent>
   </bpmn:process>
   <bpmn:message id="Message_0sf7vgm" name="cluster_modification" />

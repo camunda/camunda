@@ -135,13 +135,13 @@
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_0u4g912" sourceRef="Task_MemberJoin" targetRef="Activity_1jiekgu" />
     <bpmn:sequenceFlow id="Flow_119ruxa" sourceRef="Activity_1jiekgu" targetRef="Gateway_Merge" />
-    <bpmn:scriptTask id="Task_PostScaling" name="Post-Scaling">
+    <bpmn:serviceTask id="Task_PostScaling" name="Update Cluster Variable">
       <bpmn:extensionElements>
-        <zeebe:script expression="=&#34;&#34;" resultVariable="empty" />
+        <zeebe:taskDefinition type="update-cluster-variable" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1p4kr9b</bpmn:incoming>
       <bpmn:outgoing>Flow_06mm4kl</bpmn:outgoing>
-    </bpmn:scriptTask>
+    </bpmn:serviceTask>
     <bpmn:subProcess id="Activity_10y55xc">
       <bpmn:incoming>Flow_05chzo7</bpmn:incoming>
       <bpmn:outgoing>Flow_0rg2qak</bpmn:outgoing>
