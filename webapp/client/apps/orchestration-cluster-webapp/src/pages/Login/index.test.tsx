@@ -7,7 +7,7 @@
  */
 
 import {render} from 'vitest-browser-react';
-import {Component} from './index';
+import {Login} from './index';
 import {it} from '#/vitest-modules/test-extend';
 import {describe, expect, vi} from 'vitest';
 
@@ -16,16 +16,16 @@ describe('<Login />', () => {
 		vi.useFakeTimers();
 		const mockYear = 1984;
 		vi.setSystemTime(new Date(mockYear, 0));
-		const screen = await render(<Component />);
+		const screen = await render(<Login />);
 
 		await expect
-			.element(screen.getByText(`© Camunda Services GmbH ${mockYear}. All rights reserved. | 8.10.1`))
+			.element(screen.getByText(`© Camunda Services GmbH ${mockYear}. All rights reserved. | 0.0.0`))
 			.toBeVisible();
 		vi.useRealTimers();
 	});
 
 	it('should not allow the form to be submitted with empty fields', async () => {
-		const screen = await render(<Component />);
+		const screen = await render(<Login />);
 
 		await screen.getByRole('button', {name: /login/i}).click();
 

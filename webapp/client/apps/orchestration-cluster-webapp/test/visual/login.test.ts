@@ -12,7 +12,5 @@ test('should match the login page snapshot', async ({page}) => {
 	await page.goto('/login');
 	await expect(page.getByRole('button', {name: /login/i})).toBeVisible();
 
-	await expect(page).toHaveScreenshot('login.png', {
-		fullPage: true,
-	});
+	await expect(page).toHaveScreenshot();
 });

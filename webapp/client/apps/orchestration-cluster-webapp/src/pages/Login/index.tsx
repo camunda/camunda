@@ -115,7 +115,7 @@ const Login: React.FC = () => {
 								<Button
 									type="submit"
 									disabled={submitting}
-									{...(submitting ? {renderIcon: LoadingSpinner} : {})}
+									renderIcon={submitting ? LoadingSpinner : undefined}
 									className={styles['button']!}
 								>
 									{/* TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325 */}
@@ -134,6 +134,4 @@ const Login: React.FC = () => {
 	);
 };
 
-Login.displayName = 'Login';
-
-export {Login as Component};
+export {Login};
