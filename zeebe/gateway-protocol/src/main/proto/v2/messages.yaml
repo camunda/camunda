@@ -349,8 +349,9 @@ components:
           additionalProperties:
             type: string
           description: |
-            The `zeebe:properties` extension properties extracted from the BPMN element associated
-            with this subscription. Empty object when no properties are defined.
+            The subset of `zeebe:properties` extension properties whose keys start with the
+            `io.camunda.tool:` prefix, extracted from the BPMN element associated with this
+            subscription. Empty object when no matching properties are defined.
         processDefinitionName:
           type: string
           nullable: true
