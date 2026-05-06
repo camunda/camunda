@@ -391,6 +391,10 @@ body {
  * Markers:
  *   coverage-completed  → completed shapes (tasks, events, gateways)
  *   coverage-taken      → taken sequence flows
+ *
+ * Note: !important is required here because bpmn-js inlines SVG styles directly
+ * on the shape/path elements. CSS class selectors alone cannot override inline
+ * styles without !important.
  */
 
 /* Completed shapes (tasks, events, gateways) */

@@ -28,6 +28,7 @@ export async function renderProcess(processId, data, context = null) {
   if (context) {
     const suite = suites.find((s) => s.id === context.suiteId);
     const run = suite?.runs?.find((r) => r.name === context.runName);
+    // If suite or run is not found, cov stays null and the diagram renders without highlighting
     cov = run?.coverages?.find((c) => c.processDefinitionId === processId) ?? null;
 
     // Breadcrumb: Suite > Run > Process

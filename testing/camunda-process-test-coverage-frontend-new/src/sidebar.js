@@ -51,7 +51,8 @@ export function updateSidebarActive(route) {
       .querySelectorAll(`[data-suite-id="${CSS.escape(route.suiteId)}"][data-route="suite"]`)
       .forEach((el) => el.classList.add('active'));
   } else if (route.view === 'run' || route.view === 'runProcess') {
-    // Match by BOTH suiteId and runName to avoid cross-suite false positives
+    // Match on BOTH suiteId AND runName so two suites with identically-named
+    // test runs don't both get highlighted simultaneously.
     document
       .querySelectorAll(
         `[data-suite-id="${CSS.escape(route.suiteId)}"][data-run-name="${CSS.escape(route.runName)}"]`
