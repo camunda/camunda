@@ -522,8 +522,8 @@ class OpensearchBatchRequestTest {
   }
 
   private static byte[] readAllBytes(final BinaryData data) {
-    try {
-      return data.asInputStream().readAllBytes();
+    try (var in = data.asInputStream()) {
+      return in.readAllBytes();
     } catch (final IOException e) {
       throw new AssertionError("failed to read BinaryData", e);
     }
