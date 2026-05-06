@@ -24,7 +24,6 @@ import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
