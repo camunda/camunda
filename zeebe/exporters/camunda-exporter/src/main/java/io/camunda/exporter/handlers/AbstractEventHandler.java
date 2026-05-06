@@ -38,6 +38,7 @@ import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptio
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -49,9 +50,11 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     implements ExportHandler<MessageSubscriptionEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
+  protected final ToolsConfiguration toolConfig;
 
-  public AbstractEventHandler(final String indexName) {
+  public AbstractEventHandler(final String indexName, final ToolsConfiguration toolConfig) {
     this.indexName = indexName;
+    this.toolConfig = toolConfig;
   }
 
   @Override
@@ -148,9 +151,13 @@ public abstract class AbstractEventHandler<R extends RecordValue>
               .map(p -> p.get(elementId))
               .orElse(Map.of());
       entity
-          .setToolName(ProcessCacheUtil.getToolName(ext))
-          .setInboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext))
-          .setToolProperties(ProcessCacheUtil.getToolProperties(ext));
+          .setToolName(ProcessCacheUtil.getToolName(ext, toolConfig.getExtensionPropertyToolName()))
+          .setInboundConnectorType(
+              ProcessCacheUtil.getInboundConnectorType(
+                  ext, toolConfig.getExtensionPropertyInboundConnectorType()))
+          .setToolProperties(
+              ProcessCacheUtil.getToolProperties(
+                  ext, toolConfig.getExtensionPropertyPrefixToolProperties()));
     }
   }
 }
