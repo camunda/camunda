@@ -29,10 +29,10 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreatio
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
+import io.camunda.zeebe.engine.processing.scheduled.runtime.ManagedScheduledTask;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.processing.timer.TimerCancelProcessor;
 import io.camunda.zeebe.engine.processing.timer.TimerTriggerProcessor;
 import io.camunda.zeebe.engine.processing.variable.VariableDocumentUpdateProcessor;
@@ -69,7 +69,7 @@ public final class BpmnProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final DueDateTimerCheckScheduler timerChecker,
+      final ManagedScheduledTask timerChecker,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
@@ -219,7 +219,7 @@ public final class BpmnProcessors {
 
   private static void addTimerStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final DueDateTimerCheckScheduler timerChecker,
+      final ManagedScheduledTask timerChecker,
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {

@@ -7,132 +7,72 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.ScheduledTask;
+import io.camunda.zeebe.engine.processing.scheduled.api.TaskContext;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.scheduling.Task;
-import io.camunda.zeebe.stream.api.scheduling.TaskResult;
-import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import java.time.Duration;
-import java.time.InstantSource;
 import org.agrona.collections.MutableInteger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAware {
-  private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutCheckScheduler.class);
-
-  private boolean shouldReschedule = false;
-
-  /** Keeps track of the timestamp to compare the message deadlines against. */
-  private long executionTimestamp = -1;
-
-  /** Keeps track of where to continue between iterations. */
-  private DeadlineIndex startAtIndex = null;
+/**
+ * Times out activated jobs whose deadline has passed by writing a {@link JobIntent#TIME_OUT}
+ * command for each.
+ *
+ * <p>Periodic with continuation: returns {@link Outcome.YieldNow} when the configured batch limit
+ * is hit, retaining a cursor in {@link #startAtIndex} so the next run resumes where this one left
+ * off. When the queue drains the cursor is cleared and the runtime falls back to its periodic
+ * interval.
+ */
+public final class JobTimeoutCheckScheduler implements ScheduledTask {
 
   private final JobState state;
-  private ReadonlyStreamProcessorContext processingContext;
-  private final Duration pollingInterval;
   private final int batchLimit;
-  private final InstantSource clock;
 
-  public JobTimeoutCheckScheduler(
-      final JobState state,
-      final Duration pollingInterval,
-      final int batchLimit,
-      final InstantSource clock) {
+  /** Stable timestamp across continuation iterations; cleared when the queue drains. */
+  private long executionTimestamp = -1;
+
+  /** Cursor for the next continuation; null between drains. */
+  private DeadlineIndex startAtIndex = null;
+
+  public JobTimeoutCheckScheduler(final JobState state, final int batchLimit) {
     this.state = state;
-    this.pollingInterval = pollingInterval;
     this.batchLimit = batchLimit;
-    this.clock = clock;
-  }
-
-  public void schedule(final Duration idleInterval) {
-    if (shouldReschedule) {
-      processingContext.getScheduleService().runAt(clock.millis() + idleInterval.toMillis(), this);
-    }
   }
 
   @Override
-  public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    LOG.trace("Job timeout checker running...");
+  public String name() {
+    return "job-timeout-check";
+  }
+
+  @Override
+  public Outcome run(final TaskContext ctx) {
     if (executionTimestamp == -1) {
-      executionTimestamp = clock.millis();
+      executionTimestamp = ctx.clock().millis();
     }
 
-    final var counter = new MutableInteger(0);
+    final MutableInteger counter = new MutableInteger(0);
 
-    final DeadlineIndex lastVisitedIndex =
+    final DeadlineIndex lastVisited =
         state.forEachTimedOutEntry(
             executionTimestamp,
             startAtIndex,
             (key, record) -> {
-              if (counter.getAndIncrement() >= batchLimit) {
+              if (counter.getAndIncrement() >= batchLimit || ctx.shouldYield()) {
                 return false;
               }
-
-              return taskResultBuilder.appendCommandRecord(key, JobIntent.TIME_OUT, record);
+              return ctx.sink().append(key, JobIntent.TIME_OUT, record);
             });
 
-    if (lastVisitedIndex != null) {
-      LOG.trace(
-          "Job timeout checker yielded early. Will reschedule immediately from {}",
-          lastVisitedIndex);
-      startAtIndex = lastVisitedIndex;
-      schedule(Duration.ZERO);
-    } else {
-      executionTimestamp = -1;
-      startAtIndex = null;
-      schedule(pollingInterval);
+    if (lastVisited != null) {
+      // Stopped early — keep the cursor and ask the runtime to reschedule immediately.
+      startAtIndex = lastVisited;
+      return Outcome.YIELD_NOW;
     }
 
-    LOG.trace("{} timeout job commands appended to task result builder", counter.get());
-
-    return taskResultBuilder.build();
-  }
-
-  @Override
-  public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    this.processingContext = processingContext;
-    shouldReschedule = true;
-    schedule(pollingInterval);
-  }
-
-  @Override
-  public void onClose() {
-    cancelTimer();
-  }
-
-  @Override
-  public void onFailed() {
-    cancelTimer();
-  }
-
-  @Override
-  public void onPaused() {
-    cancelTimer();
-  }
-
-  @Override
-  public void onResumed() {
-    shouldReschedule = true;
-    schedule(pollingInterval);
-  }
-
-  private void cancelTimer() {
-    shouldReschedule = false;
-    LOG.trace("Job timeout checker canceled!");
-  }
-
-  // Package-private setters for tests
-
-  void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
-    this.processingContext = processingContext;
-  }
-
-  void setShouldReschedule(final boolean shouldReschedule) {
-    this.shouldReschedule = shouldReschedule;
+    // Queue drained for this round.
+    executionTimestamp = -1;
+    startAtIndex = null;
+    return Outcome.IDLE;
   }
 }
