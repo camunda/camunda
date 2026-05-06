@@ -18,10 +18,13 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import java.util.Map;
+import java.util.Optional;
 
 public final class BpmnConfigurationChangeJobWorker implements AutoCloseable {
 
@@ -112,6 +115,18 @@ public final class BpmnConfigurationChangeJobWorker implements AutoCloseable {
       case "member-remove" -> {
         final var memberToRemove = MemberId.from((String) vars.get("memberToRemove"));
         yield new MemberRemoveOperation(memberId, memberToRemove);
+      }
+      case "partition-enable-exporter" -> {
+        final int partitionId = ((Number) vars.get("partitionId")).intValue();
+        final String exporterId = (String) vars.get("exporterId");
+        final var initializeFrom = Optional.ofNullable((String) vars.get("initializeFrom"));
+        yield new PartitionEnableExporterOperation(
+            memberId, partitionId, exporterId, initializeFrom);
+      }
+      case "partition-disable-exporter" -> {
+        final int partitionId = ((Number) vars.get("partitionId")).intValue();
+        final String exporterId = (String) vars.get("exporterId");
+        yield new PartitionDisableExporterOperation(memberId, partitionId, exporterId);
       }
       default -> throw new IllegalArgumentException("Unknown operationType: " + type);
     };

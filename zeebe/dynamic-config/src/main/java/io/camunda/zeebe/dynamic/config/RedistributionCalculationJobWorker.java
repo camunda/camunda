@@ -61,8 +61,7 @@ public final class RedistributionCalculationJobWorker implements AutoCloseable {
       final var membersToAdd = (List<Number>) vars.getOrDefault("membersToAdd", List.of());
       final var membersToRemove = (List<Number>) vars.getOrDefault("membersToRemove", List.of());
       final ClusterConfiguration currentConfig =
-          BpmnClusterConfigurationMapper.fromMap(
-              toConfigMap(vars.get("currentClusterConfiguration")));
+          BpmnClusterConfigurationMapper.fromMap(toConfigMap(vars.get("configuration")));
 
       final Set<MemberId> newMembers = new HashSet<>(currentConfig.members().keySet());
       membersToAdd.forEach(id -> newMembers.add(MemberId.from(String.valueOf(id.intValue()))));

@@ -70,6 +70,7 @@ public final class ClusterConfigurationManagerService
   private CamundaClient camundaClient;
   private BpmnConfigurationChangeJobWorker bpmnJobWorker;
   private RedistributionCalculationJobWorker redistributionCalculationWorker;
+  private ExporterCalculationJobWorker exporterCalculationWorker;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -242,6 +243,9 @@ public final class ClusterConfigurationManagerService
     if (redistributionCalculationWorker != null) {
       redistributionCalculationWorker.close();
     }
+    if (exporterCalculationWorker != null) {
+      exporterCalculationWorker.close();
+    }
     if (camundaClient != null) {
       camundaClient.close();
     }
@@ -275,6 +279,9 @@ public final class ClusterConfigurationManagerService
 
     redistributionCalculationWorker = new RedistributionCalculationJobWorker(camundaClient);
     redistributionCalculationWorker.start();
+
+    exporterCalculationWorker = new ExporterCalculationJobWorker(camundaClient);
+    exporterCalculationWorker.start();
   }
 
   public void removePartitionChangeExecutor() {
