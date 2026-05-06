@@ -7,45 +7,38 @@
  */
 
 import type {Suggestion} from '@camunda/copilot-chat';
-import {matchPath} from 'react-router-dom';
 
-interface RoutePrompts {
-  readonly route: string;
-  readonly suggestions: readonly Suggestion[];
-}
+const INSTANCE_PROMPTS: readonly Suggestion[] = [
+  {label: 'Why is this stuck?'},
+  {label: 'Show recent incidents'},
+  {label: 'What variables does it have?'},
+];
 
-const PROMPTS: readonly RoutePrompts[] = [
-  {
-    route: '/processes/:processInstanceId/*',
-    suggestions: [
-      {label: 'Why is this stuck?'},
-      {label: 'Show recent incidents'},
-      {label: 'What variables does it have?'},
-    ],
-  },
-  {
-    route: '/dashboard',
-    suggestions: [
-      {label: 'Which processes are failing?'},
-      {label: 'Show me recent incidents across all processes'},
-    ],
-  },
-  {
-    route: '/processes',
-    suggestions: [
-      {label: 'List process definitions'},
-      {label: 'Which processes have open incidents?'},
-    ],
-  },
+const PROCESSES_LIST_PROMPTS: readonly Suggestion[] = [
+  {label: 'List process definitions'},
+  {label: 'Which processes have open incidents?'},
+];
+
+const DASHBOARD_PROMPTS: readonly Suggestion[] = [
+  {label: 'Which processes are failing?'},
+  {label: 'Show me recent incidents across all processes'},
 ];
 
 const FALLBACK: readonly Suggestion[] = [{label: "What's running right now?"}];
 
+const INSTANCE_PATH = /^\/processes\/[^/]+/;
+
 const getSuggestionsForRoute = (pathname: string): readonly Suggestion[] => {
-  const match = PROMPTS.find((entry) =>
-    matchPath({path: entry.route, end: false}, pathname),
-  );
-  return match?.suggestions ?? FALLBACK;
+  if (INSTANCE_PATH.test(pathname)) {
+    return INSTANCE_PROMPTS;
+  }
+  if (pathname === '/processes' || pathname === '/processes/') {
+    return PROCESSES_LIST_PROMPTS;
+  }
+  if (pathname === '/' || pathname === '') {
+    return DASHBOARD_PROMPTS;
+  }
+  return FALLBACK;
 };
 
 export {getSuggestionsForRoute};

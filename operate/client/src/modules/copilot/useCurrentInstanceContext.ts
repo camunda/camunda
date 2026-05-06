@@ -6,20 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {matchPath, useLocation} from 'react-router-dom'
+import {useLocation} from 'react-router-dom'
 
 interface CurrentInstanceContext {
   readonly processInstanceId: string | null
 }
 
+const INSTANCE_PATH = /^\/processes\/([^/]+)/
+
 const useCurrentInstanceContext = (): CurrentInstanceContext => {
   const {pathname} = useLocation()
-  const match = matchPath(
-    {path: '/processes/:processInstanceId/*', end: false},
-    pathname,
-  )
+  const match = INSTANCE_PATH.exec(pathname)
   return {
-    processInstanceId: match?.params.processInstanceId ?? null,
+    processInstanceId: match?.[1] ?? null,
   }
 }
 
