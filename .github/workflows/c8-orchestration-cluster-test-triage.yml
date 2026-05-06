@@ -29,7 +29,6 @@ permissions:
   actions: read
   contents: write
   pull-requests: write
-  issues: write
 
 jobs:
   triage:
@@ -123,6 +122,13 @@ jobs:
           done
 
           echo "downloaded=${downloaded}" >> "$GITHUB_OUTPUT"
+
+      # ── Fail fast if nothing was downloaded ─────────────────────────────────
+      - name: Check artifact downloads
+        if: steps.download.outputs.downloaded == '0'
+        run: |
+          echo "::error::No nightly artifacts could be downloaded. Ensure nightly runs have completed and the workflow has 'actions: read' permission."
+          exit 1
 
       # ── Analyse ─────────────────────────────────────────────────────────────
       - name: Analyse test results
@@ -255,7 +261,8 @@ jobs:
               '.fixed[] | "- `\(.file)`: \(.test) (\(.fix_type))"' \
               "fix-report-${label_prefix}.json")
 
-            FIX_BRANCH="fix/flaky-tests-${label_prefix}-${TODAY}"
+            # Include the run ID so reruns on the same day don't collide
+            FIX_BRANCH="fix/flaky-tests-${label_prefix}-${TODAY}-${{ github.run_id }}"
 
             git checkout -b "$FIX_BRANCH"
             git add qa/c8-orchestration-cluster-e2e-test-suite/
@@ -267,7 +274,6 @@ ${fixed_list}"
             if [[ "$DRY_RUN" != "true" ]]; then
               git push -u origin "$FIX_BRANCH"
 
-              safe_branch="${git_branch//\//-}"
               PR_URL=$(gh pr create \
                 --title "test: auto-fix flaky nightly tests on ${git_branch} ($(date -u +%Y-%m-%d))" \
                 --base "$git_branch" \

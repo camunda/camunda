@@ -52,12 +52,16 @@ from pathlib import Path
 
 # Matches the opening of a Playwright test call, capturing:
 #   group 1: test( or test.only(
-#   group 2: the test title (single- or double-quoted, including escaped quotes)
-#   group 3: everything up to and including the opening `{` of the arrow function body
+#   group 2: quote character around the title
+#   group 3: the test title
+#   group 4: the `{` that opens the arrow-function body
+#
+# Anchoring on `=>\s*{` rather than the first `{` avoids matching the `{`
+# inside parameter destructuring (e.g. `async ({request, page}) => {`).
 _TEST_OPEN_RE = re.compile(
-    r"""(test(?:\.only)?\s*\(\s*)"""  # test( or test.only(
+    r"""(test(?:\.only)?\s*\(\s*)"""   # test( or test.only(
     r"""(['"])((?:(?!\2).|\\.)*)\2"""  # 'title' or "title"
-    r"""([\s\S]*?\{)""",              # , async ({...}) => {   — non-greedy up to first {
+    r"""[\s\S]*?=>\s*(\{)""",         # => {   (arrow function body opening)
     re.MULTILINE,
 )
 
@@ -65,27 +69,20 @@ _SLOW_ALREADY_RE = re.compile(r"\btest\.slow\(\s*\)\s*;")
 _TODO_ALREADY_RE = re.compile(r"// TODO\(triage-agent\)")
 
 
-def _escape_for_search(title: str) -> str:
-    """Escape a test title for use as a literal substring match (no regex)."""
-    return title
-
-
 def _apply_slow(content: str, test_title: str) -> tuple[str, bool]:
-    """Insert `test.slow();` after the opening brace of the named test."""
+    """Insert `test.slow();` as the first statement in the named test body."""
     modified = False
 
     def replacer(m: re.Match) -> str:
         nonlocal modified
-        captured_title = m.group(3)
-        if captured_title != test_title:
+        if m.group(3) != test_title:
             return m.group(0)
-        body_open = m.group(4)
-        # Don't double-add
-        remaining = content[m.end():]
-        if _SLOW_ALREADY_RE.search(content[m.start():m.start() + 200]):
+        # Don't double-add — check the 100 chars immediately after the opening {
+        if _SLOW_ALREADY_RE.search(content[m.end():m.end() + 100]):
             return m.group(0)
         modified = True
-        return m.group(1) + m.group(2) + captured_title + m.group(2) + body_open + "\n    test.slow();"
+        # m.group(0) ends with the opening { — append the new statement after it
+        return m.group(0) + "\n    test.slow();"
 
     new_content = _TEST_OPEN_RE.sub(replacer, content)
     return new_content, modified
@@ -99,9 +96,8 @@ def _apply_todo_comment(content: str, test_title: str) -> tuple[str, bool]:
         nonlocal modified
         if m.group(3) != test_title:
             return m.group(0)
-        # Don't double-add
-        start = m.start()
-        preceding = content[max(0, start - 200):start]
+        # Don't double-add — check the 200 chars before the match
+        preceding = content[max(0, m.start() - 200):m.start()]
         if _TODO_ALREADY_RE.search(preceding):
             return m.group(0)
         modified = True
