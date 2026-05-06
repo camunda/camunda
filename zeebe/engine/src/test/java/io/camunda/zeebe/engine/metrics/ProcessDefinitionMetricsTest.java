@@ -102,6 +102,29 @@ public class ProcessDefinitionMetricsTest {
   }
 
   @Test
+  public void shouldReflectResourceBytesInSizeGauge() {
+    // given - a BPMN with a documentation field of a known size
+    final int paddingBytes = 1024;
+    final String padding = "x".repeat(paddingBytes);
+
+    // when
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID_A)
+                .startEvent()
+                .endEvent()
+                .documentation(padding)
+                .done())
+        .deploy();
+
+    // then - size gauge reports more bytes than the injected payload
+    assertThat(resourceSizeGauge(1))
+        .describedAs("resource size gauge should reflect the deployed BPMN bytes")
+        .isGreaterThan(paddingBytes);
+  }
+
+  @Test
   public void shouldDecrementCountsAndRemoveSizeGaugeOnDeletion() {
     // given
     final long processDefinitionKey = deploySimpleProcess(PROCESS_ID_A);
