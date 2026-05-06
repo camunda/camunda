@@ -67,4 +67,3 @@ class ReplicationLogStatusProviderFactoryTest {
     assertThat(provider).isEmpty();
   }
 }
-
