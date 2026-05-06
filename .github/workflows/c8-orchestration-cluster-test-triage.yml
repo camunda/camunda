@@ -205,6 +205,11 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          # Remember the branch we started on so we can restore it after the
+          # loop (which checks out stable/* branches and would otherwise leave
+          # the worktree on main, where the triage scripts don't exist yet).
+          ORIGINAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
           # The triage scripts live on this branch (main after merge) but not on
           # stable/* branches. Copy them to a temp dir so they remain available
           # after each git checkout below.
@@ -278,7 +283,7 @@ jobs:
             echo "Fixed ${fixed_count} test(s) on ${git_branch}"
 
             if [[ "$fixed_count" == "0" ]]; then
-              git checkout main 2>/dev/null || git checkout -
+              git checkout "$ORIGINAL_BRANCH" 2>/dev/null || git checkout -
               continue
             fi
 
@@ -313,7 +318,7 @@ jobs:
               done
               if [[ "$pushed" != "true" ]]; then
                 echo "::error::Failed to push ${FIX_BRANCH} after 4 attempts — skipping PR for ${git_branch}"
-                git checkout main 2>/dev/null || git checkout -
+                git checkout "$ORIGINAL_BRANCH" 2>/dev/null || git checkout -
                 continue
               fi
 
@@ -351,8 +356,11 @@ jobs:
             fi
 
             # Return to a neutral state for the next iteration
-            git checkout main 2>/dev/null || git checkout -
+            git checkout "$ORIGINAL_BRANCH" 2>/dev/null || git checkout -
           done
+
+          # Restore the original branch so subsequent steps find their scripts
+          git checkout "$ORIGINAL_BRANCH" 2>/dev/null || git checkout -
 
           {
             echo "total_fixed=${total_fixed}"
