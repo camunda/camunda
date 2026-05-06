@@ -443,6 +443,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     expectedUpdateFields.put("processDefinitionVersion", null);
     expectedUpdateFields.put("toolName", null);
     expectedUpdateFields.put("inboundConnectorType", null);
+    expectedUpdateFields.put("extensionProperties", null);
     expectedUpdateFields.put("metadata", metadataMap);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);

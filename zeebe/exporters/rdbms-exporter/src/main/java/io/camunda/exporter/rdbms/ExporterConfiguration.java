@@ -44,6 +44,8 @@ public class ExporterConfiguration {
   private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
   private ReplicationConfiguration asyncReplication = new ReplicationConfiguration();
+  private MessageSubscriptionConfiguration messageSubscription =
+      new MessageSubscriptionConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -148,6 +150,14 @@ public class ExporterConfiguration {
 
   public void setAsyncReplication(final ReplicationConfiguration asyncReplication) {
     this.asyncReplication = asyncReplication;
+  }
+
+  public MessageSubscriptionConfiguration getMessageSubscription() {
+    return messageSubscription;
+  }
+
+  public void setMessageSubscription(final MessageSubscriptionConfiguration messageSubscription) {
+    this.messageSubscription = messageSubscription;
   }
 
   public void validate() {
@@ -695,6 +705,38 @@ public class ExporterConfiguration {
                 "asyncReplication.maxLag must be a positive duration but was %s", maxLag));
       }
       return errors;
+    }
+  }
+
+  public static class MessageSubscriptionConfiguration {
+    private String extensionPropertyToolName = "io.camunda.tool:name";
+    private String extensionPropertyInboundConnectorType = "inbound.type";
+    private String extensionPropertyPrefixToolProperties = "io.camunda.tool:";
+
+    public String getExtensionPropertyToolName() {
+      return extensionPropertyToolName;
+    }
+
+    public void setExtensionPropertyToolName(final String extensionPropertyToolName) {
+      this.extensionPropertyToolName = extensionPropertyToolName;
+    }
+
+    public String getExtensionPropertyInboundConnectorType() {
+      return extensionPropertyInboundConnectorType;
+    }
+
+    public void setExtensionPropertyInboundConnectorType(
+        final String extensionPropertyInboundConnectorType) {
+      this.extensionPropertyInboundConnectorType = extensionPropertyInboundConnectorType;
+    }
+
+    public String getExtensionPropertyPrefixToolProperties() {
+      return extensionPropertyPrefixToolProperties;
+    }
+
+    public void setExtensionPropertyPrefixToolProperties(
+        final String extensionPropertyPrefixToolProperties) {
+      this.extensionPropertyPrefixToolProperties = extensionPropertyPrefixToolProperties;
     }
   }
 }

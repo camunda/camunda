@@ -88,6 +88,6 @@ public class MessageSubscriptionEntityMapperTest {
     assertThat(entity.processDefinitionName())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.processDefinitionVersion()).isNull();
-    assertThat(entity.extensionProperties()).isEqualTo(Map.of());
+    assertThat(entity.toolProperties()).isEqualTo(Map.of());
   }
 }

@@ -30,7 +30,9 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_NAME;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_PROPERTIES;
 
+import io.camunda.exporter.config.ExporterConfiguration.MessageSubscriptionConfiguration;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
@@ -48,9 +50,16 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     implements ExportHandler<MessageSubscriptionEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
+  protected final MessageSubscriptionConfiguration messageSubscriptionConfig;
 
   public AbstractEventHandler(final String indexName) {
+    this(indexName, new MessageSubscriptionConfiguration());
+  }
+
+  public AbstractEventHandler(
+      final String indexName, final MessageSubscriptionConfiguration messageSubscriptionConfig) {
     this.indexName = indexName;
+    this.messageSubscriptionConfig = messageSubscriptionConfig;
   }
 
   @Override
@@ -100,6 +109,7 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     jsonMap.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
     jsonMap.put(TOOL_NAME, entity.getToolName());
     jsonMap.put(INBOUND_CONNECTOR_TYPE, entity.getInboundConnectorType());
+    jsonMap.put(TOOL_PROPERTIES, entity.getToolProperties());
     jsonMap.put(positionFieldName, positionFieldValue);
     if (entity.getMetadata() != null) {
       final Map<String, Object> metadataMap = new HashMap<>();
@@ -146,8 +156,15 @@ public abstract class AbstractEventHandler<R extends RecordValue>
               .map(p -> p.get(elementId))
               .orElse(Map.of());
       entity
-          .setToolName(ProcessCacheUtil.getToolName(ext))
-          .setInboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext));
+          .setToolName(
+              ProcessCacheUtil.getToolName(
+                  ext, messageSubscriptionConfig.getExtensionPropertyToolName()))
+          .setInboundConnectorType(
+              ProcessCacheUtil.getInboundConnectorType(
+                  ext, messageSubscriptionConfig.getExtensionPropertyInboundConnectorType()))
+          .setToolProperties(
+              ProcessCacheUtil.getToolProperties(
+                  ext, messageSubscriptionConfig.getExtensionPropertyPrefixToolProperties()));
     }
   }
 }

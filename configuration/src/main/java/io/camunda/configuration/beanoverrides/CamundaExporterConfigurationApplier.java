@@ -12,11 +12,13 @@ import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.Opensearch;
 import io.camunda.configuration.Retention;
 import io.camunda.configuration.SecondaryStorage;
+import io.camunda.configuration.Tools;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.BulkConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.MessageSubscriptionConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.PostExportConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
@@ -243,6 +245,20 @@ public final class CamundaExporterConfigurationApplier {
         .getDecisionRequirementsCache()
         .setMaxCacheSize(source.getDecisionRequirementsCache().getMaxSize());
     exporterConfiguration.getFormCache().setMaxCacheSize(source.getFormCache().getMaxSize());
+  }
+
+  public static void applyMessageSubscription(
+      final ExporterConfiguration exporterConfiguration,
+      final UnifiedConfiguration unifiedConfiguration) {
+
+    final Tools source = unifiedConfiguration.getCamunda().getData().getToolProperties();
+    final MessageSubscriptionConfiguration target = exporterConfiguration.getMessageSubscription();
+
+    target.setExtensionPropertyToolName(source.getExtensionPropertyToolName());
+    target.setExtensionPropertyInboundConnectorType(
+        source.getExtensionPropertyInboundConnectorType());
+    target.setExtensionPropertyPrefixToolProperties(
+        source.getExtensionPropertyPrefixToolProperties());
   }
 
   private static DocumentBasedSecondaryStorageDatabase getDocumentBasedDatabase(

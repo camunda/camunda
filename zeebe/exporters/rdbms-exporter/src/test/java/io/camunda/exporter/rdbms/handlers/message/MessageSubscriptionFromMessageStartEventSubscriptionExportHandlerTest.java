@@ -187,7 +187,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionExportHandlerTes
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(timestamp)));
     assertThat(model.processDefinitionName()).isEqualTo(processName);
     assertThat(model.processDefinitionVersion()).isEqualTo(processVersion);
-    assertThat(model.extensionProperties()).isEqualTo(Map.of());
+    assertThat(model.extensionProperties()).isEqualTo(Map.of("io.camunda.tool:name", "myTool"));
     assertThat(model.toolName()).isEqualTo("myTool");
     assertThat(model.inboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
   }

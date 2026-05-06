@@ -59,14 +59,14 @@ class ProcessesToolRepositoryTest {
   private static MessageSubscriptionEntity buildStartSubscriptionEntity(
       final Long key,
       final String toolName,
-      final Map<String, String> extensionProperties,
+      final Map<String, String> toolProperties,
       final String messageName,
       final String tenantId,
       final MessageSubscriptionState state) {
     return MessageSubscriptionEntity.builder()
         .messageSubscriptionKey(key)
         .toolName(toolName)
-        .extensionProperties(extensionProperties)
+        .toolProperties(toolProperties)
         .messageName(messageName)
         .tenantId(tenantId)
         .messageSubscriptionState(state)

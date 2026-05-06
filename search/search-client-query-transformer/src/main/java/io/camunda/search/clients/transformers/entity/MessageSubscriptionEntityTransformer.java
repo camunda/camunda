@@ -36,7 +36,7 @@ public class MessageSubscriptionEntityTransformer
         value.getTenantId(),
         value.getProcessDefinitionName(),
         value.getProcessDefinitionVersion(),
-        value.getExtensionProperties(),
+        value.getToolProperties(),
         value.getToolName(),
         value.getInboundConnectorType());
   }

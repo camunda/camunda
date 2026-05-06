@@ -136,7 +136,7 @@ public class ProcessesToolRepository implements ToolRepository {
 
   private Tool buildTool(final MessageSubscriptionEntity entity) {
     final String name = entity.toolName() + "_" + entity.messageSubscriptionKey();
-    final String description = buildDescription(entity.extensionProperties());
+    final String description = buildDescription(entity.toolProperties());
     return Tool.builder()
         .name(name)
         .title(entity.toolName())

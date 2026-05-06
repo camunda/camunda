@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.ExporterMetadata;
+import io.camunda.exporter.config.ExporterConfiguration.MessageSubscriptionConfiguration;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
@@ -41,7 +42,15 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
       final String indexName,
       final ExporterMetadata exporterMetadata,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
-    super(indexName);
+    this(indexName, exporterMetadata, processCache, new MessageSubscriptionConfiguration());
+  }
+
+  public MessageSubscriptionFromProcessMessageSubscriptionHandler(
+      final String indexName,
+      final ExporterMetadata exporterMetadata,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final MessageSubscriptionConfiguration messageSubscriptionConfig) {
+    super(indexName, messageSubscriptionConfig);
     this.exporterMetadata = exporterMetadata;
     this.processCache = processCache;
   }
