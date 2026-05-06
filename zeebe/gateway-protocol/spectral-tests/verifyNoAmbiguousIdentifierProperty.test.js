@@ -77,6 +77,13 @@ describe('verifyNoAmbiguousIdentifierProperty', () => {
       assert.equal(v.length, 1);
       assert.match(v[0].message, /ambiguous property "id"/);
     });
+
+    it('reports the correct path through allOf', () => {
+      const v = filterByPathSegment(violations, 'AllOfBadIdSchema');
+      assert.ok(v[0].path.includes('allOf'), 'path should include allOf segment');
+      assert.ok(v[0].path.includes('properties'), 'path should include properties segment');
+      assert.ok(v[0].path.includes('id'), 'path should include the property name');
+    });
   });
 
   describe('total violation count', () => {

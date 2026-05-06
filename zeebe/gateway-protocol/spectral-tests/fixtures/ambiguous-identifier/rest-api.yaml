@@ -1,5 +1,6 @@
 # Entry point for no-ambiguous-identifier-property rule tests.
-# Mirrors the real spec structure: schemas $ref to domain files.
+# Tests lint things.yaml directly via lintFixtureFile(); this file exists
+# only to satisfy the fixture directory convention.
 openapi: "3.0.3"
 info:
   title: Test Fixture — no-ambiguous-identifier-property

@@ -45,9 +45,9 @@ function collectBannedProperties(schema, allowedProps, schemaName, basePath, err
 
   for (const keyword of ['allOf', 'oneOf', 'anyOf']) {
     if (Array.isArray(schema[keyword])) {
-      for (const member of schema[keyword]) {
-        collectBannedProperties(member, allowedProps, schemaName, basePath, errors);
-      }
+      schema[keyword].forEach((member, index) => {
+        collectBannedProperties(member, allowedProps, schemaName, [...basePath, keyword, index], errors);
+      });
     }
   }
 }
