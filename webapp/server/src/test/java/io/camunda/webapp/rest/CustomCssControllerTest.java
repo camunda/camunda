@@ -40,6 +40,7 @@ class CustomCssControllerTest {
     // given
     final String cssContent = "body { background-color: #f3f3f3; }";
     doReturn(mockResource).when(controller).loadResource(CustomCssController.CLASSPATH_LOCATION);
+    when(mockResource.exists()).thenReturn(true);
     when(mockResource.getContentAsString(any())).thenReturn(cssContent);
 
     // when
@@ -50,15 +51,29 @@ class CustomCssControllerTest {
   }
 
   @Test
-  void shouldFallbackToEmptyStringOnReadError() throws IOException {
+  void shouldReturnEmptyStringWhenFileNotPresent() {
     // given
     doReturn(mockResource).when(controller).loadResource(CustomCssController.CLASSPATH_LOCATION);
-    doThrow(new IOException("file not found")).when(mockResource).getContentAsString(any());
+    when(mockResource.exists()).thenReturn(false);
 
     // when
     controller.init();
 
-    // then — bean init must not throw; content degrades to empty
+    // then — missing file is expected in most deployments; must not throw or log ERROR
+    assertThat(controller.getCustomCssContent()).isEmpty();
+  }
+
+  @Test
+  void shouldFallbackToEmptyStringOnReadError() throws IOException {
+    // given
+    doReturn(mockResource).when(controller).loadResource(CustomCssController.CLASSPATH_LOCATION);
+    when(mockResource.exists()).thenReturn(true);
+    doThrow(new IOException("disk error")).when(mockResource).getContentAsString(any());
+
+    // when
+    controller.init();
+
+    // then — genuine read failure degrades gracefully
     assertThat(controller.getCustomCssContent()).isEmpty();
   }
 
@@ -67,6 +82,7 @@ class CustomCssControllerTest {
     // given
     final String cssContent = "h1 { color: red; }";
     doReturn(mockResource).when(controller).loadResource(any());
+    when(mockResource.exists()).thenReturn(true);
     when(mockResource.getContentAsString(any())).thenReturn(cssContent);
     controller.init();
 
@@ -82,6 +98,7 @@ class CustomCssControllerTest {
   void shouldSetNoCacheHeader() throws IOException {
     // given
     doReturn(mockResource).when(controller).loadResource(any());
+    when(mockResource.exists()).thenReturn(true);
     when(mockResource.getContentAsString(any())).thenReturn("");
     controller.init();
 

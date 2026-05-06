@@ -34,11 +34,16 @@ public class CustomCssController {
 
   @PostConstruct
   public void init() {
+    final Resource resource = loadResource(CLASSPATH_LOCATION);
+    if (!resource.exists()) {
+      LOG.debug("No custom.css found on classpath — custom styles disabled");
+      customCssContent = "";
+      return;
+    }
     try {
-      final Resource resource = loadResource(CLASSPATH_LOCATION);
       customCssContent = resource.getContentAsString(StandardCharsets.UTF_8);
     } catch (final IOException e) {
-      LOG.error("Error when reading custom css file {}", CLASSPATH_LOCATION, e);
+      LOG.error("Failed to read custom css file {}", CLASSPATH_LOCATION, e);
       customCssContent = "";
     }
   }

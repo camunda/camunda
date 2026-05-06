@@ -20,6 +20,7 @@ import {playwright} from '@vitest/browser-playwright';
 // the bundled Carbon theme.
 const injectCustomCss: PluginOption = {
 	name: 'inject-custom-css',
+	apply: 'build',
 	transformIndexHtml: {
 		order: 'post',
 		handler: () => [
