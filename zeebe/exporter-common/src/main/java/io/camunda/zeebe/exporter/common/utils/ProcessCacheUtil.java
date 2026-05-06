@@ -23,8 +23,6 @@ import org.slf4j.LoggerFactory;
 
 public final class ProcessCacheUtil {
 
-  public static final String EXTENSION_PROPERTY_CAMUNDA_TOOL_NAME = "io.camunda.tool:name";
-  public static final String EXTENSION_PROPERTY_INBOUND_TYPE = "inbound.type";
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCacheUtil.class);
 
   private ProcessCacheUtil() {
@@ -160,27 +158,33 @@ public final class ProcessCacheUtil {
         .collect(HashMap::new, (map, fn) -> map.put(fn.getId(), fn.getName()), HashMap::putAll);
   }
 
-  public static String getToolName(final Map<String, String> extensionProperties) {
-    if (extensionProperties == null) {
+  public static String getToolName(
+      final Map<String, String> extensionProperties, final String toolNameProperty) {
+    if (extensionProperties == null || toolNameProperty == null) {
       return null;
     }
-    return extensionProperties.get(EXTENSION_PROPERTY_CAMUNDA_TOOL_NAME);
+    return extensionProperties.get(toolNameProperty);
   }
 
-  public static String getInboundConnectorType(final Map<String, String> extensionProperties) {
-    if (extensionProperties == null) {
+  public static String getInboundConnectorType(
+      final Map<String, String> extensionProperties, final String inboundTypeProperty) {
+    if (extensionProperties == null || inboundTypeProperty == null) {
       return null;
     }
-    return extensionProperties.get(EXTENSION_PROPERTY_INBOUND_TYPE);
+    return extensionProperties.get(inboundTypeProperty);
   }
 
+  /**
+   * Returns a map of extension properties whose keys start with the given prefix. Returns an empty
+   * map if {@code extensionProperties} is null or the prefix is null/blank.
+   */
   public static Map<String, String> getToolProperties(
-      final Map<String, String> extensionProperties) {
-    if (extensionProperties == null) {
+      final Map<String, String> extensionProperties, final String prefix) {
+    if (extensionProperties == null || prefix == null || prefix.isBlank()) {
       return Map.of();
     }
     return extensionProperties.entrySet().stream()
-        .filter(e -> e.getKey().startsWith("io.camunda.tool:"))
+        .filter(e -> e.getKey().startsWith(prefix))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 }

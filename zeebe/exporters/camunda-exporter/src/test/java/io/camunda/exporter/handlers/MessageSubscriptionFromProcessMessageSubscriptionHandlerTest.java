@@ -25,6 +25,7 @@ import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptio
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -55,7 +56,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
 
   private final MessageSubscriptionFromProcessMessageSubscriptionHandler underTest =
       new MessageSubscriptionFromProcessMessageSubscriptionHandler(
-          indexName, exporterMetadata, processCache);
+          indexName, exporterMetadata, processCache, new ToolsConfiguration());
 
   @BeforeEach
   void resetMetadata() {

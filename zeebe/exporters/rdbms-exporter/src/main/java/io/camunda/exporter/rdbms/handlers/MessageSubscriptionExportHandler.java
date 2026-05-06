@@ -16,6 +16,7 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionS
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -37,12 +38,15 @@ public class MessageSubscriptionExportHandler
           ProcessMessageSubscriptionIntent.MIGRATED);
   private final MessageSubscriptionWriter messageSubscriptionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final ToolsConfiguration toolConfig;
 
   public MessageSubscriptionExportHandler(
       final MessageSubscriptionWriter messageSubscriptionWriter,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final ToolsConfiguration toolConfig) {
     this.messageSubscriptionWriter = messageSubscriptionWriter;
     this.processCache = processCache;
+    this.toolConfig = toolConfig;
   }
 
   @Override
@@ -94,9 +98,13 @@ public class MessageSubscriptionExportHandler
         .processDefinitionName(
             cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null))
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
-        .toolProperties(ProcessCacheUtil.getToolProperties(ext))
-        .toolName(ProcessCacheUtil.getToolName(ext))
-        .inboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext))
+        .toolProperties(
+            ProcessCacheUtil.getToolProperties(
+                ext, toolConfig.getExtensionPropertyPrefixToolProperties()))
+        .toolName(ProcessCacheUtil.getToolName(ext, toolConfig.getExtensionPropertyToolName()))
+        .inboundConnectorType(
+            ProcessCacheUtil.getInboundConnectorType(
+                ext, toolConfig.getExtensionPropertyInboundConnectorType()))
         .build();
   }
 }

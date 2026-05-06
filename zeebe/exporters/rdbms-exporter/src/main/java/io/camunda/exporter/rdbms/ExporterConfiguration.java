@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig.InsertBatchingConfig;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -44,6 +45,7 @@ public class ExporterConfiguration {
   private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
   private ReplicationConfiguration asyncReplication = new ReplicationConfiguration();
+  private ToolsConfiguration tools = new ToolsConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -148,6 +150,14 @@ public class ExporterConfiguration {
 
   public void setAsyncReplication(final ReplicationConfiguration asyncReplication) {
     this.asyncReplication = asyncReplication;
+  }
+
+  public ToolsConfiguration getTools() {
+    return tools;
+  }
+
+  public void setTools(final ToolsConfiguration tools) {
+    this.tools = tools;
   }
 
   public void validate() {
