@@ -187,6 +187,7 @@ jobs:
         shell: bash
         env:
           LOCAL_TEST: "false"
+          DATABASE: "elasticsearch"
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
