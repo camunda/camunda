@@ -29,10 +29,19 @@ import com.nimbusds.jwt.SignedJWT;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
+import io.camunda.authentication.service.DefaultMembershipService;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.authentication.service.NoDBMembershipService;
+import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.MappingRuleEntity;
+import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.GroupServices;
+import io.camunda.service.MappingRuleServices;
+import io.camunda.service.RoleServices;
+import io.camunda.service.TenantServices;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,11 +52,13 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -76,9 +87,15 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
  * <p>To switch the {@link MembershipService} variant, run with one of:
  *
  * <ul>
- *   <li>{@code -Dharness.membership=nodb} (default) — anonymous-style, near-zero cost
- *   <li>{@code -Dharness.membership=simulated-db} — sleeps {@code harness.simulatedDbLatencyMs} (4
- *       roundtrips simulated)
+ *   <li>{@code -Dharness.membership=nodb} (default) — minimal {@code NoDBMembershipService};
+ *       baseline cost of the chain without any membership-resolution work
+ *   <li>{@code -Dharness.membership=simulated-db} — wraps {@code NoDBMembershipService} with a 4 ×
+ *       {@code harness.simulatedDbLatencyMs} pre-sleep; cheap latency simulation, does not exercise
+ *       {@code DefaultMembershipService} code paths
+ *   <li>{@code -Dharness.membership=real-mocked} — runs the real {@code DefaultMembershipService}
+ *       with Mockito-mocked downstream services that each return empty results after sleeping
+ *       {@code harness.simulatedDbLatencyMs}; matches the production code path including allocation
+ *       and stream pipelines
  * </ul>
  *
  * <p>To run a single scenario:
@@ -350,6 +367,52 @@ public class RestApiAuthPerfHarness {
         }
         return delegate.resolveMemberships(claims, principalId, principalType);
       };
+    }
+
+    /**
+     * Real {@link DefaultMembershipService} wired against Mockito-mocked downstream services that
+     * each return empty results after sleeping {@code harness.simulatedDbLatencyMs}. Goes through
+     * the production code path (allocation, stream pipelines, builder), unlike {@code simulated-db}
+     * which short-circuits to a single sleep wrapper.
+     */
+    @Bean
+    @Primary
+    @ConditionalOnProperty(name = "harness.membership", havingValue = "real-mocked")
+    public MembershipService realMockedMembershipService(
+        final SecurityConfiguration securityConfiguration,
+        @Value("${harness.simulatedDbLatencyMs:1}") final long latencyMs) {
+      final var mappingRuleServices = Mockito.mock(MappingRuleServices.class);
+      final var groupServices = Mockito.mock(GroupServices.class);
+      final var roleServices = Mockito.mock(RoleServices.class);
+      final var tenantServices = Mockito.mock(TenantServices.class);
+
+      Mockito.when(mappingRuleServices.getMatchingMappingRules(Mockito.any(), Mockito.any()))
+          .thenAnswer(
+              inv -> {
+                Thread.sleep(latencyMs);
+                return Stream.<MappingRuleEntity>empty();
+              });
+      Mockito.when(groupServices.getGroupsByMemberTypeAndMemberIds(Mockito.any(), Mockito.any()))
+          .thenAnswer(
+              inv -> {
+                Thread.sleep(latencyMs);
+                return List.<GroupEntity>of();
+              });
+      Mockito.when(roleServices.getRolesByMemberTypeAndMemberIds(Mockito.any(), Mockito.any()))
+          .thenAnswer(
+              inv -> {
+                Thread.sleep(latencyMs);
+                return List.<RoleEntity>of();
+              });
+      Mockito.when(tenantServices.getTenantsByMemberTypeAndMemberIds(Mockito.any(), Mockito.any()))
+          .thenAnswer(
+              inv -> {
+                Thread.sleep(latencyMs);
+                return List.<TenantEntity>of();
+              });
+
+      return new DefaultMembershipService(
+          mappingRuleServices, tenantServices, roleServices, groupServices, securityConfiguration);
     }
 
     /** Avoids Spring complaining about an empty list of converters when nothing else publishes. */
