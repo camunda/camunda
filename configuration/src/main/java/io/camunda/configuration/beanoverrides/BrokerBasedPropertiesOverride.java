@@ -983,20 +983,20 @@ public class BrokerBasedPropertiesOverride {
                         .setPauseOnMaxLagExceeded(asyncReplication.isPauseOnMaxLagExceeded());
                   }
 
-                  final var toolsConfig = unifiedConfiguration.getCamunda().getData().getTools();
-                  config
-                      .getTools()
-                      .setExtensionPropertyToolName(toolsConfig.getExtensionPropertyToolName());
-                  config
-                      .getTools()
-                      .setExtensionPropertyInboundConnectorType(
-                          toolsConfig.getExtensionPropertyInboundConnectorType());
-                  config
-                      .getTools()
-                      .setExtensionPropertyPrefixToolProperties(
-                          toolsConfig.getExtensionPropertyPrefixToolProperties());
+                  applyRdbmsToolsConfiguration(
+                      config.getTools(), unifiedConfiguration.getCamunda().getData().getTools());
                 })
             .toArgs());
+  }
+
+  private void applyRdbmsToolsConfiguration(
+      final io.camunda.exporter.rdbms.ExporterConfiguration.ToolsConfiguration tools,
+      final io.camunda.configuration.Tools source) {
+    tools.setExtensionPropertyToolName(source.getExtensionPropertyToolName());
+    tools.setExtensionPropertyInboundConnectorType(
+        source.getExtensionPropertyInboundConnectorType());
+    tools.setExtensionPropertyPrefixToolProperties(
+        source.getExtensionPropertyPrefixToolProperties());
   }
 
   private void applyRdbmsHistoryExporterConfiguration(

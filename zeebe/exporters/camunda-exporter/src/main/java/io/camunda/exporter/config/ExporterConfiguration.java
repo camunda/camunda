@@ -592,9 +592,9 @@ public class ExporterConfiguration {
   }
 
   public static class ToolsConfiguration {
-    private String extensionPropertyToolName;
-    private String extensionPropertyInboundConnectorType;
-    private String extensionPropertyPrefixToolProperties;
+    private String extensionPropertyToolName = "io.camunda.tool:name";
+    private String extensionPropertyInboundConnectorType = "inbound.type";
+    private String extensionPropertyPrefixToolProperties = "io.camunda.tool:";
 
     public String getExtensionPropertyToolName() {
       return extensionPropertyToolName;
