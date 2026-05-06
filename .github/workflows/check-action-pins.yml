@@ -1,0 +1,189 @@
+# =============================================================================
+# check-action-pins.yml
+#
+# Purpose:
+#   Enforce GitHub Issue #25934 — every 3rd-party GitHub Action MUST be pinned
+#   to a 40-char commit SHA, never a tag or branch. Tag/branch refs are mutable
+#   and expose us to supply-chain attacks: the upstream owner — or anyone who
+#   compromises them — can rewrite the tag to point at malicious code, and our
+#   CI will silently start running it.
+#
+# Scope:
+#   This job intentionally only fails on action files that the *current PR*
+#   adds or modifies. It does NOT scan the whole repo. The reason is that
+#   `main` and the stable branches still carry pre-existing unpinned legacy
+#   files (e.g. older `actions/checkout@v4` references) that we don't want
+#   to block unrelated PRs on. By running zizmor only on changed files, we:
+#     - block any *new* violation that a PR is trying to introduce
+#     - force a touched legacy file to be cleaned up before merge
+#     - leave untouched legacy files alone (so the rule lands incrementally)
+#
+# Tool:
+#   We use `zizmor` (https://github.com/zizmorcore/zizmor), a security auditor
+#   for GitHub Actions. Its `unpinned-uses` rule supports per-org policies,
+#   which lets us require hash-pinning for external actions while still
+#   allowing tag/branch refs for our own org (camunda/*) and for GitHub-owned
+#   actions (actions/*, github/*) — see .github/zizmor.yml for the policy.
+# =============================================================================
+
+name: check-action-pins
+
+# -----------------------------------------------------------------------------
+# Triggers
+# -----------------------------------------------------------------------------
+# We run on `pull_request` so the check is gated *before* merge — running it
+# on `push` to main wouldn't help, since by then the violation is already in.
+#
+# `paths:` filters the PR-level trigger so this workflow is skipped entirely
+# for PRs that don't touch action files. Note that `paths:` filters which
+# *workflow runs* are created — it does NOT filter which files the job
+# inspects. We do per-file filtering further down in the job itself.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+
+# -----------------------------------------------------------------------------
+# Permissions
+# -----------------------------------------------------------------------------
+# Principle of least privilege: this job only reads code, so we drop the
+# default GITHUB_TOKEN scopes to `contents: read` and nothing else. If
+# someone later adds a step that comments on the PR, *that* step can
+# request `pull-requests: write` explicitly at the step level rather than
+# elevating the whole job.
+permissions:
+  contents: read
+
+jobs:
+  pin-check:
+    # Standard GitHub-hosted runner — this job only reads files and runs a
+    # small static-analysis tool, no need for self-hosted.
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 1 — Check out the PR head, with full history.
+      # -----------------------------------------------------------------------
+      # We need `fetch-depth: 0` because Step 2 calls `git diff` between
+      # the PR base SHA and the PR head SHA. The default shallow clone
+      # (fetch-depth: 1) doesn't include the base commit, so `git diff`
+      # would fail with "fatal: bad object". Full history is the simplest
+      # fix; if performance matters here later, we could fetch only the
+      # specific base SHA via `git fetch origin $base_sha --depth=1`.
+      #
+      # The action below is itself pinned to a SHA — both because this
+      # workflow has to follow the rule it enforces, and because pinning
+      # the enforcer to a SHA matters more than pinning anything else.
+      - name: Check out PR head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # -----------------------------------------------------------------------
+      # Step 2 — Compute the list of action files this PR adds or modifies.
+      # -----------------------------------------------------------------------
+      # `github.event.pull_request.base.sha` is the SHA of the base branch's
+      # tip at the moment the PR was opened/synchronized. `head.sha` is the
+      # tip of the PR branch. Diffing these gives us the set of files this
+      # PR is contributing.
+      #
+      # `--diff-filter=AM` keeps only **A**dded and **M**odified files:
+      #   - We don't want to flag deletions (a PR that removes an unpinned
+      #     file shouldn't be blocked by this check).
+      #   - Pure renames aren't included either; if you want to also lint
+      #     content-edited renames, add `R` here.
+      #
+      # The path globs restrict the diff to action definition files only —
+      # workflow YAMLs and composite-action YAMLs. Files outside those dirs
+      # (e.g. application code) are never inspected.
+      #
+      # We write the list to `changed.txt` instead of using a step output
+      # because step outputs have a 1MB limit and shell-quoting newline-
+      # delimited file lists across steps is fiddly. A file is simpler.
+      #
+      # `count` is exposed as a step output so later steps can short-circuit
+      # via `if: steps.changed.outputs.count != '0'`. Without that guard,
+      # running zizmor with zero files passed to it would error out and
+      # turn a no-op PR into a red check.
+      - name: List added/edited action files vs PR base
+        id: changed
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+
+          # `mapfile` reads stdin into a bash array, one element per line.
+          # `< <(...)` is process substitution — it feeds the git output
+          # to mapfile without spawning a subshell that would lose the array.
+          mapfile -t files < <(git diff --name-only --diff-filter=AM "$base" "$head" -- \
+            '.github/workflows/*.yml' \
+            '.github/workflows/*.yaml' \
+            '.github/actions/**/action.yml' \
+            '.github/actions/**/action.yaml')
+
+          # Persist the list for the next step. `printf '%s\n'` correctly
+          # handles paths containing spaces or special chars (unlike `echo`).
+          printf '%s\n' "${files[@]}" > changed.txt
+
+          # Emit a count so downstream `if:` conditions can skip cleanly.
+          echo "count=${#files[@]}" >> "$GITHUB_OUTPUT"
+
+          # Surface the list in the job log for debugging.
+          echo "Files to lint:"
+          cat changed.txt
+
+      # -----------------------------------------------------------------------
+      # Step 3 — Install zizmor.
+      # -----------------------------------------------------------------------
+      # `pipx` installs Python apps in isolated venvs — preferred over plain
+      # `pip install` to avoid polluting the runner's system Python and to
+      # keep zizmor's deps from clashing with anything else.
+      #
+      # We pin zizmor itself to a specific version, both for reproducibility
+      # (a silent upgrade could change the rule set or severity assignments
+      # and start failing PRs that used to pass) and because this workflow's
+      # whole point is "pin your dependencies". Bump deliberately when ready.
+      #
+      # The `if:` skips the install when there are no files to lint — cheaper,
+      # and avoids a misleading green tick on a job that did nothing.
+      - name: Install zizmor
+        if: steps.changed.outputs.count != '0'
+        run: pipx install 'zizmor==1.24.1'
+
+      # -----------------------------------------------------------------------
+      # Step 4 — Run zizmor on the changed files only.
+      # -----------------------------------------------------------------------
+      # `xargs -a changed.txt -r zizmor ...`:
+      #   `-a changed.txt` reads file paths from the file (one per line).
+      #   `-r` (--no-run-if-empty) prevents xargs from invoking zizmor with
+      #         no arguments if the list happens to be empty — without this,
+      #         zizmor would run against the whole repo, which is exactly
+      #         the behavior we DON'T want for this incremental check.
+      #
+      # `--config .github/zizmor.yml` points at our policy file, which
+      #   defines the per-org pinning rules (camunda/* and actions/* may
+      #   use tags; everyone else must hash-pin). See that file for details.
+      #
+      # `--min-severity=high` filters out informational/low/medium audits.
+      #   The `unpinned-uses` rule fires at "high" severity when our policy
+      #   says hash-pin is required and a tag is used, so a `high` floor
+      #   lets only real policy violations fail the job — no noise from
+      #   zizmor's other audits (template-injection, excessive-permissions,
+      #   etc.) which we haven't tuned for this repo.
+      #
+      # `--format=github` makes zizmor emit `::error file=...::` annotations,
+      #   so violations show up inline in the PR's "Files changed" view —
+      #   reviewers see exactly which line is unpinned without digging
+      #   into raw logs.
+      #
+      # The exit code from zizmor (non-zero on findings >= min-severity)
+      # propagates out and fails the job — that's what makes this a gate.
+      - name: Run zizmor on changed files
+        if: steps.changed.outputs.count != '0'
+        run: |
+          set -euo pipefail
+          xargs -a changed.txt -r zizmor \
+            --config .github/zizmor.yml \
+            --min-severity=high \
+            --format=github
