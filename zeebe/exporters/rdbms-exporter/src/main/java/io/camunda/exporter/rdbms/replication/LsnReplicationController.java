@@ -76,6 +76,11 @@ public class LsnReplicationController implements ReplicationController {
     flushedPosition.set(exporterPosition);
     final long currentLsn = lsnProvider.getCurrent();
     final long now = clock.millis();
+    LOG.debug(
+        "[RDBMS Exporter P{}] Flushed position {}, current LSN is {}, enqueueing for replication check",
+        partitionId,
+        exporterPosition,
+        currentLsn);
     if (!pendingEntries.offer(new LsnPositionEntry(exporterPosition, currentLsn, now))) {
       // it's fine to just drop. When we are able to compact, when we export a new entry it will be
       // added. If the queue is not full for too much it's not a problem, otherwise we will just hit
@@ -103,6 +108,12 @@ public class LsnReplicationController implements ReplicationController {
       final var confirmedEntry = removeConfirmedLsnEntries(confirmedLsn);
       final Duration dbReportedLag = getCurrentDbLag();
       final boolean dbLagExceeded = isMaxLagExceeded(dbReportedLag);
+
+      LOG.debug(
+          "[RDBMS Exporter P{}] Confirmed LSN {}, current lag is {}",
+          partitionId,
+          confirmedLsn,
+          dbReportedLag);
 
       updatePausedState(pauseOnMaxLagExceeded && dbLagExceeded, dbReportedLag, connectedReplicas);
 
@@ -153,6 +164,13 @@ public class LsnReplicationController implements ReplicationController {
       if (entry.lsn() > confirmedLsn) {
         break;
       }
+
+      LOG.trace(
+          "[RDBMS Exporter P{}] Removing pending LSN {} for position {}, as it is lower than confirmed lsn {}",
+          partitionId,
+          entry.lsn(),
+          entry.position(),
+          confirmedLsn);
 
       lastConfirmedReplication.set(Instant.ofEpochMilli(entry.enqueueTimeMs()));
       newReplicatedPosition = entry.position();
