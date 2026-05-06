@@ -903,6 +903,23 @@ operation (e.g. `createGroup`) before this one. The `bind` map propagates
 the identifier values produced by the upstream call into this call's
 parameters.
 
+> **Composite-key entities — declare a `requires` for every foreign
+> identifier you borrow.** When an entity producer's `identifiedBy`
+> includes an identifier registered to a different entity kind (e.g.
+> `createTenantClusterVariable` carries `TenantId`, which is owned by
+> `Tenant`, in its identity tuple), the operation MUST also declare an
+> `x-semantic-requires` on that owning kind. The runtime rejects
+> requests against unknown referenced entities (`NOT_FOUND`); without
+> the explicit `requires`, downstream chain planners walk the producer
+> as a root, synthesise the identifier value, and the call fails.
+> Enforced by `verify-semantic-kinds-registered`. Exceptions: edge
+> producers (the planner derives implicit `requires` from the edge's
+> `identifiedBy`), and the multi-owner sibling pattern where the
+> identifier is also one of the establishing kind's own `identifiers`
+> (e.g. `ClusterVariableName` is shared between
+> `GlobalClusterVariable` and `TenantClusterVariable` as parallel
+> variants, not parent/child).
+
 #### Per-tuple `acceptsExternal: true` (camunda/camunda#52322)
 
 Marks a single `identifiedBy` endpoint as **bimodal** — either an in-API

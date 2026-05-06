@@ -724,6 +724,56 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
     });
   });
 
+  // ── Hole D: foreign-identifier-without-requires ──
+  // camunda/camunda#52322 review: a composite-key entity producer that
+  // lists a foreign-owned identifier (an identifier registered to a
+  // different entity kind) in `identifiedBy` must declare a corresponding
+  // `x-semantic-requires` on the owning kind. Otherwise the runtime
+  // dependency is unannotated and downstream chain planners walk the
+  // producer as a root, synthesising an identifier value the engine
+  // rejects with NOT_FOUND.
+  //
+  // Exempt cases (must NOT fire):
+  //   - Edge producers — `requires` derived from `identifiedBy` by design.
+  //   - Multi-owner sibling pattern — identifier appears on both the
+  //     establishing kind's own `identifiers` and a sibling's (e.g.
+  //     ClusterVariableName, owned by both Global and Tenant variants).
+  //   - Foreign owner is `external-entity` — referenced via edges only,
+  //     never required directly.
+  describe('verify-semantic-kinds-registered: foreign-identifier-without-requires', () => {
+    it('flags an entity producer whose identifiedBy borrows a foreign-owned identifier without a corresponding x-semantic-requires', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/invalid/establishes-foreign-id-no-requires') &&
+          e.message.includes("'WidgetId'") &&
+          e.message.includes('foreign entity kind') &&
+          e.message.includes('[Widget]'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+
+    it('does not flag the same shape when the producer also declares the corresponding x-semantic-requires', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/valid/establishes-foreign-id-with-requires') &&
+          e.message.includes('foreign entity kind'),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+
+    it('does not flag any edge producer (requires are derived from identifiedBy by design)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('foreign entity kind') &&
+          (e.message.includes('assignWidgetOwner') ||
+            e.message.includes('assignWidgetFrobLink') ||
+            e.message.includes('assignWidgetExternalLink') ||
+            e.message.includes('assignWidgetBimodalLink')),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+  });
+
   // ── Per-file pass: only the producer-existence cross-reference is gated ──
   // CI lints both the bundled entry (rest-api.yaml) and each domain file
   // independently. The cross-reference walk relies on every producer being

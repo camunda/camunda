@@ -529,6 +529,82 @@ module.exports = (input, _opts, _context) => {
               }
             }
           }
+
+          // Hole D: foreign-identifier-without-requires
+          // (camunda/camunda#52322 review).
+          //
+          // Composite-key entity producers may legitimately reference a
+          // foreign-but-registered identifier in `identifiedBy` (e.g.
+          // `createTenantClusterVariable` carries `TenantId` in its
+          // identity tuple even though `TenantId` is owned by `Tenant`).
+          // The runtime depends on the foreign entity already existing
+          // — `createTenantClusterVariable` returns 404 when the
+          // referenced tenant is unknown. The annotation must mirror
+          // that runtime dependency by declaring `x-semantic-requires`
+          // on the foreign owning kind. Otherwise downstream chain
+          // planners walk the producer as a root, synthesise an
+          // arbitrary identifier value, and the engine rejects it.
+          //
+          // Skipped when the foreign identifier is also one of the
+          // establishing kind's own registered identifiers — that is
+          // the documented multi-owner sibling pattern (e.g.
+          // `ClusterVariableName` is owned by both `GlobalClusterVariable`
+          // and `TenantClusterVariable` because they are parallel
+          // variants, not parent/child entities).
+          //
+          // Skipped for edge producers — the edge-endpoint resolution
+          // below derives implicit `requires` from `identifiedBy` for
+          // them by design (registry header `$comment` documents this).
+          if (
+            registeredShape === 'entity' &&
+            declaredShape === 'entity' &&
+            Array.isArray(est.identifiedBy)
+          ) {
+            const ownIds = kindIdentifiers.get(est.kind) || new Set();
+            const reqRaw = op['x-semantic-requires'];
+            const reqList = Array.isArray(reqRaw)
+              ? reqRaw
+              : reqRaw && typeof reqRaw === 'object'
+              ? [reqRaw]
+              : [];
+            const requiredKindsOnOp = new Set(
+              reqList
+                .map((r) => r && r.kind)
+                .filter((k) => typeof k === 'string'),
+            );
+            for (let i = 0; i < est.identifiedBy.length; i++) {
+              const item = est.identifiedBy[i];
+              if (!item || typeof item !== 'object') continue;
+              const st = item.semanticType;
+              if (typeof st !== 'string' || st.length === 0) continue;
+              // Multi-owner sibling pattern: identifier is also one of
+              // the establishing kind's own identifiers. Accept.
+              if (ownIds.has(st)) continue;
+              const owners = identifierToKinds.get(st);
+              if (!owners) continue; // unregistered — flagged above
+              const foreignEntityOwners = owners.filter(
+                (o) => o !== est.kind && kindShapes.get(o) === 'entity',
+              );
+              if (foreignEntityOwners.length === 0) continue;
+              const satisfied = foreignEntityOwners.some((o) =>
+                requiredKindsOnOp.has(o),
+              );
+              if (satisfied) continue;
+              const ownersList = foreignEntityOwners.join(', ');
+              errors.push({
+                message: `x-semantic-establishes.identifiedBy[${i}] on ${method.toUpperCase()} ${pathKey} declares semanticType '${st}', which is owned by foreign entity kind${foreignEntityOwners.length > 1 ? 's' : ''} [${ownersList}], but the operation does not declare a corresponding x-semantic-requires. The runtime depends on the referenced entity already existing; add x-semantic-requires for one of [${ownersList}] (or remove the foreign identifier from identifiedBy if there is genuinely no such dependency).`,
+                path: [
+                  'paths',
+                  pathKey,
+                  method,
+                  'x-semantic-establishes',
+                  'identifiedBy',
+                  i,
+                  'semanticType',
+                ],
+              });
+            }
+          }
         }
 
         // Edge endpoint resolution. For shape: edge, every identifiedBy entry's

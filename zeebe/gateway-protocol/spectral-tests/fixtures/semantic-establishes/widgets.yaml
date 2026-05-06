@@ -1078,3 +1078,81 @@ paths:
       responses:
         '200':
           description: OK.
+
+  # ── Foreign-identifier-without-requires (camunda/camunda#52322 review) ──
+  # An entity producer whose `identifiedBy` contains a foreign-owned
+  # identifier (i.e. an identifier registered to a different entity
+  # kind) must also declare a corresponding `x-semantic-requires` on
+  # the owning kind. Otherwise the runtime dependency is unannotated:
+  # downstream planners walk the producer as a root and synthesise an
+  # identifier value the engine rejects. Mirrors the production
+  # TenantClusterVariable / Tenant relationship.
+
+  # 38. Producer establishes ForeignBound via (widgetId: WidgetId,
+  #     foreignBoundName: ForeignBoundName) WITHOUT requires:Widget.
+  /invalid/establishes-foreign-id-no-requires/{widgetId}/{foreignBoundName}:
+    post:
+      operationId: establishesForeignIdNoRequires
+      summary: Establishes ForeignBound with foreign WidgetId but no requires
+      description: |
+        Should fail — `WidgetId` is owned by `Widget`, not by
+        `ForeignBound`, and the operation declares no
+        `x-semantic-requires` on `Widget`. The runtime would 404 on a
+        synthesised widgetId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The foreign widget id.
+          schema: { type: string }
+        - name: foreignBoundName
+          in: path
+          required: true
+          description: The ForeignBound name.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: ForeignBound
+        identifiedBy:
+          - { in: path, name: widgetId,         semanticType: WidgetId }
+          - { in: path, name: foreignBoundName, semanticType: ForeignBoundName }
+      responses:
+        '201':
+          description: Created.
+
+  # 39. Same producer, but with the corresponding requires:Widget. Must
+  #     lint clean.
+  /valid/establishes-foreign-id-with-requires/{widgetId}/{foreignBoundName}:
+    post:
+      operationId: establishesForeignIdWithRequires
+      summary: Establishes ForeignBound with foreign WidgetId AND requires:Widget
+      description: |
+        Should pass. The foreign-owned identifier `WidgetId` is paired
+        with an `x-semantic-requires` on `Widget`, which mirrors the
+        runtime dependency the engine enforces.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: foreignBoundName
+          in: path
+          required: true
+          description: The ForeignBound name.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: ForeignBound
+        identifiedBy:
+          - { in: path, name: widgetId,         semanticType: WidgetId }
+          - { in: path, name: foreignBoundName, semanticType: ForeignBoundName }
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '201':
+          description: Created.

@@ -48,6 +48,10 @@ paths:
         identifiedBy:
           - { in: path, name: tenantId, semanticType: TenantId }
           - { in: body, name: name,     semanticType: ClusterVariableName }
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path

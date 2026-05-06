@@ -42,7 +42,22 @@
     "`globalListenerId`). The Spectral rule treats these keys as accepted",
     "in addition to the camelCased identifiers. Adding a new entry here",
     "requires the same justification — prefer fixing the bind key on the",
-    "consumer if the wire name has not yet shipped."
+    "consumer if the wire name has not yet shipped.",
+    "",
+    "Foreign-identifier-without-requires rule (composite-key entities):",
+    "an entity producer whose `x-semantic-establishes.identifiedBy` lists",
+    "an identifier owned by a different entity kind (e.g.",
+    "createTenantClusterVariable's `TenantId`, owned by `Tenant`) MUST",
+    "also declare a corresponding `x-semantic-requires` on the owning",
+    "kind. The runtime rejects requests against unknown referenced",
+    "entities (NOT_FOUND); without the explicit requires, downstream",
+    "chain planners walk the producer as a root, synthesise an",
+    "identifier value, and the engine rejects it. The rule is skipped",
+    "when the borrowed identifier is also one of the establishing kind's",
+    "own `identifiers` (the multi-owner sibling pattern, e.g.",
+    "ClusterVariableName shared by GlobalClusterVariable and",
+    "TenantClusterVariable as parallel variants), and for edges (whose",
+    "implicit requires are derived from `identifiedBy` — see above)."
   ],
   "kinds": [
     {

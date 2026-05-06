@@ -124,6 +124,12 @@ paths:
   /invalid/isolated-kind-consumer/{isolatedKindId}:
     $ref: 'widgets.yaml#/paths/~1invalid~1isolated-kind-consumer~1{isolatedKindId}'
 
+  # ── Foreign-identifier-without-requires ──────────────────────
+  /invalid/establishes-foreign-id-no-requires/{widgetId}/{foreignBoundName}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-foreign-id-no-requires~1{widgetId}~1{foreignBoundName}'
+  /valid/establishes-foreign-id-with-requires/{widgetId}/{foreignBoundName}:
+    $ref: 'widgets.yaml#/paths/~1valid~1establishes-foreign-id-with-requires~1{widgetId}~1{foreignBoundName}'
+
   # ── Binding existence with $ref'd request body ───────────────
   # Production specs declare `requestBody.content.*.schema` as a `$ref`
   # to a top-level component schema, not as an inline object. The
