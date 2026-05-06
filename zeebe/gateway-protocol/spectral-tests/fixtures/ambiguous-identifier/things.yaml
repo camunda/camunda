@@ -1,6 +1,6 @@
 # Domain file for no-ambiguous-identifier-property rule test fixture.
 # Contains both valid schemas (qualified names or allowlisted) and invalid
-# schemas (bare id/key/name that are NOT allowlisted).
+# schemas (bare id/key that are NOT allowlisted).
 openapi: "3.0.3"
 info:
   title: Ambiguous identifier test schemas
@@ -23,7 +23,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidSchema'
-  # ── Invalid inline: truly inline schema with bare `name` ──────
+  # ── Invalid inline: truly inline schema with bare `id` ──────
   /bad-inline-things:
     post:
       operationId: createBadInlineThing
@@ -33,9 +33,9 @@ paths:
             schema:
               type: object
               properties:
-                name:
+                id:
                   type: string
-                  description: Bare name in inline schema — should be flagged.
+                  description: Bare id in inline schema — should be flagged.
                 qualifiedProp:
                   type: string
       responses:
@@ -71,14 +71,6 @@ components:
           type: string
           description: Grandfathered bare id.
 
-    # ── Valid: allowlisted schema with bare `name` ──────────────
-    CreateClusterVariableRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          description: Grandfathered bare name.
-
     # ── Invalid: bare `id` not in allowlist ─────────────────────
     BadIdSchema:
       type: object
@@ -98,14 +90,6 @@ components:
           type: string
           description: This bare key should be flagged.
 
-    # ── Invalid: bare `name` not in allowlist ───────────────────
-    BadNameSchema:
-      type: object
-      properties:
-        name:
-          type: string
-          description: This bare name should be flagged.
-
     # ── Invalid: multiple banned properties on one schema ───────
     MultiViolationSchema:
       type: object
@@ -116,9 +100,6 @@ components:
         key:
           type: string
           description: Bare key.
-        name:
-          type: string
-          description: Bare name.
 
     # ── Invalid: bare `id` inside an allOf member ───────────────
     AllOfBadIdSchema:

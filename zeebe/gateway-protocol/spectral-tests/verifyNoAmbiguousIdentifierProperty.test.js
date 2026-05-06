@@ -37,13 +37,6 @@ describe('verifyNoAmbiguousIdentifierProperty', () => {
     });
   });
 
-  describe('valid: allowlisted schema with bare name', () => {
-    it('produces no violations for CreateClusterVariableRequest', () => {
-      const v = filterByPathSegment(violations, 'CreateClusterVariableRequest');
-      assert.equal(v.length, 0);
-    });
-  });
-
   // ── Invalid cases ────────────────────────────────────────────
 
   describe('invalid: bare id not in allowlist', () => {
@@ -62,18 +55,10 @@ describe('verifyNoAmbiguousIdentifierProperty', () => {
     });
   });
 
-  describe('invalid: bare name not in allowlist', () => {
-    it('flags BadNameSchema', () => {
-      const v = filterByPathSegment(violations, 'BadNameSchema');
-      assert.equal(v.length, 1);
-      assert.match(v[0].message, /ambiguous property "name"/);
-    });
-  });
-
   describe('invalid: multiple banned properties on one schema', () => {
-    it('flags all three on MultiViolationSchema', () => {
+    it('flags both on MultiViolationSchema', () => {
       const v = filterByPathSegment(violations, 'MultiViolationSchema');
-      assert.equal(v.length, 3);
+      assert.equal(v.length, 2);
     });
   });
 
@@ -93,8 +78,8 @@ describe('verifyNoAmbiguousIdentifierProperty', () => {
   });
 
   describe('total violation count', () => {
-    it('produces exactly 7 violations total', () => {
-      assert.equal(violations.length, 7);
+    it('produces exactly 5 violations total', () => {
+      assert.equal(violations.length, 5);
     });
   });
 });
@@ -116,13 +101,13 @@ describe('verifyNoAmbiguousIdentifierProperty (inline schemas)', () => {
     });
   });
 
-  describe('invalid: truly inline schema with bare name', () => {
+  describe('invalid: truly inline schema with bare id', () => {
     it('flags the inline schema under /bad-inline-things', () => {
       const v = inlineViolations.filter(r =>
         r.path.some(seg => String(seg).includes('/bad-inline-things'))
       );
       assert.equal(v.length, 1);
-      assert.match(v[0].message, /ambiguous property "name"/);
+      assert.match(v[0].message, /ambiguous property "id"/);
     });
 
     it('includes "(inline schema)" in the label', () => {

@@ -1,16 +1,16 @@
 // Spectral custom function to flag schema properties whose name is one of
-// the ambiguous identifiers `id`, `key`, or `name`.
+// the ambiguous identifiers `id` or `key`.
 //
 // Entity schemas should use qualified names (e.g. `processDefinitionKey`,
-// `tenantName`, `globalListenerId`) so that SDK generators can produce
-// ergonomic, unambiguous bindings. A small number of existing schemas are
-// grandfathered via the allowlist in `.spectral.yaml` — see the issue
+// `globalListenerId`) so that SDK generators can produce ergonomic,
+// unambiguous bindings. A small number of existing schemas are grandfathered
+// via the allowlist in `.spectral.yaml` — see the issue
 // https://github.com/camunda/camunda/issues/52510 for rationale.
 //
 // Applied to component schemas ($.components.schemas[*]) and inline schemas
 // under request bodies, responses, and parameters.
 
-const BANNED = new Set(['id', 'key', 'name']);
+const BANNED = new Set(['id', 'key']);
 
 module.exports = (input, opts, context) => {
   if (!input || typeof input !== 'object') {
