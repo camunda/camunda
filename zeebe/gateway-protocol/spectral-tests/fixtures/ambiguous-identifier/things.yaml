@@ -6,7 +6,41 @@ info:
   title: Ambiguous identifier test schemas
   version: "1.0"
 
-paths: {}
+paths:
+  # ── Valid inline: $ref to a component schema (not flagged) ────
+  /valid-things:
+    post:
+      operationId: createValidThing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidSchema'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidSchema'
+  # ── Invalid inline: truly inline schema with bare `name` ──────
+  /bad-inline-things:
+    post:
+      operationId: createBadInlineThing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Bare name in inline schema — should be flagged.
+                qualifiedProp:
+                  type: string
+      responses:
+        "200":
+          description: OK
 
 components:
   schemas:
