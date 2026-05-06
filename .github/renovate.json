@@ -148,6 +148,22 @@
       "enabled": false
     },
     {
+      "description": "Disable camunda/keycloak digest updates in optimize e2e setup. Digests newer than 3eba291 break the Identity SDK token exchange, causing the auth callback to hang indefinitely. Must be re-evaluated when the Identity SDK compatibility issue is resolved.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchFileNames": [
+        "optimize/client/docker-compose.yml",
+        "optimize/docker-compose.ccsm-with-optimize.yml",
+        "optimize/docker-compose.ccsm-without-optimize.yml",
+        ".github/actions/compose/docker-compose.smoketest.yml"
+      ],
+      "matchPackageNames": [
+        "camunda/keycloak"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Big (major+minor) updates are done manually due to alignment/breaking changes.",
       "matchDatasources": [
         "docker"

@@ -30,7 +30,7 @@ fixture('Homepage')
   })
   .afterEach(cleanEntities);
 
-test('navigate to report view and edit pages', async (t) => {
+test.meta({type: 'smoke'})('navigate to report view and edit pages', async (t) => {
   await createNewReport(t);
   await save(t);
 
@@ -49,7 +49,7 @@ test('navigate to report view and edit pages', async (t) => {
   await t.expect(Common.controlPanel.visible).ok();
 });
 
-test('navigate to dashboard view and edit pages', async (t) => {
+test.meta({type: 'smoke'})('navigate to dashboard view and edit pages', async (t) => {
   await createNewDashboard(t);
   await save(t);
 

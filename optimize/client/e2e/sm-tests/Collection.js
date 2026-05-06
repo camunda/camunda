@@ -33,7 +33,7 @@ async function createCollection(t, name = 'Test Collection') {
   await t.click(Common.modalConfirmButton);
 }
 
-test('create a collection and entities inside it', async (t) => {
+test.meta({type: 'smoke'})('create a collection and entities inside it', async (t) => {
   await createCollection(t, 'Test Collection');
 
   await t.expect(e.collectionTitle.visible).ok();
@@ -63,7 +63,7 @@ test('create a collection and entities inside it', async (t) => {
   await t.expect(Common.listItem('dashboard').textContent).contains(description);
 });
 
-test('renaming a collection', async (t) => {
+test.meta({type: 'smoke'})('renaming a collection', async (t) => {
   await createCollection(t);
 
   await t.click(e.collectionContextMenu);
