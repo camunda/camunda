@@ -67,12 +67,9 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   public void insert(final KeyType key, final ValueType value) {
     context.runInTransaction(
         () -> {
-          if (consistencyChecksSettings.enablePreconditions()) {
-            final var rawKey = serializeKey(key);
-            if (!context.isTombstoned(rawKey) && activeColumnFamily.exists(key)) {
-              throw new ZeebeDbInconsistentException(
-                  "Key " + key + " in ColumnFamily " + columnFamily + " already exists");
-            }
+          if (consistencyChecksSettings.enablePreconditions() && existsInternal(key)) {
+            throw new ZeebeDbInconsistentException(
+                "Key " + key + " in ColumnFamily " + columnFamily + " already exists");
           }
 
           context.clearTombstone(serializeKey(key));

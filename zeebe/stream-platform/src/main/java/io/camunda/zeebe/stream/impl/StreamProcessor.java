@@ -163,6 +163,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final var startRecoveryTimer = metrics.startRecoveryTimer();
       LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final long snapshotPosition = recoverFromSnapshot();
+      LOG.info("Snapshot position is {}", snapshotPosition);
 
       final var scheduledTaskMetrics =
           ScheduledTaskMetrics.of(streamProcessorContext.getMeterRegistry());
