@@ -43,6 +43,14 @@ const preview: Preview = {
         date: /Date$/i,
       },
     },
+    options: {
+      storySort: (a, b) => {
+        const aIsDoc = a.type === 'docs';
+        const bIsDoc = b.type === 'docs';
+        if (aIsDoc !== bIsDoc) return aIsDoc ? 1 : -1;
+        return 0;
+      },
+    },
   },
 };
 

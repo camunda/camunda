@@ -8,12 +8,24 @@
 
 import type {StorybookConfig} from '@storybook/react-vite';
 import tailwindcss from '@tailwindcss/vite';
+import remarkGfm from 'remark-gfm';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.@(ts|tsx)'],
-  addons: ['@storybook/addon-docs'],
+  stories: ['../src/**/*.stories.@(ts|tsx)', '../src/**/*.mdx'],
+  addons: [
+    {
+      name: '@storybook/addon-docs',
+      options: {
+        mdxPluginOptions: {
+          mdxCompileOptions: {
+            remarkPlugins: [remarkGfm],
+          },
+        },
+      },
+    },
+  ],
   framework: {
     name: '@storybook/react-vite',
     options: {},

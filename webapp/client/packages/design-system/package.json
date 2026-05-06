@@ -8,7 +8,8 @@
 	"scripts": {
 		"typecheck": "tsc",
 		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build"
+		"build-storybook": "storybook build",
+		"build-registry": "node scripts/build-registry.mjs"
 	},
 	"exports": {
 		".": "./src/index.ts",
@@ -47,6 +48,7 @@
 		"@storybook/react-vite": "^10.3.6",
 		"@types/react": "19.2.14",
 		"@types/react-dom": "19.2.3",
+		"remark-gfm": "^4.0.1",
 		"sass": "1.99.0",
 		"storybook": "^10.3.6",
 		"typescript": "6.0.3",

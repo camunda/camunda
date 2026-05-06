@@ -1,0 +1,35 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as ButtonStories from './button.stories';
+
+<Meta of={ButtonStories} name="Docs" />
+
+# Button
+
+A clickable element that triggers an action. Use for form submissions, dialog confirmations, navigation that performs work, and any primary call-to-action.
+
+## When to use
+
+- **Primary actions** — submit a form, confirm a dialog, save changes. Use `variant="default"`.
+- **Secondary actions** — cancel, close, dismiss, supporting actions next to a primary button. Use `variant="secondary"` or `variant="outline"`.
+- **Destructive actions** — delete, remove, discard, anything that loses data. Use `variant="destructive"`.
+- **Tertiary / low-emphasis actions** — toolbar controls, repeated actions in a list. Use `variant="ghost"`.
+- **Icon-only triggers** — close buttons, expand/collapse, menu openers. Use `size="icon"` and always set `aria-label`.
+
+## When not to use
+
+- **Inline navigation inside body text** — use the `Link` component, not `variant="link"`.
+- **On/off toggles** — use a `Switch` or `Checkbox` instead of a stateful button.
+- **Selecting from a list of options** — use `RadioGroup` or `Select`.
+
+## Composition
+
+- Use `asChild` to wrap a router link or anchor without losing styles: `<Button asChild><a href="…">Open</a></Button>`.
+- Place icons as children, not via a prop: `<Button><PlusIcon />Create</Button>`. Sizing is handled automatically.
