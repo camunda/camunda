@@ -244,17 +244,17 @@ Benchmark clusters have authentication enabled. Logging into Operate, Tasklist a
 
 1. Port-forward both Camunda and Keycloak:
 
-   ```sh
-    kubectl -n <namespace> port-forward svc/camunda 8080:8080 &
-    kubectl -n <namespace> port-forward pod/keycloak-0 18080:8080 &
-    wait
-   ```
+```sh
+kubectl -n <namespace> port-forward svc/camunda 8080:8080 &
+kubectl -n <namespace> port-forward pod/keycloak-0 18080:8080 &
+wait
+```
 
 2. Get the `demo` user password:
 
-   ```sh
-   kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identity-firstuser-password}" | base64 --decode
-   ```
+```sh
+kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identity-firstuser-password}" | base64 --decode
+```
 
 3. Open <http://localhost:8080> and log in with user `demo` and the password from the previous step.
 
