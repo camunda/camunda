@@ -11,7 +11,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.service.IncidentServices;
 import io.camunda.service.ProcessInstanceServices;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,15 +32,20 @@ public class CopilotToolRegistry {
 
   private final ObjectMapper objectMapper;
   private final ProcessInstanceServices processInstanceServices;
+  private final IncidentServices incidentServices;
   private final Map<String, Tool> tools = new LinkedHashMap<>();
 
   public CopilotToolRegistry(
-      ObjectMapper objectMapper, ProcessInstanceServices processInstanceServices) {
+      ObjectMapper objectMapper,
+      ProcessInstanceServices processInstanceServices,
+      IncidentServices incidentServices) {
     this.objectMapper = objectMapper;
     this.processInstanceServices = processInstanceServices;
+    this.incidentServices = incidentServices;
     register(listProcesses());
     register(countFailedInstances());
     register(getProcessInstance());
+    register(listIncidentsForInstance());
     register(searchCamundaDocs());
   }
 
@@ -143,6 +150,48 @@ public class CopilotToolRegistry {
               "endDate", entity.endDate(),
               "hasIncident", entity.hasIncident(),
               "tenantId", entity.tenantId());
+        });
+  }
+
+  private Tool listIncidentsForInstance() {
+    return new Tool(
+        ToolSpecification.builder()
+            .name("list_incidents_for_instance")
+            .description(
+                "List active incidents for a specific process instance. "
+                    + "Use this when the user asks why an instance is failing or what errors it has.")
+            .parameters(
+                JsonObjectSchema.builder()
+                    .addProperty(
+                        "processInstanceKey",
+                        JsonStringSchema.builder().description("Numeric instance key").build())
+                    .required("processInstanceKey")
+                    .build())
+            .build(),
+        (args, auth) -> {
+          final long key = parseLong(args.get("processInstanceKey"), "processInstanceKey");
+          final var page =
+              incidentServices.search(
+                  IncidentQuery.of(q -> q.filter(f -> f.processInstanceKeys(key))), auth);
+          final var items =
+              page.items().stream()
+                  .map(
+                      inc ->
+                          Map.of(
+                              "incidentKey",
+                              inc.incidentKey(),
+                              "errorType",
+                              String.valueOf(inc.errorType()),
+                              "errorMessage",
+                              inc.errorMessage() != null ? inc.errorMessage() : "",
+                              "elementId",
+                              inc.flowNodeId() != null ? inc.flowNodeId() : "",
+                              "creationTime",
+                              String.valueOf(inc.creationTime()),
+                              "state",
+                              String.valueOf(inc.state())))
+                  .toList();
+          return Map.of("processInstanceKey", key, "incidents", items, "total", page.total());
         });
   }
 
