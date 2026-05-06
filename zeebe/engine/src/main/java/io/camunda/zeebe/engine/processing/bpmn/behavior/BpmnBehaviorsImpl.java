@@ -261,6 +261,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             expressionProcessor,
             stateBehavior,
             processingState.getResourceState(),
+            processingState.getFormState(),
             incidentBehavior,
             jobActivationBehavior,
             jobMetrics,

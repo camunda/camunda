@@ -20,12 +20,14 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -79,6 +81,40 @@ public class ServiceTaskTest {
         "executionPlatformVersion": "8.7.0",
         "schemaVersion": 7,
         "resource": "Script content2"
+      }""";
+  private static final String FORM_1V =
+      """
+      {
+        "type": "default",
+        "id": "Form_1",
+        "components": [],
+        "schemaVersion": 13,
+        "versionTag": "1v"
+      }""";
+  private static final String FORM_2V =
+      """
+      {
+        "type": "default",
+        "id": "Form_1",
+        "components": [],
+        "schemaVersion": 13,
+        "versionTag": "2v"
+      }""";
+  private static final String FORM_1 =
+      """
+      {
+        "type": "default",
+        "id": "Form_1",
+        "components": [],
+        "schemaVersion": 13
+      }""";
+  private static final String FORM_2 =
+      """
+      {
+        "type": "default",
+        "id": "Form_1",
+        "components": [{"type": "textfield"}],
+        "schemaVersion": 13
       }""";
   private static final String PROCESS_ID = "process";
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -498,5 +534,328 @@ public class ServiceTaskTest {
             .getFirst();
 
     assertThat(jobCreated.getValue().getCustomHeaders()).doesNotContainKey("linkedResources");
+  }
+
+  @Test
+  public void shouldCreateJobWithLinkedFormVersionTagBinding() throws JsonProcessingException {
+
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "my_linked_form",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId("Form_1")
+                                    .resourceType("form")
+                                    .bindingType(ZeebeBindingType.versionTag)
+                                    .versionTag("1v")
+                                    .linkName("my_form"))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withJsonResource(FORM_1V.getBytes(StandardCharsets.UTF_8), "form1.form")
+        .deploy();
+
+    ENGINE
+        .deployment()
+        .withJsonResource(FORM_2V.getBytes(StandardCharsets.UTF_8), "form2.form")
+        .deploy();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(jobCreated.getValue().getCustomHeaders()).containsKey("linkedResources");
+    assertThat(jobCreated.getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
+    final List<LinkedResourceProps> resourcePropsList =
+        MAPPER.readValue(
+            jobCreated.getValue().getCustomHeaders().get("linkedResources"),
+            new TypeReference<>() {});
+
+    assertThat(resourcePropsList).hasSize(1);
+    final LinkedResourceProps resourceProps = resourcePropsList.get(0);
+    assertThat(resourceProps)
+        .hasFieldOrPropertyWithValue("resourceType", "form")
+        .hasFieldOrPropertyWithValue("linkName", "my_form");
+
+    final List<Record<Form>> formRecords =
+        RecordingExporter.formRecords()
+            .withFormId("Form_1")
+            .withIntent(FormIntent.CREATED)
+            .limit(2)
+            .toList();
+    // The second record is present
+    assertThat(formRecords).hasSize(2);
+    assertThat(formRecords.getFirst().getValue().getVersionTag()).isEqualTo("1v");
+    // Bound to the first record that has the correct tag
+    assertThat(resourceProps.getResourceKey())
+        .isEqualTo(String.valueOf(formRecords.getFirst().getKey()));
+  }
+
+  @Test
+  public void shouldCreateJobWithLinkedFormLatestBinding() throws JsonProcessingException {
+
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "my_linked_form",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId("Form_1")
+                                    .resourceType("form")
+                                    .bindingType(ZeebeBindingType.latest)
+                                    .linkName("my_form"))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withJsonResource(FORM_1.getBytes(StandardCharsets.UTF_8), "form1.form")
+        .withXmlResource(modelInstance)
+        .deploy();
+
+    // Latest deployment
+    ENGINE
+        .deployment()
+        .withJsonResource(FORM_2.getBytes(StandardCharsets.UTF_8), "form2.form")
+        .deploy();
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(jobCreated.getValue().getCustomHeaders()).containsKey("linkedResources");
+    final List<LinkedResourceProps> resourcePropsList =
+        MAPPER.readValue(
+            jobCreated.getValue().getCustomHeaders().get("linkedResources"),
+            new TypeReference<>() {});
+
+    assertThat(resourcePropsList).hasSize(1);
+    final LinkedResourceProps resourceProps = resourcePropsList.get(0);
+    assertThat(resourceProps)
+        .hasFieldOrPropertyWithValue("resourceType", "form")
+        .hasFieldOrPropertyWithValue("linkName", "my_form");
+    final List<Record<Form>> formRecords =
+        RecordingExporter.formRecords()
+            .withFormId("Form_1")
+            .withIntent(FormIntent.CREATED)
+            .limit(2)
+            .toList();
+    // The second record is present
+    assertThat(formRecords).hasSize(2);
+    // The key is taken from the last record
+    assertThat(resourceProps.getResourceKey())
+        .isEqualTo(String.valueOf(formRecords.getLast().getKey()));
+  }
+
+  @Test
+  public void shouldCreateJobWithLinkedFormDeploymentBinding() throws JsonProcessingException {
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "my_linked_form",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId("Form_1")
+                                    .resourceType("form")
+                                    .bindingType(ZeebeBindingType.deployment)
+                                    .linkName("my_form"))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withJsonResource(FORM_1.getBytes(StandardCharsets.UTF_8), "form1.form")
+        .withXmlResource(modelInstance)
+        .deploy();
+
+    // Second form with the same id
+    ENGINE
+        .deployment()
+        .withJsonResource(FORM_2.getBytes(StandardCharsets.UTF_8), "form2.form")
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(jobCreated.getValue().getCustomHeaders()).containsKey("linkedResources");
+    final List<LinkedResourceProps> resourcePropsList =
+        MAPPER.readValue(
+            jobCreated.getValue().getCustomHeaders().get("linkedResources"),
+            new TypeReference<>() {});
+
+    assertThat(resourcePropsList).hasSize(1);
+    final LinkedResourceProps resourceProps = resourcePropsList.get(0);
+    assertThat(resourceProps)
+        .hasFieldOrPropertyWithValue("resourceType", "form")
+        .hasFieldOrPropertyWithValue("linkName", "my_form");
+    final List<Record<Form>> formRecords =
+        RecordingExporter.formRecords()
+            .withFormId("Form_1")
+            .withIntent(FormIntent.CREATED)
+            .limit(2)
+            .toList();
+    // The second record is present
+    assertThat(formRecords).hasSize(2);
+    // But the key is taken from the first one (same deployment)
+    assertThat(resourceProps.getResourceKey())
+        .isEqualTo(String.valueOf(formRecords.getFirst().getKey()));
+  }
+
+  @Test
+  public void shouldHandleNotFoundLinkedFormVersionTagBinding() {
+    // given
+    final var formId = "Missing_Form_With_Version_Tag";
+    final var versionTag = "1v";
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "my_linked_form",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId(formId)
+                                    .resourceType("form")
+                                    .bindingType(ZeebeBindingType.versionTag)
+                                    .versionTag(versionTag)
+                                    .linkName("my_form"))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .extracting(IncidentRecordValue::getErrorType, IncidentRecordValue::getErrorMessage)
+        .describedAs("Expect that incident is raised when linked form is not found")
+        .containsExactly(
+            ErrorType.FORM_NOT_FOUND,
+            String.format(
+                BpmnJobBehavior.FIND_FORM_BY_ID_AND_VERSION_TAG_FAILED_MESSAGE,
+                formId,
+                versionTag));
+  }
+
+  @Test
+  public void shouldHandleNotFoundLinkedFormLatestBinding() {
+    // given
+    final var formId = "Missing_Form_Latest";
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "my_linked_form",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId(formId)
+                                    .resourceType("form")
+                                    .bindingType(ZeebeBindingType.latest)
+                                    .linkName("my_form"))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .extracting(IncidentRecordValue::getErrorType, IncidentRecordValue::getErrorMessage)
+        .describedAs("Expect that incident is raised when linked form is not found")
+        .containsExactly(
+            ErrorType.FORM_NOT_FOUND,
+            String.format(BpmnJobBehavior.FIND_LATEST_FORM_BY_ID_FAILED_MESSAGE, formId));
+  }
+
+  @Test
+  public void shouldHandleNotFoundLinkedFormDeploymentBinding() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "my_linked_form",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId("Form_1")
+                                    .resourceType("form")
+                                    .bindingType(ZeebeBindingType.deployment)
+                                    .linkName("my_form"))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withJsonResource(FORM_1.getBytes(StandardCharsets.UTF_8), "form1.form")
+            .withXmlResource(modelInstance)
+            .deploy();
+    final var formKey = deployment.getValue().getFormMetadata().getFirst().getFormKey();
+    ENGINE.resourceDeletion().withResourceKey(formKey).delete();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .extracting(IncidentRecordValue::getErrorType, IncidentRecordValue::getErrorMessage)
+        .describedAs(
+            "Expect that incident is raised when deployment-bound linked form is not found")
+        .containsExactly(
+            ErrorType.FORM_NOT_FOUND,
+            String.format(
+                BpmnJobBehavior.FIND_FORM_BY_ID_IN_SAME_DEPLOYMENT_FAILED_MESSAGE,
+                "Form_1",
+                deployment.getKey()));
   }
 }
