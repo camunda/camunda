@@ -4,6 +4,7 @@
 
 plugins {
     id("buildlogic.java-conventions")
+    id("buildlogic.netty-tcnative-runtime-conventions")
 }
 
 dependencies {
