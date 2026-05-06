@@ -19,6 +19,7 @@ Anyone working on the orchestration cluster frontend components.
 - **[Code reviews](./code-reviews.md)** — what we look for.
 - **[ADRs](./adr/adr.md)** — recorded architecture decisions.
 - **[Code style](./code-style.md)** — formatting and naming conventions.
+- **[Legacy components](./legacy-components.md)** — pointers to components still living outside `webapp/client`.
 
 ## Status
 

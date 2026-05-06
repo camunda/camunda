@@ -139,6 +139,7 @@ const sidebars = {
           items: [],
         },
         'frontend/code-style',
+        'frontend/legacy-components',
       ],
     },
   ],
