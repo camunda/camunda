@@ -270,7 +270,7 @@ public class NodeIdProvider {
     private int nodeId;
 
     public int getNodeId() {
-      return UnifiedConfigurationHelper.validateLegacyConfiguration(
+      return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
           Cluster.PREFIX + ".node-id",
           nodeId,
           Integer.class,

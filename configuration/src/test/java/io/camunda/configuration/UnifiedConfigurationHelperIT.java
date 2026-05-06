@@ -32,7 +32,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesMultilineListSyntax() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".multilinelistsyntax",
               List.of("newItem1", "newItem2"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -44,7 +44,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesInlineListSyntax() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".inlinelistsyntax",
               List.of("newItem3", "newItem4"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -56,7 +56,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesInlineListSyntaxWithoutQuotes() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".inlinelistsyntaxwithoutqoutes",
               List.of("newItem7", "newItem8"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -68,7 +68,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesCommaSeparatedString() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".commaseparatedstring",
               List.of("newItem5", "newItem6"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -81,7 +81,7 @@ class UnifiedConfigurationHelperIT {
     void shouldReturnMapFromNewWhenNewConfigUsesMultilineMapSyntax() {
       final var expectedMap = Map.of("k1new", 1, "k2new", 2, "k3new", 3);
       final Map<String, Integer> map =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".multilinemapsyntax",
               expectedMap,
               ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
@@ -94,7 +94,7 @@ class UnifiedConfigurationHelperIT {
     void shouldReturnMapFromNewWhenNewConfigUsesInlineMapSyntax() {
       final var expectedMap = Map.of("k4new", 4, "k5new", 5, "k6new", 6);
       final Map<String, Integer> map =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".inlinemapsyntax",
               expectedMap,
               ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
@@ -107,7 +107,7 @@ class UnifiedConfigurationHelperIT {
     void shouldReturnMapFromNewWhenNewConfigUsesSinglelineMapSyntax() {
       final var expectedMap = Map.of("k7new", 7, "k8new", 8, "k9new", 9);
       final Map<String, Integer> map =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".singlelinemapsyntax",
               expectedMap,
               ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
@@ -122,7 +122,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromLegacyWhenLegacyConfigUsesMultilineListSyntax() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -134,7 +134,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromLegacyWhenLegacyConfigUsesInlineListSyntax() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -146,7 +146,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromLegacyWhenLegacyConfigUsesInlineListSyntaxWithoutQuotes() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -158,7 +158,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromLegacyWhenLegacyConfigUsesCommaSeparatedString() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -170,7 +170,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDurationListFromLegacyWhenLegacyConfigUsesMultilineListSyntax() {
       final List<Duration> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, Duration.class),
@@ -184,7 +184,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDurationListFromLegacyWhenLegacyConfigUsesInlineListSyntax() {
       final List<Duration> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, Duration.class),
@@ -198,7 +198,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDurationListFromLegacyWhenLegacyConfigUsesCommaSeparatedString() {
       final List<Duration> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, Duration.class),
@@ -212,7 +212,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDataSizeListFromLegacyWhenLegacyConfigUsesMultilineListSyntax() {
       final List<DataSize> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, DataSize.class),
@@ -226,7 +226,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDataSizeListFromLegacyWhenLegacyConfigUsesInlineListSyntax() {
       final List<DataSize> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, DataSize.class),
@@ -240,7 +240,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnDataSizeListFromLegacyWhenLegacyConfigUsesCommaSeparatedString() {
       final List<DataSize> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyList(),
               ResolvableType.forClassWithGenerics(List.class, DataSize.class),
@@ -254,7 +254,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnMapFromLegacyWhenLegacyConfigUsesMultilineMapSyntax() {
       final Map<String, Integer> map =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyMap(),
               ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
@@ -267,7 +267,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnMapFromLegacyWhenLegacyConfigUsesInlineMapSyntax() {
       final Map<String, Integer> map =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyMap(),
               ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
@@ -280,7 +280,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnMapFromLegacyWhenLegacyConfigUsesSinglelineMapSyntax() {
       final Map<String, Integer> map =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "foo" + ".bar",
               Collections.emptyMap(),
               ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
@@ -296,7 +296,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesMultilineListSyntax() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".multilinelistsyntax",
               List.of("newItem1", "newItem2"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -308,7 +308,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesInlineListSyntax() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".inlinelistsyntax",
               List.of("newItem3", "newItem4"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -320,7 +320,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesInlineListSyntaxWithoutQuotes() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".inlinelistsyntaxwithoutqoutes",
               List.of("newItem7", "newItem8"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -332,7 +332,7 @@ class UnifiedConfigurationHelperIT {
     @Test
     void shouldReturnListFromNewWhenNewConfigUsesCommaSeparatedString() {
       final List<String> list =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".commaseparatedstring",
               List.of("newItem5", "newItem6"),
               ResolvableType.forClassWithGenerics(List.class, String.class),
@@ -345,7 +345,7 @@ class UnifiedConfigurationHelperIT {
     void shouldReturnMapFromNewWhenNewConfigUsesMultilineMapSyntax() {
       final var expectedMap = Map.of("k1new", 1, "k2new", 2, "k3new", 3);
       final Map<String, Integer> map =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".multilinemapsyntax",
               expectedMap,
               ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
@@ -358,7 +358,7 @@ class UnifiedConfigurationHelperIT {
     void shouldReturnMapFromNewWhenNewConfigUsesInlineMapSyntax() {
       final var expectedMap = Map.of("k4new", 4, "k5new", 5, "k6new", 6);
       final Map<String, Integer> map =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".inlinemapsyntax",
               expectedMap,
               ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
@@ -371,7 +371,7 @@ class UnifiedConfigurationHelperIT {
     void shouldReturnMapFromNewWhenNewConfigUsesSinglelineMapSyntax() {
       final var expectedMap = Map.of("k7new", 7, "k8new", 8, "k9new", 9);
       final Map<String, Integer> map =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
+          UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
               "new" + ".singlelinemapsyntax",
               expectedMap,
               ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
