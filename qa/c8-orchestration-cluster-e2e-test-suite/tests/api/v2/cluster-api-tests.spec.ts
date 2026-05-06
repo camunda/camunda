@@ -33,7 +33,10 @@ test.describe('Cluster API Tests', () => {
       );
       const result = await res.json();
       expect(result.brokers).toHaveLength(1);
-      expect(result.brokers[0].partitions).toHaveLength(1);
+      // Elasticsearch uses 2 partitions, other databases use the default of 1
+      const expectedPartitionCount =
+        process.env.DATABASE === 'elasticsearch' ? 2 : 1;
+      expect(result.brokers[0].partitions).toHaveLength(expectedPartitionCount);
     }).toPass({
       intervals: [2_000, 5_000, 10_000],
       timeout: 20_000,
