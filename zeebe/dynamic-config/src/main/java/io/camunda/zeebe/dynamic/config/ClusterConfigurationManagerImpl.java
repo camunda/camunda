@@ -367,6 +367,42 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     }
   }
 
+  ActorFuture<ClusterConfiguration> applyOperationDirectly(
+      final ClusterConfiguration providedConfiguration,
+      final ClusterConfigurationChangeOperation operation,
+      final ConfigurationChangeAppliers appliers) {
+    final ActorFuture<ClusterConfiguration> future = executor.createFuture();
+    executor.run(
+        () -> {
+          final var applier = appliers.getApplier(operation);
+
+          final var initResult =
+              applier
+                  .init(providedConfiguration)
+                  .map(initTransformer -> initTransformer.apply(providedConfiguration))
+                  .flatMap(this::updateLocalConfiguration);
+
+          if (initResult.isLeft()) {
+            future.completeExceptionally(initResult.getLeft());
+            return;
+          }
+
+          final var intermediateConfig = initResult.get();
+          applier
+              .apply()
+              .onComplete(
+                  (applyTransformer, error) -> {
+                    if (error != null) {
+                      future.completeExceptionally(error);
+                      return;
+                    }
+                    updateLocalConfiguration(applyTransformer.apply(intermediateConfig))
+                        .ifRightOrLeft(future::complete, future::completeExceptionally);
+                  });
+        });
+    return future;
+  }
+
   void registerTopologyChangeAppliers(
       final ConfigurationChangeAppliers configurationChangeAppliers) {
     executor.run(

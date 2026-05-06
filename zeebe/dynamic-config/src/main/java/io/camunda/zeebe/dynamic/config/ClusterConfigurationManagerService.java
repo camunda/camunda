@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.FileInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.GossipInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentC
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
@@ -62,6 +64,8 @@ public final class ClusterConfigurationManagerService
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
+  private final MemberId localMemberId;
+  private ConfigurationChangeAppliers currentAppliers;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -80,7 +84,7 @@ public final class ClusterConfigurationManagerService
       throw new UncheckedIOException("Failed to create data directory", e);
     }
 
-    final MemberId localMemberId = memberShipService.getLocalMember().id();
+    localMemberId = memberShipService.getLocalMember().id();
     configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterConfiguration =
         PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
@@ -238,12 +242,18 @@ public final class ClusterConfigurationManagerService
   public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
-    clusterConfigurationManager.registerTopologyChangeAppliers(
+    currentAppliers =
         new ConfigurationChangeAppliersImpl(
             partitionChangeExecutor,
             new NoopClusterMembershipChangeExecutor(),
             partitionScalingChangeExecutor,
-            clusterChangeExecutor));
+            clusterChangeExecutor);
+    clusterConfigurationManager.registerTopologyChangeAppliers(currentAppliers);
+  }
+
+  public BpmnConfigurationChangeJobWorker createBpmnJobWorker(final CamundaClient camundaClient) {
+    return new BpmnConfigurationChangeJobWorker(
+        camundaClient, localMemberId, clusterConfigurationManager, currentAppliers);
   }
 
   public void removePartitionChangeExecutor() {
