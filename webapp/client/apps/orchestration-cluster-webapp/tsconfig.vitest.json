@@ -12,7 +12,7 @@
 		"module": "ESNext",
 		"moduleResolution": "bundler",
 		"moduleDetection": "force",
-		"types": ["vite/client", "vitest", "@vitest/browser/matchers", "node", "vite-plugin-svgr/client"],
+		"types": ["vite/client", "vitest", "@vitest/browser/matchers", "node"],
 		"paths": {
 			"#/modules/*": ["./src/modules/*"],
 			"#/assets/*": ["./src/assets/*"],
