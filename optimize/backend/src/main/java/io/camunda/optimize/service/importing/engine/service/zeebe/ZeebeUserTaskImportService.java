@@ -185,37 +185,46 @@ public class ZeebeUserTaskImportService
                 .sorted(Comparator.naturalOrder())
                 .toList();
 
+        // Deduplicate consecutive CLAIMs: keep only the first CLAIM in each unclaimed window.
+        // Consecutive CLAIMs (with no UNCLAIM between them) occur e.g. when the same user is
+        // re-assigned without unclaiming first. Only the first CLAIM opens a new work period;
+        // subsequent consecutive CLAIMs are redundant for duration calculation.
+        final List<OffsetDateTime> effectiveClaimTimestamps =
+            getEffectiveClaimTimestamps(allClaimTimestamps, allUnclaimTimestamps);
+
         // Calculate idle time, which is the sum of differences between claim and unclaim timestamp
-        // pairs, ie (claim_n -
-        // unclaim_n)
-        // Note there will always be at least one unclaim (startDate)
-        for (int i = 0; i < allUnclaimTimestamps.size() && i < allClaimTimestamps.size(); i++) {
+        // pairs, ie (claim_n - unclaim_n).
+        // Note there will always be at least one unclaim (startDate).
+        for (int i = 0;
+            i < allUnclaimTimestamps.size() && i < effectiveClaimTimestamps.size();
+            i++) {
           final OffsetDateTime unclaimDate = allUnclaimTimestamps.get(i);
-          final OffsetDateTime claimDate = allClaimTimestamps.get(i);
+          final OffsetDateTime claimDate = effectiveClaimTimestamps.get(i);
           totalIdleTimeInMs += Duration.between(unclaimDate, claimDate).toMillis();
           idleTimeHasChanged = true;
         }
 
         // Calculate work time, which is the sum of differences between unclaim and previous claim
-        // timestamp pairs, ie
-        // (unclaim_n+1 - claim_n)
-        // Note the startDate is the first unclaim, so can be disregarded for this calculation
-        for (int i = 0; i < allUnclaimTimestamps.size() - 1 && i < allClaimTimestamps.size(); i++) {
-          final OffsetDateTime claimDate = allClaimTimestamps.get(i);
+        // timestamp pairs, ie (unclaim_n+1 - claim_n).
+        // Note the startDate is the first unclaim, so can be disregarded for this calculation.
+        for (int i = 0;
+            i < allUnclaimTimestamps.size() - 1 && i < effectiveClaimTimestamps.size();
+            i++) {
+          final OffsetDateTime claimDate = effectiveClaimTimestamps.get(i);
           final OffsetDateTime unclaimDate = allUnclaimTimestamps.get(i + 1);
           totalWorkTimeInMs += Duration.between(claimDate, unclaimDate).toMillis();
           workTimeHasChanged = true;
         }
 
-        // Edge case: task was unclaimed and then completed without claim (== there are 2 more
-        // unclaims than claims)
-        // --> add time between end and last "real" unclaim as idle time
-        if (allUnclaimTimestamps.size() - allClaimTimestamps.size() == 2) {
-          final OffsetDateTime lastUnclaim =
-              allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 1);
+        // Edge case: task was unclaimed and then completed without re-claiming
+        // (== there are 2 more unclaims than effective claims)
+        // --> add idle time from last "real" unclaim to end
+        if (allUnclaimTimestamps.size() - effectiveClaimTimestamps.size() == 2) {
           final OffsetDateTime secondToLastUnclaim =
               allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 2);
-          totalIdleTimeInMs += Duration.between(lastUnclaim, secondToLastUnclaim).toMillis();
+          final OffsetDateTime lastUnclaim =
+              allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 1);
+          totalIdleTimeInMs += Duration.between(secondToLastUnclaim, lastUnclaim).toMillis();
           idleTimeHasChanged = true;
         }
       }
@@ -245,6 +254,27 @@ public class ZeebeUserTaskImportService
         userTaskToAdd.setWorkDurationInMs(totalWorkTimeInMs);
       }
     }
+  }
+
+  private List<OffsetDateTime> getEffectiveClaimTimestamps(
+      final List<OffsetDateTime> allClaimTimestamps,
+      final List<OffsetDateTime> allUnclaimTimestamps) {
+    final List<OffsetDateTime> effectiveClaimTimestamps = new ArrayList<>();
+    for (final OffsetDateTime claimTs : allClaimTimestamps) {
+      if (effectiveClaimTimestamps.isEmpty()
+          || hasUnclaimTimestampBetween(allUnclaimTimestamps, claimTs, effectiveClaimTimestamps)) {
+        effectiveClaimTimestamps.add(claimTs);
+      }
+    }
+    return effectiveClaimTimestamps;
+  }
+
+  private boolean hasUnclaimTimestampBetween(
+      final List<OffsetDateTime> allUnclaimTimestamps,
+      final OffsetDateTime claimTs,
+      final List<OffsetDateTime> effectiveClaimTimestamps) {
+    return allUnclaimTimestamps.stream()
+        .anyMatch(ut -> ut.isAfter(effectiveClaimTimestamps.getLast()) && ut.isBefore(claimTs));
   }
 
   private void updateUserTaskAssigneeOperations(
