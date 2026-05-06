@@ -262,6 +262,35 @@ class LsnReplicationControllerTest {
     verify(controller, times(2)).scheduleCancellableTask(eq(POLLING_INTERVAL), any());
   }
 
+  @Test
+  void shouldCancelTaskAfterClose() throws Exception {
+    // given
+    final var sut = createController();
+    when(lsnProvider.getReplicationStatuses()).thenReturn(List.of());
+
+    // when
+    sut.close();
+
+    // then – one schedule during construction + one after checkReplication
+    verify(scheduledTask).cancel();
+  }
+
+  @Test
+  void shouldCancelRescheduledTaskAfterClose() throws Exception {
+    // given
+    final var sut = createController();
+    when(lsnProvider.getReplicationStatuses()).thenReturn(List.of());
+    final var rescheduledTask = mock(ScheduledTask.class);
+    when(controller.scheduleCancellableTask(any(), any())).thenReturn(rescheduledTask);
+
+    // when
+    sut.checkReplication();
+    sut.close();
+
+    // then – one schedule during construction + one after checkReplication
+    verify(rescheduledTask).cancel();
+  }
+
   // -----------------------------------------------------------------------
   // Unit tests for computeConfirmedLsn()
   // -----------------------------------------------------------------------

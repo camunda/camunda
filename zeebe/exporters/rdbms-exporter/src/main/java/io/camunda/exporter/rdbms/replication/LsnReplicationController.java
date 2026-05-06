@@ -43,10 +43,11 @@ public class LsnReplicationController implements ReplicationController {
   private final AtomicReference<Instant> lastConfirmedReplication;
   private final AtomicBoolean paused = new AtomicBoolean(false);
 
-  private final ScheduledTask replicationCheckTask;
   private final int minSyncReplicas;
   private final Duration maxLag;
   private final boolean pauseOnMaxLagExceeded;
+
+  private ScheduledTask replicationCheckTask;
 
   public LsnReplicationController(
       final Controller controller,
@@ -131,8 +132,9 @@ public class LsnReplicationController implements ReplicationController {
           replicationConfiguration.getPollingInterval(),
           e);
     } finally {
-      controller.scheduleCancellableTask(
-          replicationConfiguration.getPollingInterval(), this::checkReplication);
+      replicationCheckTask =
+          controller.scheduleCancellableTask(
+              replicationConfiguration.getPollingInterval(), this::checkReplication);
     }
   }
 
