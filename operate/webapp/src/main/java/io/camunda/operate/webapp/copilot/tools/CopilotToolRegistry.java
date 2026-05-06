@@ -131,25 +131,47 @@ public class CopilotToolRegistry {
         ToolSpecification.builder()
             .name("count_failed_instances")
             .description(
-                "Count process instances with active incidents, optionally filtered by process id.")
+                "Count active incidents across the cluster, optionally filtered by process "
+                    + "definition id, grouped by error type.")
             .parameters(
                 JsonObjectSchema.builder()
                     .addProperty(
-                        "processId",
+                        "processDefinitionId",
                         JsonStringSchema.builder()
                             .description("Process definition id; omit for all processes")
                             .build())
                     .build())
             .build(),
-        // TODO: replace with IncidentReader.search(...) + group by process
-        (args, auth) ->
-            Map.of(
-                "processId",
-                args.getOrDefault("processId", "*"),
-                "count",
-                12,
-                "byErrorType",
-                Map.of("JOB_NO_RETRIES", 7, "EXTRACT_VALUE_ERROR", 5)));
+        (args, auth) -> {
+          final String processDefinitionId =
+              args.get("processDefinitionId") != null
+                  ? String.valueOf(args.get("processDefinitionId"))
+                  : null;
+          final var page =
+              incidentServices.search(
+                  IncidentQuery.of(
+                      q ->
+                          q.filter(
+                              f -> {
+                                if (processDefinitionId != null && !processDefinitionId.isBlank()) {
+                                  f.processDefinitionIds(processDefinitionId);
+                                }
+                                return f;
+                              })),
+                  auth);
+          final var byErrorType = new java.util.LinkedHashMap<String, Integer>();
+          for (var inc : page.items()) {
+            final String type = String.valueOf(inc.errorType());
+            byErrorType.merge(type, 1, Integer::sum);
+          }
+          return Map.of(
+              "processDefinitionId",
+              processDefinitionId != null ? processDefinitionId : "*",
+              "total",
+              page.total(),
+              "byErrorType",
+              byErrorType);
+        });
   }
 
   private Tool getProcessInstance() {
