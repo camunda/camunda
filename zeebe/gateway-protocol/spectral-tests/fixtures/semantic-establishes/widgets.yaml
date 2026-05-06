@@ -1235,3 +1235,185 @@ paths:
       responses:
         '201':
           description: Created.
+
+  # ── Own-identifier presence (Hole E, camunda/camunda#52322 review) ──
+  # An entity producer must include at least one of the establishing
+  # kind's own identifiers in `identifiedBy`. A producer that lists
+  # only foreign identifiers does not actually produce the kind's
+  # identifier tuple; without this check, the producer-existence gate
+  # silently swallows downstream orphan errors.
+
+  # 42. Producer claims `kind: OwnIdMissingKind` but identifiedBy lists
+  #     only WidgetId (foreign). Should fail.
+  /invalid/establishes-only-foreign-id/{widgetId}:
+    post:
+      operationId: establishesOnlyForeignId
+      summary: Claims to establish OwnIdMissingKind via foreign WidgetId only
+      description: |
+        Should fail — `OwnIdMissingKind`'s own identifier is
+        `OwnIdMissingKindId`, but no `identifiedBy` entry references
+        it. The producer never produces an OwnIdMissingKindId.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id (foreign identifier).
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: OwnIdMissingKind
+        identifiedBy:
+          - { in: path, name: widgetId, semanticType: WidgetId }
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 43. Consumer of OwnIdMissingKind. Must report the orphan error —
+  #     proves the foreign-only producer (#42) was not silently
+  #     admitted by the producer-existence gate.
+  /invalid/own-id-missing-kind-consumer/{ownIdMissingKindId}:
+    get:
+      operationId: ownIdMissingKindConsumer
+      summary: Requires OwnIdMissingKind
+      description: Class-scoped guard for the own-identifier-presence check.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: ownIdMissingKindId
+          in: path
+          required: true
+          description: The id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: OwnIdMissingKind
+        bind:
+          ownIdMissingKindId: { from: path, name: ownIdMissingKindId }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Consumer-bind tuple coverage (Hole F, camunda/camunda#52322 review) ──
+  # For composite-key entities (registered with `requiredBindKeys`),
+  # consumers must bind every key in the full identifier tuple. A
+  # consumer that binds only one key leaves the planner with an
+  # under-specified reference. Mirrors the production
+  # TenantClusterVariable / (tenantId, name) case.
+
+  # 44. Producer of CompositeBindKind: establishes correctly with both
+  #     identifiers AND requires:Widget (so it is a clean producer
+  #     against which consumers can be validated).
+  /valid/composite-bind/{widgetId}/{compositeBindKindName}:
+    post:
+      operationId: createCompositeBindKind
+      summary: Create CompositeBindKind
+      description: Establishes the composite-key kind cleanly.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: compositeBindKindName
+          in: path
+          required: true
+          description: The composite bind kind name.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: CompositeBindKind
+        identifiedBy:
+          - { in: path, name: widgetId,              semanticType: WidgetId }
+          - { in: path, name: compositeBindKindName, semanticType: CompositeBindKindName }
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          widgetId: { from: path, name: widgetId }
+      responses:
+        '201':
+          description: Created.
+
+  # 45. Consumer of CompositeBindKind binding ONLY compositeBindKindName.
+  #     Should fail — `widgetId` is in `requiredBindKeys` and not bound.
+  /invalid/composite-bind-consumer-missing-widget-id/{compositeBindKindName}:
+    get:
+      operationId: compositeBindConsumerMissingWidgetId
+      summary: Consumes CompositeBindKind binding only one of two required keys
+      description: |
+        Should fail — `CompositeBindKind` declares
+        `requiredBindKeys: [widgetId, compositeBindKindName]`, but
+        this consumer binds only `compositeBindKindName`. The planner
+        has no way to obtain the (widgetId) half of the tuple.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: compositeBindKindName
+          in: path
+          required: true
+          description: The name.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: CompositeBindKind
+        bind:
+          compositeBindKindName: { from: path, name: compositeBindKindName }
+      responses:
+        '200':
+          description: OK.
+
+  # 46. Consumer of CompositeBindKind binding the FULL tuple. Must
+  #     lint clean.
+  /valid/composite-bind-consumer-full-tuple/{widgetId}/{compositeBindKindName}:
+    get:
+      operationId: compositeBindConsumerFullTuple
+      summary: Consumes CompositeBindKind binding the full tuple
+      description: Should pass — both required bind keys are present.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+        - name: compositeBindKindName
+          in: path
+          required: true
+          description: The name.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: CompositeBindKind
+        bind:
+          widgetId:              { from: path, name: widgetId }
+          compositeBindKindName: { from: path, name: compositeBindKindName }
+      responses:
+        '200':
+          description: OK.
+
+  # 47. Consumer of Widget binding NOTHING (empty bind). Default rule
+  #     (no requiredBindKeys on Widget) should fail because every
+  #     registered identifier (WidgetId -> widgetId) must be bound.
+  /invalid/widget-consumer-empty-bind:
+    get:
+      operationId: widgetConsumerEmptyBind
+      summary: Consumes Widget with empty bind
+      description: |
+        Should fail — `Widget`'s only registered identifier is
+        `WidgetId` (camelCased `widgetId`); the consumer must bind it.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: someOtherParam
+          in: query
+          required: false
+          schema: { type: string }
+      x-semantic-requires:
+        kind: Widget
+        bind: {}
+      responses:
+        '200':
+          description: OK.

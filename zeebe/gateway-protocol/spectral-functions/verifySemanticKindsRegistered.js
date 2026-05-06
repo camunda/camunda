@@ -337,6 +337,21 @@ function loadRegistry() {
   // here should require the same justification — the wire name is
   // already published and cannot be renamed without breaking SDK users.
   const kindLegacyBindKeys = new Map();
+  // kindName -> ordered Array of bind-key strings that the consumer
+  // MUST include in `x-semantic-requires.bind` (the kind's full
+  // identity tuple). Optional; when absent, the verifier falls back to
+  // requiring `camelCase(id)` for each registered identifier of the
+  // kind (substitutable via `legacyBindKeys`). Required for composite-
+  // key entities where the identity tuple includes a foreign-owned
+  // identifier that is intentionally not listed in `identifiers` (e.g.
+  // `TenantClusterVariable` whose identity is `(tenantId, name)` but
+  // whose `identifiers` contain only `ClusterVariableName`, because
+  // `TenantId` must remain single-owner under `Tenant` for the edge-
+  // resolution rule). Without this field, a consumer binding only
+  // `name` lints clean against the kind's `legacyBindKeys` even though
+  // the runtime needs both keys to resolve the entity. PR #52322
+  // review.
+  const kindRequiredBindKeys = new Map();
   for (const entry of kinds) {
     const name = typeof entry === 'string' ? entry : entry?.name;
     if (typeof name !== 'string' || name.length === 0) continue;
@@ -363,6 +378,14 @@ function loadRegistry() {
         }
         if (keys.size > 0) kindLegacyBindKeys.set(name, keys);
       }
+      if (Array.isArray(entry.requiredBindKeys)) {
+        const keys = [];
+        for (const k of entry.requiredBindKeys) {
+          if (typeof k !== 'string' || k.length === 0) continue;
+          keys.push(k);
+        }
+        if (keys.length > 0) kindRequiredBindKeys.set(name, keys);
+      }
     }
   }
   cachedRegistry = {
@@ -372,6 +395,7 @@ function loadRegistry() {
     kindShapes,
     kindIdentifiers,
     kindLegacyBindKeys,
+    kindRequiredBindKeys,
   };
   cachedFor = file;
   return cachedRegistry;
@@ -396,6 +420,7 @@ module.exports = (input, _opts, _context) => {
     kindShapes,
     kindIdentifiers,
     kindLegacyBindKeys,
+    kindRequiredBindKeys,
   } = loadRegistry();
 
   // The CI runs spectral twice: once on the bundled entry point
@@ -524,6 +549,49 @@ module.exports = (input, _opts, _context) => {
                     'identifiedBy',
                     i,
                     'semanticType',
+                  ],
+                });
+              }
+            }
+          }
+
+          // Hole E: producer must include at least one of the
+          // establishing kind's OWN identifiers in `identifiedBy`
+          // (camunda/camunda#52322 review). Without this, an operation
+          // can claim to establish kind K using only foreign
+          // identifiers, satisfying the producer-existence gate so
+          // downstream orphan errors disappear, even though the
+          // producer never produces an identifier of K and consumers
+          // have no way to obtain K's actual identifier tuple.
+          //
+          // Skipped when the kind has no registered `identifiers`
+          // (e.g. registry-only kinds with composite-only identity);
+          // the entity-tuple check above already validates each
+          // semanticType is registered somewhere.
+          //
+          // Skipped for edge producers — by design, every edge
+          // identifiedBy entry is a foreign identifier resolved via
+          // single-owner edge-endpoint resolution.
+          if (
+            registeredShape === 'entity' &&
+            declaredShape === 'entity' &&
+            Array.isArray(est.identifiedBy)
+          ) {
+            const ownIds = kindIdentifiers.get(est.kind);
+            if (ownIds && ownIds.size > 0) {
+              const hasOwn = est.identifiedBy.some(
+                (it) => it && typeof it === 'object' && ownIds.has(it.semanticType),
+              );
+              if (!hasOwn) {
+                const ownList = Array.from(ownIds).join(', ');
+                errors.push({
+                  message: `x-semantic-establishes on ${method.toUpperCase()} ${pathKey} claims to establish kind '${est.kind}' but none of its identifiedBy entries reference one of the kind's own identifiers [${ownList}] (registered in semantic-kinds.json). A producer that only references foreign identifiers does not actually produce '${est.kind}'; downstream consumers would be unable to obtain the kind's identifier tuple. Add an identifiedBy entry whose semanticType is one of [${ownList}], or fix the establishing 'kind'.`,
+                  path: [
+                    'paths',
+                    pathKey,
+                    method,
+                    'x-semantic-establishes',
+                    'identifiedBy',
                   ],
                 });
               }
@@ -853,6 +921,69 @@ module.exports = (input, _opts, _context) => {
                     errors.push({
                       message: `x-semantic-requires.bind has key '${bindKey}' on ${method.toUpperCase()} ${pathKey}, but kind '${req.kind}' declares identifiers [${Array.from(ids).join(', ')}] in semantic-kinds.json (expected bind key one of: [${allowedList}]). Fix the bind key, add the missing identifier to the kind's 'identifiers', or \u2014 only if the wire field is a published name that cannot be renamed \u2014 add '${bindKey}' to the kind's 'legacyBindKeys'.`,
                       path: ['paths', pathKey, method, 'x-semantic-requires', 'bind', bindKey],
+                    });
+                  }
+                }
+              }
+            }
+          }
+
+          // Hole F: consumer bind must cover the full identifier tuple
+          // (camunda/camunda#52322 review). The bind-key validation
+          // above only checks that each key is *allowed*, not that all
+          // *required* keys are present. For composite-key entities
+          // (e.g. TenantClusterVariable whose identity is (tenantId,
+          // name)), a consumer binding only `name` lints clean but
+          // leaves the planner with an under-specified reference the
+          // runtime cannot resolve.
+          //
+          // Required tuple per kind:
+          //   - If the registry declares an explicit `requiredBindKeys`
+          //     array (composite-key entities like
+          //     TenantClusterVariable), every listed key MUST appear
+          //     in `bind`. The verifier accepts the keys verbatim;
+          //     legacy aliases are not substituted because the registry
+          //     has already chosen the canonical wire form.
+          //   - Otherwise, for each registered identifier `id`, the
+          //     bind must contain `camelCase(id)` OR one of the kind's
+          //     `legacyBindKeys`. Single-identifier kinds with a
+          //     legacy alias (e.g. GlobalListener -> `id`) are covered
+          //     by either form.
+          //
+          // Skipped for unknown / external kinds (already errored
+          // above) and for kinds with no registered identifiers (the
+          // bind-key allow-list above is the only check that applies).
+          if (registry.has(req.kind) && !externalNames.has(req.kind)) {
+            const registeredShape = kindShapes.get(req.kind);
+            if (registeredShape === 'entity') {
+              const bindKeys = new Set(Object.keys(req.bind));
+              const required = kindRequiredBindKeys.get(req.kind);
+              if (required) {
+                const missing = required.filter((k) => !bindKeys.has(k));
+                if (missing.length > 0) {
+                  errors.push({
+                    message: `x-semantic-requires.bind on ${method.toUpperCase()} ${pathKey} for kind '${req.kind}' is missing required bind key${missing.length > 1 ? 's' : ''} [${missing.join(', ')}] (the kind declares requiredBindKeys [${required.join(', ')}] in semantic-kinds.json because its identity is composite). Add the missing bind${missing.length > 1 ? 'ings' : 'ing'} so the planner has the full identifier tuple.`,
+                    path: ['paths', pathKey, method, 'x-semantic-requires', 'bind'],
+                  });
+                }
+              } else {
+                const ids = kindIdentifiers.get(req.kind);
+                if (ids && ids.size > 0) {
+                  const legacy = kindLegacyBindKeys.get(req.kind) || new Set();
+                  const missing = [];
+                  for (const id of ids) {
+                    const cc = camelCaseIdentifier(id);
+                    const satisfied =
+                      bindKeys.has(cc) || [...legacy].some((l) => bindKeys.has(l));
+                    if (!satisfied) missing.push(cc);
+                  }
+                  if (missing.length > 0) {
+                    const legacyHint = legacy.size > 0
+                      ? ` (or one of legacyBindKeys [${[...legacy].join(', ')}])`
+                      : '';
+                    errors.push({
+                      message: `x-semantic-requires.bind on ${method.toUpperCase()} ${pathKey} for kind '${req.kind}' does not bind identifier${missing.length > 1 ? 's' : ''} [${missing.join(', ')}]${legacyHint}. Every registered identifier of an entity kind must be bound so the planner can construct the full identifier tuple at runtime.`,
+                      path: ['paths', pathKey, method, 'x-semantic-requires', 'bind'],
                     });
                   }
                 }

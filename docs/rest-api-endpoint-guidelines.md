@@ -930,6 +930,27 @@ parameters.
 > unreachable via chain planning and is flagged as an unreachable
 > orphan.
 
+> **Producer must include the establishing kind's own identifier.**
+> An entity producer's `identifiedBy` MUST contain at least one entry
+> whose `semanticType` is one of the establishing kind's own
+> `identifiers` in `semantic-kinds.json`. A producer that lists only
+> foreign identifiers does not actually produce the kind's identifier
+> tuple, even though it satisfies the producer-existence gate;
+> downstream consumers' orphan errors would silently disappear.
+> Enforced by `verify-semantic-kinds-registered`. Edge producers are
+> exempt (every edge `identifiedBy` is a foreign identifier by
+> definition, resolved via single-owner edge-endpoint resolution).
+
+> **Consumer must bind the full identifier tuple.** Every
+> `x-semantic-requires.bind` for an entity-kind consumer MUST cover
+> the kind's complete identity tuple. For composite-key entities
+> registered with `requiredBindKeys` (e.g. `TenantClusterVariable`
+> requires `[tenantId, name]`), every listed key must be present;
+> otherwise the planner has an under-specified reference. For
+> non-composite kinds, every `camelCase(identifier)` must be bound
+> (substitutable via `legacyBindKeys`). Enforced by
+> `verify-semantic-kinds-registered`.
+
 #### Per-tuple `acceptsExternal: true` (camunda/camunda#52322)
 
 Marks a single `identifiedBy` endpoint as **bimodal** — either an in-API

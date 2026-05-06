@@ -136,6 +136,22 @@ paths:
   /valid/establishes-external-id-with-accepts-external/{externalThingId}/{externalBoundName}:
     $ref: 'widgets.yaml#/paths/~1valid~1establishes-external-id-with-accepts-external~1{externalThingId}~1{externalBoundName}'
 
+  # ── Own-identifier presence (Hole E, camunda/camunda#52322 review) ──
+  /invalid/establishes-only-foreign-id/{widgetId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-only-foreign-id~1{widgetId}'
+  /invalid/own-id-missing-kind-consumer/{ownIdMissingKindId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1own-id-missing-kind-consumer~1{ownIdMissingKindId}'
+
+  # ── Consumer-bind tuple coverage (Hole F, camunda/camunda#52322 review) ──
+  /valid/composite-bind/{widgetId}/{compositeBindKindName}:
+    $ref: 'widgets.yaml#/paths/~1valid~1composite-bind~1{widgetId}~1{compositeBindKindName}'
+  /invalid/composite-bind-consumer-missing-widget-id/{compositeBindKindName}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1composite-bind-consumer-missing-widget-id~1{compositeBindKindName}'
+  /valid/composite-bind-consumer-full-tuple/{widgetId}/{compositeBindKindName}:
+    $ref: 'widgets.yaml#/paths/~1valid~1composite-bind-consumer-full-tuple~1{widgetId}~1{compositeBindKindName}'
+  /invalid/widget-consumer-empty-bind:
+    $ref: 'widgets.yaml#/paths/~1invalid~1widget-consumer-empty-bind'
+
   # ── Binding existence with $ref'd request body ───────────────
   # Production specs declare `requestBody.content.*.schema` as a `$ref`
   # to a top-level component schema, not as an inline object. The

@@ -803,6 +803,85 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
     });
   });
 
+  // ── Hole E: own-identifier presence on entity producers ──
+  // camunda/camunda#52322 review: an entity producer must include at
+  // least one of the establishing kind's own registered identifiers in
+  // `identifiedBy`. Otherwise the operation can claim to establish
+  // kind K via foreign identifiers only — passing the producer-
+  // existence gate, suppressing orphan errors on consumers of K, even
+  // though the producer never actually produces a K identifier value.
+  describe('verify-semantic-kinds-registered: producer-must-include-own-identifier', () => {
+    it("flags an entity producer whose identifiedBy lists only foreign identifiers (no own-kind identifier)", () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/invalid/establishes-only-foreign-id') &&
+          e.message.includes("kind 'OwnIdMissingKind'") &&
+          e.message.includes('OwnIdMissingKindId'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+
+    it('still surfaces the orphan error on the OwnIdMissingKind consumer (proves the foreign-only producer was not silently admitted)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('OwnIdMissingKind') &&
+          e.message.includes('no operation establishes'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+
+    it('does not flag clean producers whose identifiedBy includes the kind\'s own identifier', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('createWidget') ||
+          e.message.includes('createUser') ||
+          e.message.includes('createCompositeBindKind'),
+      ).filter((e) => e.message.includes("none of its identifiedBy"));
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+  });
+
+  // ── Hole F: consumer bind must cover the full identifier tuple ──
+  // camunda/camunda#52322 review: for entity consumers, every
+  // identifier in the kind's identity tuple must appear in
+  // `x-semantic-requires.bind`. Composite-key entities declare the
+  // full tuple via `requiredBindKeys`; for the rest, every
+  // `camelCase(identifier)` must be present (substitutable via
+  // `legacyBindKeys`).
+  describe('verify-semantic-kinds-registered: consumer-bind-tuple-coverage', () => {
+    it('flags a consumer of a composite-key entity that omits one of the requiredBindKeys', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/invalid/composite-bind-consumer-missing-widget-id') &&
+          e.message.includes("kind 'CompositeBindKind'") &&
+          e.message.includes('widgetId') &&
+          e.message.includes('requiredBindKeys'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+
+    it('does not flag a consumer that binds the full requiredBindKeys tuple', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/valid/composite-bind-consumer-full-tuple') &&
+          (e.message.includes('requiredBindKeys') ||
+            e.message.includes('does not bind identifier')),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+
+    it('flags a consumer with empty bind on a single-identifier kind (default rule)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/invalid/widget-consumer-empty-bind') &&
+          e.message.includes("kind 'Widget'") &&
+          e.message.includes('does not bind identifier') &&
+          e.message.includes('widgetId'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+  });
+
   // ── Per-file pass: only the producer-existence cross-reference is gated ──
   // CI lints both the bundled entry (rest-api.yaml) and each domain file
   // independently. The cross-reference walk relies on every producer being
