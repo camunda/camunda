@@ -1,0 +1,573 @@
+# description: Creates a finite (default 10min) load test when a PR is labeled with
+#              'quicker-max' and/or 'quicker-realistic'. Each label maps to one of the
+#              shared `max` / `realistic` scenarios in camunda-load-test.yml. Both labels
+#              can coexist on the same PR — the workflow fans out via a job matrix and
+#              each scenario gets its own namespace + PR comment. Auto-cleans up the
+#              namespace once results are posted (or on label removal / PR close).
+# calls: camunda-load-test.yml (scenario: max|realistic + starter.durationLimit override)
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda Pull Request Quicker Benchmark
+on:
+  pull_request:
+    types:
+      - labeled
+      - unlabeled
+      - synchronize
+      - closed
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref (branch, tag or commit SHA) to benchmark'
+        required: true
+        type: string
+      scenario:
+        description: 'Scenario to benchmark'
+        required: false
+        type: choice
+        options:
+          - max
+          - realistic
+        default: max
+      duration-seconds:
+        description: 'Test duration in seconds (overrides the default 600)'
+        required: false
+        type: string
+        default: '600'
+      pr-number:
+        description: 'PR number to comment on (optional). When empty, only writes a job summary.'
+        required: false
+        type: string
+        default: ''
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+  # Default test duration in seconds. The platform takes ~7min to come up; 10min leaves a
+  # short but usable load window. Override per-run via workflow_dispatch input.
+  DEFAULT_DURATION_SECONDS: '600'
+
+jobs:
+  sanitize-branch-name:
+    name: Resolve scenarios
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+      (github.event.action == 'unlabeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+      (github.event.action == 'synchronize' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic'))) ||
+      (github.event.action == 'closed' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic')))
+    outputs:
+      author-sanitized: ${{ steps.compute-outputs.outputs.author-sanitized }}
+      pr-number: ${{ steps.compute-outputs.outputs.pr-number }}
+      pr-id-suffix: ${{ steps.compute-outputs.outputs.pr-id-suffix }}
+      duration-seconds: ${{ steps.compute-outputs.outputs.duration-seconds }}
+      ref: ${{ steps.compute-outputs.outputs.ref }}
+      scenarios: ${{ steps.compute-outputs.outputs.scenarios }}
+    steps:
+      - id: sanitize-author
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ github.event_name == 'workflow_dispatch' && github.actor || github.event.pull_request.user.login }}
+          max_length: 10
+      - id: compute-outputs
+        name: Compute scenarios, namespace pieces, duration, and ref
+        env:
+          # Pass untrusted user-controlled refs/inputs through env so a maliciously named
+          # branch can't break out of the shell context (actionlint expression check).
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          PR_LABELS_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          DISPATCH_PR_NUMBER: ${{ inputs.pr-number }}
+          DISPATCH_REF: ${{ inputs.ref }}
+          DISPATCH_SCENARIO: ${{ inputs.scenario }}
+          DISPATCH_DURATION: ${{ inputs.duration-seconds }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          AUTHOR_SANITIZED: ${{ steps.sanitize-author.outputs.branch_name }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          # Namespace is distinct from the existing 'benchmark' label (c8-...-pr-...) so all
+          # quicker-* labels can coexist on the same PR alongside it. Each scenario gets its
+          # own namespace: c8-<author>-quicker-<scenario>-pr-<id-suffix>.
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            pr_number="$DISPATCH_PR_NUMBER"
+            ref="$DISPATCH_REF"
+            duration="$DISPATCH_DURATION"
+            scenarios=$(jq -nc --arg s "${DISPATCH_SCENARIO:-max}" '[$s]')
+          else
+            pr_number="$PR_NUMBER"
+            ref="$PR_HEAD_REF"
+            duration="$DEFAULT_DURATION_SECONDS"
+            case "$ACTION" in
+              labeled|unlabeled)
+                # Single-label event: act on just the label that triggered it. The label is
+                # known-good (the if-guard restricts to quicker-max / quicker-realistic).
+                scenarios=$(jq -nc --arg s "${LABEL_NAME#quicker-}" '[$s]')
+                ;;
+              synchronize|closed)
+                # Multi-label-aware: every quicker-* label currently on the PR. The matrix
+                # below fans out to all of them.
+                scenarios=$(jq -cn --argjson labels "$PR_LABELS_JSON" '[
+                  $labels[]
+                  | select(. == "quicker-max" or . == "quicker-realistic")
+                  | sub("^quicker-"; "")
+                ]')
+                ;;
+              *)
+                scenarios='[]'
+                ;;
+            esac
+          fi
+          id_suffix="${pr_number:-run-$RUN_ID}"
+          {
+            echo "author-sanitized=${AUTHOR_SANITIZED}"
+            echo "pr-number=${pr_number}"
+            echo "pr-id-suffix=${id_suffix}"
+            echo "duration-seconds=${duration:-${DEFAULT_DURATION_SECONDS}}"
+            echo "ref=${ref}"
+            echo "scenarios=${scenarios}"
+          } >> "$GITHUB_OUTPUT"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  create-benchmark:
+    name: Quicker Benchmark (${{ matrix.scenario }})
+    needs: sanitize-branch-name
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+      (github.event.action == 'synchronize' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic')))
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: ${{ fromJSON(needs.sanitize-branch-name.outputs.scenarios) }}
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      # Each scenario gets its own namespace so both can run side-by-side on the same PR.
+      name: c8-${{ needs.sanitize-branch-name.outputs.author-sanitized }}-quicker-${{ matrix.scenario }}-pr-${{ needs.sanitize-branch-name.outputs.pr-id-suffix }}
+      ref: ${{ needs.sanitize-branch-name.outputs.ref }}
+      scenario: ${{ matrix.scenario }}
+      load-test-load: --set starter.durationLimit=${{ needs.sanitize-branch-name.outputs.duration-seconds }}
+
+  collect-metrics:
+    name: Collect metrics & post results (${{ matrix.scenario }})
+    needs: [sanitize-branch-name, create-benchmark]
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+      (github.event.action == 'synchronize' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic')))
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: ${{ fromJSON(needs.sanitize-branch-name.outputs.scenarios) }}
+    runs-on: ubuntu-latest
+    # Test runs for `duration-seconds` and we want headroom for platform bring-up + scrape.
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      pull-requests: 'write'
+    env:
+      NAMESPACE: c8-${{ needs.sanitize-branch-name.outputs.author-sanitized }}-quicker-${{ matrix.scenario }}-pr-${{ needs.sanitize-branch-name.outputs.pr-id-suffix }}
+      DURATION_SECONDS: ${{ needs.sanitize-branch-name.outputs.duration-seconds }}
+      PR_NUMBER: ${{ needs.sanitize-branch-name.outputs.pr-number }}
+      SCENARIO: ${{ matrix.scenario }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
+      # The CI Teleport role grants pods/portforward in test namespaces but NOT in the
+      # `monitoring` namespace, so we cannot tunnel to the cluster Prometheus. Instead we
+      # scrape each pod's own metrics endpoint directly from the runner once the platform
+      # and load-test client are ready.
+
+      - name: Verify platform & load-test client are ready
+        uses: ./.github/actions/await-load-test
+        with:
+          namespace: ${{ env.NAMESPACE }}
+
+      - name: Wait for benchmark duration to elapse
+        run: |
+          # The starter is configured with --set starter.durationLimit=$DURATION_SECONDS,
+          # so it can't flip the run-finished gauge before then. Sleep through that window
+          # rather than burn kubectl/curl traffic actively polling for it.
+          echo "Sleeping ${DURATION_SECONDS}s for the benchmark run to complete..."
+          sleep "$DURATION_SECONDS"
+
+      - name: Wait for starter run-finished
+        id: wait-starter
+        run: |
+          # Post-sleep poll for the `starter_run_finished` gauge.
+          #
+          # The starter exposes /metrics (the load-tester remaps /actuator/prometheus to
+          # /metrics so Grafana scrape configs match Zeebe's convention).
+          #
+          # We deliberately do NOT hold a long-lived port-forward. If the starter pod gets
+          # restarted or rescheduled (k8s eviction, manual `kubectl delete pod`, deployment
+          # update from a manual change, etc.), kubectl port-forward dies and won't reconnect
+          # to the replacement pod — leaving us polling a dead local port until deadline.
+          # Resolve the current pod by label and open a fresh port-forward each iteration.
+          # Cost: ~3s extra per 15s loop, trade for resilience.
+          poll_starter() {
+            # Echoes raw /metrics body (or empty on failure). Does not throw under pipefail.
+            local pod local_port=9601
+            pod=$(kubectl -n "$NAMESPACE" get pod -l app=starter \
+              -o jsonpath='{.items[0].metadata.name}' 2>/dev/null) || true
+            if [[ -z "$pod" ]]; then return 0; fi
+            kubectl -n "$NAMESPACE" port-forward "pod/$pod" "$local_port:9600" \
+              >/tmp/pf-starter.log 2>&1 &
+            local pid=$!
+            local out=""
+            for _ in 1 2 3; do
+              sleep 1
+              if out=$(curl -sf "http://localhost:$local_port/metrics" 2>/dev/null) && [[ -n "$out" ]]; then break; fi
+            done
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            printf '%s' "$out"
+          }
+
+          # Generous enough to absorb ONE full restart's worth of extra runtime.
+          # Multi-restart cases get surfaced via the restart-count warning in the comment.
+          deadline_seconds=$((DURATION_SECONDS + 300))
+          end=$(( $(date +%s) + deadline_seconds ))
+          finished=0
+          while [[ $(date +%s) -lt $end ]]; do
+            out=$(poll_starter)
+            val=$(printf '%s\n' "$out" | awk '/^starter_run_finished[ {]/ {print $NF; exit}')
+            if [[ "$val" == "1.0" || "$val" == "1" ]]; then
+              finished=1
+              # Save the last-known scrape so the next step can re-use it without another
+              # port-forward round-trip.
+              printf '%s' "$out" > /tmp/starter.prom
+              break
+            fi
+            sleep 15
+          done
+          echo "finished=${finished}" >> "$GITHUB_OUTPUT"
+          if [[ "$finished" != "1" ]]; then
+            echo "::warning::Starter did not flip starter_run_finished=1 within ${deadline_seconds}s after the duration window. Continuing to scrape what's available."
+            : > /tmp/starter.prom  # ensure file exists for the aggregator
+          fi
+
+      - name: Read starter pod restart count
+        id: restarts
+        run: |
+          # If the starter was restarted by k8s mid-run, the actual elapsed wall-clock time
+          # exceeds DURATION_SECONDS (the new pod runs another full duration_limit). Surface
+          # the count so the comment can warn — we don't try to recover.
+          rc=$(kubectl -n "$NAMESPACE" get pod -l app=starter \
+            -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}' 2>/dev/null \
+            | tr ' ' '\n' | awk '{s+=$1} END {print s+0}')
+          echo "count=${rc:-0}" >> "$GITHUB_OUTPUT"
+
+      - name: Scrape camunda broker metrics (all 3)
+        run: |
+          # Each broker pod exposes /actuator/prometheus on port 9600. Per-broker counters
+          # only count their own partitions, so we scrape all three and aggregate later.
+          mkdir -p /tmp/camunda-prom
+          # Selector verified against the camunda-platform Helm chart: the broker pods
+          # carry app.kubernetes.io/component=zeebe-broker. Older charts may use
+          # `app.kubernetes.io/component=orchestration`; we fall back if the primary
+          # selector returns nothing.
+          mapfile -t pods < <(kubectl -n "$NAMESPACE" get pods \
+            -l app.kubernetes.io/component=zeebe-broker \
+            -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n')
+          if [[ ${#pods[@]} -eq 0 ]]; then
+            mapfile -t pods < <(kubectl -n "$NAMESPACE" get pods \
+              -l app.kubernetes.io/component=orchestration \
+              -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n')
+          fi
+          echo "Scraping ${#pods[@]} broker pod(s): ${pods[*]}"
+          local_port=9700
+          for p in "${pods[@]}"; do
+            [[ -z "$p" ]] && continue
+            kubectl -n "$NAMESPACE" port-forward "pod/$p" "$local_port:9600" >"/tmp/pf-$p.log" 2>&1 &
+            pid=$!
+            for _ in $(seq 1 15); do
+              if curl -sf "http://localhost:$local_port/actuator/prometheus" >/dev/null 2>&1; then break; fi
+              sleep 2
+            done
+            curl -sf "http://localhost:$local_port/actuator/prometheus" > "/tmp/camunda-prom/$p.prom" \
+              || echo "::warning::Failed to scrape $p"
+            kill $pid 2>/dev/null || true
+            wait $pid 2>/dev/null || true
+            local_port=$((local_port + 1))
+          done
+
+      - name: Aggregate metrics
+        id: scrape
+        run: |
+          # Pure shell + awk — no Python. Each broker reports nonzero values only for
+          # partitions it leads, so summing across 3 broker scrapes gives the cluster
+          # total without double-counting (verified live: camunda-0 partition 1 +
+          # camunda-1 partition 2 + camunda-2 partition 3 = central Prom's total).
+          #
+          # We pipe through `cat ... 2>/dev/null` so an empty broker-scrape directory
+          # (every scrape failed) yields zeros instead of awk crashing on a missing glob.
+          shopt -s nullglob
+          camunda_files=( /tmp/camunda-prom/*.prom )
+
+          instances=$(awk '/^starter_process_instances_started_total[ {]/ {print $NF; exit}' /tmp/starter.prom)
+
+          completed=$(cat "${camunda_files[@]}" 2>/dev/null | awk '
+            /^zeebe_element_instance_events_total\{/ \
+              && /action="completed"/ \
+              && /type="PROCESS"/ { s += $NF }
+            END { printf "%.0f", s+0 }
+          ')
+
+          dropped=$(cat "${camunda_files[@]}" 2>/dev/null | awk '/^zeebe_dropped_request_count_total\{/  { s += $NF } END { printf "%.0f", s+0 }')
+          received=$(cat "${camunda_files[@]}" 2>/dev/null | awk '/^zeebe_received_request_count_total\{/ { s += $NF } END { printf "%.0f", s+0 }')
+          bp=$(awk -v d="$dropped" -v r="$received" 'BEGIN { if (r > 0) printf "%.4f", (d/r)*100; else print "0" }')
+
+          {
+            echo "instances-started=${instances:-0}"
+            echo "completed-pi-total=${completed:-0}"
+            echo "completed-pi-rate=$(awk -v c="${completed:-0}" -v d="$DURATION_SECONDS" 'BEGIN { printf "%.4f", c/d }')"
+            echo "backpressure-pct=${bp}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install js-yaml
+        if: always()
+        run: npm install --no-save js-yaml@4.1.0
+
+      - name: Render and post results
+        if: always()
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          INSTANCES_STARTED: ${{ steps.scrape.outputs.instances-started }}
+          COMPLETED_PI_RATE: ${{ steps.scrape.outputs.completed-pi-rate }}
+          COMPLETED_PI_TOTAL: ${{ steps.scrape.outputs.completed-pi-total }}
+          BACKPRESSURE_PCT: ${{ steps.scrape.outputs.backpressure-pct }}
+          STARTER_FINISHED: ${{ steps.wait-starter.outputs.finished }}
+          RESTART_COUNT: ${{ steps.restarts.outputs.count }}
+          PR_NUMBER: ${{ needs.sanitize-branch-name.outputs.pr-number }}
+        with:
+          script: |
+            const fs = require('fs');
+            const yaml = require('js-yaml');
+
+            const scenario = process.env.SCENARIO;
+            const baseline = yaml.load(
+              fs.readFileSync(`load-tests/quicker-benchmark/baseline-${scenario}.yaml`, 'utf8')
+            );
+            const m = baseline.metrics || {};
+
+            const num = (v) => {
+              const n = Number(v);
+              return Number.isFinite(n) ? n : null;
+            };
+            const fmt = (v, digits = 2) => v == null ? 'n/a' : v.toFixed(digits);
+
+            const instances = num(process.env.INSTANCES_STARTED);
+            const completedPiRate = num(process.env.COMPLETED_PI_RATE);
+            const completedPiTotal = num(process.env.COMPLETED_PI_TOTAL);
+            const backpressurePct = num(process.env.BACKPRESSURE_PCT);
+            const restartCount = num(process.env.RESTART_COUNT) || 0;
+            const finishedFlag = process.env.STARTER_FINISHED === '1';
+            const durationSeconds = ${{ needs.sanitize-branch-name.outputs.duration-seconds }};
+            const throughput = instances != null && durationSeconds > 0
+              ? instances / durationSeconds
+              : null;
+
+            // For each metric: lower-is-better unless higher-is-better is true.
+            const verdict = (current, expected, tolerance, higherIsBetter) => {
+              if (current == null || expected == null) return '❔';
+              if (expected === 0) {
+                // baseline of 0 => any nonzero is a regression for lower-is-better metrics
+                if (!higherIsBetter && current === 0) return '✅';
+                if (!higherIsBetter && current > 0) return '⚠️';
+                return current > 0 ? '✅' : '❔';
+              }
+              const diff = ((current - expected) / expected) * 100;
+              const within = Math.abs(diff) <= (tolerance ?? 10);
+              if (within) return '✅';
+              const better = higherIsBetter ? diff > 0 : diff < 0;
+              return better ? '✅' : '⚠️';
+            };
+            const delta = (current, expected) => {
+              if (current == null || expected == null) return 'n/a';
+              if (expected === 0) return current === 0 ? '0' : '+∞';
+              const diff = ((current - expected) / expected) * 100;
+              const sign = diff >= 0 ? '+' : '';
+              return `${sign}${diff.toFixed(1)}%`;
+            };
+
+            const rows = [
+              {
+                label: 'Process instances started (starter)',
+                current: instances == null ? 'n/a' : Math.round(instances).toLocaleString(),
+                spec: m['process-instances-started'],
+                value: instances,
+                higherIsBetter: true,
+              },
+              {
+                label: 'Process instances completed (engine)',
+                current: completedPiTotal == null ? 'n/a' : Math.round(completedPiTotal).toLocaleString(),
+                spec: m['process-instances-completed'],
+                value: completedPiTotal,
+                higherIsBetter: true,
+              },
+              {
+                label: 'Throughput, avg (PI/s)',
+                current: throughput == null ? 'n/a' : fmt(throughput, 1),
+                spec: m['throughput-per-second'],
+                value: throughput,
+                higherIsBetter: true,
+              },
+              {
+                label: 'Completed PI rate, avg (PI/s)',
+                current: fmt(completedPiRate, 1),
+                spec: m['completed-pi-rate-per-second'],
+                value: completedPiRate,
+                higherIsBetter: true,
+              },
+              {
+                label: 'Backpressure (% of received requests)',
+                current: backpressurePct == null ? 'n/a' : fmt(backpressurePct, 2) + '%',
+                spec: m['backpressure-percent'],
+                value: backpressurePct,
+                higherIsBetter: false,
+              },
+            ];
+
+            const tableLines = [
+              '| Metric | Current | Baseline | Tolerance | Δ | |',
+              '|---|---:|---:|---:|---:|:---:|',
+            ];
+            for (const r of rows) {
+              const expected = r.spec?.expected;
+              const tolerance = r.spec?.['tolerance-percent'];
+              const expectedStr = expected == null ? 'n/a' : expected.toLocaleString();
+              const tolStr = tolerance == null ? 'n/a' : `±${tolerance}%`;
+              tableLines.push(
+                `| ${r.label} | ${r.current} | ${expectedStr} | ${tolStr} | ${delta(r.value, expected)} | ${verdict(r.value, expected, tolerance, r.higherIsBetter)} |`
+              );
+            }
+
+            const warnings = [];
+            if (!finishedFlag) {
+              warnings.push('⚠️ Starter never reported `starter_run_finished=1`. Numbers may reflect a partial run.');
+            }
+            if (restartCount > 0) {
+              warnings.push(`⚠️ Starter pod restarted **${restartCount}** time(s). Wall-clock runtime exceeds the configured ${durationSeconds}s — the comparison against the baseline is no longer apples-to-apples.`);
+            }
+
+            const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ env.NAMESPACE }}`;
+            const body = [
+              `## ⏱️ Quicker Benchmark Results — \`${scenario}\``,
+              '',
+              `Scenario: \`${scenario}\` · Duration: ${durationSeconds}s · Namespace: \`${{ env.NAMESPACE }}\``,
+              ...(warnings.length ? ['', ...warnings] : []),
+              '',
+              ...tableLines,
+              '',
+              `📊 [Grafana dashboard](${dashboard}) · 🔁 [Workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+              '',
+              `_Baseline lives at \`load-tests/quicker-benchmark/baseline-${scenario}.yaml\`. ⚠️ flags only fire on the regression side — improvements outside tolerance still show ✅._`,
+            ].join('\n');
+
+            await core.summary.addRaw(body).write();
+
+            const prNumber = parseInt(process.env.PR_NUMBER || '0', 10);
+            if (prNumber > 0) {
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  delete-benchmark:
+    name: Quicker Benchmark Cleanup (${{ matrix.scenario }})
+    needs: [sanitize-branch-name, collect-metrics]
+    # Run after results are posted (success or failure), and also on label-removal / PR-close
+    # so abandoned tests don't leak namespaces. `if: always()` lets it fire when collect-metrics
+    # fails too.
+    if: >
+      always() && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.action == 'labeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+        (github.event.action == 'unlabeled' && (github.event.label.name == 'quicker-max' || github.event.label.name == 'quicker-realistic')) ||
+        (github.event.action == 'synchronize' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic'))) ||
+        (github.event.action == 'closed' && (contains(github.event.pull_request.labels.*.name, 'quicker-max') || contains(github.event.pull_request.labels.*.name, 'quicker-realistic')))
+      )
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: ${{ fromJSON(needs.sanitize-branch-name.outputs.scenarios) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    env:
+      NAMESPACE: c8-${{ needs.sanitize-branch-name.outputs.author-sanitized }}-quicker-${{ matrix.scenario }}-pr-${{ needs.sanitize-branch-name.outputs.pr-id-suffix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
+      - name: Delete benchmark namespace
+        run: |
+          kubectl delete ns "$NAMESPACE" --ignore-not-found=true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

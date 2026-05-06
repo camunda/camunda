@@ -1,0 +1,43 @@
+# Static baseline for the `max` quicker scenario, consumed by
+# `.github/workflows/camunda-quicker-pr-load-test.yaml` when a PR is labeled with
+# `quicker-max`. Numbers are placeholders — calibrate from clean runs of the workflow
+# against `main` before treating the comparison as authoritative. See the README in
+# this directory for the update procedure.
+#
+# Goal state for `max` at 600s with starter.rate=300:
+#   - 180_000 instances submitted, 180_000 completed end-to-end (started ≈ completed)
+#   - 300 PI/s submission throughput, 300 PI/s completion rate
+#   - Backpressure expected to be 0 — any nonzero value is flagged as a regression.
+#
+# Each metric:
+#   expected         the target value (units match the comment column)
+#   tolerance-percent the +/- band that counts as ✅ in the PR comment
+#                    (defaults to 10% in the renderer if omitted)
+#
+# Direction (higher-is-better vs lower-is-better) is hard-coded per metric in the
+# renderer — throughput/instances/completed-rate go up; backpressure goes down.
+
+scenario: max
+duration-seconds: 600
+
+metrics:
+  process-instances-started:
+    expected: 180000
+    tolerance-percent: 5
+
+  process-instances-completed:
+    expected: 180000
+    tolerance-percent: 5
+
+  throughput-per-second:
+    expected: 300
+    tolerance-percent: 5
+
+  completed-pi-rate-per-second:
+    expected: 300
+    tolerance-percent: 5
+
+  # Goal: zero backpressure. Tolerance 0 means any nonzero is flagged.
+  backpressure-percent:
+    expected: 0
+    tolerance-percent: 0
