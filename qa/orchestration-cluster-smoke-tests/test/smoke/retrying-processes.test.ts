@@ -44,7 +44,9 @@ test.describe('Retrying processes', {tag: '@operate'}, () => {
       await instancePage.variablesPanel.trigger.click();
       await expect(variable.container).toBeVisible();
       await variable.editButton.click();
-      await variable.editField.fill('7');
+      // Field is not input/textarea element. "fill()" does not work.
+      // Will add 2 in front of the existing value => 23.
+      await variable.editField.pressSequentially('2');
       await variable.saveButton.click();
 
       await expect(
