@@ -15,6 +15,7 @@
 		"types": ["vite/client", "vitest", "@vitest/browser/matchers", "node", "vite-plugin-svgr/client"],
 		"paths": {
 			"#/modules/*": ["./src/modules/*"],
+			"#/assets/*": ["./src/assets/*"],
 			"#/vitest-modules/*": ["./src/vitest-modules/*"],
 			"#/shared-test-modules/*": ["./shared-test-modules/*"]
 		}
