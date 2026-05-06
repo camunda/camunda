@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.impl.NoopColumnFamilyMetrics;
 import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -59,12 +60,13 @@ public class InMemoryZeebeDb<
   final ConcurrentSkipListMap<byte[], DbValue> committedData =
       new ConcurrentSkipListMap<>(Arrays::compareUnsigned);
 
+  @Nullable volatile Predicate<byte[]> persistentRawKeyChecker;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration accessMetricsConfiguration;
   private final MeterRegistry meterRegistry;
   private volatile boolean closed;
-  @Nullable volatile Predicate<byte[]> persistentRawKeyChecker;
 
+  @VisibleForTesting
   public InMemoryZeebeDb() {
     this(
         new ConsistencyChecksSettings(true, true),

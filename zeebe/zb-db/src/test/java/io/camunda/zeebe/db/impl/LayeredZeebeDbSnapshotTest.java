@@ -180,6 +180,55 @@ final class LayeredZeebeDbSnapshotTest {
     assertThatNoException().isThrownBy(() -> cf.upsert(fkKey, value));
   }
 
+  /**
+   * Reproduces the replay-after-snapshot scenario where insert() is called during replay for a key
+   * that already lives in the RocksDB persistent layer (written before the snapshot). With
+   * preconditions enabled, insert() must not throw when the key is only in the persistent layer and
+   * not yet in the in-memory active layer.
+   */
+  @Test
+  void shouldNotThrowOnInsertWhenKeyIsInPersistentLayerOnly(
+      @TempDir final File dbDir, @TempDir final File snapshotDir) throws Exception {
+    // given: factory with preconditions ENABLED (mirrors test/dev broker config)
+    final ZeebeDbFactory<Families> preconditionsFactory =
+        new LayeredZeebeDbFactory<>(
+            new RocksDbConfiguration(),
+            new ConsistencyChecksSettings(true, true),
+            new AccessMetricsConfiguration(Kind.NONE, 1),
+            SimpleMeterRegistry::new);
+
+    final ZeebeDb<Families> db = preconditionsFactory.createDb(dbDir);
+    final TransactionContext ctx = db.createContext();
+    final DbLong key = new DbLong();
+    final DbLong value = new DbLong();
+    final ColumnFamily<DbLong, DbLong> cf = db.createColumnFamily(Families.ONE, ctx, key, value);
+
+    key.wrapLong(1);
+    value.wrapLong(42);
+    cf.insert(key, value);
+
+    // when: snapshot (flushes to RocksDB) + reopen from snapshot — InMemory starts empty
+    final var snapshotPath = new File(snapshotDir, "snapshot");
+    db.createSnapshot(snapshotPath);
+    db.close();
+
+    final ZeebeDb<Families> restoredDb = preconditionsFactory.createDb(snapshotPath);
+    try {
+      final TransactionContext restoredCtx = restoredDb.createContext();
+      final DbLong rk = new DbLong();
+      final DbLong rv = new DbLong();
+      final ColumnFamily<DbLong, DbLong> rCf =
+          restoredDb.createColumnFamily(Families.ONE, restoredCtx, rk, rv);
+
+      // then: replaying insert on a key that is only in the persistent snapshot must NOT throw
+      rk.wrapLong(1);
+      rv.wrapLong(99);
+      assertThatNoException().isThrownBy(() -> rCf.insert(rk, rv));
+    } finally {
+      restoredDb.close();
+    }
+  }
+
   @Test
   void shouldReadMultipleEntriesFromSnapshotAfterRestart(
       @TempDir final File dbDir, @TempDir final File snapshotDir) throws Exception {
