@@ -27,7 +27,6 @@ import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisio
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch.core.BulkRequest;
 
 class OpensearchAdapter implements ClientAdapter {
   private final OpenSearchClient client;
@@ -55,8 +54,7 @@ class OpensearchAdapter implements ClientAdapter {
 
   @Override
   public BatchRequest createBatchRequest() {
-    return new OpensearchBatchRequest(
-        client, new BulkRequest.Builder(), new OpensearchScriptBuilder());
+    return new OpensearchBatchRequest(client, new OpensearchScriptBuilder());
   }
 
   @Override
