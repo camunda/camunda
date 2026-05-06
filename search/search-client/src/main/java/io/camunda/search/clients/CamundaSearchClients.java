@@ -24,6 +24,7 @@ import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.DeployedResourceEntity;
+import io.camunda.search.entities.DocumentReferenceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
@@ -74,6 +75,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.DeployedResourceQuery;
+import io.camunda.search.query.DocumentReferenceQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
@@ -538,6 +540,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery query) {
     return doSearchWithReader(readers.variableReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<DocumentReferenceEntity> searchDocumentReferences(
+      final DocumentReferenceQuery query) {
+    return doSearchWithReader(readers.documentReferenceReader(), query);
   }
 
   @Override
