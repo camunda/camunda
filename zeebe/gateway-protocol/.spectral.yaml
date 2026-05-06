@@ -11,6 +11,7 @@ functions:
   - verifyResponsePropertiesRequired
   - verifyDeprecatedEnumMembers
   - verifyAddedInVersion
+  - verifySemanticKindsRegistered
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -158,3 +159,93 @@ rules:
     message: "{{error}}"
     then:
       function: verifyAddedInVersion
+
+  # ── x-semantic-establishes / x-semantic-requires (camunda/camunda#52272) ──
+  # Three rules:
+  #   1. Schema-shape lint for x-semantic-establishes (operation-level).
+  #   2. Schema-shape lint for x-semantic-requires (operation-level).
+  #   3. Cross-document check: every kind: must be in semantic-kinds.json,
+  #      and every required kind must be established somewhere.
+  # The first two use Spectral's built-in `schema` function (no custom code);
+  # the third uses verifySemanticKindsRegistered.
+
+  semantic-establishes-shape:
+    description: "`x-semantic-establishes` must conform to the documented schema."
+    severity: error
+    given: $.paths[*][get,put,post,patch,delete].x-semantic-establishes
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: [kind, identifiedBy]
+          additionalProperties: false
+          properties:
+            kind:
+              type: string
+              pattern: "^[A-Z][A-Za-z0-9]+$"
+              description: PascalCase singular noun. The symbolic name of the established thing, not of the operation.
+            shape:
+              type: string
+              enum: [entity, edge]
+              description: Optional discriminator. Defaults to `entity`. Use `edge` for membership-style relationships observable only via member-list search.
+            identifiedBy:
+              type: array
+              minItems: 1
+              description: Ordered tuple of identifying members. Length 1 for single-key entities, length ≥ 2 for composite-key entities and edges.
+              items:
+                type: object
+                required: [in, name, semanticType]
+                additionalProperties: false
+                properties:
+                  in: { type: string, enum: [body, path, query, header] }
+                  name: { type: string, minLength: 1 }
+                  semanticType:
+                    type: string
+                    pattern: "^[A-Z][A-Za-z0-9]+$"
+                  acceptsExternal:
+                    type: boolean
+                    description: |
+                      Per-tuple opt-out for the producer-existence cross-reference (camunda/camunda#52322).
+                      Set to `true` when this specific edge endpoint accepts either an in-API producer
+                      (the canonical local entity) OR an externally-minted ID (e.g. BYOG/OIDC IdP-supplied
+                      group IDs at `assignGroupToRole` / `assignGroupToTenant`). The single-owner
+                      identifier resolution still runs (typo / config check), but the resolved entity kind
+                      is NOT pushed onto the producer-existence required-set for this tuple. Distinct from
+                      kind-level `shape: external-entity` (which marks the kind as having no in-API
+                      producer at all).
+
+  semantic-requires-shape:
+    description: "`x-semantic-requires` must conform to the documented schema."
+    severity: error
+    given: $.paths[*][get,put,post,patch,delete].x-semantic-requires
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: [kind, bind]
+          additionalProperties: false
+          properties:
+            kind:
+              type: string
+              pattern: "^[A-Z][A-Za-z0-9]+$"
+            bind:
+              type: object
+              minProperties: 1
+              description: Maps members of the established tuple to local parameters of the consumer.
+              additionalProperties:
+                type: object
+                required: [from, name]
+                additionalProperties: false
+                properties:
+                  from: { type: string, enum: [body, path, query, header] }
+                  name: { type: string, minLength: 1 }
+
+  verify-semantic-kinds-registered:
+    description: "Every `kind:` referenced by x-semantic-establishes / x-semantic-requires must appear in semantic-kinds.json, every required kind must be established somewhere in the spec, and every identifiedBy/bind member must reference a parameter or top-level requestBody property that actually exists on the operation."
+    severity: error
+    given: "$"
+    message: "{{error}}"
+    then:
+      function: verifySemanticKindsRegistered

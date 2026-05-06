@@ -1,0 +1,206 @@
+{
+  "$comment": [
+    "Registry of semantic kinds used by `x-semantic-establishes` and",
+    "`x-semantic-requires` (see camunda/camunda#52272).",
+    "",
+    "Every value used as the `kind:` field of either annotation must appear",
+    "in the `kinds` array below. The Spectral rule",
+    "`verify-semantic-kinds-registered` enforces this.",
+    "",
+    "Adding a new entry: PR with the new kind plus at least one consumer",
+    "operation that uses it. For `entity` and `edge` kinds the PR must also",
+    "include a producer; `external-entity` kinds are explicitly forbidden",
+    "from having an in-API producer (the identifier is minted outside the",
+    "Camunda REST API) and ship with consumers only. Reviewer checks the",
+    "kind name is PascalCase, singular, and a noun (not a verb phrase).",
+    "",
+    "`shape` is the default `shape:` an operation should declare on",
+    "`x-semantic-establishes`. Three values:",
+    "  • `entity` — single- or composite-key fetchable singleton.",
+    "  • `edge` — membership relationship observable only via member-list search.",
+    "  • `external-entity` (camunda/camunda#52320) — identifier minted outside",
+    "    the Camunda REST API (e.g. an OAuth ClientId minted by Console or an",
+    "    external IdP). Referenced via edge `identifiedBy` tuples only; it is",
+    "    an error to use an external kind directly in `x-semantic-establishes`",
+    "    or `x-semantic-requires`, and the producer-existence cross-reference",
+    "    is skipped for it.",
+    "",
+    "`identifiers` (entity and external-entity kinds) lists the semantic identifier types",
+    "that identify the entity (matching the `semanticType` values used in",
+    "`x-semantic-establishes.identifiedBy`). Edge operations whose",
+    "`identifiedBy` references one of these types implicitly require the",
+    "owning entity — the planner derives this rather than asking authors to",
+    "redundantly declare both `establishes: edge` and a sibling `requires`",
+    "for each endpoint. The Spectral rule rejects any edge whose",
+    "`identifiedBy` semanticType is not declared as the identifier of",
+    "exactly one registered entity, and the cross-reference check then",
+    "verifies the resolved endpoint kinds are actually established somewhere",
+    "in the spec.",
+    "",
+    "`legacyBindKeys` (entity kinds, optional) is a grandfathered escape",
+    "hatch for `x-semantic-requires.bind` keys that do not follow the",
+    "`camelCase(identifier)` convention because the wire field name was",
+    "published before the convention existed and cannot be renamed without",
+    "breaking SDK users (e.g. GlobalTaskListener's path field is `id`, not",
+    "`globalListenerId`). The Spectral rule treats these keys as accepted",
+    "in addition to the camelCased identifiers. Adding a new entry here",
+    "requires the same justification — prefer fixing the bind key on the",
+    "consumer if the wire name has not yet shipped.",
+    "",
+    "`requiredBindKeys` (entity kinds, optional) declares the full",
+    "consumer-side bind tuple for composite-key entities whose identity",
+    "includes a foreign-owned identifier intentionally not listed in",
+    "`identifiers` (e.g. TenantClusterVariable's identity is",
+    "(tenantId, name) but only `ClusterVariableName` is in `identifiers`",
+    "because `TenantId` must remain single-owner under `Tenant`). Every",
+    "key listed here MUST appear in every consumer's",
+    "`x-semantic-requires.bind`; otherwise the planner has an under-",
+    "specified reference the runtime cannot resolve. Default (when",
+    "absent): every registered identifier must be bound, with each one",
+    "substitutable via `legacyBindKeys`.",
+    "",
+    "Foreign-identifier-without-requires rule (composite-key entities):",
+    "an entity producer whose `x-semantic-establishes.identifiedBy` lists",
+    "an identifier owned by a different entity kind (e.g.",
+    "createTenantClusterVariable's `TenantId`, owned by `Tenant`) MUST",
+    "also declare a corresponding `x-semantic-requires` on the owning",
+    "kind. The runtime rejects requests against unknown referenced",
+    "entities (NOT_FOUND); without the explicit requires, downstream",
+    "chain planners walk the producer as a root, synthesise an",
+    "identifier value, and the engine rejects it. The rule is skipped",
+    "when the borrowed identifier is also one of the establishing kind's",
+    "own `identifiers` (the multi-owner sibling pattern, e.g.",
+    "ClusterVariableName shared by GlobalClusterVariable and",
+    "TenantClusterVariable as parallel variants), and for edges (whose",
+    "implicit requires are derived from `identifiedBy` — see above).",
+    "When the foreign identifier is owned by an `external-entity` kind",
+    "(e.g. `ClientId`, owned by `Client`), the producer MUST instead",
+    "set `acceptsExternal: true` on that `identifiedBy` entry — direct",
+    "`x-semantic-requires` on an external-entity kind is forbidden, so",
+    "the per-tuple flag is the only way to declare bimodal acceptance."
+  ],
+  "kinds": [
+    {
+      "name": "Role",
+      "shape": "entity",
+      "identifiers": ["RoleId"],
+      "description": "A role entity, identified by its client-minted roleId."
+    },
+    {
+      "name": "User",
+      "shape": "entity",
+      "identifiers": ["Username"],
+      "description": "A user entity, identified by its client-minted username."
+    },
+    {
+      "name": "RoleUserMembership",
+      "shape": "edge",
+      "description": "Edge between a Role and a User, identified by the (roleId, username) tuple. Established by assignRoleToUser, observable only via searchUsersForRole."
+    },
+    {
+      "name": "Tenant",
+      "shape": "entity",
+      "identifiers": ["TenantId"],
+      "description": "A tenant entity, identified by its client-minted tenantId."
+    },
+    {
+      "name": "TenantUserMembership",
+      "shape": "edge",
+      "description": "Edge between a Tenant and a User, identified by the (tenantId, username) tuple. Established by assignUserToTenant, observable only via searchUsersForTenant."
+    },
+    {
+      "name": "Group",
+      "shape": "entity",
+      "identifiers": ["GroupId"],
+      "description": "A group entity, identified by its client-minted groupId."
+    },
+    {
+      "name": "GroupUserMembership",
+      "shape": "edge",
+      "description": "Edge between a Group and a User, identified by the (groupId, username) tuple. Established by assignUserToGroup, observable only via searchUsersForGroup."
+    },
+    {
+      "name": "MappingRule",
+      "shape": "entity",
+      "identifiers": ["MappingRuleId"],
+      "description": "A mapping rule entity, identified by its client-minted mappingRuleId."
+    },
+    {
+      "name": "RoleMappingRuleMembership",
+      "shape": "edge",
+      "description": "Edge between a Role and a MappingRule, identified by the (roleId, mappingRuleId) tuple. Established by assignRoleToMappingRule, observable only via searchMappingRulesForRole."
+    },
+    {
+      "name": "GroupMappingRuleMembership",
+      "shape": "edge",
+      "description": "Edge between a Group and a MappingRule, identified by the (groupId, mappingRuleId) tuple. Established by assignMappingRuleToGroup, observable only via searchMappingRulesForGroup."
+    },
+    {
+      "name": "TenantMappingRuleMembership",
+      "shape": "edge",
+      "description": "Edge between a Tenant and a MappingRule, identified by the (tenantId, mappingRuleId) tuple. Established by assignMappingRuleToTenant, observable only via searchMappingRulesForTenant."
+    },
+    {
+      "name": "RoleGroupMembership",
+      "shape": "edge",
+      "description": "Edge between a Role and a Group, identified by the (roleId, groupId) tuple. Established by assignRoleToGroup, observable only via searchGroupsForRole."
+    },
+    {
+      "name": "RoleClientMembership",
+      "shape": "edge",
+      "description": "Edge between a Role and a Client (external entity), identified by the (roleId, clientId) tuple. Established by assignRoleToClient, observable only via searchClientsForRole."
+    },
+    {
+      "name": "GroupClientMembership",
+      "shape": "edge",
+      "description": "Edge between a Group and a Client (external entity), identified by the (groupId, clientId) tuple. Established by assignClientToGroup, observable only via searchClientsForGroup."
+    },
+    {
+      "name": "TenantClientMembership",
+      "shape": "edge",
+      "description": "Edge between a Tenant and a Client (external entity), identified by the (tenantId, clientId) tuple. Established by assignClientToTenant, observable only via searchClientsForTenant."
+    },
+    {
+      "name": "TenantGroupMembership",
+      "shape": "edge",
+      "description": "Edge between a Tenant and a Group, identified by the (tenantId, groupId) tuple. Established by assignGroupToTenant, observable only via searchGroupIdsForTenant."
+    },
+    {
+      "name": "TenantRoleMembership",
+      "shape": "edge",
+      "description": "Edge between a Tenant and a Role, identified by the (tenantId, roleId) tuple. Established by assignRoleToTenant, observable only via searchRolesForTenant."
+    },
+    {
+      "name": "GlobalTaskListener",
+      "shape": "entity",
+      "identifiers": ["GlobalListenerId"],
+      "legacyBindKeys": ["id"],
+      "$comment": "The wire path field is `id`, not `globalListenerId`. The spec was published before the camelCase(identifier) bind-key convention existed; the field cannot be renamed without breaking SDK users. Consumer ops accordingly bind via `id: { from: path, name: id }`, which `legacyBindKeys` whitelists.",
+      "description": "A global user task listener entity, identified by its client-minted id (a GlobalListenerId)."
+    },
+    {
+      "name": "GlobalClusterVariable",
+      "shape": "entity",
+      "identifiers": ["ClusterVariableName"],
+      "legacyBindKeys": ["name"],
+      "$comment": "The wire path field is `name`, not `clusterVariableName`. Same grandfathered situation as GlobalTaskListener — the spec was published with `name` and the field cannot be renamed without breaking SDK users.",
+      "description": "A global-scoped cluster variable, identified by its client-minted name (a ClusterVariableName). Established by createGlobalClusterVariable."
+    },
+    {
+      "name": "TenantClusterVariable",
+      "shape": "entity",
+      "identifiers": ["ClusterVariableName"],
+      "legacyBindKeys": ["tenantId", "name"],
+      "requiredBindKeys": ["tenantId", "name"],
+      "$comment": "Composite-key entity whose identity is (tenantId, name). Only ClusterVariableName is listed in `identifiers` because TenantId is owned by the Tenant entity and must remain single-owner for the edge-derivation rule. Consumers therefore bind via two keys (`tenantId` and `name`), neither of which is camelCase('ClusterVariableName'); both are whitelisted via `legacyBindKeys`. The wire field name `name` (rather than `clusterVariableName`) is also grandfathered — same rationale as GlobalClusterVariable. `requiredBindKeys` enforces that consumers bind BOTH keys; without it, a consumer binding only `name` lints clean and leaves the planner with an under-specified reference (camunda/camunda#52322 review).",
+      "description": "A tenant-scoped cluster variable, identified by the (tenantId, name) tuple. Established by createTenantClusterVariable. Only ClusterVariableName is listed in 'identifiers' here because TenantId is owned by the Tenant entity and must remain single-owner for the edge-derivation rule; the Tenant requirement of tenant-scoped operations is expressed via the tenantId path parameter."
+    },
+    {
+      "name": "Client",
+      "shape": "external-entity",
+      "identifiers": ["ClientId"],
+      "description": "An OAuth client. Minted outside the Camunda REST API: by Console in SaaS, by the configured external IdP (EntraID, Keycloak, Okta, …) in Self-Managed with OIDC. Not modelled at all under Self-Managed Basic auth, where m2m apps are users instead. Referenced by the client-membership edges only — never established or fetched via this API."
+    }
+  ]
+
+}

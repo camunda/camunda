@@ -824,6 +824,273 @@ Operation "createMyResource" (POST /my-resources) is missing x-added-in-version.
 
 ---
 
+### 2.18 Semantic graph annotations (`x-semantic-establishes`, `x-semantic-requires`, `x-semantic-provider`, `x-semantic-client-minted`)
+
+These annotations declare the **producer/consumer dependencies between
+operations and entities**, and are consumed by the API test generator
+(camunda/api-test-generator) to plan dependency-respecting integration test
+chains. They have no effect on generated SDK code or the published wire
+contract — they're vendor extensions for tooling.
+
+The single source of truth for which kinds exist is
+[`zeebe/gateway-protocol/src/main/proto/v2/semantic-kinds.json`](../zeebe/gateway-protocol/src/main/proto/v2/semantic-kinds.json).
+Read the `$comment` block at the top of that file before adding a new
+entry.
+
+Tracking issues: camunda/camunda#52169 (audit), camunda/camunda#52272
+(establishes/requires), camunda/camunda#52320 (`shape: external-entity`),
+camunda/camunda#52322 (`identifiedBy.acceptsExternal`).
+
+#### `x-semantic-establishes` (operation-level)
+
+Declares that an operation **creates** (or first observes the existence
+of) an instance of an entity or edge. Mutating CRUD endpoints, edge
+assignments, and a small number of search endpoints that are the only
+observation point for a derived entity all carry it.
+
+```yaml
+/groups:
+  post:
+    operationId: createGroup
+    x-semantic-establishes:
+      kind: Group               # PascalCase singular noun, must appear in semantic-kinds.json
+      identifiedBy:
+        - { in: body, name: groupId, semanticType: GroupId }
+
+/roles/{roleId}/groups/{groupId}:
+  put:
+    operationId: assignRoleToGroup
+    x-semantic-establishes:
+      kind: RoleGroupMembership
+      shape: edge               # required for membership-style relationships
+      identifiedBy:
+        - { in: path, name: roleId,  semanticType: RoleId }
+        - { in: path, name: groupId, semanticType: GroupId }
+```
+
+The shape above is the **closed-graph slice**: it describes the
+annotations needed for the default embedded-IDC deployment, where
+Groups CRUD is enabled and `groupId` is produced by `createGroup`. Real
+production `assignRoleToGroup` carries `acceptsExternal: true` on the
+`groupId` tuple to encode the BYOG/OIDC-`groupsClaim` variant where
+the runtime accepts an externally-minted IdP ID; see the [Per-tuple
+`acceptsExternal: true`](#per-tuple-acceptsexternal-true-camundacamunda52322)
+section below for that worked example. The orthogonal
+*operation-availability* axis (e.g. that `createGroup` itself is
+disabled in OIDC-`groupsClaim` mode) is not yet annotated; it is
+tracked in camunda/camunda#52511.
+
+Field reference:
+
+|     Field      |                                                  Meaning                                                  |
+|----------------|-----------------------------------------------------------------------------------------------------------|
+| `kind`         | The kind name, registered in `semantic-kinds.json`. PascalCase singular noun.                             |
+| `shape`        | Optional. Defaults to `entity`. Use `edge` for memberships observable only via member-list search.        |
+| `identifiedBy` | Ordered tuple of identifying members. Length 1 for single-key entities, ≥ 2 for composite keys and edges. |
+
+Each `identifiedBy[]` entry has `in` (`body` / `path` / `query` / `header`),
+`name` (the parameter or top-level body property name), `semanticType`
+(the `x-semantic-type` of the identifier — must match the registered
+`identifiers` of exactly one entity kind in `semantic-kinds.json`), and
+optionally `acceptsExternal: true` (see below).
+
+#### `x-semantic-requires` (operation-level)
+
+Declares that an operation **needs** an existing entity to operate on.
+Maps each member of the established tuple to a local parameter of the
+consumer.
+
+```yaml
+/groups/{groupId}:
+  get:
+    operationId: getGroup
+    x-semantic-requires:
+      kind: Group
+      bind:
+        groupId: { from: path, name: groupId }
+```
+
+The planner uses `requires` to schedule a call to a `Group`-establishing
+operation (e.g. `createGroup`) before this one. The `bind` map propagates
+the identifier values produced by the upstream call into this call's
+parameters.
+
+> **Edge producers do not declare explicit `x-semantic-requires`.**
+> The planner derives the implicit requires for an `edge` producer
+> from each foreign identifier in its `identifiedBy` tuple (resolved
+> via single-owner identifier resolution). Adding an explicit
+> `x-semantic-requires` on a membership endpoint such as
+> `assignUserToGroup` or `assignRoleToGroup` is redundant — use this
+> annotation only on entity consumers (operations without an
+> `x-semantic-establishes`, or whose `shape` defaults to `entity`).
+>
+> **Composite-key entities — declare a `requires` for every foreign
+> identifier you borrow.** When an entity producer's `identifiedBy`
+> includes an identifier registered to a different entity kind (e.g.
+> `createTenantClusterVariable` carries `TenantId`, which is owned by
+> `Tenant`, in its identity tuple), the operation MUST also declare an
+> `x-semantic-requires` on that owning kind. The runtime rejects
+> requests against unknown referenced entities (`NOT_FOUND`); without
+> the explicit `requires`, downstream chain planners walk the producer
+> as a root, synthesise the identifier value, and the call fails.
+> Enforced by `verify-semantic-kinds-registered`. Exceptions: edge
+> producers (the planner derives implicit `requires` from the edge's
+> `identifiedBy`), and the multi-owner sibling pattern where the
+> identifier is also one of the establishing kind's own `identifiers`
+> (e.g. `ClusterVariableName` is shared between
+> `GlobalClusterVariable` and `TenantClusterVariable` as parallel
+> variants, not parent/child).
+>
+> When the foreign identifier is owned by an `external-entity` kind
+> (e.g. `ClientId`, owned by `Client`), `x-semantic-requires` is
+> **not** the answer — direct `requires` on an external-entity is
+> forbidden. The producer MUST instead set `acceptsExternal: true` on
+> that `identifiedBy` entry (see the section below), declaring that
+> the site accepts an externally-minted ID. Without either an
+> `acceptsExternal: true` or a routable `requires`, the producer is
+> unreachable via chain planning and is flagged as an unreachable
+> orphan.
+>
+> **Producer must include the establishing kind's own identifier.**
+> An entity producer's `identifiedBy` MUST contain at least one entry
+> whose `semanticType` is one of the establishing kind's own
+> `identifiers` in `semantic-kinds.json`. A producer that lists only
+> foreign identifiers does not actually produce the kind's identifier
+> tuple, even though it satisfies the producer-existence gate;
+> downstream consumers' orphan errors would silently disappear.
+> Enforced by `verify-semantic-kinds-registered`. Edge producers are
+> exempt (every edge `identifiedBy` is a foreign identifier by
+> definition, resolved via single-owner edge-endpoint resolution).
+>
+> **Consumer must bind the full identifier tuple.** Every
+> `x-semantic-requires.bind` for an entity-kind consumer MUST cover
+> the kind's complete identity tuple. For composite-key entities
+> registered with `requiredBindKeys` (e.g. `TenantClusterVariable`
+> requires `[tenantId, name]`), every listed key must be present;
+> otherwise the planner has an under-specified reference. For
+> non-composite kinds, every `camelCase(identifier)` must be bound
+> (substitutable via `legacyBindKeys`). Enforced by
+> `verify-semantic-kinds-registered`.
+
+#### Per-tuple `acceptsExternal: true` (camunda/camunda#52322)
+
+Marks a single `identifiedBy` endpoint as **bimodal** — either an in-API
+producer (the canonical local entity) OR an externally-minted ID is
+acceptable. Set it on edge endpoints whose runtime accepts client-minted
+IDs in some deployments but the kind itself is still locally producible
+elsewhere.
+
+> Note: this annotation encodes **identifier provenance** (the value at
+> this site may originate inside or outside the API), which is
+> orthogonal to **operation availability** (whether the producer
+> endpoint itself is callable in a given deployment mode). The
+> mode-availability axis — for example, that the entire Groups API is
+> disabled when `oidc.groupsClaim` is set — is not yet annotated and
+> is tracked in camunda/camunda#52511.
+
+```yaml
+# roles.yaml — assignRoleToGroup
+x-semantic-establishes:
+  kind: RoleGroupMembership
+  shape: edge
+  identifiedBy:
+    - { in: path, name: roleId,  semanticType: RoleId }
+    # BYOG: under OIDC `groupsClaim`, runtime accepts external IdP IDs.
+    - { in: path, name: groupId, semanticType: GroupId, acceptsExternal: true }
+```
+
+Effect on the verifier: single-owner identifier resolution still runs
+(typo / config-error check), but the resolved entity kind is **not**
+pushed onto the producer-existence required-set for that tuple. A chain
+planner that prefers an in-API producer when one exists still sees the
+`createGroup → assignRoleToGroup` chain, but is free to fall back to
+client-minting an external ID when no producer is reachable.
+
+Distinct from kind-level `shape: external-entity` (below) — use the
+per-tuple flag when the kind IS locally producible elsewhere and only a
+specific edge endpoint is bimodal.
+
+#### Kind-level `shape: external-entity` (camunda/camunda#52320)
+
+Set in `semantic-kinds.json` (not in the path YAML files) for kinds
+whose identifier is **always** minted outside the Camunda REST API
+(e.g. `Client` IDs minted by Console or an external IdP). External
+kinds are referenced via edge `identifiedBy` tuples only — it is an
+error to use them directly in operation-level
+`x-semantic-establishes` or `x-semantic-requires`, and the
+producer-existence cross-reference is skipped for them entirely.
+
+```jsonc
+// semantic-kinds.json
+{ "name": "Client", "shape": "external-entity", "identifiers": ["ClientId"] }
+```
+
+#### `x-semantic-provider` (schema-level)
+
+Declares that a response/result schema is the **canonical producer** of
+one or more identifier values. Lists the property names that carry the
+produced IDs.
+
+```yaml
+DeploymentProcessResult:
+  description: A deployed process.
+  x-semantic-provider:
+    - processDefinitionKey
+    - processDefinitionId
+  type: object
+  required:
+    - processDefinitionId
+    # …
+```
+
+Used by the test generator to lift identifier values out of upstream
+responses and bind them into downstream `x-semantic-requires.bind`
+slots. Schema-level annotation; a single schema can provide multiple
+identifiers.
+
+> **Caveat — shared response schemas.** Because the annotation lives on
+> the schema, it implicitly claims provider semantics for **every**
+> operation whose response `$ref`s that schema. Do not add
+> `x-semantic-provider` to a schema that is shared across operations
+> with different identity contracts (e.g. a single `FooResult` reused by
+> `createFoo`, `getFoo`, `updateFoo`, and `searchFoos`) — the create
+> response is the canonical producer of `id`, but the search items are
+> not, and the annotation cannot distinguish. In that case either split
+> the schema (a dedicated `FooCreateResult` for the producing
+> operation), or omit `x-semantic-provider` and let consumers chain via
+> `x-semantic-establishes` on the producing operation instead. A
+> structural lint guard for this is tracked in
+> [#52414](https://github.com/camunda/camunda/issues/52414).
+
+#### `x-semantic-client-minted` (identifier-level)
+
+Set on identifier schemas in `identifiers.yaml` to declare that the ID
+value is **minted by the client** rather than allocated by the server
+(e.g. `TenantId`, `Username`, `RoleId`, `GroupId`). The test generator
+uses this signal to know it can synthesise a fresh value at chain-plan
+time instead of needing to extract one from an upstream response.
+
+```yaml
+# identifiers.yaml
+TenantId:
+  description: The unique identifier of the tenant.
+  type: string
+  format: TenantId
+  x-semantic-type: TenantId
+  x-semantic-client-minted: true
+  pattern: ^(<default>|[\w\.\-]{1,31})$
+```
+
+#### What the Spectral rules enforce
+
+- `semantic-establishes-shape` (severity `error`) — `x-semantic-establishes` matches the documented schema (`kind`, optional `shape`, `identifiedBy[]` with `in` / `name` / `semanticType` / optional `acceptsExternal`).
+- `semantic-requires-shape` (severity `error`) — `x-semantic-requires` matches the documented schema (`kind`, `bind` map of `from` / `name`).
+- `verify-semantic-kinds-registered` (severity `error`, custom JS function) — every referenced `kind:` appears in `semantic-kinds.json`; every required kind is established somewhere in the spec; an operation's `x-semantic-establishes.shape` (defaulting to `entity` when omitted) must match the kind's registered shape, so e.g. forgetting `shape: edge` on a membership operation is a lint error rather than a style issue; every `identifiedBy` / `bind` member references a parameter or top-level requestBody property that exists; no operation directly establishes/requires an `external-entity` kind; per-tuple `acceptsExternal: true` skips the producer-existence cross-reference for that tuple while still running single-owner resolution.
+
+`x-semantic-provider` and `x-semantic-client-minted` are **not** lint-enforced — they're consumer-only signals. Add them by review.
+
+---
+
 ## 3. Spectral linting & custom rules
 
 ### 3.1 What is Spectral?
