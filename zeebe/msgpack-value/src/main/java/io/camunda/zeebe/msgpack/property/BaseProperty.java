@@ -161,7 +161,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getKey(), value, defaultValue, isSet);
+    return Objects.hash(getKey(), hasValue() ? resolveValue() : null);
   }
 
   @Override
