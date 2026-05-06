@@ -16,6 +16,7 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.reader.ResourceAccessChecks;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -202,6 +203,323 @@ class IncidentErrorHashCodeNormalizerTest {
     final var result =
         normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
     assertThat(result).isEmpty();
+  }
+
+  // Regression test for https://github.com/camunda/camunda/issues/45129:
+  // when the IN list contains a truncated prefix of the resolved error message, the prefix
+  // alone phrase-matches every incident with that prefix in Elasticsearch, so the hash filter
+  // is effectively ignored. The normalizer must collapse to eq(resolved) instead of
+  // in([prefix, resolved]) so that the hash filter narrows results correctly.
+  @Test
+  void shouldNormalizeInOpToEqResolvedWhenInValueIsTruncatedPrefixOfResolved() {
+    final var resolved =
+        "Expected result of the expression 'retriesA' to be 'NUMBER', but was 'STRING'.";
+    final var truncatedPrefix = resolved.substring(0, 50);
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.in(List.of(truncatedPrefix))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn(resolved);
+
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations()).containsExactly(Operation.eq(resolved));
+  }
+
+  @Test
+  void shouldReturnEmptyWhenInValuesAreNotContainedInResolved() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.in(List.of("unrelated"))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldNormalizeInOpToEqResolvedWhenInContainsBothUnrelatedAndResolved() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.in(List.of("Other message", "Resolved"))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations()).containsExactly(Operation.eq("Resolved"));
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNeqEqualsResolved() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.neq("Resolved")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldNormalizeNeqToEqResolvedWhenNeqValueDiffersFromResolved() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.neq("Other")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations()).containsExactly(Operation.eq("Resolved"));
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNotInContainsValueContainedInResolved() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.notIn(List.of("Resolved"))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldNormalizeLikeToEqResolvedWhenLikePatternMatchesResolved() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.like("Expected*")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Expected result of the expression");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations())
+        .containsExactly(Operation.eq("Expected result of the expression"));
+  }
+
+  @Test
+  void shouldReturnEmptyWhenLikePatternDoesNotMatchResolved() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.like("Failed*")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Expected result of the expression");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  // resolved.contains("") is always true, so a stray blank value in the IN list must not be
+  // allowed to silently satisfy the AND — the user's other (non-blank) IN constraints have to
+  // remain authoritative. The normalizer drops the filter as invalid instead.
+  @Test
+  void shouldReturnEmptyWhenInListContainsBlankValueAlongsideOthers() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.in(List.of("Other", ""))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNotInListContainsBlankValueAlongsideOthers() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.notIn(List.of("Other", ""))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldNormalizeNotInToEqResolvedWhenNoneOfItsValuesAreContainedInResolved() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.notIn(List.of("Other", "Different"))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations()).containsExactly(Operation.eq("Resolved"));
+  }
+
+  @Test
+  void shouldNormalizeExistsToEqResolvedWhenCombinedWithHash() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.exists(true)))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations()).containsExactly(Operation.eq("Resolved"));
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNotExistsCombinedWithHash() {
+    // resolveErrorMessage guarantees R is non-blank, so NOT_EXISTS contradicts the hash filter.
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.exists(false)))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldMatchLikePatternWithSingleCharWildcard() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.like("Err?r")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Error");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations()).containsExactly(Operation.eq("Error"));
+  }
+
+  @Test
+  void shouldMatchLikePatternCaseInsensitively() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.like("EXPECTED*")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Expected result");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations())
+        .containsExactly(Operation.eq("Expected result"));
+  }
+
+  // Regression guard for globToRegex: regex meta-characters in the LIKE pattern must be escaped,
+  // so e.g. "a.b" matches the literal "a.b" rather than "a" + any-char + "b".
+  @Test
+  void shouldEscapeRegexMetaCharactersInLikePattern() {
+    final var matchingFilter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.like("a.b")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("a.b");
+    final var matching =
+        normalizer.normalizeAndValidateProcessInstanceFilter(matchingFilter, resourceAccessChecks);
+    assertThat(matching).isPresent();
+
+    // "axb" must NOT match the pattern "a.b" — the dot is a literal, not a regex any-char.
+    final var nonMatchingFilter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.like("a.b")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("axb");
+    final var nonMatching =
+        normalizer.normalizeAndValidateProcessInstanceFilter(
+            nonMatchingFilter, resourceAccessChecks);
+    assertThat(nonMatching).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyWhenInValuesListIsEmpty() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.in(List.of())))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  // Defends opAcceptsResolved's switch against an Operation that was constructed (or
+  // deserialized) with a null operator — would otherwise NPE inside the switch.
+  @Test
+  void shouldReturnEmptyWhenErrorMessageOperationHasNullOperator() {
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(new Operation<>(null, "Resolved")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  // Lock down Locale.ROOT lowercasing in likePatternMatches: ASCII patterns and ASCII messages
+  // must round-trip identically regardless of the JVM default locale (e.g. tr_TR's dotted-I).
+  @Test
+  void shouldMatchLikePatternWithUppercaseAsciiInputUnderTurkishLocale() {
+    final var defaultLocale = Locale.getDefault();
+    Locale.setDefault(new Locale("tr", "TR"));
+    try {
+      final var filter =
+          new ProcessInstanceFilter.Builder()
+              .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+              .errorMessageOperations(List.of(Operation.like("INVALID*")))
+              .build();
+      when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+          .thenReturn("Invalid input");
+      final var result =
+          normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
+      assertThat(result).isPresent();
+      assertThat(result.get().errorMessageOperations())
+          .containsExactly(Operation.eq("Invalid input"));
+    } finally {
+      Locale.setDefault(defaultLocale);
+    }
   }
 
   @Test
@@ -430,6 +748,153 @@ class IncidentErrorHashCodeNormalizerTest {
             .build();
     when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
         .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldNormalizeInOpToEqResolvedWhenInValueIsTruncatedPrefixOfResolvedDefStat() {
+    final var resolved =
+        "Expected result of the expression 'retriesA' to be 'NUMBER', but was 'STRING'.";
+    final var truncatedPrefix = resolved.substring(0, 50);
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.in(List.of(truncatedPrefix))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn(resolved);
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations()).containsExactly(Operation.eq(resolved));
+  }
+
+  @Test
+  void shouldReturnEmptyWhenInValuesAreNotContainedInResolvedDefStat() {
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.in(List.of("unrelated"))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNeqEqualsResolvedDefStat() {
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.neq("Resolved")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldNormalizeLikeToEqResolvedWhenLikePatternMatchesResolvedDefStat() {
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.like("Expected*")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Expected result of the expression");
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations())
+        .containsExactly(Operation.eq("Expected result of the expression"));
+  }
+
+  @Test
+  void shouldReturnEmptyWhenLikePatternDoesNotMatchResolvedDefStat() {
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.like("Failed*")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Expected result of the expression");
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyWhenInListContainsBlankValueAlongsideOthersDefStat() {
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.in(List.of("Other", ""))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNotInListContainsBlankValueAlongsideOthersDefStat() {
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.notIn(List.of("Other", ""))))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldNormalizeExistsToEqResolvedWhenCombinedWithHashDefStat() {
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.exists(true)))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations()).containsExactly(Operation.eq("Resolved"));
+  }
+
+  @Test
+  void shouldReturnEmptyWhenNotExistsCombinedWithHashDefStat() {
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.exists(false)))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("Resolved");
+    final var result =
+        normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldEscapeRegexMetaCharactersInLikePatternDefStat() {
+    final var filter =
+        new ProcessDefinitionStatisticsFilter.Builder(1L)
+            .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
+            .errorMessageOperations(List.of(Operation.like("a.b")))
+            .build();
+    when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
+        .thenReturn("axb");
     final var result =
         normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
     assertThat(result).isEmpty();
