@@ -19,7 +19,7 @@ type Sort = NonNullable<QueryMessageSubscriptionsRequestBody["sort"]>;
 const DEFAULT_SORT: Sort = [{ field: "toolName", order: "asc" }];
 
 const toolString = z.string().trim().min(1).nullable().default(null);
-const toolDataSchema = z
+const toolPropertiesSchema = z
   .looseObject({
     "io.camunda.tool:purpose": toolString,
     "io.camunda.tool:results": toolString,
@@ -37,7 +37,7 @@ export type McpProcessTool = {
   id: string;
   toolName: string;
   toolDescription: string;
-  toolData: z.output<typeof toolDataSchema>;
+  toolProperties: z.output<typeof toolPropertiesSchema>;
   processDefinitionKey: string | null;
   processDefinitionId: string;
   processDefinitionName: string;
@@ -51,12 +51,12 @@ const mapSubscriptionToProcessTool = (
   // `toolName` is expected to exist based on the filter supplied to the backend.
   if (!sub.toolName) return null;
 
-  const toolData = toolDataSchema.parse(sub.toolProperties ?? {});
+  const toolProperties = toolPropertiesSchema.parse(sub.toolProperties ?? {});
   return {
     id: sub.messageSubscriptionKey,
     toolName: sub.toolName,
-    toolDescription: toolData.purpose ?? "-",
-    toolData,
+    toolDescription: toolProperties.purpose ?? "-",
+    toolProperties,
     processDefinitionKey: sub.processDefinitionKey,
     processDefinitionId: sub.processDefinitionId,
     processDefinitionName: sub.processDefinitionName ?? sub.processDefinitionId,

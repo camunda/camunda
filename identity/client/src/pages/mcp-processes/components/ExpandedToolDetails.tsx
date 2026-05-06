@@ -36,28 +36,28 @@ const SectionBody = styled.p`
 
 export const ExpandedToolDetails: FC<{ tool: McpProcessTool }> = ({ tool }) => {
   const { t } = useTranslate("mcpProcesses");
-  const data = tool.toolData;
+  const properties = tool.toolProperties;
 
   return (
     <>
       <SectionHeading>{t("toolPurpose")}</SectionHeading>
-      <SectionBody data-fallback={!data.purpose}>
-        {data.purpose ?? t("informationMissing")}
+      <SectionBody data-fallback={!properties.purpose}>
+        {properties.purpose ?? t("informationMissing")}
       </SectionBody>
 
       <SectionHeading>{t("toolResults")}</SectionHeading>
-      <SectionBody data-fallback={!data.results}>
-        {data.results ?? t("informationMissing")}
+      <SectionBody data-fallback={!properties.results}>
+        {properties.results ?? t("informationMissing")}
       </SectionBody>
 
       <SectionHeading>{t("toolWhenToUse")}</SectionHeading>
-      <SectionBody data-fallback={!data.whenToUse}>
-        {data.whenToUse ?? t("informationMissing")}
+      <SectionBody data-fallback={!properties.whenToUse}>
+        {properties.whenToUse ?? t("informationMissing")}
       </SectionBody>
 
       <SectionHeading>{t("toolWhenNotToUse")}</SectionHeading>
-      <SectionBody data-fallback={!data.whenNotToUse}>
-        {data.whenNotToUse ?? t("informationMissing")}
+      <SectionBody data-fallback={!properties.whenNotToUse}>
+        {properties.whenNotToUse ?? t("informationMissing")}
       </SectionBody>
     </>
   );
