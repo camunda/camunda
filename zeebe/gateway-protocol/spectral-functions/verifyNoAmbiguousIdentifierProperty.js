@@ -12,9 +12,7 @@
 const BANNED = new Set(['id', 'key', 'name']);
 
 module.exports = (input, opts, context) => {
-  const errors = [];
-
-  if (!input || typeof input !== 'object' || !input.properties) {
+  if (!input || typeof input !== 'object') {
     return [];
   }
 
@@ -22,14 +20,34 @@ module.exports = (input, opts, context) => {
   const allowlist = (opts && opts.allowlist) || {};
   const allowedProps = new Set(allowlist[schemaName] || []);
 
-  for (const propName of Object.keys(input.properties)) {
-    if (BANNED.has(propName) && !allowedProps.has(propName)) {
-      errors.push({
-        message: `Schema "${schemaName}" has ambiguous property "${propName}". Use a qualified name like "${schemaName.replace(/(?:Request|Result|Response|Filter|Base|Enum)$/, '')}${propName.charAt(0).toUpperCase() + propName.slice(1)}" instead. If this is a grandfathered exception, add it to the allowlist in .spectral.yaml.`,
-        path: [...context.path, 'properties', propName],
-      });
+  const errors = [];
+  collectBannedProperties(input, allowedProps, schemaName, context.path, errors);
+  return errors;
+};
+
+/**
+ * Recursively collects banned property names from a schema, traversing
+ * allOf / oneOf / anyOf composition members.
+ */
+function collectBannedProperties(schema, allowedProps, schemaName, basePath, errors) {
+  if (!schema || typeof schema !== 'object') return;
+
+  if (schema.properties && typeof schema.properties === 'object') {
+    for (const propName of Object.keys(schema.properties)) {
+      if (BANNED.has(propName) && !allowedProps.has(propName)) {
+        errors.push({
+          message: `Schema "${schemaName}" has ambiguous property "${propName}". Use a qualified name like "entityName${propName.charAt(0).toUpperCase() + propName.slice(1)}" instead. If this is a grandfathered exception, add it to the allowlist in .spectral.yaml.`,
+          path: [...basePath, 'properties', propName],
+        });
+      }
     }
   }
 
-  return errors;
-};
+  for (const keyword of ['allOf', 'oneOf', 'anyOf']) {
+    if (Array.isArray(schema[keyword])) {
+      for (const member of schema[keyword]) {
+        collectBannedProperties(member, allowedProps, schemaName, basePath, errors);
+      }
+    }
+  }
+}
