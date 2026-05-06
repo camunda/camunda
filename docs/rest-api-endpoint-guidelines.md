@@ -865,9 +865,20 @@ observation point for a derived entity all carry it.
       shape: edge               # required for membership-style relationships
       identifiedBy:
         - { in: path, name: roleId,  semanticType: RoleId }
-        # BYOG: under OIDC `groupsClaim`, runtime accepts external IdP IDs.
-        - { in: path, name: groupId, semanticType: GroupId, acceptsExternal: true }
+        - { in: path, name: groupId, semanticType: GroupId }
 ```
+
+The shape above is the **closed-graph slice**: it describes the
+annotations needed for the default embedded-IDC deployment, where
+Groups CRUD is enabled and `groupId` is produced by `createGroup`. Real
+production `assignRoleToGroup` carries `acceptsExternal: true` on the
+`groupId` tuple to encode the BYOG/OIDC-`groupsClaim` variant where
+the runtime accepts an externally-minted IdP ID; see the [Per-tuple
+`acceptsExternal: true`](#per-tuple-acceptsexternal-true-camundacamunda52322)
+section below for that worked example. The orthogonal
+*operation-availability* axis (e.g. that `createGroup` itself is
+disabled in OIDC-`groupsClaim` mode) is not yet annotated; it is
+tracked in camunda/camunda#52511.
 
 Field reference:
 
@@ -912,7 +923,7 @@ parameters.
 > `assignUserToGroup` or `assignRoleToGroup` is redundant — use this
 > annotation only on entity consumers (operations without an
 > `x-semantic-establishes`, or whose `shape` defaults to `entity`).
-
+>
 > **Composite-key entities — declare a `requires` for every foreign
 > identifier you borrow.** When an entity producer's `identifiedBy`
 > includes an identifier registered to a different entity kind (e.g.
@@ -968,6 +979,14 @@ producer (the canonical local entity) OR an externally-minted ID is
 acceptable. Set it on edge endpoints whose runtime accepts client-minted
 IDs in some deployments but the kind itself is still locally producible
 elsewhere.
+
+> Note: this annotation encodes **identifier provenance** (the value at
+> this site may originate inside or outside the API), which is
+> orthogonal to **operation availability** (whether the producer
+> endpoint itself is callable in a given deployment mode). The
+> mode-availability axis — for example, that the entire Groups API is
+> disabled when `oidc.groupsClaim` is set — is not yet annotated and
+> is tracked in camunda/camunda#52511.
 
 ```yaml
 # roles.yaml — assignRoleToGroup
