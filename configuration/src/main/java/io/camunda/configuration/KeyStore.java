@@ -32,7 +32,7 @@ public class KeyStore {
   private String password;
 
   public File getFilePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".file-path",
         filePath,
         File.class,
@@ -45,7 +45,7 @@ public class KeyStore {
   }
 
   public String getPassword() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
         PREFIX + ".password",
         password,
         String.class,

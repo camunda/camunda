@@ -88,7 +88,7 @@ public class Backup {
   private Azure azure = new Azure();
 
   public String getRepositoryName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".repository-name",
         repositoryName,
         String.class,
@@ -101,7 +101,7 @@ public class Backup {
   }
 
   public int getSnapshotTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".snapshot-timeout",
         snapshotTimeout,
         Integer.class,
@@ -115,7 +115,7 @@ public class Backup {
 
   public Duration getIncompleteCheckTimeout() {
     final long incompleteCheckTimeoutInSeconds =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             PREFIX + ".incomplete-check-timeout",
             incompleteCheckTimeout.getSeconds(),
             Long.class,
@@ -162,7 +162,7 @@ public class Backup {
   }
 
   public BackupStoreType getStore() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".store",
         store,
         BackupStoreType.class,

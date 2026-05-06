@@ -43,27 +43,132 @@ public class UnifiedConfigurationHelper {
     UnifiedConfigurationHelper.environment = environment;
   }
 
-  public static <T> T validateLegacyConfiguration(
+  /**
+   * Validates the legacy configuration properties based on the provided backward compatibility mode
+   * and returns the appropriate value. This method could potentially log the value of the
+   * properties (both unified configuration ones and legacy one), so it is not safe to use for
+   * sensitive data. Use {@link #validateSensitiveLegacyConfiguration} instead in that case.
+   *
+   * @param newProperty the new unified configuration property name
+   * @param newValue the new unified configuration property value
+   * @param expectedType the expected type of the configuration property
+   * @param backwardsCompatibilityMode the backward compatibility mode to apply when validating the
+   *     legacy properties
+   * @param legacyProperties the set of legacy configuration property names to validate
+   * @return the value to use for the configuration property
+   * @throws UnifiedConfigurationException if the legacy configuration is not valid according to the
+   *     backward compatibility mode
+   */
+  public static <T> T validateLegacyConfigurationUnsafe(
       final String newProperty,
       final T newValue,
       final Class<T> expectedType,
       final BackwardsCompatibilityMode backwardsCompatibilityMode,
       final Set<String> legacyProperties) {
+    return validateLegacyConfiguration(
+        newProperty, newValue, expectedType, backwardsCompatibilityMode, legacyProperties, false);
+  }
+
+  /**
+   * Validates the legacy configuration properties based on the provided backward compatibility mode
+   * and returns the appropriate value. This method could potentially log the value of the
+   * properties (both unified configuration ones and legacy one), so it is not safe to use for
+   * sensitive data. Use {@link #validateSensitiveLegacyConfiguration} instead in that case.
+   *
+   * @param newProperty the new unified configuration property name
+   * @param newValue the new unified configuration property value
+   * @param expectedType the expected type of the configuration property
+   * @param backwardsCompatibilityMode the backward compatibility mode to apply when validating the
+   *     legacy properties
+   * @param legacyProperties the set of legacy configuration property names to validate
+   * @return the value to use for the configuration property
+   * @throws UnifiedConfigurationException if the legacy configuration is not valid according to the
+   *     backward compatibility mode
+   */
+  public static <T> T validateLegacyConfigurationUnsafe(
+      final String newProperty,
+      final T newValue,
+      final ResolvableType expectedType,
+      final BackwardsCompatibilityMode backwardsCompatibilityMode,
+      final Set<String> legacyProperties) {
+    return validateLegacyConfiguration(
+        newProperty, newValue, expectedType, backwardsCompatibilityMode, legacyProperties, false);
+  }
+
+  /**
+   * Validates the legacy configuration properties based on the provided backward compatibility mode
+   * and returns the appropriate value. This method will not log the value of the properties, so it
+   * is safe to use for sensitive data.
+   *
+   * @param newProperty the new unified configuration property name
+   * @param newValue the new unified configuration property value
+   * @param expectedType the expected type of the configuration property
+   * @param backwardsCompatibilityMode the backward compatibility mode to apply when validating the
+   *     legacy properties
+   * @param legacyProperties the set of legacy configuration property names to validate
+   * @return the value to use for the configuration property
+   * @throws UnifiedConfigurationException if the legacy configuration is not valid according to the
+   *     backward compatibility mode
+   */
+  public static <T> T validateSensitiveLegacyConfiguration(
+      final String newProperty,
+      final T newValue,
+      final Class<T> expectedType,
+      final BackwardsCompatibilityMode backwardsCompatibilityMode,
+      final Set<String> legacyProperties) {
+    return validateLegacyConfiguration(
+        newProperty, newValue, expectedType, backwardsCompatibilityMode, legacyProperties, true);
+  }
+
+  /**
+   * Validates the legacy configuration properties based on the provided backward compatibility mode
+   * and returns the appropriate value. This method will not log the value of the properties, so it
+   * is safe to use for sensitive data.
+   *
+   * @param newProperty the new unified configuration property name
+   * @param newValue the new unified configuration property value
+   * @param expectedType the expected type of the configuration property
+   * @param backwardsCompatibilityMode the backward compatibility mode to apply when validating the
+   *     legacy properties
+   * @param legacyProperties the set of legacy configuration property names to validate
+   * @return the value to use for the configuration property
+   * @throws UnifiedConfigurationException if the legacy configuration is not valid according to the
+   *     backward compatibility mode
+   */
+  public static <T> T validateSensitiveLegacyConfiguration(
+      final String newProperty,
+      final T newValue,
+      final ResolvableType expectedType,
+      final BackwardsCompatibilityMode backwardsCompatibilityMode,
+      final Set<String> legacyProperties) {
+    return validateLegacyConfiguration(
+        newProperty, newValue, expectedType, backwardsCompatibilityMode, legacyProperties, true);
+  }
+
+  private static <T> T validateLegacyConfiguration(
+      final String newProperty,
+      final T newValue,
+      final Class<T> expectedType,
+      final BackwardsCompatibilityMode backwardsCompatibilityMode,
+      final Set<String> legacyProperties,
+      final boolean isSensitiveData) {
 
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         newProperty,
         newValue,
         ResolvableType.forClass(expectedType),
         backwardsCompatibilityMode,
-        legacyProperties);
+        legacyProperties,
+        isSensitiveData);
   }
 
-  public static <T> T validateLegacyConfiguration(
+  private static <T> T validateLegacyConfiguration(
       final String newProperty,
       final T newValue,
       final ResolvableType expectedType,
       final BackwardsCompatibilityMode backwardsCompatibilityMode,
-      final Set<String> legacyProperties) {
+      final Set<String> legacyProperties,
+      final boolean isSensitiveData) {
 
     if (backwardsCompatibilityMode == null) {
       throw new UnifiedConfigurationException("backwardsCompatibilityMode cannot be null");
@@ -76,12 +181,12 @@ public class UnifiedConfigurationHelper {
       case NOT_SUPPORTED ->
           backwardsCompatibilityNotSupported(legacyProperties, newProperty, newValue, expectedType);
       case SUPPORTED_ONLY_IF_VALUES_MATCH -> {
-        final T legacyValue = getLegacyValue(legacyProperties, expectedType);
+        final T legacyValue = getLegacyValue(legacyProperties, expectedType, isSensitiveData);
         yield backwardsCompatibilitySupportedOnlyIfValuesMatch(
-            legacyProperties, legacyValue, newProperty, newValue, expectedType);
+            legacyProperties, legacyValue, newProperty, newValue, expectedType, isSensitiveData);
       }
       case SUPPORTED -> {
-        final T legacyValue = getLegacyValue(legacyProperties, expectedType);
+        final T legacyValue = getLegacyValue(legacyProperties, expectedType, isSensitiveData);
         yield backwardsCompatibilitySupported(
             legacyProperties, legacyValue, newProperty, newValue, expectedType);
       }
@@ -89,22 +194,26 @@ public class UnifiedConfigurationHelper {
   }
 
   private static <T> T getLegacyValue(
-      final Set<String> legacyProperties, final ResolvableType expectedType) {
-    final var legacyConfigurationValues = new HashMap<String, T>();
+      final Set<String> legacyProperties,
+      final ResolvableType expectedType,
+      final boolean isSensitiveData) {
+    final var legacyConfigurationDisplayValues = new HashMap<String, String>();
+    final var legacyValues = new HashSet<T>();
 
     for (final String legacyProperty : legacyProperties) {
       final T legacyValue = parseLegacyValue(legacyProperty, expectedType);
+      final String legacyDisplayValue = displayValue(legacyValue, isSensitiveData);
 
-      LOGGER.trace("Parsing legacy property '{}' -> '{}'", legacyProperty, legacyValue);
+      LOGGER.trace("Parsing legacy property '{}' -> {}", legacyProperty, legacyDisplayValue);
       if (legacyValue != null) {
-        legacyConfigurationValues.put(legacyProperty, legacyValue);
-        LOGGER.trace("Parsed actual value: '{}'", legacyValue);
+        legacyConfigurationDisplayValues.put(legacyProperty, legacyDisplayValue);
+        legacyValues.add(legacyValue);
+        LOGGER.trace("Parsed actual value: {}", legacyDisplayValue);
       } else {
         LOGGER.trace("Parsed null object");
       }
     }
 
-    final Set<T> legacyValues = new HashSet<>(legacyConfigurationValues.values());
     if (legacyValues.isEmpty()) {
       return null;
     }
@@ -112,7 +221,8 @@ public class UnifiedConfigurationHelper {
     if (legacyValues.size() > 1) {
       throw new UnifiedConfigurationException(
           String.format(
-              "Ambiguous legacy configuration. Legacy properties: %s", legacyConfigurationValues));
+              "Ambiguous legacy configuration. Legacy properties: %s",
+              legacyConfigurationDisplayValues));
     }
 
     return legacyValues.iterator().next();
@@ -158,7 +268,8 @@ public class UnifiedConfigurationHelper {
       final T legacyValue,
       final String newProperty,
       final T newValue,
-      final ResolvableType expectedType) {
+      final ResolvableType expectedType,
+      final boolean isSensitiveData) {
     final boolean legacyPresent = legacyConfigPresent(legacyProperties, expectedType);
 
     final String warningMessage =
@@ -191,7 +302,10 @@ public class UnifiedConfigurationHelper {
       final String errorMessage =
           String.format(
               "Ambiguous configuration. The value %s=%s conflicts with the values '%s' from the legacy properties %s",
-              newProperty, newValue, legacyValue, String.join(", ", legacyProperties));
+              newProperty,
+              displayValue(newValue, isSensitiveData),
+              displayValue(legacyValue, isSensitiveData),
+              String.join(", ", legacyProperties));
       throw new UnifiedConfigurationException(errorMessage);
     }
   }
@@ -310,6 +424,10 @@ public class UnifiedConfigurationHelper {
     return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
             "camundaExporter", args)
         .instantiate(ExporterConfiguration.class);
+  }
+
+  private static <T> String displayValue(final T value, final boolean isSensitiveData) {
+    return isSensitiveData ? "*****" : value != null ? value.toString() : "<null>";
   }
 
   /* Setters used by tests to inject the mock objects */

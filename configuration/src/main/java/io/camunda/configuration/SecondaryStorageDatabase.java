@@ -33,7 +33,7 @@ public abstract class SecondaryStorageDatabase {
   private String indexPrefix = "";
 
   public String getUrl() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".url",
         url,
         String.class,
@@ -46,7 +46,7 @@ public abstract class SecondaryStorageDatabase {
   }
 
   public String getUsername() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".username",
         username,
         String.class,
@@ -59,7 +59,7 @@ public abstract class SecondaryStorageDatabase {
   }
 
   public String getPassword() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
         prefix() + ".password",
         password,
         String.class,
@@ -80,7 +80,7 @@ public abstract class SecondaryStorageDatabase {
   }
 
   public String getClusterName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".cluster-name",
         clusterName,
         String.class,
@@ -93,7 +93,7 @@ public abstract class SecondaryStorageDatabase {
   }
 
   public String getIndexPrefix() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".index-prefix",
         indexPrefix,
         String.class,

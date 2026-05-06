@@ -74,7 +74,7 @@ public class Raft {
   private Duration flushDelay = Duration.ZERO;
 
   public Duration getHeartbeatInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".heartbeat-interval",
         heartbeatInterval,
         Duration.class,
@@ -87,7 +87,7 @@ public class Raft {
   }
 
   public Duration getElectionTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".election-timeout",
         electionTimeout,
         Duration.class,
@@ -100,7 +100,7 @@ public class Raft {
   }
 
   public boolean isPriorityElectionEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".priority-election-enabled",
         priorityElectionEnabled,
         Boolean.class,
@@ -113,7 +113,7 @@ public class Raft {
   }
 
   public boolean isFlushEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".flush-enabled",
         flushEnabled,
         Boolean.class,
@@ -126,7 +126,7 @@ public class Raft {
   }
 
   public Duration getFlushDelay() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".flush-delay",
         flushDelay,
         Duration.class,
