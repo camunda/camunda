@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.layered;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
@@ -32,14 +33,18 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
 
   private final ZeebeDb<ColumnFamilyType> activeDb;
   private final ZeebeDb<ColumnFamilyType> persistentDb;
+  private final ConsistencyChecksSettings consistencyChecksSettings;
   private final NavigableSet<byte[]> committedTombstones = new TreeSet<>(Arrays::compareUnsigned);
   private final Map<RegisteredColumnFamilyKey, RegisteredColumnFamily> registeredColumnFamilies =
       new HashMap<>();
 
   public LayeredZeebeDb(
-      final ZeebeDb<ColumnFamilyType> activeDb, final ZeebeDb<ColumnFamilyType> persistentDb) {
+      final ZeebeDb<ColumnFamilyType> activeDb,
+      final ZeebeDb<ColumnFamilyType> persistentDb,
+      final ConsistencyChecksSettings consistencyChecksSettings) {
     this.activeDb = activeDb;
     this.persistentDb = persistentDb;
+    this.consistencyChecksSettings = consistencyChecksSettings;
   }
 
   ZeebeDb<ColumnFamilyType> activeDb() {
@@ -108,7 +113,8 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
                   activeColumnFamily,
                   persistentColumnFamily,
                   keyInstance,
-                  valueInstance);
+                  valueInstance,
+                  consistencyChecksSettings);
             });
 
     registerColumnFamily(columnFamily, keyInstance, valueInstance, columnFamilyInstance);
@@ -150,6 +156,7 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
   @Override
   public void close() throws Exception {
     try {
+      //      LayeredSnapshotFlusher.flush(this);
       activeDb.close();
     } finally {
       persistentDb.close();

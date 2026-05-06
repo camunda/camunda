@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.layered;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
@@ -40,6 +41,7 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   private final ColumnFamily<KeyType, ValueType> persistentColumnFamily;
   private final KeyType keyInstance;
   private final ValueType valueInstance;
+  private final ConsistencyChecksSettings consistencyChecksSettings;
 
   LayeredColumnFamily(
       final LayeredZeebeDb<?> db,
@@ -48,7 +50,8 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
       final ColumnFamily<KeyType, ValueType> activeColumnFamily,
       final ColumnFamily<KeyType, ValueType> persistentColumnFamily,
       final KeyType keyInstance,
-      final ValueType valueInstance) {
+      final ValueType valueInstance,
+      final ConsistencyChecksSettings consistencyChecksSettings) {
     this.db = db;
     this.context = context;
     this.columnFamily = columnFamily;
@@ -57,6 +60,7 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
     this.persistentColumnFamily = persistentColumnFamily;
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
+    this.consistencyChecksSettings = consistencyChecksSettings;
   }
 
   @Override
@@ -100,7 +104,16 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   public @Nullable ValueType get(final KeyType key) {
     final var result = new Holder<ValueType>();
     context.runInTransaction(() -> result.value = getOrLoad(key));
-    return result.value;
+    if (result.value == null) {
+      return null;
+    }
+    // In contrast to rocksDB we always need to allocate a new instance since mutating it,
+    // will mutate the state.
+    // In rocksDB mutating the return from get() only returns the "cache" in memory, not the rocksDB
+    // state
+    final var allocated = newValueInstance();
+    result.value.copyTo(allocated);
+    return allocated;
   }
 
   @Override
@@ -116,18 +129,16 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
 
           final var activeValue = activeColumnFamily.get(key, valueSupplier);
           if (activeValue != null) {
-            result.value = activeValue;
+            result.value = valueSupplier.get();
+            activeValue.copyTo(result.value);
             return;
           }
 
-          final var persistentValue = persistentColumnFamily.get(key, this::newValueInstance);
-          if (persistentValue == null) {
-            result.value = null;
-            return;
+          final var persistentValue = persistentColumnFamily.get(key, valueSupplier);
+          if (persistentValue != null) {
+            activeColumnFamily.upsert(key, persistentValue);
+            result.value = activeColumnFamily.get(key, valueSupplier);
           }
-
-          activeColumnFamily.upsert(key, persistentValue);
-          result.value = activeColumnFamily.get(key, valueSupplier);
         });
     return result.value;
   }
@@ -285,7 +296,7 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   public void deleteExisting(final KeyType key) {
     context.runInTransaction(
         () -> {
-          if (!existsInternal(key)) {
+          if (consistencyChecksSettings.enablePreconditions() && !existsInternal(key)) {
             throw new ZeebeDbInconsistentException(
                 "Key " + key + " in ColumnFamily " + columnFamily + " does not exist");
           }

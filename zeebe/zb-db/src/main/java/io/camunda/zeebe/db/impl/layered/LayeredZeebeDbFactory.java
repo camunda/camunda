@@ -30,6 +30,8 @@ import java.util.function.Supplier;
 public final class LayeredZeebeDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDbFactory<ColumnFamilyType> {
+  private static final ConsistencyChecksSettings INDIVIDUAL_DB_CONSISTENCY_SETTINGS =
+      new ConsistencyChecksSettings();
 
   private final ZeebeRocksDbFactory<ColumnFamilyType> persistentFactory;
   private final ConsistencyChecksSettings consistencyChecksSettings;
@@ -60,7 +62,8 @@ public final class LayeredZeebeDbFactory<
     persistentFactory =
         new ZeebeRocksDbFactory<>(
             rocksDbConfiguration,
-            consistencyChecksSettings,
+            // disabled as each zeebeDB is not consistent within itself
+            INDIVIDUAL_DB_CONSISTENCY_SETTINGS,
             accessMetricsConfiguration,
             meterRegistryFactory,
             sharedRocksDbResources,
@@ -78,8 +81,10 @@ public final class LayeredZeebeDbFactory<
     final var persistentDb = persistentFactory.createDb(pathName, avoidFlush);
     final var activeDb =
         new InMemoryZeebeDb<ColumnFamilyType>(
-            consistencyChecksSettings, accessMetricsConfiguration, persistentDb.getMeterRegistry());
-    return new LayeredZeebeDb<>(activeDb, persistentDb);
+            INDIVIDUAL_DB_CONSISTENCY_SETTINGS,
+            accessMetricsConfiguration,
+            persistentDb.getMeterRegistry());
+    return new LayeredZeebeDb<>(activeDb, persistentDb, consistencyChecksSettings);
   }
 
   @Override
@@ -87,8 +92,10 @@ public final class LayeredZeebeDbFactory<
     final var persistentDb = persistentFactory.createDb(pathName);
     final var activeDb =
         new InMemoryZeebeDb<ColumnFamilyType>(
-            consistencyChecksSettings, accessMetricsConfiguration, persistentDb.getMeterRegistry());
-    return new LayeredZeebeDb<>(activeDb, persistentDb);
+            INDIVIDUAL_DB_CONSISTENCY_SETTINGS,
+            accessMetricsConfiguration,
+            persistentDb.getMeterRegistry());
+    return new LayeredZeebeDb<>(activeDb, persistentDb, consistencyChecksSettings);
   }
 
   @Override
