@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms;
 
+import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProvider;
+import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
@@ -49,6 +51,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.Builder;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /** A holder for all rdbms services */
@@ -98,6 +101,7 @@ public class RdbmsService {
       incidentProcessInstanceStatisticsByDefinitionDbReader;
   private final GlobalListenerDbReader globalListenerDbReader;
   private final DeployedResourceDbReader deployedResourceDbReader;
+  private final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -142,7 +146,8 @@ public class RdbmsService {
       final IncidentProcessInstanceStatisticsByDefinitionDbReader
           incidentProcessInstanceStatisticsByDefinitionDbReader,
       final GlobalListenerDbReader globalListenerDbReader,
-      final DeployedResourceDbReader deployedResourceDbReader) {
+      final DeployedResourceDbReader deployedResourceDbReader,
+      final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.auditLogReader = auditLogReader;
     this.authorizationReader = authorizationReader;
@@ -186,6 +191,7 @@ public class RdbmsService {
         incidentProcessInstanceStatisticsByDefinitionDbReader;
     this.globalListenerDbReader = globalListenerDbReader;
     this.deployedResourceDbReader = deployedResourceDbReader;
+    this.replicationLogStatusProviderFactory = replicationLogStatusProviderFactory;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -347,6 +353,10 @@ public class RdbmsService {
 
   public DeployedResourceDbReader getResourceDbReader() {
     return deployedResourceDbReader;
+  }
+
+  public Optional<ReplicationLogStatusProvider> getReplicationLogStatusProvider() {
+    return replicationLogStatusProviderFactory.create();
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
