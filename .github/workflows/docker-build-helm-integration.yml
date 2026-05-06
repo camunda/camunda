@@ -336,6 +336,33 @@ jobs:
       - run: |
           # shellcheck disable=SC2242
           exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+      - name: Add Helm debugging guidance on failure
+        if: failure()
+        run: |
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
+          {
+            echo "## Helm Integration Tests Failed"
+            echo ""
+            echo "### Where to look"
+            echo "Open [this run](${RUN_URL}) → job \`Helm chart Integration Tests\`"
+            echo "Expand the reusable workflow steps to find the failing install or test step."
+            echo ""
+            echo "### Common failure patterns"
+            echo "| Symptom | Likely cause |"
+            echo "|---|---|"
+            echo "| Pod not ready / CrashLoopBackOff | Container image issue or misconfiguration — check pod logs in the job output |"
+            echo "| Helm install timeout | Resource limits, PVC issues, or missing secrets — check Kubernetes events |"
+            echo "| E2E assertions failed | App started but behaving incorrectly — check E2E test output and screenshots |"
+            echo "| ImagePullBackOff | Harbor push failed or wrong tag — re-run the Docker build job |"
+            echo "| Namespace cleanup error | Previous run left dangling resources — usually safe to re-run |"
+            echo ""
+            echo "### Full debugging guide"
+            echo "[CI Debugging Cookbook — Helm section](${COOKBOOK_URL}#helm-integration-test-failures)"
+            echo ""
+            echo "### Need help?"
+            echo "- Slack: [#ask-alwaysgreen](https://camunda.slack.com/archives/C0AQ378VBEV) / [#alwaysgreen-reliability](https://camunda.slack.com/archives/C0AK0AVKRL0)"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -507,6 +534,34 @@ jobs:
           else
             echo "No downstream workflow run URL found." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Add debugging guidance on failure
+        if: steps.wait-downstream.outcome == 'failure'
+        run: |
+          DOWNSTREAM_URL="${{ steps.wait-downstream.outputs.downstream_run_url }}"
+          COOKBOOK_URL="https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
+          {
+            echo ""
+            echo "### Debugging the SaaS E2E Failure"
+            echo ""
+            if [ -n "$DOWNSTREAM_URL" ]; then
+              echo "**Downstream run:** [$DOWNSTREAM_URL]($DOWNSTREAM_URL)"
+              echo ""
+              echo "**Artifacts (HTML report, screenshots, traces):** [playwright-report, screenshots, traces]($DOWNSTREAM_URL#artifacts)"
+            fi
+            echo ""
+            echo "**Quick steps:**"
+            echo "1. Click the downstream run link above"
+            echo "2. In the \`run-tests-saas-manual\` job, expand \`Run tests\` for log output"
+            echo "3. Download the \`playwright-report\` artifact → open \`index.html\`"
+            echo "4. Download \`test-results\` for screenshots and Playwright traces:"
+            echo "   \`\`\`"
+            echo "   npx playwright show-trace trace.zip"
+            echo "   \`\`\`"
+            echo "   Or upload to https://trace.playwright.dev"
+            echo ""
+            echo "**Full guide:** [CI Debugging Cookbook]($COOKBOOK_URL)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Observe build status
         if: always()
