@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,12 +183,8 @@ public final class ProcessCacheUtil {
     if (extensionProperties == null || prefix == null || prefix.isBlank()) {
       return Map.of();
     }
-    final Map<String, String> result = new HashMap<>();
-    for (final Map.Entry<String, String> entry : extensionProperties.entrySet()) {
-      if (entry.getKey().startsWith(prefix)) {
-        result.put(entry.getKey(), entry.getValue());
-      }
-    }
-    return result;
+    return extensionProperties.entrySet().stream()
+        .filter(e -> e.getKey().startsWith(prefix))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 }

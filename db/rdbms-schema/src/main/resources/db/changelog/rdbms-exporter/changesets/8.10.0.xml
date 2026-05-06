@@ -66,14 +66,14 @@
     </addColumn>
   </changeSet>
 
-  <changeSet id="add_message_subscription_extension_properties_column" author="camunda">
+  <changeSet id="add_message_subscription_tool_properties_column" author="camunda">
     <preConditions onFail="MARK_RAN">
       <not>
-        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="EXTENSION_PROPERTIES"/>
+        <columnExists tableName="${prefix}MESSAGE_SUBSCRIPTION" columnName="TOOL_PROPERTIES"/>
       </not>
     </preConditions>
     <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
-      <column name="EXTENSION_PROPERTIES" type="CLOB"/>
+      <column name="TOOL_PROPERTIES" type="CLOB"/>
     </addColumn>
   </changeSet>
 

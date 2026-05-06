@@ -37,7 +37,7 @@ public class MessageSubscriptionEntityMapperTest {
             .tenantId("tenantId")
             .processDefinitionName("My Process")
             .processDefinitionVersion(2)
-            .extensionProperties(Map.of("key1", "value1"))
+            .toolProperties(Map.of("key1", "value1"))
             .build();
 
     // When
@@ -66,7 +66,7 @@ public class MessageSubscriptionEntityMapperTest {
             .tenantId(null)
             .processDefinitionName(null)
             .processDefinitionVersion(null)
-            .extensionProperties(null)
+            .toolProperties(null)
             .build();
 
     // When

@@ -38,7 +38,7 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
 
   private final MessageSubscriptionWriter messageSubscriptionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
-  private final ToolsConfiguration messageSubscriptionConfig;
+  private final ToolsConfiguration toolConfig;
 
   public MessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
       final MessageSubscriptionWriter messageSubscriptionWriter,
@@ -49,10 +49,10 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
   public MessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
       final MessageSubscriptionWriter messageSubscriptionWriter,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final ToolsConfiguration messageSubscriptionConfig) {
+      final ToolsConfiguration toolConfig) {
     this.messageSubscriptionWriter = messageSubscriptionWriter;
     this.processCache = processCache;
-    this.messageSubscriptionConfig = messageSubscriptionConfig;
+    this.toolConfig = toolConfig;
   }
 
   @Override
@@ -103,15 +103,13 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
         .processDefinitionName(
             cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null))
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
-        .extensionProperties(
+        .toolProperties(
             ProcessCacheUtil.getToolProperties(
-                ext, messageSubscriptionConfig.getExtensionPropertyPrefixToolProperties()))
-        .toolName(
-            ProcessCacheUtil.getToolName(
-                ext, messageSubscriptionConfig.getExtensionPropertyToolName()))
+                ext, toolConfig.getExtensionPropertyPrefixToolProperties()))
+        .toolName(ProcessCacheUtil.getToolName(ext, toolConfig.getExtensionPropertyToolName()))
         .inboundConnectorType(
             ProcessCacheUtil.getInboundConnectorType(
-                ext, messageSubscriptionConfig.getExtensionPropertyInboundConnectorType()))
+                ext, toolConfig.getExtensionPropertyInboundConnectorType()))
         .build();
   }
 }

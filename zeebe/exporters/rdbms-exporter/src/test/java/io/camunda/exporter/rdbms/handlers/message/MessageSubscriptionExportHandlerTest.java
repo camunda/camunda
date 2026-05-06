@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.utils.DateUtil;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
@@ -51,7 +52,15 @@ final class MessageSubscriptionExportHandlerTest {
       mock(ExporterEntityCache.class);
 
   private final MessageSubscriptionExportHandler underTest =
-      new MessageSubscriptionExportHandler(writer, processCache);
+      new MessageSubscriptionExportHandler(writer, processCache, buildToolsConfig());
+
+  private static ToolsConfiguration buildToolsConfig() {
+    final var config = new ToolsConfiguration();
+    config.setExtensionPropertyToolName("io.camunda.tool:name");
+    config.setExtensionPropertyInboundConnectorType("inbound.type");
+    config.setExtensionPropertyPrefixToolProperties("io.camunda.tool:");
+    return config;
+  }
 
   @ParameterizedTest
   @EnumSource(
@@ -195,7 +204,7 @@ final class MessageSubscriptionExportHandlerTest {
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(timestamp)));
     assertThat(model.processDefinitionName()).isEqualTo(processName);
     assertThat(model.processDefinitionVersion()).isEqualTo(processVersion);
-    assertThat(model.extensionProperties()).isEqualTo(Map.of("io.camunda.tool:name", "myTool"));
+    assertThat(model.toolProperties()).isEqualTo(Map.of("io.camunda.tool:name", "myTool"));
     assertThat(model.toolName()).isEqualTo("myTool");
     assertThat(model.inboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
   }
@@ -245,7 +254,7 @@ final class MessageSubscriptionExportHandlerTest {
     final MessageSubscriptionDbModel model = captor.getValue();
     assertThat(model.processDefinitionName()).isNull();
     assertThat(model.processDefinitionVersion()).isNull();
-    assertThat(model.extensionProperties()).isEqualTo(Map.of());
+    assertThat(model.toolProperties()).isEqualTo(Map.of());
     assertThat(model.toolName()).isNull();
     assertThat(model.inboundConnectorType()).isNull();
   }

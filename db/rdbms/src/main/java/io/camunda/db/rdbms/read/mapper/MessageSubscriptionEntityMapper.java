@@ -32,7 +32,7 @@ public class MessageSubscriptionEntityMapper {
         .tenantId(nullToEmpty(messageSubscriptionDbModel.tenantId()))
         .processDefinitionName(nullToEmpty(messageSubscriptionDbModel.processDefinitionName()))
         .processDefinitionVersion(messageSubscriptionDbModel.processDefinitionVersion())
-        .toolProperties(messageSubscriptionDbModel.extensionProperties())
+        .toolProperties(messageSubscriptionDbModel.toolProperties())
         .toolName(messageSubscriptionDbModel.toolName())
         .inboundConnectorType(messageSubscriptionDbModel.inboundConnectorType())
         .build();
