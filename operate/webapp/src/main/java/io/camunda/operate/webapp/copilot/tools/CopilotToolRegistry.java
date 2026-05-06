@@ -11,8 +11,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
+import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.ProcessInstanceServices;
 import java.util.LinkedHashMap;
@@ -33,19 +35,23 @@ public class CopilotToolRegistry {
   private final ObjectMapper objectMapper;
   private final ProcessInstanceServices processInstanceServices;
   private final IncidentServices incidentServices;
+  private final ElementInstanceServices elementInstanceServices;
   private final Map<String, Tool> tools = new LinkedHashMap<>();
 
   public CopilotToolRegistry(
       ObjectMapper objectMapper,
       ProcessInstanceServices processInstanceServices,
-      IncidentServices incidentServices) {
+      IncidentServices incidentServices,
+      ElementInstanceServices elementInstanceServices) {
     this.objectMapper = objectMapper;
     this.processInstanceServices = processInstanceServices;
     this.incidentServices = incidentServices;
+    this.elementInstanceServices = elementInstanceServices;
     register(listProcesses());
     register(countFailedInstances());
     register(getProcessInstance());
     register(listIncidentsForInstance());
+    register(getElementInstancesForProcessInstance());
     register(searchCamundaDocs());
   }
 
@@ -192,6 +198,46 @@ public class CopilotToolRegistry {
                               String.valueOf(inc.state())))
                   .toList();
           return Map.of("processInstanceKey", key, "incidents", items, "total", page.total());
+        });
+  }
+
+  private Tool getElementInstancesForProcessInstance() {
+    return new Tool(
+        ToolSpecification.builder()
+            .name("get_element_instances_for_process_instance")
+            .description(
+                "Return the element (flow node) instances of a process instance — "
+                    + "what step the token is on, which steps have completed, etc. "
+                    + "Use this to answer 'where is this stuck?'.")
+            .parameters(
+                JsonObjectSchema.builder()
+                    .addProperty(
+                        "processInstanceKey",
+                        JsonStringSchema.builder().description("Numeric instance key").build())
+                    .required("processInstanceKey")
+                    .build())
+            .build(),
+        (args, auth) -> {
+          final long key = parseLong(args.get("processInstanceKey"), "processInstanceKey");
+          final var page =
+              elementInstanceServices.search(
+                  FlowNodeInstanceQuery.of(
+                      q -> q.filter(f -> f.processInstanceKeys(java.util.List.of(key)))),
+                  auth);
+          final var items =
+              page.items().stream()
+                  .map(
+                      el ->
+                          Map.of(
+                              "elementInstanceKey", el.flowNodeInstanceKey(),
+                              "elementId", el.flowNodeId() != null ? el.flowNodeId() : "",
+                              "elementName", el.flowNodeName() != null ? el.flowNodeName() : "",
+                              "type", String.valueOf(el.type()),
+                              "state", String.valueOf(el.state()),
+                              "startDate", String.valueOf(el.startDate()),
+                              "endDate", String.valueOf(el.endDate())))
+                  .toList();
+          return Map.of("processInstanceKey", key, "elements", items, "total", page.total());
         });
   }
 
