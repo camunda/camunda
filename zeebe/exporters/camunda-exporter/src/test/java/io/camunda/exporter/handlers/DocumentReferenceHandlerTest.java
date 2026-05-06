@@ -279,6 +279,192 @@ public class DocumentReferenceHandlerTest {
     assertThat(entity.getStoreId()).isEqualTo("gcp");
     assertThat(entity.getContentHash()).isEqualTo("hash2");
     assertThat(entity.getFileName()).isEqualTo("report.docx");
+    assertThat(entity.getContentType())
+        .isEqualTo(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     assertThat(entity.getSize()).isEqualTo(2048L);
+    assertThat(entity.getExpiresAt()).isEqualTo("2025-12-31T00:00:00Z");
+  }
+
+  @Test
+  void shouldNotHandleRecordWhenDiscriminatorAppearsOnlyAsValue() {
+    // given - discriminator string appears in a value, not as a key
+    final VariableRecordValue recordValue =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withValue("{\"description\": \"we use camunda.document.type for foo\"}")
+            .build();
+    final Record<VariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r -> r.withIntent(VariableIntent.CREATED).withValue(recordValue));
+
+    // when - then
+    assertThat(underTest.handlesRecord(record)).isFalse();
+  }
+
+  @Test
+  void shouldNotHandleRecordWhenJsonIsMalformedButPassesFastPath() {
+    // given - contains the discriminator substring but isn't valid JSON
+    final VariableRecordValue recordValue =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withValue("{\"camunda.document.type\": \"camunda\"")
+            .build();
+    final Record<VariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r -> r.withIntent(VariableIntent.CREATED).withValue(recordValue));
+
+    // when - then
+    assertThat(underTest.handlesRecord(record)).isFalse();
+  }
+
+  @Test
+  void shouldFilterOutNonDocRefElementsFromMixedArray() {
+    // given - one element is a doc-ref, the other is a plain object
+    final String mixedArray =
+        """
+        [
+          {
+            "camunda.document.type": "camunda",
+            "documentId": "doc123",
+            "storeId": "aws",
+            "metadata": {"fileName": "a.pdf"}
+          },
+          {
+            "foo": "bar"
+          }
+        ]
+        """;
+    final VariableRecordValue recordValue =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withValue(mixedArray)
+            .build();
+    final Record<VariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r -> r.withIntent(VariableIntent.CREATED).withValue(recordValue));
+
+    // when
+    final boolean handles = underTest.handlesRecord(record);
+    final var ids = underTest.generateIds(record);
+
+    // then - only the doc-ref element produces an id
+    assertThat(handles).isTrue();
+    assertThat(ids).containsExactly(record.getKey() + "_doc123");
+  }
+
+  @Test
+  void shouldSkipArrayElementWithoutDocumentId() {
+    // given - array with one valid doc-ref and one missing documentId
+    final String arrayMissingId =
+        """
+        [
+          {
+            "camunda.document.type": "camunda",
+            "documentId": "doc123",
+            "metadata": {}
+          },
+          {
+            "camunda.document.type": "camunda",
+            "metadata": {}
+          }
+        ]
+        """;
+    final VariableRecordValue recordValue =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withValue(arrayMissingId)
+            .build();
+    final Record<VariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r -> r.withIntent(VariableIntent.CREATED).withValue(recordValue));
+
+    // when
+    final var ids = underTest.generateIds(record);
+
+    // then - only the element with documentId yields an id
+    assertThat(ids).containsExactly(record.getKey() + "_doc123");
+  }
+
+  @Test
+  void shouldSetRootProcessInstanceKeyWhenPositive() {
+    // given
+    final VariableRecordValue recordValue =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withValue(SINGLE_DOC_REF)
+            .withRootProcessInstanceKey(42L)
+            .build();
+    final Record<VariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r -> r.withIntent(VariableIntent.CREATED).withValue(recordValue));
+    final DocumentReferenceEntity entity = new DocumentReferenceEntity();
+    entity.setId(record.getKey() + "_doc123");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getRootProcessInstanceKey()).isEqualTo(42L);
+  }
+
+  @Test
+  void shouldFallBackToDefaultTenantWhenTenantIsEmpty() {
+    // given - empty tenantId triggers tenantOrDefault fallback
+    final VariableRecordValue recordValue =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withValue(SINGLE_DOC_REF)
+            .withTenantId("")
+            .build();
+    final Record<VariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r -> r.withIntent(VariableIntent.CREATED).withValue(recordValue));
+    final DocumentReferenceEntity entity = new DocumentReferenceEntity();
+    entity.setId(record.getKey() + "_doc123");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getTenantId()).isEqualTo("<default>");
+  }
+
+  @Test
+  void shouldRunFullLifecycleReusingTheCacheForArrayDocRefs() {
+    // given - exercise the cache happy-path: handlesRecord populates, generateIds + updateEntity
+    // both consume without re-parsing
+    final VariableRecordValue recordValue =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withValue(ARRAY_DOC_REFS)
+            .build();
+    final Record<VariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r -> r.withIntent(VariableIntent.CREATED).withValue(recordValue));
+
+    // when
+    final boolean handles = underTest.handlesRecord(record);
+    final var ids = underTest.generateIds(record);
+    final DocumentReferenceEntity first = new DocumentReferenceEntity();
+    first.setId(ids.get(0));
+    underTest.updateEntity(record, first);
+    final DocumentReferenceEntity second = new DocumentReferenceEntity();
+    second.setId(ids.get(1));
+    underTest.updateEntity(record, second);
+
+    // then
+    assertThat(handles).isTrue();
+    assertThat(ids).hasSize(2);
+    assertThat(first.getDocumentId()).isNotEqualTo(second.getDocumentId());
+    assertThat(first.getDocumentId()).isIn("doc123", "doc456");
+    assertThat(second.getDocumentId()).isIn("doc123", "doc456");
   }
 }
