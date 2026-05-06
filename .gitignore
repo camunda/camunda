@@ -83,3 +83,8 @@ cmd/renovate/renovate*/
 .c8dev
 /output/
 scripts/codeowners-utils/output/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
