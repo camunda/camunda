@@ -1,32 +1,29 @@
-COMMAND_STUB_ZEEBE := docker-compose --project-directory ./ -f docker-compose.yml -f ../docker/compose/docker-compose.yaml
-COMMAND_STUB_OPE := docker-compose --project-directory ./ -f docker-compose.yml -f docker-compose.ope-ztl.yml
+COMPOSE     := docker compose --project-directory ./
+COMPOSE_DEV := $(COMPOSE) -f docker-compose.yml -f docker-compose.dev.yml
+COMPOSE     := $(COMPOSE) -f docker-compose.yml
 
 .DEFAULT_GOAL := up
-.PHONY: up
+.PHONY: up down clean up-dev down-dev clean-dev
+
 up:
-	$(COMMAND_STUB_ZEEBE) up -d
+	$(COMPOSE) up -d
 
-.PHONY: down
 down:
-	$(COMMAND_STUB_ZEEBE) down
+	$(COMPOSE) down
 
-.PHONY: up-ope
-up-ope:
-	$(COMMAND_STUB_OPE) up -d --force-recreate
-
-.PHONY: down-ope
-down-ope:
-	$(COMMAND_STUB_OPE) down
-
-
-.PHONY: clean
 clean:
-	$(COMMAND_STUB_ZEEBE) down -v
+	$(COMPOSE) down -v
 
-.PHONY: clean-ope
-clean-ope:
-	$(COMMAND_STUB_OPE) down -v
+up-dev:
+	$(COMPOSE_DEV) up -d
 
+down-dev:
+	$(COMPOSE_DEV) down
+
+clean-dev:
+	$(COMPOSE_DEV) down -v
+
+# Deprecated: Grizzly is archived and has no Windows support. Use make up-dev instead.
 .PHONY: grizzly
 grizzly:
 	@set -o allexport && source .env && \

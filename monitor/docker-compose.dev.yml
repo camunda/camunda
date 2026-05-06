@@ -1,0 +1,74 @@
+services:
+  grafana:
+    environment:
+      - GF_PATHS_DATA=/tmp/grafana-data
+
+  traffic-generator:
+    image: alpine:latest
+    depends_on:
+      - camunda
+    volumes:
+      - ./processes:/processes:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apk add --no-cache curl -q
+        echo "Waiting for Camunda to be ready..."
+        until curl -sf http://camunda:9600/actuator/health/readiness > /dev/null; do
+          sleep 3
+        done
+        sleep 5
+        echo "Deploying test process..."
+        curl -sf -X POST http://camunda:8080/v2/deployments \
+          -F "resources=@/processes/test-process.bpmn" \
+          -H "Accept: application/json"
+        echo "Generating traffic (one instance every 10s)..."
+        while true; do
+          curl -s -X POST http://camunda:8080/v2/process-instances \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -d '{"bpmnProcessId":"test-process","version":-1}'
+          sleep 10
+        done
+    restart: on-failure
+
+  metrics-generator:
+    build: ./metrics-generator
+    container_name: metrics-generator
+    ports:
+      - 9400:9400
+    environment:
+      - CAMUNDA_URL=http://camunda:8080
+    restart: unless-stopped
+
+  dashboard-sync:
+    image: alpine:latest
+    depends_on:
+      - grafana
+    volumes:
+      - ./grafana/dashboards:/dashboards
+    environment:
+      - GRAFANA_URL=http://grafana:3000
+      - GRAFANA_USER=admin
+      - GRAFANA_TOKEN=camunda
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apk add --no-cache curl jq -q
+        echo "Dashboard sync started — writing Grafana UI saves back to JSON files..."
+        while true; do
+          sleep 10
+          for file in $$(find /dashboards -name "*.json" 2>/dev/null); do
+            uid=$$(jq -r '.uid // empty' "$$file" 2>/dev/null)
+            [ -z "$$uid" ] && continue
+            remote=$$(curl -sf -u "$$GRAFANA_USER:$$GRAFANA_TOKEN" \
+              "$$GRAFANA_URL/api/dashboards/uid/$$uid" 2>/dev/null) || continue
+            remote_content=$$(echo "$$remote" | jq -cS '.dashboard | del(.id, .version)' 2>/dev/null)
+            local_content=$$(jq -cS 'del(.id, .version)' "$$file" 2>/dev/null)
+            if [ "$$remote_content" != "$$local_content" ]; then
+              echo "Syncing $$(basename $$file)"
+              echo "$$remote" | jq --slurpfile local "$$file" '.dashboard | if ($$local[0] | has("id")) then .id = $$local[0].id else del(.id) end | if ($$local[0] | has("version")) then .version = $$local[0].version else del(.version) end' > "$${file}.tmp" && mv "$${file}.tmp" "$$file"
+            fi
+          done
+        done
+    restart: unless-stopped

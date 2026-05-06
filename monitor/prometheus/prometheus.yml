@@ -2,57 +2,28 @@ global:
   scrape_interval:     5s
   evaluation_interval: 5s
 
+# Recording rules that derive node_namespace_pod_container:* metrics from the
+# synthetic container metrics produced by the metrics-generator container.
+rule_files:
+  - 'recording_rules.yml'
+
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
-         - targets: ['localhost:9090']
+      - targets: ['localhost:9090']
 
-  - job_name: 'zeebe'
+  - job_name: 'camunda'
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['zeebe:9600']
+      - targets: ['camunda:9600']
         labels:
           namespace: 'local'
-          pod: 'zeebe'
+          pod: 'camunda'
+          container: 'camunda'
+          cluster: 'local'
+          camunda_region: 'eu-west-1'
 
-  - job_name: 'broker-1'
+  - job_name: 'metrics-generator'
+    honor_labels: true
     static_configs:
-      - targets: ['broker-1:9600']
-        labels:
-          namespace: 'local'
-          pod: 'broker-1'
-
-  - job_name: 'broker-2'
-    static_configs:
-      - targets: ['broker-2:9600']
-        labels:
-          namespace: 'local'
-          pod: 'broker-2'
-
-  - job_name: 'broker-3'
-    static_configs:
-      - targets: ['broker-3:9600']
-        labels:
-          namespace: 'local'
-          pod: 'broker-3'
-
-  - job_name: "tasklist"
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["tasklist:8090"]
-        labels:
-          namespace: 'local'
-          pod: 'tasklist'
-
-  - job_name: "operate"
-    metrics_path: /actuator/prometheus
-    static_configs:
-      - targets: ["operate:8080"]
-        labels:
-          namespace: 'local'
-          pod: 'operate'
-
-  - job_name: "elasticsearch"
-    metrics_path: /metrics
-    static_configs:
-      - targets: ["elasticsearch_exporter:9114"]
+      - targets: ['metrics-generator:9400']
