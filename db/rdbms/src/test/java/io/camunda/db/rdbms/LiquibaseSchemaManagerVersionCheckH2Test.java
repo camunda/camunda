@@ -89,6 +89,7 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
   void shouldRejectSkippedMinorVersionAndNotRunLiquibase() throws Exception {
     // given: existing DB with RDBMS_SCHEMA_VERSION = '8.9.0'
     runLiquibaseWithVersion("8.9.0");
+    final int changelogRowsBefore = countChangelogRows();
 
     // when: start app with 8.11.0 (skips 8.10)
     final var manager = buildSchemaManager("8.11.0");
@@ -101,6 +102,8 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     assertThat(manager.isInitialized()).isFalse();
     // Schema version should NOT have been updated
     assertThat(readSchemaVersion()).isEqualTo("8.9.0");
+    // Liquibase should NOT have applied any new changesets
+    assertThat(countChangelogRows()).isEqualTo(changelogRowsBefore);
   }
 
   // ---- Acceptance criterion 4: Fresh DB ----
@@ -169,7 +172,11 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
     return manager;
   }
 
-  /** Runs Liquibase migrations and then manually sets the schema version to the given value. */
+  /**
+   * Initializes the schema manager with the given application version by running all Liquibase
+   * migrations and recording the version in {@code RDBMS_SCHEMA_VERSION} via {@code
+   * updateSchemaVersion()}.
+   */
   private void runLiquibaseWithVersion(final String version) throws Exception {
     final var manager = buildSchemaManager(version);
     manager.afterPropertiesSet();
@@ -200,6 +207,14 @@ class LiquibaseSchemaManagerVersionCheckH2Test {
       stmt.setMaxRows(1);
       final var rs = stmt.executeQuery();
       return rs.next() ? rs.getString(1) : null;
+    }
+  }
+
+  private int countChangelogRows() throws Exception {
+    try (final var conn = dataSource.getConnection();
+        final var stmt = conn.createStatement();
+        final var rs = stmt.executeQuery("SELECT COUNT(*) FROM DATABASECHANGELOG")) {
+      return rs.next() ? rs.getInt(1) : 0;
     }
   }
 }

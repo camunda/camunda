@@ -411,8 +411,7 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
       final Connection connection, final String tableName, final String stableVersion)
       throws SQLException {
     try (final var insertStmt =
-        connection.prepareStatement(
-            "INSERT INTO " + tableName + " (ID, VERSION) VALUES (1, ?)")) {
+        connection.prepareStatement("INSERT INTO " + tableName + " (ID, VERSION) VALUES (1, ?)")) {
       insertStmt.setString(1, stableVersion);
       insertStmt.executeUpdate();
     }
