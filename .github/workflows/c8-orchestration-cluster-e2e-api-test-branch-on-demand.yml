@@ -204,6 +204,7 @@ jobs:
       - name: Run API tests
         env:
           LOCAL_TEST: "false"
+          DATABASE: "elasticsearch"
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
@@ -384,6 +385,7 @@ jobs:
       - name: Run API tests
         env:
           LOCAL_TEST: "false"
+          DATABASE: "RDBMS"
           CORE_APPLICATION_URL: "http://localhost:8080"
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
           CAMUNDA_AUTH_STRATEGY: "BASIC"
