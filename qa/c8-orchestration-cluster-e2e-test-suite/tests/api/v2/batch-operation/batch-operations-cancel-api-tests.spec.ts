@@ -22,7 +22,7 @@ import {
   cancelBatchOperation,
   createCompletedBatchOperation,
 } from '@requestHelpers';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 
@@ -48,8 +48,12 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
       });
 
     await test.step('Cancel batch operation', async () => {
-      const res = await cancelBatchOperation(request, key);
-      await assertStatusCode(res, 204);
+      // The batch operation may not be visible to the cancel endpoint
+      // immediately after creation; retry on 404 until it is.
+      await expect(async () => {
+        const res = await cancelBatchOperation(request, key);
+        await assertStatusCode(res, 204);
+      }).toPass(defaultAssertionOptions);
     });
 
     await test.step('Poll batch status', async () => {

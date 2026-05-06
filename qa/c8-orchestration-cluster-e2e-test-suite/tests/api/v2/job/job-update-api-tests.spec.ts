@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 import {
   assertBadRequest,
   assertNotFoundRequest,
@@ -18,6 +18,7 @@ import {
   activateJobToObtainAValidJobKey,
   setupProcessInstanceForTests,
 } from '@requestHelpers';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Update API Tests', () => {
@@ -36,13 +37,17 @@ test.describe('Job Update API Tests', () => {
     );
 
     await test.step('PATCH update the job', async () => {
-      const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
-        headers: jsonHeaders(),
-        data: {
-          changeset: {retries: 1, timeout: 9000},
-        },
-      });
-      await assertStatusCode(updateRes, 204);
+      // Job activation is observed before the job is fully visible to the
+      // /jobs/{jobKey} endpoint. Retry on 404 until visibility catches up.
+      await expect(async () => {
+        const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
+          headers: jsonHeaders(),
+          data: {
+            changeset: {retries: 1, timeout: 9000},
+          },
+        });
+        await assertStatusCode(updateRes, 204);
+      }).toPass(defaultAssertionOptions);
     });
   });
 
