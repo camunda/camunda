@@ -42,6 +42,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -66,6 +67,9 @@ public final class ClusterConfigurationManagerService
   private final TopologyManagerMetrics topologyManagerMetrics;
   private final MemberId localMemberId;
   private ConfigurationChangeAppliers currentAppliers;
+  private CamundaClient camundaClient;
+  private BpmnConfigurationChangeJobWorker bpmnJobWorker;
+  private RedistributionCalculationJobWorker redistributionCalculationWorker;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -232,6 +236,15 @@ public final class ClusterConfigurationManagerService
 
   @Override
   public ActorFuture<Void> closeAsync() {
+    if (bpmnJobWorker != null) {
+      bpmnJobWorker.close();
+    }
+    if (redistributionCalculationWorker != null) {
+      redistributionCalculationWorker.close();
+    }
+    if (camundaClient != null) {
+      camundaClient.close();
+    }
     if (configurationRequestServer != null) {
       configurationRequestServer.close();
     }
@@ -251,9 +264,16 @@ public final class ClusterConfigurationManagerService
     clusterConfigurationManager.registerTopologyChangeAppliers(currentAppliers);
   }
 
-  public BpmnConfigurationChangeJobWorker createBpmnJobWorker(final CamundaClient camundaClient) {
-    return new BpmnConfigurationChangeJobWorker(
-        camundaClient, localMemberId, clusterConfigurationManager, currentAppliers);
+  public void startBpmnWorkers(final URI grpcAddress) {
+    camundaClient = CamundaClient.newClientBuilder().grpcAddress(grpcAddress).build();
+
+    bpmnJobWorker =
+        new BpmnConfigurationChangeJobWorker(
+            camundaClient, localMemberId, clusterConfigurationManager, currentAppliers);
+    bpmnJobWorker.start();
+
+    redistributionCalculationWorker = new RedistributionCalculationJobWorker(camundaClient);
+    redistributionCalculationWorker.start();
   }
 
   public void removePartitionChangeExecutor() {

@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.net.URI;
 import java.nio.file.Path;
 
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
@@ -30,9 +31,12 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
 
   private ClusterConfigurationManagerService clusterConfigurationManagerService;
   private final ClusterChangeExecutor clusterChangeExecutor;
+  private final URI camundaGrpcAddress;
 
-  public DynamicClusterConfigurationService(final ClusterChangeExecutor clusterChangeExecutor) {
+  public DynamicClusterConfigurationService(
+      final ClusterChangeExecutor clusterChangeExecutor, final URI camundaGrpcAddress) {
     this.clusterChangeExecutor = clusterChangeExecutor;
+    this.camundaGrpcAddress = camundaGrpcAddress;
   }
 
   @Override
@@ -47,6 +51,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.registerPartitionChangeExecutors(
           partitionChangeExecutor, partitionScalingChangeExecutor);
+      clusterConfigurationManagerService.startBpmnWorkers(camundaGrpcAddress);
     } else {
       throw new IllegalStateException(
           "Cannot register change executor before the topology manager is started");

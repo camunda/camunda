@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.net.URI;
 import java.time.Duration;
 
 public class ClusterConfigurationManagerStep
@@ -36,8 +37,11 @@ public class ClusterConfigurationManagerStep
             brokerStartupContext.getExporterRepository(),
             brokerStartupContext.getNodeIdProvider(),
             brokerStartupContext.getMeterRegistry());
+    final var gatewayCfg = brokerStartupContext.getBrokerConfiguration().getGateway().getNetwork();
+    final URI camundaGrpcAddress =
+        URI.create("http://" + gatewayCfg.getHost() + ":" + gatewayCfg.getPort());
     final ClusterConfigurationService clusterConfigurationService =
-        new DynamicClusterConfigurationService(clusterChangeExecutor);
+        new DynamicClusterConfigurationService(clusterChangeExecutor, camundaGrpcAddress);
     return clusterConfigurationService
         .start(brokerStartupContext)
         .andThen(
