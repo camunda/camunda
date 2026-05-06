@@ -9,12 +9,16 @@
  *   issue_only  — architectural, concurrency, security-sensitive, or
  *                 otherwise context-dependent; needs human triage
  *
- * The hackday MVP uses a static rule-ID allowlist. When an
- * `ANTHROPIC_API_KEY` is available and `ENABLE_AI_TRIAGE=true`, the
- * dispatch in `classify()` will route through Claude with the
- * classification rubric prompt instead.
+ * The default classifier is a static rule-ID allowlist. When
+ * `ENABLE_AI_TRIAGE=true`, the dispatch in `classify()` routes findings
+ * through Claude (via AWS Bedrock) using the rubric prompt. The Bedrock
+ * client reads AWS credentials from the standard env vars
+ * (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`) and the
+ * model from `BEDROCK_INFERENCE_PROFILE_ARN`.
  */
 import fs from "node:fs";
+
+import { AnthropicBedrock } from "@anthropic-ai/bedrock-sdk";
 
 const RULE_TRACK = {
   // Pure rename to a non-deprecated successor; safe to auto-fix.
@@ -60,19 +64,99 @@ function classifyWithRules(finding) {
   };
 }
 
+const CLASSIFICATION_SYSTEM_PROMPT = `You are classifying static analysis findings for an automated code-quality pipeline.
+
+Each finding is routed to one of two tracks:
+
+PR-eligible — fix is local, low-risk, safe to apply automatically. ALL of:
+  - Local change (single function or file, no cross-module impact)
+  - Not concurrency-related (no locks, threads, async, volatile, CompletableFuture)
+  - Not security-sensitive (no SAST or taint findings)
+  - High-confidence rule (e.g., deprecated API rename, unused import, simple null check, missing @Override)
+
+Issue-only — needs human triage. ANY of:
+  - Architectural or cross-cutting
+  - Concurrency, threading, async correctness
+  - SAST / taint analysis
+  - Low-confidence or context-dependent
+  - Any finding where the fix could plausibly introduce a new bug
+
+When in doubt, choose issue_only.
+
+Respond with a single JSON object and no other text:
+{"track": "pr_eligible" | "issue_only", "confidence": <0..1>, "reason": "<brief justification>"}`;
+
+let bedrockClient = null;
+function getBedrockClient() {
+  if (bedrockClient) return bedrockClient;
+  const region = process.env.AWS_REGION;
+  if (!region) {
+    throw new Error("AWS_REGION env var is required for Bedrock dispatch.");
+  }
+  // Access key, secret, and (optional) session token are read from the
+  // standard AWS env vars by the SDK.
+  bedrockClient = new AnthropicBedrock({ awsRegion: region });
+  return bedrockClient;
+}
+
+function extractText(response) {
+  return response.content
+    .map((b) => (b.type === "text" ? b.text : ""))
+    .join("")
+    .trim();
+}
+
+function parseClassification(rawText) {
+  const cleaned = rawText
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/i, "")
+    .trim();
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    throw new Error(`Claude returned non-JSON classification: ${rawText}`);
+  }
+  if (parsed.track !== "pr_eligible" && parsed.track !== "issue_only") {
+    throw new Error(`Claude returned invalid track: ${parsed.track}`);
+  }
+  const confidence =
+    typeof parsed.confidence === "number" ? parsed.confidence : 0.5;
+  return {
+    track: parsed.track,
+    confidence: Math.max(0, Math.min(1, confidence)),
+    reason: typeof parsed.reason === "string" ? parsed.reason : undefined,
+  };
+}
+
 /**
- * Placeholder for the Claude-driven classifier. When wired up, this
- * will call the Anthropic API with the rubric prompt and a structured
- * JSON response.
- *
+ * Classify a finding via Claude on AWS Bedrock.
+ * @param {Finding} finding
  * @returns {Promise<Classification>}
  */
-// eslint-disable-next-line no-unused-vars
-async function classifyWithClaude(finding, sourceContext) {
-  throw new Error(
-    "classifyWithClaude not implemented yet. Add @anthropic-ai/sdk and " +
-      "encode the rubric prompt before enabling ENABLE_AI_TRIAGE.",
-  );
+async function classifyWithClaude(finding) {
+  const model = process.env.BEDROCK_INFERENCE_PROFILE_ARN;
+  if (!model) {
+    throw new Error(
+      "BEDROCK_INFERENCE_PROFILE_ARN env var is required for Bedrock dispatch.",
+    );
+  }
+  const userPrompt = [
+    `Rule: ${finding.rule}`,
+    `File: ${finding.file}`,
+    `Line: ${finding.line}`,
+    `Message: ${finding.message}`,
+    "",
+    "Classify this finding.",
+  ].join("\n");
+
+  const response = await getBedrockClient().messages.create({
+    model,
+    max_tokens: 512,
+    system: CLASSIFICATION_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userPrompt }],
+  });
+  return parseClassification(extractText(response));
 }
 
 /**
@@ -81,12 +165,8 @@ async function classifyWithClaude(finding, sourceContext) {
  * @returns {Promise<Classification>}
  */
 async function classify(finding) {
-  if (
-    process.env.ANTHROPIC_API_KEY &&
-    process.env.ENABLE_AI_TRIAGE === "true"
-  ) {
-    // Future: load source context around finding.{file,line} for the prompt.
-    return classifyWithClaude(finding, null);
+  if (process.env.ENABLE_AI_TRIAGE === "true") {
+    return classifyWithClaude(finding);
   }
   return classifyWithRules(finding);
 }
@@ -176,9 +256,12 @@ function parseArgs(argv) {
             "  --input PATH    SARIF file (default: stdin)",
             "  --output PATH   classified JSON (default: stdout)",
             "",
-            "Env:",
-            "  ANTHROPIC_API_KEY + ENABLE_AI_TRIAGE=true",
-            "    Routes through the Claude classifier (not implemented yet).",
+            "Env (Claude/Bedrock dispatch — set ENABLE_AI_TRIAGE=true):",
+            "  AWS_REGION                       (required)",
+            "  AWS_ACCESS_KEY_ID                (required)",
+            "  AWS_SECRET_ACCESS_KEY            (required)",
+            "  AWS_SESSION_TOKEN                (optional, STS)",
+            "  BEDROCK_INFERENCE_PROFILE_ARN    (required, used as model)",
           ].join("\n"),
         );
         process.exit(0);

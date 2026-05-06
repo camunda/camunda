@@ -71,3 +71,56 @@ jobs:
           name: codeql-sarif
           path: codeql-results/
           retention-days: 30
+
+  ai-triage:
+    name: AI triage of CodeQL findings
+    needs: codeql-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: .github/scripts/code-quality-ai/package-lock.json
+
+      - name: Install triage dependencies
+        working-directory: .github/scripts/code-quality-ai
+        run: npm ci --no-audit --no-fund
+
+      - name: Download CodeQL SARIF
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: codeql-sarif
+          path: codeql-results
+
+      - name: Locate SARIF file
+        id: locate
+        run: |
+          SARIF_PATH=$(find codeql-results -name '*.sarif' -print -quit)
+          if [ -z "$SARIF_PATH" ]; then
+            echo "No SARIF file found in codeql-results/" >&2
+            exit 1
+          fi
+          echo "sarif=$GITHUB_WORKSPACE/$SARIF_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Run AI triage
+        working-directory: .github/scripts/code-quality-ai
+        env:
+          ENABLE_AI_TRIAGE: "true"
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          BEDROCK_INFERENCE_PROFILE_ARN: ${{ secrets.BEDROCK_INFERENCE_PROFILE_ARN }}
+        run: node triage.js --input "${{ steps.locate.outputs.sarif }}" --output triaged.json
+
+      - name: Upload triage output
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: triaged-findings
+          path: .github/scripts/code-quality-ai/triaged.json
+          retention-days: 30
