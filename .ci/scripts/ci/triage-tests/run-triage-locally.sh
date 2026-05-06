@@ -59,7 +59,7 @@ for arg in "$@"; do
 done
 
 # ── Dependency checks ───────────────────────────────────────────────────────
-for cmd in gh python3 jq; do
+for cmd in gh python3 jq curl; do
   if ! command -v "$cmd" &>/dev/null; then
     echo "ERROR: '$cmd' is required but not found in PATH." >&2
     exit 1

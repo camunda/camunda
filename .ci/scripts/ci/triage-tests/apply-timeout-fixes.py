@@ -101,7 +101,11 @@ def _apply_todo_comment(content: str, test_title: str) -> tuple[str, bool]:
         if _TODO_ALREADY_RE.search(preceding):
             return m.group(0)
         modified = True
-        return "// TODO(triage-agent): flaky – investigate\n" + m.group(0)
+        # Preserve the leading whitespace of the test() call so the comment
+        # matches the indentation of the surrounding describe block.
+        line_start = content.rfind("\n", 0, m.start()) + 1
+        indent = content[line_start:m.start()]
+        return indent + "// TODO(triage-agent): flaky – investigate\n" + m.group(0)
 
     new_content = _TEST_OPEN_RE.sub(replacer, content)
     return new_content, modified
@@ -199,6 +203,9 @@ if __name__ == "__main__":
 
     if "--version-label" in args:
         idx = args.index("--version-label")
+        if idx + 1 >= len(args):
+            print("ERROR: --version-label requires a value", file=sys.stderr)
+            sys.exit(1)
         version_label = args[idx + 1]
         args = args[:idx] + args[idx + 2:]
 

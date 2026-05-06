@@ -101,13 +101,23 @@ class TestFailure:
 
 # Each entry: (error_type_label, list_of_keyword_fragments)
 # Checked in order — first match wins.
+#
+# timeout must come before locator: Playwright timeout messages are often
+# prefixed with the locator action (e.g. "locator.click: Timeout exceeded"),
+# which would match the bare word "locator" and misclassify a timing issue
+# as a test-code / locator problem.
 _ERROR_PATTERNS: list[tuple[str, list[str]]] = [
+    ("timeout", [
+        "timeout", "timed out", "time out", "exceeded the timeout",
+        "waiting for expect", "exceeded time limit",
+    ]),
     ("locator", [
-        "locator", "selector", "strict mode violation",
+        "strict mode violation",
         "element is not attached", "detached from dom",
         "element is outside the viewport", "element is not visible",
         "element handle is not valid", "no element found",
-        "unable to find element",
+        "unable to find element", "not found",
+        "selector", "resolved to",
     ]),
     ("data", [
         "duplicate key", "unique constraint", "already exists",
@@ -118,10 +128,6 @@ _ERROR_PATTERNS: list[tuple[str, list[str]]] = [
         "status 409", "status 422", "status 500", "status 502",
         "status 503", "expected status", "response status",
         "http error", "request failed with status",
-    ]),
-    ("timeout", [
-        "timeout", "timed out", "time out", "exceeded the timeout",
-        "waiting for expect", "exceeded time limit",
     ]),
     ("network", [
         "networkerror", "net::", "econnrefused", "fetch failed",

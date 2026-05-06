@@ -98,7 +98,7 @@ jobs:
             dest="artifacts/${label}"
 
             run_id=$(gh api \
-              "/repos/${REPO}/actions/workflows/${workflow}/runs?per_page=1&status=completed" \
+              "/repos/${REPO}/actions/workflows/${workflow}/runs?per_page=1&status=completed&event=schedule" \
               --jq '.workflow_runs[0].id // empty' 2>/dev/null) || true
 
             if [[ -z "$run_id" ]]; then
@@ -179,7 +179,7 @@ jobs:
         if: steps.analyse.outputs.flaky != '0' && steps.analyse.outputs.flaky != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          DRY_RUN:  ${{ inputs.dry_run || 'false' }}
+          DRY_RUN:  ${{ github.event.inputs.dry_run || 'false' }}
         run: |
           set -euo pipefail
 
@@ -187,6 +187,13 @@ jobs:
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # The triage scripts live on this branch (main after merge) but not on
+          # stable/* branches. Copy them to a temp dir so they remain available
+          # after each git checkout below.
+          TRIAGE_SCRIPTS=$(mktemp -d)
+          cp -r .ci/scripts/ci/triage-tests/. "$TRIAGE_SCRIPTS/"
+          APPLY_FIXES="${TRIAGE_SCRIPTS}/apply-timeout-fixes.py"
 
           total_fixed=0
           all_pr_urls=""
@@ -233,7 +240,7 @@ jobs:
             combined_skipped="[]"
 
             for label in $labels; do
-              python3 .ci/scripts/ci/triage-tests/apply-timeout-fixes.py \
+              python3 "$APPLY_FIXES" \
                 triage-report.json \
                 qa/c8-orchestration-cluster-e2e-test-suite \
                 --version-label "$label" \
@@ -428,7 +435,7 @@ PYEOF
 
       # ── Post to Slack ────────────────────────────────────────────────────────
       - name: Post triage report to Slack
-        if: inputs.dry_run != 'true'
+        if: github.event.inputs.dry_run != 'true'
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           method: chat.postMessage
