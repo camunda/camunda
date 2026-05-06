@@ -124,3 +124,62 @@ jobs:
           name: triaged-findings
           path: .github/scripts/code-quality-ai/triaged.json
           retention-days: 30
+
+  pr-track:
+    name: Open auto-fix PRs
+    needs: ai-triage
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: code-quality-ai-pr
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: .github/scripts/code-quality-ai/package-lock.json
+
+      - name: Install runner dependencies
+        working-directory: .github/scripts/code-quality-ai
+        run: npm ci --no-audit --no-fund
+
+      - name: Download triaged findings
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: triaged-findings
+          path: .github/scripts/code-quality-ai
+
+      - name: Configure git identity
+        run: |
+          git config user.name "camunda-ci-bot"
+          git config user.email "camunda-ci-bot@users.noreply.github.com"
+
+      - name: Run PR-track runner
+        working-directory: .github/scripts/code-quality-ai
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          BEDROCK_INFERENCE_PROFILE_ARN: ${{ secrets.BEDROCK_INFERENCE_PROFILE_ARN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: node pr_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-prs 5 --output pr-summary.json
+
+      - name: Upload PR-track summary
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: pr-track-summary
+          path: .github/scripts/code-quality-ai/pr-summary.json
+          retention-days: 30
