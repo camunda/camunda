@@ -1,0 +1,15 @@
+# DO NOT MERGE — smoke-test fixture for PR #52554
+#
+# Introduces a deliberately unpinned external action (foo/bar@v1) so the
+# `check-action-pins` gate can be observed firing in CI. The workflow itself
+# never runs (manual `workflow_dispatch` trigger only, on a non-existent action).
+# This file is created on a throwaway branch and is meant to be deleted along
+# with that branch once the smoke test is confirmed.
+name: zzz-smoke-test-pin-gate
+on: workflow_dispatch
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: foo/bar@v1
