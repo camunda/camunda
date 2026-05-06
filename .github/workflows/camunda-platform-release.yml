@@ -237,13 +237,17 @@ jobs:
             ARGUMENTS_PROFILE="-P!include-optimize"
           fi
 
-          # Clear any stale deployment-id file left by a previous run on this self-hosted runner.
-          rm -f /tmp/deployment-id.txt
+          # Per-job, per-release deployment-id file. $RUNNER_TEMP is emptied by the
+          # runner agent at the start and end of each job, and the version suffix
+          # guarantees no collision with any concurrent release on the same runner.
+          DEPLOYMENT_ID_FILE="${RUNNER_TEMP}/deployment-id-${RELEASE_VERSION}.txt"
 
           # Ensure the Maven Central deployment ID is captured even if the step fails
           # (e.g. upload succeeds but validation times out). The trap runs on any exit.
-          trap 'if [[ -f /tmp/deployment-id.txt ]]; then
-            echo "deploymentId=$(</tmp/deployment-id.txt)" >> "$GITHUB_OUTPUT"
+          trap 'if [[ -f "${DEPLOYMENT_ID_FILE}" ]]; then
+            id=$(<"${DEPLOYMENT_ID_FILE}")
+            echo "deploymentId=${id}" >> "$GITHUB_OUTPUT"
+            echo "::notice::Maven Central deployment ID: ${id}"
           elif [[ "${SKIP_CENTRAL_RELEASE}" == "true" ]]; then
             echo "deploymentId=dry-run-${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
           else
@@ -259,11 +263,11 @@ jobs:
             -P-autoFormat \
             ${PROFILE_FLAGS} \
             -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -DwaitMaxTime=${CENTRAL_WAIT_MAX_TIME} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\"" \
-            2>&1 | awk '{print} /deploymentId:/{for(i=1;i<=NF;i++) if($i ~ /^[0-9a-f]+-[0-9a-f-]+/) {gsub(/[^0-9a-f-]/,"",$i); print $i > "/tmp/deployment-id.txt"}}'
+            2>&1 | awk -v out="${DEPLOYMENT_ID_FILE}" '{print} /deploymentId:/{for(i=1;i<=NF;i++) if($i ~ /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/) {gsub(/[^0-9a-f-]/,"",$i); id=$i}} END{if(id) print id > out}'
 
           # Log the extracted deployment ID (the trap above handles writing to GITHUB_OUTPUT)
-          if [[ -f /tmp/deployment-id.txt ]]; then
-            echo "✅ Maven Central deployment ID: $(</tmp/deployment-id.txt)"
+          if [[ -f "${DEPLOYMENT_ID_FILE}" ]]; then
+            echo "✅ Maven Central deployment ID: $(<"${DEPLOYMENT_ID_FILE}")"
           elif [[ "${SKIP_CENTRAL_RELEASE}" == "true" ]]; then
             echo "ℹ️ Dry run — using mock deployment ID" >&2
           else
