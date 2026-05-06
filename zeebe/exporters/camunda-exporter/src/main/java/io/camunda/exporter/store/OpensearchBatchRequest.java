@@ -10,7 +10,6 @@ package io.camunda.exporter.store;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.utils.OpensearchNdJsonSizeUtil;
 import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
@@ -19,7 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -111,7 +110,7 @@ public class OpensearchBatchRequest implements BatchRequest {
         id,
         entity,
         updateFields);
-    addUpdateOp(index, id, routing, b -> b.upsert(entity).document(updateFields));
+    addUpdateOp(index, id, routing, wrapper -> wrapper.upsert(entity).document(updateFields));
     return this;
   }
 
@@ -145,7 +144,10 @@ public class OpensearchBatchRequest implements BatchRequest {
         index,
         id,
         routing,
-        b -> b.upsert(entity).script(scriptBuilder.getScriptWithParameters(script, parameters)));
+        wrapper ->
+            wrapper
+                .upsert(entity)
+                .script(scriptBuilder.getScriptWithParameters(script, parameters)));
     return this;
   }
 
@@ -154,14 +156,14 @@ public class OpensearchBatchRequest implements BatchRequest {
       final String index, final String id, final Map<String, Object> updateFields) {
     LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
-    addUpdateOp(index, id, null, b -> b.document(updateFields));
+    addUpdateOp(index, id, null, wrapper -> wrapper.document(updateFields));
     return this;
   }
 
   @Override
   public BatchRequest update(final String index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add update request for index {} id {} and entity {}", index, id, entity);
-    addUpdateOp(index, id, null, b -> b.document(entity));
+    addUpdateOp(index, id, null, wrapper -> wrapper.document(entity));
     return this;
   }
 
@@ -178,7 +180,10 @@ public class OpensearchBatchRequest implements BatchRequest {
         script,
         parameters);
     addUpdateOp(
-        index, id, null, b -> b.script(scriptBuilder.getScriptWithParameters(script, parameters)));
+        index,
+        id,
+        null,
+        wrapper -> wrapper.script(scriptBuilder.getScriptWithParameters(script, parameters)));
     return this;
   }
 
@@ -220,17 +225,12 @@ public class OpensearchBatchRequest implements BatchRequest {
       final String index,
       final String id,
       final String routing,
-      final Function<UpdateOperation.Builder<Object>, ?> opBuilder) {
-    final UpdateOperation<Object> updateOp =
-        UpdateOperation.of(
-            b -> {
-              b.index(index).id(id).routing(routing).retryOnConflict(UPDATE_RETRY_COUNT);
-              opBuilder.apply(b);
-              return b;
-            });
-    final long sizeBytes =
-        OpensearchNdJsonSizeUtil.measureSingleNdJsonSerializable(updateOp, jsonpMapper);
-    addOperation(BulkOperation.of(b -> b.update(updateOp)), sizeBytes);
+      final Consumer<BinaryUpdateOperationWrapper> wrapperConfigurer) {
+    final BinaryUpdateOperationWrapper wrapper = new BinaryUpdateOperationWrapper(jsonpMapper);
+    wrapperConfigurer.accept(wrapper);
+    final UpdateOperation<BinaryData> updateOp =
+        wrapper.build(index, id, routing, UPDATE_RETRY_COUNT);
+    addOperation(BulkOperation.of(b -> b.update(updateOp)), wrapper.payloadBytes());
   }
 
   private void addDeleteOp(final String index, final String id, final String routing) {
