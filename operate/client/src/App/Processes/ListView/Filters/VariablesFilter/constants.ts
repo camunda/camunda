@@ -24,7 +24,6 @@ const VARIABLE_FILTER_OPERATORS: OperatorConfig[] = [
 ];
 
 type DraftCondition = {
-  id: string;
   name: string;
   operator: VariableFilterOperator;
   value: string;

@@ -73,7 +73,6 @@ type FormValues = {
 };
 
 const createDraft = (): DraftCondition => ({
-  id: crypto.randomUUID(),
   name: '',
   operator: 'equals',
   value: '',
@@ -87,7 +86,7 @@ const VariableFilterModal: React.FC<Props> = ({
 }) => {
   const [initialDraftConditions] = useState<DraftCondition[]>(() =>
     initialConditions.length > 0
-      ? initialConditions.map((c) => ({...c, id: crypto.randomUUID()}))
+      ? initialConditions.map((c) => ({...c}))
       : [createDraft()],
   );
 
@@ -99,14 +98,12 @@ const VariableFilterModal: React.FC<Props> = ({
       return {conditions: conditionErrors};
     }
     onApply(
-      values.conditions.map(
-        ({id: _id, operator, name, value}): VariableCondition => {
-          if (operator === 'exists' || operator === 'doesNotExist') {
-            return {name, operator, value: ''};
-          }
-          return {name, operator, value: value ?? ''};
-        },
-      ),
+      values.conditions.map(({operator, name, value}): VariableCondition => {
+        if (operator === 'exists' || operator === 'doesNotExist') {
+          return {name, operator, value: ''};
+        }
+        return {name, operator, value: value ?? ''};
+      }),
     );
     return undefined;
   };

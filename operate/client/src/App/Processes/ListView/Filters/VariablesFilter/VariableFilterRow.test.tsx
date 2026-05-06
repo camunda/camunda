@@ -17,7 +17,6 @@ type RowFormValues = {conditions: DraftCondition[]};
 
 const getWrapper = (condition: Partial<DraftCondition> = {}) => {
   const draft: DraftCondition = {
-    id: 'test-id',
     name: '',
     operator: 'equals',
     value: '',
@@ -49,15 +48,11 @@ describe('<VariableFilterRow />', () => {
       {wrapper: getWrapper()},
     );
 
+    expect(screen.getByTestId('variable-filter-name-0')).toBeInTheDocument();
     expect(
-      screen.getByTestId('variable-filter-name-test-id'),
+      screen.getByTestId('variable-filter-operator-0'),
     ).toBeInTheDocument();
-    expect(
-      screen.getByTestId('variable-filter-operator-test-id'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByTestId('variable-filter-value-test-id'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('variable-filter-value-0')).toBeInTheDocument();
   });
 
   it('should hide value field when operator does not require value', () => {
@@ -72,7 +67,7 @@ describe('<VariableFilterRow />', () => {
     );
 
     expect(
-      screen.queryByTestId('variable-filter-value-test-id'),
+      screen.queryByTestId('variable-filter-value-0'),
     ).not.toBeInTheDocument();
   });
 
@@ -87,7 +82,7 @@ describe('<VariableFilterRow />', () => {
       {wrapper: getWrapper()},
     );
 
-    expect(screen.getByTestId('delete-variable-filter-test-id')).toHaveStyle({
+    expect(screen.getByTestId('delete-variable-filter-0')).toHaveStyle({
       visibility: 'hidden',
     });
   });
@@ -103,7 +98,7 @@ describe('<VariableFilterRow />', () => {
       {wrapper: getWrapper()},
     );
 
-    expect(screen.getByTestId('delete-variable-filter-test-id')).toHaveStyle({
+    expect(screen.getByTestId('delete-variable-filter-0')).toHaveStyle({
       visibility: 'visible',
     });
   });
@@ -119,9 +114,9 @@ describe('<VariableFilterRow />', () => {
       {wrapper: getWrapper()},
     );
 
-    await user.type(screen.getByTestId('variable-filter-name-test-id'), 'x');
+    await user.type(screen.getByTestId('variable-filter-name-0'), 'x');
 
-    expect(screen.getByTestId('variable-filter-name-test-id')).toHaveValue('x');
+    expect(screen.getByTestId('variable-filter-name-0')).toHaveValue('x');
   });
 
   it('should update value input when user types', async () => {
@@ -135,11 +130,9 @@ describe('<VariableFilterRow />', () => {
       {wrapper: getWrapper({name: 'status'})},
     );
 
-    await user.type(screen.getByTestId('variable-filter-value-test-id'), 'v');
+    await user.type(screen.getByTestId('variable-filter-value-0'), 'v');
 
-    expect(screen.getByTestId('variable-filter-value-test-id')).toHaveValue(
-      'v',
-    );
+    expect(screen.getByTestId('variable-filter-value-0')).toHaveValue('v');
   });
 
   it('should call onDelete when delete button is clicked', async () => {
@@ -154,7 +147,7 @@ describe('<VariableFilterRow />', () => {
       {wrapper: getWrapper()},
     );
 
-    await user.click(screen.getByTestId('delete-variable-filter-test-id'));
+    await user.click(screen.getByTestId('delete-variable-filter-0'));
 
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
@@ -174,7 +167,7 @@ describe('<VariableFilterRow />', () => {
     await user.click(screen.getByText('exists'));
 
     expect(
-      screen.queryByTestId('variable-filter-value-test-id'),
+      screen.queryByTestId('variable-filter-value-0'),
     ).not.toBeInTheDocument();
   });
 
@@ -192,8 +185,6 @@ describe('<VariableFilterRow />', () => {
     await user.click(screen.getByRole('combobox', {name: 'Operator'}));
     await user.click(screen.getByText('equals'));
 
-    expect(
-      screen.getByTestId('variable-filter-value-test-id'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('variable-filter-value-0')).toBeInTheDocument();
   });
 });
