@@ -51,7 +51,9 @@ public class ResourceReexportReexportProcessor
         // continue with the next one.
         value.getResourceKey() + 1,
         resource -> {
-          if (!BufferUtil.bufferAsString(resource.getResourceName()).endsWith(RPA_FILE_EXTENSION)) {
+          if (!BufferUtil.bufferAsString(resource.getResourceName())
+              .toLowerCase()
+              .endsWith(RPA_FILE_EXTENSION)) {
             return true; // We should only reexport RPA resources.
           }
           foundResource.set(resource.copy());

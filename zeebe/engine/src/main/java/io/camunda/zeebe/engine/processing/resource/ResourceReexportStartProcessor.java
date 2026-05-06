@@ -33,6 +33,6 @@ public class ResourceReexportStartProcessor
     stateWriter.appendFollowUpEvent(
         command.getKey(), ResourceReexportIntent.STARTED, command.getValue());
     commandWriter.appendFollowUpCommand(
-        command.getKey(), ResourceReexportIntent.REEXPORT, new ResourceReexportRecord());
+        command.getKey(), ResourceReexportIntent.REEXPORT, command.getValue());
   }
 }

@@ -37,7 +37,7 @@ public final class RpaReexportMigrator implements StreamProcessorLifecycleAware 
     }
 
     if (context.getPartitionId() != Protocol.DEPLOYMENT_PARTITION) {
-      // We should only create users on the deployment partition. The command will be distributed to
+      // We should only reexport on the deployment partition. The command will be distributed to
       // the other partitions using our command distribution mechanism.
       LOG.debug(
           "Skipping RPA reexport migration on partition {} as it is not the deployment partition",
