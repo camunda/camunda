@@ -5,25 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 @import './globals.css';
-
-@use '@carbon/react' as * with (
-	$font-path: '@ibm/plex'
-);
-@use '@carbon/react/scss/themes';
-@use '@carbon/react/scss/theme';
-
-:root {
-	@include theme.theme(themes.$g10);
-}
-
-[data-carbon-theme='g10'] {
-	@include theme.theme(themes.$g10);
-}
-
-[data-carbon-theme='g100'] {
-	@include theme.theme(themes.$g100);
-}
+@import '@camunda/design-system/carbon';
 
 html,
 body,

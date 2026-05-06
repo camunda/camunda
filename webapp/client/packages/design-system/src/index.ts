@@ -6,5 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-@import "tailwindcss";
-@import "@camunda/design-system/globals.css";
+export * from './index.carbon';

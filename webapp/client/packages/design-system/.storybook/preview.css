@@ -7,4 +7,4 @@
  */
 
 @import "tailwindcss";
-@import "@camunda/design-system/globals.css";
+@import "../globals.css";

@@ -8,7 +8,7 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {createEndpointMock} from '#/shared-test-modules/mock-endpoint';
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 import {useEffect, useState} from 'react';
 import {render} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';

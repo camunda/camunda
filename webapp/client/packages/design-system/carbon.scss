@@ -6,5 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-@import "tailwindcss";
-@import "@camunda/design-system/globals.css";
+@use '@carbon/react' as * with (
+  $font-path: '@ibm/plex'
+);
+@use '@carbon/react/scss/themes';
+@use '@carbon/react/scss/theme';
+
+:root {
+  @include theme.theme(themes.$g10);
+}
+
+[data-carbon-theme='g10'] {
+  @include theme.theme(themes.$g10);
+}
+
+[data-carbon-theme='g100'] {
+  @include theme.theme(themes.$g100);
+}
