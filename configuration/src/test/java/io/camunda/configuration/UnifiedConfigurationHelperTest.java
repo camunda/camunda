@@ -12,6 +12,8 @@ import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompa
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.LinkedHashSet;
@@ -19,7 +21,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.mock.env.MockEnvironment;
+import org.springframework.core.env.Environment;
 
 class UnifiedConfigurationHelperTest {
 
@@ -35,16 +37,17 @@ class UnifiedConfigurationHelperTest {
     LEGACY_ORDERED_PROPERTIES.add(Set.of("legacy.prop3"));
   }
 
-  MockEnvironment mockEnvironment;
+  Environment mockEnvironment;
 
   @BeforeEach
   void setup() {
-    mockEnvironment = new MockEnvironment();
+    mockEnvironment = mock(Environment.class);
     UnifiedConfigurationHelper.setCustomEnvironment(mockEnvironment);
   }
 
   private void setPropertyValues(final String key, final String value) {
-    mockEnvironment.setProperty(key, value);
+    when(mockEnvironment.getProperty(key)).thenReturn(value);
+    when(mockEnvironment.containsProperty(key)).thenReturn(true);
   }
 
   // single legacy property and new property coexist with same value -> ok + warning

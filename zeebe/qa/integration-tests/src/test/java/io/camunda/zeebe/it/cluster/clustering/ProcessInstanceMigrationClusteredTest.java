@@ -5,13 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.engine.client.multipartition;
+package io.camunda.zeebe.it.cluster.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.it.cluster.clustering.ClusteringRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;

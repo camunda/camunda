@@ -36,7 +36,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-library-api</artifactId>
+      <artifactId>camunda-security-core</artifactId>
     </dependency>
 
     <dependency>

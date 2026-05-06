@@ -13,7 +13,6 @@ import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 
-import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.HashMap;
 import java.util.List;
@@ -82,7 +81,7 @@ public class BrokerRequestAuthorizationConverter {
         claims.put(USER_GROUPS_CLAIMS, groups);
       }
 
-      if (tokenClaims != null && !tokenClaims.isEmpty()) {
+      if (tokenClaims != null) {
         claims.put(USER_TOKEN_CLAIMS, tokenClaims);
       }
     }

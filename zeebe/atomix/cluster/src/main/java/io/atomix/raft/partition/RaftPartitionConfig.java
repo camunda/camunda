@@ -30,9 +30,9 @@ public class RaftPartitionConfig {
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
-  private static final String DEFAULT_TENANT_NAME = "default";
+  private static final String DEFAULT_ENGINE_NAME = "default";
   private static final boolean DEFAULT_RECEIVE_ON_LEGACY_SUBJECT = true;
-  private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = false;
+  private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = true;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -48,8 +48,7 @@ public class RaftPartitionConfig {
   private EntryValidator entryValidator;
   private Duration configurationChangeTimeout;
   private int snapshotChunkSize;
-  private String tenantName = DEFAULT_TENANT_NAME;
-  private String legacyGroupName;
+  private String engineName = DEFAULT_ENGINE_NAME;
   private boolean receiveOnLegacySubject = DEFAULT_RECEIVE_ON_LEGACY_SUBJECT;
   private boolean sendOnLegacySubject = DEFAULT_SEND_ON_LEGACY_SUBJECT;
 
@@ -216,20 +215,12 @@ public class RaftPartitionConfig {
     this.entryValidator = entryValidator;
   }
 
-  public String getTenantName() {
-    return tenantName;
+  public String getEngineName() {
+    return engineName;
   }
 
-  public void setTenantName(final String tenantName) {
-    this.tenantName = tenantName;
-  }
-
-  public String getLegacyGroupName() {
-    return legacyGroupName;
-  }
-
-  public void setLegacyGroupName(final String legacyGroupName) {
-    this.legacyGroupName = legacyGroupName;
+  public void setEngineName(final String engineName) {
+    this.engineName = engineName;
   }
 
   public boolean isReceiveOnLegacySubject() {
@@ -275,8 +266,8 @@ public class RaftPartitionConfig {
         + maxQuorumResponseTimeout
         + ", preferSnapshotReplicationThreshold="
         + preferSnapshotReplicationThreshold
-        + ", tenantName="
-        + tenantName
+        + ", engineName="
+        + engineName
         + ", receiveOnLegacySubject="
         + receiveOnLegacySubject
         + ", sendOnLegacySubject="

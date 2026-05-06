@@ -320,17 +320,14 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   private RaftServerCommunicator createServerProtocol() {
     final var legacySubjects = createLegacySubjects();
-    final var tenantSubjects = createTenantSubjects();
+    final var engineSubjects = createEngineSubjects();
 
-    final var sendingSubject =
-        config.isSendOnLegacySubject() && legacySubjects != null ? legacySubjects : tenantSubjects;
+    final var sendingSubject = config.isSendOnLegacySubject() ? legacySubjects : engineSubjects;
 
-    final List<RaftMessageContext> receivingSubjects;
-    if (config.isReceiveOnLegacySubject() && legacySubjects != null) {
-      receivingSubjects = List.of(legacySubjects, tenantSubjects);
-    } else {
-      receivingSubjects = List.of(tenantSubjects);
-    }
+    final var receivingSubjects =
+        config.isReceiveOnLegacySubject()
+            ? List.of(legacySubjects, engineSubjects)
+            : List.of(engineSubjects);
 
     return new RaftServerCommunicator(
         sendingSubject,
@@ -344,22 +341,12 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftMessageContext createLegacySubjects() {
-    final var legacyGroupName = config.getLegacyGroupName();
-    if (legacyGroupName == null) {
-      return null;
-    }
-    // The legacy subject uses the old group name (set to "raft-partition" for the default engine)
-    // so that new brokers can still receive messages from old brokers that have not been upgraded
-    // yet. This is decoupled from partition.name() because the GROUP_NAME constant was changed to
-    // "default" as part of #50538. Only the default engine sets this — non-default engines have no
-    // legacy subjects to listen on.
-    final var legacyPrefix = PARTITION_NAME_FORMAT.formatted(legacyGroupName, partition.id().id());
-    return new RaftMessageContext(legacyPrefix);
+    return new RaftMessageContext(partition.name());
   }
 
-  private RaftMessageContext createTenantSubjects() {
-    final var tenantPrefix = getPartitionNameWithTenantPrefix();
-    return new RaftMessageContext(tenantPrefix);
+  private RaftMessageContext createEngineSubjects() {
+    final var enginePrefix = getPartitionNameWithEnginePrefix();
+    return new RaftMessageContext(enginePrefix);
   }
 
   public CompletableFuture<Void> stepDown() {
@@ -378,10 +365,10 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.getContext().getTailSegments(index);
   }
 
-  private String getPartitionNameWithTenantPrefix() {
-    final var tenantName = config.getTenantName();
+  private String getPartitionNameWithEnginePrefix() {
+    final var engineName = config.getEngineName();
     final var partitionId = partition.id().id();
-    return PARTITION_NAME_FORMAT.formatted(tenantName, partitionId);
+    return PARTITION_NAME_FORMAT.formatted(engineName, partitionId);
   }
 
   @VisibleForTesting

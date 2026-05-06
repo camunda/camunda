@@ -86,7 +86,6 @@ public class RaftServerSenderSubjectsTest {
     final var raftStorageConfig = new RaftStorageConfig();
 
     raftPartitionConfig.setSendOnLegacySubject(sendOnLegacySubject);
-    raftPartitionConfig.setLegacyGroupName(PARTITION_GROUP);
     raftPartitionConfig.setStorageConfig(raftStorageConfig);
 
     return raftPartitionConfig;
@@ -106,7 +105,7 @@ public class RaftServerSenderSubjectsTest {
 
     final var prefixSubject =
         PARTITION_NAME_FORMAT.formatted(
-            sendOnLegacySubject ? PARTITION_GROUP : config.getTenantName(), 1);
+            sendOnLegacySubject ? PARTITION_GROUP : config.getEngineName(), 1);
     final var subject = "%s-%s".formatted(prefixSubject, subjectSuffix);
 
     // when

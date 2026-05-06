@@ -134,7 +134,7 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
   }
 
   @Test
-  void authenticationClaimsAreEmpty() {
+  void authenticationClaimsAreNull() {
     // given
     final var authentication = getUsernamePasswordAuthentication("test-user", "test-password");
 
@@ -142,7 +142,7 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
     final var camundaAuthentication = authenticationConverter.convert(authentication);
 
     // then
-    assertThat(camundaAuthentication.claims()).isEmpty();
+    assertThat(camundaAuthentication.claims()).isNull();
   }
 
   private Authentication getUsernamePasswordAuthentication(

@@ -97,7 +97,7 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
     final var partitionId = context.getPartitionId();
     final var legacyReceivingSubject = LEGACY_TOPIC_PREFIX + partitionId;
     final var receivingSubject =
-        TOPIC_PREFIX.formatted(config.getDefaultTenantName()) + partitionId;
+        TOPIC_PREFIX.formatted(config.getDefaultEngineName()) + partitionId;
 
     final var receivingSubjects =
         config.isReceiveOnLegacySubject()
@@ -133,7 +133,7 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
     final var sendingSubject =
         config.isSendOnLegacySubject()
             ? LEGACY_TOPIC_PREFIX
-            : TOPIC_PREFIX.formatted(config.getDefaultTenantName());
+            : TOPIC_PREFIX.formatted(config.getDefaultEngineName());
 
     final var sender =
         new InterPartitionCommandSenderService(

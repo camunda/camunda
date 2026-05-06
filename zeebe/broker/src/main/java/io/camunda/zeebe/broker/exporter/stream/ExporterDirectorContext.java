@@ -33,7 +33,7 @@ public final class ExporterDirectorContext {
   private EventFilter positionsToSkipFilter;
   private MeterRegistry meterRegistry;
   private InstantSource clock;
-  private String tenantName;
+  private String engineName;
   private boolean sendOnLegacySubject = true;
   private boolean receiveOnLegacySubject = true;
 
@@ -81,8 +81,8 @@ public final class ExporterDirectorContext {
     return clock;
   }
 
-  public String getTenantName() {
-    return tenantName;
+  public String getEngineName() {
+    return engineName;
   }
 
   public boolean isSendOnLegacySubject() {
@@ -150,8 +150,8 @@ public final class ExporterDirectorContext {
     return this;
   }
 
-  public ExporterDirectorContext tenantName(final String tenantName) {
-    this.tenantName = tenantName;
+  public ExporterDirectorContext engineName(final String engineName) {
+    this.engineName = engineName;
     return this;
   }
 
