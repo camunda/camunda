@@ -45,7 +45,6 @@ public class ProcessDefinitionInstanceVersionStatisticsDocumentReader extends Do
                 resourceAccessChecks,
                 ProcessDefinitionInstanceVersionStatisticsAggregationResult::items);
 
-    // Return paginated items and total from the single query result
     return new SearchQueryResult<>(
         paginatedResult.total(),
         paginatedResult.hasMoreTotalItems(),

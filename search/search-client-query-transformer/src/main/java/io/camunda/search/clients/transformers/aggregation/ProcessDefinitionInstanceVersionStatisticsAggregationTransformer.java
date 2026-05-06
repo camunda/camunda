@@ -8,6 +8,8 @@
 package io.camunda.search.clients.transformers.aggregation;
 
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_FIELD_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_FIELD_PROCESS_DEFINITION_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_FIELD_PROCESS_DEFINITION_NAME;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_BY_VERSION_TENANT;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_PAGE;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_PROCESS_DEFINITION_VERSION;
@@ -15,10 +17,13 @@ import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStat
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_TOTAL_WITH_INCIDENT;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_NAME_VERSION_CARDINALITY;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGG_MAX_PROCESS_DEFINITION_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGG_MAX_PROCESS_VERSION;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.PROCESS_DEFINITION_AND_TENANT_KEY;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.bucketSort;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.cardinality;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filter;
+import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.max;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.topHits;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -77,10 +82,16 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
     final var totalWithoutIncidentsAgg =
         filter().name(AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT).query(term(INCIDENT, false)).build();
 
+    final var maxProcessDefinitionKeyAgg =
+        max().name(AGG_MAX_PROCESS_DEFINITION_KEY).field(PROCESS_KEY).build();
+
+    final var maxProcessVersionAgg =
+        max().name(AGG_MAX_PROCESS_VERSION).field(PROCESS_VERSION).build();
+
     final var bucketSort =
         bucketSort()
             .name(AGGREGATION_NAME_PAGE)
-            .sorting(getCountSuffixSortings(aggregation))
+            .sorting(toBucketSortFieldSortings(aggregation))
             .from(aggregation.page() != null ? aggregation.page().from() : null)
             .size(aggregation.page() != null ? aggregation.page().size() : null)
             .build();
@@ -91,16 +102,37 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
                 topHitsByProcessDefinition,
                 totalWithIncidentsAgg,
                 totalWithoutIncidentsAgg,
+                maxProcessDefinitionKeyAgg,
+                maxProcessVersionAgg,
                 bucketSort)
             .build();
 
     return List.of(processDefinitionKeyCardinalityAgg, byProcessDefinitionVersionAgg);
   }
 
-  private static List<FieldSorting> getCountSuffixSortings(
+  private static List<FieldSorting> toBucketSortFieldSortings(
       final ProcessDefinitionInstanceVersionStatisticsAggregation aggregation) {
     return aggregation.sort().getFieldSortings().stream()
-        .map(ordering -> new FieldSorting(ordering.field() + "._count", ordering.order()))
+        .map(
+            ordering -> {
+              final String bucketSortField =
+                  switch (ordering.field()) {
+                    case AGGREGATION_FIELD_KEY -> AGGREGATION_FIELD_KEY;
+                    case AGGREGATION_NAME_TOTAL_WITH_INCIDENT ->
+                        AGGREGATION_NAME_TOTAL_WITH_INCIDENT + "._count";
+                    case AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT ->
+                        AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT + "._count";
+                    case AGGREGATION_FIELD_PROCESS_DEFINITION_KEY ->
+                        AGG_MAX_PROCESS_DEFINITION_KEY + ".value";
+                    case AGGREGATION_NAME_PROCESS_DEFINITION_VERSION ->
+                        AGG_MAX_PROCESS_VERSION + ".value";
+                    // processDefinitionName is embedded as the first segment of the terms bucket
+                    // key (processName::processVersion::tenantId), so _key sorts by name.
+                    case AGGREGATION_FIELD_PROCESS_DEFINITION_NAME -> AGGREGATION_FIELD_KEY;
+                    default -> ordering.field() + "._count";
+                  };
+              return new FieldSorting(bucketSortField, ordering.order());
+            })
         .toList();
   }
 }
