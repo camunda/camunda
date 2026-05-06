@@ -29,6 +29,7 @@ import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilde
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4.CamundaClientCloudBuilderStep5;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.ClientProperties;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.ExperimentalApi;
@@ -119,11 +120,16 @@ public class CamundaClientCloudBuilderImpl
         ClientProperties.STREAM_ENABLED);
 
     innerBuilder.withProperties(properties);
+    resetMultiTenancy();
+    return this;
+  }
 
-    // todo(#14106): allow default tenant id setting for cloud client
-    innerBuilder.defaultTenantId("");
-    innerBuilder.defaultJobWorkerTenantIds(Collections.emptyList());
-
+  @Override
+  public CamundaClientBuilder withConfiguration(final CamundaClientConfiguration configuration) {
+    // no need to invoke the cloud builders withProperties here as the applied properties cannot be
+    // derived from the configuration anyway
+    innerBuilder.withConfiguration(configuration);
+    resetMultiTenancy();
     return this;
   }
 
@@ -334,6 +340,12 @@ public class CamundaClientCloudBuilderImpl
     innerBuilder.restAddress(determineRestAddress());
     innerBuilder.credentialsProvider(determineCredentialsProvider());
     return innerBuilder.build();
+  }
+
+  private void resetMultiTenancy() {
+    // todo(#14106): allow default tenant id setting for cloud client
+    innerBuilder.defaultTenantId("");
+    innerBuilder.defaultJobWorkerTenantIds(Collections.emptyList());
   }
 
   private URI determineRestAddress() {

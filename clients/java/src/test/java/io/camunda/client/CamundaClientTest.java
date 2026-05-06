@@ -53,25 +53,31 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.enums.TenantFilter;
+import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
 import io.camunda.client.impl.CamundaClientEnvironmentVariables;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.Environment;
 import io.camunda.client.impl.util.EnvironmentExtension;
+import io.grpc.ClientInterceptor;
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -79,6 +85,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1054,6 +1061,35 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
+  @CsvSource({
+    DEFAULT_JOB_WORKER_TENANT_IDS_VAR + "," + DEFAULT_JOB_WORKER_TENANT_IDS,
+  })
+  public void shouldSetEmptyDefaultJobWorkerTenantIdsFromEmptyStringInEnvVarAndProperty(
+      final String envName, final String propertyName) {
+    // given — empty string in environment variable
+    Environment.system().put(envName, "");
+    final CamundaClientBuilderImpl builderEnv = new CamundaClientBuilderImpl();
+
+    // when
+    try (final CamundaClient clientEnv = builderEnv.build()) {
+      // then — environment variable path should return empty list
+      assertThat(builderEnv.getDefaultJobWorkerTenantIds()).isEmpty();
+    }
+
+    // given — empty string in property
+    final Properties properties = new Properties();
+    properties.setProperty(propertyName, "");
+    final CamundaClientBuilderImpl builderProp = new CamundaClientBuilderImpl();
+    builderProp.withProperties(properties);
+
+    // when
+    try (final CamundaClient clientProp = builderProp.build()) {
+      // then — property path should also return empty list
+      assertThat(builderProp.getDefaultJobWorkerTenantIds()).isEmpty();
+    }
+  }
+
+  @ParameterizedTest
   @ValueSource(strings = {DEFAULT_JOB_WORKER_TENANT_IDS})
   public void shouldNotSetDefaultJobWorkerTenantIdsFromPropertyWithCloudClientBuilder(
       final String propertyName) {
@@ -1399,5 +1435,244 @@ public final class CamundaClientTest {
 
     // then
     assertThat(builder.useClientSideLoadBalancing()).isTrue();
+  }
+
+  @Test
+  void shouldPreserveConfigurationViaWithConfiguration() {
+    // given — a configuration with every property set to a non-default value
+    final CredentialsProvider credentialsProvider = new NoopCredentialsProvider();
+    final JsonMapper jsonMapper = new CamundaObjectMapper();
+    final ClientInterceptor interceptor = mock(ClientInterceptor.class);
+    final AsyncExecChainHandler chainHandler = mock(AsyncExecChainHandler.class);
+    final ScheduledExecutorService schedulingExecutor =
+        Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService handlingExecutor = Executors.newSingleThreadExecutor();
+    final JobExceptionHandler exceptionHandler = mock(JobExceptionHandler.class);
+
+    try {
+      final CamundaClientConfiguration source =
+          new CamundaClientConfiguration() {
+            @Override
+            public URI getGrpcAddress() {
+              return URI.create("https://custom-grpc:12345");
+            }
+
+            @Override
+            public URI getRestAddress() {
+              return URI.create("https://custom-rest:54321");
+            }
+
+            @Override
+            public String getDefaultTenantId() {
+              return "custom-tenant";
+            }
+
+            @Override
+            public List<String> getDefaultJobWorkerTenantIds() {
+              return Arrays.asList("tenant-a", "tenant-b");
+            }
+
+            @Override
+            public TenantFilter getDefaultJobWorkerTenantFilter() {
+              return TenantFilter.ASSIGNED;
+            }
+
+            @Override
+            public int getNumJobWorkerExecutionThreads() {
+              return 7;
+            }
+
+            @Override
+            public int getDefaultJobWorkerMaxJobsActive() {
+              return 99;
+            }
+
+            @Override
+            public String getDefaultJobWorkerName() {
+              return "custom-worker";
+            }
+
+            @Override
+            public Duration getDefaultJobTimeout() {
+              return Duration.ofMinutes(42);
+            }
+
+            @Override
+            public Duration getDefaultJobPollInterval() {
+              return Duration.ofSeconds(3);
+            }
+
+            @Override
+            public Duration getDefaultMessageTimeToLive() {
+              return Duration.ofMinutes(30);
+            }
+
+            @Override
+            public Duration getDefaultRequestTimeout() {
+              return Duration.ofSeconds(77);
+            }
+
+            @Override
+            public Duration getDefaultRequestTimeoutOffset() {
+              return Duration.ofSeconds(5);
+            }
+
+            @Override
+            public String getCaCertificatePath() {
+              return "/custom/ca.pem";
+            }
+
+            @Override
+            public CredentialsProvider getCredentialsProvider() {
+              return credentialsProvider;
+            }
+
+            @Override
+            public Duration getKeepAlive() {
+              return Duration.ofSeconds(90);
+            }
+
+            @Override
+            public List<ClientInterceptor> getInterceptors() {
+              return Collections.singletonList(interceptor);
+            }
+
+            @Override
+            public List<AsyncExecChainHandler> getChainHandlers() {
+              return Collections.singletonList(chainHandler);
+            }
+
+            @Override
+            public JsonMapper getJsonMapper() {
+              return jsonMapper;
+            }
+
+            @Override
+            public String getOverrideAuthority() {
+              return "custom-authority";
+            }
+
+            @Override
+            public int getMaxMessageSize() {
+              return 10 * ONE_MB;
+            }
+
+            @Override
+            public int getMaxMetadataSize() {
+              return 32 * ONE_KB;
+            }
+
+            @Override
+            public ScheduledExecutorService jobWorkerExecutor() {
+              return schedulingExecutor;
+            }
+
+            @Override
+            public boolean ownsJobWorkerExecutor() {
+              return true;
+            }
+
+            @Override
+            public ScheduledExecutorService jobWorkerSchedulingExecutor() {
+              return schedulingExecutor;
+            }
+
+            @Override
+            public boolean ownsJobWorkerSchedulingExecutor() {
+              return true;
+            }
+
+            @Override
+            public ExecutorService jobHandlingExecutor() {
+              return handlingExecutor;
+            }
+
+            @Override
+            public boolean ownsJobHandlingExecutor() {
+              return true;
+            }
+
+            @Override
+            public boolean getDefaultJobWorkerStreamEnabled() {
+              return true;
+            }
+
+            @Override
+            public boolean useDefaultRetryPolicy() {
+              return true;
+            }
+
+            @Override
+            public JobExceptionHandler getDefaultJobWorkerExceptionHandler() {
+              return exceptionHandler;
+            }
+
+            @Override
+            public boolean preferRestOverGrpc() {
+              return false;
+            }
+
+            @Override
+            public int getMaxHttpConnections() {
+              return 42;
+            }
+
+            @Override
+            public boolean useClientSideLoadBalancing() {
+              return true;
+            }
+          };
+
+      // when
+      final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+      builder.applyEnvironmentVariableOverrides(false);
+      builder.withConfiguration(source);
+
+      // then — every property should match the source
+      assertThat(builder.getGrpcAddress()).isEqualTo(source.getGrpcAddress());
+      assertThat(builder.getRestAddress()).isEqualTo(source.getRestAddress());
+      assertThat(builder.getDefaultTenantId()).isEqualTo(source.getDefaultTenantId());
+      assertThat(builder.getDefaultJobWorkerTenantIds())
+          .isEqualTo(source.getDefaultJobWorkerTenantIds());
+      assertThat(builder.getDefaultJobWorkerTenantFilter())
+          .isEqualTo(source.getDefaultJobWorkerTenantFilter());
+      assertThat(builder.getNumJobWorkerExecutionThreads())
+          .isEqualTo(source.getNumJobWorkerExecutionThreads());
+      assertThat(builder.getDefaultJobWorkerMaxJobsActive())
+          .isEqualTo(source.getDefaultJobWorkerMaxJobsActive());
+      assertThat(builder.getDefaultJobWorkerName()).isEqualTo(source.getDefaultJobWorkerName());
+      assertThat(builder.getDefaultJobTimeout()).isEqualTo(source.getDefaultJobTimeout());
+      assertThat(builder.getDefaultJobPollInterval()).isEqualTo(source.getDefaultJobPollInterval());
+      assertThat(builder.getDefaultMessageTimeToLive())
+          .isEqualTo(source.getDefaultMessageTimeToLive());
+      assertThat(builder.getDefaultRequestTimeout()).isEqualTo(source.getDefaultRequestTimeout());
+      assertThat(builder.getDefaultRequestTimeoutOffset())
+          .isEqualTo(source.getDefaultRequestTimeoutOffset());
+      assertThat(builder.getCaCertificatePath()).isEqualTo(source.getCaCertificatePath());
+      assertThat(builder.getKeepAlive()).isEqualTo(source.getKeepAlive());
+      assertThat(builder.getOverrideAuthority()).isEqualTo(source.getOverrideAuthority());
+      assertThat(builder.getMaxMessageSize()).isEqualTo(source.getMaxMessageSize());
+      assertThat(builder.getMaxMetadataSize()).isEqualTo(source.getMaxMetadataSize());
+      assertThat(builder.getMaxHttpConnections()).isEqualTo(source.getMaxHttpConnections());
+      assertThat(builder.preferRestOverGrpc()).isEqualTo(source.preferRestOverGrpc());
+      assertThat(builder.getDefaultJobWorkerStreamEnabled())
+          .isEqualTo(source.getDefaultJobWorkerStreamEnabled());
+      assertThat(builder.useDefaultRetryPolicy()).isEqualTo(source.useDefaultRetryPolicy());
+      assertThat(builder.useClientSideLoadBalancing())
+          .isEqualTo(source.useClientSideLoadBalancing());
+      // non-property fields
+      assertThat(builder.getCredentialsProvider()).isSameAs(credentialsProvider);
+      assertThat(builder.getJsonMapper()).isSameAs(jsonMapper);
+      assertThat(builder.getInterceptors()).containsExactly(interceptor);
+      assertThat(builder.getChainHandlers()).containsExactly(chainHandler);
+      assertThat(builder.jobWorkerSchedulingExecutor()).isSameAs(schedulingExecutor);
+      assertThat(builder.ownsJobWorkerSchedulingExecutor()).isTrue();
+      assertThat(builder.jobHandlingExecutor()).isSameAs(handlingExecutor);
+      assertThat(builder.ownsJobHandlingExecutor()).isTrue();
+      assertThat(builder.getDefaultJobWorkerExceptionHandler()).isSameAs(exceptionHandler);
+    } finally {
+      schedulingExecutor.shutdown();
+      handlingExecutor.shutdown();
+    }
   }
 }
