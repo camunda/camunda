@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -88,6 +89,9 @@ public record AuditLogInfo(
           Map.entry(GroupIntent.DELETED, AuditLogOperationType.DELETE),
           Map.entry(GroupIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
           Map.entry(GroupIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN),
+
+          // HistoryDeletion
+          Map.entry(HistoryDeletionIntent.DELETED, AuditLogOperationType.DELETE),
 
           // Incident
           Map.entry(IncidentIntent.RESOLVED, AuditLogOperationType.RESOLVE),
@@ -165,6 +169,7 @@ public record AuditLogInfo(
           Map.entry(ValueType.DECISION_REQUIREMENTS, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.DECISION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.FORM, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.HISTORY_DELETION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.INCIDENT, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.JOB, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(
@@ -207,6 +212,7 @@ public record AuditLogInfo(
           Map.entry(ValueType.ROLE, AuditLogEntityType.ROLE),
           Map.entry(ValueType.TENANT, AuditLogEntityType.TENANT),
           Map.entry(ValueType.FORM, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.HISTORY_DELETION, AuditLogEntityType.RESOURCE),
           Map.entry(ValueType.PROCESS, AuditLogEntityType.RESOURCE),
           Map.entry(ValueType.RESOURCE, AuditLogEntityType.RESOURCE),
           Map.entry(ValueType.USER_TASK, AuditLogEntityType.USER_TASK));

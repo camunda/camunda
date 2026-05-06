@@ -439,6 +439,222 @@ public class AuditLogResourceOperationsIT {
   }
 
   // ========================================================================================
+  // History Deletion Tests
+  // ========================================================================================
+
+  @Test
+  void shouldTrackProcessInstanceHistoryDeletion(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - a completed process instance
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(SIMPLE_PROCESS, "pi-delete-test.bpmn")
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var processInstance =
+        client
+            .newCreateProcessInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    // wait for process instance to complete
+    Awaitility.await("Process instance completed")
+        .atMost(Duration.ofSeconds(10))
+        .until(
+            () ->
+                client
+                    .newProcessInstanceSearchRequest()
+                    .filter(f -> f.processInstanceKey(processInstanceKey))
+                    .send()
+                    .join()
+                    .items()
+                    .stream()
+                    .anyMatch(
+                        pi ->
+                            pi.getProcessInstanceKey() == processInstanceKey
+                                && pi.getState()
+                                    .equals(
+                                        io.camunda.client.api.search.enums.ProcessInstanceState
+                                            .COMPLETED)));
+
+    // when - delete the process instance history
+    client.newDeleteProcessInstanceCommand(processInstanceKey).send().join();
+
+    // then - wait for audit log entry for the history deletion
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+            AuditLogOperationTypeEnum.DELETE,
+            String.valueOf(processInstanceKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = findByEntityKey(auditLogItems, String.valueOf(processInstanceKey));
+    assertThat(auditLog.getEntityKey()).isEqualTo(String.valueOf(processInstanceKey));
+    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.PROCESS_INSTANCE);
+    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.DELETE);
+    assertThat(auditLog.getEntityDescription()).isEqualTo("PROCESS_INSTANCE");
+    assertThat(auditLog.getProcessDefinitionId()).isEqualTo(PROCESS_ID);
+    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
+  }
+
+  @Test
+  void shouldTrackProcessDefinitionHistoryDeletion(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - a deployed process
+    final var processId = "auditLogProcessDefDeleteTest";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("testTask"))
+            .endEvent()
+            .done();
+
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(process, "process-def-delete-test.bpmn")
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var processDefinitionKey = deployment.getProcesses().getFirst().getProcessDefinitionKey();
+
+    // when - delete the process definition with history
+    client.newDeleteResourceCommand(processDefinitionKey).deleteHistory(true).send().join();
+
+    // then - wait for audit log entry for the history deletion
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.RESOURCE,
+            AuditLogOperationTypeEnum.DELETE,
+            String.valueOf(processDefinitionKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    // Find the audit log entry for PROCESS_DEFINITION deletion (entity description)
+    final var historyDeletionLog =
+        auditLogItems.stream()
+            .filter(al -> "PROCESS_DEFINITION".equals(al.getEntityDescription()))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "No history deletion audit log found for process definition"));
+
+    assertThat(historyDeletionLog.getEntityKey()).isEqualTo(String.valueOf(processDefinitionKey));
+    assertThat(historyDeletionLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.RESOURCE);
+    assertThat(historyDeletionLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.DELETE);
+    assertThat(historyDeletionLog.getEntityDescription()).isEqualTo("PROCESS_DEFINITION");
+    assertThat(historyDeletionLog.getProcessDefinitionId()).isEqualTo(processId);
+    assertThat(historyDeletionLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(historyDeletionLog.getTenantId()).isEqualTo(TENANT_A);
+  }
+
+  @Test
+  void shouldTrackDecisionRequirementsHistoryDeletion(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - a deployed decision requirements
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("decisions/decision_model_1.dmn")
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var decisionRequirementsKey =
+        deployment.getDecisionRequirements().getFirst().getDecisionRequirementsKey();
+    final var decisionDefinitionId =
+        deployment.getDecisionRequirements().getFirst().getDmnDecisionRequirementsId();
+
+    // when - delete the decision requirements with history
+    client.newDeleteResourceCommand(decisionRequirementsKey).deleteHistory(true).send().join();
+
+    // then - wait for audit log entry for the history deletion
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.RESOURCE,
+            AuditLogOperationTypeEnum.DELETE,
+            String.valueOf(decisionRequirementsKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    // Find the audit log entry for DECISION_REQUIREMENTS deletion (entity description)
+    final var historyDeletionLog =
+        auditLogItems.stream()
+            .filter(al -> "DECISION_REQUIREMENTS".equals(al.getEntityDescription()))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new AssertionError(
+                        "No history deletion audit log found for decision requirements"));
+
+    assertThat(historyDeletionLog.getEntityKey())
+        .isEqualTo(String.valueOf(decisionRequirementsKey));
+    assertThat(historyDeletionLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.RESOURCE);
+    assertThat(historyDeletionLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.DELETE);
+    assertThat(historyDeletionLog.getEntityDescription()).isEqualTo("DECISION_REQUIREMENTS");
+    assertThat(historyDeletionLog.getDecisionDefinitionId()).isEqualTo(decisionDefinitionId);
+    assertThat(historyDeletionLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(historyDeletionLog.getTenantId()).isEqualTo(TENANT_A);
+  }
+
+  @Test
+  void shouldTrackDecisionInstanceHistoryDeletion(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - a decision instance
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("decisions/decision_model_1.dmn")
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+
+    final var decisionId = deployment.getDecisions().getFirst().getDmnDecisionId();
+
+    final var decisionEvaluation =
+        client
+            .newEvaluateDecisionCommand()
+            .decisionId(decisionId)
+            .tenantId(TENANT_A)
+            .variables("{\"input1\": \"A\"}")
+            .send()
+            .join();
+
+    final var decisionEvaluationKey = decisionEvaluation.getDecisionEvaluationKey();
+
+    // when - delete the decision instance history
+    client.newDeleteDecisionInstanceCommand(decisionEvaluationKey).send().join();
+
+    // then - wait for audit log entry for the history deletion
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.DECISION,
+            AuditLogOperationTypeEnum.DELETE,
+            String.valueOf(decisionEvaluationKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = findByEntityKey(auditLogItems, String.valueOf(decisionEvaluationKey));
+    assertThat(auditLog.getEntityKey()).isEqualTo(String.valueOf(decisionEvaluationKey));
+    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.DECISION);
+    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.DELETE);
+    assertThat(auditLog.getEntityDescription()).isEqualTo("DECISION_INSTANCE");
+    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
+  }
+
+  // ========================================================================================
   // Helper Methods
   // ========================================================================================
 
