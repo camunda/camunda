@@ -9,7 +9,7 @@ package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
+import io.camunda.tasklist.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.TasklistProperties;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

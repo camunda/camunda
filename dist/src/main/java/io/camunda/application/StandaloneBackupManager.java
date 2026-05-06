@@ -7,16 +7,10 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
@@ -83,15 +77,7 @@ public class StandaloneBackupManager implements CommandLineRunner {
         .web(WebApplicationType.NONE)
         .logStartupInfo(true)
         .sources(
-            // Unified Configuration classes
-            UnifiedConfigurationHelper.class,
-            UnifiedConfiguration.class,
-            SearchEngineConnectPropertiesOverride.class,
-            SearchEngineIndexPropertiesOverride.class,
-            SearchEngineRetentionPropertiesOverride.class,
-            SearchEngineSchemaManagerPropertiesOverride.class,
-            GatewayRestPropertiesOverride.class,
-            // ---
+            UnifiedConfigurationModule.class,
             BackupManagerConfiguration.class,
             StandaloneBackupManager.class,
             NativeSearchClientsConfiguration.class,
