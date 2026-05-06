@@ -31,6 +31,7 @@ import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.client.api.worker.JobWorkerMetrics;
+import io.camunda.client.impl.Loggers;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import org.slf4j.Logger;
 
 public final class JobWorkerBuilderImpl
     implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3 {
@@ -49,6 +51,7 @@ public final class JobWorkerBuilderImpl
       BackoffSupplier.newBackoffBuilder().maxDelay(Duration.ofMinutes(1).toMillis()).build();
   public static final Duration DEFAULT_STREAM_TIMEOUT = Duration.ofHours(8);
   public static final Duration DEFAULT_STREAM_INACTIVITY_TIMEOUT = Duration.ofMinutes(10);
+  private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
   private final JobClient jobClient;
   private final ScheduledExecutorService scheduledExecutor;
   private final ExecutorService jobHandlingExecutor;
@@ -237,12 +240,10 @@ public final class JobWorkerBuilderImpl
       if (streamInactivityTimeout != null) {
         ensurePositive("streamInactivityTimeout", streamInactivityTimeout);
         if (streamTimeout != null && streamInactivityTimeout.compareTo(streamTimeout) >= 0) {
-          throw new IllegalArgumentException(
-              "streamInactivityTimeout ("
-                  + streamInactivityTimeout
-                  + ") must be strictly less than streamTimeout ("
-                  + streamTimeout
-                  + ")");
+          LOG.info(
+              "streamInactivityTimeout ({}) is not less than streamTimeout ({}); inactivity-based stream recreation will not fire because streamTimeout will always preempt it.",
+              streamInactivityTimeout,
+              streamTimeout);
         }
       }
 
