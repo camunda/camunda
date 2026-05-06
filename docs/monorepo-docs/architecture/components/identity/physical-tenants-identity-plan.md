@@ -31,11 +31,30 @@ This document covers **only the identity (authN/authZ) sub-slice** of that effor
 
 ### 1.3 What this slice does **not** deliver
 
-- Per-PT Raft groups, broker data layout, secondary storage isolation, document-store isolation — owned by the Strong Tenant Isolation epic.
-- Per-PT login chains, tenant-aware OIDC login picker, `/sso-callback/{physicalTenantId}`, RP-initiated logout per PT — owned by a follow-up "Webapps PT routing" slice.
-- gRPC `Camunda-Physical-Tenant` header handling — owned by a sibling slice of the same epic. Touch-points are documented (§13.2) so we ship a unified `PhysicalTenantContext` API the gRPC interceptor can later re-use.
+- Per-PT Raft groups, broker data layout, document-store isolation — owned by the Strong Tenant Isolation epic. **Per-PT primary and secondary storage are a hard prerequisite for this slice** because per-PT authorization data is seeded into and read from per-PT storage (see §6.1).
 - Persisted cluster-admin grant store, audit, dynamic PT/IdP management APIs, Hub policy distribution.
 - Bulk migration tooling from existing 8.9 logical-tenant authorizations.
+- **Per-PT BASIC auth.** BASIC is cluster-level only (cluster-admin break-glass on `/v2/cluster/**`). PTs cannot declare a `users` block — startup validation rejects non-empty PT user lists.
+- **Cross-PT authorization.** `ROLE_CLUSTER_ADMIN` grants access to cluster-scoped resources only (`/v2/cluster/**`); it does **not** grant access to PT-scoped resources. The topology aggregator's per-PT fan-out uses a strictly read-only marker authority that PT-side services recognise **only** for topology, not for any other operation. See §6.4 (no-cross-tenant rule).
+- **Per-PT session cookie isolation** — sessions remain on the single `camunda-session` cookie. Per-PT cookie scoping (so two browser tabs can hold sessions for different PTs simultaneously) is a UX improvement deferred from this slice.
+
+#### What this slice **does** deliver (mandatory)
+
+- **REST AUTH surfaces:**
+  - `/v2/physical-tenants/{physicalTenantId}/**` per-PT bearer-token filter chain.
+  - `/v2/cluster/**` cluster-admin filter chain (matcher only — specific controllers like topology, backup, restore are owned by **their respective slices**, not this one). The cluster-admin chain authenticates and authorises any controller mounted under that prefix uniformly.
+- **gRPC parity:** A new gRPC interceptor at the Zeebe gateway reads the request header `Camunda-Physical-Tenant` (gRPC metadata) and resolves the PT for the call. Reuses `PhysicalTenantRegistry` and the per-PT JWT converter — single source of truth for PT auth across REST and gRPC.
+- **Browser login/logout:** tenant-aware OIDC login flow per the §6.4 decision (Option A or Option B). **Mandatory in 8.10** — Option C ("defer login") is **off the table** per the requirements clarification.
+- **Cluster-level authentication:** OIDC claim-based + BASIC fallback for cluster-admin break-glass.
+- **Per-PT seeding into per-PT primary + secondary storage** at startup (uses Strong Isolation's per-PT storage beans).
+
+#### Explicitly **not** in this slice (consumers of our auth chain, owned by other slices)
+
+- `/v2/cluster/topology` controller — owned by the gateway/topology team. They mount the controller under `/v2/cluster/**`; our cluster-admin chain authenticates and authorises the call.
+- `/v2/cluster/backup`, `/v2/cluster/restore` — owned by the backup/restore sibling slice of epic #3430.
+- Any future `/v2/cluster/*` endpoint — same pattern.
+
+The contract this slice provides to those consumers: **any controller mounted under `/v2/cluster/**` automatically gets cluster-admin authentication and authorisation, claim-based or BASIC fallback, with the no-cross-tenant rule enforced at the chain level.**
 
 ---
 
@@ -76,9 +95,9 @@ Two new chains are inserted **before** the legacy `/v2/**` chain so that:
 
 ### 3.1 YAML shape
 
-All PT configuration lives under `camunda.security.physical-tenants.*`. The map key **is** the `physicalTenantId` (deliberately distinct from the existing logical-tenant `tenantId` so the two cannot be confused). No separate `id` field. IdP assignments live inside each PT entry — no separate `engine-idp-assignments` mapping.
+All PT configuration lives at the **top level** under `camunda.physical-tenants.*`. The map key **is** the `physicalTenantId` (deliberately distinct from the existing logical-tenant `tenantId` so the two cannot be confused). No separate `id` field. Each PT carries its own `security` sub-block under `camunda.physical-tenants.{id}.security` — and other slices (storage, backup, broker-client) will own their own sibling sub-blocks (`camunda.physical-tenants.{id}.secondary-storage`, `camunda.physical-tenants.{id}.backup`, etc.) without colliding with security. The placeholder javadoc in `search/search-client-connect/.../TenantConnectConfigResolver.java` referencing `camunda.physical-tenants` is consistent with this layout — the search slice's per-PT storage config sits alongside `security` under the same `{id}`.
 
-> **Note on coexistence with other slices.** This identity slice introduces `camunda.security.physical-tenants.*` for security configuration only. Sibling slices of epic #3430 (secondary storage, backup repositories, broker-client wiring) will need their own per-PT properties for their own concerns. The placeholder javadoc in `search/search-client-connect/.../TenantConnectConfigResolver.java` already references a non-security `camunda.physical-tenants` tree as a forward placeholder for that purpose. The shared concept across slices is the **set of physical tenant ids** — owned by `PhysicalTenantRegistry` (this slice). A future cross-slice agreement on a unified top-level location for non-security PT properties is **out of scope here** and tracked as an open question (§11).
+This shape **resolves the cross-slice coordination open question** (previously §11.6): one top-level PT tree, multiple per-PT sub-blocks each owned by its respective slice. The set of PT ids is single-source-of-truth via `PhysicalTenantRegistry` regardless of which slices are configured.
 
 ```yaml
 camunda:
@@ -110,7 +129,10 @@ camunda:
       value: cluster-admin                    # required claim value
       # Optional break-glass via BASIC; users come from camunda.security.initialization.users
 
-    # Cluster-level seeded identities — also acts as the implicit "default" PT for legacy callers
+    # Cluster-level identities — IN-MEMORY ONLY (no secondary-storage seeding in PT mode).
+    # Used solely for cluster-admin BASIC break-glass auth on /v2/cluster/**.
+    # In legacy mode (no `camunda.physical-tenants` block configured), this still seeds
+    # into secondary storage as in 8.9 — backwards compatibility for single-tenant deployments.
     initialization:
       users:
         - username: cluster-admin
@@ -121,12 +143,14 @@ camunda:
           name: Cluster Admin
           users: [cluster-admin]
 
-    # NEW: Physical Tenants — map keyed by tenant id
-    physical-tenants:
-      default:
-        name: Default
-        idps: [default]
-        initialization:
+  # NEW: Physical Tenants — top-level, map keyed by tenant id.
+  # Each PT carries its own `security` block under `camunda.physical-tenants.{id}.security`.
+  physical-tenants:
+    default:
+      name: Default
+      security:                               # PT-scoped security block
+        idps: [default]                        # IdPs trusted by this PT
+        initialization:                        # SEEDED into PT primary + secondary storage
           roles:
             - roleId: default-engine-admin
               name: Default Engine Admin
@@ -134,7 +158,7 @@ camunda:
             - groupId: default-developers
               name: Default Engine Developers
               roles: [default-engine-admin]
-          tenants:
+          tenants:                             # logical tenants inside this physical tenant
             - tenantId: default
               name: Default
               roles: [default-engine-admin]
@@ -145,9 +169,11 @@ camunda:
               resourceType: PROCESS_DEFINITION
               resourceId: "*"
               permissions: [READ, CREATE, UPDATE, DELETE]
+          # NOTE: no `users` block — BASIC auth is cluster-level only.
 
-      risk-production:
-        name: Risk Team Production
+    risk-production:
+      name: Risk Team Production
+      security:
         idps: [default, provider-a]
         initialization:
           roles:
@@ -182,20 +208,26 @@ camunda:
 | Spring binding | Works | Works (native `Map<String, X>` binding) |
 | Forward compatibility (renaming) | Friction-free | Same |
 
-### 3.3 Why nest under `camunda.security.*`
+### 3.3 Why a top-level `camunda.physical-tenants` tree (not nested under `camunda.security`)
 
-- It **is** security configuration. Nesting keeps a single tree and avoids a third top-level `@ConfigurationProperties` registration.
-- It piggybacks on the existing `CamundaSecurityProperties extends SecurityConfiguration` binder in `dist/src/main/java/io/camunda/application/commons/security/CamundaSecurityConfiguration.java` — **no new property class needs `@EnableConfigurationProperties`**.
-- It collapses what was previously two trees (`camunda.physical-tenants` + `camunda.identity.engine-idp-assignments`) into one.
+Per the requirements clarification: PT data is shared across slices (security, secondary storage, backup, broker-client). Nesting under `camunda.security` would force every other slice to either piggyback on the security tree (semantically wrong) or duplicate the PT id list under their own root (drift risk). A top-level `camunda.physical-tenants.{id}` with **per-slice sub-blocks** (`security`, `secondary-storage`, `backup`, …) keeps:
+
+- one set of PT ids (registry-enforced single source of truth);
+- per-slice ownership of sub-trees (no cross-slice contention);
+- consistency with the placeholder javadoc in `TenantConnectConfigResolver`.
+
+This requires a new `@ConfigurationProperties("camunda.physical-tenants")` registration in `dist/`, distinct from the existing `CamundaSecurityProperties extends SecurityConfiguration` binder. Cost: one new `@EnableConfigurationProperties` line. Benefit: clean cross-slice tree.
 
 ### 3.4 Why each PT carries `InitializationConfiguration` (and only that)
 
-Each PT entry contains an instance of the **existing** `io.camunda.security.configuration.InitializationConfiguration`. We do **not** allow per-PT `authentication` / `authorizations` (the global `AuthorizationsConfiguration` flag, distinct from the `authorizations` list inside `InitializationConfiguration`) overrides:
-- IdPs are cluster-level by requirement.
+Each PT's `security` block contains an `idps: List<String>` and an `initialization: InitializationConfiguration` (existing type, reused). We do **not** allow per-PT `authentication.method` overrides:
 - Authentication method (BASIC vs OIDC) is cluster-level by requirement.
-- Per-PT auth-method override would silently footgun (e.g. PT declared OIDC while cluster is BASIC).
+- BASIC is **explicitly cluster-level only** (used for cluster-admin break-glass auth on `/v2/cluster/**`); a PT cannot declare a `users` block. This is enforced as a startup validation rule (§7).
+- OIDC is the only authentication method that operates per-PT — and it operates by selecting which IdPs the PT trusts via the `idps` list.
 
-This is the smallest reuse surface that satisfies the issue — operators get full control of *who* and *what* per PT, while *how to authenticate* stays cluster-uniform.
+The reused `InitializationConfiguration` carries `roles`, `groups`, `tenants` (logical), `authorizations`, `mappingRules`, and `defaultRoles`. Its `users` field **must be empty per PT** — startup validation rejects non-empty PT user lists.
+
+This is the smallest reuse surface that satisfies the requirement — operators get full control of *who* (via roles/groups/mapping-rules) and *what* (via authorizations) per PT, while *how to authenticate* stays cluster-uniform.
 
 ---
 
@@ -310,7 +342,7 @@ classDiagram
 
 **Location:** `security/security-core/src/main/java/io/camunda/security/configuration/PhysicalTenantConfiguration.java`
 
-**Purpose:** The bound type for each entry under `camunda.security.physical-tenants.{physicalTenantId}`. Reuses `InitializationConfiguration` verbatim so that the existing `ConfiguredUser`/`ConfiguredRole`/`ConfiguredAuthorization`/`ConfiguredGroup`/`ConfiguredTenant`/`ConfiguredMappingRule` types are reused.
+**Purpose:** The bound type for each entry under `camunda.physical-tenants.{physicalTenantId}.security`. Reuses `InitializationConfiguration` verbatim so that the existing `ConfiguredUser`/`ConfiguredRole`/`ConfiguredAuthorization`/`ConfiguredGroup`/`ConfiguredTenant`/`ConfiguredMappingRule` types are reused.
 
 ```java
 public class PhysicalTenantConfiguration {
@@ -651,57 +683,22 @@ SecurityFilterChain clusterAdminSecurityFilterChain(
 
 The existing legacy `/v2/**` chain (`@Order(ORDER_DEFAULT_API)` after re-spacing) is **untouched**; calls without a PT prefix continue to behave exactly as 8.9.
 
-### 4.10 `ClusterTopologyController` (NEW)
+### 4.10 Cluster-admin chain matcher — contract for downstream controllers
 
-**Location:** `zeebe/gateway-rest/src/main/java/io/camunda/zeebe/gateway/rest/controller/ClusterTopologyController.java`
+This slice does **not** ship any `/v2/cluster/*` controllers — those are owned by their respective slices (gateway/topology team for `/v2/cluster/topology`; backup/restore team for `/v2/cluster/backup` and `/v2/cluster/restore`; future cluster-ops slices for additions).
 
-**Purpose:** Implements `/v2/cluster/topology` without touching the existing `TopologyController`.
+What this slice **does** ship is the **`clusterAdminSecurityFilterChain` with `securityMatcher("/v2/cluster/**")`** (§4.9 / §5.1) plus the contract:
 
-```java
-@CamundaRestController
-@RequestMapping("/v2/cluster")
-public final class ClusterTopologyController {
+> Any controller mounted under `/v2/cluster/**` inherits, automatically and without additional wiring:
+> - **JWT authentication** against the configured cluster-admin IdP set (`camunda.security.cluster-admin.providers`).
+> - **Claim-based authorisation** — request is authenticated only if the token carries the configured claim/value.
+> - **HTTP BASIC fallback** for break-glass against the in-memory `camunda.security.initialization.users`.
+> - **`ROLE_CLUSTER_ADMIN` granted authority** on success.
+> - **No-cross-tenant enforcement** (§6.3) — any service the controller invokes must reject the marker authority for non-cluster-scoped operations.
 
-  private final TopologyServices topologyServices;
-  private final PhysicalTenantRegistry registry;
+Downstream controllers (topology, backup, restore) consume that contract; they ship in their own slices and PRs.
 
-  @CamundaGetMapping(path = "/topology")
-  public CompletableFuture<ResponseEntity<Object>> getClusterTopology() {
-    final var perTenant = registry.allTenantIds().stream()
-        .collect(toMap(Function.identity(), this::topologyFor));
-
-    return CompletableFuture.allOf(perTenant.values().toArray(new CompletableFuture[0]))
-        .thenApply(v -> ResponseEntity.ok(toClusterTopologyResponse(perTenant)));
-  }
-
-  private CompletableFuture<TopologyOrError> topologyFor(final String physicalTenantId) {
-    // For 8.10, every PT shares the same in-process TopologyServices.
-    // The shape is forward-compatible with later per-PT BrokerClient instances
-    // (Strong Isolation epic) — only this method body changes then.
-    return RequestExecutor
-        .executeServiceMethod(topologyServices::getTopology, ResponseMapper::toTopologyResponse)
-        .handle((ok, ex) -> ex == null
-            ? new TopologyOrError.Ok(ok)
-            : new TopologyOrError.Failed(physicalTenantId, ex.getMessage()));
-  }
-}
-```
-
-**Decisions in this controller:**
-- The existing `/v2/topology` endpoint (in `TopologyController`) is **not modified**. It remains the single-topology endpoint and continues to satisfy 8.9 callers and the default-PT case.
-- Per-PT failure is data, not a 5xx — clients can render a "DEGRADED" PT in the cluster view.
-- For 8.10 the controller delegates to the same `TopologyServices` for every PT (Strong Isolation hasn't shipped). The response shape is the forward-compatible one (`{ physicalTenantId → topology }`), so when per-PT broker clients arrive only the `topologyFor(...)` method body changes.
-
-#### 4.10.1 The same pattern applies to `/v2/cluster/backup` (and any future `/v2/cluster/*`)
-
-Cluster-wide backup follows the **identical pattern** that this slice establishes for topology, and is delivered by the per-PT backup/restore sibling slice of epic #3430:
-
-- **Auth wiring is already in place.** The `clusterAdminSecurityFilterChain` matcher (`/v2/cluster/**`) covers every cluster-scoped endpoint uniformly. No new filter chain, no new resolver — adding `/v2/cluster/backup` is a controller-only addition from the security perspective.
-- **Same controller shape.** A `ClusterBackupController` will be a thin fan-out over `registry.allTenantIds()`, returning `{ physicalTenantId → BackupOrError }`. Per-PT backup repository selection (today: shared `/actuator/backupRuntime`; tomorrow: per-PT repository per the Strong Isolation epic) lives behind that controller and is owned by the backup slice.
-- **Failure surfaces as data.** A PT whose backup fails returns `{ status: DEGRADED, error: "..." }` in its slot — the cluster-wide call returns 200 if at least one PT could be processed.
-- **Backwards compatibility.** The existing `/actuator/backupRuntime` and `/actuator/backupHistory` continue to work unchanged for 8.9 callers and operators. The new `/v2/cluster/backup` is additive.
-
-**This slice does not deliver `ClusterBackupController` itself** — only the security wiring it will plug into. We document the pattern here so the backup-slice team has a clear contract: any controller they mount under `/v2/cluster/**` inherits cluster-admin authentication for free, and is expected to follow the same fan-out / per-PT-error shape that `ClusterTopologyController` establishes.
+The existing `TopologyController` (`/v1/topology`, `/v2/topology`) is **untouched** by this slice. Whether or not it is later replaced or augmented by a `/v2/cluster/topology` controller is a decision for the gateway team, not this slice.
 
 ### 4.11 Files at a glance
 
@@ -717,9 +714,10 @@ Cluster-wide backup follows the **identical pattern** that this slice establishe
 | `authentication/.../config/PhysicalTenantJwtAuthenticationConverterFactory.java` | **NEW** |
 | `authentication/.../config/PhysicalTenantPathExtractionFilter.java` | **NEW** |
 | `authentication/.../config/ClusterAdminClaimAuthorizer.java` | **NEW** |
-| `zeebe/gateway-rest/.../controller/ClusterTopologyController.java` | **NEW** |
-| `zeebe/gateway-rest/.../controller/TopologyController.java` | **UNTOUCHED** |
-| `dist/.../security/CamundaSecurityConfiguration.java` | No change needed — `CamundaSecurityProperties extends SecurityConfiguration` already binds new fields. |
+| `zeebe/gateway-rest/.../controller/TopologyController.java` | **UNTOUCHED** (and **not** replaced — `/v2/cluster/topology` controller is owned by the gateway slice if/when it ships, not by this slice). |
+| `zeebe/gateway/.../interceptors/PhysicalTenantGrpcInterceptor.java` | **NEW** — reads the `Camunda-Physical-Tenant` request metadata header, resolves the PT, applies per-PT auth via the same converter the REST chain uses. |
+| `dist/.../security/CamundaSecurityConfiguration.java` | Add a new `@Bean PhysicalTenantRegistry`; register the new `@ConfigurationProperties("camunda.physical-tenants")` bean. |
+| `dist/.../physicaltenants/CamundaPhysicalTenantsConfiguration.java` | **NEW** — `@ConfigurationProperties("camunda.physical-tenants")` registration for the `Map<String, PhysicalTenantConfiguration>` binding. |
 
 ---
 
@@ -825,23 +823,53 @@ sequenceDiagram
 
 ## 6. Authorization Model
 
-### 6.1 Where authorities come from
+### 6.1 Where authorities come from — storage model (cluster ↔ PT inverted)
 
-`InitializationConfiguration.authorizations` (a `List<ConfiguredAuthorization>`) maps `(ownerType, ownerId, resourceType, resourceId, permissions)`. The existing `TokenClaimsConverter` already translates a JWT plus a `SecurityConfiguration` into a `CamundaAuthentication` carrying the right authorities. **The PT chain reuses that pipeline** — see §4.6 — by passing in the PT-scoped `SecurityConfiguration` projection.
+The two surfaces use **opposite** storage strategies, by requirement:
+
+| Surface | Storage | Source of truth at runtime |
+|---|---|---|
+| Cluster level (`/v2/cluster/**`, cluster-admin BASIC, login-flow IdP/issuer validation) | **In-memory only** | `camunda.security.initialization.users` + `camunda.security.cluster-admin.{providers,claim,value}` read on each request — no seeding, no DB lookup |
+| Per-PT (`/v2/physical-tenants/{id}/**`, webapp routes under `/{id}/...`, gRPC with PT header) | **Primary + secondary storage**, isolated per PT | `camunda.physical-tenants.{id}.security.initialization.{roles, groups, tenants, authorizations, mappingRules}` is **seeded once at startup** into that PT's primary + secondary storage; runtime reads go through the existing `MembershipService` / `ResourceAccessProvider` against that PT's storage |
+
+**Cluster level — in-memory.** No `MembershipService` or `ResourceAccessProvider` involvement. The cluster-admin chain validates the JWT (claim check) or BASIC credentials (in-memory user lookup) directly against the configured YAML. This is correct because cluster-scoped resources are few (topology, backup, restore, IdP definitions, PT definitions) and their authorization is binary (`ROLE_CLUSTER_ADMIN` or not).
+
+**Per-PT — full storage pipeline.** Each PT runs the existing 8.9 seeder against its own storage at startup (Strong Isolation provides per-PT `BrokerClient`, per-PT secondary-storage indices/schema). The per-PT JWT converter then resolves authorities through:
+
+1. `OidcTokenAuthenticationConverter` — JWT decoded (cluster-level issuer-aware decoder).
+2. `TokenClaimsConverter` — resolves principal (user / mapping-rule match) **against PT's primary storage**.
+3. `MembershipService` (existing) — reads roles/groups **from PT's secondary storage**.
+4. `ResourceAccessProvider` (existing) — reads authorizations **from PT's secondary storage**.
+
+The `PhysicalTenantJwtAuthenticationConverterFactory` (§4.6) is reframed: it does not build a "PT-scoped `SecurityConfiguration` projection" anymore. Instead, it selects the **per-PT `MembershipService` / `ResourceAccessProvider` beans** from a registry-backed map, keyed on the URL's PT id. Strong Isolation provides those beans (one per configured PT); the identity slice consumes them.
+
+**Backwards-compatibility (no PTs configured).** The registry synthesizes a single `default` PT whose `initialization` references the cluster-level `camunda.security.initialization`. The 8.9 single-storage seeder runs unchanged against the cluster's secondary storage. Cluster-level YAML is then **both** the in-memory cluster-admin source and the seed source for the synthetic default PT. This is the legacy path; runtime behavior is byte-identical to 8.9.
 
 ### 6.2 Cluster-admin
 
-Claim-based, stateless. The configured triple `(providers, claim, value)` is the only gate. BASIC fallback uses `camunda.security.initialization.users` filtered to whoever is mapped to a role with `resourceType: CLUSTER` `permissions: *`. No new identity store.
+Claim-based, stateless, **in-memory**. The configured triple `(providers, claim, value)` is the only JWT gate. BASIC fallback resolves users from `camunda.security.initialization.users` (in-memory list) filtered to those mapped to a role with `resourceType: CLUSTER`. No DB lookup. No identity store.
 
-### 6.3 Cross-tenant aggregator
+The cluster-admin grant authorises **only** cluster-scoped resources — `/v2/cluster/**`. It does **not** grant access to `/v2/physical-tenants/{id}/**` data; see §6.4 (no-cross-tenant rule).
 
-`/v2/cluster/topology` runs under `ROLE_CLUSTER_ADMIN`. Per-PT topology fan-out is in-process; visibility is the cluster-admin's by definition. When per-PT authorization granularity becomes a requirement (e.g. "cluster-admin who can only see PT-X topology"), introduce a `tenantAuthorizer.canRead(actor, physicalTenantId)` seam in the controller — explicitly out of scope for 8.10.
+### 6.3 No-cross-tenant authorization rule (mandatory)
+
+`ROLE_CLUSTER_ADMIN` authorises **only** cluster-scoped operations (anything mounted under `/v2/cluster/**`). It does **not** authorise reads, writes, or any other operation on PT-scoped resources (`/v2/physical-tenants/{id}/**`, gRPC calls with a PT header, webapp routes under `/{id}/...`).
+
+Cluster-scoped controllers that fan out to per-PT operations (e.g. a future `/v2/cluster/topology` controller in the gateway slice, a future `/v2/cluster/backup` controller in the backup slice) will need a **bounded marker authority** to invoke per-PT services. The contract this slice imposes on those consumers:
+
+- Each cluster-scoped operation grants its **own narrowly-scoped marker authority** for the duration of the per-PT call (e.g. `ROLE_INTERNAL_TOPOLOGY_READ` for topology, `ROLE_INTERNAL_BACKUP_RUN` for backup), in a `try/finally` that restores the `SecurityContextHolder` after the call returns.
+- PT-side `ResourceAccessProvider` whitelists each marker **only** for its specific code path. Any other entry point rejects it as unauthenticated.
+- Markers are **single-purpose**, not generic "internal cluster admin can do anything" authorities. A compromised cluster-admin token can read topology across PTs (intended) but **cannot** read process-instance data, decision data, secrets, or any other PT-scoped resource.
+
+This rule is enforceable by `ResourceAccessProvider` regardless of which slice ships the cluster-scoped controller. Identity slice's job is to make the rule **obligatory** — any cluster-scoped controller that ignores it is incorrect.
 
 ### 6.4 Login and logout — 🚨 DECISION REQUIRED 🚨 (CTA)
 
-> **Status: open.** Three options below — **A**, **B**, **C** — each is a viable path. The team needs to pick one before tickets for the login surface are cut. Until a choice is made, this slice ships **Option C** (deferred) by default; that is the current pushed state of this document.
+> **Status: open.** Login/logout is **mandatory in 8.10** per the requirements clarification — Option C ("defer login") has been **removed**. The remaining decision is **A vs B**.
 >
-> **Action required (CTA):** Identity team + Spring Security reviewers please leave a `+1` on the option you prefer in the PR thread, or push back with a fourth alternative. Decision deadline: **before M2c starts** (see §14).
+> **Action required (CTA):** Identity team + Spring Security reviewers please leave a `+1` on **A** or **B** in the PR thread, or push back with a fourth alternative. Decision deadline: **before M2c starts** (see §14).
+>
+> The "no cross-tenant authorization" rule (§6.3) constrains both options the same way — neither A nor B grants cross-PT access via the cluster-admin role.
 
 PR [camunda/camunda#51959](https://github.com/camunda/camunda/pull/51959) (Ana Vinogradova, marked "PoC, DO NOT MERGE") demonstrates a tenant-aware login picker bound to the OIDC session via `?tenant=` query parameter on `/oauth2/authorization/{idpId}`. A cross-functional review (Spring Security, Java/architecture, devil's advocate, TDD) surfaced **three security defects** in the PoC's specific mechanism that block adopting it as-is:
 
@@ -860,7 +888,7 @@ These are **structural to the choice of HTTP session as the binding store** — 
 - The success handler reads `OAuth2LoginAuthenticationToken.getAuthorizationExchange().getAuthorizationRequest().getAttribute("ptId")` and grants `SimpleGrantedAuthority("PT_" + ptId)` to the authenticated principal.
 - Replace `TenantBindingEnforcementFilter` with `authorizeHttpRequests(a -> a.requestMatchers("/{ptId}/**").access(hasAuthorityForUrlPt))`. The custom filter goes away; Spring's `AuthorizationManager` handles the gating via `ExceptionTranslationFilter` (proper 401/403 rendering through the configured handlers).
 - For Bearer traffic on webapp paths: either reject Bearer entirely on `oidcWebappSecurity` (force JWT through `physicalTenantApiSecurityFilterChain` only) or require the JWT to carry a PT claim that matches the URL.
-- Move properties from PoC's `camunda.identity.engine-idp-assignments` to ADR-0007's `camunda.security.physical-tenants.{id}.idps`.
+- Move properties from PoC's `camunda.identity.engine-idp-assignments` to ADR-0007's `camunda.physical-tenants.{id}.security.idps`.
 - Rename PoC's `Tenant…` classes to `PhysicalTenant…` for grep-ability and to avoid confusion with the existing logical-tenant `Tenant` types.
 - Split the PoC's `OAuth2RefreshTokenFilter` `SecurityContextLogoutHandler` fix to a separate PR — it's an unrelated pre-existing bug.
 
@@ -890,98 +918,43 @@ These are **structural to the choice of HTTP session as the binding store** — 
 
 **Compatibility with API surface:** ideal — converges API and webapp authentication/authorization on the same token-claim mechanism. The per-PT JWT converter (§4.6) becomes the single source of authority mapping for both surfaces.
 
-#### Option C — Defer (current pushed state)
+#### ~~Option C — Defer (REMOVED per requirements clarification)~~
 
-**Approach.** Ship 8.10 identity API surface (`/v2/physical-tenants/...`, `/v2/cluster/...`) with login/logout **unchanged** from 8.9. Webapps remain cluster-uniform consumers of legacy `/v2/...`. PT-aware login is a follow-up slice.
-
-**Resolves:** unblocks 8.10 ship of the API surface immediately. No security risk because the PoC is not adopted.
-
-**Does not resolve:** anything UX-side. Browser users see the cluster-uniform IdP picker (every IdP, regardless of PT relevance). Webapps cannot consume PT-scoped APIs. PR #51959's work sits on a branch and is re-evaluated post-8.10.
-
-**Effort:** zero additional in this slice. Picks up the deferred follow-up's full cost (~10-15 days) at a later release.
+> Option C ("defer login/logout to a follow-up slice") was removed when login/logout was confirmed mandatory for 8.10. Reference only — not selectable.
 
 #### Comparison summary
 
-| Dimension | A — refined PoC | B — claim-based RBAC | C — defer |
-|---|---|---|---|
-| Resolves CSRF-on-GET | ✅ via `state` | ✅ no session binding | n/a |
-| Resolves Bearer bypass | ✅ chain decision | ✅ no enforcement filter | n/a |
-| Resolves multi-tab race | ✅ per-flow `state` | ✅ no per-tab state | n/a |
-| Multi-PT UX (no logout) | ❌ logout to switch | ✅ sidebar / freely | ❌ |
-| Webapp → PT API works | ⚠ needs BFF token relay | ✅ one token, both surfaces | ❌ broken |
-| IdP claim requirement | none | **PT memberships claim required** | none |
-| Effort from PoC | ~5-7 days | ~10-14 days | 0 |
-| Spring-native | ✅ uses `state` correctly | ✅ uses `authorizeHttpRequests` | ✅ untouched |
-| Risk of regression | low (incremental on PoC) | medium (bigger surface) | none |
+| Dimension | A — refined PoC | B — claim-based RBAC |
+|---|---|---|
+| Resolves CSRF-on-GET | ✅ via `state` | ✅ no session binding |
+| Resolves Bearer bypass | ✅ chain decision | ✅ no enforcement filter |
+| Resolves multi-tab race | ✅ per-flow `state` | ✅ no per-tab state |
+| Multi-PT UX (no logout) | ❌ logout to switch | ✅ sidebar / freely |
+| Webapp → PT API works | ⚠ needs BFF token relay | ✅ one token, both surfaces |
+| IdP claim requirement | none | **PT memberships claim required** |
+| Effort from PoC | ~5-7 days | ~10-14 days |
+| Spring-native | ✅ uses `state` correctly | ✅ uses `authorizeHttpRequests` |
+| Risk of regression | low (incremental on PoC) | medium (bigger surface) |
 
 #### Bias / recommendation
 
 Spring Security specialist recommends **A** as a minimum bar (closes all three defects with smallest delta). Devil's advocate recommends **B** because session-binding is the wrong primitive and A patches around it forever; **B** is also the only option that closes the API/webapp coexistence problem **inside** the identity slice rather than punting to "webapps will figure out a BFF later". The plan author (this document) leans **B** for the same reason; ticket-cutting team should weigh against the customer-side IdP-claim requirement.
 
-If timeline pressure rules out B, ship A — but explicitly document that the API/webapp BFF gap is unresolved.
+#### What this slice keeps regardless of the A-vs-B decision
 
-If timeline pressure rules out A *and* B, ship C — and the API surface still ships independently in 8.10; the login slice slots into a later release without redoing API work.
+The API surface (`/v2/physical-tenants/{id}/**` chain, cluster-admin chain, `/v2/cluster/topology`, `/v2/cluster/backup` pattern, gRPC `Camunda-Physical-Tenant` interceptor, `PhysicalTenantRegistry`, `PhysicalTenantConfiguration`, validation rules, `ClusterAdminConfiguration`) is **independent of this decision** and proceeds to ticket-cutting now. Whichever option wins for the login side reuses the same registry and the same property tree (`camunda.physical-tenants.{id}.security.*`).
 
-#### What this slice keeps regardless of the decision
+> **The chosen option's full design (sequence diagrams, component tables, filter-chain wiring, reserved-ID alignment, OAuth2RefreshTokenFilter logout fix split-out) is documented inline once A or B is selected.** Until selected, the milestone breakdown (§14) and decision log (§15) record the option-dependent effort and the reviewers' bias.
 
-The API surface (`/v2/physical-tenants/{id}/**` chain, cluster-admin chain, `/v2/cluster/topology`, `/v2/cluster/backup` pattern, `PhysicalTenantRegistry`, `PhysicalTenantConfiguration`, validation rules, `ClusterAdminConfiguration`) is **independent of this decision** and proceeds to ticket-cutting now. Whichever option wins for the login side reuses the same registry and the same property tree (`camunda.security.physical-tenants.*`).
+#### What this slice rejects regardless of A/B
 
----
+These are PoC behaviors the team will **not** ship under either A or B, even though the PoC implemented them:
 
-> **Below this line is the documented "Option C" current behavior** — what ships if no decision is made. It should be replaced with the chosen option's design once the team picks A or B.
-
-#### Option C (default while pending) — login/logout unchanged from 8.9
-
-The browser login/logout flow is **not modified by this slice** until a decision is made. Every existing component keeps its current behavior:
-
-| Concern | 8.10 behavior in this slice |
-|---|---|
-| `/login` page | Existing cluster-uniform OIDC picker. Renders **every** IdP defined under `camunda.security.authentication.oidc.providers` — there is no per-PT filtering yet. |
-| Login picker filter | Spring's `DefaultLoginPageGeneratingFilter` over the existing single `ClientRegistrationRepository`. Untouched. |
-| Auth request resolver | Existing `ClientAwareOAuth2AuthorizationRequestResolver`. Untouched. |
-| Redirect URI | Single `/sso-callback` registered at every IdP — no PT segment in the path. |
-| Session cookie | Single global `camunda-session` (the existing `WebSecurityConfig.SESSION_COOKIE` constant). One cookie per browser, regardless of PT. |
-| `/logout` | Existing webapp logout chain. Existing `CamundaOidcLogoutSuccessHandler` for RP-initiated OIDC logout. Untouched. |
-| Cluster-admin BASIC fallback | New, but stateless — `httpBasic()` on the `clusterAdminSecurityFilterChain`, no session involved. Break-glass only. |
-
-#### Why this is safe
-
-The PT chain (`physicalTenantApiSecurityFilterChain`) is configured with `oauth2ResourceServer().jwt()` and **no** `oauth2Login`, **no** `formLogin`, and **no** `httpBasic`. The request flow it accepts is therefore **bearer-token only**. This means the two surfaces don't intersect:
-
-1. **Bearer-token clients** (Java client, Connectors runtime, M2M services, integrations) hit `/v2/physical-tenants/{physicalTenantId}/...` directly with an IdP-issued access token. The PT chain authenticates and authorizes them using the per-PT converter (§4.6). No login flow involved.
-2. **Browser users** still log in through the unchanged `/login` page, get a session cookie, and use **webapps + legacy `/v2/...` endpoints** (default-PT chain). They cannot directly call PT-scoped endpoints from a session — those calls return `401 Unauthorized` because there is no `Authorization: Bearer …` header. This is **intentional** for 8.10: webapps remain cluster-uniform consumers and have no UX path to PT-scoped APIs yet.
-3. **Cluster admin** uses either a JWT carrying the configured claim (stateless) or HTTP BASIC against `camunda.security.initialization.users` (also stateless). Neither involves the browser login flow.
-
-The result: in 8.10, login/logout serves webapps and legacy APIs exactly as in 8.9. PT-scoped traffic is bearer-only. The two flows are decoupled by design.
-
-#### What this slice deliberately does **not** do
-
-- **No tenant-aware login picker.** A user logging in still sees every cluster-level IdP in the picker, even IdPs not assigned to any PT they care about. This is a UX gap but not a security gap — the PT chain still rejects tokens issued by an unassigned IdP at request time (§5.3).
-- **No per-PT redirect URI.** All IdPs continue to register a single `/sso-callback` redirect URI. Microsoft Entra (which doesn't allow wildcard redirect URIs) is unaffected — there is still exactly one redirect URI to register per IdP.
-- **No per-PT session cookie scoping.** A single `camunda-session` cookie covers the whole host. Two browser tabs cannot be logged into different PTs simultaneously today, but that limitation only matters once webapps gain PT routing — which is the next slice.
-- **No per-PT logout.** `POST /logout` invalidates the single global session. There is no notion of "log out of PT A but stay in PT B" yet.
-
-#### What the Webapps PT routing slice (sibling of #3430) will add
-
-When that slice lands, it owns:
-
-1. **`/login/{physicalTenantId}`** — a tenant-aware picker that filters `ProvidersConfiguration` by `physicalTenantRegistry.idpsForTenant(id)`. Reuses `PhysicalTenantRegistry` (this slice).
-2. **`/sso-callback/{physicalTenantId}`** — per-PT redirect URI. Microsoft Entra customers will register N callback URIs (one per PT) since Entra does not support wildcard redirect URIs; Keycloak/Okta/Auth0 customers can use a wildcard.
-3. **Per-PT session cookie scoping** — either `Path=/{physicalTenantId}` on a shared name, or per-PT cookie names (`camunda-session-{physicalTenantId}`). Path-scoped is cleaner if all PT webapp URLs live under `/{physicalTenantId}/...`.
-4. **Per-PT logout** — `/{physicalTenantId}/logout` invalidates only that PT's session and triggers RP-initiated OIDC logout against the PT's IdP.
-5. **Session → bearer bridging on PT API calls.** Two viable approaches; the slice will pick one:
-   - **(a) Webapp-side**: webapp JS extracts the access token from the session and forwards it as `Authorization: Bearer …` on `/v2/physical-tenants/{id}/...` calls. PT chain stays bearer-only; no change to this slice's filter chain.
-   - **(b) Filter-chain-side**: the PT chain accepts session-cookie auth as a second mechanism by adding `oauth2Login()` on a per-PT chain (or composing with the webapp chain). Heavier; requires lifting the "no `oauth2Login` on PT chain" constraint set here.
-   The webapps slice picks based on whether the webapps are server-rendered or client-rendered.
-
-#### What this slice reserves so the follow-up doesn't have to redo work
-
-- **`PhysicalTenantContext.currentPhysicalTenantId()`** — the request-scoped holder (§13.1). Populated by the REST `PhysicalTenantPathExtractionFilter` here; will also be populated by the future webapp/login filter and gRPC interceptor. One source of truth for "current PT" across protocols and surfaces.
-- **`PhysicalTenantRegistry.idpsForTenant(id)`** — the data the future tenant-aware picker filters on.
-- **`PhysicalTenantJwtAuthenticationConverterFactory.forTenant(id)`** — reused by the future webapp chain so session-authenticated users hitting PT paths get the same authority mapping that bearer-token clients get today.
-- **Reserved-ID list in `DefaultPhysicalTenantRegistry`** — already includes `login`, `logout`, `oauth2`, `sso-callback`, `post-logout` so a PT id can never collide with a webapp login route.
-
-The webapps slice is therefore an **additive overlay** — none of the wiring this slice ships needs to be unwound.
+- **HTTP-session attribute as the binding store.** Replaced by OIDC `state` (Option A) or by per-request RBAC against token claims (Option B).
+- **Custom `TenantBindingEnforcementFilter` after `AuthorizationFilter`.** Replaced by `authorizeHttpRequests` matchers that go through `ExceptionTranslationFilter` (proper 401/403 rendering through the configured handlers).
+- **Bearer pass-through on the OIDC webapp chain.** Bearer is rejected on `oidcWebappSecurity` so JWT traffic is **only** routed through `physicalTenantApiSecurityFilterChain`. Closes the bypass.
+- **Picker hosted in Identity admin webapp.** Per the Java specialist's recommendation, the picker UI is hosted as a standalone shell (or B's claim-based RBAC drops the picker entirely in favour of cluster-uniform login + post-login PT navigation).
+- **`OAuth2RefreshTokenFilter` `SecurityContextLogoutHandler` fix bundled in this PR.** Split to a separate small PR — it's an unrelated pre-existing bug.
 
 ---
 
@@ -991,12 +964,15 @@ The webapps slice is therefore an **additive overlay** — none of the wiring th
 |---|---|---|
 | Tenant id (map key) matches `SecurityConfiguration.idValidationPattern` | `DefaultPhysicalTenantRegistry.validate()` | `IllegalStateException` listing the offending id |
 | Tenant id (map key) ∉ `RESERVED_IDS` | Same | `IllegalStateException` listing reserved IDs |
-| Every `idps[*]` references a key under `authentication.oidc.providers` | Same | `IllegalStateException` listing unknown IdP keys per PT |
+| Tenant id (map key) is not all-numeric | Same | `IllegalStateException` (PoC-confirmed; collides with user-task id route) |
+| Every `idps[*]` references a key under `camunda.security.authentication.oidc.providers` | Same | `IllegalStateException` listing unknown IdP keys per PT |
 | OIDC mode + at least one PT defined ⇒ every PT has ≥1 IdP | Same | `IllegalStateException` listing PTs with empty `idps` |
-| `clusterAdmin.providers[*]` references a key under `authentication.oidc.providers` | Same | `IllegalStateException` listing unknown IdP keys |
+| **PT `initialization.users` is empty.** BASIC auth is cluster-level only — PTs cannot declare local password users. | Same | `IllegalStateException` naming the PT(s) with non-empty user lists |
+| `clusterAdmin.providers[*]` references a key under `camunda.security.authentication.oidc.providers` | Same | `IllegalStateException` listing unknown IdP keys |
 | `clusterAdmin.claim` non-blank when `clusterAdmin.providers` non-empty | Same | `IllegalStateException` |
+| **At least one PT is configured OR legacy mode is active** (single-tenant 8.9 BC) | Same | Acceptable — both paths are valid; no failure |
 
-Duplicate-id validation is **structurally impossible** thanks to the `Map`-keyed shape. No cross-tree mismatch validation is needed (everything sits in one tree).
+Duplicate-id validation is **structurally impossible** thanks to the `Map`-keyed shape.
 
 ---
 
@@ -1004,7 +980,7 @@ Duplicate-id validation is **structurally impossible** thanks to the `Map`-keyed
 
 > **Contract:** A vanilla 8.9 configuration starts on 8.10 with no behavior change.
 
-When `camunda.security.physical-tenants` is empty (legacy mode):
+When `camunda.physical-tenants` is empty (legacy mode):
 
 - The registry synthesizes one `default` entry whose `initialization` **references** (not copies) `camunda.security.initialization`. Operator updates to the cluster-level initialization continue to flow.
 - The synthetic `default` entry's `idps` is the full set of keys under `authentication.oidc.providers`.
@@ -1088,15 +1064,16 @@ One module: `authentication/src/test/java/io/camunda/authentication/physicaltena
 
 | # | Risk | Mitigation in this slice |
 |---|---|---|
-| 1 | Bean-count explosion with N PTs (one converter per PT, cached) | Lazy-build, single `JwtDecoder`, no per-PT chain. Bounded to one `Converter` per accessed PT. Documented limit: 50 PTs (per Strong Isolation decisions). |
-| 2 | Persisted-vs-in-memory contradiction | Decision: **in-memory only**. `InitializationConfiguration` per PT is read-on-request, never seeded into secondary storage. |
-| 3 | "Skip everything else" interpreted too literally | Scoped narrowly: skip global *authentication mechanisms*, keep CSRF/headers/firewall. Documented in §1.2. |
-| 4 | Reserved-ID list drift as new top-level paths land | Documented constant in `DefaultPhysicalTenantRegistry`; covered by a unit test that fails when an undocumented top-level segment is introduced. (Optional follow-up: build-time scanner.) |
-| 5 | Cluster-admin claim has no revocation/audit | Out of scope for 8.10. Documented as a known gap; follow-up ticket to evaluate a minimal grant-on-first-use record. |
-| 6 | Microsoft Entra wildcard redirect-URI limitation | N/A in this slice — login flow not modified. Risk transfers to the Webapps PT routing follow-up. |
-| 7 | `/v2/cluster/topology` shape locked in early | Mitigated by returning `{ physicalTenantId → topology }` from day one — same shape regardless of legacy or PT mode. Per-PT body changes when Strong Isolation lands. The same shape is expected for `/v2/cluster/backup`. |
-| 8 | Long-poll / `OAuth2AuthorizedClientRepository` cross-PT bleed | Out of scope here (no webapp login chain change). Documented as a dependency on Strong Isolation. |
-| 9 | gRPC parity drift | Touch-points listed in §13.2; `PhysicalTenantRegistry` is the single source of truth so the future gRPC interceptor reuses it. |
+| 1 | Bean-count explosion with N PTs (one converter per PT, cached) | Lazy-build, single `JwtDecoder`, no per-PT chain. Bounded to one `Converter` + one `MembershipService`/`ResourceAccessProvider` per accessed PT. Documented limit: 50 PTs (per Strong Isolation decisions). |
+| 2 | Storage model split (cluster in-memory, PT primary+secondary) | Decision per requirements clarification: **cluster level is in-memory; PT level is seeded into per-PT primary + secondary storage**. The 8.9 cluster-level seeder runs unchanged in legacy mode (no PTs) for backwards compatibility. The Strong Isolation epic provides the per-PT storage primitives this slice consumes. |
+| 3 | Strong Isolation dependency (per-PT storage prerequisite) | This slice's runtime authorization depends on per-PT primary + secondary storage shipped by the Strong Isolation epic. Documented as a hard prerequisite (§1.3). If Strong Isolation slips for 8.10, identity slice falls back to legacy mode (single-storage, single synthetic default PT). |
+| 4 | "Skip everything else" interpreted too literally | Scoped narrowly: skip global *authentication mechanisms*, keep CSRF/headers/firewall. Documented in §1.2. |
+| 5 | Reserved-ID list drift as new top-level paths land | Documented constant in `DefaultPhysicalTenantRegistry`; covered by a unit test that fails when an undocumented top-level segment is introduced. (Build-time scanner over `@RequestMapping` annotations is a documented follow-up — Java specialist's recommendation.) |
+| 6 | Cluster-admin claim has no revocation/audit | Out of scope for 8.10. Documented as a known gap; follow-up ticket to evaluate a minimal grant-on-first-use record. |
+| 7 | Microsoft Entra wildcard redirect-URI limitation | Resolved by Option A (single shared `/sso-callback` + `state`-based PT binding) and by Option B (cluster-uniform login + per-request RBAC). Both options sidestep per-PT redirect URI registration. |
+| 8 | `/v2/cluster/topology` shape locked in early | Mitigated by returning `{ physicalTenantId → topology }` from day one — same shape regardless of legacy or PT mode. Per-PT body changes when Strong Isolation lands. The same shape is expected for `/v2/cluster/backup`. |
+| 9 | Long-poll / `OAuth2AuthorizedClientRepository` cross-PT bleed | Per "no cross-tenant authorization" rule (§6.3 / §1.3): cluster-admin authorities cannot access PT-scoped data; the topology aggregator's marker authority is whitelisted only for read-only topology. Long-polling on PT chains is per-PT-scoped by construction (the converter resolves authorities against per-PT storage). |
+| 10 | gRPC parity in same release | gRPC `Camunda-Physical-Tenant` interceptor is **mandatory in this slice** (M2-grpc, see §14). Reuses `PhysicalTenantRegistry` and `PhysicalTenantJwtAuthenticationConverterFactory` so REST and gRPC converge on the same per-PT auth mapping. |
 
 ---
 
@@ -1106,8 +1083,10 @@ One module: `authentication/src/test/java/io/camunda/authentication/physicaltena
 2. **`MultiTenancyConfiguration` interaction.** Logical tenants live inside a PT. If an operator sets `multiTenancy.checksEnabled=true` cluster-wide, does it apply per PT? Recommend yes (no behavioural change), confirm with engine team.
 3. **Cluster-admin BASIC fallback ergonomics.** Should we warn at startup when the BASIC `cluster-admin` user keeps the default password? (Existing pattern for `demo` user — apply the same.)
 4. **`clusterAdmin.value` as a list?** Some IdPs ship multiple admin claim values. Do we accept `value: [...]` or just `value: cluster-admin`? Recommend single-value for 8.10, multi-value as a follow-up.
-5. **`/v2/cluster/topology` response schema sign-off.** Must be agreed with the API stewards before implementation. The same shape (`{ physicalTenantId → ResultOrError }`) is expected to apply to `/v2/cluster/backup` (sibling slice).
-6. **Cross-slice config-tree coordination.** This slice introduces `camunda.security.physical-tenants.*` for identity. Sibling slices need their own per-PT config (secondary storage, backup repositories, broker-client wiring) — the placeholder javadoc in `TenantConnectConfigResolver` already references `camunda.physical-tenants` for non-security use. The set of physical tenant ids must remain **a single source of truth**. Options for resolution: (a) cross-slice agreement that `camunda.security.physical-tenants` and `camunda.physical-tenants` coexist as parallel trees keyed by the same set of ids (registry validates consistency); (b) a unified `camunda.physical-tenants.{id}.{security,storage,backup,...}` tree at a future epic-wide refactoring boundary. This slice ships option (a) implicitly; option (b) is a follow-up that does not block 8.10.
+5. ~~`/v2/cluster/topology` response schema sign-off.~~ **No longer relevant** — that controller is not delivered by this slice (see §1.3, §4.10). Schema decisions move to the gateway/topology slice.
+6. ~~Cross-slice config-tree coordination.~~ **Resolved** by the new property layout: `camunda.physical-tenants.{id}.security.{...}` (this slice) coexists with `camunda.physical-tenants.{id}.secondary-storage.{...}`, `…backup.{...}`, etc. (sibling slices). One tree, multiple per-PT sub-blocks, single source of truth for PT ids via `PhysicalTenantRegistry`.
+7. **`§6.4` login-flow option.** Pick **A** or **B** — see §6.4 CTA. Mandatory before M2c starts.
+8. **Strong Isolation prerequisite for per-PT storage.** This slice consumes per-PT `MembershipService` / `ResourceAccessProvider` beans from a registry-backed map. The Strong Isolation epic provides those beans. Confirm 8.10 sequencing: Strong Isolation must ship together with or ahead of identity, OR identity falls back to legacy single-storage mode (see §6.1 BC paragraph).
 
 ---
 
@@ -1162,13 +1141,12 @@ return RequestExecutor.executeServiceMethod(
 
 > Estimates are rough engineering days assuming one engineer per stream, with the existing test infrastructure available.
 >
-> **The login/logout option (A / B / C) chosen in §6.4 changes the total significantly** — the milestone set forks at M2c. Use the per-option totals below.
+> **The login/logout option (A or B) chosen in §6.4 changes the total** — the milestone set forks at M2c. Option C ("defer login") was removed when login/logout was confirmed mandatory for 8.10. **gRPC parity is mandatory** in M2-grpc. **`/v2/cluster/topology` and `/v2/cluster/backup` controllers are not in scope** (M3 was removed) — this slice ships the cluster-admin filter-chain *matcher* and the no-cross-tenant rule, downstream slices ship the controllers.
 >
-> | Option | API surface (M0–M3) | Login surface (M2c) | Tests + docs (M4–M5) | **Total (eng-days)** |
-> |---|---|---|---|---|
-> | **A — refined PoC** | ~9 | **~5-7** | ~5 | **~19-21** |
-> | **B — claim-based RBAC** | ~9 | **~10-14** | ~6 | **~25-29** |
-> | **C — defer login** | ~9 | **0** | ~4 | **~13** |
+> | Option | API auth surface (M0–M2b) | gRPC parity (M2-grpc) | Login surface (M2c) | Tests + docs (M4–M5) | **Total (eng-days)** |
+> |---|---|---|---|---|---|
+> | **A — refined PoC** | ~7 | ~3 | ~5-7 | ~5 | **~20-22** |
+> | **B — claim-based RBAC** | ~7 | ~3 | ~10-14 | ~6 | **~26-30** |
 >
 > Calendar duration depends on engineer count — see the parallelisation map at the end of this section.
 
@@ -1208,17 +1186,31 @@ return RequestExecutor.executeServiceMethod(
 
 ### M2b — Cluster-admin chain (depends on M1, ~2 days, parallel with M2a)
 
-**Goal:** `/v2/cluster/**` enforces claim-based admin with BASIC fallback.
+**Goal:** `/v2/cluster/**` enforces claim-based admin with BASIC fallback. **In-memory only** — no DB lookup, no seeder.
 
-- [ ] `ClusterAdminClaimAuthorizer`.
+- [ ] `ClusterAdminClaimAuthorizer` reading `camunda.security.cluster-admin.{providers, claim, value}` in-memory.
+- [ ] BASIC fallback resolving against `camunda.security.initialization.users` in-memory (no `MembershipService` involvement at the cluster level).
 - [ ] `clusterAdminSecurityFilterChain` `@Bean` in `WebSecurityConfig`.
+- [ ] Verify cluster-admin grant does **not** authorise `/v2/physical-tenants/{id}/**` paths (no-cross-tenant rule, §6.3) — slice test asserts 403 when a cluster-admin token hits a PT path.
 - [ ] Unit + slice tests (§9.2, §9.3).
 
-**Exit criteria:** slice tests green for the cluster-admin positive and negative scenarios.
+**Exit criteria:** slice tests green for cluster-admin positive/negative; cluster-admin cannot reach PT paths even with a valid claim.
 
-### M2c — Login surface (depends on M1, parallel with M2a/M2b) — **option-dependent**
+### M2-grpc — gRPC `Camunda-Physical-Tenant` interceptor (depends on M1, ~3 days, parallel with M2a/M2b/M2c) — **mandatory**
 
-> **Skip this milestone entirely under Option C.** Pick **M2c-A** or **M2c-B** based on the §6.4 decision.
+**Goal:** gRPC traffic to the Zeebe gateway resolves PT from the `Camunda-Physical-Tenant` metadata header and applies per-PT authentication and authorization in lockstep with the REST surface.
+
+- [ ] New `PhysicalTenantGrpcInterceptor` (`io.camunda.zeebe.gateway.interceptors`) reads `Camunda-Physical-Tenant` from gRPC `Metadata`. Missing/unknown id → `Status.UNAUTHENTICATED` (or `NOT_FOUND` for unknown PT).
+- [ ] Interceptor consumes the same `PhysicalTenantRegistry` and the same `PhysicalTenantJwtAuthenticationConverterFactory` that REST uses — single source of truth for PT lookup and authority mapping. No duplicated logic.
+- [ ] Wire the resolved `CamundaAuthentication` into the gRPC `Context` so downstream services see the same authority shape as REST.
+- [ ] gRPC chain rejects bearer tokens whose `iss` is not in the targeted PT's `idps` (parity with REST cross-PT replay rejection).
+- [ ] Unit + integration tests covering: missing header, unknown header, valid header + valid token, valid header + token from unassigned IdP, missing token (401).
+
+**Exit criteria:** Java client (gRPC under the hood) authenticates against `/v2/physical-tenants/risk-production/...` REST endpoint AND the equivalent gRPC operation (e.g., `ActivateJobs`) with the same token + header — both succeed. Cross-PT token replay rejected on both protocols.
+
+### M2c — Login surface (depends on M1, parallel with M2a/M2b/M2-grpc) — **option-dependent (A or B; C removed)**
+
+> Pick **M2c-A** or **M2c-B** based on the §6.4 decision.
 
 #### M2c-A — Refined PoC: bind PT in OIDC `state` (~5-7 engineering days)
 
@@ -1229,7 +1221,7 @@ return RequestExecutor.executeServiceMethod(
 - [ ] Replace PoC's `TenantBindingAuthenticationSuccessHandler` with a converter that reads `OAuth2LoginAuthenticationToken.getAuthorizationExchange().getAuthorizationRequest().getAttribute("ptId")` and grants `SimpleGrantedAuthority("PT_" + ptId)`.
 - [ ] **Delete** `TenantBindingEnforcementFilter` — replace with `authorizeHttpRequests(a -> a.requestMatchers("/{physicalTenantId}/**").access(hasUrlMatchingAuthority))` so Spring's `AuthorizationManager` runs through `ExceptionTranslationFilter`.
 - [ ] **Reject Bearer on `oidcWebappSecurity`** — `oauth2ResourceServer.jwt(...)` is removed from this chain (force JWT through `physicalTenantApiSecurityFilterChain` only). Closes the bypass.
-- [ ] Migrate properties from PoC's `camunda.identity.engine-idp-assignments` to `camunda.security.physical-tenants.{id}.idps` per ADR-0007. Drop the PoC's standalone `PhysicalTenantIdpRegistry`; consume the unified `PhysicalTenantRegistry` (M1).
+- [ ] Migrate properties from PoC's `camunda.identity.engine-idp-assignments` to `camunda.physical-tenants.{id}.security.idps` per ADR-0007. Drop the PoC's standalone `PhysicalTenantIdpRegistry`; consume the unified `PhysicalTenantRegistry` (M1).
 - [ ] Rename PoC's `Tenant…` classes → `PhysicalTenant…` (`PhysicalTenantAuthenticationEntryPoint`, `PhysicalTenantOAuth2AuthorizationRequestResolver`, `PhysicalTenantBindingSuccessHandler`, `PhysicalTenantLoginController`).
 - [ ] Reserved-ID alignment: registry's reserved set absorbs the webapp-side additions and all-numeric rejection from §6.4.6.
 - [ ] **Split out the PoC's `OAuth2RefreshTokenFilter` `SecurityContextLogoutHandler` fix as a separate PR** — it's an unrelated pre-existing bug.
@@ -1264,48 +1256,36 @@ return RequestExecutor.executeServiceMethod(
 
 **Exit criteria:** logged-in user with `pt_memberships=[risk-production, default]` in their token can navigate freely between `/risk-production/...` and `/default/...` without re-login; webapp JS calls to `/v2/physical-tenants/risk-production/...` succeed via forwarded access token; user without a PT in their claim hitting `/that-pt/...` gets 403; cluster-uniform login is the only login flow.
 
-#### M2c-C — Defer login surface (0 engineering days in this slice)
+### M3 — ~~Cluster topology aggregator~~ (REMOVED — not an identity concern)
 
-**Goal:** Ship 8.10 identity API surface only. Browser login/logout untouched from 8.9.
+Per the requirements clarification, `/v2/cluster/topology` and `/v2/cluster/backup` controllers are **not** delivered by this slice. The cluster-admin chain matcher `/v2/cluster/**` from M2b authenticates and authorises any controller mounted under it — the controllers themselves ship in their respective slices (gateway/topology team for topology; backup/restore team for backup). Identity slice's contract is the auth wiring; the cross-PT no-authority-leak rule (§6.3) is enforceable from `ResourceAccessProvider` regardless of who ships the controller.
 
-- [ ] Document the deferral and the dependent slice (Webapps PT routing in a future release).
-- [ ] No code changes; PR #51959 sits on its branch unmerged.
+What remains for this slice from the original M3:
+- [ ] In M2b, write a slice test asserting that an arbitrary controller mounted under `/v2/cluster/**` and decorated with `hasRole("CLUSTER_ADMIN")` correctly receives the cluster-admin auth from the chain.
+- [ ] Document in the consumer contract (§4.10) that markers must be single-purpose and `ResourceAccessProvider`-whitelisted per-call.
 
-**Exit criteria:** the API surface ships in 8.10; PR #51959 is referenced as input for the future webapp-routing slice; the §6.4 CTA is closed with the decision recorded.
-
-### M3 — Cluster topology aggregator (depends on M2b, ~2 days)
-
-**Goal:** `/v2/cluster/topology` returns aggregated topology shape; the same pattern is reusable for `/v2/cluster/backup` (delivered by the backup sibling slice — see §4.10.1).
-
-- [ ] `ClusterTopologyController` (in-process delegation to `TopologyServices`).
-- [ ] Response schema sign-off (open question §11.5) — same shape will apply to `/v2/cluster/backup`.
-- [ ] Slice tests.
-- [ ] Confirm `TopologyController` (`/v2/topology`) is untouched and still passes its existing tests.
-- [ ] Confirm the cluster-admin chain matcher (`/v2/cluster/**`) covers the backup endpoint with no further security wiring needed when the backup slice lands its controller.
-
-**Exit criteria:** legacy `/v2/topology` unchanged; new `/v2/cluster/topology` returns aggregated map; per-PT failure surfaces as data, not 5xx; backup-slice team has a documented contract for plugging `/v2/cluster/backup` into the same auth chain.
-
-### M4 — Integration tests (depends on M2a + M2b + M3 [+ M2c-A or M2c-B], **option-dependent**)
+### M4 — Integration tests (depends on M2a + M2b + M2-grpc [+ M2c-A or M2c-B], **option-dependent**)
 
 **Goal:** End-to-end confidence with Keycloak.
 
-**Effort:** ~3 days under Option C (API only); ~4 days under Option A (adds login flow tests); ~5 days under Option B (adds login flow + BFF relay + multi-PT navigation tests).
+**Effort:** ~4 days under Option A; ~5 days under Option B. Both options must cover REST + gRPC + login.
 
-- [ ] Two-realm Keycloak Testcontainer fixture (shared across API and login surfaces).
-- [ ] **API scenarios (all options):** assigned/unassigned IdP, cross-PT bearer-token replay, cluster-admin happy/sad paths, topology aggregation.
+- [ ] Two-realm Keycloak Testcontainer fixture (shared across REST API, gRPC, and login surfaces).
+- [ ] **REST API scenarios:** assigned/unassigned IdP, cross-PT bearer-token replay, cluster-admin happy/sad paths, cluster-admin token rejected on PT paths (no-cross-tenant rule).
+- [ ] **gRPC scenarios:** missing `Camunda-Physical-Tenant` header → 401 (or NOT_FOUND for unknown PT), cross-PT bearer replay over gRPC, REST + gRPC sharing the same authority resolution per PT.
 - [ ] **Webapp scenarios under Option A:** unauthenticated tenant URL → picker; picker filtering; IdP selection → callback → bound principal; cross-PT URL with same session → 403; `state`-based binding survives session id rotation; `<img>`-tag CSRF cannot pin a session.
 - [ ] **Webapp scenarios under Option B:** cluster-uniform login → multi-PT navigation without re-login; webapp → `/v2/physical-tenants/{id}/...` call via forwarded access token; URL-PT not in claim → 403; logout invalidates everything.
 - [ ] **Cross-surface (A only):** browser session and bearer-token client coexisting; webapps cannot consume PT API without explicit token-forwarding adapter.
-- [ ] **Cross-surface (B only):** webapps with forwarded access token successfully consume PT API; same authorities resolve identically on both surfaces.
+- [ ] **Cross-surface (B only):** webapps with forwarded access token successfully consume PT API; same authorities resolve identically on REST and gRPC.
 - [ ] One acceptance test in `qa/acceptance-tests` per surface in scope.
 
-**Exit criteria:** option-appropriate integration suite green; cross-PT replay (bearer) and cross-PT navigation (browser) both rejected; acceptance tests cover at least one bearer call and (if Option A or B) one full browser login.
+**Exit criteria:** integration suite green for REST + gRPC + login (option-appropriate); cross-PT replay (bearer, both protocols) and cross-PT navigation (browser) both rejected; cluster-admin cannot reach PT data; acceptance tests cover at least one bearer call and one full browser login.
 
 ### M5 — Documentation + release notes (parallel with M4, **option-dependent**)
 
 **Goal:** Everything operators need to upgrade to PTs.
 
-**Effort:** ~1 day under Option C; ~2 days under Option A (login picker + reserved-ID + Entra notes); ~3 days under Option B (claim contract + per-IdP recipes + 8.9 → 8.10 migration ramp).
+**Effort:** ~2 days under Option A (login picker + reserved-ID + Entra notes + gRPC header recipe); ~3 days under Option B (claim contract + per-IdP recipes + 8.9 → 8.10 migration ramp + gRPC header recipe).
 
 - [ ] User-facing docs for the new YAML shape (under `monorepo-docs-site/`).
 - [ ] Migration note: empty `physical-tenants` block = unchanged 8.9 behavior.
@@ -1325,28 +1305,26 @@ flowchart LR
     M1["M1 — Registry + validation<br/>~2d"]:::seq
     M2a["M2a — PT API filter chain<br/>~3d"]:::par
     M2b["M2b — Cluster-admin chain<br/>~2d"]:::par
+    M2grpc["M2-grpc — gRPC interceptor<br/>~3d (mandatory)"]:::par
     M2cA["M2c-A — Login (state binding)<br/>~5-7d (Option A)"]:::optA
     M2cB["M2c-B — Login (claim RBAC)<br/>~10-14d (Option B)"]:::optB
-    M2cC["M2c-C — Login deferred<br/>0d (Option C)"]:::optC
-    M3["M3 — Topology aggregator<br/>~2d"]:::seq
-    M4["M4 — Integration tests<br/>~3-5d (option-dependent)"]:::par
-    M5["M5 — Documentation<br/>~1-3d (option-dependent)"]:::par
-    Decision{"§6.4 decision<br/>A · B · C"}
+    M4["M4 — Integration tests<br/>~4-5d (option-dependent)"]:::par
+    M5["M5 — Documentation<br/>~2-3d (option-dependent)"]:::par
+    Decision{"§6.4 decision<br/>A or B<br/>(C removed)"}
     Release([Release])
 
     M0 --> M1
     M1 --> M2a
     M1 --> M2b
+    M1 --> M2grpc
     M1 --> Decision
     Decision -->|A| M2cA
     Decision -->|B| M2cB
-    Decision -->|C| M2cC
     M2a --> M4
-    M2b --> M3
-    M3 --> M4
+    M2b --> M4
+    M2grpc --> M4
     M2cA --> M4
     M2cB --> M4
-    M2cC --> M4
     M4 --> Release
     M5 --> Release
 
@@ -1354,78 +1332,61 @@ flowchart LR
     classDef par fill:#dcfce7,stroke:#16a34a,stroke-width:2px;
     classDef optA fill:#fef3c7,stroke:#d97706,stroke-width:2px;
     classDef optB fill:#fce7f3,stroke:#be185d,stroke-width:2px;
-    classDef optC fill:#f3f4f6,stroke:#6b7280,stroke-width:2px,stroke-dasharray: 4 2;
 ```
 
-Gantt schedule per option (illustrative; assumes 2 engineers for A and C, 3 engineers for B; immediate hand-offs):
+Gantt schedule per option (illustrative; assumes 3 engineers for A, 4 engineers for B; immediate hand-offs):
 
 ```mermaid
 gantt
-    title Option A — Refined PoC (2 engineers, ~3 calendar weeks)
+    title Option A — Refined PoC (3 engineers, ~3 calendar weeks)
     dateFormat  YYYY-MM-DD
     axisFormat  W%V
     section Sequential
     M0 Config foundation        :m0a, 2026-05-04, 2d
     M1 Registry + validation    :m1a, after m0a, 2d
-    M3 Topology aggregator      :m3a, after m2ba, 2d
-    section Eng 1 — API
+    section Eng 1 — REST API
     M2a PT API filter chain     :m2aa, after m1a, 3d
     M4 Integration tests        :m4a, after m2cA, 4d
     section Eng 2 — Cluster + login
     M2b Cluster-admin chain     :m2ba, after m1a, 2d
     M2c-A Login (state)         :m2cA, after m2ba, 7d
-    M5 Documentation            :m5a, after m3a, 2d
+    M5 Documentation            :m5a, after m2cA, 2d
+    section Eng 3 — gRPC
+    M2-grpc gRPC interceptor    :m2g_a, after m1a, 3d
 ```
 
 ```mermaid
 gantt
-    title Option B — Claim-based RBAC (3 engineers, ~3-3.5 calendar weeks)
+    title Option B — Claim-based RBAC (4 engineers, ~3.5 calendar weeks)
     dateFormat  YYYY-MM-DD
     axisFormat  W%V
     section Sequential
     M0 Config foundation        :m0b, 2026-05-04, 2d
     M1 Registry + validation    :m1b, after m0b, 2d
-    M3 Topology aggregator      :m3b, after m2bb, 2d
-    section Eng 1 — API
+    section Eng 1 — REST API
     M2a PT API filter chain     :m2ab, after m1b, 3d
     M4 Integration tests        :m4b, after m2cB, 5d
     section Eng 2 — Cluster + docs
     M2b Cluster-admin chain     :m2bb, after m1b, 2d
-    M5 Documentation            :m5b, after m3b, 3d
-    section Eng 3 — Login
+    M5 Documentation            :m5b, after m2cB, 3d
+    section Eng 3 — gRPC
+    M2-grpc gRPC interceptor    :m2g_b, after m1b, 3d
+    section Eng 4 — Login
     M2c-B Login (claim RBAC)    :m2cB, after m1b, 14d
 ```
 
-```mermaid
-gantt
-    title Option C — Defer login (2 engineers, ~2 calendar weeks)
-    dateFormat  YYYY-MM-DD
-    axisFormat  W%V
-    section Sequential
-    M0 Config foundation        :m0c, 2026-05-04, 2d
-    M1 Registry + validation    :m1c, after m0c, 2d
-    M3 Topology aggregator      :m3c, after m2bc, 2d
-    section Eng 1 — API
-    M2a PT API filter chain     :m2ac, after m1c, 3d
-    M4 Integration tests        :m4c, after m3c, 3d
-    section Eng 2 — Cluster + docs
-    M2b Cluster-admin chain     :m2bc, after m1c, 2d
-    M5 Documentation            :m5c, after m3c, 1d
-```
-
-- **M0 → M1** is the only strict sequential prefix in all options.
-- **M2a, M2b, M2c-{A|B}** are independent after M1 — split across engineers if available.
-- **M3** depends on M2b (cluster-admin chain gates the new topology endpoint).
-- **M4** is the integration-test merge point and depends on every chain in scope being in place — its scope grows under A and B.
+- **M0 → M1** is the only strict sequential prefix.
+- **M2a, M2b, M2-grpc, M2c-{A|B}** are independent after M1 — split across engineers if available.
+- **M4** is the integration-test merge point and depends on every chain (REST PT, cluster-admin, gRPC, login) being in place.
 - **M5** runs in parallel with M4 — its content grows under A (picker UX, Entra notes) and B (claim contract, per-IdP recipes, migration ramp).
+- **M3 was removed** — `/v2/cluster/topology` and `/v2/cluster/backup` controllers are not identity-slice deliverables (the cluster-admin chain matcher in M2b is sufficient; controllers ship in their respective slices).
 
 ### Rough total per option
 
-| Option | 1 engineer | 2 engineers (parallel M2a/M2b/M2c, parallel M4/M5) | 3 engineers (A or B; split M2c stream) |
+| Option | 2 engineers | 3 engineers | 4 engineers |
 |---|---|---|---|
-| **A — refined PoC** | ~5 weeks | ~3 weeks | ~2.5 weeks |
-| **B — claim-based RBAC** | ~6-7 weeks | ~3.5-4 weeks | ~3-3.5 weeks |
-| **C — defer login** | ~3 weeks | ~2 weeks | ~1.5 weeks |
+| **A — refined PoC** | ~4 weeks | ~3 weeks | ~2.5-3 weeks |
+| **B — claim-based RBAC** | ~5 weeks | ~4 weeks | ~3.5 weeks |
 
 ---
 
@@ -1433,20 +1394,21 @@ gantt
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Property location | `camunda.security.physical-tenants.*` | Lives in the security tree; reuses existing `CamundaSecurityProperties` binder. |
+| Property location | `camunda.physical-tenants.{id}.security.*` (top-level PT tree, security sub-block per PT) | Top-level allows non-security slices (storage, backup) to attach their own per-PT sub-blocks under the same `{id}`. Single set of PT ids; per-slice ownership of sub-trees. |
 | PT collection shape | `Map<String, PhysicalTenantConfiguration>` keyed by id | Eliminates duplicate-id risk; cleaner YAML; native Spring Boot binding. |
-| IdP assignment shape | Inline list `idps:` per PT | Removes the separate `engine-idp-assignments` tree — no cross-tree validation. |
-| Per-PT auth config | `InitializationConfiguration` only (no auth-method override) | IdPs and method are cluster-level by requirement. |
-| `/v2/topology` | Untouched | Existing endpoint stays; new behaviour is a sibling endpoint. |
-| `/v2/cluster/topology` | New controller | Mounted under cluster-admin chain; same shape for legacy and PT mode. |
-| `/v2/cluster/backup` | Same pattern, controller delivered by backup slice | Auth wiring is already in place via `securityMatcher: /v2/cluster/**`. Same fan-out / per-PT-error response shape. |
-| Authorization model | In-memory, read-on-request from PT `authorizations` block | Avoids the persisted-vs-in-memory contradiction. |
-| Filter-chain strategy | Two new chains, ordered before legacy `/v2/**` | Spring Security's canonical multi-tenant pattern; per-PT login chains deferred. |
-| `JwtDecoder` strategy | One shared issuer-aware decoder; per-PT *converter* | Keeps decoder cardinality at 1 regardless of PT count. |
+| IdP assignment shape | Inline `idps:` list under `physical-tenants.{id}.security` | Removes the separate `engine-idp-assignments` tree — no cross-tree validation. |
+| Per-PT auth config | `InitializationConfiguration` only (no auth-method override; **`users` rejected**) | IdPs and method are cluster-level by requirement. **BASIC is cluster-level only** per requirements clarification — PTs cannot declare local password users. |
+| Cluster-level BASIC users | `camunda.security.initialization.users` (in-memory) | BASIC fallback for cluster-admin break-glass on `/v2/cluster/**`. No DB lookup. |
+| `/v2/topology` | Untouched | Existing endpoint stays. |
+| `/v2/cluster/topology` and `/v2/cluster/backup` controllers | **Not identity deliverables** | This slice ships the cluster-admin filter-chain matcher `/v2/cluster/**`; controllers are owned by their respective slices (gateway/topology team, backup/restore team). Identity slice provides the auth contract and the no-cross-tenant rule. |
+| **Storage model** | **Cluster: in-memory. PT: primary + secondary storage** (per-PT, isolated) | Per requirements clarification — inverted from earlier draft. Cluster-admin auth is stateless and reads YAML at runtime; PT-scope authorization uses the existing 8.9 seeder + `MembershipService` / `ResourceAccessProvider` against per-PT storage. |
+| **No cross-tenant authorization** | `ROLE_CLUSTER_ADMIN` does not authorise PT-scoped resources; topology aggregator uses a read-only marker authority | Per requirements clarification. PT-side `ResourceAccessProvider` whitelists the marker only for topology read; rejects it elsewhere. No cross-PT data path even with cluster-admin privilege. |
+| Filter-chain strategy | New chains: PT API, cluster-admin, login (modified existing OIDC webapp chain), gRPC interceptor | Spring Security canonical multi-tenant pattern. Login chain modified in place; not duplicated. |
+| `JwtDecoder` strategy | One shared issuer-aware decoder; per-PT *converter* selecting per-PT `MembershipService`/`ResourceAccessProvider` | Keeps decoder cardinality at 1 regardless of PT count. |
 | "Skip everything else" | Scoped to authentication mechanisms only; CSRF/headers retained | Defense-in-depth not sacrificed. |
-| Login flow | 🚨 **PENDING — see §6.4 CTA** 🚨 | Three options on the table: **A** (refined PoC with `state` binding, ~5-7d, low risk), **B** (claim-based RBAC, ~10-14d, also closes API/webapp gap), **C** (defer to follow-up, current default). Team decision required before M2c starts. PoC PR #51959 has structural defects (CSRF on GET, Bearer bypass, broken multi-tab race defense) that block adopting it as-is. |
-| Logout | Tied to login decision | Under A and C: cluster-uniform single-session logout via existing `CamundaOidcLogoutSuccessHandler`. Under B: same. Per-PT logout cookie isolation excluded under all three options. |
-| gRPC parity | Out of scope | Deferred to gRPC PT parity follow-up; touch-points reserved. |
+| **gRPC parity** | **Mandatory in this slice** | Per requirements clarification — gRPC is no longer a follow-up. New `PhysicalTenantGrpcInterceptor` reuses `PhysicalTenantRegistry` and converter factory. M2-grpc, ~3 days. |
+| **Login/logout** | **Mandatory in this slice; pick A or B in §6.4** | Per requirements clarification — Option C ("defer") is removed. Decision still pending between **A** (refined PoC with `state` binding, ~5-7d) and **B** (claim-based RBAC, ~10-14d). |
+| Logout | Tied to login decision | Cluster-uniform single-session logout via existing `CamundaOidcLogoutSuccessHandler` under both A and B. Per-PT logout cookie isolation excluded. |
 | Cluster-admin store | Claim-based + BASIC fallback, no persisted grant table | As specified in the issue. Audit/revocation flagged as known gap. |
 
 ---
