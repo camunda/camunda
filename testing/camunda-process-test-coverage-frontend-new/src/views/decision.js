@@ -160,7 +160,7 @@ function renderDecisionTable(xml, decisionId, cov) {
     const outputs = Array.from(decisionTable.querySelectorAll(':scope > output'));
     const rules = Array.from(decisionTable.querySelectorAll(':scope > rule'));
 
-    const matchedRuleIds = new Set((cov?.matchedRuleIds) || []);
+    const matchedRuleIds = new Set(cov?.matchedRuleIds || []);
 
     // Build table header from inputs and outputs
     let tableHtml = `

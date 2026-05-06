@@ -7,10 +7,10 @@
  *   #/decision/<decisionId>                               → { view: 'decision', decisionId }
  *   #/suite/<suiteId>                                     → { view: 'suite', suiteId }
  *   #/suite/<suiteId>/run/<runName>                       → { view: 'run', suiteId, runName }
- *   #/suite/<suiteId>/process/<p>                         → { view: 'suiteProcess', suiteId, processId }
- *   #/suite/<suiteId>/decision/<d>                        → { view: 'suiteDecision', suiteId, decisionId }
- *   #/suite/<suiteId>/run/<rn>/process/<p>                → { view: 'runProcess', suiteId, runName, processId }
- *   #/suite/<suiteId>/run/<rn>/decision/<d>               → { view: 'runDecision', suiteId, runName, decisionId }
+ *   #/suite/<suiteId>/process/<processId>                 → { view: 'suiteProcess', suiteId, processId }
+ *   #/suite/<suiteId>/decision/<decisionId>               → { view: 'suiteDecision', suiteId, decisionId }
+ *   #/suite/<suiteId>/run/<runName>/process/<processId>   → { view: 'runProcess', suiteId, runName, processId }
+ *   #/suite/<suiteId>/run/<runName>/decision/<decisionId> → { view: 'runDecision', suiteId, runName, decisionId }
  */
 
 'use strict';
