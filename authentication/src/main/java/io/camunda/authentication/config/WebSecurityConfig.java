@@ -28,6 +28,7 @@ import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.LoggingAuthenticationFailureHandler;
 import io.camunda.authentication.handler.OAuth2AuthenticationExceptionHandler;
+import io.camunda.authentication.jwt.CachingJwtDecoder;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -75,6 +76,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -865,7 +867,13 @@ public class WebSecurityConfig {
     public JwtDecoder jwtDecoder(
         final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
         final ClientRegistrationRepository clientRegistrationRepository,
-        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository,
+        @Value("${camunda.security.authentication.oidc.jwt-cache.enabled:true}")
+            final boolean jwtCacheEnabled,
+        @Value("${camunda.security.authentication.oidc.jwt-cache.max-size:10000}")
+            final long jwtCacheMaxSize,
+        @Value("${camunda.security.authentication.oidc.jwt-cache.max-ttl:PT5M}")
+            final Duration jwtCacheMaxTtl) {
       final var repository = (Iterable<ClientRegistration>) clientRegistrationRepository;
       final var clientRegistrations =
           StreamSupport.stream(repository.spliterator(), false).toList();
@@ -873,6 +881,7 @@ public class WebSecurityConfig {
       final var additionalJwkSetUrisByIssuer =
           buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
 
+      final JwtDecoder underlying;
       if (clientRegistrations.size() == 1) {
         final var clientRegistration = clientRegistrations.getFirst();
         final var additionalUris =
@@ -881,21 +890,32 @@ public class WebSecurityConfig {
         LOG.info(
             "Create Access Token JWT Decoder for OIDC Provider: {}",
             clientRegistration.getRegistrationId());
-        return new SupplierJwtDecoder(
-            () ->
-                oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
-                    clientRegistration, additionalUris));
+        underlying =
+            new SupplierJwtDecoder(
+                () ->
+                    oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
+                        clientRegistration, additionalUris));
       } else {
         LOG.info(
             "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
             clientRegistrations.stream()
                 .map(ClientRegistration::getRegistrationId)
                 .collect(Collectors.joining(", ")));
-        return new SupplierJwtDecoder(
-            () ->
-                oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
-                    clientRegistrations, additionalJwkSetUrisByIssuer));
+        underlying =
+            new SupplierJwtDecoder(
+                () ->
+                    oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
+                        clientRegistrations, additionalJwkSetUrisByIssuer));
       }
+
+      // Per-token decode cache: bearer clients reuse the same access token across many requests,
+      // so caching the decoded Jwt eliminates RSA signature verification + Base64 decoding +
+      // claim parsing on every cache hit. TTL is clamped to the token's exp claim so a hit is
+      // never staler than a fresh decode would have been. See {@link CachingJwtDecoder}.
+      if (jwtCacheEnabled) {
+        return new CachingJwtDecoder(underlying, jwtCacheMaxSize, jwtCacheMaxTtl);
+      }
+      return underlying;
     }
 
     private Map<String, List<String>> buildAdditionalJwkSetUrisByIssuer(
