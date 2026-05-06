@@ -19,6 +19,7 @@ import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
+import io.camunda.authentication.converter.UnprotectedCamundaAuthenticationConverter;
 import io.camunda.authentication.converter.UsernamePasswordAuthenticationTokenConverter;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
@@ -639,6 +640,11 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public CamundaAuthenticationConverter<Authentication> anonymousCamundaAuthenticationConverter() {
+      return new UnprotectedCamundaAuthenticationConverter();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(MeterRegistry.class)
     public MeterRegistry meterRegistry() {
       // Fallback MeterRegistry for test / minimal Spring contexts that don't configure
@@ -962,29 +968,20 @@ public class WebSecurityConfig {
     public SecurityFilterChain oidcApiSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
-        final JwtDecoder jwtDecoder,
         final SecurityConfiguration securityConfiguration,
-        final CookieCsrfTokenRepository csrfTokenRepository,
-        final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final OAuth2AuthorizedClientManager authorizedClientManager)
+        final CookieCsrfTokenRepository csrfTokenRepository)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
               .securityMatcher(API_PATHS.toArray(new String[0]))
               .authorizeHttpRequests(
-                  (authorizeHttpRequests) ->
-                      authorizeHttpRequests
-                          .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
-                          .permitAll()
-                          .anyRequest()
-                          .authenticated())
+                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
               .headers(
                   headers ->
                       setupSecureHeaders(
                           headers,
                           securityConfiguration.getHttpHeaders(),
                           securityConfiguration.getSaas().isConfigured()))
-              // disabled for performance debugging
               .sessionManagement(
                   (sessionManagement) ->
                       sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -993,15 +990,10 @@ public class WebSecurityConfig {
                   (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
               .cors(AbstractHttpConfigurer::disable)
               .formLogin(AbstractHttpConfigurer::disable)
-              .anonymous(AbstractHttpConfigurer::disable)
-              .oauth2ResourceServer(
-                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
               .oauth2Login(AbstractHttpConfigurer::disable)
               .oidcLogout(AbstractHttpConfigurer::disable)
               .logout(AbstractHttpConfigurer::disable);
 
-      applyOauth2RefreshTokenFilter(
-          httpSecurity, authorizedClientRepository, authorizedClientManager);
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
