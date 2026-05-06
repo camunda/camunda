@@ -496,6 +496,12 @@
         {
           "ignore": true,
           "code": "java.method.removed",
+          "old": "method io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::jobWorkerPostProcessor(io.camunda.client.jobhandling.JobWorkerManager, java.util.List<io.camunda.client.annotation.customizer.JobWorkerValueCustomizer>, java.util.List<io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer>)",
+          "justification": "Internal Spring @Bean factory method refactor; invoked by the Spring container during auto-configuration, not by user code, so the signature change has no compatibility impact for users."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
           "old": "method io.camunda.client.jobhandling.CommandExceptionHandlingStrategy io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::commandExceptionHandlingStrategy(io.camunda.client.jobhandling.CamundaClientExecutorService)",
           "justification": "Internal refactor; compatibility impact accepted for this release."
         },
