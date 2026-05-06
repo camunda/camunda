@@ -10,12 +10,14 @@ import {CopilotChat, CopilotSidecar} from '@camunda/copilot-chat';
 import {useLocation} from 'react-router-dom';
 import {useCopilotAdapter} from './useCopilotAdapter';
 import {useCurrentInstanceContext} from './useCurrentInstanceContext';
+import {useInstanceGreeting} from './useInstanceGreeting';
 import {getSuggestionsForRoute} from './startingPrompts';
 
 const Copilot: React.FC = () => {
   const {sendMessage, stopGeneration, resetConversation, isBusy} =
     useCopilotAdapter();
   const {processInstanceId} = useCurrentInstanceContext();
+  useInstanceGreeting();
   const {pathname} = useLocation();
   const suggestions = getSuggestionsForRoute(pathname);
 
