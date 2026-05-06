@@ -160,16 +160,22 @@ function collectTopLevelBodyProperties(schema, seen) {
   }
   if (walked) return { kind: 'walked', props };
   // Schema was resolved (object) but declared neither `properties` nor
-  // a composition keyword we could walk. Distinguish two sub-cases:
-  //   - has an explicit non-object `type` (string/number/integer/boolean/array)
+  // a composition keyword we could walk. Three sub-cases:
+  //   - explicit `type: 'object'` with no properties (e.g. closed schema
+  //     `{type: object, additionalProperties: false}`) → fully resolved
+  //     as an object with zero top-level properties; body bindings are
+  //     impossible. Returning `walked` with an empty Set surfaces the
+  //     deterministic `no requestBody media-type schema declares ...`
+  //     error rather than silently deferring to the bundled pass
+  //     (camunda/camunda#52322 review).
+  //   - explicit non-object `type` (string/number/integer/boolean/array)
   //     → resolved as non-object; body bindings are impossible.
-  //   - everything else (e.g. unresolved $ref node, or an empty object)
-  //     → unresolved, defer to the bundled pass.
-  if (
-    typeof schema.type === 'string' &&
-    schema.type !== 'object' &&
-    schema.type.length > 0
-  ) {
+  //   - everything else (e.g. unresolved $ref node, or an empty object
+  //     with no `type` declared) → unresolved, defer to the bundled pass.
+  if (typeof schema.type === 'string' && schema.type.length > 0) {
+    if (schema.type === 'object') {
+      return { kind: 'walked', props: new Set() };
+    }
     return { kind: 'non-object' };
   }
   return { kind: 'unresolved' };
@@ -309,6 +315,28 @@ function loadRegistry() {
   // registry config error and surfaces as an error against the first edge
   // operation that triggers the lookup.
   const identifierToKinds = new Map();
+  // Forward map: kindName -> Set of identifier semanticType strings
+  // declared in registry. Powers two checks added in camunda/camunda#52322
+  // review:
+  //   1. Entity-producer semanticType validation: an entity producer's
+  //      `identifiedBy[].semanticType` must be one of the kind's own
+  //      registered identifiers. Without this, a producer can claim to
+  //      establish kind X via a foreign identifier and the orphan check
+  //      on consumers of X is silently satisfied.
+  //   2. Bind-key validation: each `x-semantic-requires.bind` key on an
+  //      entity-kind consumer must equal `camelCase(identifier)` for one
+  //      of the kind's registered identifiers (or a legacy bind key —
+  //      see kindLegacyBindKeys below). Catches typos like `rolId` for
+  //      `kind: Role`.
+  const kindIdentifiers = new Map();
+  // kindName -> Set of bind-key strings explicitly grandfathered by the
+  // registry. Used when the wire field name doesn't follow the
+  // `camelCase(identifier)` convention because the spec name was
+  // published before the convention existed (e.g. GlobalTaskListener's
+  // path field is `id`, not `globalListenerId`). Adding a new entry
+  // here should require the same justification — the wire name is
+  // already published and cannot be renamed without breaking SDK users.
+  const kindLegacyBindKeys = new Map();
   for (const entry of kinds) {
     const name = typeof entry === 'string' ? entry : entry?.name;
     if (typeof name !== 'string' || name.length === 0) continue;
@@ -317,23 +345,58 @@ function loadRegistry() {
       if (typeof entry.shape === 'string') kindShapes.set(name, entry.shape);
       if (entry.shape === 'external-entity') externalNames.add(name);
       if (Array.isArray(entry.identifiers)) {
+        const ownIds = new Set();
         for (const id of entry.identifiers) {
           if (typeof id !== 'string' || id.length === 0) continue;
+          ownIds.add(id);
           const existing = identifierToKinds.get(id);
           if (existing) existing.push(name);
           else identifierToKinds.set(id, [name]);
         }
+        if (ownIds.size > 0) kindIdentifiers.set(name, ownIds);
+      }
+      if (Array.isArray(entry.legacyBindKeys)) {
+        const keys = new Set();
+        for (const k of entry.legacyBindKeys) {
+          if (typeof k !== 'string' || k.length === 0) continue;
+          keys.add(k);
+        }
+        if (keys.size > 0) kindLegacyBindKeys.set(name, keys);
       }
     }
   }
-  cachedRegistry = { names, identifierToKinds, externalNames, kindShapes };
+  cachedRegistry = {
+    names,
+    identifierToKinds,
+    externalNames,
+    kindShapes,
+    kindIdentifiers,
+    kindLegacyBindKeys,
+  };
   cachedFor = file;
   return cachedRegistry;
 }
 
+// Convert an identifier semanticType (PascalCase, e.g. `RoleId`) to the
+// bind-key convention (`roleId`). Used by the bind-key validation
+// check; matches the convention all entity kinds in the spec follow,
+// with a small set of grandfathered exceptions handled by
+// `legacyBindKeys` in semantic-kinds.json.
+function camelCaseIdentifier(id) {
+  if (typeof id !== 'string' || id.length === 0) return id;
+  return id[0].toLowerCase() + id.slice(1);
+}
+
 module.exports = (input, _opts, _context) => {
   const errors = [];
-  const { names: registry, identifierToKinds, externalNames, kindShapes } = loadRegistry();
+  const {
+    names: registry,
+    identifierToKinds,
+    externalNames,
+    kindShapes,
+    kindIdentifiers,
+    kindLegacyBindKeys,
+  } = loadRegistry();
 
   // The CI runs spectral twice: once on the bundled entry point
   // (rest-api.yaml) and once per-file across the glob. The cross-reference
@@ -416,6 +479,55 @@ module.exports = (input, _opts, _context) => {
                 ...(typeof est.shape === 'string' ? ['shape'] : ['kind']),
               ],
             });
+          }
+
+          // Entity-tuple validation (camunda/camunda#52322 review):
+          // for entity producers, every identifiedBy[].semanticType
+          // must be a registered identifier of SOME entity kind.
+          // Without this, a producer can claim to establish kind X via
+          // a typo or stale identifier name and the orphan check on
+          // every consumer of X is silently satisfied.
+          //
+          // Composite-key entities (e.g. TenantClusterVariable, whose
+          // identity is (tenantId, name)) legitimately reference a
+          // foreign-but-registered identifier in their identifiedBy:
+          // the foreign identifier is part of the composite key but is
+          // owned by another entity for the single-owner edge
+          // resolution rule. The relaxed check (registered SOMEWHERE)
+          // catches the bug class the reviewer identified (unregistered
+          // typos) without breaking composite entities. A stricter
+          // own-identifiers-only check would require either a
+          // `compositeKey: true` registry marker or a per-kind override
+          // and is intentionally deferred.
+          //
+          // Edge producers are excluded - their identifiedBy
+          // semanticType cross-references foreign entity identifiers by
+          // design (handled by the edge-endpoint resolution below).
+          if (
+            registeredShape === 'entity' &&
+            declaredShape === 'entity' &&
+            Array.isArray(est.identifiedBy)
+          ) {
+            for (let i = 0; i < est.identifiedBy.length; i++) {
+              const item = est.identifiedBy[i];
+              if (!item || typeof item !== 'object') continue;
+              const st = item.semanticType;
+              if (typeof st !== 'string' || st.length === 0) continue;
+              if (!identifierToKinds.has(st)) {
+                errors.push({
+                  message: `x-semantic-establishes.identifiedBy[${i}].semanticType '${st}' on ${method.toUpperCase()} ${pathKey} is not declared as an identifier of any registered entity kind in semantic-kinds.json. Either fix the semanticType or add it to the appropriate kind's 'identifiers'.`,
+                  path: [
+                    'paths',
+                    pathKey,
+                    method,
+                    'x-semantic-establishes',
+                    'identifiedBy',
+                    i,
+                    'semanticType',
+                  ],
+                });
+              }
+            }
           }
         }
 
@@ -585,6 +697,41 @@ module.exports = (input, _opts, _context) => {
                 message: `x-semantic-requires.bind.${bindKey} on ${method.toUpperCase()} ${pathKey} references ${binding.from} parameter '${binding.name}', but no such ${binding.from} parameter is declared on the operation (or its path item). Add the parameter or fix the binding.`,
                 path: ['paths', pathKey, method, 'x-semantic-requires', 'bind', bindKey, 'name'],
               });
+            }
+          }
+
+          // Bind-key tuple validation (camunda/camunda#52322 review):
+          // for entity-kind consumers, every bind key must equal
+          // `camelCase(identifier)` for one of the kind's registered
+          // identifiers in semantic-kinds.json (or appear in the kind's
+          // explicit `legacyBindKeys` escape hatch). Catches typos like
+          // `rolId` for `kind: Role`, where the existing existence
+          // check only validates `binding.name` against the operation's
+          // members and the typo'd bind key (the map key, not
+          // `binding.name`) lints clean. Skipped for edge kinds because
+          // their bind keys span multiple endpoint entities and the
+          // registry does not enumerate edge bind keys directly; the
+          // edge-endpoint resolution above guards the producer side.
+          // Skipped for unknown / external kinds (already errored above).
+          if (registry.has(req.kind) && !externalNames.has(req.kind)) {
+            const registeredShape = kindShapes.get(req.kind);
+            if (registeredShape === 'entity') {
+              const ids = kindIdentifiers.get(req.kind);
+              if (ids && ids.size > 0) {
+                const legacy = kindLegacyBindKeys.get(req.kind);
+                const allowedKeys = new Set();
+                for (const id of ids) allowedKeys.add(camelCaseIdentifier(id));
+                if (legacy) for (const k of legacy) allowedKeys.add(k);
+                for (const bindKey of Object.keys(req.bind)) {
+                  if (!allowedKeys.has(bindKey)) {
+                    const allowedList = Array.from(allowedKeys).sort().join(', ');
+                    errors.push({
+                      message: `x-semantic-requires.bind has key '${bindKey}' on ${method.toUpperCase()} ${pathKey}, but kind '${req.kind}' declares identifiers [${Array.from(ids).join(', ')}] in semantic-kinds.json (expected bind key one of: [${allowedList}]). Fix the bind key, add the missing identifier to the kind's 'identifiers', or \u2014 only if the wire field is a published name that cannot be renamed \u2014 add '${bindKey}' to the kind's 'legacyBindKeys'.`,
+                      path: ['paths', pathKey, method, 'x-semantic-requires', 'bind', bindKey],
+                    });
+                  }
+                }
+              }
             }
           }
         }

@@ -106,6 +106,24 @@ paths:
   /invalid/requires-body-non-object-array:
     $ref: 'widgets.yaml#/paths/~1invalid~1requires-body-non-object-array'
 
+  # ── Binding existence: closed-object request body ────────────
+  /invalid/establishes-body-closed-object:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-body-closed-object'
+
+  # ── Bind-key tuple validation ────────────────────────────────
+  /invalid/requires-bind-bogus-key/{widgetId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1requires-bind-bogus-key~1{widgetId}'
+  /valid/legacy-bind-producer:
+    $ref: 'widgets.yaml#/paths/~1valid~1legacy-bind-producer'
+  /valid/legacy-bind-consumer/{id}:
+    $ref: 'widgets.yaml#/paths/~1valid~1legacy-bind-consumer~1{id}'
+
+  # ── Entity-tuple semanticType validation ─────────────────────
+  /invalid/establishes-bogus-semantic-type:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-bogus-semantic-type'
+  /invalid/isolated-kind-consumer/{isolatedKindId}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1isolated-kind-consumer~1{isolatedKindId}'
+
   # ── Binding existence with $ref'd request body ───────────────
   # Production specs declare `requestBody.content.*.schema` as a `$ref`
   # to a top-level component schema, not as an inline object. The

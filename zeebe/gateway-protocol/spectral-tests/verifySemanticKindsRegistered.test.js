@@ -615,6 +615,115 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
     });
   });
 
+  // ── Binding existence: closed-object request body ────────────
+  // camunda/camunda#52322 review: an explicit
+  // `{type: object, additionalProperties: false}` schema with no
+  // `properties` documents zero top-level properties. The walker
+  // previously returned `unresolved` for this shape (no walk set
+  // `walked`, the non-object branch only fires for non-object `type:`
+  // strings), so a body binding silently lint-cleaned ("defer to the
+  // bundled pass") instead of failing. Fixed by treating explicit
+  // `type: object` with no walked branches as `walked` with an empty
+  // Set.
+  describe('verify-semantic-kinds-registered: binding existence (closed-object body)', () => {
+    it('flags establishes when the requestBody schema is `{type: object, additionalProperties: false}` with no properties', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/invalid/establishes-body-closed-object') &&
+          e.message.includes("body member 'widgetId'") &&
+          /no requestBody media-type schema declares/.test(e.message),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+  });
+
+  // ── Bind-key tuple validation ─────────────────────────────────
+  // camunda/camunda#52322 review: each `x-semantic-requires.bind` key
+  // on an entity-kind consumer must equal `camelCase(identifier)` for
+  // one of the kind's registered identifiers, or appear in the kind's
+  // explicit `legacyBindKeys` escape hatch. The existing existence
+  // check only validates `binding.name` against the operation's
+  // members, so a typo'd bind key like `wigetId` for `kind: Widget`
+  // would otherwise lint clean. Class-scoped: covers both the typo
+  // failure mode and the legacyBindKeys grandfathered-pass mode.
+  describe('verify-semantic-kinds-registered: bind-key tuple validation', () => {
+    it('flags a bind key that is not camelCase(identifier) and not in legacyBindKeys', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/invalid/requires-bind-bogus-key') &&
+          e.message.includes("bind has key 'wigetId'") &&
+          e.message.includes("kind 'Widget'"),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+
+    it('does not flag a bind key listed in the kind\u0027s legacyBindKeys (grandfathered wire field name)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/valid/legacy-bind-consumer') &&
+          /bind has key 'id'/.test(e.message),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+
+    it('does not flag valid happy-path bind keys (widgetId on Widget, username on User)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          /bind has key/.test(e.message) &&
+          (e.message.includes('createWidget') ||
+            e.message.includes('getWidget') ||
+            e.message.includes('createUser') ||
+            e.message.includes('searchOwnersForWidget')),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+  });
+
+  // ── Entity-tuple semanticType validation ──────────────────────
+  // camunda/camunda#52322 review: an entity producer's
+  // `identifiedBy[].semanticType` must be a registered identifier of
+  // SOME entity kind. Without the check, a producer can claim to
+  // establish kind X via a typo or stale identifier name and the
+  // orphan check on every consumer of X is silently satisfied.
+  // Composite-key entities (e.g. TenantClusterVariable) legitimately
+  // reference foreign-but-registered identifiers, so the check accepts
+  // any registered identifier rather than restricting to the kind's
+  // own identifiers — class-scoped fixture covers both the bug class
+  // (unregistered semanticType) and the consumer-side orphan to prove
+  // the producer-existence gate rejected the malformed producer.
+  describe('verify-semantic-kinds-registered: entity-tuple semanticType validation', () => {
+    it('flags an entity producer whose identifiedBy.semanticType is not registered as an identifier of any kind', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes('/invalid/establishes-bogus-semantic-type') &&
+          e.message.includes("'WrongIdentifierType'") &&
+          e.message.includes('not declared as an identifier of any registered entity kind'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+
+    it('reports orphan on the IsolatedKind consumer (proving the wrong-semanticType producer was not silently admitted)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes("Semantic kind 'IsolatedKind'") &&
+          e.message.includes('no operation establishes it') &&
+          e.message.includes('/invalid/isolated-kind-consumer'),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+
+    it('does not flag the valid happy-path entity producers (createWidget, createUser, legacyBindProducer)', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          /is not declared as an identifier of any registered entity kind/.test(e.message) &&
+          (e.message.includes('createWidget') ||
+            e.message.includes('createUser') ||
+            e.message.includes('legacyBindProducer')),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+  });
+
   // ── Per-file pass: only the producer-existence cross-reference is gated ──
   // CI lints both the bundled entry (rest-api.yaml) and each domain file
   // independently. The cross-reference walk relies on every producer being

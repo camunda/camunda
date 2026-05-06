@@ -32,7 +32,17 @@
     "`identifiedBy` semanticType is not declared as the identifier of",
     "exactly one registered entity, and the cross-reference check then",
     "verifies the resolved endpoint kinds are actually established somewhere",
-    "in the spec."
+    "in the spec.",
+    "",
+    "`legacyBindKeys` (entity kinds, optional) is a grandfathered escape",
+    "hatch for `x-semantic-requires.bind` keys that do not follow the",
+    "`camelCase(identifier)` convention because the wire field name was",
+    "published before the convention existed and cannot be renamed without",
+    "breaking SDK users (e.g. GlobalTaskListener's path field is `id`, not",
+    "`globalListenerId`). The Spectral rule treats these keys as accepted",
+    "in addition to the camelCased identifiers. Adding a new entry here",
+    "requires the same justification — prefer fixing the bind key on the",
+    "consumer if the wire name has not yet shipped."
   ],
   "kinds": [
     {
@@ -129,18 +139,24 @@
       "name": "GlobalTaskListener",
       "shape": "entity",
       "identifiers": ["GlobalListenerId"],
+      "legacyBindKeys": ["id"],
+      "$comment": "The wire path field is `id`, not `globalListenerId`. The spec was published before the camelCase(identifier) bind-key convention existed; the field cannot be renamed without breaking SDK users. Consumer ops accordingly bind via `id: { from: path, name: id }`, which `legacyBindKeys` whitelists.",
       "description": "A global user task listener entity, identified by its client-minted id (a GlobalListenerId)."
     },
     {
       "name": "GlobalClusterVariable",
       "shape": "entity",
       "identifiers": ["ClusterVariableName"],
+      "legacyBindKeys": ["name"],
+      "$comment": "The wire path field is `name`, not `clusterVariableName`. Same grandfathered situation as GlobalTaskListener — the spec was published with `name` and the field cannot be renamed without breaking SDK users.",
       "description": "A global-scoped cluster variable, identified by its client-minted name (a ClusterVariableName). Established by createGlobalClusterVariable."
     },
     {
       "name": "TenantClusterVariable",
       "shape": "entity",
       "identifiers": ["ClusterVariableName"],
+      "legacyBindKeys": ["tenantId", "name"],
+      "$comment": "Composite-key entity whose identity is (tenantId, name). Only ClusterVariableName is listed in `identifiers` because TenantId is owned by the Tenant entity and must remain single-owner for the edge-derivation rule. Consumers therefore bind via two keys (`tenantId` and `name`), neither of which is camelCase('ClusterVariableName'); both are whitelisted via `legacyBindKeys`. The wire field name `name` (rather than `clusterVariableName`) is also grandfathered — same rationale as GlobalClusterVariable.",
       "description": "A tenant-scoped cluster variable, identified by the (tenantId, name) tuple. Established by createTenantClusterVariable. Only ClusterVariableName is listed in 'identifiers' here because TenantId is owned by the Tenant entity and must remain single-owner for the edge-derivation rule; the Tenant requirement of tenant-scoped operations is expressed via the tenantId path parameter."
     },
     {

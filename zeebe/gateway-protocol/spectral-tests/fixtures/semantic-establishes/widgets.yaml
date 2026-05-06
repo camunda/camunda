@@ -885,3 +885,196 @@ paths:
       responses:
         '200':
           description: OK.
+
+  # ── Closed-object request body (camunda/camunda#52322 review) ──
+  # The walker previously returned `unresolved` for explicit
+  # `{type: object, additionalProperties: false}` schemas with no
+  # properties, because no composition/properties walk set `walked` and
+  # the non-object branch only fires for non-object `type:` strings. A
+  # body binding then silently lint-cleaned ("defer to bundled pass")
+  # instead of failing — even though such a closed schema documents zero
+  # top-level properties and cannot host any binding. The walker now
+  # returns `walked` with an empty Set for explicit-object-no-properties,
+  # surfacing the deterministic `no requestBody media-type schema
+  # declares ...` error.
+
+  # 32. Establishes binds in: body against a closed-object request body.
+  /invalid/establishes-body-closed-object:
+    post:
+      operationId: establishesBodyClosedObject
+      summary: Establishes from a closed-object request body
+      description: |
+        Should fail — the requestBody schema is `{type: object,
+        additionalProperties: false}` with no properties. The contract
+        documents zero top-level properties, so a body binding to
+        widgetId cannot resolve. Symmetric with #30/#31 (non-object
+        scalar/array bodies) but for the closed-object case.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: Widget
+        identifiedBy:
+          - { in: body, name: widgetId, semanticType: WidgetId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '201':
+          description: Created.
+
+  # ── Bind-key tuple validation (camunda/camunda#52322 review) ──
+  # Each bind key on an entity-kind requires must equal
+  # camelCase(identifier) for one of the kind's registered identifiers,
+  # or appear in `legacyBindKeys` as a grandfathered escape hatch. The
+  # existing existence check only validates `binding.name` against the
+  # operation's members; a typo'd bind key (the map key, not
+  # `binding.name`) like `wigetId` for `kind: Widget` would otherwise
+  # lint clean.
+
+  # 33. Bind key 'wigetId' typo on kind: Widget (allowed: widgetId).
+  /invalid/requires-bind-bogus-key/{widgetId}:
+    get:
+      operationId: requiresBindBogusKey
+      summary: Requires Widget with typo'd bind key
+      description: |
+        Should fail — bind key 'wigetId' is not camelCase('WidgetId') and
+        Widget declares no `legacyBindKeys`. The existence check passes
+        (binding.name 'widgetId' is a real path param), so without the
+        tuple check this typo would silently lint clean.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: widgetId
+          in: path
+          required: true
+          description: The widget id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: Widget
+        bind:
+          wigetId: { from: path, name: widgetId }
+      responses:
+        '200':
+          description: OK.
+
+  # 34. Producer for LegacyBindKind. Wire field is `id`, not
+  #     `legacyBindKindId`, mirroring the GlobalTaskListener real-world
+  #     situation. semanticType remains LegacyBindKindId (the registered
+  #     identifier) — the wire field name and the semantic identifier
+  #     type are independent.
+  /valid/legacy-bind-producer:
+    post:
+      operationId: legacyBindProducer
+      summary: Establishes LegacyBindKind via wire field `id`
+      description: |
+        Should pass. The producer's identifiedBy semanticType is
+        LegacyBindKindId (matches the kind's registered identifier);
+        the wire field happens to be `id` rather than `legacyBindKindId`
+        because the spec was published before the camelCase convention
+        existed.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: LegacyBindKind
+        identifiedBy:
+          - { in: body, name: id, semanticType: LegacyBindKindId }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id: { type: string }
+              required: [id]
+      responses:
+        '201':
+          description: Created.
+
+  # 35. Consumer of LegacyBindKind using the legacy bind key `id`.
+  #     Must lint clean — `id` is in LegacyBindKind.legacyBindKeys.
+  /valid/legacy-bind-consumer/{id}:
+    get:
+      operationId: legacyBindConsumer
+      summary: Requires LegacyBindKind via legacy bind key `id`
+      description: |
+        Should pass. Bind key `id` is whitelisted by
+        LegacyBindKind.legacyBindKeys even though it is not
+        camelCase('LegacyBindKindId').
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The legacy bind kind id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: LegacyBindKind
+        bind:
+          id: { from: path, name: id }
+      responses:
+        '200':
+          description: OK.
+
+  # ── Entity-tuple semanticType validation (camunda/camunda#52322 review) ──
+  # An entity producer's `identifiedBy[].semanticType` must be one of
+  # the kind's own registered identifiers. Without the check, a producer
+  # can claim to establish kind X via a foreign identifier and the
+  # orphan check on every consumer of X is silently satisfied.
+
+  # 36. Entity producer establishes IsolatedKind via wrong semanticType.
+  /invalid/establishes-bogus-semantic-type:
+    post:
+      operationId: establishesBogusSemanticType
+      summary: Establishes IsolatedKind with wrong semanticType
+      description: |
+        Should fail — IsolatedKind declares identifiers
+        ['IsolatedKindId'] but the producer claims semanticType
+        'WrongIdentifierType'. The producer-existence gate must reject
+        it so the consumer below still reports orphan.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      x-semantic-establishes:
+        kind: IsolatedKind
+        identifiedBy:
+          - { in: body, name: isolatedKindId, semanticType: WrongIdentifierType }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isolatedKindId: { type: string }
+              required: [isolatedKindId]
+      responses:
+        '201':
+          description: Created.
+
+  # 37. Consumer of IsolatedKind. Must report the orphan error — proves
+  #     the wrong-semanticType producer (#36) was not silently admitted.
+  /invalid/isolated-kind-consumer/{isolatedKindId}:
+    get:
+      operationId: isolatedKindConsumer
+      summary: Requires IsolatedKind
+      description: Class-scoped guard for entity-tuple validation.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: isolatedKindId
+          in: path
+          required: true
+          description: The id.
+          schema: { type: string }
+      x-semantic-requires:
+        kind: IsolatedKind
+        bind:
+          isolatedKindId: { from: path, name: isolatedKindId }
+      responses:
+        '200':
+          description: OK.
