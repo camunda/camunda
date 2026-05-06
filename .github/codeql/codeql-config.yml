@@ -1,8 +1,11 @@
-# CodeQL configuration for the Code Quality AI Pipeline.
+# CodeQL configuration for the Code Quality AI Pipeline (FALLBACK / LOCAL).
 #
-# Scope: limited to a small set of "hotspot" modules for the hackday.
-# This list is hardcoded for now; in a follow-up step it will be generated
-# dynamically by the Stage 1 hotspot detection script.
+# In the workflow, the Stage 1 `hotspots` job generates a dynamic config
+# at runtime (paths driven by code-maat hotspot ranking) which the
+# `codeql-scan` job consumes via codeql-action/init's `config-file:`
+# input. This static file is the base used when a dynamic config has
+# not been produced — local runs, manual debugging, or pipeline failures
+# that prevent the hotspots job from completing.
 #
 # Query pack: security-and-quality (broad). Switch to security-extended
 # if the volume of findings is unmanageable.
