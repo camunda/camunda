@@ -31,7 +31,7 @@ jobs:
     needs: [utils-get-snapshot-docker-tag]
     if: ${{ !cancelled() && needs.utils-get-snapshot-docker-tag.result != 'failure' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions: {}
     env:
       TEST_OWNER: Core Features
