@@ -1,0 +1,81 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/InlineLoading/Migration" />
+
+# InlineLoading — Carbon → shadcn migration guide
+
+## Scope mismatch
+
+Carbon's `InlineLoading` is a **stateful inline status indicator**: it shows a spinner with adjacent status text and transitions through `inactive` / `active` / `finished` / `error` states (each rendering a different icon and styling). It's typically used next to a "Save" button to show the in-flight save and its outcome.
+
+shadcn ships only the **`Spinner` primitive** — a styled `lucide-react` `Loader2Icon` with `animate-spin`. There is no built-in status text, no finished/error iconography, no state machine.
+
+Migrating means:
+- Replace the spinning indicator with `<Spinner />`.
+- Render status text yourself (just a sibling `<span>`).
+- For `finished` and `error` states, render a different icon yourself (`<CheckCircle2>`, `<XCircle>` from `lucide-react` are the canonical choices).
+- Manage the state transitions in your component (typically already lives in your form / mutation logic).
+
+## Mapping
+
+| Carbon `status` | shadcn equivalent |
+|---|---|
+| `inactive` | render nothing (or `<Spinner className="opacity-30" />`) |
+| `active` | `<Spinner />` (spinning Loader2 icon) |
+| `finished` | `<CheckCircle2 className="text-green-600" />` |
+| `error` | `<XCircle className="text-destructive" />` |
+
+| Concept | Carbon | shadcn |
+|---|---|---|
+| Wrapper | `<InlineLoading status description />` | `<div className="flex items-center gap-2"><Spinner /><span>{text}</span></div>` |
+| Status icon | implicit (chosen by `status`) | render manually per state |
+| Status text | `description` prop | sibling `<span>` |
+| Success message | `successDelay` (auto-fade after success) | manage with `setTimeout` in your component |
+| Spinner | always present | render only when active |
+
+## Carbon features missing in shadcn
+
+- **`status` prop with state-driven iconography** — Carbon flips between spinner, checkmark, X based on `status`. shadcn requires you to render the right icon yourself based on your loading/success/error state.
+- **`description` text slot** — Carbon's per-state text. shadcn: render a sibling `<span>` with state-specific text.
+- **`successDelay`** — Carbon auto-hides the finished state after N ms. shadcn: use `setTimeout(() => setStatus('inactive'), 2000)` in your component.
+- **Animation transitions between states** — Carbon cross-fades between icons. shadcn: no built-in; if you want it, add Tailwind animation classes or use Framer Motion.
+- **`iconDescription`** (a11y) — Carbon's SR description for the status icon. shadcn: `<Spinner>` ships `aria-label="Loading"` already; for finished/error icons, add `<span className="sr-only">…</span>`.
+- **`className` on the wrapper that affects layout** — Carbon's wrapper is a flex container. shadcn: you own the wrapper; style with Tailwind as needed.
+- **Skeleton variant (`<InlineLoadingSkeleton>`)** — Carbon ships skeletons. shadcn has only `Spinner` + the generic `skeleton` primitive.
+
+## shadcn features missing in Carbon
+
+- **Standalone Spinner usable anywhere** — `<Spinner />` works inside buttons, badges, tiles, cards. Carbon's spinner is bundled with the inline-loading layout.
+- **Tailwind composability** — `<Spinner className="size-3" />` for small, `size-6` for large, `text-primary` to recolour. Carbon's spinner has fixed sizing.
+- **`role="status"`** — shadcn `Spinner` carries `role="status"` so screen readers announce "Loading" automatically. Carbon's status text is announced too, but the icon-only fallback is shadcn's better default.
+
+## Behavioural differences
+
+- **Default size** — Carbon: 16px spinner with surrounding label spacing. shadcn `Spinner`: `size-4` (16px), no surrounding spacing.
+- **Animation** — Carbon: custom CSS spinner animation (matches Carbon design language). shadcn: `animate-spin` Tailwind class on Lucide's `Loader2Icon` (~360° rotation per second).
+- **Colour** — Carbon: blue (`--cds-interactive-01`) by default. shadcn: inherits `currentColor` (whatever text colour the parent has).
+- **Accessibility** — Both announce "loading" / status text to SRs.
+
+## Migration checklist
+
+1. Decide whether you need full state-machine behaviour (`active`/`finished`/`error`) or just a spinner. Most usages of `InlineLoading` in Camunda webapps are "show spinner during async action then disappear" — that's just `<Spinner />` conditionally rendered.
+2. Replace `<InlineLoading status="active" description={text} />` with:
+   ```tsx
+   <div className="flex items-center gap-2 text-sm">
+     <Spinner />
+     <span>{text}</span>
+   </div>
+   ```
+3. For `status="finished"`: render `<CheckCircle2 className="h-4 w-4 text-green-600" />` + `<span>` (not a `<Spinner>`).
+4. For `status="error"`: render `<XCircle className="h-4 w-4 text-destructive" />` + `<span className="text-destructive">`.
+5. For `successDelay`: own the timeout in your component (`useEffect(() => { const t = setTimeout(() => setStatus('inactive'), 2000); return () => clearTimeout(t); }, [status])`).
+6. If used inside a button (the most common Carbon pattern): replace with `<Button disabled={isPending}><Spinner /> Save</Button>` — drop the standalone InlineLoading entirely.
+7. For a11y on success/error icons: add `<span className="sr-only">{status}</span>` next to the icon (or use `aria-live="polite"` on the wrapper div).

@@ -1,0 +1,36 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as SkeletonIconStories from './skeleton-icon.stories';
+
+<Meta of={SkeletonIconStories} name="Docs" />
+
+# SkeletonIcon
+
+A small square placeholder for icon slots while content is loading. Use to reserve space and signal pending state where an icon will eventually render — beside a label, in a list row, or inside a button.
+
+## When to use
+
+- **Square placeholder for an icon** — `<Skeleton className="size-4" />` for the default 16px icon slot.
+- **Larger icon shapes** — `<Skeleton className="size-6" />` (24px), `size-8` (32px), etc.
+- **Squared corners (matching Carbon)** — add `className="rounded-none"` to override the default `rounded-md`.
+- **Loading row composition** — pair with text skeletons in a flex row: `<Skeleton className="size-4" />` + `<Skeleton className="h-4 w-32" />`.
+- **Screen-reader announcement** — wrap the loading group in `<div role="status" aria-busy="true" aria-label="Loading">`.
+
+## When not to use
+
+- **Line-shaped text placeholders** — use `SkeletonText` (same generic primitive, sized as a line).
+- **Per-component skeletons** ("button skeleton", "table skeleton") — assemble a composition of `<Skeleton>` rectangles to match the rendered shape.
+- **Real-time loading where size is known** — render a tiny `Spinner` if the duration is short and known.
+
+## Composition
+
+- The wrapper re-exports the canonical `Skeleton` from `skeleton/`. There is no per-content-type variant — sizing is yours via Tailwind.
+- Default animation is `animate-pulse` (opacity-based), not the Carbon shimmer. For shimmer, write a custom keyframe in `globals.css`.
+- Default colour is `bg-accent` (a neutral grey theme token); recolour with any `bg-*` class.

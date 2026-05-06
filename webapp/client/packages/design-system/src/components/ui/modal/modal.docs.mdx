@@ -1,0 +1,38 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as ModalStories from './modal.stories';
+
+<Meta of={ModalStories} name="Docs" />
+
+# Modal
+
+A focus-trapped overlay panel for tasks that require the user's full attention. Use for forms, multi-step flows, or detail views that interrupt the page until explicitly dismissed.
+
+## When to use
+
+- **Forms or multi-step flows** — compose `Dialog` + `DialogTrigger` + `DialogContent` with `DialogHeader` + `DialogFooter`. Use `<DialogClose asChild>` for the cancel button.
+- **Title and description** — use `<DialogTitle>` and `<DialogDescription>` inside `<DialogHeader>` for a11y-correct labelling.
+- **Trigger from any element** — wrap any button, link, or custom element in `<DialogTrigger asChild>`.
+- **Custom width** — restyle `<DialogContent className="sm:max-w-md / 2xl / 4xl">`. Default is `sm:max-w-lg`.
+- **Prevent outside-click dismissal** — `<DialogContent onPointerDownOutside={(e) => e.preventDefault()}>`.
+- **Custom focus on open** — `<DialogContent onOpenAutoFocus={(e) => { e.preventDefault(); ref.current?.focus() }}>`.
+
+## When not to use
+
+- **Destructive confirmation** ("Delete?", "Discard changes?") — use `AlertDialog`. It defaults focus to the cancel button, blocks outside-click, and uses `role="alertdialog"`.
+- **Transient feedback** ("Saved", "Copied") — use `Sonner` toasts.
+- **Inline content that doesn't need to interrupt** — render in place.
+- **Picking from a list of options** — use `Popover` or `DropdownMenu`.
+
+## Composition
+
+- shadcn ships **one** API (`Dialog` family) — no separate `Modal` vs. `ComposedModal`. Always compose explicitly.
+- The close (X) button is built into `<DialogContent>`. There is no `passiveModal` prop — to omit footer buttons, just don't render `<DialogFooter>`.
+- For `loadingStatus`-style pending state, render a `<Spinner />` next to the action button and disable it while pending.

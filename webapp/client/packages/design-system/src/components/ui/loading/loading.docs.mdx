@@ -1,0 +1,36 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as LoadingStories from './loading.stories';
+
+<Meta of={LoadingStories} name="Docs" />
+
+# Loading
+
+A page- or section-level spinner indicating that work is in progress. Use when content is fetching, a long-running action is pending, or a region of the UI must be visually blocked while waiting.
+
+## When to use
+
+- **Section loading** — content area fetching data. Use `<Spinner className="size-12" />` centered with `flex items-center justify-center`.
+- **Full-page or section-blocking** — overlay the spinner: `<div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">` containing the Spinner.
+- **Inline next to text** — drop `<Spinner />` (default `size-4`) next to a label like "Loading…".
+- **Recolour to match context** — `<Spinner className="text-primary">` inherits any palette token via `currentColor`.
+- **Custom screen-reader label** — pass `aria-label="Loading data"` to override the default `aria-label="Loading"`.
+
+## When not to use
+
+- **Inside a button or form field while pending** — use `InlineLoading` (small spinner with status text and state machine).
+- **Skeleton placeholders for content shape** — use `Skeleton`, `SkeletonText`, or `SkeletonIcon`.
+- **Indeterminate progress with a known step count** — use a `Progress` bar.
+
+## Composition
+
+- The wrapper re-exports the canonical `Spinner` from `spinner/`. Sizing, centering, and overlay are app-level composition — there is no `withOverlay` or `small` prop.
+- For full-page blocking with scroll-lock, prefer wrapping the Spinner in a `<Dialog>` instead of building your own overlay.
+- The default size is `size-4` (16px). Match Carbon's large 88px look with `size-16` or larger.

@@ -1,0 +1,38 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as ToastNotificationStories from './toast-notification.stories';
+
+<Meta of={ToastNotificationStories} name="Docs" />
+
+# ToastNotification
+
+A transient floating notification queued by an imperative `toast()` API. The wrapper re-exports `Toaster` and `toast` from `sonner/`. Use for ephemeral feedback after a user action — save success, async completion, errors that don't block the flow.
+
+## When to use
+
+- **Success / info / warning / error feedback** — `toast.success(title, {description})`, `toast.info(...)`, `toast.warning(...)`, `toast.error(...)`.
+- **Async operation status** — `toast.promise(promise, {loading, success, error})` shows pending → resolved/rejected in one call.
+- **Loading state with later replacement** — `const id = toast.loading(...)`; later `toast.success(..., {id})`.
+- **Toast with a primary action** — pass `action: {label, onClick}` for an inline CTA.
+- **Custom JSX content** — `toast.custom(jsx)` for full layout control inside the toast cell.
+- **Per-toast lifetime** — `duration` option overrides the global default (4000ms).
+
+## When not to use
+
+- **Permanent contextual status in the page body** — use `Callout` or `InlineNotification` (the `Alert` family).
+- **Blocking confirmation** — use `AlertDialog`.
+- **Inline form-field errors** — render error text under the field, not a toast.
+
+## Composition
+
+- Mount **one `<Toaster />` once at the app root** (inside `<ThemeProvider>` next to `<App />`). Multiple Toasters mean multiple queues and viewports.
+- Configure `position`, default `duration`, `expand`, `closeButton`, and `richColors` on `<Toaster>`; these become the defaults for every `toast()` call.
+- Theme follows the `dark` class on the `<html>` element via a built-in `MutationObserver`; no `next-themes` integration required.
+- Sonner is client-only — mark the file with `"use client"` if migrating into a Next.js (RSC) app.

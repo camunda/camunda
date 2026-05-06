@@ -1,0 +1,36 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as InlineLoadingStories from './inline-loading.stories';
+
+<Meta of={InlineLoadingStories} name="Docs" />
+
+# InlineLoading
+
+A small inline status indicator showing an in-flight async operation and its outcome. The shadcn equivalent is just `Spinner` plus your own text and outcome icons — there is no state-machine component.
+
+## When to use
+
+- **In-flight async indicator next to a control** — saving, uploading, validating. Render `<Spinner />` + a sibling `<span>` while the operation is pending.
+- **Inside a button during submit** — `<Button disabled={isPending}><Spinner /> Save</Button>`. Drop the standalone wrapper entirely.
+- **Sized indicator in a dense surface** — pass `className="size-3"` (small) or `size-6` (large) on `<Spinner>`. Default is `size-4` (16px).
+- **Recoloured indicator** — `<Spinner>` inherits `currentColor`; set the parent's `text-…` class to recolour.
+
+## When not to use
+
+- **Page-level loading state** — use a full-page or section `Skeleton`, not a single Spinner.
+- **Status that needs the previous-state context to read** ("Connecting…" / "Connected" / "Disconnected") — render the icon swap yourself; this primitive doesn't manage the state machine.
+- **Long-running progress with a known percentage** — use a `Progress` bar.
+
+## Composition
+
+- shadcn ships only `Spinner` (a styled `lucide-react` `Loader2Icon` with `animate-spin` and `role="status"`). Status text, success/error icons, and state transitions are app-side composition.
+- Outcome icons: render `<CheckCircle2 className="text-green-600" />` for finished and `<XCircle className="text-destructive" />` for error — there is no built-in finished/error state.
+- For Carbon's `successDelay`: own the timeout in your component (`setTimeout(() => setStatus('idle'), 2000)`).
+- A11y: `<Spinner>` already carries `role="status"`. For success/error icons, add `<span className="sr-only">{status}</span>` or `aria-live="polite"` on the wrapper.

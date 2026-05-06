@@ -1,0 +1,95 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/ToastNotification/Migration" />
+
+# ToastNotification — Carbon → shadcn migration guide
+
+## Paradigm shift
+
+This is the most architecturally different migration on the list. The mental model changes completely.
+
+- **Carbon `ToastNotification`** is a **declaratively rendered component**. You instantiate `<ToastNotification kind title subtitle />` somewhere in JSX. Lifecycle (queueing, dismissing, position) is the consumer's responsibility — typically managed by an external Redux/Zustand store that pushes/pops notifications and renders them in a fixed-position container.
+- **shadcn `Sonner`** (a wrapper around the [sonner](https://sonner.emilkowal.ski/) library) is a **toast queue + viewport**. You render a single `<Toaster />` once near your app root, and call the imperative `toast(message, options)` API from anywhere to enqueue a toast. The library handles positioning, stacking, animations, and auto-dismiss.
+
+Migrating from Carbon to shadcn means:
+1. Remove your manual notification store / state management.
+2. Mount one `<Toaster />` at the app root.
+3. Replace `dispatch({type: 'NOTIFY', kind: 'success', title, subtitle})` (or whatever pattern) with `toast.success(title, {description: subtitle})`.
+
+## Mapping
+
+| Concept | Carbon | shadcn |
+|---|---|---|
+| Toast queue | manual (Redux store, Context, etc.) | built-in via `<Toaster />` |
+| Render API | `<ToastNotification kind title subtitle />` JSX | `toast(message, opts)` imperative |
+| Mount point | wherever you render the JSX | `<Toaster />` once at app root |
+| Status / kind | `kind="error" / "info" / "info-square" / "success" / "warning" / "warning-alt"` | `toast.error()`, `toast.info()`, `toast.success()`, `toast.warning()` |
+| Title | `title` prop | first arg to `toast(...)` |
+| Subtitle / body | `subtitle` prop | `description` option |
+| Caption / timestamp | `caption` prop | not modeled — include in description manually |
+| Action button | not built-in (use `<ActionableNotification>` for inline) | `action: {label, onClick}` option |
+| Dismiss button | `hideCloseButton` prop | always rendered (X icon); hide via `closeButton: false` Toaster prop |
+| Auto-dismiss | `timeout` prop | `duration` option per toast (default 4000ms) |
+| Position | manual (consumer-owned container) | `<Toaster position="top-right" / "bottom-right" / …>` |
+| Stacking / queueing | manual | built-in (animated stack) |
+| Promise tracking | not modeled | `toast.promise(promise, {loading, success, error})` |
+| Custom JSX content | children | `toast.custom(jsx)` or pass JSX as `description` |
+| Skeleton variant | `<NotificationSkeleton>` | none (not really applicable for ephemeral toasts) |
+
+## Carbon features missing in shadcn
+
+- **`caption` prop** — Carbon's third text slot for timestamps/metadata. shadcn: include it in the `description` string or use `toast.custom(jsx)` for full JSX control.
+- **`role="status"` for non-error kinds** — Carbon switches `role` based on `kind`. Sonner uses `role="status"` for all toasts (announces politely to SRs). Errors should use `toast.error()` so SRs prioritise them; for hard alerts use `role="alert"` via custom rendering.
+- **`hideCloseButton`** — Carbon prop per notification. Sonner: configure globally via `<Toaster closeButton={false} />` or per-toast via `closeButton: false` (in newer sonner versions).
+- **6 status kinds** — Carbon ships `error` / `info` / `info-square` / `success` / `warning` / `warning-alt`. Sonner provides 4 + plain (`toast.success` / `info` / `warning` / `error`). The two info/warning sub-variants collapse.
+- **`statusIconDescription`** — Carbon's SR label for the status icon. Sonner relies on the toast text; the icon is decorative.
+- **`onCloseButtonClick` / `onClose`** — per-notification close callbacks. Sonner: `onDismiss` / `onAutoClose` options on `toast(...)`.
+- **`lowContrast` boolean** — Carbon's quieter visual treatment. Sonner has no toggle — restyle via `<Toaster className>` or `toastOptions`.
+- **No JSX-rendered toast pattern** — Sonner is fundamentally imperative. If your code expects to render `<ToastNotification />` declaratively (e.g., in a list of notifications), you'd need to migrate that data structure to call `toast()` in a `useEffect` for new entries.
+
+## shadcn / Sonner features missing in Carbon
+
+- **`<Toaster />` viewport** — one container handles positioning, stacking, animations, theme syncing.
+- **`toast.promise(promise, {…})`** — track an async operation's pending/success/error states with one call. Carbon has no equivalent.
+- **`toast.loading(message)`** — show a loading spinner; later call `toast.success(...)` to replace.
+- **`toast.custom(jsx)`** — render arbitrary JSX inside a toast cell.
+- **`action` + `cancel` slots** — first-class action buttons (`action: {label, onClick}`). Carbon only supports this in `<ActionableNotification>` (separate component).
+- **Stacking + animations** — built-in entry/exit animations + multi-toast stacking.
+- **`expand` / `closeButton` / `richColors` / `position`** — viewport-level config on `<Toaster>`.
+- **Theme sync** — auto-switches light/dark based on the document's `dark` class (we wired this via `MutationObserver` since shadcn's default uses `next-themes` which we don't have).
+- **`toast.dismiss(id)` / `toast.dismiss()` (all)** — programmatic dismiss.
+- **`toastOptions` on `<Toaster>`** — global defaults for duration, classes, etc.
+
+## Behavioural differences
+
+- **Lifecycle** — Carbon: you own it. Sonner: library owns it.
+- **Default position** — Carbon: wherever you mount it. Sonner: `top-right` (configurable).
+- **Default duration** — Carbon: indefinite unless `timeout` set. Sonner: 4000ms (configurable).
+- **Default render order** — Carbon: top-down (oldest at top). Sonner: newest at top, animated stack underneath.
+- **Theme** — Carbon: theme via the surrounding `data-carbon-theme`. Sonner: theme prop, syncs with `dark` class via our `useThemeMode()` hook in `sonner.shadcn.tsx`.
+
+## Migration checklist
+
+1. **Mount `<Toaster />` once at the app root** (e.g., inside `<ThemeProvider>` next to your `<App />`). Configure `position`, `duration`, `expand`, etc. once.
+2. Identify your notification source — likely a Redux/Zustand store or Context that holds an array of `{kind, title, subtitle}`.
+3. Replace the consumer rendering (the component that maps over the array and renders `<ToastNotification>` per entry) with: when a new notification is pushed to the store, call `toast(...)`.
+4. Map `kind` → toast helper:
+   - `kind="success"` → `toast.success(title, {description: subtitle})`
+   - `kind="info"` / `"info-square"` → `toast.info(title, {description: subtitle})`
+   - `kind="warning"` / `"warning-alt"` → `toast.warning(title, {description: subtitle})`
+   - `kind="error"` → `toast.error(title, {description: subtitle})`
+5. Replace `timeout={5000}` with `duration: 5000` option.
+6. Replace `caption` with appended description text or `toast.custom(jsx)` for full layout control.
+7. For `onClose` / `onCloseButtonClick`: pass `onDismiss` / `onAutoClose` in the toast options.
+8. Remove your manual notification store entirely (sonner owns the queue), OR if you keep the store for non-toast purposes, just add the `toast()` call as a side-effect.
+9. For places that needed a CTA in the toast: use `action: {label, onClick}` — ToastNotification didn't natively support this; teams typically used `<ActionableNotification>` instead.
+10. **Don't render `<Toaster />` inside `<ToastNotification>` migration sites** — render it once globally. Multiple Toasters mean multiple queues, multiple viewports.
+11. For SSR setups: Sonner is client-only; mark the file with `"use client"` at the top if migrating into a Next.js app (already implied here since the project is Vite/SPA).

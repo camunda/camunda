@@ -1,0 +1,77 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/StructuredList/Migration" />
+
+# StructuredList — Carbon → shadcn migration guide
+
+## What StructuredList is
+
+Carbon's `StructuredList` is a **read-only tabular layout** typically used for:
+1. Showing key/value pairs (e.g., "Email: …", "Role: …" rows in a profile panel).
+2. Showing simple lists with light header/row structure.
+3. Optionally embedding a **radio-input** in each row to select one (`StructuredListInput`).
+
+It uses the `<div role="table">` family under the hood (Carbon-typed CSS, not native `<table>`).
+
+shadcn does not ship a dedicated `StructuredList`. The closest primitive is the **`Table`** family — the same one used by the `table/` direct-match wrapper. For most StructuredList usages (key/value, simple data display), a plain `<Table>` works. For the radio-selection variant, you compose `<RadioGroup>` + `<Table>` manually.
+
+## Mapping
+
+| Carbon | shadcn |
+|---|---|
+| `<StructuredListWrapper>` | `<Table>` |
+| `<StructuredListHead>` | `<TableHeader>` (which is `<thead>` in shadcn — note the [naming clash](../table/migration_guide.md#-naming-clash-the-big-one) with Carbon's `Table` family) |
+| `<StructuredListBody>` | `<TableBody>` |
+| `<StructuredListRow head>` | `<TableRow>` inside `<TableHeader>` |
+| `<StructuredListRow>` (body) | `<TableRow>` inside `<TableBody>` |
+| `<StructuredListCell head>` | `<TableHead>` (= `<th>`) |
+| `<StructuredListCell>` (body) | `<TableCell>` (= `<td>`) |
+| `<StructuredListInput>` (radio per row) | `<RadioGroup>` wrapping the `<TableBody>` + `<RadioGroupItem>` inside each row's first `<TableCell>` |
+| `<StructuredListSkeleton>` | compose `<Skeleton>` rectangles in a `<Table>` shape, or skip entirely |
+| `selection` (single-select highlight) | track `useState`, set `data-state="selected"` on `<TableRow>` + manage row-click to select |
+| `border` boolean | shadcn rows have a default border-b; remove with `[&_tr]:border-0` if needed |
+| `noWrap` on cells | `<TableCell className="whitespace-nowrap">` |
+
+## Carbon features missing in shadcn
+
+- **`<StructuredListInput>` radio-per-row** — Carbon's first-class "select one row" UI. shadcn requires composing `<RadioGroup>` + `<RadioGroupItem>` (not yet wrapped — would come from a separate shadcn primitive `radio-group`) inside cells.
+- **`selection` prop on the wrapper** — Carbon's selected-row tracking. shadcn: own the state and use `data-state="selected"` on `<TableRow>` (the shadcn `Table` primitive already styles selected rows via `data-[state=selected]:bg-muted`).
+- **Built-in CSS for "narrow" key/value layout** — Carbon's StructuredList is more visually compact than Carbon's DataTable. shadcn `Table` is one density; for tighter rows, restyle with `[&_td]:py-2` or similar.
+- **`<StructuredListSkeleton>`** — Carbon ships a skeleton variant. shadcn: compose `<Skeleton>` divs to match the table shape.
+- **`isCondensed`** — Carbon's tighter row variant. shadcn: restyle padding via Tailwind.
+- **`isFlush`** — Carbon's no-padding variant. shadcn: restyle padding via Tailwind.
+
+## shadcn features missing in Carbon
+
+- **Native `<table>` semantics** — `<Table>` renders a real `<table>` with `<thead>`/`<tbody>`/`<tr>`/`<th>`/`<td>`. Carbon's StructuredList uses `<div>`-based ARIA roles. Native semantics are slightly better for screen readers and CSV/copy interactions.
+- **`<TableCaption>` / `<TableFooter>`** — shadcn ships these primitives for accessible captions and aggregated rows. Carbon's StructuredList has neither.
+- **Tailwind composability** — restyle row padding, borders, density per-call-site.
+
+## Behavioural differences
+
+- **Underlying element** — Carbon: `<div role="table">`. shadcn: native `<table>`. Native is slightly more accessible / portable.
+- **Default density** — Carbon StructuredList: roughly 14px line-height + ~16px padding. shadcn Table: 14px + 16px padding (`p-4` on cells). Visually close but not identical.
+- **Hover** — Carbon StructuredList: subtle hover state. shadcn Table: `hover:bg-muted/50` always on (suppress with `[&_tr]:hover:bg-transparent`).
+- **Border between rows** — Carbon: full bottom border. shadcn: `border-b` per row. Match.
+
+## Migration checklist
+
+1. Replace `<StructuredListWrapper>` with `<Table>`.
+2. Replace `<StructuredListHead>` with `<TableHeader>` (note: shadcn `TableHeader` = `<thead>`, opposite of Carbon's `TableHead` — see the table migration guide for the full name-clash details).
+3. Replace `<StructuredListBody>` with `<TableBody>`.
+4. Replace `<StructuredListRow>` with `<TableRow>`.
+5. Replace `<StructuredListCell head>` with `<TableHead>` (shadcn `<th>`).
+6. Replace `<StructuredListCell>` (body) with `<TableCell>` (shadcn `<td>`).
+7. For `noWrap` cells: `<TableCell className="whitespace-nowrap">`.
+8. For `<StructuredListInput>` radio rows: pull in shadcn's `radio-group` primitive (`npx shadcn add radio-group`), wrap the `<TableBody>` in `<RadioGroup value onValueChange>`, and place `<RadioGroupItem value={…} />` in the first `<TableCell>` of each row. Click-target the whole row by adding `onClick` to set the radio.
+9. For `selection`: track `const [selected, setSelected] = useState<string>()` and set `data-state={row.id === selected ? 'selected' : undefined}` on `<TableRow>` to get the built-in selected styling.
+10. For `<StructuredListSkeleton>`: build a small composition: a `<Table>` shell with `<TableRow>`s containing `<TableCell><Skeleton className="h-4 w-full" /></TableCell>`.
+11. For typical key/value usage: omit `<TableHeader>` entirely; just use `<TableBody>` + `<TableRow>` with two cells each (a styled "label" cell with `font-medium whitespace-nowrap` and a "value" cell). See the `KeyValue` story for the canonical shape.

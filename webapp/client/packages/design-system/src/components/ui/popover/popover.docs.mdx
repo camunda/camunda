@@ -1,0 +1,39 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as PopoverStories from './popover.stories';
+
+<Meta of={PopoverStories} name="Docs" />
+
+# Popover
+
+A small floating panel anchored to a trigger. Use for transient, non-modal supplementary content — tooltips with rich markup, settings panels, lightweight forms — that is dismissed by clicking outside or pressing Escape.
+
+## When to use
+
+- **Anchored auxiliary UI** — compose `Popover` + `PopoverTrigger asChild` + `PopoverContent`. Use `defaultOpen` (uncontrolled) or `open` + `onOpenChange` (controlled).
+- **Non-button trigger** — wrap any element in `<PopoverTrigger asChild>`.
+- **Placement around the trigger** — pass `side` (`top`/`right`/`bottom`/`left`) and `align` (`start`/`center`/`end`) on `<PopoverContent>`.
+- **Pixel-precise spacing** — `<PopoverContent sideOffset={8} alignOffset={4}>`.
+- **Content-hugging width** — default content is `w-72`; override with `<PopoverContent className="w-auto">`.
+- **Headed content** — use `<PopoverHeader>` + `<PopoverTitle>` + `<PopoverDescription>` for structured layout.
+
+## When not to use
+
+- **Focus-trapping, blocking overlay** — use `Dialog` (or `AlertDialog` for destructive confirmations).
+- **Single-text hover hint** — use `Tooltip`.
+- **Action menu** — use `DropdownMenu` (`MenuButton` / `OverflowMenu`).
+- **Single-select picker** — use `Select`.
+- **Anchored to a text reference** ("hover for details") — use `HoverCard`.
+
+## Composition
+
+- Content always renders into a portal at `<body>`. Ancestor `overflow:hidden` will not clip it.
+- There is no `caret`/arrow primitive in the wrapper — import `<PopoverPrimitive.Arrow />` from `@radix-ui/react-popover` and place it inside `<PopoverContent>` if needed.
+- `dropShadow` is always on (`shadow-md`); strip with `className="shadow-none"`. There is no `highContrast` or `isTabTip` variant — restyle via Tailwind.

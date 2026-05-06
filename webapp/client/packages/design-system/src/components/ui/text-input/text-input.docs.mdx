@@ -1,0 +1,38 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as TextInputStories from './text-input.stories';
+
+<Meta of={TextInputStories} name="Docs" />
+
+# TextInput
+
+A styled native `<input>` for single-line text entry. Use for any short string field — names, emails, search queries, numeric values, passwords. The wrapper re-exports `Input`.
+
+## When to use
+
+- **Short single-line text** — `<Input />`. Every native attribute (`type`, `autoComplete`, `inputMode`, `pattern`, `min`, `max`) just works.
+- **Typed inputs** — `<Input type="email" / "number" / "search" / "url" />` selects the native UA behaviour. No separate `NumberInput`/`SearchInput` components — use `type` + composition.
+- **Password field** — `<Input type="password" />`. For a show/hide toggle, compose with a ghost icon `Button` and local `useState`.
+- **Invalid state** — `aria-invalid` triggers the destructive border + ring out of the box; render error text as a sibling `<p>`.
+- **Read-only** — native `readOnly`; add `className="bg-muted cursor-not-allowed"` to mimic Carbon's greyed look.
+- **Icon prefix / suffix** — wrap with `InputGroup` to attach icons or trailing actions.
+
+## When not to use
+
+- **Multi-line text** — use `Textarea` (shadcn `TextArea`).
+- **Choice from a fixed list** — use `Select` or `ComboBox`.
+- **Boolean toggles** — use `Switch` or `Checkbox`.
+
+## Composition
+
+- Ships **just the input** — no label, helper text, or error message. Pair with `<Label htmlFor>` and sibling `<p>` elements (or shadcn `Field`) for the full field experience.
+- Built-in `aria-invalid:` selectors apply destructive styling automatically — no need for a separate `invalid` prop.
+- Default sizing is `h-9 text-base md:text-sm`; override with `className="h-10"` to match Carbon's `md` density.
+- Form libraries (React Hook Form, TanStack Form) work out of the box — the underlying element is a real `<input>`.

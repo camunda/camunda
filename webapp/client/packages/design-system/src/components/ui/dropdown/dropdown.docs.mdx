@@ -1,0 +1,38 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as DropdownStories from './dropdown.stories';
+
+<Meta of={DropdownStories} name="Docs" />
+
+# Dropdown
+
+A single-select listbox for picking one option from a fixed set. The shadcn migration target is **`Select`**, not `DropdownMenu` — `DropdownMenu` is the action-menu primitive (Carbon's `OverflowMenu` / `MenuButton`).
+
+## When to use
+
+- **Single-select from a short, fixed list** (≤ ~10 items, no search needed). Compose `<Select>` + `<SelectTrigger>` + `<SelectContent>` + `<SelectItem>`.
+- **Form fields with a known option set** — country, language, role. Use `defaultValue` for initial selection, `value` + `onValueChange` for controlled state.
+- **Grouped options** — wrap related items in `<SelectGroup>` with `<SelectLabel>`, separated by `<SelectSeparator>`.
+- **Invalid state** — set `aria-invalid` and `className="border-destructive focus:ring-destructive"` on `<SelectTrigger>`; render the error message as a sibling `<p>`.
+- **Force panel above** — pass `side="top"` on `<SelectContent>`.
+
+## When not to use
+
+- **Searchable / filterable selection** — use `ComboBox`.
+- **Action menu** (clickable items that fire callbacks) — use `DropdownMenu`.
+- **Multi-select** — `Select` is single-select only. Use `ComboBox` with `<ComboboxChips>`.
+- **Boolean toggle** — use `Switch` or `Checkbox`.
+- **Mutually exclusive small set displayed inline** — use `RadioGroup` or `ToggleGroup`.
+
+## Composition
+
+- `Select`'s `value` is a **string**. If your data is an array of objects, map `value={item.id}` and look the object back up via your source array — there is no `itemToString` / `itemToElement`.
+- The trigger label uses `<SelectItemText>` (text-only). For rich content in the trigger, override `<SelectValue>` with a custom render.
+- For form serialisation, add a hidden `<input type="hidden" name>` synced with the value, or use a form library's `Controller`.

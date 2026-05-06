@@ -1,0 +1,92 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/Select/Migration" />
+
+# Select — Carbon → shadcn migration guide
+
+## Underlying primitive
+
+- **Carbon `Select`** wraps a native `<select>` element. Items are real `<option>`s; the dropdown is the OS-native picker.
+- **shadcn `Select`** is a Radix-based custom listbox (`@radix-ui/react-select`). It renders a `<button>` trigger and a Portal'd content panel; no native `<select>` is involved.
+
+This is the biggest behavioural difference and drives most of the others.
+
+## Structural differences
+
+Carbon's `Select` is monolithic: pass `<SelectItem>`s as children, set `labelText`/`helperText`/`invalidText` on the parent.
+
+shadcn's `Select` is fully decomposed: explicit `<SelectTrigger>`, `<SelectValue>`, `<SelectContent>`, optional `<SelectGroup>` / `<SelectLabel>` / `<SelectSeparator>`, plus `<SelectItem>` per option.
+
+| Concept | Carbon | shadcn |
+|---|---|---|
+| Root | `<Select labelText="…" />` | `<Select>…</Select>` (open state lives here) |
+| Trigger / value | implicit (built-in) | `<SelectTrigger><SelectValue /></SelectTrigger>` |
+| Dropdown panel | implicit (native picker) | `<SelectContent>` (Radix Portal + custom panel) |
+| Item | `<SelectItem value="…" text="…" />` | `<SelectItem value="…">{label}</SelectItem>` |
+| Field label | `labelText` prop | external `<label>` |
+| Helper text | `helperText` prop | external `<p>` |
+| Invalid + error text | `invalid` + `invalidText` | `aria-invalid` + external `<p>`; style trigger via `data-[state]` selectors |
+| Warn state | `warn` + `warnText` | not modeled — render manually |
+| Group / divider | `<SelectItemGroup label="…">` | `<SelectGroup><SelectLabel>…</SelectLabel><SelectItem/>…</SelectGroup>` + `<SelectSeparator />` |
+| Hidden placeholder | `<SelectItem disabled hidden value="" text="Pick…">` (boilerplate) | `<SelectValue placeholder="Pick…" />` (built-in) |
+| Density variants | `size="sm" / "md" / "lg"` | none — restyle `<SelectTrigger>` via Tailwind |
+| Inline variant | `inline` prop | none — build manually |
+| Light variant | `light` prop | none — set CSS variables |
+| Skeleton | `<SelectSkeleton>` | none — use the generic `skeleton` primitive |
+
+## Carbon features missing in shadcn
+
+- **`labelText` / `helperText` / `invalidText` / `warnText`** — Carbon ships labels and messaging in the field. shadcn forces external composition (typically with the `Field` primitive).
+- **`warn` state** — Carbon distinguishes invalid (red) from warning (amber). shadcn has only `aria-invalid`. Mimic warning by hand-rolling amber classes.
+- **`size="sm"` / `"lg"`** — density variants. shadcn's `<SelectTrigger>` is one fixed size; restyle with Tailwind.
+- **`inline` prop** — Carbon's "inline label" variant where the label sits beside the trigger. shadcn requires custom flexbox composition.
+- **`light` prop** — Carbon's light-on-dark treatment. shadcn relies on theme tokens; no toggle prop.
+- **`<SelectItemGroup label>`** — Carbon's grouping is one component with a built-in `<optgroup>`-like label. shadcn splits into `<SelectGroup>` + `<SelectLabel>`.
+- **`<SelectItem disabled hidden>` placeholder pattern** — Carbon's idiom for a default/placeholder option. shadcn's `<SelectValue placeholder>` is more elegant.
+- **Native form serialisation** — `<select name="…">` works inside `<form>` without JS. shadcn requires you to add a hidden `<input type="hidden" name>` companion or integrate with a form library.
+- **Native mobile UX** — Carbon delegates to the OS picker on touch devices (much better UX on iOS/Android). shadcn's Radix listbox renders the same custom panel everywhere.
+- **`<SelectSkeleton>`** — Carbon ships a skeleton variant. shadcn has none.
+- **Render-prop `itemToString` / `renderSelectedItem`** — Carbon has hooks for non-string item rendering (e.g., icons next to options); accomplished in shadcn via arbitrary children inside `<SelectItem>`, but the trigger's selected-value rendering is `<SelectValue>`'s `<SelectItemText>` only.
+
+## shadcn features missing in Carbon
+
+- **Custom panel styling** — full control over the dropdown's look (borders, shadows, animations). Carbon's native picker is OS-styled.
+- **Group + separator primitives** — first-class `<SelectGroup>`, `<SelectLabel>`, `<SelectSeparator>` for richer hierarchy.
+- **Per-item rich content** — render icons, descriptions, badges inside `<SelectItem>`. Carbon's native `<option>` is text-only.
+- **Animation primitives** — entry/exit animations driven by `data-state` attributes.
+- **`asChild`-style swap** — swap any sub-component with `asChild` (Radix slot pattern).
+- **Scroll buttons** — auto-rendered `<SelectScrollUpButton>` / `<SelectScrollDownButton>` when the panel overflows.
+- **Position prop** — `<SelectContent position="popper" | "item-aligned">` to choose between popper-style positioning (anchored under trigger) or item-aligned (selected item lines up with trigger). Carbon's native picker has no equivalent.
+
+## Behavioural differences
+
+- **Trigger element** — Carbon: native `<select>` with browser-styled chevron. shadcn: `<button>` with custom chevron.
+- **Mobile** — Carbon: native OS picker. shadcn: same custom panel everywhere.
+- **Form integration** — Carbon: `name` attribute serialises automatically. shadcn: needs a hidden input or form-library integration.
+- **Keyboard** — Both support arrow keys, type-ahead, Escape. shadcn additionally supports `data-state`-driven custom focus rings.
+- **Z-index / portal** — shadcn portals to `<body>`; Carbon renders inline (so parent `overflow:hidden` can clip the OS picker, though that's typically a non-issue with native pickers).
+- **Selected-value rendering** — Carbon shows the option's `text`. shadcn shows whatever's inside `<SelectItem>` via `<SelectItemText>` (still text only — no rich content in the trigger).
+
+## Migration checklist
+
+1. Replace `<Select labelText helperText>` with `<Select>` + a sibling `<label>`/`<p>`.
+2. Restructure children:
+   - Wrap the visible trigger value in `<SelectTrigger><SelectValue placeholder="…" /></SelectTrigger>`.
+   - Wrap option list in `<SelectContent>…</SelectContent>`.
+3. Replace `<SelectItem text>` with `<SelectItem value="…">{text}</SelectItem>`.
+4. Drop the `<SelectItem disabled hidden value="">` placeholder; use `<SelectValue placeholder="…" />`.
+5. Replace `<SelectItemGroup label="X">` with `<SelectGroup><SelectLabel>X</SelectLabel>…</SelectGroup>`.
+6. For grouped lists, optionally insert `<SelectSeparator />` between groups.
+7. Replace `invalid` + `invalidText` with `aria-invalid` on `<SelectTrigger>` + a sibling `<p>` for the message; restyle the trigger if needed.
+8. For `warn`: render amber styling by hand — no shadcn primitive.
+9. If the form posts via plain HTML: add `<input type="hidden" name="…" value={selected} />` next to the `<Select>`, or wire up `react-hook-form` `Controller`.
+10. If the surface targets mobile, evaluate whether the OS-native picker matters; shadcn's panel has the same UX on all devices.
+11. Drop `size`, `inline`, `light` props — restyle with Tailwind classes if needed.

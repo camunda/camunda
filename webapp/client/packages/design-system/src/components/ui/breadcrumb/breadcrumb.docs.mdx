@@ -1,0 +1,36 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as BreadcrumbStories from './breadcrumb.stories';
+
+<Meta of={BreadcrumbStories} name="Docs" />
+
+# Breadcrumb
+
+A navigation trail showing the user's location in a hierarchy. Use at the top of a page when the route is more than two levels deep and back-navigation by hierarchy is useful.
+
+## When to use
+
+- **Hierarchical navigation** — page is at least two levels below the root. Compose `Breadcrumb` > `BreadcrumbList` > `BreadcrumbItem`s.
+- **Linkable ancestors** — each level is a real, navigable URL. Use `BreadcrumbLink` (with `asChild` to plug in a router link).
+- **Current page indicator** — final crumb is the user's location and not clickable. Use `BreadcrumbPage` (sets `aria-current="page"`).
+- **Truncated path** — too many ancestors to show inline. Use `BreadcrumbEllipsis`, optionally wrapping it in a `DropdownMenu` to expose hidden levels.
+- **Custom separator** — pass children to `BreadcrumbSeparator` to override the default chevron per item.
+
+## When not to use
+
+- **Flat navigation** (one or two pages deep) — page title is enough; breadcrumbs add noise.
+- **Step-based flows** (wizards, checkouts) — use a `Stepper` / progress indicator, not breadcrumbs.
+- **Primary site navigation** — use a sidebar or top nav, not a breadcrumb.
+
+## Composition
+
+- Separators are **explicit**: insert a `BreadcrumbSeparator` between every consecutive pair of items. The component does not render them automatically.
+- Use `BreadcrumbLink asChild` to compose with `react-router` / `next/link` without a wrapper anchor: `<BreadcrumbLink asChild><RouterLink to="…">…</RouterLink></BreadcrumbLink>`.
+- For overflow menus, render a `DropdownMenu` inside a `BreadcrumbItem` in place of `BreadcrumbEllipsis`'s default span.

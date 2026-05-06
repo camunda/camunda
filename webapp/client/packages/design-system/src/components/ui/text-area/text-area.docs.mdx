@@ -1,0 +1,37 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as TextAreaStories from './text-area.stories';
+
+<Meta of={TextAreaStories} name="Docs" />
+
+# TextArea
+
+A styled native `<textarea>` for multi-line text input. Use for free-form content longer than a single line — descriptions, comments, JSON snippets, prose fields.
+
+## When to use
+
+- **Multi-line free text** — `<Textarea />`. Bind via `value` + `onChange` or hand off to a form library; the underlying element is native and accepts every standard attribute.
+- **Auto-grow with content** — built in via `field-sizing-content`; the textarea grows from `min-h-16` as the user types.
+- **Fixed height** — set `rows={N}` or override `min-h` / `h` via `className`.
+- **Invalid state** — `aria-invalid` on the element triggers the destructive border + ring out of the box.
+- **Read-only** — the native `readOnly` attribute works; add `className="bg-muted cursor-not-allowed"` to mimic Carbon's greyed look.
+- **Disabled** — the native `disabled` attribute drops opacity to 50% and applies `cursor-not-allowed`.
+
+## When not to use
+
+- **Single-line text** — use `Input` (shadcn `TextInput`).
+- **Rich text / formatted content** — use a dedicated rich-text editor; `<textarea>` is plain text.
+- **Code editing with syntax highlighting** — use a code editor primitive, not a textarea.
+
+## Composition
+
+- Ships **just the textarea** — no label, helper text, error message, or character counter. Pair with `<Label htmlFor>` and sibling `<p>` elements (or shadcn `Field`) for the full field experience.
+- For a character counter, track `value.length` in state and render `<p className="text-xs text-muted-foreground">{value.length}/{max}</p>`; set `maxLength` on the textarea to enforce the limit.
+- Resize affordance follows browser default; constrain with `resize-none` / `resize-y` Tailwind classes.
