@@ -32,8 +32,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
   private int partitionId;
   private String processDefinitionName;
   private Integer processDefinitionVersion;
-  private String serializedExtensionProperties;
-  private Map<String, String> extensionProperties;
+  private String serializedToolProperties;
+  private Map<String, String> toolProperties;
   private String toolName;
   private String inboundConnectorType;
 
@@ -58,7 +58,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       final int partitionId,
       final String processDefinitionName,
       final Integer processDefinitionVersion,
-      final Map<String, String> extensionProperties,
+      final Map<String, String> toolProperties,
       final String toolName,
       final String inboundConnectorType) {
     this.messageSubscriptionKey = messageSubscriptionKey;
@@ -77,8 +77,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.partitionId = partitionId;
     this.processDefinitionName = processDefinitionName;
     this.processDefinitionVersion = processDefinitionVersion;
-    serializedExtensionProperties = MapSerializer.serialize(extensionProperties);
-    this.extensionProperties = extensionProperties;
+    serializedToolProperties = MapSerializer.serialize(toolProperties);
+    this.toolProperties = toolProperties;
     this.toolName = toolName;
     this.inboundConnectorType = inboundConnectorType;
   }
@@ -171,17 +171,17 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.processDefinitionVersion = processDefinitionVersion;
   }
 
-  public String serializedExtensionProperties() {
-    return serializedExtensionProperties;
+  public String serializedToolProperties() {
+    return serializedToolProperties;
   }
 
-  public void setSerializedExtensionProperties(final String serializedExtensionProperties) {
-    this.serializedExtensionProperties = serializedExtensionProperties;
-    extensionProperties = MapSerializer.deserialize(serializedExtensionProperties);
+  public void setSerializedToolProperties(final String serializedToolProperties) {
+    this.serializedToolProperties = serializedToolProperties;
+    toolProperties = MapSerializer.deserialize(serializedToolProperties);
   }
 
-  public Map<String, String> extensionProperties() {
-    return extensionProperties;
+  public Map<String, String> toolProperties() {
+    return toolProperties;
   }
 
   public String toolName() {
@@ -267,7 +267,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
         .partitionId(partitionId)
         .processDefinitionName(processDefinitionName)
         .processDefinitionVersion(processDefinitionVersion)
-        .extensionProperties(extensionProperties)
+        .toolProperties(toolProperties)
         .toolName(toolName)
         .inboundConnectorType(inboundConnectorType);
   }
@@ -289,7 +289,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     private int partitionId;
     private String processDefinitionName;
     private Integer processDefinitionVersion;
-    private Map<String, String> extensionProperties;
+    private Map<String, String> toolProperties;
     private String toolName;
     private String inboundConnectorType;
 
@@ -349,8 +349,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       return this;
     }
 
-    public Builder extensionProperties(final Map<String, String> extensionProperties) {
-      this.extensionProperties = extensionProperties;
+    public Builder toolProperties(final Map<String, String> toolProperties) {
+      this.toolProperties = toolProperties;
       return this;
     }
 
@@ -408,7 +408,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
           partitionId,
           processDefinitionName,
           processDefinitionVersion,
-          extensionProperties,
+          toolProperties,
           toolName,
           inboundConnectorType);
     }

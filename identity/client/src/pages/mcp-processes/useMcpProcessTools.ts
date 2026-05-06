@@ -51,7 +51,7 @@ const mapSubscriptionToProcessTool = (
   // `toolName` is expected to exist based on the filter supplied to the backend.
   if (!sub.toolName) return null;
 
-  const toolData = toolDataSchema.parse(sub.extensionProperties ?? {});
+  const toolData = toolDataSchema.parse(sub.toolProperties ?? {});
   return {
     id: sub.messageSubscriptionKey,
     toolName: sub.toolName,

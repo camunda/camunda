@@ -1095,7 +1095,7 @@ public final class SearchQueryResponseMapper {
         .tenantId(messageSubscription.tenantId())
         .processDefinitionName(messageSubscription.processDefinitionName())
         .processDefinitionVersion(messageSubscription.processDefinitionVersion())
-        .extensionProperties(messageSubscription.extensionProperties())
+        .toolProperties(messageSubscription.toolProperties())
         .toolName(messageSubscription.toolName())
         .inboundConnectorType(messageSubscription.inboundConnectorType());
   }

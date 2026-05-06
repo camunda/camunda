@@ -4999,7 +4999,7 @@
                   "nullable": true
                 },
                 {
-                  "name": "extensionProperties",
+                  "name": "toolProperties",
                   "type": "object"
                 },
                 {

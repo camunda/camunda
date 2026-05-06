@@ -61,7 +61,7 @@ public class MessageSubscriptionEntity
   private Integer processDefinitionVersion;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private Map<String, String> extensionProperties;
+  private Map<String, String> toolProperties;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String messageSubscriptionType;
@@ -238,13 +238,12 @@ public class MessageSubscriptionEntity
     return this;
   }
 
-  public Map<String, String> getExtensionProperties() {
-    return extensionProperties;
+  public Map<String, String> getToolProperties() {
+    return toolProperties;
   }
 
-  public MessageSubscriptionEntity setExtensionProperties(
-      final Map<String, String> extensionProperties) {
-    this.extensionProperties = extensionProperties;
+  public MessageSubscriptionEntity setToolProperties(final Map<String, String> toolProperties) {
+    this.toolProperties = toolProperties;
     return this;
   }
 
@@ -367,7 +366,7 @@ public class MessageSubscriptionEntity
         rootProcessInstanceKey,
         processDefinitionName,
         processDefinitionVersion,
-        extensionProperties,
+        toolProperties,
         messageSubscriptionType,
         toolName,
         inboundConnectorType);
@@ -403,7 +402,7 @@ public class MessageSubscriptionEntity
         && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
         && Objects.equals(processDefinitionName, that.processDefinitionName)
         && Objects.equals(processDefinitionVersion, that.processDefinitionVersion)
-        && Objects.equals(extensionProperties, that.extensionProperties)
+        && Objects.equals(toolProperties, that.toolProperties)
         && Objects.equals(messageSubscriptionType, that.messageSubscriptionType)
         && Objects.equals(toolName, that.toolName)
         && Objects.equals(inboundConnectorType, that.inboundConnectorType);

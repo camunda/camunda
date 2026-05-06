@@ -42,7 +42,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   private final String tenantId;
   private final String processDefinitionName;
   private final Integer processDefinitionVersion;
-  private final Map<String, String> extensionProperties;
+  private final Map<String, String> toolProperties;
   private final String toolName;
   private final String inboundConnectorType;
 
@@ -64,7 +64,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     tenantId = item.getTenantId();
     processDefinitionName = item.getProcessDefinitionName();
     processDefinitionVersion = item.getProcessDefinitionVersion();
-    extensionProperties = item.getExtensionProperties();
+    toolProperties = item.getToolProperties();
     toolName = item.getToolName();
     inboundConnectorType = item.getInboundConnectorType();
   }
@@ -145,8 +145,8 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   }
 
   @Override
-  public Map<String, String> getExtensionProperties() {
-    return extensionProperties;
+  public Map<String, String> getToolProperties() {
+    return toolProperties;
   }
 
   @Override
@@ -177,7 +177,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         tenantId,
         processDefinitionName,
         processDefinitionVersion,
-        extensionProperties,
+        toolProperties,
         toolName,
         inboundConnectorType);
   }
@@ -206,7 +206,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         && Objects.equals(tenantId, subscription.tenantId)
         && Objects.equals(processDefinitionName, subscription.processDefinitionName)
         && Objects.equals(processDefinitionVersion, subscription.processDefinitionVersion)
-        && Objects.equals(extensionProperties, subscription.extensionProperties)
+        && Objects.equals(toolProperties, subscription.toolProperties)
         && Objects.equals(toolName, subscription.toolName)
         && Objects.equals(inboundConnectorType, subscription.inboundConnectorType);
   }
