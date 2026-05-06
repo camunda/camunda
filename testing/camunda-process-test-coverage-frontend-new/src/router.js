@@ -2,10 +2,11 @@
  * Hash-based router.
  *
  * Supported hash patterns:
- *   #/                                → { view: 'dashboard' }
- *   #/process/<processId>             → { view: 'process', processId }
- *   #/suite/<suiteId>                 → { view: 'suite', suiteId }
- *   #/suite/<suiteId>/run/<runName>   → { view: 'run', suiteId, runName }
+ *   #/                                          → { view: 'dashboard' }
+ *   #/process/<processId>                       → { view: 'process', processId }
+ *   #/suite/<suiteId>                           → { view: 'suite', suiteId }
+ *   #/suite/<suiteId>/run/<runName>             → { view: 'run', suiteId, runName }
+ *   #/suite/<suiteId>/run/<runName>/process/<p> → { view: 'runProcess', suiteId, runName, processId }
  */
 
 'use strict';
@@ -28,7 +29,16 @@ export function parseRoute() {
     case 'suite': {
       const suiteId = decodeURIComponent(parts[1] || '');
       if (parts[2] === 'run') {
-        return { view: 'run', suiteId, runName: decodeURIComponent(parts[3] || '') };
+        const runName = decodeURIComponent(parts[3] || '');
+        if (parts[4] === 'process') {
+          return {
+            view: 'runProcess',
+            suiteId,
+            runName,
+            processId: decodeURIComponent(parts[5] || ''),
+          };
+        }
+        return { view: 'run', suiteId, runName };
       }
       return { view: 'suite', suiteId };
     }

@@ -1,47 +1,42 @@
 # Contributing to Camunda Process Test Coverage Frontend (New)
 
-Thank you for contributing! This document explains how to set up a local development environment, the coding conventions used in this module, and how to submit changes.
+This guide covers everything you need to contribute to this frontend module.
+
+---
+
+## Prerequisites
+
+| Tool | Version |
+|------|---------|
+| Node.js | ≥ 20 (CI uses v24.13.0 via `frontend-maven-plugin`) |
+| npm | ≥ 10 (CI uses 11.9.0) |
+| Java / Maven | 21 / 3.x (for Maven integration) |
 
 ---
 
 ## Getting started
 
-### 1. Install dependencies
-
 ```bash
+# Install dependencies
 npm install
-```
 
-### 2. Build (production)
-
-```bash
+# Production build
 npm run build
-```
 
-This runs Webpack in production mode, bundling all dependencies and outputting to `target/generated-frontend-resources/coverage/`.
-
-### 3. Build (development / watch)
-
-```bash
+# Development build with watch mode
 npm run dev
 ```
 
-Runs Webpack in development mode with `--watch`. Re-bundles on any source file change.
+### Previewing with real data
 
-### 4. Run against real data
-
-The easiest way to see the report in a browser is to run the Java tests in the example module first:
-
-```bash
-# From the repo root
-./mvnw verify -pl testing/camunda-process-test-example -am -Dquickly -DskipTests=false -DskipITs -T1C
-```
-
-Open the generated report:
-
-```
-testing/camunda-process-test-example/target/coverage-report/index.html
-```
+1. Run the example module tests to generate a coverage report:
+   ```bash
+   ./mvnw verify -pl testing/camunda-process-test-example -am -Dquickly -DskipTests=false -DskipITs -T1C
+   ```
+2. Open the generated HTML report:
+   ```
+   testing/camunda-process-test-example/target/coverage-report/index.html
+   ```
 
 ---
 
@@ -50,24 +45,23 @@ testing/camunda-process-test-example/target/coverage-report/index.html
 ```
 camunda-process-test-coverage-frontend-new/
 ├── package.json          npm package descriptor
-├── webpack.config.js     Webpack configuration
-├── .npmrc                npm configuration
-├── pom.xml               Maven module (packaging=jar)
+├── webpack.config.js     Webpack configuration (bundling + CSS extraction)
+├── pom.xml               Maven module (packaging=jar, runs webpack via frontend-maven-plugin)
 ├── src/
-│   ├── app.js            Entry point
-│   ├── utils.js          Shared helpers (formatting, HTML escaping)
+│   ├── app.js            Entry point – imports CSS, wires router + views
+│   ├── utils.js          Shared helpers (formatting, HTML escaping, colours)
 │   ├── router.js         Hash-based router
-│   ├── sidebar.js        Sidebar navigation
-│   ├── bpmn.js           camunda-bpmn-js viewer wrapper
-│   ├── styles.css        Custom styles
-│   ├── index.html        HTML template
+│   ├── sidebar.js        Sidebar navigation component
+│   ├── bpmn.js           camunda-bpmn-js viewer wrapper + zoom controls
+│   ├── styles.css        Custom styles (Camunda brand, layout)
+│   ├── index.html        HTML template ({{ COVERAGE_DATA }} placeholder)
 │   └── views/
-│       ├── dashboard.js
-│       ├── process.js
-│       ├── suite.js
-│       └── run.js
+│       ├── dashboard.js  Dashboard view
+│       ├── process.js    Process details view (BPMN diagram)
+│       ├── suite.js      Test suite view
+│       └── run.js        Test case (run) view
 └── public/
-    └── static/media/     Static assets (logo, favicon)
+    └── static/media/     Logo, favicon
 ```
 
 ---
@@ -76,15 +70,12 @@ camunda-process-test-coverage-frontend-new/
 
 ### Webpack bundling
 
-Webpack (configured in `webpack.config.js`) handles:
+Webpack (`webpack.config.js`) handles:
 
 - **Entry**: `src/app.js` imports all ES modules and CSS.
-- **CSS**: `MiniCssExtractPlugin` extracts all CSS (Bootstrap, Bootstrap Icons, camunda-bpmn-js, custom) into `bundle.css`. Fonts referenced by CSS are copied to `static/fonts/` by webpack's `asset/resource` rule.
-- **Output**: `bundle.js` (all JS) + `bundle.css` (all CSS) in `coverage/static/`.
-- **HTML**: `CopyWebpackPlugin` copies `src/index.html` to `coverage/index.html`.
-- **Media**: Logo and favicon are copied to `coverage/static/media/`.
-
-The `BUILD_PATH` environment variable (set by Maven) tells webpack where to write the `coverage/` output directory.
+- **CSS**: `MiniCssExtractPlugin` extracts all CSS into `bundle.css`. Fonts are copied to `static/fonts/` via the `asset/resource` rule.
+- **HTML / media**: `CopyWebpackPlugin` copies `src/index.html` and `public/static/media/` to the output directory.
+- **Output path**: The `BUILD_PATH` environment variable (set by Maven) controls where webpack writes the `coverage/` directory.
 
 ### Routing
 
@@ -93,59 +84,41 @@ Hash-based routing (`window.location.hash`) provides deep-linkable URLs:
 | Hash | View |
 |------|------|
 | `#/` | Dashboard |
-| `#/process/<processId>` | Process details |
+| `#/process/<processId>` | Process details (global aggregate coverage) |
 | `#/suite/<suiteId>` | Suite details |
 | `#/suite/<suiteId>/run/<runName>` | Test-case details |
-
-The router is implemented in `src/router.js`.
+| `#/suite/<suiteId>/run/<runName>/process/<processId>` | Process view scoped to a test run |
 
 ### BPMN rendering
 
-`camunda-bpmn-js` `NavigatedViewer` is used. It is destroyed and recreated on each navigation to a process page (see `src/bpmn.js`).
+`camunda-bpmn-js` `NavigatedViewer` is used. It is destroyed and re-created on each navigation to a process page (`src/bpmn.js`).
 
-Coverage highlighting:
-- **Completed elements** – CSS marker class `coverage-completed` via `canvas.addMarker()`.
-- **Taken sequence flows** – blue stroke via `graphicsFactory.update()`.
+Coverage highlighting uses `canvas.addMarker()`:
+- **Completed elements** → marker `coverage-completed` (blue fill via CSS)
+- **Taken sequence flows** → marker `coverage-taken` (blue stroke via CSS)
+
+Zoom controls are exposed as `window.bpmnZoomIn/bpmnZoomOut/bpmnZoomReset` and wired to toolbar buttons rendered in `process.js`.
 
 ---
 
 ## Coding conventions
 
-- **ES modules** – use `import`/`export` throughout. Webpack handles bundling.
-- **No class components** – keep code functional and simple.
+- **ES modules** – use `import`/`export` throughout.
 - **HTML escaping** – always escape user-supplied strings with `escapeHtml()` from `utils.js`.
-- **Camunda brand colours** – use the `COLORS` constants from `utils.js`.
-
-### CSS conventions
-
-- Camunda brand colours are defined as comments at the top of `styles.css`.
-- Avoid inline styles in HTML; prefer CSS classes.
-- Custom classes use a `coverage-` prefix.
+- **No inline styles** – use CSS classes from `styles.css`.
+- **Camunda brand colours** – use `COLORS` constants from `utils.js`.
 
 ---
 
-## Updating vendor libraries
+## Updating vendor dependencies
 
 ```bash
 # Check for updates
 npm outdated
 
-# Update to latest (check for breaking changes first!)
-npm install camunda-bpmn-js@latest bootstrap@latest bootstrap-icons@latest
+# Update a specific package
+npm install camunda-bpmn-js@latest
 
 # Rebuild
 npm run build
 ```
-
----
-
-## Pull request checklist
-
-Before opening a PR that touches this module:
-
-- [ ] `npm run build` completes without errors.
-- [ ] The report renders correctly in Chrome and Firefox.
-- [ ] BPMN diagrams display and coverage highlighting works.
-- [ ] Deep-links (`#/process/…`, `#/suite/…`) work.
-- [ ] No changes to `node_modules/` or the `node/` directory (these are gitignored).
-- [ ] Java formatting applied: `./mvnw license:format spotless:apply -T1C` (for `pom.xml` changes).

@@ -1,5 +1,9 @@
 /**
  * Run (test-case) view – processes covered by a single test method.
+ *
+ * Clicking a process row navigates to the run-scoped process view
+ * (#/suite/<sid>/run/<rn>/process/<pid>), which shows only the coverage
+ * from this test run rather than the global aggregate.
  */
 
 'use strict';
@@ -41,6 +45,7 @@ export function renderRun(suiteId, runName, data) {
       : 0;
 
   const sid = encodeURIComponent(suite.id);
+  const rn = encodeURIComponent(run.name);
 
   let html = `
     <nav aria-label="breadcrumb" class="mb-3">
@@ -75,23 +80,21 @@ export function renderRun(suiteId, runName, data) {
             <th>Process</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
-            <th style="width:120px">Elements</th>
           </tr></thead>
           <tbody>`;
 
     for (const cov of sorted) {
       const pid = encodeURIComponent(cov.processDefinitionId);
-      const completed = (cov.completedElements || []).length;
-      const flows = (cov.takenSequenceFlows || []).length;
+      // Navigate to run-scoped process view so the diagram shows only THIS test's coverage
       html += `
-            <tr class="clickable-row" onclick="navigate('/process/${pid}')">
+            <tr class="clickable-row"
+                onclick="navigate('/suite/${sid}/run/${rn}/process/${pid}')">
               <td>
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
                 ${escapeHtml(cov.processDefinitionId)}
               </td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
-              <td><span class="text-muted">${completed} el. / ${flows} fl.</span></td>
             </tr>`;
     }
     html += '</tbody></table></div>';

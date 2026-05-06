@@ -80,7 +80,17 @@ export function renderSuite(suiteId, data) {
     html += '<p class="text-muted">No test cases recorded for this suite.</p>';
   } else {
     const sid = encodeURIComponent(suite.id);
-    html += '<div class="list-group">';
+    html += `
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr>
+            <th>Test Case</th>
+            <th style="width:80px">Processes</th>
+            <th style="width:200px">Coverage</th>
+            <th style="width:100px">Ratio</th>
+          </tr></thead>
+          <tbody>`;
+
     for (const run of runs) {
       const rn = encodeURIComponent(run.name);
       const runCoverages = run.coverages || [];
@@ -89,20 +99,17 @@ export function renderSuite(suiteId, data) {
           ? runCoverages.reduce((s, c) => s + c.coverage, 0) / runCoverages.length
           : 0;
       html += `
-        <a href="#/suite/${sid}/run/${rn}"
-           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-          <div>
-            <i class="bi bi-file-earmark-code-fill me-2 text-info" aria-hidden="true"></i>
-            <strong>${escapeHtml(run.name)}</strong>
-            <small class="text-muted ms-2">${runCoverages.length} process(es)</small>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            ${progressBarHtml(runAvg)}
-            ${badgeHtml(runAvg)}
-          </div>
-        </a>`;
+            <tr class="clickable-row" onclick="navigate('/suite/${sid}/run/${rn}')">
+              <td>
+                <i class="bi bi-file-earmark-code-fill me-2 text-info" aria-hidden="true"></i>
+                <strong>${escapeHtml(run.name)}</strong>
+              </td>
+              <td><span class="text-muted">${runCoverages.length}</span></td>
+              <td>${progressBarHtml(runAvg)}</td>
+              <td>${badgeHtml(runAvg)}</td>
+            </tr>`;
     }
-    html += '</div>';
+    html += '</tbody></table></div>';
   }
 
   document.getElementById('content').innerHTML = html;

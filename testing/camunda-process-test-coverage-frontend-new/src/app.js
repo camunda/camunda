@@ -75,6 +75,12 @@ async function render() {
     case 'run':
       renderRun(route.suiteId, route.runName, data);
       break;
+    case 'runProcess':
+      await renderProcess(route.processId, data, {
+        suiteId: route.suiteId,
+        runName: route.runName,
+      });
+      break;
     default:
       renderDashboard(data);
   }

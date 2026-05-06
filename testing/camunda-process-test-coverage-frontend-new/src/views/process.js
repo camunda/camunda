@@ -1,5 +1,9 @@
 /**
  * Process details view – BPMN diagram with coverage highlighting.
+ *
+ * Supports two modes:
+ *   - Overall coverage  (no context): shows aggregate coverage from data.coverages
+ *   - Run-scoped coverage (context):  shows the coverage of a specific test run
  */
 
 'use strict';
@@ -11,83 +15,104 @@ import { renderBpmnDiagram } from '../bpmn.js';
  * Renders the process details view into #content.
  * @param {string} processId
  * @param {object} data window.COVERAGE_DATA
+ * @param {{ suiteId: string, runName: string } | null} [context] Optional run context for scoped coverage.
  */
-export async function renderProcess(processId, data) {
-  const globalCoverages = data.coverages || [];
+export async function renderProcess(processId, data, context = null) {
   const suites = data.suites || [];
   const definitions = data.definitions || {};
 
-  const cov = globalCoverages.find((c) => c.processDefinitionId === processId);
+  // Resolve coverage: run-scoped or global aggregate
+  let cov = null;
+  let breadcrumbHtml = '';
+
+  if (context) {
+    const suite = suites.find((s) => s.id === context.suiteId);
+    const run = suite?.runs?.find((r) => r.name === context.runName);
+    cov = run?.coverages?.find((c) => c.processDefinitionId === processId) ?? null;
+
+    // Breadcrumb: Suite > Run > Process
+    const sid = encodeURIComponent(context.suiteId);
+    const rn = encodeURIComponent(context.runName);
+    breadcrumbHtml = `
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="#/suite/${sid}">${escapeHtml(suite?.name ?? context.suiteId)}</a></li>
+          <li class="breadcrumb-item"><a href="#/suite/${sid}/run/${rn}">${escapeHtml(context.runName)}</a></li>
+          <li class="breadcrumb-item active" aria-current="page">${escapeHtml(processId)}</li>
+        </ol>
+      </nav>`;
+  } else {
+    cov = (data.coverages || []).find((c) => c.processDefinitionId === processId) ?? null;
+  }
+
   const xml = definitions[processId];
 
-  let html = `
+  let html = breadcrumbHtml + `
     <h2 class="view-title">
       <i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i>
       ${escapeHtml(processId)}
     </h2>`;
 
   if (cov) {
-    const completed = (cov.completedElements || []).length;
-    const flows = (cov.takenSequenceFlows || []).length;
     html += `
       <div class="row g-3 mb-4">
         ${statCard(toPercent(cov.coverage), 'Coverage', 'bi-bar-chart-fill', coverageClass(cov.coverage))}
-        ${statCard(completed, 'Completed Elements', 'bi-check-circle-fill')}
-        ${statCard(flows, 'Taken Flows', 'bi-arrow-right-circle-fill')}
+        ${statCard((cov.completedElements || []).length, 'Completed Elements', 'bi-check-circle-fill')}
+        ${statCard((cov.takenSequenceFlows || []).length, 'Taken Flows', 'bi-arrow-right-circle-fill')}
       </div>`;
   }
 
   html += `
     <h3 class="section-title">BPMN Diagram</h3>
-    <div id="bpmn-canvas" class="bpmn-canvas"></div>`;
+    <div class="bpmn-canvas-wrapper">
+      <div id="bpmn-canvas" class="bpmn-canvas"></div>
+      <div class="bpmn-controls">
+        <button class="bpmn-zoom-btn" onclick="window.bpmnZoomReset()" title="Fit to viewport">
+          <i class="bi bi-fullscreen" aria-hidden="true"></i>
+        </button>
+        <button class="bpmn-zoom-btn" onclick="window.bpmnZoomIn()" title="Zoom in">
+          <i class="bi bi-zoom-in" aria-hidden="true"></i>
+        </button>
+        <button class="bpmn-zoom-btn" onclick="window.bpmnZoomOut()" title="Zoom out">
+          <i class="bi bi-zoom-out" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>`;
 
-  if (cov) {
-    html += `
-      <div class="mt-3">
-        <h3 class="section-title">Coverage Details</h3>
-        <div class="row">
-          <div class="col-md-6">
-            <h5>Completed Elements
-              <span class="badge text-bg-secondary">${(cov.completedElements || []).length}</span>
-            </h5>
-            ${elementList(cov.completedElements)}
-          </div>
-          <div class="col-md-6">
-            <h5>Taken Sequence Flows
-              <span class="badge text-bg-secondary">${(cov.takenSequenceFlows || []).length}</span>
-            </h5>
-            ${elementList(cov.takenSequenceFlows)}
-          </div>
-        </div>
-      </div>`;
-  }
-
-  // Suite coverage for this process
-  const suitesForProcess = suites.filter((s) =>
-    (s.coverages || []).some((c) => c.processDefinitionId === processId)
-  );
-  if (suitesForProcess.length > 0) {
-    html += '<h3 class="section-title mt-4">Test Suite Coverage</h3>';
-    html += '<div class="list-group">';
-    for (const suite of suitesForProcess) {
-      const suiteCov = (suite.coverages || []).find(
-        (c) => c.processDefinitionId === processId
-      );
-      const sid = encodeURIComponent(suite.id);
+  // Show test suite coverage table only in global mode
+  if (!context) {
+    const suitesForProcess = suites.filter((s) =>
+      (s.coverages || []).some((c) => c.processDefinitionId === processId)
+    );
+    if (suitesForProcess.length > 0) {
       html += `
-        <a href="#/suite/${sid}"
-           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-          <span>
-            <i class="bi bi-folder-fill me-2 text-warning" aria-hidden="true"></i>
-            ${escapeHtml(suite.name)}
-          </span>
-          <div class="d-flex align-items-center gap-2">
-            ${suiteCov ? progressBarHtml(suiteCov.coverage) : ''}
-            ${suiteCov ? badgeHtml(suiteCov.coverage) : ''}
-          </div>
-        </a>`;
+        <h3 class="section-title mt-4">Test Suite Coverage</h3>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr>
+              <th>Suite</th>
+              <th style="width:200px">Coverage</th>
+              <th style="width:100px">Ratio</th>
+            </tr></thead>
+            <tbody>`;
+
+      for (const suite of suitesForProcess) {
+        const suiteCov = (suite.coverages || []).find(
+          (c) => c.processDefinitionId === processId
+        );
+        const sid = encodeURIComponent(suite.id);
+        html += `
+              <tr class="clickable-row" onclick="navigate('/suite/${sid}')">
+                <td>
+                  <i class="bi bi-folder-fill me-2 text-warning" aria-hidden="true"></i>
+                  ${escapeHtml(suite.name)}
+                </td>
+                <td>${suiteCov ? progressBarHtml(suiteCov.coverage) : ''}</td>
+                <td>${suiteCov ? badgeHtml(suiteCov.coverage) : ''}</td>
+              </tr>`;
+      }
+      html += '</tbody></table></div>';
     }
-    html += '</div>';
   }
 
   document.getElementById('content').innerHTML = html;
@@ -102,24 +127,4 @@ export async function renderProcess(processId, data) {
         '<p class="text-muted p-3">No BPMN definition available for this process.</p>';
     }
   }
-}
-
-// ── Private helpers ─────────────────────────────────────────────────────────
-
-function elementList(items) {
-  if (!items || items.length === 0) {
-    return '<p class="text-muted">None</p>';
-  }
-  return `
-    <ul class="list-group list-group-flush element-list">
-      ${items
-        .map(
-          (id) => `
-        <li class="list-group-item py-1 px-2">
-          <i class="bi bi-check2 text-success me-2" aria-hidden="true"></i>
-          <code>${escapeHtml(id)}</code>
-        </li>`
-        )
-        .join('')}
-    </ul>`;
 }

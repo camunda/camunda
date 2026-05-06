@@ -24,7 +24,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   color: #1c2127;
   background-color: #f8f9fa;
   overflow: hidden; /* prevent double scrollbar – content areas scroll independently */
@@ -45,11 +45,11 @@ body {
   color: #ffffff;
   border-bottom: 3px solid #0072ce;
   flex-shrink: 0;
-  padding: 0.6rem 1.25rem;
+  padding: 0.75rem 1.5rem;
 }
 
 .app-header-title {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
@@ -65,8 +65,8 @@ body {
 /* ── Sidebar ───────────────────────────────────────────────────────────────── */
 
 .app-sidebar {
-  width: 280px;
-  min-width: 220px;
+  width: 300px;
+  min-width: 240px;
   background-color: #f0f1f2;
   border-right: 1px solid #dee2e6;
   overflow-y: auto;
@@ -97,7 +97,7 @@ body {
   display: flex;
   align-items: center;
   padding: 0.6rem 1rem 0.25rem;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -110,14 +110,14 @@ body {
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 0.35rem 1rem;
+  padding: 0.45rem 1rem;
   color: #1c2127;
   text-decoration: none;
   border-radius: 4px;
   margin: 1px 0.5rem;
   transition: background-color 0.15s ease;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   overflow: hidden;
 }
 
@@ -140,9 +140,9 @@ body {
 /* Suite / run wrapper items */
 .nav-item-suite,
 .nav-item-run {
-  padding: 0.3rem 0.75rem 0.3rem 1rem;
+  padding: 0.4rem 0.75rem 0.4rem 1rem;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   border-radius: 4px;
   margin: 1px 0.5rem;
   transition: background-color 0.15s ease;
@@ -160,7 +160,7 @@ body {
   color: #1c2127;
   text-decoration: none;
   overflow: hidden;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .nav-suite-link:hover,
@@ -176,7 +176,22 @@ body {
 
 .nav-item-process,
 .nav-item-process-leaf {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* Caret toggle button */
+.nav-caret-btn {
+  background: none;
+  border: none;
+  padding: 0.1rem 0.25rem;
+  cursor: pointer;
+  color: #888b8d;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.nav-caret-btn:hover {
+  color: #0072ce;
 }
 
 .nav-item-label {
@@ -197,9 +212,9 @@ body {
 
 .coverage-badge {
   display: inline-block;
-  padding: 0.15em 0.55em;
+  padding: 0.2em 0.6em;
   border-radius: 12px;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.4;
   white-space: nowrap;
@@ -286,7 +301,7 @@ body {
 }
 
 .stat-label {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 500;
   color: #888b8d;
   text-transform: uppercase;
@@ -296,14 +311,14 @@ body {
 /* ── View headers ───────────────────────────────────────────────────────────── */
 
 .view-title {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
   margin-bottom: 1.25rem;
   color: #1c2127;
 }
 
 .section-title {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #495057;
   margin-bottom: 0.75rem;
@@ -321,11 +336,10 @@ body {
   background-color: #f0f4fb;
 }
 
-/* ── BPMN canvas ─────────────────────────────────────────────────────────────── */
+/* ── BPMN canvas wrapper ──────────────────────────────────────────────────────── */
 
-.bpmn-canvas {
-  width: 100%;
-  height: 460px;
+.bpmn-canvas-wrapper {
+  position: relative;
   border: 1px solid #dee2e6;
   border-radius: 6px;
   background-color: #ffffff;
@@ -333,9 +347,50 @@ body {
   overflow: hidden;
 }
 
+.bpmn-canvas {
+  width: 100%;
+  height: 500px;
+}
+
+/* Zoom control toolbar overlay */
+.bpmn-controls {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 10;
+}
+
+.bpmn-zoom-btn {
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: #495057;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.15s ease;
+}
+
+.bpmn-zoom-btn:hover {
+  background-color: #f0f4fb;
+  color: #0072ce;
+  border-color: #0072ce;
+}
+
 /*
  * Coverage highlighting – applied via canvas.addMarker()
- * Marker class: "coverage-completed"
+ *
+ * Markers:
+ *   coverage-completed  → completed shapes (tasks, events, gateways)
+ *   coverage-taken      → taken sequence flows
  */
 
 /* Completed shapes (tasks, events, gateways) */
@@ -344,14 +399,14 @@ body {
   fill: #d0e8f9 !important;
 }
 
-/* Completed connection default path stroke */
-.coverage-completed.djs-connection .djs-visual path {
+/* Taken sequence flows – path (the line) */
+.coverage-taken.djs-connection .djs-visual path {
   stroke: #0072ce !important;
-  stroke-width: 2px !important;
+  stroke-width: 2.5px !important;
 }
 
-/* Completed connection arrowhead */
-.coverage-completed.djs-connection .djs-visual > :nth-child(2) path {
+/* Taken sequence flows – arrowhead */
+.coverage-taken.djs-connection .djs-visual marker path {
   fill: #0072ce !important;
   stroke: #0072ce !important;
 }
@@ -363,13 +418,13 @@ body {
   overflow-y: auto;
   border: 1px solid #dee2e6;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 /* ── List group overrides ────────────────────────────────────────────────────── */
 
 .list-group-item {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .list-group-item-action:hover {
@@ -379,15 +434,15 @@ body {
 /* ── Breadcrumb ──────────────────────────────────────────────────────────────── */
 
 .breadcrumb {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 /* ── Responsive tweaks ───────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
   .app-sidebar {
-    width: 200px;
-    min-width: 180px;
+    width: 220px;
+    min-width: 200px;
   }
 
   .coverage-bar-wrap {

@@ -7,13 +7,16 @@
  *      order-process  100.0%
  *   ── TEST SUITES
  *      ▸ MyTestSuite
- *        ▸ shouldDoSomething
- *          order-process  75.0%
+ *        shouldDoSomething
+ *        shouldDoSomethingElse
+ *
+ * Collapse/expand is driven by a dedicated caret button (not the whole row),
+ * so clicking the suite/run name always navigates correctly.
  */
 
 'use strict';
 
-import { escapeHtml, badgeHtml, coverageClass } from './utils.js';
+import { escapeHtml, badgeHtml } from './utils.js';
 import { Collapse } from 'bootstrap';
 
 /**
@@ -32,6 +35,7 @@ export function renderSidebar(data) {
  * @param {{ view: string, [key: string]: string }} route
  */
 export function updateSidebarActive(route) {
+  // Clear all active states
   document.querySelectorAll('.nav-item, .nav-suite-link, .nav-run-link').forEach((el) => {
     el.classList.remove('active');
   });
@@ -44,13 +48,14 @@ export function updateSidebarActive(route) {
       .forEach((el) => el.classList.add('active'));
   } else if (route.view === 'suite') {
     document
-      .querySelectorAll(
-        `[data-suite-id="${CSS.escape(route.suiteId)}"][data-route="suite"]`
-      )
+      .querySelectorAll(`[data-suite-id="${CSS.escape(route.suiteId)}"][data-route="suite"]`)
       .forEach((el) => el.classList.add('active'));
-  } else if (route.view === 'run') {
+  } else if (route.view === 'run' || route.view === 'runProcess') {
+    // Match by BOTH suiteId and runName to avoid cross-suite false positives
     document
-      .querySelectorAll(`[data-run-name="${CSS.escape(route.runName)}"]`)
+      .querySelectorAll(
+        `[data-suite-id="${CSS.escape(route.suiteId)}"][data-run-name="${CSS.escape(route.runName)}"]`
+      )
       .forEach((el) => el.classList.add('active'));
   }
 }
@@ -115,19 +120,19 @@ function buildSuiteHtml(suite) {
 
   let html = `
     <li class="nav-suite">
-      <div class="nav-item nav-item-suite d-flex align-items-center"
-           role="button"
-           data-bs-toggle="collapse"
-           data-bs-target="#${collapseId}"
-           aria-expanded="false"
-           aria-controls="${collapseId}">
-        <i class="bi bi-caret-right-fill nav-caret me-1" aria-hidden="true"></i>
+      <div class="d-flex align-items-center nav-item-suite">
+        <button class="nav-caret-btn"
+                data-bs-toggle="collapse"
+                data-bs-target="#${collapseId}"
+                aria-expanded="false"
+                aria-label="Toggle ${escapeHtml(suite.name)}">
+          <i class="bi bi-caret-right-fill nav-caret" aria-hidden="true"></i>
+        </button>
         <a class="nav-suite-link flex-grow-1 text-truncate"
            href="#/suite/${sid}"
            data-route="suite"
            data-suite-id="${escapeHtml(suite.id)}"
-           title="${escapeHtml(suite.name)}"
-           onclick="event.stopPropagation()">
+           title="${escapeHtml(suite.name)}">
           <i class="bi bi-folder-fill me-2" aria-hidden="true"></i>
           ${escapeHtml(suite.name)}
         </a>
@@ -149,52 +154,19 @@ function buildSuiteHtml(suite) {
 function buildRunHtml(suite, run) {
   const sid = encodeURIComponent(suite.id);
   const rn = encodeURIComponent(run.name);
-  const runCollapseId = `rc-${sid.replace(/[^a-zA-Z0-9]/g, '_')}_${rn.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-  let html = `
-          <li class="nav-run">
-            <div class="nav-item nav-item-run d-flex align-items-center"
-                 role="button"
-                 data-bs-toggle="collapse"
-                 data-bs-target="#${runCollapseId}"
-                 aria-expanded="false"
-                 aria-controls="${runCollapseId}">
-              <i class="bi bi-caret-right-fill nav-caret me-1" aria-hidden="true"></i>
-              <a class="nav-run-link flex-grow-1 text-truncate"
-                 href="#/suite/${sid}/run/${rn}"
-                 data-route="run"
-                 data-suite-id="${escapeHtml(suite.id)}"
-                 data-run-name="${escapeHtml(run.name)}"
-                 title="${escapeHtml(run.name)}"
-                 onclick="event.stopPropagation()">
-                <i class="bi bi-file-earmark-code-fill me-2" aria-hidden="true"></i>
-                <span class="nav-item-label">${escapeHtml(run.name)}</span>
-              </a>
-            </div>
-            <div class="collapse ms-3" id="${runCollapseId}">
-              <ul class="nav-list" role="list">`;
-
-  for (const cov of run.coverages || []) {
-    const pid = encodeURIComponent(cov.processDefinitionId);
-    html += `
-                <li>
-                  <a class="nav-item nav-item-process-leaf"
-                     href="#/process/${pid}"
-                     data-route="process"
-                     data-process-id="${escapeHtml(cov.processDefinitionId)}"
-                     title="${escapeHtml(cov.processDefinitionId)}">
-                    <i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i>
-                    <span class="nav-item-label">${escapeHtml(cov.processDefinitionId)}</span>
-                    ${badgeHtml(cov.coverage)}
-                  </a>
-                </li>`;
-  }
-
-  html += `
-              </ul>
-            </div>
+  return `
+          <li>
+            <a class="nav-item nav-item-run"
+               href="#/suite/${sid}/run/${rn}"
+               data-route="run"
+               data-suite-id="${escapeHtml(suite.id)}"
+               data-run-name="${escapeHtml(run.name)}"
+               title="${escapeHtml(run.name)}">
+              <i class="bi bi-file-earmark-code-fill me-2" aria-hidden="true"></i>
+              <span class="nav-item-label">${escapeHtml(run.name)}</span>
+            </a>
           </li>`;
-  return html;
 }
 
 function attachCollapseListeners() {
@@ -202,19 +174,15 @@ function attachCollapseListeners() {
     const targetId = btn.getAttribute('data-bs-target');
     const target = document.querySelector(targetId);
     if (!target) return;
-    // Ensure Bootstrap Collapse is initialised
+    // Create Bootstrap Collapse instance without toggling on creation
     Collapse.getOrCreateInstance(target, { toggle: false });
     target.addEventListener('show.bs.collapse', () => {
-      btn.querySelector('.nav-caret')?.classList.replace(
-        'bi-caret-right-fill',
-        'bi-caret-down-fill'
-      );
+      btn.querySelector('.nav-caret')?.classList.replace('bi-caret-right-fill', 'bi-caret-down-fill');
+      btn.setAttribute('aria-expanded', 'true');
     });
     target.addEventListener('hide.bs.collapse', () => {
-      btn.querySelector('.nav-caret')?.classList.replace(
-        'bi-caret-down-fill',
-        'bi-caret-right-fill'
-      );
+      btn.querySelector('.nav-caret')?.classList.replace('bi-caret-down-fill', 'bi-caret-right-fill');
+      btn.setAttribute('aria-expanded', 'false');
     });
   });
 }
