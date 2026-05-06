@@ -167,12 +167,14 @@ jobs:
           unknown=$(jq  '.summary.needs_investigation // 0' triage-report.json)
           flaky=$(jq    '(.flaky_tests // []) | length'     triage-report.json)
 
-          echo "total=${total}"         >> "$GITHUB_OUTPUT"
-          echo "test_code=${test_code}" >> "$GITHUB_OUTPUT"
-          echo "product=${product}"     >> "$GITHUB_OUTPUT"
-          echo "timing=${timing}"       >> "$GITHUB_OUTPUT"
-          echo "unknown=${unknown}"     >> "$GITHUB_OUTPUT"
-          echo "flaky=${flaky}"         >> "$GITHUB_OUTPUT"
+          {
+            echo "total=${total}"
+            echo "test_code=${test_code}"
+            echo "product=${product}"
+            echo "timing=${timing}"
+            echo "unknown=${unknown}"
+            echo "flaky=${flaky}"
+          } >> "$GITHUB_OUTPUT"
 
       # ── Auto-fix flaky tests (per branch) ──────────────────────────────────
       # Each stable branch and main is checked out in turn.  Only tests that
@@ -250,7 +252,7 @@ jobs:
               '[.flaky_tests[].versions[]] | unique | map(select(contains($lp))) | .[]' \
               triage-report.json | sort -u)
 
-            > "fix-report-${label_prefix}.json"
+            : > "fix-report-${label_prefix}.json"
             combined_fixed="[]"
             combined_skipped="[]"
 
@@ -296,7 +298,24 @@ jobs:
               -m "$(printf 'Applied by the triage agent based on nightly run failures:\n%s' "${fixed_list}")"
 
             if [[ "$DRY_RUN" != "true" ]]; then
-              git push -u origin "$FIX_BRANCH"
+              # Push with retry — GitHub sometimes times out validating workflow-adjacent pushes
+              pushed=false
+              for attempt in 1 2 3 4; do
+                if git push -u origin "$FIX_BRANCH"; then
+                  pushed=true
+                  break
+                fi
+                if [[ $attempt -lt 4 ]]; then
+                  wait=$((attempt * 2))
+                  echo "::warning::Push attempt ${attempt} failed, retrying in ${wait}s..."
+                  sleep "$wait"
+                fi
+              done
+              if [[ "$pushed" != "true" ]]; then
+                echo "::error::Failed to push ${FIX_BRANCH} after 4 attempts — skipping PR for ${git_branch}"
+                git checkout main 2>/dev/null || git checkout -
+                continue
+              fi
 
               PR_BODY_FILE=$(mktemp)
               {
@@ -335,10 +354,12 @@ jobs:
             git checkout main 2>/dev/null || git checkout -
           done
 
-          echo "total_fixed=${total_fixed}" >> "$GITHUB_OUTPUT"
-          echo "pr_urls<<EOF"     >> "$GITHUB_OUTPUT"
-          echo "$all_pr_urls"     >> "$GITHUB_OUTPUT"
-          echo "EOF"              >> "$GITHUB_OUTPUT"
+          {
+            echo "total_fixed=${total_fixed}"
+            echo "pr_urls<<EOF"
+            echo "$all_pr_urls"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       # ── Build Slack payload ──────────────────────────────────────────────────
       - name: Build Slack triage payload
