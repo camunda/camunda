@@ -11,6 +11,7 @@ functions:
   - verifyResponsePropertiesRequired
   - verifyDeprecatedEnumMembers
   - verifyAddedInVersion
+  - verifyNoAmbiguousIdentifierProperty
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -158,3 +159,65 @@ rules:
     message: "{{error}}"
     then:
       function: verifyAddedInVersion
+
+  # Guard against new schemas introducing ambiguous bare identifier properties.
+  # Existing schemas are grandfathered via the allowlist below — do not add new
+  # entries without discussion. See https://github.com/camunda/camunda/issues/52510
+  no-ambiguous-identifier-property:
+    description: "Schema properties must not use bare `id`, `key`, or `name` — use qualified names like `entityNameId`."
+    severity: error
+    given: "$.components.schemas[*]"
+    message: "{{error}}"
+    then:
+      function: verifyNoAmbiguousIdentifierProperty
+      functionOptions:
+        allowlist:
+          # Grandfathered schemas — these pre-date the naming convention and
+          # cannot be renamed without breaking published SDK consumers.
+          CreateGlobalTaskListenerRequest: [id]
+          GlobalTaskListenerResult: [id]
+          GlobalTaskListenerSearchQueryFilterRequest: [id]
+          CreateClusterVariableRequest: [name]
+          ClusterVariableResultBase: [name]
+          ClusterVariableSearchQueryFilterRequest: [name]
+          DecisionDefinitionFilter: [name]
+          DecisionDefinitionResult: [name]
+          DeploymentDecisionResult: [name]
+          GroupCreateRequest: [name]
+          GroupCreateResult: [name]
+          GroupUpdateRequest: [name]
+          GroupUpdateResult: [name]
+          GroupResult: [name]
+          GroupFilter: [name]
+          MappingRuleCreateUpdateRequest: [name]
+          MappingRuleCreateUpdateResult: [name]
+          MappingRuleResult: [name]
+          MappingRuleFilter: [name]
+          MessageCorrelationRequest: [name]
+          MessagePublicationRequest: [name]
+          ProcessDefinitionFilter: [name]
+          ProcessDefinitionResult: [name]
+          RoleCreateRequest: [name]
+          RoleCreateResult: [name]
+          RoleUpdateRequest: [name]
+          RoleUpdateResult: [name]
+          RoleResult: [name]
+          RoleFilter: [name]
+          TenantCreateRequest: [name]
+          TenantCreateResult: [name]
+          TenantUpdateRequest: [name]
+          TenantUpdateResult: [name]
+          TenantResult: [name]
+          TenantFilter: [name]
+          UserTaskFilter: [name]
+          UserTaskResult: [name]
+          UserTaskVariableFilter: [name]
+          UserRequest: [name]
+          UserCreateResult: [name]
+          UserUpdateRequest: [name]
+          UserUpdateResult: [name]
+          UserResult: [name]
+          UserFilter: [name]
+          VariableFilter: [name]
+          VariableResultBase: [name]
+          VariableValueFilterProperty: [name]
