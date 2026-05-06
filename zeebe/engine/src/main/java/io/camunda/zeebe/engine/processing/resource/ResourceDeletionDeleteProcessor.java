@@ -12,8 +12,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;

@@ -74,8 +74,8 @@ public final class ProcessDefinitionMetrics {
       final String bpmnProcessId,
       final int version,
       final int sizeBytes) {
-    addEntry(processDefinitionKey, bpmnProcessId, version, sizeBytes);
-    if (keysByProcessId.get(bpmnProcessId).size() == 1) {
+    final var keys = addEntry(processDefinitionKey, bpmnProcessId, version, sizeBytes);
+    if (keys.size() == 1) {
       totalUniqueProcessIds.incrementAndGet();
     }
     totalVersions.incrementAndGet();
@@ -107,14 +107,15 @@ public final class ProcessDefinitionMetrics {
     totalVersions.decrementAndGet();
   }
 
-  private void addEntry(
+  private Set<Long> addEntry(
       final long processDefinitionKey,
       final String bpmnProcessId,
       final int version,
       final int sizeBytes) {
     final var entry = new VersionEntry(bpmnProcessId, version, sizeBytes);
     versionsByKey.put(processDefinitionKey, entry);
-    keysByProcessId.computeIfAbsent(bpmnProcessId, id -> new HashSet<>()).add(processDefinitionKey);
+    final var keys = keysByProcessId.computeIfAbsent(bpmnProcessId, id -> new HashSet<>());
+    keys.add(processDefinitionKey);
 
     final var sizeDoc = EngineMetricsDoc.PROCESS_DEFINITION_RESOURCE_SIZE;
     final var gauge =
@@ -124,6 +125,7 @@ public final class ProcessDefinitionMetrics {
             .tag(ProcessDefinitionKeyNames.VERSION.asString(), String.valueOf(version))
             .register(registry);
     sizeGaugesByKey.put(processDefinitionKey, gauge);
+    return keys;
   }
 
   private record VersionEntry(String bpmnProcessId, int version, int sizeBytes) {}
