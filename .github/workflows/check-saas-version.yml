@@ -1,0 +1,71 @@
+# description: Guards against accidentally downgrading the SaaS Elasticsearch version in .ci/db-versions.yml
+# test location: .ci/db-versions.yml
+# type: CI
+# owner: @camunda/data-layer
+---
+# Guards against accidentally downgrading the SaaS Elasticsearch version in
+# .ci/db-versions.yml.
+#
+# To enforce this as a merge requirement, add "Check SaaS version / Check SaaS
+# version does not decrease" to the required status checks in branch protection.
+
+name: Check SaaS version
+
+on:
+  pull_request:
+    paths:
+      - .ci/db-versions.yml
+
+jobs:
+  check-saas-version:
+    name: Check SaaS version does not decrease
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Install Python dependencies
+        run: python3 -m pip install -q --disable-pip-version-check pyyaml==6.0.2
+      - name: Compare SaaS version against base branch
+        env:
+          SKIP_LABEL: "ci:allow-saas-downgrade"
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          BASE_BRANCH: ${{ github.base_ref }}
+        shell: bash
+        run: |
+          if echo "$PR_LABELS" | python3 -c "import json,sys; sys.exit(0 if '$SKIP_LABEL' in json.load(sys.stdin) else 1)"; then
+            echo "Label '$SKIP_LABEL' is set — skipping version check."
+            exit 0
+          fi
+
+          PR_VERSION=$(python3 -c "import yaml; print(yaml.safe_load(open('.ci/db-versions.yml'))['elasticsearch']['saas'])")
+          git fetch origin "$BASE_BRANCH" --depth=1
+          if ! git show "origin/$BASE_BRANCH:.ci/db-versions.yml" > /dev/null 2>&1; then
+            echo ".ci/db-versions.yml does not exist on $BASE_BRANCH — nothing to compare against."
+            exit 0
+          fi
+          BASE_VERSION=$(git show "origin/$BASE_BRANCH:.ci/db-versions.yml" | python3 -c "import yaml,sys; print(yaml.safe_load(sys.stdin)['elasticsearch']['saas'])")
+
+          echo "SaaS version on $BASE_BRANCH: $BASE_VERSION"
+          echo "SaaS version on this PR:      $PR_VERSION"
+
+          python3 - <<EOF
+          import sys
+
+          def parse(v):
+              return tuple(int(x) for x in v.split("."))
+
+          pr   = parse("$PR_VERSION")
+          base = parse("$BASE_VERSION")
+
+          if pr < base:
+              print(f"::error::SaaS version decreased: {base} -> {pr}.")
+              print(f"::error::If this is intentional, add the label '$SKIP_LABEL' to the PR.")
+              sys.exit(1)
+
+          print(f"OK: {base} -> {pr}")
+          EOF
