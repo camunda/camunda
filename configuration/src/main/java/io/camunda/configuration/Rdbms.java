@@ -81,6 +81,9 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   @NestedConfigurationProperty private RdbmsQuery query = new RdbmsQuery();
 
+  @NestedConfigurationProperty
+  private RdbmsConnectionPool connectionPool = new RdbmsConnectionPool();
+
   public Boolean getAutoDdl() {
     return autoDdl;
   }
@@ -215,5 +218,13 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setDdlLockWaitTimeout(final Duration ddlLockWaitTimeout) {
     this.ddlLockWaitTimeout = ddlLockWaitTimeout;
+  }
+
+  public RdbmsConnectionPool getConnectionPool() {
+    return connectionPool;
+  }
+
+  public void setConnectionPool(final RdbmsConnectionPool connectionPool) {
+    this.connectionPool = connectionPool;
   }
 }

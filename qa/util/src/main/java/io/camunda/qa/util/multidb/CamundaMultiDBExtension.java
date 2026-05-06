@@ -359,50 +359,34 @@ public class CamundaMultiDBExtension
               isHistoryRelatedTest,
               "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
               "sa",
-              "",
-              "org.h2.Driver");
+              "");
       case RDBMS_POSTGRES ->
           multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:postgresql:camunda",
-              "camunda",
-              "camunda",
-              "org.postgresql.Driver");
+              isHistoryRelatedTest, "jdbc:postgresql:camunda", "camunda", "camunda");
       case RDBMS_MARIADB ->
           multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:mariadb://localhost:3306/camunda",
-              "camunda",
-              "camunda",
-              "org.mariadb.jdbc.Driver");
+              isHistoryRelatedTest, "jdbc:mariadb://localhost:3306/camunda", "camunda", "camunda");
       case RDBMS_MYSQL ->
           multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest,
-              "jdbc:mysql://localhost:3306/camunda",
-              "camunda",
-              "camunda",
-              "com.mysql.cj.jdbc.Driver");
+              isHistoryRelatedTest, "jdbc:mysql://localhost:3306/camunda", "camunda", "camunda");
       case RDBMS_ORACLE ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
               "jdbc:oracle:thin:@localhost:1521/FREEPDB1",
               "camunda",
-              "camunda",
-              "oracle.jdbc.OracleDriver");
+              "camunda");
       case RDBMS_MSSQL ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
               "jdbc:sqlserver://localhost:1433;Encrypt=false",
               "sa",
-              "Camunda#8_demo",
-              "com.microsoft.sqlserver.jdbc.SQLServerDriver");
+              "Camunda#8_demo");
       case RDBMS_AURORA ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
               System.getProperty(TEST_INTEGRATION_AURORA_AWS_URL),
               System.getProperty(TEST_INTEGRATION_AURORA_AWS_USERNAME),
-              System.getProperty(TEST_INTEGRATION_AURORA_AWS_PASSWORD),
-              "software.amazon.jdbc.Driver");
+              System.getProperty(TEST_INTEGRATION_AURORA_AWS_PASSWORD));
       case AWS_OS -> {
         final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
         multiDbConfigurator.configureAWSOpenSearchSupport(
