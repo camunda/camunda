@@ -31,6 +31,11 @@ For the latest status, check the unification epic
 ([camunda/camunda#51305](https://github.com/camunda/camunda/issues/51305)) or the
 Slack channel `#prj-pdp-3456-frontend-application-unification`.
 
+## Get in touch
+
+- Slack: `#team-core-features-frontend` — day-to-day questions and discussion.
+- Bi-weekly team sync — ask in the Slack channel for the invite.
+
 ## Related references
 
 - [`.github/instructions/frontend.instructions.md`](https://github.com/camunda/camunda/blob/main/.github/instructions/frontend.instructions.md) — scoped instructions auto-loaded by editors and AI agents.
