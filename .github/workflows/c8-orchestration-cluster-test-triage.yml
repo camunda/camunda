@@ -1,0 +1,427 @@
+# description: Triage agent for the C8 Orchestration Cluster nightly test suite.
+#              Downloads JSON reports from the latest nightly runs (8.7–main, API + E2E),
+#              classifies failures as flaky or product bugs, auto-fixes timeout-related
+#              flaky tests, and posts a structured triage summary to Slack.
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Test Triage Agent
+
+on:
+  schedule:
+    - cron: "0 5 * * *" # 5:00 AM UTC — after the 4:00 AM metrics report
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Skip the PR creation and Slack post (analysis only)"
+        required: false
+        default: "false"
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  triage:
+    name: Triage nightly test failures
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # ── Checkout ────────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Need a full clone so we can push a fix branch
+          fetch-depth: 0
+
+      # ── Secrets ─────────────────────────────────────────────────────────────
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+
+      # ── Python ──────────────────────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.x"
+
+      # ── Download artifacts ───────────────────────────────────────────────────
+      # For each nightly workflow we fetch the most recent completed run, then
+      # download its JSON-report artifact into a labelled subdirectory so the
+      # analysis script can identify which version/test-type it came from.
+      - name: Download nightly JSON reports
+        id: download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+
+          # format: "label|workflow_file|artifact_name"
+          RUNS=(
+            "api-stable-8.7|c8-orchestration-cluster-nightly-8.7-api-es.yml|json-report-nightly-api-stable-8.7"
+            "api-stable-8.8|c8-orchestration-cluster-nightly-8.8-api-es.yml|json-report-nightly-api-stable-8.8"
+            "api-stable-8.9|c8-orchestration-cluster-nightly-8.9-api-es.yml|json-report-nightly-api-stable-8.9"
+            "api-main|c8-orchestration-cluster-nightly-main-api-es.yml|json-report-nightly-api-main"
+            "e2e-stable-8.7-v1|c8-orchestration-cluster-nightly-8.7-e2e.yml|json-report-nightly-e2e-stable-8.7-v1"
+            "e2e-stable-8.8-v1|c8-orchestration-cluster-nightly-8.8-e2e.yml|json-report-nightly-e2e-stable-8.8-v1"
+            "e2e-stable-8.8-v2|c8-orchestration-cluster-nightly-8.8-e2e.yml|json-report-nightly-e2e-stable-8.8-v2"
+            "e2e-stable-8.9-v1|c8-orchestration-cluster-nightly-8.9-e2e.yml|json-report-nightly-e2e-stable-8.9-v1"
+            "e2e-stable-8.9-v2|c8-orchestration-cluster-nightly-8.9-e2e.yml|json-report-nightly-e2e-stable-8.9-v2"
+            "e2e-main-v2|c8-orchestration-cluster-nightly-main-e2e.yml|json-report-nightly-e2e-main-v2"
+          )
+
+          downloaded=0
+          for entry in "${RUNS[@]}"; do
+            IFS='|' read -r label workflow artifact_name <<< "$entry"
+            dest="artifacts/${label}"
+
+            run_id=$(gh api \
+              "/repos/${REPO}/actions/workflows/${workflow}/runs?per_page=1&status=completed" \
+              --jq '.workflow_runs[0].id // empty' 2>/dev/null) || true
+
+            if [[ -z "$run_id" ]]; then
+              echo "::warning::No completed run found for ${workflow} – skipping."
+              continue
+            fi
+
+            artifact_id=$(gh api \
+              "/repos/${REPO}/actions/runs/${run_id}/artifacts" \
+              --jq ".artifacts[] | select(.name == \"${artifact_name}\") | .id" 2>/dev/null \
+              | head -1) || true
+
+            if [[ -z "$artifact_id" ]]; then
+              echo "::warning::Artifact '${artifact_name}' not found in run ${run_id} – skipping."
+              continue
+            fi
+
+            mkdir -p "$dest"
+            gh api "/repos/${REPO}/actions/artifacts/${artifact_id}/zip" > "${dest}/artifact.zip"
+            unzip -q "${dest}/artifact.zip" -d "$dest/"
+            rm "${dest}/artifact.zip"
+            echo "Downloaded: ${label} (run ${run_id}, artifact ${artifact_id})"
+            downloaded=$((downloaded + 1))
+          done
+
+          echo "downloaded=${downloaded}" >> "$GITHUB_OUTPUT"
+
+      # ── Analyse ─────────────────────────────────────────────────────────────
+      - name: Analyse test results
+        id: analyse
+        run: |
+          set -euo pipefail
+          python3 .ci/scripts/ci/triage-tests/analyze-playwright-results.py artifacts \
+            > triage-report.json
+
+          echo "---- triage-report.json ----"
+          cat triage-report.json
+
+          # Expose counts for later steps
+          flaky=$(jq '.summary.flaky'         triage-report.json)
+          bugs=$(jq  '.summary.product_bugs'  triage-report.json)
+          cross=$(jq '.summary.cross_version_bugs' triage-report.json)
+          total=$(jq '.summary.total_unique_failures' triage-report.json)
+
+          echo "flaky=${flaky}"   >> "$GITHUB_OUTPUT"
+          echo "bugs=${bugs}"     >> "$GITHUB_OUTPUT"
+          echo "cross=${cross}"   >> "$GITHUB_OUTPUT"
+          echo "total=${total}"   >> "$GITHUB_OUTPUT"
+
+      # ── Auto-fix flaky tests ─────────────────────────────────────────────────
+      # Applies test.slow() for timeout-related flakes and TODO comments for
+      # others, then opens a PR so the team can review the changes.
+      - name: Apply flaky-test fixes
+        id: fix
+        if: steps.analyse.outputs.flaky != '0'
+        run: |
+          set -euo pipefail
+          python3 .ci/scripts/ci/triage-tests/apply-timeout-fixes.py \
+            triage-report.json \
+            qa/c8-orchestration-cluster-e2e-test-suite \
+            > fix-report.json
+
+          echo "---- fix-report.json ----"
+          cat fix-report.json
+
+          fixed_count=$(jq '.fixed | length' fix-report.json)
+          echo "fixed_count=${fixed_count}" >> "$GITHUB_OUTPUT"
+
+          # Summarise which files were modified (for the PR body and Slack)
+          fixed_list=$(jq -r '.fixed[] | "- `\(.file)`: \(.test) (\(.fix_type))"' fix-report.json)
+          echo "fixed_list<<EOF"   >> "$GITHUB_OUTPUT"
+          echo "$fixed_list"       >> "$GITHUB_OUTPUT"
+          echo "EOF"               >> "$GITHUB_OUTPUT"
+
+      - name: Create fix PR
+        id: pr
+        if: |
+          steps.fix.outputs.fixed_count != '' &&
+          steps.fix.outputs.fixed_count != '0' &&
+          inputs.dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TODAY=$(date -u +"%Y%m%d")
+          BRANCH="fix/flaky-tests-${TODAY}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$BRANCH"
+          git add qa/c8-orchestration-cluster-e2e-test-suite/
+          git commit -m "test: auto-fix flaky nightly tests (${TODAY})
+
+Applied by the triage agent based on nightly run failures:
+${{ steps.fix.outputs.fixed_list }}"
+
+          git push -u origin "$BRANCH"
+
+          PR_URL=$(gh pr create \
+            --title "test: auto-fix flaky nightly tests ($(date -u +"%Y-%m-%d"))" \
+            --body "$(cat <<'BODY'
+## Summary
+
+Auto-generated by the [C8 Orchestration Cluster Test Triage Agent](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+### Changes applied
+
+${{ steps.fix.outputs.fixed_list }}
+
+### How to review
+
+- `test.slow()` triples the Playwright timeout for the affected test — verify that the test still passes and that tripling the timeout is a proportionate fix.
+- `// TODO(triage-agent)` comments flag tests that need deeper investigation (non-timeout flakes).
+
+Closes no issue — this is a maintenance fix. Please link any follow-up issues in a comment.
+BODY
+            )" \
+            --base main)
+
+          echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
+          echo "Created PR: ${PR_URL}"
+
+      # ── Build Slack payload ──────────────────────────────────────────────────
+      - name: Build Slack triage payload
+        id: slack_payload
+        env:
+          FLAKY:      ${{ steps.analyse.outputs.flaky }}
+          BUGS:       ${{ steps.analyse.outputs.bugs }}
+          CROSS:      ${{ steps.analyse.outputs.cross }}
+          TOTAL:      ${{ steps.analyse.outputs.total }}
+          FIXED:      ${{ steps.fix.outputs.fixed_count || '0' }}
+          PR_URL:     ${{ steps.pr.outputs.pr_url || '' }}
+          RUN_URL:    ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          DRY_RUN:    ${{ inputs.dry_run || 'false' }}
+        run: |
+          set -euo pipefail
+          TODAY=$(date -u +"%d.%m.%Y")
+
+          # Overall health emoji
+          if [[ "$BUGS" == "0" && "$FLAKY" == "0" ]]; then
+            HEALTH=":white_check_mark: All green"
+          elif [[ "$BUGS" == "0" ]]; then
+            HEALTH=":yellow_circle: Flaky tests only"
+          else
+            HEALTH=":red_circle: Product bug(s) detected"
+          fi
+
+          # Flaky tests block (top 10)
+          FLAKY_LINES=$(jq -r '
+            .flaky_tests[:10]
+            | map("• `\(.name | split(" > ")[-1])` — \(.versions | join(", ")) — \(.error_type)")
+            | join("\n")
+          ' triage-report.json)
+          [ -z "$FLAKY_LINES" ] && FLAKY_LINES="None :white_check_mark:"
+
+          # Product bug block (top 10)
+          BUG_LINES=$(jq -r '
+            .product_bugs[:10]
+            | map(
+                (if (.versions | length) > 1 then ":rotating_light: " else ":x: " end)
+                + "`\(.name | split(" > ")[-1])`"
+                + " — " + (.versions | join(", "))
+              )
+            | join("\n")
+          ' triage-report.json)
+          [ -z "$BUG_LINES" ] && BUG_LINES="None :white_check_mark:"
+
+          # Fix summary
+          if [[ "$FIXED" != "0" && -n "$PR_URL" ]]; then
+            FIX_TEXT=":wrench: $FIXED test(s) auto-fixed — <${PR_URL}|view PR>"
+          elif [[ "$FIXED" != "0" ]]; then
+            FIX_TEXT=":wrench: $FIXED test(s) auto-fixed (dry-run, no PR created)"
+          else
+            FIX_TEXT=":information_source: No automated fixes applicable"
+          fi
+
+          # Cross-version note
+          if [[ "$CROSS" != "0" ]]; then
+            CROSS_NOTE=":warning: ${CROSS} failure(s) span multiple versions — likely infrastructure or test issue."$'\n'
+          else
+            CROSS_NOTE=""
+          fi
+
+          # Assemble payload via Python to guarantee valid JSON
+          python3 - <<PYEOF
+          import json, os
+
+          today       = os.environ["TODAY"]   if "TODAY" in os.environ else "$(date -u +"%d.%m.%Y")"
+          total       = os.environ["TOTAL"]
+          flaky       = os.environ["FLAKY"]
+          bugs        = os.environ["BUGS"]
+          cross       = os.environ["CROSS"]
+          fixed       = os.environ["FIXED"]
+          health      = """$HEALTH"""
+          run_url     = os.environ["RUN_URL"]
+          fix_text    = """$FIX_TEXT"""
+          cross_note  = """$CROSS_NOTE"""
+          flaky_lines = """$FLAKY_LINES"""
+          bug_lines   = """$BUG_LINES"""
+
+          summary_text = (
+              f"{health}\n"
+              f"Total unique failures: *{total}* | "
+              f":yellow_circle: Flaky: *{flaky}* | "
+              f":x: Product bugs: *{bugs}*\n"
+              f"{cross_note}"
+              f"{fix_text}\n"
+              f"<{run_url}|:mag: View triage run>"
+          )
+
+          payload = {
+              "channel": "c8-orchestration-cluster-e2e-test-results",
+              "text": f"C8 Orchestration Cluster Triage Report — {today}",
+              "blocks": [
+                  {
+                      "type": "header",
+                      "text": {
+                          "type": "plain_text",
+                          "text": f":microscope: C8 Orchestration Cluster Triage — {today}"
+                      }
+                  },
+                  {
+                      "type": "section",
+                      "text": {"type": "mrkdwn", "text": summary_text}
+                  },
+                  {"type": "divider"},
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": f"*:yellow_circle: Flaky Tests* (passed on retry)\n{flaky_lines}"
+                      }
+                  },
+                  {"type": "divider"},
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": f"*:x: Product Bug Failures* (all retries failed)\n{bug_lines}"
+                      }
+                  },
+              ]
+          }
+          print(json.dumps(payload))
+          PYEOF
+
+          # Write to a file to avoid multi-line output truncation
+          python3 - > slack-payload.json <<PYEOF2
+          import json, os
+
+          today       = "$(date -u +"%d.%m.%Y")"
+          total       = "$TOTAL"
+          flaky       = "$FLAKY"
+          bugs        = "$BUGS"
+          cross       = "$CROSS"
+          fixed       = "$FIXED"
+          health      = """$HEALTH"""
+          run_url     = "$RUN_URL"
+          fix_text    = """$FIX_TEXT"""
+          cross_note  = """$CROSS_NOTE"""
+          flaky_lines = """$FLAKY_LINES"""
+          bug_lines   = """$BUG_LINES"""
+
+          summary_text = (
+              f"{health}\n"
+              f"Total unique failures: *{total}* | "
+              f":yellow_circle: Flaky: *{flaky}* | "
+              f":x: Product bugs: *{bugs}*\n"
+              f"{cross_note}"
+              f"{fix_text}\n"
+              f"<{run_url}|:mag: View triage run>"
+          )
+
+          payload = {
+              "channel": "c8-orchestration-cluster-e2e-test-results",
+              "text": f"C8 Orchestration Cluster Triage Report — {today}",
+              "blocks": [
+                  {
+                      "type": "header",
+                      "text": {
+                          "type": "plain_text",
+                          "text": f":microscope: C8 Orchestration Cluster Triage — {today}"
+                      }
+                  },
+                  {
+                      "type": "section",
+                      "text": {"type": "mrkdwn", "text": summary_text}
+                  },
+                  {"type": "divider"},
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": f"*:yellow_circle: Flaky Tests* (passed on retry)\n{flaky_lines}"
+                      }
+                  },
+                  {"type": "divider"},
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": f"*:x: Product Bug Failures* (all retries failed)\n{bug_lines}"
+                      }
+                  },
+              ]
+          }
+          print(json.dumps(payload))
+          PYEOF2
+
+          echo "payload_file=slack-payload.json" >> "$GITHUB_OUTPUT"
+
+      # ── Post to Slack ────────────────────────────────────────────────────────
+      - name: Post triage report to Slack
+        if: inputs.dry_run != 'true'
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        with:
+          method: chat.postMessage
+          token: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          payload-file-path: slack-payload.json
+
+      # ── Build status ─────────────────────────────────────────────────────────
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
