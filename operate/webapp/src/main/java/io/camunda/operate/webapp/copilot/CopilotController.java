@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.copilot;
 import io.camunda.operate.webapp.copilot.dto.SendMessagePayload;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/v2/copilot/conversations")
+@ConditionalOnProperty(prefix = "camunda.operate.copilot", name = "api-key")
 public class CopilotController {
 
   private final CopilotConversationManager conversations;

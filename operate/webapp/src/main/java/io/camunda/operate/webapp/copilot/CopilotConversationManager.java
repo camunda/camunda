@@ -32,10 +32,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Component
+@ConditionalOnProperty(prefix = "camunda.operate.copilot", name = "api-key")
 public class CopilotConversationManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(CopilotConversationManager.class);

@@ -190,16 +190,19 @@ public class CopilotToolRegistry {
         (args, auth) -> {
           final long key = parseLong(args.get("processInstanceKey"), "processInstanceKey");
           final var entity = processInstanceServices.getByKey(key, auth);
-          return Map.of(
-              "processInstanceKey", entity.processInstanceKey(),
-              "processDefinitionId", entity.processDefinitionId(),
-              "processDefinitionName", entity.processDefinitionName(),
-              "processDefinitionVersion", entity.processDefinitionVersion(),
-              "state", String.valueOf(entity.state()),
-              "startDate", entity.startDate(),
-              "endDate", entity.endDate(),
-              "hasIncident", entity.hasIncident(),
-              "tenantId", entity.tenantId());
+          // LinkedHashMap (not Map.of) because several entity fields are @Nullable
+          // and Map.of throws NPE on null values.
+          final var result = new java.util.LinkedHashMap<String, Object>();
+          result.put("processInstanceKey", entity.processInstanceKey());
+          result.put("processDefinitionId", entity.processDefinitionId());
+          result.put("processDefinitionName", entity.processDefinitionName());
+          result.put("processDefinitionVersion", entity.processDefinitionVersion());
+          result.put("state", String.valueOf(entity.state()));
+          result.put("startDate", entity.startDate());
+          result.put("endDate", entity.endDate());
+          result.put("hasIncident", entity.hasIncident());
+          result.put("tenantId", entity.tenantId());
+          return result;
         });
   }
 
