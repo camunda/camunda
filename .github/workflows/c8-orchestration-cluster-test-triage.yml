@@ -133,15 +133,17 @@ jobs:
           cat triage-report.json
 
           # Expose counts for later steps
-          flaky=$(jq '.summary.flaky'         triage-report.json)
-          bugs=$(jq  '.summary.product_bugs'  triage-report.json)
-          cross=$(jq '.summary.cross_version_bugs' triage-report.json)
           total=$(jq '.summary.total_unique_failures' triage-report.json)
+          test_code=$(jq '.summary.test_code'            triage-report.json)
+          product=$(jq  '.summary.product_regression'    triage-report.json)
+          timing=$(jq   '.summary.timing'                triage-report.json)
+          unknown=$(jq  '.summary.needs_investigation'   triage-report.json)
 
-          echo "flaky=${flaky}"   >> "$GITHUB_OUTPUT"
-          echo "bugs=${bugs}"     >> "$GITHUB_OUTPUT"
-          echo "cross=${cross}"   >> "$GITHUB_OUTPUT"
-          echo "total=${total}"   >> "$GITHUB_OUTPUT"
+          echo "total=${total}"         >> "$GITHUB_OUTPUT"
+          echo "test_code=${test_code}" >> "$GITHUB_OUTPUT"
+          echo "product=${product}"     >> "$GITHUB_OUTPUT"
+          echo "timing=${timing}"       >> "$GITHUB_OUTPUT"
+          echo "unknown=${unknown}"     >> "$GITHUB_OUTPUT"
 
       # ── Auto-fix flaky tests (per branch) ──────────────────────────────────
       # Each stable branch and main is checked out in turn.  Only tests that
@@ -301,193 +303,129 @@ Closes no issue — maintenance fix. Link any follow-up issues in a comment.")
       - name: Build Slack triage payload
         id: slack_payload
         env:
-          FLAKY:      ${{ steps.analyse.outputs.flaky }}
-          BUGS:       ${{ steps.analyse.outputs.bugs }}
-          CROSS:      ${{ steps.analyse.outputs.cross }}
           TOTAL:      ${{ steps.analyse.outputs.total }}
+          TEST_CODE:  ${{ steps.analyse.outputs.test_code }}
+          PRODUCT:    ${{ steps.analyse.outputs.product }}
+          TIMING:     ${{ steps.analyse.outputs.timing }}
+          UNKNOWN:    ${{ steps.analyse.outputs.unknown }}
           FIXED:      ${{ steps.fix.outputs.total_fixed || '0' }}
           PR_URLS:    ${{ steps.fix.outputs.pr_urls || '' }}
           RUN_URL:    ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          DRY_RUN:    ${{ inputs.dry_run || 'false' }}
         run: |
           set -euo pipefail
           TODAY=$(date -u +"%d.%m.%Y")
 
           # Overall health emoji
-          if [[ "$BUGS" == "0" && "$FLAKY" == "0" ]]; then
-            HEALTH=":white_check_mark: All green"
-          elif [[ "$BUGS" == "0" ]]; then
-            HEALTH=":yellow_circle: Flaky tests only"
+          if [[ "$TOTAL" == "0" ]]; then
+            HEALTH=":white_check_mark: All green — no failures"
+          elif [[ "$PRODUCT" != "0" ]]; then
+            HEALTH=":red_circle: Product regression(s) detected"
+          elif [[ "$UNKNOWN" != "0" ]]; then
+            HEALTH=":large_orange_circle: Failures need investigation"
           else
-            HEALTH=":red_circle: Product bug(s) detected"
+            HEALTH=":yellow_circle: Test code / timing issues only"
           fi
 
-          # Flaky tests block (top 10)
-          FLAKY_LINES=$(jq -r '
-            .flaky_tests[:10]
-            | map("• `\(.name | split(" > ")[-1])` — \(.versions | join(", ")) — \(.error_type)")
-            | join("\n")
-          ' triage-report.json)
-          [ -z "$FLAKY_LINES" ] && FLAKY_LINES="None :white_check_mark:"
-
-          # Product bug block (top 10)
-          BUG_LINES=$(jq -r '
-            .product_bugs[:10]
-            | map(
-                (if (.versions | length) > 1 then ":rotating_light: " else ":x: " end)
-                + "`\(.name | split(" > ")[-1])`"
-                + " — " + (.versions | join(", "))
-              )
-            | join("\n")
-          ' triage-report.json)
-          [ -z "$BUG_LINES" ] && BUG_LINES="None :white_check_mark:"
-
-          # Fix summary — list each per-branch PR on its own line
+          # Fix summary
           if [[ "$FIXED" != "0" && -n "$PR_URLS" ]]; then
             pr_links=""
             for url in $PR_URLS; do
-              branch_label=$(echo "$url" | grep -oP 'fix/flaky-tests-\K[^/]+(?=-)' || echo "")
               pr_links="${pr_links}<${url}|view PR> "
             done
             FIX_TEXT=":wrench: $FIXED test(s) auto-fixed — ${pr_links}"
           elif [[ "$FIXED" != "0" ]]; then
-            FIX_TEXT=":wrench: $FIXED test(s) auto-fixed (dry-run, no PRs created)"
+            FIX_TEXT=":wrench: $FIXED test(s) auto-fixed (dry-run)"
           else
-            FIX_TEXT=":information_source: No automated fixes applicable"
+            FIX_TEXT=":information_source: No automated fixes applied"
           fi
 
-          # Cross-version note
-          if [[ "$CROSS" != "0" ]]; then
-            CROSS_NOTE=":warning: ${CROSS} failure(s) span multiple versions — likely infrastructure or test issue."$'\n'
-          else
-            CROSS_NOTE=""
-          fi
+          # Per-hint failure blocks (top 8 each, with reasons)
+          # helper: format one failure entry for Slack mrkdwn
+          format_failure() {
+            local hint="$1"
+            jq -r --arg h "$hint" '
+              [ .failures[] | select(.root_cause_hint == $h) ] | .[:8]
+              | map(
+                  "• `" + (.name | split(" > ")[-1]) + "`"
+                  + " — " + (.versions | join(", "))
+                  + " — _" + (.error_type) + "_"
+                  + "\n  › " + (.root_cause_reasons | join("; "))
+                )
+              | join("\n")
+            ' triage-report.json
+          }
 
-          # Assemble payload via Python to guarantee valid JSON
-          python3 - <<PYEOF
+          TC_LINES=$(format_failure "test_code");         [ -z "$TC_LINES" ] && TC_LINES="None :white_check_mark:"
+          PR_LINES=$(format_failure "product_regression"); [ -z "$PR_LINES" ] && PR_LINES="None :white_check_mark:"
+          TM_LINES=$(format_failure "timing");             [ -z "$TM_LINES" ] && TM_LINES="None :white_check_mark:"
+          UN_LINES=$(format_failure "needs_investigation"); [ -z "$UN_LINES" ] && UN_LINES="None :white_check_mark:"
+
+          # Write payload as a file via Python (avoids shell quoting issues with JSON)
+          python3 - > slack-payload.json <<PYEOF
           import json, os
 
-          today       = os.environ["TODAY"]   if "TODAY" in os.environ else "$(date -u +"%d.%m.%Y")"
-          total       = os.environ["TOTAL"]
-          flaky       = os.environ["FLAKY"]
-          bugs        = os.environ["BUGS"]
-          cross       = os.environ["CROSS"]
-          fixed       = os.environ["FIXED"]
-          health      = """$HEALTH"""
-          run_url     = os.environ["RUN_URL"]
-          fix_text    = """$FIX_TEXT"""
-          cross_note  = """$CROSS_NOTE"""
-          flaky_lines = """$FLAKY_LINES"""
-          bug_lines   = """$BUG_LINES"""
+          today      = "$TODAY"
+          total      = "$TOTAL"
+          test_code  = "$TEST_CODE"
+          product    = "$PRODUCT"
+          timing     = "$TIMING"
+          unknown    = "$UNKNOWN"
+          fixed      = "$FIXED"
+          health     = """$HEALTH"""
+          run_url    = "$RUN_URL"
+          fix_text   = """$FIX_TEXT"""
+          tc_lines   = """$TC_LINES"""
+          pr_lines   = """$PR_LINES"""
+          tm_lines   = """$TM_LINES"""
+          un_lines   = """$UN_LINES"""
 
-          summary_text = (
+          summary = (
               f"{health}\n"
-              f"Total unique failures: *{total}* | "
-              f":yellow_circle: Flaky: *{flaky}* | "
-              f":x: Product bugs: *{bugs}*\n"
-              f"{cross_note}"
+              f"Total: *{total}* | "
+              f":hammer_and_wrench: Test code: *{test_code}* | "
+              f":red_circle: Product regression: *{product}* | "
+              f":hourglass: Timing: *{timing}* | "
+              f":question: Needs investigation: *{unknown}*\n"
               f"{fix_text}\n"
               f"<{run_url}|:mag: View triage run>"
           )
+
+          def section(text):
+              return {"type": "section", "text": {"type": "mrkdwn", "text": text}}
 
           payload = {
               "channel": "c8-orchestration-cluster-e2e-test-results",
               "text": f"C8 Orchestration Cluster Triage Report — {today}",
               "blocks": [
-                  {
-                      "type": "header",
-                      "text": {
-                          "type": "plain_text",
-                          "text": f":microscope: C8 Orchestration Cluster Triage — {today}"
-                      }
-                  },
-                  {
-                      "type": "section",
-                      "text": {"type": "mrkdwn", "text": summary_text}
-                  },
+                  {"type": "header", "text": {
+                      "type": "plain_text",
+                      "text": f":microscope: C8 Orchestration Cluster Triage — {today}"
+                  }},
+                  section(summary),
                   {"type": "divider"},
-                  {
-                      "type": "section",
-                      "text": {
-                          "type": "mrkdwn",
-                          "text": f"*:yellow_circle: Flaky Tests* (passed on retry)\n{flaky_lines}"
-                      }
-                  },
+                  section(
+                      f"*:hammer_and_wrench: Test Code Issues* "
+                      f"_(outdated locator, data isolation, wrong assertion)_\n{tc_lines}"
+                  ),
                   {"type": "divider"},
-                  {
-                      "type": "section",
-                      "text": {
-                          "type": "mrkdwn",
-                          "text": f"*:x: Product Bug Failures* (all retries failed)\n{bug_lines}"
-                      }
-                  },
+                  section(
+                      f"*:red_circle: Product Regressions* "
+                      f"_(HTTP errors or assertion failures on a single version)_\n{pr_lines}"
+                  ),
+                  {"type": "divider"},
+                  section(
+                      f"*:hourglass: Timing / Race Conditions* "
+                      f"_(timeout or intermittent — needs human judgement)_\n{tm_lines}"
+                  ),
+                  {"type": "divider"},
+                  section(
+                      f"*:question: Needs Investigation* "
+                      f"_(conflicting or insufficient signals)_\n{un_lines}"
+                  ),
               ]
           }
           print(json.dumps(payload))
           PYEOF
-
-          # Write to a file to avoid multi-line output truncation
-          python3 - > slack-payload.json <<PYEOF2
-          import json, os
-
-          today       = "$(date -u +"%d.%m.%Y")"
-          total       = "$TOTAL"
-          flaky       = "$FLAKY"
-          bugs        = "$BUGS"
-          cross       = "$CROSS"
-          fixed       = "$FIXED"
-          health      = """$HEALTH"""
-          run_url     = "$RUN_URL"
-          fix_text    = """$FIX_TEXT"""
-          cross_note  = """$CROSS_NOTE"""
-          flaky_lines = """$FLAKY_LINES"""
-          bug_lines   = """$BUG_LINES"""
-
-          summary_text = (
-              f"{health}\n"
-              f"Total unique failures: *{total}* | "
-              f":yellow_circle: Flaky: *{flaky}* | "
-              f":x: Product bugs: *{bugs}*\n"
-              f"{cross_note}"
-              f"{fix_text}\n"
-              f"<{run_url}|:mag: View triage run>"
-          )
-
-          payload = {
-              "channel": "c8-orchestration-cluster-e2e-test-results",
-              "text": f"C8 Orchestration Cluster Triage Report — {today}",
-              "blocks": [
-                  {
-                      "type": "header",
-                      "text": {
-                          "type": "plain_text",
-                          "text": f":microscope: C8 Orchestration Cluster Triage — {today}"
-                      }
-                  },
-                  {
-                      "type": "section",
-                      "text": {"type": "mrkdwn", "text": summary_text}
-                  },
-                  {"type": "divider"},
-                  {
-                      "type": "section",
-                      "text": {
-                          "type": "mrkdwn",
-                          "text": f"*:yellow_circle: Flaky Tests* (passed on retry)\n{flaky_lines}"
-                      }
-                  },
-                  {"type": "divider"},
-                  {
-                      "type": "section",
-                      "text": {
-                          "type": "mrkdwn",
-                          "text": f"*:x: Product Bug Failures* (all retries failed)\n{bug_lines}"
-                      }
-                  },
-              ]
-          }
-          print(json.dumps(payload))
-          PYEOF2
 
           echo "payload_file=slack-payload.json" >> "$GITHUB_OUTPUT"
 
