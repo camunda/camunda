@@ -13,12 +13,12 @@ Do not add PID file reads or writes that skip lock acquisition.
 
 `AttemptToStartProcess` in `internal/processmanagement/processhandler.go` implements a 4-state decision:
 
-| State | Condition | Action |
-|---|---|---|
-| **No PID** | PID file does not exist | Start process |
-| **Running + healthy** | PID file exists, process alive, health check passes | Do nothing (skip start) |
-| **Running + unhealthy** | PID file exists, process alive, health check fails | Kill process, clean up PID, restart |
-| **Stale PID** | PID file exists, process is dead | Clean up PID file, start process |
+|          State          |                      Condition                      |               Action                |
+|-------------------------|-----------------------------------------------------|-------------------------------------|
+| **No PID**              | PID file does not exist                             | Start process                       |
+| **Running + healthy**   | PID file exists, process alive, health check passes | Do nothing (skip start)             |
+| **Running + unhealthy** | PID file exists, process alive, health check fails  | Kill process, clean up PID, restart |
+| **Stale PID**           | PID file exists, process is dead                    | Clean up PID file, start process    |
 
 The health check only runs if the process is confirmed running. An unhealthy running process triggers a kill + cleanup before restart — not a graceful shutdown. Changes to restart logic must be tested against all four states.
 

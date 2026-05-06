@@ -2,19 +2,19 @@
 
 ## Key Areas
 
-| Path | Description |
-|---|---|
-| `cmd/c8run/` | End-user CLI — `start`, `stop`, and `help` commands |
-| `cmd/packager/` | CLI for building distributable C8Run archives |
-| `internal/start/` | Java resolution, config locations, startup, health checks |
-| `internal/shutdown/` | Stop flow and H2 data cleanup rules |
+|             Path              |                         Description                         |
+|-------------------------------|-------------------------------------------------------------|
+| `cmd/c8run/`                  | End-user CLI — `start`, `stop`, and `help` commands         |
+| `cmd/packager/`               | CLI for building distributable C8Run archives               |
+| `internal/start/`             | Java resolution, config locations, startup, health checks   |
+| `internal/shutdown/`          | Stop flow and H2 data cleanup rules                         |
 | `internal/processmanagement/` | PID files, lock files, process trees, killing, restart flow |
-| `internal/unix/` | Linux and macOS command/process implementation |
-| `internal/windows/` | Windows command/process implementation |
-| `internal/connectors/` | Connectors launcher compatibility logic |
-| `internal/packages/` | Distribution download, clean, extract, and package logic |
-| `configuration/` | Default runtime configuration loaded by every start |
-| `e2e_tests/` | API and Playwright checks used by C8Run CI |
+| `internal/unix/`              | Linux and macOS command/process implementation              |
+| `internal/windows/`           | Windows command/process implementation                      |
+| `internal/connectors/`        | Connectors launcher compatibility logic                     |
+| `internal/packages/`          | Distribution download, clean, extract, and package logic    |
+| `configuration/`              | Default runtime configuration loaded by every start         |
+| `e2e_tests/`                  | API and Playwright checks used by C8Run CI                  |
 
 ## Runtime and Generated Artifacts
 

@@ -37,10 +37,10 @@ API and Playwright-based E2E tests live in `e2e_tests/`. These are run by C8Run 
 
 ### Repositories
 
-| Repo | Role |
-|---|---|
-| `camunda/camunda` | In-repo smoke tests (`c8run/e2e_tests/`) + PR dispatch trigger |
-| `camunda/c8-cross-component-e2e-tests` | Full QA E2E suite (Playwright + TestRail) |
+|                  Repo                  |                              Role                              |
+|----------------------------------------|----------------------------------------------------------------|
+| `camunda/camunda`                      | In-repo smoke tests (`c8run/e2e_tests/`) + PR dispatch trigger |
+| `camunda/c8-cross-component-e2e-tests` | Full QA E2E suite (Playwright + TestRail)                      |
 
 ### Layer 1 — In-repo smoke tests (`camunda/camunda`)
 
@@ -75,30 +75,30 @@ Linux/macOS use the `.github/actions/setup-c8run` composite action to build and 
 
 **Nightly runs:**
 
-| Workflow | OS | Schedule (UTC) | Versions | DB |
-|---|---|---|---|---|
-| `playwright_c8Run_nightly_tests_linux.yml` | Linux | 00:00 | 8.7, 8.8, 8.9, 8.10 | H2 (8.9+), ES (8.8 and older) |
-| `playwright_c8Run_nightly_tests_mac.yml` | macOS | 01:00 | 8.10 | H2 |
-| `playwright_c8Run_nightly_tests_windows.yml` | Windows | 02:00 | 8.10 | H2 |
-| `playwright_c8Run_nightly_tests_docker_linux.yml` | Linux (Docker Compose) | 01:00 | 8.7, 8.8, 8.9 | H2 (8.9), ES (older) |
+|                     Workflow                      |           OS           | Schedule (UTC) |      Versions       |              DB               |
+|---------------------------------------------------|------------------------|----------------|---------------------|-------------------------------|
+| `playwright_c8Run_nightly_tests_linux.yml`        | Linux                  | 00:00          | 8.7, 8.8, 8.9, 8.10 | H2 (8.9+), ES (8.8 and older) |
+| `playwright_c8Run_nightly_tests_mac.yml`          | macOS                  | 01:00          | 8.10                | H2                            |
+| `playwright_c8Run_nightly_tests_windows.yml`      | Windows                | 02:00          | 8.10                | H2                            |
+| `playwright_c8Run_nightly_tests_docker_linux.yml` | Linux (Docker Compose) | 01:00          | 8.7, 8.8, 8.9       | H2 (8.9), ES (older)          |
 
 No config file is passed — H2 is the c8run default for 8.9+. The matrix sets `database: RDBMS` as an env var used for test filtering and TestRail reporting, not for DB configuration.
 
 **Release / on-demand runs:**
 
-| Workflow | Trigger | OS |
-|---|---|---|
-| `playwright_c8Run_release_test.yml` | `workflow_dispatch` (release validation) | Linux + macOS + Windows |
-| `playwright_c8Run_tests_manual_linux/mac/windows.yml` | `workflow_dispatch` | Respective OS |
+|                       Workflow                        |                 Trigger                  |           OS            |
+|-------------------------------------------------------|------------------------------------------|-------------------------|
+| `playwright_c8Run_release_test.yml`                   | `workflow_dispatch` (release validation) | Linux + macOS + Windows |
+| `playwright_c8Run_tests_manual_linux/mac/windows.yml` | `workflow_dispatch`                      | Respective OS           |
 
 The release workflow publishes results to TestRail. Each action accepts `database`, `tasklist_version`, and `version` inputs.
 
 ### RDBMS configuration summary
 
-| Layer | DB | How configured |
-|---|---|---|
-| In-repo smoke | H2 file-based | `--config e2e_tests/prefix-config.yaml` |
-| QA nightly / PR trigger (8.9+) | H2 default | No config file |
-| QA release / on-demand | H2 default | No config file |
+|             Layer              |      DB       |             How configured              |
+|--------------------------------|---------------|-----------------------------------------|
+| In-repo smoke                  | H2 file-based | `--config e2e_tests/prefix-config.yaml` |
+| QA nightly / PR trigger (8.9+) | H2 default    | No config file                          |
+| QA release / on-demand         | H2 default    | No config file                          |
 
 No external database (Postgres, MariaDB, etc.) is provisioned in any c8run E2E CI workflow. All RDBMS coverage is H2-only. External RDBMS testing (e.g. Postgres) is tracked but not yet wired into regular CI.

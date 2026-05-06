@@ -115,20 +115,20 @@ go version
 
 ## Additional Agent Context
 
-| File / Path | Purpose |
-|---|---|
-| `README.md` | Build setup, Go version requirement, `.env` config, packaging steps |
-| `docs/local-development.md` | Prerequisites, quick start, and testing code changes against a local Camunda build |
-| `docs/package-layout.md` | Key package areas, runtime artifact list, packaging a distribution |
-| `docs/runtime-rules.md` | Config precedence, H2 rules, Connectors compatibility, ports, health check timeout, quickstart marker |
-| `docs/testing-guide.md` | Platform coverage, process lifecycle, packaging, startup test expectations |
-| `docs/process-lifecycle.md` | PID locking semantics, 4-state restart machine, signal handling, graceful shutdown, detached mode stub |
-| `docs/configuration.md` | JAVA_HOME fallback chain, config directory handling, H2 cleanup decision tree, RDBMS driver detection |
-| `docs/platform-differences.md` | Unix vs Windows: process groups, kill implementation, path/classpath conventions, archive formats, test tags |
-| `docs/release.md` | Release process: RC and public release steps, workflow inputs, artifact naming, post-release cleanup |
-| `docs/versions.md` | Branch layout, per-version feature matrix, backport policy |
-| `.env` | Local credentials and version pins — never committed |
-| `configuration/application.yaml` | Default runtime config loaded on every start |
+|           File / Path            |                                                   Purpose                                                    |
+|----------------------------------|--------------------------------------------------------------------------------------------------------------|
+| `README.md`                      | Build setup, Go version requirement, `.env` config, packaging steps                                          |
+| `docs/local-development.md`      | Prerequisites, quick start, and testing code changes against a local Camunda build                           |
+| `docs/package-layout.md`         | Key package areas, runtime artifact list, packaging a distribution                                           |
+| `docs/runtime-rules.md`          | Config precedence, H2 rules, Connectors compatibility, ports, health check timeout, quickstart marker        |
+| `docs/testing-guide.md`          | Platform coverage, process lifecycle, packaging, startup test expectations                                   |
+| `docs/process-lifecycle.md`      | PID locking semantics, 4-state restart machine, signal handling, graceful shutdown, detached mode stub       |
+| `docs/configuration.md`          | JAVA_HOME fallback chain, config directory handling, H2 cleanup decision tree, RDBMS driver detection        |
+| `docs/platform-differences.md`   | Unix vs Windows: process groups, kill implementation, path/classpath conventions, archive formats, test tags |
+| `docs/release.md`                | Release process: RC and public release steps, workflow inputs, artifact naming, post-release cleanup         |
+| `docs/versions.md`               | Branch layout, per-version feature matrix, backport policy                                                   |
+| `.env`                           | Local credentials and version pins — never committed                                                         |
+| `configuration/application.yaml` | Default runtime config loaded on every start                                                                 |
 
 ## Recommended Agent Workflow
 
@@ -140,3 +140,4 @@ go version
 6. Build the changed binary to confirm it compiles: `go build -o c8run ./cmd/c8run`.
 7. For packaging changes, also build and verify `packager`.
 8. Commit with Conventional Commits format, no scope.
+

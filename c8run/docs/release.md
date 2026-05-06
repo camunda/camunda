@@ -27,15 +27,15 @@ For each version:
 For each version, click **Run workflow** in the
 [C8Run Release GitHub workflow](https://github.com/camunda/camunda/actions/workflows/c8run-release.yaml):
 
-| Input | Value |
-|---|---|
-| Run workflow from | `Branch: main` (always) |
-| Release branch | e.g. `stable/8.7` for 8.7 |
-| Camunda minor version | e.g. `8.7` |
-| Camunda app GH release | e.g. `8.7.4` |
-| Publish to Camunda apps GitHub release page | **Ticked** |
-| Publish to Camunda Download Center | **Unticked** (RCs are not published to the Download Center) |
-| Artifact version suffix | `-rc` (include the dash) |
+|                    Input                    |                            Value                            |
+|---------------------------------------------|-------------------------------------------------------------|
+| Run workflow from                           | `Branch: main` (always)                                     |
+| Release branch                              | e.g. `stable/8.7` for 8.7                                   |
+| Camunda minor version                       | e.g. `8.7`                                                  |
+| Camunda app GH release                      | e.g. `8.7.4`                                                |
+| Publish to Camunda apps GitHub release page | **Ticked**                                                  |
+| Publish to Camunda Download Center          | **Unticked** (RCs are not published to the Download Center) |
+| Artifact version suffix                     | `-rc` (include the dash)                                    |
 
 Then:
 
@@ -50,15 +50,15 @@ Then:
 For each version, click **Run workflow** in the
 [C8Run Release GitHub workflow](https://github.com/camunda/camunda/actions/workflows/c8run-release.yaml):
 
-| Input | Value |
-|---|---|
-| Run workflow from | `Branch: main` (always) |
-| Release branch | e.g. `stable/8.8` for 8.8, `main` for latest |
-| Camunda minor version | e.g. `8.6`, `8.7`, `8.8` |
-| Camunda app GH release | e.g. `8.7.1`, `8.8-alpha4.1` |
-| Publish to Camunda apps GitHub release page | **Ticked** |
-| Publish to Camunda Download Center | **Ticked** |
-| Artifact version suffix | *(leave empty)* |
+|                    Input                    |                    Value                     |
+|---------------------------------------------|----------------------------------------------|
+| Run workflow from                           | `Branch: main` (always)                      |
+| Release branch                              | e.g. `stable/8.8` for 8.8, `main` for latest |
+| Camunda minor version                       | e.g. `8.6`, `8.7`, `8.8`                     |
+| Camunda app GH release                      | e.g. `8.7.1`, `8.8-alpha4.1`                 |
+| Publish to Camunda apps GitHub release page | **Ticked**                                   |
+| Publish to Camunda Download Center          | **Ticked**                                   |
+| Artifact version suffix                     | *(leave empty)*                              |
 
 Then:
 

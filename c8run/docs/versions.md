@@ -6,12 +6,12 @@ Each minor version lives on its own stable branch. The latest unreleased minor v
 `main` until its first stable release, at which point a new `stable/x.y` branch is cut and `main`
 moves on to the next minor.
 
-| Branch | Version | Status |
-|---|---|---|
-| `stable/8.7` | 8.7.x | Maintenance |
-| `stable/8.8` | 8.8.x | Maintenance |
-| `stable/8.9` | 8.9.x | Maintenance |
-| `main` | 8.10.x (alpha) → 8.11 once `stable/8.10` is cut | Active development |
+|    Branch    |                     Version                     |       Status       |
+|--------------|-------------------------------------------------|--------------------|
+| `stable/8.7` | 8.7.x                                           | Maintenance        |
+| `stable/8.8` | 8.8.x                                           | Maintenance        |
+| `stable/8.9` | 8.9.x                                           | Maintenance        |
+| `main`       | 8.10.x (alpha) → 8.11 once `stable/8.10` is cut | Active development |
 
 > [!IMPORTANT]
 > Breaking changes must never be backported to stable branches.
@@ -21,15 +21,15 @@ moves on to the next minor.
 
 ## Feature Matrix
 
-| Feature | 8.7 | 8.8 | 8.9 | main (8.10+) |
-|---|---|---|---|---|
-| Supported JDK range | 21–23 | 21–23 | 21–25 | 21–25 |
-| Elasticsearch bundled | ✓ v8.13.4 | ✓ v8.17.3 | ✗ | ✗ |
-| `--disable-elasticsearch` flag | ✓ | ✓ | ✗ | ✗ |
-| Docker Compose bundled (`--docker` flag) | ✓ | ✓ | ✓ | ✗ |
-| RDBMS secondary storage | ✗ | ✗ | ✓ | ✓ |
-| H2 as default secondary storage | ✗ | ✗ | ✓ | ✓ |
-| `--extra-driver` flag | ✗ | ✗ | ✓ | ✓ |
+|                 Feature                  |    8.7    |    8.8    |  8.9  | main (8.10+) |
+|------------------------------------------|-----------|-----------|-------|--------------|
+| Supported JDK range                      | 21–23     | 21–23     | 21–25 | 21–25        |
+| Elasticsearch bundled                    | ✓ v8.13.4 | ✓ v8.17.3 | ✗     | ✗            |
+| `--disable-elasticsearch` flag           | ✓         | ✓         | ✗     | ✗            |
+| Docker Compose bundled (`--docker` flag) | ✓         | ✓         | ✓     | ✗            |
+| RDBMS secondary storage                  | ✗         | ✗         | ✓     | ✓            |
+| H2 as default secondary storage          | ✗         | ✗         | ✓     | ✓            |
+| `--extra-driver` flag                    | ✗         | ✗         | ✓     | ✓            |
 
 ---
 
