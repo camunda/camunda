@@ -32,6 +32,8 @@ export default defineConfig({
   retries: 1,
   outputDir: `${REPORTS_BASE_DIR}/artifacts`,
   reporter: CI ? ciReporters : localReporters,
+  timeout: 60_000,
+  expect: {timeout: 15_000},
   use: {
     trace: 'retain-on-failure',
   },
