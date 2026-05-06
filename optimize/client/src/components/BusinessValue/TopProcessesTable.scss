@@ -1,12 +1,9 @@
-@use '@carbon/react/scss/spacing' as *;
-@use '@carbon/react/scss/theme' as *;
-
 .TopProcessesTable {
   width: 100%;
-  padding: $spacing-03 $spacing-05 $spacing-05;
+  padding: 0.5rem 0.75rem 1rem;
 
   .cds--data-table {
-    background-color: $layer-01;
+    background-color: var(--white, #fff);
 
     th,
     td {
@@ -15,21 +12,21 @@
 
     thead {
       th {
-        background-color: $layer-01;
-        border-bottom: 1px solid $border-subtle-01;
+        background-color: var(--white, #fff);
+        border-bottom: 1px solid var(--silver-darken-80, #cdcdcd);
       }
     }
 
     tbody {
       tr {
-        background-color: $layer-01;
+        background-color: var(--white, #fff);
 
         &:hover {
-          background-color: $layer-hover-01;
+          background-color: var(--silver-base-97, #f8f8f8);
         }
 
         td {
-          border-bottom: 1px solid $border-subtle-00;
+          border-bottom: 1px solid var(--silver-darken-94, #efefef);
         }
       }
     }
