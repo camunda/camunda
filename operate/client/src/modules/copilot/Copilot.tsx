@@ -49,6 +49,7 @@ const Copilot: React.FC = () => {
           emptyStateTitle="Camunda Copilot"
           emptyStateDescription={emptyStateDescription}
           suggestions={suggestions}
+          className="operate-copilot"
         />
       )}
     </CopilotSidecar>
