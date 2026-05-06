@@ -118,6 +118,20 @@ class LsnReplicationControllerTest {
   }
 
   @Test
+  void shouldPauseWhenLsnQueryExceptionalOnFullQueue() {
+    // given – create a controller with queue that is already full
+    final var sut = createController();
+    when(lsnProvider.getCurrent()).thenThrow(new RuntimeException("db error"));
+    when(clock.millis()).thenReturn(0L);
+
+    // fill the queue completely
+    sut.onFlush(1);
+
+    // then – isReplicationInSync returns false due to DB problems
+    assertThat(sut.isReplicationInSync()).isFalse();
+  }
+
+  @Test
   void shouldRemoveConfirmedEntriesOnCheck() {
     // given – 5 entries with lsn 1..5; replica has confirmed up to lsn 2
     final var sut = createController();

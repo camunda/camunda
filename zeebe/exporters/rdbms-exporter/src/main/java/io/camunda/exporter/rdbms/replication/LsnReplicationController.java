@@ -75,22 +75,28 @@ public class LsnReplicationController implements ReplicationController {
   @Override
   public void onFlush(final long exporterPosition) {
     flushedPosition.set(exporterPosition);
-    final long currentLsn = lsnProvider.getCurrent();
-    final long now = clock.millis();
-    LOG.debug(
-        "[RDBMS Exporter P{}] Flushed position {}, current LSN is {}, enqueueing for replication check",
-        partitionId,
-        exporterPosition,
-        currentLsn);
-    if (!pendingEntries.offer(new LsnPositionEntry(exporterPosition, currentLsn, now))) {
-      // it's fine to just drop. When we are able to compact, when we export a new entry it will be
-      // added. If the queue is not full for too much it's not a problem, otherwise we will just hit
-      // the max_lag bound.
-      LOG.warn(
-          "[RDBMS Exporter P{}] Replication queue is full, dropping LSN entry (lsn={}, position={})",
+    try {
+      final long currentLsn = lsnProvider.getCurrent();
+      final long now = clock.millis();
+      LOG.debug(
+          "[RDBMS Exporter P{}] Flushed position {}, current LSN is {}, enqueueing for replication check",
           partitionId,
-          currentLsn,
-          exporterPosition);
+          exporterPosition,
+          currentLsn);
+      if (!pendingEntries.offer(new LsnPositionEntry(exporterPosition, currentLsn, now))) {
+        // it's fine to just drop. When we are able to compact, when we export a new entry it will
+        // be
+        // added. If the queue is not full for too much it's not a problem, otherwise we will just
+        // hit
+        // the max_lag bound.
+        LOG.warn(
+            "[RDBMS Exporter P{}] Replication queue is full, dropping LSN entry (lsn={}, position={})",
+            partitionId,
+            currentLsn,
+            exporterPosition);
+      }
+    } catch (final Exception e) {
+      pauseOnFlushFailure(exporterPosition, e);
     }
   }
 
@@ -184,6 +190,16 @@ public class LsnReplicationController implements ReplicationController {
     }
 
     return null;
+  }
+
+  private void pauseOnFlushFailure(final long exporterPosition, final Exception e) {
+    paused.set(true);
+    LOG.error(
+        "[RDBMS Exporter P{}] Failed to capture replication state after flushing exporter "
+            + "position {}. Exporting will remain paused until replication checks recover.",
+        partitionId,
+        exporterPosition,
+        e);
   }
 
   private void updatePausedState(
