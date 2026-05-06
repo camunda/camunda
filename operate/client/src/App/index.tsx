@@ -165,6 +165,14 @@ const routes = createRoutesFromElements(
             return {Component: InstanceHistoryTab};
           }}
         />
+        <Route
+          path={Paths.processInstanceDebug({isRelative: true})}
+          lazy={async () => {
+            const {DebugTab} =
+              await import('./ProcessInstance/BottomPanelTabs/DebugTab/index');
+            return {Component: DebugTab};
+          }}
+        />
         <Route path="*" element={<DefaultTabRedirect />} />
       </Route>
       <Route

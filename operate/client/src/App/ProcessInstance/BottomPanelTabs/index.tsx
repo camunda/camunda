@@ -134,6 +134,14 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       title: 'Instance History',
       visible: isHistoryTabVisible,
     },
+    {
+      label: 'Debug',
+      to: {pathname: Paths.processInstanceDebug({processInstanceId})},
+      key: 'debug',
+      selected: currentPage === 'process-details-debug',
+      title: 'Debug',
+      visible: true,
+    },
   ] satisfies React.ComponentProps<typeof TabListNav>['items'];
 
   const selectedTab = tabItems.find((tab) => tab.selected);
