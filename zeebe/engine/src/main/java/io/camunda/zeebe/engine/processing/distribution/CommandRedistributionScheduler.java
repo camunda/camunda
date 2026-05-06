@@ -83,14 +83,7 @@ public final class CommandRedistributionScheduler implements ScheduledTask {
                 record.getIntent(),
                 record.getPartitionId(),
                 retryCycle);
-            ctx.sink()
-                .sendInterPartition(
-                    record.getPartitionId(),
-                    record.getValueType(),
-                    record.getIntent(),
-                    distributionKey,
-                    record.getCommandValue(),
-                    record.getAuthInfo());
+            distributionBehavior.onScheduledRetry(distributionKey, record);
           }
 
           visited.add(retriable);

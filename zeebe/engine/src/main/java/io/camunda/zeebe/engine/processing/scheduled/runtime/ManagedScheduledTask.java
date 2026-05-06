@@ -184,11 +184,11 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
   // ---------------------------------------------------------------------------
 
   private void scheduleInitial() {
-    if (schedule.fallbackInterval() != null) {
-      // periodic / fallback: fire once promptly, then driven by Outcome
-      rescheduleIfEarlier(0L);
-    }
-    // else: pure on-demand; wait for requestRun() or skip — task stays idle.
+    // Always run once promptly after recovery/resume so the task can observe entries that became
+    // due while we were paused (or that were already in state at startup). For pure on-demand
+    // schedules the task itself decides via Outcome.AwaitDueAt / Outcome.IDLE whether to keep
+    // firing afterwards.
+    rescheduleIfEarlier(0L);
   }
 
   private void scheduleNext(final Outcome outcome) {
