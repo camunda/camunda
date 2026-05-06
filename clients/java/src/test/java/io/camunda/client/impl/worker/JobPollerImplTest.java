@@ -149,7 +149,9 @@ public final class JobPollerImplTest extends ClientTest {
               final List<LogEvent> traceEvents = eventsAt(Level.TRACE);
               if (!traceEvents.isEmpty()) {
                 assertThat(traceEvents)
-                    .as("%s should be logged at TRACE when trace capture is enabled", status.getCode())
+                    .as(
+                        "%s should be logged at TRACE when trace capture is enabled",
+                        status.getCode())
                     .anySatisfy(
                         e -> {
                           assertThat(e.getMessage().getFormattedMessage())

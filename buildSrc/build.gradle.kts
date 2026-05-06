@@ -10,9 +10,12 @@ plugins {
 repositories {
     // Use the plugin portal to apply community plugins in convention plugins.
     gradlePluginPortal()
+    mavenCentral()
 }
 
 dependencies {
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:7.2.1")
+    implementation("net.ltgt.gradle:gradle-errorprone-plugin:4.3.0")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
     implementation("org.openapitools:openapi-generator-gradle-plugin:7.18.0")
     implementation("com.gradleup.shadow:shadow-gradle-plugin:8.3.5")

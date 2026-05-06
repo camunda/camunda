@@ -35,6 +35,8 @@ com-google-cloud-google-cloud-core = "2.66.0"
 com-google-cloud-google-cloud-storage = "2.64.1"
 com-google-code-findbugs-jsr305 = "3.0.2"
 com-google-code-gson-gson = "2.13.2"
+com-google-errorprone-error-prone-core = "2.49.0"
+com-google-googlejavaformat-google-java-format = "1.35.0"
 com-google-guava-guava = "33.5.0-jre"
 com-google-protobuf-protobuf-java = "4.34.1"
 com-google-protobuf-protobuf-java-util = "4.34.1"
@@ -58,6 +60,7 @@ com-tngtech-archunit-archunit-junit5-engine = "1.4.1"
 com-typesafe-config = "1.4.5"
 com-unboundid-unboundid-ldapsdk = "7.0.4"
 com-vdurmont-semver4j = "3.1.0"
+com-uber-nullaway-nullaway = "0.13.4"
 com-zaxxer-hikaricp = "7.0.2"
 commons-codec-commons-codec = "1.21.0"
 commons-io-commons-io = "2.21.0"
@@ -345,6 +348,8 @@ com-google-cloud-google-cloud-core = { module = "com.google.cloud:google-cloud-c
 com-google-cloud-google-cloud-storage = { module = "com.google.cloud:google-cloud-storage", version.ref = "com-google-cloud-google-cloud-storage" }
 com-google-code-findbugs-jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "com-google-code-findbugs-jsr305" }
 com-google-code-gson-gson = { module = "com.google.code.gson:gson", version.ref = "com-google-code-gson-gson" }
+com-google-errorprone-error-prone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "com-google-errorprone-error-prone-core" }
+com-google-googlejavaformat-google-java-format = { module = "com.google.googlejavaformat:google-java-format", version.ref = "com-google-googlejavaformat-google-java-format" }
 com-google-guava-guava = { module = "com.google.guava:guava", version.ref = "com-google-guava-guava" }
 com-google-protobuf-protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "com-google-protobuf-protobuf-java" }
 com-google-protobuf-protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "com-google-protobuf-protobuf-java-util" }
@@ -368,6 +373,7 @@ com-tngtech-archunit-archunit-junit5-engine = { module = "com.tngtech.archunit:a
 com-typesafe-config = { module = "com.typesafe:config", version.ref = "com-typesafe-config" }
 com-unboundid-unboundid-ldapsdk = { module = "com.unboundid:unboundid-ldapsdk", version.ref = "com-unboundid-unboundid-ldapsdk" }
 com-vdurmont-semver4j = { module = "com.vdurmont:semver4j", version.ref = "com-vdurmont-semver4j" }
+com-uber-nullaway-nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "com-uber-nullaway-nullaway" }
 com-zaxxer-hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "com-zaxxer-hikaricp" }
 commons-codec-commons-codec = { module = "commons-codec:commons-codec", version.ref = "commons-codec-commons-codec" }
 commons-io-commons-io = { module = "commons-io:commons-io", version.ref = "commons-io-commons-io" }
