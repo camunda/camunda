@@ -64,7 +64,14 @@ public class DocumentReferenceHandler
     if (!SUPPORTED_INTENTS.contains(record.getIntent())) {
       return false;
     }
-    return isDocumentReference(record.getValue().getValue());
+    final String value = record.getValue().getValue();
+    // Fast-path: most variables are not document references, and many can be large JSON objects
+    // or arrays.  A substring scan is O(n) but avoids any allocation; if the discriminator is
+    // absent we can discard the record without touching the JSON parser at all.
+    if (!value.contains(DOCUMENT_TYPE_DISCRIMINATOR)) {
+      return false;
+    }
+    return isDocumentReference(value);
   }
 
   @Override
