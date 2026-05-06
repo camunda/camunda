@@ -47,12 +47,16 @@ export function updateSidebarActive(route) {
     document
       .querySelectorAll(`[data-process-id="${CSS.escape(route.processId)}"]`)
       .forEach((el) => el.classList.add('active'));
-  } else if (route.view === 'suite' || route.view === 'suiteProcess') {
+  } else if (route.view === 'decision') {
+    document
+      .querySelectorAll(`[data-decision-id="${CSS.escape(route.decisionId)}"]`)
+      .forEach((el) => el.classList.add('active'));
+  } else if (route.view === 'suite' || route.view === 'suiteProcess' || route.view === 'suiteDecision') {
     document
       .querySelectorAll(`[data-suite-id="${CSS.escape(route.suiteId)}"][data-route="suite"]`)
       .forEach((el) => el.classList.add('active'));
     expandSuiteInSidebar(route.suiteId);
-  } else if (route.view === 'run' || route.view === 'runProcess') {
+  } else if (route.view === 'run' || route.view === 'runProcess' || route.view === 'runDecision') {
     // Match on BOTH suiteId AND runName so two suites with identically-named
     // test runs don't both get highlighted simultaneously.
     document
@@ -88,6 +92,7 @@ function expandSuiteInSidebar(suiteId) {
 function buildSidebarHtml(data) {
   const suites = data.suites || [];
   const globalCoverages = data.coverages || [];
+  const globalDecisionCoverages = data.decisionCoverages || [];
 
   let html = `<ul class="nav-list" role="list">
     <li>
@@ -115,6 +120,31 @@ function buildSidebarHtml(data) {
          title="${escapeHtml(cov.processDefinitionId)}">
         <i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i>
         <span class="nav-item-label">${escapeHtml(cov.processDefinitionId)}</span>
+        ${badgeHtml(cov.coverage)}
+      </a>
+    </li>`;
+    }
+  }
+
+  // ── Decisions ──────────────────────────────────────────────────────────────
+  if (globalDecisionCoverages.length > 0) {
+    html += `
+    <li class="nav-section-header">
+      <i class="bi bi-table me-2" aria-hidden="true"></i>Decisions
+    </li>`;
+
+    const sortedDecisions = [...globalDecisionCoverages].sort((a, b) => b.coverage - a.coverage);
+    for (const cov of sortedDecisions) {
+      const did = encodeURIComponent(cov.decisionDefinitionId);
+      html += `
+    <li>
+      <a class="nav-item nav-item-decision"
+         href="#/decision/${did}"
+         data-route="decision"
+         data-decision-id="${escapeHtml(cov.decisionDefinitionId)}"
+         title="${escapeHtml(cov.decisionDefinitionId)}">
+        <i class="bi bi-table me-2" aria-hidden="true"></i>
+        <span class="nav-item-label">${escapeHtml(cov.decisionDefinitionId)}</span>
         ${badgeHtml(cov.coverage)}
       </a>
     </li>`;

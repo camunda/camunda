@@ -1,5 +1,5 @@
 /**
- * Dashboard view – overview of all processes and test suites.
+ * Dashboard view – overview of all processes, decisions, and test suites.
  */
 
 'use strict';
@@ -20,9 +20,11 @@ import {
 export function renderDashboard(data) {
   const suites = data.suites || [];
   const globalCoverages = data.coverages || [];
+  const globalDecisionCoverages = data.decisionCoverages || [];
 
   const totalSuites = suites.length;
   const totalProcesses = globalCoverages.length;
+  const totalDecisions = globalDecisionCoverages.length;
   const totalRuns = suites.reduce((sum, s) => sum + (s.runs || []).length, 0);
   const avgCoverage =
     totalProcesses > 0
@@ -30,6 +32,7 @@ export function renderDashboard(data) {
       : 0;
 
   const sortedProcesses = [...globalCoverages].sort((a, b) => b.coverage - a.coverage);
+  const sortedDecisions = [...globalDecisionCoverages].sort((a, b) => b.coverage - a.coverage);
 
   let html = `
     <h2 class="view-title">
@@ -40,6 +43,7 @@ export function renderDashboard(data) {
       ${statCard(totalSuites, 'Test Suites', 'bi-folder-fill')}
       ${statCard(totalRuns, 'Test Cases', 'bi-file-earmark-code-fill')}
       ${statCard(totalProcesses, 'Processes', 'bi-diagram-3-fill')}
+      ${statCard(totalDecisions, 'Decisions', 'bi-table')}
       ${statCard(toPercent(avgCoverage), 'Avg. Coverage', 'bi-bar-chart-fill', coverageClass(avgCoverage))}
     </div>
 
@@ -65,6 +69,35 @@ export function renderDashboard(data) {
               <td>
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
                 <strong>${escapeHtml(cov.processDefinitionId)}</strong>
+              </td>
+              <td>${progressBarHtml(cov.coverage)}</td>
+              <td>${badgeHtml(cov.coverage)}</td>
+            </tr>`;
+    }
+    html += '</tbody></table></div>';
+  }
+
+  html += '<h3 class="section-title mt-4">Decision Coverage</h3>';
+  if (sortedDecisions.length === 0) {
+    html += '<p class="text-muted">No decision coverage data available.</p>';
+  } else {
+    html += `
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr>
+            <th>Decision</th>
+            <th style="width:200px">Coverage</th>
+            <th style="width:100px">Ratio</th>
+          </tr></thead>
+          <tbody>`;
+
+    for (const cov of sortedDecisions) {
+      const did = encodeURIComponent(cov.decisionDefinitionId);
+      html += `
+            <tr class="clickable-row" onclick="navigate('/decision/${did}')">
+              <td>
+                <i class="bi bi-table me-2 text-success" aria-hidden="true"></i>
+                <strong>${escapeHtml(cov.decisionDefinitionId)}</strong>
               </td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>

@@ -26,6 +26,7 @@ import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
+import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
@@ -159,6 +160,32 @@ public class CamundaDataSource {
 
   public DecisionInstance getDecisionInstance(final String decisionInstanceId) {
     return client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
+  }
+
+  public List<DecisionDefinition> findDecisionDefinitionsByDecisionDefinitionId(
+      final String decisionDefinitionId) {
+    return client
+        .newDecisionDefinitionSearchRequest()
+        .filter(f -> f.decisionDefinitionId(decisionDefinitionId))
+        .page(DEFAULT_PAGE_REQUEST)
+        .sort(sort -> sort.version().desc())
+        .send()
+        .join()
+        .items();
+  }
+
+  public DecisionDefinition findDecisionDefinitionByDecisionDefinitionId(
+      final String decisionDefinitionId) {
+    return findDecisionDefinitionsByDecisionDefinitionId(decisionDefinitionId).stream()
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Decision definition not found: " + decisionDefinitionId));
+  }
+
+  public String getDecisionDefinitionXmlByDecisionDefinitionKey(final long decisionDefinitionKey) {
+    return client.newDecisionDefinitionGetXmlRequest(decisionDefinitionKey).send().join();
   }
 
   public List<MessageSubscription> findMessageSubscriptions(

@@ -463,3 +463,39 @@ body {
     padding: 1rem;
   }
 }
+
+/* ── DMN Decision Table ─────────────────────────────────────────────────────── */
+
+.dmn-table {
+  font-size: 0.88rem;
+}
+
+.dmn-table th.dmn-input-col {
+  background-color: #e8f4fd;
+  color: #0072ce;
+}
+
+.dmn-table th.dmn-output-col {
+  background-color: #eaf7ee;
+  color: #0f6b38;
+}
+
+.dmn-table td.dmn-input-cell {
+  background-color: #f8fbff;
+}
+
+.dmn-table td.dmn-output-cell {
+  background-color: #f5fbf6;
+}
+
+.dmn-rule-covered {
+  background-color: #d4f4e2 !important;
+}
+
+.dmn-rule-covered td {
+  background-color: #d4f4e2 !important;
+}
+
+.dmn-rule-uncovered {
+  opacity: 0.75;
+}

@@ -146,6 +146,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
             .reportDirectory(coverageReportConfiguration.getReportDirectory())
             .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
+            .excludeDecisionDefinitionIds(coverageReportConfiguration.getExcludedDecisions())
             .build();
 
     // initializations

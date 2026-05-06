@@ -187,6 +187,7 @@ public class CamundaProcessTestExtension
             .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
             .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
             .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
+            .excludeDecisionDefinitionIds(runtimeBuilder.getCoverageExcludedDecisions())
             .build();
 
     // put in store

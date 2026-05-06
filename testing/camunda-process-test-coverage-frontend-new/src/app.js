@@ -7,9 +7,11 @@
  * Data format (window.COVERAGE_DATA)
  * ────────────────────────────────────
  * {
- *   suites:      SuiteCoverageReport[]
- *   coverages:   Coverage[]
- *   definitions: { [processId]: string }   // BPMN XML per process
+ *   suites:              SuiteCoverageReport[]
+ *   coverages:           Coverage[]
+ *   decisionCoverages:   DecisionCoverage[]
+ *   definitions:         { [processId]: string }        // BPMN XML per process
+ *   decisionDefinitions: { [decisionId]: string }       // DMN XML per decision
  * }
  */
 
@@ -26,6 +28,7 @@ import { renderSidebar, updateSidebarActive } from './sidebar.js';
 import { destroyViewer } from './bpmn.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderProcess } from './views/process.js';
+import { renderDecision } from './views/decision.js';
 import { renderSuite } from './views/suite.js';
 import { renderRun } from './views/run.js';
 
@@ -69,6 +72,9 @@ async function render() {
     case 'process':
       await renderProcess(route.processId, data);
       break;
+    case 'decision':
+      renderDecision(route.decisionId, data);
+      break;
     case 'suite':
       renderSuite(route.suiteId, data);
       break;
@@ -81,8 +87,17 @@ async function render() {
         runName: route.runName,
       });
       break;
+    case 'runDecision':
+      renderDecision(route.decisionId, data, {
+        suiteId: route.suiteId,
+        runName: route.runName,
+      });
+      break;
     case 'suiteProcess':
       await renderProcess(route.processId, data, { suiteId: route.suiteId });
+      break;
+    case 'suiteDecision':
+      renderDecision(route.decisionId, data, { suiteId: route.suiteId });
       break;
     default:
       renderDashboard(data);
