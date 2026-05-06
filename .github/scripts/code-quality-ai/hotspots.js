@@ -1,59 +1,267 @@
 #!/usr/bin/env node
 /**
- * Hotspot identification for the code quality AI pipeline.
+ * Hotspot identification using code-maat.
  *
- * For the hackday MVP this returns a hardcoded list. The interface
- * mirrors what a real code-maat integration would expose so the
- * implementation can be swapped in later without changing callers.
+ * Generates a `git log` over a configurable window, feeds it to
+ * code-maat's `revisions` analysis (churn per file), then ranks files
+ * by `revisions × lines-of-code` — the canonical hotspot heuristic
+ * from Adam Tornhill's "Your Code as a Crime Scene".
+ *
+ * The code-maat JAR is downloaded once and cached at
+ * `$CODE_MAAT_CACHE` (default `<tmp>/code-maat-cache/`).
  */
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import https from "node:https";
+import os from "node:os";
+import path from "node:path";
 
-// Replace with code-maat output once Stage 1 integration lands.
-const HACKDAY_HOTSPOTS = ["zeebe/engine"];
+export const CODE_MAAT_VERSION = "1.0.4";
+const CODE_MAAT_URL =
+  `https://github.com/adamtornhill/code-maat/releases/download/v${CODE_MAAT_VERSION}` +
+  `/code-maat-${CODE_MAAT_VERSION}-standalone.jar`;
+const CACHE_DIR =
+  process.env.CODE_MAAT_CACHE ?? path.join(os.tmpdir(), "code-maat-cache");
+const JAR_PATH = path.join(
+  CACHE_DIR,
+  `code-maat-${CODE_MAAT_VERSION}-standalone.jar`,
+);
+
+const MAX_BUFFER = 256 * 1024 * 1024;
+
+function followRedirect(res, resolve, reject, depth = 0) {
+  if (depth > 5) {
+    reject(new Error("Too many redirects fetching code-maat JAR"));
+    return;
+  }
+  if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
+    https
+      .get(res.headers.location, (next) =>
+        followRedirect(next, resolve, reject, depth + 1),
+      )
+      .on("error", reject);
+    return;
+  }
+  if (res.statusCode !== 200) {
+    reject(new Error(`code-maat download failed with status ${res.statusCode}`));
+    return;
+  }
+  resolve(res);
+}
+
+async function downloadCodeMaat() {
+  fs.mkdirSync(CACHE_DIR, { recursive: true });
+  const tmp = `${JAR_PATH}.partial`;
+  await new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(tmp);
+    https
+      .get(CODE_MAAT_URL, (res) =>
+        followRedirect(
+          res,
+          (real) => {
+            real.pipe(file);
+            file.on("finish", () => file.close(() => resolve()));
+            file.on("error", reject);
+          },
+          reject,
+        ),
+      )
+      .on("error", reject);
+  });
+  fs.renameSync(tmp, JAR_PATH);
+}
+
+async function ensureCodeMaat() {
+  if (!fs.existsSync(JAR_PATH)) {
+    await downloadCodeMaat();
+  }
+  return JAR_PATH;
+}
+
+function generateGitLog(repoRoot, sinceDate) {
+  const args = [
+    "log",
+    "--no-merges",
+    "--numstat",
+    "--date=short",
+    "--pretty=format:--%h--%ad--%aN",
+  ];
+  if (sinceDate) args.push(`--since=${sinceDate}`);
+  const out = spawnSync("git", args, {
+    cwd: repoRoot,
+    encoding: "utf8",
+    maxBuffer: MAX_BUFFER,
+  });
+  if (out.status !== 0) {
+    throw new Error(`git log failed: ${out.stderr.trim()}`);
+  }
+  return out.stdout;
+}
+
+function runCodeMaat(jarPath, logContent) {
+  const tmpLog = path.join(
+    os.tmpdir(),
+    `code-maat-log-${process.pid}-${Date.now()}.log`,
+  );
+  fs.writeFileSync(tmpLog, logContent);
+  try {
+    const result = spawnSync(
+      "java",
+      ["-jar", jarPath, "-l", tmpLog, "-c", "git2", "-a", "revisions"],
+      { encoding: "utf8", maxBuffer: MAX_BUFFER },
+    );
+    if (result.status !== 0) {
+      throw new Error(`code-maat failed: ${result.stderr.trim()}`);
+    }
+    return result.stdout;
+  } finally {
+    fs.unlinkSync(tmpLog);
+  }
+}
+
+function parseRevisionsCsv(csv) {
+  const lines = csv.trim().split("\n");
+  const out = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) continue;
+    const comma = line.lastIndexOf(",");
+    const entity = line.slice(0, comma);
+    const revisions = parseInt(line.slice(comma + 1), 10);
+    if (Number.isFinite(revisions)) out.push({ entity, revisions });
+  }
+  return out;
+}
+
+function countLines(filePath) {
+  try {
+    return fs.readFileSync(filePath, "utf8").split("\n").length;
+  } catch {
+    return 0;
+  }
+}
 
 /**
- * Return hotspot paths (modules or files) in priority order.
- *
- * @param {number|null} [topN=null] Limit to first N entries.
- * @returns {string[]}
+ * @typedef {Object} Hotspot
+ * @property {string} entity   File path relative to repo root.
+ * @property {number} revisions Number of commits touching the file.
+ * @property {number} loc      Lines of code (raw line count).
+ * @property {number} score    Hotspot score: revisions × loc.
  */
-export function getHotspots(topN = null) {
-  if (topN === null || topN === undefined) {
-    return [...HACKDAY_HOTSPOTS];
+
+/**
+ * Identify hotspots in a Git repository.
+ *
+ * @param {Object} [opts]
+ * @param {number|null} [opts.topN]       Limit results to top N. null = all.
+ * @param {string|null} [opts.sinceDate]  Git --since value, e.g. "90 days ago".
+ * @param {string} [opts.repoRoot]        Repo working tree, defaults to cwd.
+ * @param {string[]} [opts.extensions]    File extensions to include.
+ * @param {RegExp|null} [opts.pathPrefix] Restrict to paths matching this regex.
+ * @returns {Promise<Hotspot[]>}
+ */
+export async function getHotspots({
+  topN = null,
+  sinceDate = "90 days ago",
+  repoRoot = process.cwd(),
+  extensions = [".java"],
+  pathPrefix = null,
+} = {}) {
+  await ensureCodeMaat();
+  const log = generateGitLog(repoRoot, sinceDate);
+  const csv = runCodeMaat(JAR_PATH, log);
+  const revs = parseRevisionsCsv(csv);
+
+  const scored = [];
+  for (const { entity, revisions } of revs) {
+    if (!extensions.some((ext) => entity.endsWith(ext))) continue;
+    if (pathPrefix && !pathPrefix.test(entity)) continue;
+    const loc = countLines(path.join(repoRoot, entity));
+    if (loc === 0) continue;
+    scored.push({ entity, revisions, loc, score: revisions * loc });
   }
-  return HACKDAY_HOTSPOTS.slice(0, topN);
+  scored.sort((a, b) => b.score - a.score);
+  return topN === null || topN === undefined
+    ? scored
+    : scored.slice(0, topN);
 }
 
 function parseArgs(argv) {
-  const args = { top: null, format: "lines" };
+  const args = {
+    top: null,
+    since: "90 days ago",
+    extensions: [".java"],
+    pathPrefix: null,
+    format: "lines",
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--top") {
-      args.top = parseInt(argv[++i], 10);
-    } else if (a === "--format") {
-      args.format = argv[++i];
-    } else if (a === "-h" || a === "--help") {
-      console.log("Usage: hotspots.js [--top N] [--format lines|json]");
-      process.exit(0);
-    } else {
-      console.error(`Unknown argument: ${a}`);
-      process.exit(2);
+    switch (a) {
+      case "--top":
+        args.top = parseInt(argv[++i], 10);
+        break;
+      case "--since":
+        args.since = argv[++i];
+        break;
+      case "--extensions":
+        args.extensions = argv[++i].split(",");
+        break;
+      case "--path-prefix":
+        args.pathPrefix = new RegExp(argv[++i]);
+        break;
+      case "--format":
+        args.format = argv[++i];
+        break;
+      case "-h":
+      case "--help":
+        console.log(
+          [
+            "Usage: hotspots.js [options]",
+            "  --top N             keep top N hotspots",
+            "  --since S           git --since value (default: '90 days ago')",
+            "  --extensions LIST   comma-separated list (default: .java)",
+            "  --path-prefix RE    regex restricting paths (e.g. '^zeebe/')",
+            "  --format F          lines | json | tsv (default: lines)",
+          ].join("\n"),
+        );
+        process.exit(0);
+        break;
+      default:
+        console.error(`Unknown argument: ${a}`);
+        process.exit(2);
     }
   }
   return args;
 }
 
-function main() {
+async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const hotspots = getHotspots(args.top);
-  if (args.format === "json") {
-    process.stdout.write(JSON.stringify(hotspots) + "\n");
-  } else {
-    for (const h of hotspots) {
-      console.log(h);
-    }
+  const hotspots = await getHotspots({
+    topN: args.top,
+    sinceDate: args.since,
+    extensions: args.extensions,
+    pathPrefix: args.pathPrefix,
+  });
+  switch (args.format) {
+    case "json":
+      process.stdout.write(JSON.stringify(hotspots, null, 2) + "\n");
+      break;
+    case "tsv":
+      process.stdout.write("score\trevisions\tloc\tentity\n");
+      for (const h of hotspots) {
+        process.stdout.write(
+          `${h.score}\t${h.revisions}\t${h.loc}\t${h.entity}\n`,
+        );
+      }
+      break;
+    default:
+      for (const h of hotspots) console.log(h.entity);
   }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+  main().catch((err) => {
+    console.error(err.message);
+    process.exit(1);
+  });
 }
