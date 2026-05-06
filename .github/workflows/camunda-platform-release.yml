@@ -237,6 +237,9 @@ jobs:
             ARGUMENTS_PROFILE="-P!include-optimize"
           fi
 
+          # Clear any stale deployment-id file left by a previous run on this self-hosted runner.
+          rm -f /tmp/deployment-id.txt
+
           # Ensure the Maven Central deployment ID is captured even if the step fails
           # (e.g. upload succeeds but validation times out). The trap runs on any exit.
           trap 'if [[ -f /tmp/deployment-id.txt ]]; then
