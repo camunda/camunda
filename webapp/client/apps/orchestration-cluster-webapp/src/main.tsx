@@ -9,12 +9,11 @@
 import ReactDOM from 'react-dom/client';
 import {RouterProvider, createRouter} from '@tanstack/react-router';
 import {routeTree} from './routeTree.gen';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import './index.scss';
 import {ThemeProvider} from './modules/theme/ThemeProvider';
 import {tracking} from '#/modules/tracking';
-
-const queryClient = new QueryClient();
+import {reactQueryClient} from '#/modules/http/reactQueryClient';
 
 const router = createRouter({
 	routeTree,
@@ -22,7 +21,7 @@ const router = createRouter({
 	defaultPreloadStaleTime: 0,
 	scrollRestoration: true,
 	context: {
-		queryClient,
+		queryClient: reactQueryClient,
 	},
 });
 
@@ -40,7 +39,7 @@ if (!rootElement.innerHTML) {
 	tracking.loadAnalyticsToWillingUsers().finally(() => {
 		root.render(
 			<ThemeProvider>
-				<QueryClientProvider client={queryClient}>
+				<QueryClientProvider client={reactQueryClient}>
 					<RouterProvider router={router} />
 				</QueryClientProvider>
 			</ThemeProvider>,
