@@ -112,7 +112,9 @@ public final class MessageStreamProcessorTest {
               spyCommandDistributionBehavior,
               InstantSource.system(),
               mockAuthCheckBehavior,
-              routingInfo);
+              routingInfo,
+              mock(io.camunda.zeebe.stream.api.InterPartitionCommandSender.class),
+              new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
           return typedRecordProcessors;
         });
   }

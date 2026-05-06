@@ -57,7 +57,8 @@ public final class JobEventProcessors {
     final var jobBackoffChecker =
         new ManagedScheduledTask(
             new JobBackoffCheckScheduler(scheduledTaskStateFactory.get().getJobState()),
-            Schedule.onDemand(java.time.Duration.ofMillis(100)),
+            Schedule.onDemand(
+                java.time.Duration.ofMillis(JobBackoffCheckScheduler.BACKOFF_RESOLUTION)),
             interPartitionCommandSender,
             meterRegistry);
     final var jobTimeoutChecker =

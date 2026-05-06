@@ -19,6 +19,11 @@ public sealed interface Outcome {
   /** Singleton instance for {@link YieldNow}. */
   YieldNow YIELD_NOW = new YieldNow();
 
+  /** Whether the runtime should reschedule immediately, ignoring the fallback interval. */
+  default boolean reschedulesImmediately() {
+    return this instanceof YieldNow;
+  }
+
   /**
    * Done. If a fallback interval is configured the runtime reschedules at {@code now + fallback};
    * for pure on-demand schedules the runtime sleeps until externally re-triggered.

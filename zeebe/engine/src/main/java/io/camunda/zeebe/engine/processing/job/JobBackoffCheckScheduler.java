@@ -23,6 +23,12 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
  */
 public final class JobBackoffCheckScheduler implements ScheduledTask {
 
+  /**
+   * Minimum resolution in millis between consecutive runs of this scheduler. Used by the runtime's
+   * {@code minResolution} and exposed for tests that need to time-travel past it.
+   */
+  public static final long BACKOFF_RESOLUTION = 100L;
+
   private final JobState jobState;
 
   public JobBackoffCheckScheduler(final JobState jobState) {
