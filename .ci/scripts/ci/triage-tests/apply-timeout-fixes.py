@@ -21,7 +21,15 @@ Strategies applied:
     comment above the test so it's visible during review.
 
 Usage:
-    python3 apply-timeout-fixes.py <triage-report.json> <test-suite-dir>
+    python3 apply-timeout-fixes.py <triage-report.json> <test-suite-dir> [--version-label <label>]
+
+Arguments:
+    triage-report.json  Output of analyze-playwright-results.py
+    test-suite-dir      Root of the Playwright test suite
+    --version-label     When supplied, only fix tests whose `versions` list
+                        contains this label (e.g. "api-stable-8.9").  Useful
+                        when applying fixes on a specific stable branch so
+                        that tests that only fail on main are not touched.
 
 Output (JSON to stdout):
     { "fixed": [ { "file", "test", "fix_type" }, ... ],
@@ -136,9 +144,18 @@ def fix_test_in_file(ts_file: Path, test_name: str, error_type: str) -> tuple[bo
 # Entry point
 # ---------------------------------------------------------------------------
 
-def main(report_path: Path, suite_dir: Path) -> None:
+def main(report_path: Path, suite_dir: Path, version_label: str | None = None) -> None:
     report = json.loads(report_path.read_text())
-    flaky_tests: list[dict] = report.get("flaky_tests", [])
+    all_flaky: list[dict] = report.get("flaky_tests", [])
+
+    # When a version label is given, only process tests that actually appeared
+    # in runs labelled for that version.  This allows the workflow to target
+    # stable branches: a test flaky only on stable/8.9 won't be touched when
+    # fixing main, and vice-versa.
+    if version_label:
+        flaky_tests = [t for t in all_flaky if version_label in t.get("versions", [])]
+    else:
+        flaky_tests = all_flaky
 
     fixed: list[dict] = []
     skipped: list[dict] = []
@@ -181,7 +198,19 @@ def main(report_path: Path, suite_dir: Path) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]} <triage-report.json> <test-suite-dir>", file=sys.stderr)
+    args = sys.argv[1:]
+    version_label: str | None = None
+
+    if "--version-label" in args:
+        idx = args.index("--version-label")
+        version_label = args[idx + 1]
+        args = args[:idx] + args[idx + 2:]
+
+    if len(args) != 2:
+        print(
+            f"Usage: {sys.argv[0]} <triage-report.json> <test-suite-dir> [--version-label <label>]",
+            file=sys.stderr,
+        )
         sys.exit(1)
-    main(Path(sys.argv[1]), Path(sys.argv[2]))
+
+    main(Path(args[0]), Path(args[1]), version_label)

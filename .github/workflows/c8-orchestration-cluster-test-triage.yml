@@ -143,79 +143,159 @@ jobs:
           echo "cross=${cross}"   >> "$GITHUB_OUTPUT"
           echo "total=${total}"   >> "$GITHUB_OUTPUT"
 
-      # ── Auto-fix flaky tests ─────────────────────────────────────────────────
-      # Applies test.slow() for timeout-related flakes and TODO comments for
-      # others, then opens a PR so the team can review the changes.
-      - name: Apply flaky-test fixes
+      # ── Auto-fix flaky tests (per branch) ──────────────────────────────────
+      # Each stable branch and main is checked out in turn.  Only tests that
+      # were actually observed as flaky on that branch's nightly run are fixed,
+      # so a fix that belongs on stable/8.9 is not incorrectly applied to main.
+      #
+      # Version-label prefixes used in the triage report (set in the download
+      # step above):
+      #   api-stable-8.7 / e2e-stable-8.7-v1
+      #   api-stable-8.8 / e2e-stable-8.8-v1 / e2e-stable-8.8-v2
+      #   api-stable-8.9 / e2e-stable-8.9-v1 / e2e-stable-8.9-v2
+      #   api-main       / e2e-main-v2
+      #
+      # For each git branch we supply a label prefix so the fix script can
+      # match "any label that starts with *-stable-8.9" etc.
+
+      - name: Apply flaky-test fixes per branch and open PRs
         id: fix
         if: steps.analyse.outputs.flaky != '0'
-        run: |
-          set -euo pipefail
-          python3 .ci/scripts/ci/triage-tests/apply-timeout-fixes.py \
-            triage-report.json \
-            qa/c8-orchestration-cluster-e2e-test-suite \
-            > fix-report.json
-
-          echo "---- fix-report.json ----"
-          cat fix-report.json
-
-          fixed_count=$(jq '.fixed | length' fix-report.json)
-          echo "fixed_count=${fixed_count}" >> "$GITHUB_OUTPUT"
-
-          # Summarise which files were modified (for the PR body and Slack)
-          fixed_list=$(jq -r '.fixed[] | "- `\(.file)`: \(.test) (\(.fix_type))"' fix-report.json)
-          echo "fixed_list<<EOF"   >> "$GITHUB_OUTPUT"
-          echo "$fixed_list"       >> "$GITHUB_OUTPUT"
-          echo "EOF"               >> "$GITHUB_OUTPUT"
-
-      - name: Create fix PR
-        id: pr
-        if: |
-          steps.fix.outputs.fixed_count != '' &&
-          steps.fix.outputs.fixed_count != '0' &&
-          inputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          DRY_RUN:  ${{ inputs.dry_run || 'false' }}
         run: |
           set -euo pipefail
+
           TODAY=$(date -u +"%Y%m%d")
-          BRANCH="fix/flaky-tests-${TODAY}"
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git checkout -b "$BRANCH"
-          git add qa/c8-orchestration-cluster-e2e-test-suite/
-          git commit -m "test: auto-fix flaky nightly tests (${TODAY})
+          total_fixed=0
+          all_pr_urls=""
+
+          # format: "git_branch|label_prefix"
+          # label_prefix is matched as a substring against the versions[] entries
+          # in the triage report, so "stable-8.9" catches both api-stable-8.9
+          # and e2e-stable-8.9-v1/v2.
+          BRANCHES=(
+            "stable/8.7|stable-8.7"
+            "stable/8.8|stable-8.8"
+            "stable/8.9|stable-8.9"
+            "main|main"
+          )
+
+          for entry in "${BRANCHES[@]}"; do
+            IFS='|' read -r git_branch label_prefix <<< "$entry"
+
+            # Check how many flaky tests affect this branch
+            affected=$(jq --arg lp "$label_prefix" \
+              '[.flaky_tests[] | select(.versions[] | contains($lp))] | length' \
+              triage-report.json)
+
+            if [[ "$affected" == "0" ]]; then
+              echo "No flaky tests for ${git_branch} – skipping."
+              continue
+            fi
+
+            echo "──────────────────────────────────────────"
+            echo "Processing ${git_branch} (${affected} flaky tests)"
+
+            # Checkout the target branch cleanly
+            git fetch origin "${git_branch}" --depth=1
+            git checkout -B "tmp-base-${label_prefix}" "origin/${git_branch}"
+
+            # Apply fixes scoped to this branch's label prefix.
+            # Pass each distinct label that matches the prefix.
+            labels=$(jq -r --arg lp "$label_prefix" \
+              '[.flaky_tests[].versions[]] | unique | map(select(contains($lp))) | .[]' \
+              triage-report.json | sort -u)
+
+            > "fix-report-${label_prefix}.json"
+            combined_fixed="[]"
+            combined_skipped="[]"
+
+            for label in $labels; do
+              python3 .ci/scripts/ci/triage-tests/apply-timeout-fixes.py \
+                triage-report.json \
+                qa/c8-orchestration-cluster-e2e-test-suite \
+                --version-label "$label" \
+                > "fix-single-${label}.json"
+
+              combined_fixed=$(jq -s '.[0] + .[1]' \
+                <(echo "$combined_fixed") \
+                <(jq '.fixed' "fix-single-${label}.json"))
+              combined_skipped=$(jq -s '.[0] + .[1]' \
+                <(echo "$combined_skipped") \
+                <(jq '.skipped' "fix-single-${label}.json"))
+            done
+
+            jq -n --argjson f "$combined_fixed" --argjson s "$combined_skipped" \
+              '{fixed: $f, skipped: $s}' > "fix-report-${label_prefix}.json"
+
+            fixed_count=$(jq '.fixed | length' "fix-report-${label_prefix}.json")
+            echo "Fixed ${fixed_count} test(s) on ${git_branch}"
+
+            if [[ "$fixed_count" == "0" ]]; then
+              git checkout main 2>/dev/null || git checkout -
+              continue
+            fi
+
+            total_fixed=$((total_fixed + fixed_count))
+
+            fixed_list=$(jq -r \
+              '.fixed[] | "- `\(.file)`: \(.test) (\(.fix_type))"' \
+              "fix-report-${label_prefix}.json")
+
+            FIX_BRANCH="fix/flaky-tests-${label_prefix}-${TODAY}"
+
+            git checkout -b "$FIX_BRANCH"
+            git add qa/c8-orchestration-cluster-e2e-test-suite/
+            git commit -m "test: auto-fix flaky nightly tests on ${git_branch} (${TODAY})
 
 Applied by the triage agent based on nightly run failures:
-${{ steps.fix.outputs.fixed_list }}"
+${fixed_list}"
 
-          git push -u origin "$BRANCH"
+            if [[ "$DRY_RUN" != "true" ]]; then
+              git push -u origin "$FIX_BRANCH"
 
-          PR_URL=$(gh pr create \
-            --title "test: auto-fix flaky nightly tests ($(date -u +"%Y-%m-%d"))" \
-            --body "$(cat <<'BODY'
-## Summary
+              safe_branch="${git_branch//\//-}"
+              PR_URL=$(gh pr create \
+                --title "test: auto-fix flaky nightly tests on ${git_branch} ($(date -u +%Y-%m-%d))" \
+                --base "$git_branch" \
+                --body "## Summary
 
 Auto-generated by the [C8 Orchestration Cluster Test Triage Agent](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
 
+**Target branch:** \`${git_branch}\`
+These fixes were scoped to tests that were observed as flaky specifically on the \`${git_branch}\` nightly run — tests only failing on other branches are handled in separate PRs.
+
 ### Changes applied
 
-${{ steps.fix.outputs.fixed_list }}
+${fixed_list}
 
 ### How to review
 
-- `test.slow()` triples the Playwright timeout for the affected test — verify that the test still passes and that tripling the timeout is a proportionate fix.
-- `// TODO(triage-agent)` comments flag tests that need deeper investigation (non-timeout flakes).
+- \`test.slow()\` triples the Playwright timeout for the affected test.
+- \`// TODO(triage-agent)\` flags non-timeout flakes that need deeper investigation.
 
-Closes no issue — this is a maintenance fix. Please link any follow-up issues in a comment.
-BODY
-            )" \
-            --base main)
+Closes no issue — maintenance fix. Link any follow-up issues in a comment.")
 
-          echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
-          echo "Created PR: ${PR_URL}"
+              echo "Created PR for ${git_branch}: ${PR_URL}"
+              all_pr_urls="${all_pr_urls}${PR_URL} "
+            else
+              echo "Dry-run: would have created PR for ${git_branch} from branch ${FIX_BRANCH}"
+            fi
+
+            # Return to a neutral state for the next iteration
+            git checkout main 2>/dev/null || git checkout -
+          done
+
+          echo "total_fixed=${total_fixed}" >> "$GITHUB_OUTPUT"
+          echo "pr_urls<<EOF"     >> "$GITHUB_OUTPUT"
+          echo "$all_pr_urls"     >> "$GITHUB_OUTPUT"
+          echo "EOF"              >> "$GITHUB_OUTPUT"
 
       # ── Build Slack payload ──────────────────────────────────────────────────
       - name: Build Slack triage payload
@@ -225,8 +305,8 @@ BODY
           BUGS:       ${{ steps.analyse.outputs.bugs }}
           CROSS:      ${{ steps.analyse.outputs.cross }}
           TOTAL:      ${{ steps.analyse.outputs.total }}
-          FIXED:      ${{ steps.fix.outputs.fixed_count || '0' }}
-          PR_URL:     ${{ steps.pr.outputs.pr_url || '' }}
+          FIXED:      ${{ steps.fix.outputs.total_fixed || '0' }}
+          PR_URLS:    ${{ steps.fix.outputs.pr_urls || '' }}
           RUN_URL:    ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           DRY_RUN:    ${{ inputs.dry_run || 'false' }}
         run: |
@@ -262,11 +342,16 @@ BODY
           ' triage-report.json)
           [ -z "$BUG_LINES" ] && BUG_LINES="None :white_check_mark:"
 
-          # Fix summary
-          if [[ "$FIXED" != "0" && -n "$PR_URL" ]]; then
-            FIX_TEXT=":wrench: $FIXED test(s) auto-fixed — <${PR_URL}|view PR>"
+          # Fix summary — list each per-branch PR on its own line
+          if [[ "$FIXED" != "0" && -n "$PR_URLS" ]]; then
+            pr_links=""
+            for url in $PR_URLS; do
+              branch_label=$(echo "$url" | grep -oP 'fix/flaky-tests-\K[^/]+(?=-)' || echo "")
+              pr_links="${pr_links}<${url}|view PR> "
+            done
+            FIX_TEXT=":wrench: $FIXED test(s) auto-fixed — ${pr_links}"
           elif [[ "$FIXED" != "0" ]]; then
-            FIX_TEXT=":wrench: $FIXED test(s) auto-fixed (dry-run, no PR created)"
+            FIX_TEXT=":wrench: $FIXED test(s) auto-fixed (dry-run, no PRs created)"
           else
             FIX_TEXT=":information_source: No automated fixes applicable"
           fi
