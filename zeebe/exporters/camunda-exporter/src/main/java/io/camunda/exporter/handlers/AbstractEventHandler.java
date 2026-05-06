@@ -32,6 +32,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_NAME;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
@@ -82,6 +83,7 @@ public abstract class AbstractEventHandler<R extends RecordValue>
   }
 
   protected void persistEvent(
+      final IndexLocator indexLocator,
       final MessageSubscriptionEntity entity,
       final String positionFieldName,
       final long positionFieldValue,
@@ -126,7 +128,8 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     }
 
     // write event
-    batchRequest.upsert(indexName, entity.getId(), entity, jsonMap);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(entity, indexName), entity.getId(), entity, jsonMap);
   }
 
   protected void extractDefinitionData(

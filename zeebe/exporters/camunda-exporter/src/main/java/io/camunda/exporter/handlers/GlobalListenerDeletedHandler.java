@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.util.GlobalListenerUtil;
 import io.camunda.webapps.schema.entities.globallistener.GlobalListenerEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -62,9 +63,12 @@ public class GlobalListenerDeletedHandler
   }
 
   @Override
-  public void flush(final GlobalListenerEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final GlobalListenerEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(indexLocator.getIndexLocation(entity, indexName), entity.getId());
   }
 
   @Override

@@ -135,7 +135,7 @@ class HistoryDeletionDeletedHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(historyDeletionEntity, mockRequest);
+    underTest.flush(null, historyDeletionEntity, mockRequest);
 
     // then
     verify(mockRequest).add(indexName, historyDeletionEntity);

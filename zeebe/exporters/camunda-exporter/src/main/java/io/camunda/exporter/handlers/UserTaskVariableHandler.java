@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship;
@@ -121,7 +122,10 @@ public class UserTaskVariableHandler
   }
 
   @Override
-  public void flush(final UserTaskVariableBatch entity, final BatchRequest batchRequest) {
+  public void flush(
+      final IndexLocator indexLocator,
+      final UserTaskVariableBatch entity,
+      final BatchRequest batchRequest) {
     entity
         .getVariables()
         .forEach(
@@ -130,7 +134,11 @@ public class UserTaskVariableHandler
               updateFields.put(TaskTemplate.VARIABLE_VALUE, v.getValue());
               updateFields.put(TaskTemplate.IS_TRUNCATED, v.getIsTruncated());
               batchRequest.upsertWithRouting(
-                  indexName, v.getId(), v, updateFields, String.valueOf(v.getProcessInstanceId()));
+                  indexLocator.getIndexLocation(v, indexName),
+                  v.getId(),
+                  v,
+                  updateFields,
+                  String.valueOf(v.getProcessInstanceId()));
             });
   }
 

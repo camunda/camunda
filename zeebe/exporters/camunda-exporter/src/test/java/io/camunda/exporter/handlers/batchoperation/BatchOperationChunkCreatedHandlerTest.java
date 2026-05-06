@@ -124,7 +124,7 @@ class BatchOperationChunkCreatedHandlerTest {
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(null, entity, mockRequest);
 
     final Map<String, Object> expectedParams = new HashMap<>();
     expectedParams.put(BatchOperationTemplate.OPERATIONS_TOTAL_COUNT, 1);

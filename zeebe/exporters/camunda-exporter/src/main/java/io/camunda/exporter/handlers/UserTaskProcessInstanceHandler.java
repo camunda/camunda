@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usertask.TaskProcessInstanceEntity;
@@ -71,8 +72,11 @@ public class UserTaskProcessInstanceHandler
   }
 
   @Override
-  public void flush(final TaskProcessInstanceEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+  public void flush(
+      final IndexLocator indexLocator,
+      final TaskProcessInstanceEntity entity,
+      final BatchRequest batchRequest) {
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

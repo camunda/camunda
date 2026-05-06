@@ -451,7 +451,7 @@ final class JobHandlerTest {
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
     // when
-    underTest.flush(jobEntity, mockRequest);
+    underTest.flush(null, jobEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
@@ -515,7 +515,7 @@ final class JobHandlerTest {
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
     // when
-    underTest.flush(jobEntity, mockRequest);
+    underTest.flush(null, jobEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))

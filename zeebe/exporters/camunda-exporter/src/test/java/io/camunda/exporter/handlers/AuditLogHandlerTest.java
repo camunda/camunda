@@ -131,7 +131,7 @@ class AuditLogHandlerTest {
     batch.setAuditLogEntity(new AuditLogEntity());
     final var batchRequest = mock(BatchRequest.class);
 
-    handler.flush(batch, batchRequest);
+    handler.flush(null, batch, batchRequest);
 
     verify(batchRequest).add(INDEX_NAME, batch.getAuditLogEntity());
     verify(batchRequest, never()).add(eq(CLEANUP_INDEX_NAME), any());
@@ -144,7 +144,7 @@ class AuditLogHandlerTest {
     batch.setAuditLogCleanupEntity(new AuditLogCleanupEntity().setId(ENTITY_ID));
     final var batchRequest = mock(BatchRequest.class);
 
-    handler.flush(batch, batchRequest);
+    handler.flush(null, batch, batchRequest);
 
     verify(batchRequest).add(INDEX_NAME, batch.getAuditLogEntity());
     verify(batchRequest).add(CLEANUP_INDEX_NAME, batch.getAuditLogCleanupEntity());

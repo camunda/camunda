@@ -209,7 +209,7 @@ public class UserTaskHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
@@ -241,7 +241,7 @@ public class UserTaskHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
@@ -702,7 +702,7 @@ public class UserTaskHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(null, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.PROCESS_DEFINITION_ID, taskEntity.getProcessDefinitionId());
     expectedUpdates.put(TaskTemplate.BPMN_PROCESS_ID, taskEntity.getBpmnProcessId());
@@ -745,7 +745,7 @@ public class UserTaskHandlerTest {
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(null, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
@@ -788,7 +788,7 @@ public class UserTaskHandlerTest {
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(null, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.ASSIGNEE, null);
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
@@ -828,7 +828,7 @@ public class UserTaskHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(null, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.COMPLETED);
     expectedUpdates.put(TaskTemplate.COMPLETION_TIME, taskEntity.getCompletionTime());
@@ -883,7 +883,7 @@ public class UserTaskHandlerTest {
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(null, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
     expectedUpdates.put(TaskTemplate.FOLLOW_UP_DATE, taskEntity.getFollowUpDate());
@@ -955,7 +955,7 @@ public class UserTaskHandlerTest {
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(null, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
@@ -992,7 +992,7 @@ public class UserTaskHandlerTest {
 
     // when
     final BatchRequest mockRequest = mock(BatchRequest.class);
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(null, taskEntity, mockRequest);
 
     // then
     verify(mockRequest)
