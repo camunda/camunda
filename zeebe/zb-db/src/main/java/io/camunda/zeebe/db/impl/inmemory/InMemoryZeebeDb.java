@@ -28,6 +28,8 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A pure in-memory implementation of {@link ZeebeDb}. All data is stored in a {@link
@@ -61,6 +63,7 @@ public class InMemoryZeebeDb<
   private final AccessMetricsConfiguration accessMetricsConfiguration;
   private final MeterRegistry meterRegistry;
   private volatile boolean closed;
+  @Nullable volatile Predicate<byte[]> persistentRawKeyChecker;
 
   public InMemoryZeebeDb() {
     this(
@@ -76,6 +79,10 @@ public class InMemoryZeebeDb<
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.accessMetricsConfiguration = accessMetricsConfiguration;
     this.meterRegistry = meterRegistry;
+  }
+
+  public void setPersistentRawKeyChecker(final Predicate<byte[]> checker) {
+    persistentRawKeyChecker = checker;
   }
 
   @Override

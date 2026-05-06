@@ -602,8 +602,11 @@ class InMemoryColumnFamily<
     switch (foreignKey.match()) {
       case Full -> {
         if (transaction.get(rawFkKey) == null) {
-          throw new ZeebeDbInconsistentException(
-              "Foreign key " + foreignKey.inner() + " in ColumnFamily " + cfEnum + " not found");
+          final var checker = db.persistentRawKeyChecker;
+          if (checker == null || !checker.test(rawFkKey)) {
+            throw new ZeebeDbInconsistentException(
+                "Foreign key " + foreignKey.inner() + " in ColumnFamily " + cfEnum + " not found");
+          }
         }
       }
       case Prefix -> {

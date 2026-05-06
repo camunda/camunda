@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.impl.inmemory.InMemoryZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -84,6 +85,7 @@ public final class LayeredZeebeDbFactory<
             INDIVIDUAL_DB_CONSISTENCY_SETTINGS,
             accessMetricsConfiguration,
             persistentDb.getMeterRegistry());
+    wireLayeredFkFallback(activeDb, persistentDb);
     return new LayeredZeebeDb<>(activeDb, persistentDb, consistencyChecksSettings);
   }
 
@@ -95,7 +97,15 @@ public final class LayeredZeebeDbFactory<
             INDIVIDUAL_DB_CONSISTENCY_SETTINGS,
             accessMetricsConfiguration,
             persistentDb.getMeterRegistry());
+    wireLayeredFkFallback(activeDb, persistentDb);
     return new LayeredZeebeDb<>(activeDb, persistentDb, consistencyChecksSettings);
+  }
+
+  private static void wireLayeredFkFallback(
+      final InMemoryZeebeDb<?> activeDb, final ZeebeDb<?> persistentDb) {
+    if (persistentDb instanceof final ZeebeTransactionDb<?> rocksDb) {
+      activeDb.setPersistentRawKeyChecker(rocksDb::rawKeyExists);
+    }
   }
 
   @Override

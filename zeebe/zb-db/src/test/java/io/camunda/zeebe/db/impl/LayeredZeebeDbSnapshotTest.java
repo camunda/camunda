@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.inmemory.InMemoryZeebeDb;
 import io.camunda.zeebe.db.impl.layered.LayeredZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
@@ -146,6 +147,37 @@ final class LayeredZeebeDbSnapshotTest {
     } finally {
       restoredDb.close();
     }
+  }
+
+  /**
+   * Reproduces the replay-after-snapshot scenario where a FK target key was written before a
+   * snapshot, so it lives in the RocksDB persistent layer but not in InMemory. When FK checks are
+   * enabled on the InMemory layer, upsert on a key containing a FK must not throw — the check
+   * should fall back to the persistent layer checker.
+   */
+  @Test
+  void shouldNotThrowOnFkUpsertWhenFkKeyIsInPersistentLayerOnly() {
+    // given: InMemoryZeebeDb with FK checks enabled + a persistent checker that approves all keys
+    final var db =
+        new InMemoryZeebeDb<Families>(
+            new ConsistencyChecksSettings(false, true),
+            new AccessMetricsConfiguration(Kind.NONE, 1),
+            new SimpleMeterRegistry());
+    db.setPersistentRawKeyChecker(rawKey -> true);
+
+    final var ctx = db.createContext();
+    final DbLong fkInner = new DbLong();
+    final DbForeignKey<DbLong> fkKey = new DbForeignKey<>(fkInner, Families.ONE);
+    final DbLong value = new DbLong();
+    final ColumnFamily<DbForeignKey<DbLong>, DbLong> cf =
+        db.createColumnFamily(Families.TWO, ctx, fkKey, value);
+
+    fkInner.wrapLong(42L);
+    value.wrapLong(1L);
+
+    // when: upsert with a FK key whose target is not in InMemory (only in persistent via checker)
+    // then: must not throw
+    assertThatNoException().isThrownBy(() -> cf.upsert(fkKey, value));
   }
 
   @Test
