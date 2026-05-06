@@ -6,18 +6,29 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {CopilotChat, CopilotSidecar} from '@camunda/copilot-chat';
-import {useLocation} from 'react-router-dom';
-import {useCopilotAdapter} from './useCopilotAdapter';
-import {useCurrentInstanceContext} from './useCurrentInstanceContext';
-import {getSuggestionsForRoute} from './startingPrompts';
+import {CopilotChat, CopilotSidecar} from '@camunda/copilot-chat'
+import {useLocation} from 'react-router-dom'
+import {useCopilotAdapter} from './useCopilotAdapter'
+import {useCurrentInstanceContext} from './useCurrentInstanceContext'
+import {useInstanceSummary} from './useInstanceSummary'
+import {getSuggestionsForRoute} from './startingPrompts'
+
+const INSTANCE_DESCRIPTION =
+  'Ask questions about this process instance — understand incidents, trace execution history, and get resolution guidance.'
+const GLOBAL_DESCRIPTION =
+  'Ask questions about your processes — find incidents, check health, and get insights.'
 
 const Copilot: React.FC = () => {
   const {sendMessage, stopGeneration, resetConversation, isBusy} =
-    useCopilotAdapter();
-  const {processInstanceId} = useCurrentInstanceContext();
-  const {pathname} = useLocation();
-  const suggestions = getSuggestionsForRoute(pathname);
+    useCopilotAdapter()
+  const {processInstanceId} = useCurrentInstanceContext()
+  const summary = useInstanceSummary(processInstanceId)
+  const {pathname} = useLocation()
+  const suggestions = getSuggestionsForRoute(pathname, {
+    hasIncident: summary?.hasIncident,
+  })
+  const emptyStateDescription =
+    processInstanceId !== null ? INSTANCE_DESCRIPTION : GLOBAL_DESCRIPTION
 
   return (
     <CopilotSidecar
@@ -36,12 +47,12 @@ const Copilot: React.FC = () => {
           onResetConversation={resetConversation}
           isBusy={isBusy}
           emptyStateTitle="Camunda Copilot"
-          emptyStateDescription="Ask about your processes, instances, or Camunda docs."
+          emptyStateDescription={emptyStateDescription}
           suggestions={suggestions}
         />
       )}
     </CopilotSidecar>
-  );
-};
+  )
+}
 
-export {Copilot};
+export {Copilot}

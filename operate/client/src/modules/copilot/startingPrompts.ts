@@ -6,39 +6,51 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Suggestion} from '@camunda/copilot-chat';
+import type {Suggestion} from '@camunda/copilot-chat'
 
-const INSTANCE_PROMPTS: readonly Suggestion[] = [
-  {label: 'Why is this stuck?'},
-  {label: 'Show recent incidents'},
+const INSTANCE_INCIDENT_PROMPTS: readonly Suggestion[] = [
+  {label: 'Walk me through what happened'},
+  {label: 'Why does this instance have an incident?'},
+  {label: 'How can I resolve this incident?'},
+]
+
+const INSTANCE_HEALTHY_PROMPTS: readonly Suggestion[] = [
+  {label: 'Walk me through what happened'},
+  {label: 'Where is this instance currently?'},
   {label: 'What variables does it have?'},
-];
+]
 
-const PROCESSES_LIST_PROMPTS: readonly Suggestion[] = [
-  {label: 'List process definitions'},
+const GLOBAL_PROMPTS: readonly Suggestion[] = [
   {label: 'Which processes have open incidents?'},
-];
+  {label: 'Are my processes healthy?'},
+  {label: 'Which processes are running the most instances?'},
+]
 
-const DASHBOARD_PROMPTS: readonly Suggestion[] = [
-  {label: 'Which processes are failing?'},
-  {label: 'Show me recent incidents across all processes'},
-];
+const FALLBACK_PROMPTS: readonly Suggestion[] = GLOBAL_PROMPTS
 
-const FALLBACK: readonly Suggestion[] = [{label: "What's running right now?"}];
+const INSTANCE_PATH = /^\/processes\/[^/]+/
 
-const INSTANCE_PATH = /^\/processes\/[^/]+/;
+interface SuggestionContext {
+  readonly hasIncident?: boolean
+}
 
-const getSuggestionsForRoute = (pathname: string): readonly Suggestion[] => {
+const getSuggestionsForRoute = (
+  pathname: string,
+  context: SuggestionContext = {},
+): readonly Suggestion[] => {
   if (INSTANCE_PATH.test(pathname)) {
-    return INSTANCE_PROMPTS;
+    return context.hasIncident
+      ? INSTANCE_INCIDENT_PROMPTS
+      : INSTANCE_HEALTHY_PROMPTS
   }
   if (pathname === '/processes' || pathname === '/processes/') {
-    return PROCESSES_LIST_PROMPTS;
+    return GLOBAL_PROMPTS
   }
   if (pathname === '/' || pathname === '') {
-    return DASHBOARD_PROMPTS;
+    return GLOBAL_PROMPTS
   }
-  return FALLBACK;
-};
+  return FALLBACK_PROMPTS
+}
 
-export {getSuggestionsForRoute};
+export {getSuggestionsForRoute}
+export type {SuggestionContext}
