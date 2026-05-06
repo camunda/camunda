@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.copilot;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
@@ -46,14 +47,17 @@ public class CopilotConversationManager {
   private final StreamingChatModel chatModel;
   private final CopilotToolRegistry toolRegistry;
   private final CopilotProperties properties;
+  private final ObjectMapper objectMapper;
 
   public CopilotConversationManager(
       StreamingChatModel chatModel,
       CopilotToolRegistry toolRegistry,
-      CopilotProperties properties) {
+      CopilotProperties properties,
+      ObjectMapper objectMapper) {
     this.chatModel = chatModel;
     this.toolRegistry = toolRegistry;
     this.properties = properties;
+    this.objectMapper = objectMapper;
   }
 
   public SseEmitter subscribe(String conversationId) {
@@ -109,18 +113,38 @@ public class CopilotConversationManager {
           session.emit(
               AgentEvent.toolInvoke(
                   session.id(), request.name(), request.id(), request.arguments()));
-          // Tool error mapping is added in Task 4 — for now, keep the existing happy path:
-          final String result =
-              toolRegistry.invoke(request.name(), request.arguments(), auth);
+          String resultJson;
+          boolean success;
+          try {
+            resultJson = toolRegistry.invoke(request.name(), request.arguments(), auth);
+            success = true;
+          } catch (Exception e) {
+            LOG.warn(
+                "Copilot tool '{}' failed for conversation {}: {}",
+                request.name(),
+                session.id(),
+                e.getMessage());
+            resultJson = errorJson(e.getMessage());
+            success = false;
+          }
           session.emit(
-              AgentEvent.toolResult(session.id(), request.name(), request.id(), result, true));
-          session.appendToolResult(request, result);
+              AgentEvent.toolResult(
+                  session.id(), request.name(), request.id(), resultJson, success));
+          session.appendToolResult(request, resultJson);
         }
       }
       session.emit(AgentEvent.error(session.id(), "Reached max tool turns"));
     } catch (Exception e) {
       LOG.warn("Copilot agent loop failed for {}", session.id(), e);
       session.emit(AgentEvent.error(session.id(), e.getMessage()));
+    }
+  }
+
+  private String errorJson(String message) {
+    try {
+      return objectMapper.writeValueAsString(Map.of("error", message != null ? message : ""));
+    } catch (Exception e) {
+      return "{\"error\":\"" + (message != null ? message.replace("\"", "'") : "") + "\"}";
     }
   }
 
