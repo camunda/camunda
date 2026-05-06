@@ -17,7 +17,10 @@ public enum ExportingState {
   /** All enabled exporters are actively exporting records. */
   EXPORTING,
   /**
-   * All enabled exporters are actively exporting records but progress updates are not persisted.
+   * All enabled exporters are actively exporting records but progress updates (Exporter
+   * Metadata/position) are not persisted. After a restart, exporters will continue from the last
+   * persisted position, re-exporting every record that was processed while in this state. This is
+   * used during the backup process to ensure consistency between Zeebe and secondary storage.
    */
   SOFT_PAUSED,
   /** Nothing is being exported. */

@@ -187,11 +187,17 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   /**
    * When the exporter is soft paused, we keep exporting the records without updating the exporter
-   * state. Upon resuming, the exporter is updated with the position and metadata of the last
-   * exported record.
+   * state (i.e., the Exporter Metadata/position is not persisted). Upon resuming, the exporter is
+   * updated with the position and metadata of the last exported record.
    *
    * <p>If the exporter is hard paused and softPauseExporting is called, the exporter will be soft
    * paused.
+   *
+   * <p>This is used in the backup process: soft pausing before taking a Zeebe backup ensures that
+   * after restoring Zeebe from that backup, the exporter position is still at the pre-soft-pause
+   * value. When Zeebe restarts, exporters will re-export every record processed while soft-paused,
+   * filling any gap between the Zeebe backup and the secondary storage (e.g., Elasticsearch)
+   * backup.
    */
   public ActorFuture<Void> softPauseExporting() {
     if (actor.isClosed()) {
