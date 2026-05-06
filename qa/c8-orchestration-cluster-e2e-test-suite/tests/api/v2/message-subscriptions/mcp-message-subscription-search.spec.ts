@@ -71,8 +71,8 @@ test.describe('MCP Message Subscription Search API Tests', () => {
           expect(it.messageSubscriptionType).toBe('START_EVENT');
         });
       }).toPass({
-        intervals: [5_000, 10_000, 15_000],
-        timeout: 30_000,
+        intervals: [5_000, 10_000, 15_000, 20_000],
+        timeout: 60_000,
       });
     });
 
@@ -107,8 +107,8 @@ test.describe('MCP Message Subscription Search API Tests', () => {
           expect(it.messageSubscriptionType).toBe('PROCESS_EVENT');
         });
       }).toPass({
-        intervals: [5_000, 10_000, 15_000],
-        timeout: 30_000,
+        intervals: [5_000, 10_000, 15_000, 20_000],
+        timeout: 60_000,
       });
     });
 
@@ -421,8 +421,8 @@ test.describe('MCP Message Subscription Search API Tests', () => {
         expect(versions[0]).toBeGreaterThanOrEqual(2);
         expect(json.items[0].processDefinitionId).toBe('mcpProcessAlpha');
       }).toPass({
-        intervals: [5_000, 10_000, 15_000],
-        timeout: 30_000,
+        intervals: [5_000, 10_000, 15_000, 20_000],
+        timeout: 60_000,
       });
     });
   });

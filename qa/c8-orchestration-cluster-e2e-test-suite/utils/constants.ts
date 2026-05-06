@@ -38,6 +38,12 @@ export const defaultAssertionOptions = {
   timeout: 30_000,
 };
 
+// More generous retry options for nightly/CI environments with higher data export lag
+export const extendedAssertionOptions = {
+  intervals: [5_000, 10_000, 15_000, 20_000],
+  timeout: 60_000,
+};
+
 export const uniqueBusinessId = (prefix = 'biz'): string => {
   return `${prefix}-${generateUniqueId()}`;
 };

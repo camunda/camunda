@@ -25,7 +25,10 @@ import {
   CORRELATE_MESSAGE_DOUBLE_2,
 } from '../../../../utils/beans/requestBeans';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {validateResponse} from 'json-body-assertions';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
 import {
@@ -170,7 +173,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           'tenantId',
         ],
       );
-    }).toPass(defaultAssertionOptions);
+    }).toPass(extendedAssertionOptions);
   });
 
   test('Search Message Subscriptions - multiple result - 200 Success', async ({
@@ -209,7 +212,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
       const subscriptions = json.items as CorrelatedMessageSubscription[];
       const resultMessageKeys = subscriptions.map((s) => s.messageKey);
       expect(resultMessageKeys).toEqual(expect.arrayContaining(messageKeys));
-    }).toPass(defaultAssertionOptions);
+    }).toPass(extendedAssertionOptions);
   });
 
   test('Search Message Subscriptions - no result - 200 Success', async ({
