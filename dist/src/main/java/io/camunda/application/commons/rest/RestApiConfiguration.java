@@ -9,6 +9,7 @@ package io.camunda.application.commons.rest;
 
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
+import io.camunda.authentication.converter.CachingCamundaAuthenticationConverter;
 import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
 import io.camunda.authentication.converter.UnprotectedCamundaAuthenticationConverter;
 import io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder;
@@ -20,6 +21,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -53,9 +55,15 @@ public class RestApiConfiguration {
   @Bean
   public CamundaAuthenticationProvider camundaAuthenticationProvider(
       final List<CamundaAuthenticationHolder> holders,
-      final List<CamundaAuthenticationConverter<Authentication>> converters) {
+      final List<CamundaAuthenticationConverter<Authentication>> converters,
+      final SecurityConfiguration securityConfiguration) {
+    final var ttl =
+        Duration.parse(
+            securityConfiguration.getAuthentication().getAuthenticationRefreshInterval());
+    final var cachingConverter =
+        new CachingCamundaAuthenticationConverter(
+            new CamundaAuthenticationDelegatingConverter(converters), ttl, 500);
     return new DefaultCamundaAuthenticationProvider(
-        new CamundaAuthenticationDelegatingHolder(holders),
-        new CamundaAuthenticationDelegatingConverter(converters));
+        new CamundaAuthenticationDelegatingHolder(holders), cachingConverter);
   }
 }
