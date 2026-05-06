@@ -21,7 +21,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "12.4.3"
+      "version": "13.0.1"
     },
     {
       "type": "datasource",
@@ -48,7 +48,7 @@
         "$$hashKey": "object:216",
         "builtIn": 1,
         "datasource": {
-          "type": "datasource",
+          "type": "grafana",
           "uid": "grafana"
         },
         "enable": true,
@@ -106,6 +106,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
       "collapsed": true,
@@ -115,7 +116,7 @@
         "x": 0,
         "y": 0
       },
-      "id": 27,
+      "id": 81,
       "panels": [
         {
           "datasource": {
@@ -127,7 +128,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -141,8 +141,7 @@
                   }
                 ]
               }
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 4,
@@ -168,18 +167,18 @@
             "textMode": "name",
             "wideLayout": true
           },
-          "pluginVersion": "12.4.3",
+          "pluginVersion": "13.0.1",
           "targets": [
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
               "editorMode": "code",
               "expr": "max(atomix_role{namespace=~\"$namespace\"}) by (namespace)",
               "legendFormat": "__auto",
               "range": true,
-              "refId": "A",
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              }
+              "refId": "A"
             }
           ],
           "title": "Namespace",
@@ -195,7 +194,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "percentage",
                 "steps": [
@@ -214,8 +212,7 @@
                 ]
               },
               "unit": "percentunit"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 4,
@@ -232,7 +229,7 @@
             "percentChangeColorMode": "standard",
             "reduceOptions": {
               "calcs": [
-                "lastNotNull"
+                "mean"
               ],
               "fields": "",
               "values": false
@@ -241,18 +238,18 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "12.4.3",
+          "pluginVersion": "13.0.1",
           "targets": [
             {
-              "editorMode": "code",
-              "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) / (sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\", action=\"activated\", type=\"PROCESS\"}[$__rate_interval])))",
-              "legendFormat": "% of completions",
-              "range": true,
-              "refId": "A",
               "datasource": {
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
-              }
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_executed_instances_total{action=\"completed\", namespace=~\"$namespace\", type=\"ROOT_PROCESS_INSTANCE\"}[$__rate_interval])) by (namespace)\n/\n(sum(rate(grpc_server_processing_duration_seconds_count{namespace=~\"$namespace\", method=\"CreateProcessInstance\"}[$__rate_interval])) by (namespace)\nor\nsum(rate(http_server_requests_seconds_count{\n    method=\"POST\",\n    namespace=~\"$namespace\",\n    uri=\"/v2/process-instances\",\n  }[$__rate_interval]) != 0) by(namespace)\n)",
+              "legendFormat": "% of completions",
+              "range": true,
+              "refId": "A"
             }
           ],
           "title": "Completed process instances in %",
@@ -303,7 +300,6 @@
                   "mode": "line"
                 }
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -318,17 +314,20 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 143
+            "y": 5
           },
           "id": 22,
           "options": {
+            "annotations": {
+              "clustering": -1,
+              "multiLane": false
+            },
             "legend": {
               "calcs": [
                 "lastNotNull",
@@ -348,10 +347,11 @@
               "sort": "desc"
             }
           },
-          "pluginVersion": "12.4.3",
+          "pluginVersion": "13.0.1",
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -487,8 +487,6 @@
                   "mode": "off"
                 }
               },
-              "links": [],
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -499,17 +497,20 @@
                 ]
               },
               "unit": "short"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 7,
             "w": 16,
             "x": 0,
-            "y": 150
+            "y": 12
           },
           "id": 68,
           "options": {
+            "annotations": {
+              "clustering": -1,
+              "multiLane": false
+            },
             "legend": {
               "calcs": [
                 "lastNotNull",
@@ -529,11 +530,12 @@
               "sort": "desc"
             }
           },
-          "pluginVersion": "12.4.3",
+          "pluginVersion": "13.0.1",
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(label_replace(rate(grpc_server_handled_total{namespace=~\"$namespace\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\") or on(method) rate(grpc_server_processing_duration_seconds_count{namespace=~\"$namespace\"}[$__rate_interval])) by (method)",
@@ -571,7 +573,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "percentage",
                 "steps": [
@@ -585,14 +586,13 @@
                   }
                 ]
               }
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 7,
             "w": 8,
             "x": 16,
-            "y": 150
+            "y": 12
           },
           "id": 50,
           "options": {
@@ -612,7 +612,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "12.4.3",
+          "pluginVersion": "13.0.1",
           "targets": [
             {
               "datasource": {
@@ -675,8 +675,6 @@
                   "mode": "off"
                 }
               },
-              "links": [],
-              "mappings": [],
               "min": 0,
               "thresholds": {
                 "mode": "absolute",
@@ -688,17 +686,20 @@
                 ]
               },
               "unit": "short"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 8,
             "w": 16,
             "x": 0,
-            "y": 157
+            "y": 19
           },
           "id": 12,
           "options": {
+            "annotations": {
+              "clustering": -1,
+              "multiLane": false
+            },
             "legend": {
               "calcs": [
                 "lastNotNull",
@@ -718,7 +719,7 @@
               "sort": "desc"
             }
           },
-          "pluginVersion": "12.4.3",
+          "pluginVersion": "13.0.1",
           "targets": [
             {
               "datasource": {
@@ -747,7 +748,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -766,17 +766,24 @@
                 ]
               },
               "unit": "percent"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 157
+            "y": 19
           },
           "id": 79,
           "options": {
+            "barShape": "flat",
+            "barWidthFactor": 0.5,
+            "effects": {
+              "barGlow": false,
+              "centerGlow": false,
+              "gradient": false
+            },
+            "endpointMarker": "point",
             "minVizHeight": 75,
             "minVizWidth": 75,
             "orientation": "auto",
@@ -787,11 +794,16 @@
               "fields": "",
               "values": false
             },
+            "segmentCount": 1,
+            "segmentSpacing": 0.3,
+            "shape": "gauge",
             "showThresholdLabels": false,
             "showThresholdMarkers": true,
-            "sizing": "auto"
+            "sizing": "auto",
+            "sparkline": false,
+            "textMode": "auto"
           },
-          "pluginVersion": "12.4.3",
+          "pluginVersion": "13.0.1",
           "targets": [
             {
               "datasource": {
@@ -855,8 +867,6 @@
                   "mode": "off"
                 }
               },
-              "links": [],
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -867,17 +877,20 @@
                 ]
               },
               "unit": "short"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 8,
             "w": 16,
             "x": 0,
-            "y": 165
+            "y": 27
           },
           "id": 77,
           "options": {
+            "annotations": {
+              "clustering": -1,
+              "multiLane": false
+            },
             "legend": {
               "calcs": [
                 "lastNotNull",
@@ -897,11 +910,12 @@
               "sort": "desc"
             }
           },
-          "pluginVersion": "12.4.3",
+          "pluginVersion": "13.0.1",
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (action, eventType, type)",
@@ -927,7 +941,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "mappings": [],
               "min": 0,
               "thresholds": {
                 "mode": "absolute",
@@ -939,14 +952,13 @@
                 ]
               },
               "unit": "short"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 165
+            "y": 27
           },
           "id": 38,
           "options": {
@@ -966,7 +978,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "12.4.3",
+          "pluginVersion": "13.0.1",
           "targets": [
             {
               "datasource": {
@@ -1034,8 +1046,6 @@
                   "mode": "off"
                 }
               },
-              "links": [],
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1046,14 +1056,13 @@
                 ]
               },
               "unit": "short"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 7,
             "w": 16,
             "x": 0,
-            "y": 173
+            "y": 35
           },
           "id": 78,
           "options": {
@@ -1080,7 +1089,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "avg(rate(elasticsearch_indices_indexing_index_total{namespace=~\"$namespace\"}[$__rate_interval])) by (name)",
@@ -1118,7 +1128,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1132,14 +1141,13 @@
                   }
                 ]
               }
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 7,
             "w": 8,
             "x": 16,
-            "y": 173
+            "y": 35
           },
           "id": 37,
           "options": {
@@ -1190,7 +1198,7 @@
         "x": 0,
         "y": 1
       },
-      "id": 71,
+      "id": 82,
       "panels": [
         {
           "datasource": {
@@ -1237,7 +1245,6 @@
                   "mode": "area"
                 }
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1252,8 +1259,7 @@
                 ]
               },
               "unit": "percentunit"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 7,
@@ -1344,8 +1350,6 @@
                   "mode": "line+area"
                 }
               },
-              "links": [],
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1360,8 +1364,7 @@
                 ]
               },
               "unit": "short"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 9,
@@ -1392,6 +1395,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -1462,8 +1466,6 @@
                   "mode": "line+area"
                 }
               },
-              "links": [],
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1478,8 +1480,7 @@
                 ]
               },
               "unit": "short"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 9,
@@ -1510,6 +1511,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -1568,8 +1570,6 @@
                   "mode": "line+area"
                 }
               },
-              "links": [],
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1584,8 +1584,7 @@
                 ]
               },
               "unit": "short"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 9,
@@ -1616,6 +1615,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -1674,8 +1674,6 @@
                   "mode": "area"
                 }
               },
-              "links": [],
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1892,8 +1890,6 @@
                   "mode": "line+area"
                 }
               },
-              "links": [],
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1908,8 +1904,7 @@
                 ]
               },
               "unit": "decbytes"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 8,
@@ -1942,6 +1937,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -1955,7 +1951,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
               "expr": "sum(jvm_memory_committed_bytes{namespace=~\"$namespace\",pod=~\"$pod\",area=\"heap\",container!=\"\"}) by (pod)",
@@ -2027,7 +2023,6 @@
                   "mode": "area"
                 }
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -2041,8 +2036,7 @@
                   }
                 ]
               }
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 6,
@@ -2131,8 +2125,6 @@
                   "mode": "line+area"
                 }
               },
-              "links": [],
-              "mappings": [],
               "max": 1,
               "min": 0,
               "thresholds": {
@@ -2205,6 +2197,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -2229,7 +2222,7 @@
         "x": 0,
         "y": 2
       },
-      "id": 15,
+      "id": 83,
       "panels": [
         {
           "datasource": {
@@ -2303,8 +2296,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 11,
@@ -2335,6 +2327,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -2421,8 +2414,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
@@ -2453,6 +2445,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -2504,8 +2497,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
@@ -2536,6 +2528,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -2586,8 +2579,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
@@ -2618,6 +2610,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -2668,8 +2661,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
@@ -2700,6 +2692,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -2758,7 +2751,6 @@
                   "mode": "off"
                 }
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -2773,8 +2765,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 6,
@@ -2917,8 +2908,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 6,
@@ -2949,6 +2939,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -3070,8 +3061,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 10,
@@ -3104,6 +3094,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -3200,7 +3191,6 @@
                   "mode": "off"
                 }
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -3215,8 +3205,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 9,
@@ -3249,7 +3238,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(increase(zeebe_stream_processor_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(zeebe_stream_processor_processing_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le, valueType, intent))",
@@ -3262,6 +3251,7 @@
             },
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -3276,7 +3266,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum(increase(zeebe_stream_processor_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval]) or rate(zeebe_stream_processor_processing_duration_seconds_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[$__rate_interval])) by (le, valueType, intent))",
@@ -3363,8 +3353,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 9,
@@ -3395,6 +3384,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -3515,8 +3505,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 8,
@@ -3547,6 +3536,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -3654,7 +3644,6 @@
                   "mode": "off"
                 }
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -3665,8 +3654,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 11,
@@ -3792,7 +3780,6 @@
                   "mode": "off"
                 }
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -3807,8 +3794,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 11,
@@ -3934,7 +3920,6 @@
                   "mode": "off"
                 }
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -3945,8 +3930,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 11,
@@ -4072,7 +4056,6 @@
                   "mode": "off"
                 }
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -4087,8 +4070,7 @@
                 ]
               },
               "unit": "s"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 11,
@@ -4180,7 +4162,7 @@
         "x": 0,
         "y": 3
       },
-      "id": 14,
+      "id": 84,
       "panels": [
         {
           "datasource": {
@@ -4193,8 +4175,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "links": [],
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -4205,14 +4185,13 @@
                 ]
               },
               "unit": "short"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 82
+            "y": 4
           },
           "id": 76,
           "options": {
@@ -4236,7 +4215,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(label_replace(rate(grpc_server_handled_total{namespace=~\"$namespace\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\") or on(method) rate(grpc_server_processing_duration_seconds_count{namespace=~\"$namespace\"}[$__rate_interval])) by (method)",
@@ -4274,8 +4254,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "links": [],
-              "mappings": [],
               "min": 0,
               "thresholds": {
                 "mode": "absolute",
@@ -4287,14 +4265,13 @@
                 ]
               },
               "unit": "short"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 87
+            "y": 9
           },
           "id": 75,
           "options": {
@@ -4355,7 +4332,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "mappings": [],
               "min": 0,
               "thresholds": {
                 "mode": "absolute",
@@ -4367,14 +4343,13 @@
                 ]
               },
               "unit": "none"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
             "w": 12,
             "x": 0,
-            "y": 92
+            "y": 14
           },
           "id": 23,
           "maxDataPoints": 100,
@@ -4399,6 +4374,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -4424,7 +4400,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "mappings": [],
               "min": 0,
               "thresholds": {
                 "mode": "absolute",
@@ -4448,14 +4423,13 @@
                 ]
               },
               "unit": "none"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
             "w": 12,
             "x": 12,
-            "y": 92
+            "y": 14
           },
           "id": 57,
           "maxDataPoints": 100,
@@ -4480,6 +4454,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -4527,14 +4502,13 @@
                 ]
               },
               "unit": "none"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
             "w": 8,
             "x": 0,
-            "y": 95
+            "y": 17
           },
           "id": 52,
           "maxDataPoints": 100,
@@ -4559,6 +4533,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -4606,14 +4581,13 @@
                 ]
               },
               "unit": "none"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
             "w": 8,
             "x": 8,
-            "y": 95
+            "y": 17
           },
           "id": 53,
           "maxDataPoints": 100,
@@ -4638,6 +4612,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -4663,7 +4638,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "fieldMinMax": false,
               "mappings": [
                 {
                   "options": {
@@ -4686,14 +4660,13 @@
                 ]
               },
               "unit": "none"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
             "w": 8,
             "x": 16,
-            "y": 95
+            "y": 17
           },
           "id": 54,
           "maxDataPoints": 100,
@@ -4718,6 +4691,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -4765,14 +4739,13 @@
                 ]
               },
               "unit": "none"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
             "w": 8,
             "x": 0,
-            "y": 98
+            "y": 20
           },
           "id": 16,
           "maxDataPoints": 100,
@@ -4797,6 +4770,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -4844,14 +4818,13 @@
                 ]
               },
               "unit": "none"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
             "w": 8,
             "x": 8,
-            "y": 98
+            "y": 20
           },
           "id": 18,
           "maxDataPoints": 100,
@@ -4876,6 +4849,7 @@
           "targets": [
             {
               "datasource": {
+                "type": "prometheus",
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
@@ -4902,7 +4876,6 @@
                 "mode": "thresholds"
               },
               "decimals": 2,
-              "mappings": [],
               "min": 0,
               "thresholds": {
                 "mode": "absolute",
@@ -4914,14 +4887,13 @@
                 ]
               },
               "unit": "reqps"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 3,
             "w": 8,
             "x": 16,
-            "y": 98
+            "y": 20
           },
           "id": 43,
           "options": {
@@ -4945,7 +4917,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -4969,7 +4942,6 @@
               "color": {
                 "mode": "thresholds"
               },
-              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -4988,14 +4960,13 @@
                 ]
               },
               "unit": "ops"
-            },
-            "overrides": []
+            }
           },
           "gridPos": {
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 101
+            "y": 23
           },
           "id": 41,
           "options": {
@@ -5019,7 +4990,8 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -5047,6 +5019,7 @@
   "templating": {
     "list": [
       {
+        "allowCustomValue": true,
         "current": {
           "text": "",
           "value": "${DS_PROMETHEUS}",
@@ -5063,6 +5036,7 @@
       },
       {
         "allValue": ".*",
+        "allowCustomValue": true,
         "current": {},
         "datasource": {
           "type": "prometheus",
@@ -5084,6 +5058,7 @@
         "type": "query"
       },
       {
+        "allowCustomValue": true,
         "current": {},
         "datasource": {
           "type": "prometheus",
@@ -5106,6 +5081,7 @@
         "type": "query"
       },
       {
+        "allowCustomValue": true,
         "current": {},
         "datasource": {
           "type": "prometheus",
@@ -5148,6 +5124,6 @@
   "timezone": "browser",
   "title": "Camunda Performance",
   "uid": "camunda-performance",
-  "version": 24,
+  "version": 25,
   "weekStart": ""
 }
