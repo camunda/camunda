@@ -25,7 +25,7 @@ public class ResourceExportHandler implements RdbmsExportHandler<Resource> {
   private static final Logger LOG = LoggerFactory.getLogger(ResourceExportHandler.class);
 
   private static final Set<ResourceIntent> EXPORTABLE_INTENTS =
-      Set.of(ResourceIntent.CREATED, ResourceIntent.DELETED);
+      Set.of(ResourceIntent.CREATED, ResourceIntent.DELETED, ResourceIntent.REEXPORTED);
 
   private final DeployedResourceWriter deployedResourceWriter;
 
@@ -43,7 +43,8 @@ public class ResourceExportHandler implements RdbmsExportHandler<Resource> {
   @Override
   public void export(final Record<Resource> record) {
     switch (record.getIntent()) {
-      case ResourceIntent.CREATED -> deployedResourceWriter.create(map(record));
+      case ResourceIntent.CREATED, ResourceIntent.REEXPORTED ->
+          deployedResourceWriter.create(map(record));
       case ResourceIntent.DELETED ->
           deployedResourceWriter.delete(record.getValue().getResourceKey());
       default -> LOG.warn("Unexpected intent {} for resource record", record.getIntent());

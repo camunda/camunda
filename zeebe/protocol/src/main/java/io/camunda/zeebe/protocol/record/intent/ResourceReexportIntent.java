@@ -15,38 +15,20 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
-public enum ResourceIntent implements Intent {
-  CREATED((short) 0),
-  DELETED((short) 1),
-  FETCH((short) 2),
-  FETCHED((short) 3),
-  REEXPORTED((short) 4);
+public enum ResourceReexportIntent implements Intent {
+  START(0),
+  STARTED(1),
+  REEXPORT(2),
+  FINISHED(3);
 
   private final short value;
 
-  ResourceIntent(final short value) {
-    this.value = value;
+  ResourceReexportIntent(final int value) {
+    this.value = (short) value;
   }
 
   public short getIntent() {
     return value;
-  }
-
-  public static Intent from(final short value) {
-    switch (value) {
-      case 0:
-        return CREATED;
-      case 1:
-        return DELETED;
-      case 2:
-        return FETCH;
-      case 3:
-        return FETCHED;
-      case 4:
-        return REEXPORTED;
-      default:
-        return UNKNOWN;
-    }
   }
 
   @Override
@@ -57,13 +39,26 @@ public enum ResourceIntent implements Intent {
   @Override
   public boolean isEvent() {
     switch (this) {
-      case CREATED:
-      case DELETED:
-      case FETCHED:
-      case REEXPORTED:
+      case STARTED:
+      case FINISHED:
         return true;
       default:
         return false;
+    }
+  }
+
+  public static Intent from(final short value) {
+    switch (value) {
+      case 0:
+        return START;
+      case 1:
+        return STARTED;
+      case 2:
+        return REEXPORT;
+      case 3:
+        return FINISHED;
+      default:
+        return Intent.UNKNOWN;
     }
   }
 }

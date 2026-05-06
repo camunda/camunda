@@ -63,6 +63,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -586,6 +587,11 @@ public final class EventAppliers implements EventApplier {
     register(ResourceIntent.CREATED, new ResourceCreatedApplier(state.getResourceState()));
     register(ResourceIntent.DELETED, new ResourceDeletedApplier(state.getResourceState()));
     register(ResourceIntent.FETCHED, NOOP_EVENT_APPLIER);
+    register(ResourceIntent.REEXPORTED, NOOP_EVENT_APPLIER);
+    register(
+        ResourceReexportIntent.STARTED,
+        new ResourceReexportStartedApplier(state.getResourceState()));
+    register(ResourceReexportIntent.FINISHED, NOOP_EVENT_APPLIER);
   }
 
   private void registerUserTaskAppliers(final MutableProcessingState state) {

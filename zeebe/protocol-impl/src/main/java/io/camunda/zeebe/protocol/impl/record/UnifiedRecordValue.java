@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceReexportRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
@@ -189,6 +190,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.AUTHORIZATION -> new AuthorizationRecord();
       case ValueType.ROLE -> new RoleRecord();
       case ValueType.TENANT -> new TenantRecord();
+      case ValueType.RESOURCE_REEXPORT -> new ResourceReexportRecord();
       case ValueType.SCALE -> new ScaleRecord();
       case ValueType.GROUP -> new GroupRecord();
       case ValueType.MAPPING_RULE -> new MappingRuleRecord();

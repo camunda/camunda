@@ -44,6 +44,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
@@ -114,6 +115,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRec
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
+import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.time.Duration;
 import java.util.Collection;
@@ -534,6 +536,16 @@ public final class RecordingExporter implements Exporter {
 
   public static ResourceRecordStream resourceRecords() {
     return new ResourceRecordStream(records(ValueType.RESOURCE, Resource.class));
+  }
+
+  public static ResourceReexportRecordStream resourceReexportRecords() {
+    return new ResourceReexportRecordStream(
+        records(ValueType.RESOURCE_REEXPORT, ResourceReexportRecordValue.class));
+  }
+
+  public static ResourceReexportRecordStream resourceReexportRecords(
+      final ResourceReexportIntent intent) {
+    return resourceReexportRecords().withIntent(intent);
   }
 
   public static ErrorRecordStream errorRecords() {

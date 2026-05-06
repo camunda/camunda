@@ -64,6 +64,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -139,6 +140,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRec
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
+import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.util.Collections;
@@ -263,6 +265,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.RESOURCE_DELETION,
         new Mapping<>(ResourceDeletionRecordValue.class, ResourceDeletionIntent.class));
+    mapping.put(
+        ValueType.RESOURCE_REEXPORT,
+        new Mapping<>(ResourceReexportRecordValue.class, ResourceReexportIntent.class));
     mapping.put(
         ValueType.COMMAND_DISTRIBUTION,
         new Mapping<>(CommandDistributionRecordValue.class, CommandDistributionIntent.class));

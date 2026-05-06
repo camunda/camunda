@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public interface ResourceState {
   /**
@@ -62,6 +63,27 @@ public interface ResourceState {
    * @param resourceId the id of the resource
    */
   int getNextResourceVersion(String resourceId, String tenantId);
+
+  /**
+   * Returns if the RPA reexport migration has already ran. If it did we don't need to run it again.
+   *
+   * @return a boolean indicating if the migration ran.
+   */
+  boolean hasRanRpaReexportMigration();
+
+  /**
+   * Iterates over all resources in the RESOURCES column family, starting at the entry at or after
+   * the given {@code startResourceKey}. The consumer receives each {@link PersistedResource} in key
+   * order.
+   *
+   * @param tenantId the tenant id of the resources to iterate over. Caution! This will iterate past
+   *     this tenant into other tenants.
+   * @param startResourceKey the resource key to start iterating from (inclusive)
+   * @param visitor called for each resource found at or after the start key; return {@code false}
+   *     to stop iteration early, {@code true} to continue
+   */
+  void visitResourcesByKey(
+      final String tenantId, long startResourceKey, Predicate<PersistedResource> visitor);
 
   void clearCache();
 }
