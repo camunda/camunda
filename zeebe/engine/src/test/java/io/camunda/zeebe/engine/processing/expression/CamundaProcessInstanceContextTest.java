@@ -254,4 +254,64 @@ public class CamundaProcessInstanceContextTest {
 
     assertThat(job.getVariables()).containsEntry("ref", "PARENT-child");
   }
+
+  @Test
+  public void shouldNotResolveProcessInstanceKeyInOutputMapping() {
+    // given - service task with output mapping using camunda.processInstance.key
+    final var process =
+        Bpmn.createExecutableProcess("processOut")
+            .startEvent()
+            .serviceTask(
+                "task",
+                b ->
+                    b.zeebeJobType("outType")
+                        .zeebeOutputExpression("camunda.processInstance.key", "outVar"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("processOut").create();
+
+    // when - the job completes, triggering the output mapping
+    ENGINE.job().withType("outType").ofInstance(processInstanceKey).complete();
+
+    // then - the namespace must not be available outside input mappings,
+    // so the output mapping resolves to null (FEEL semantics for missing path)
+    final var variableRecord =
+        io.camunda.zeebe.test.util.record.RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("outVar")
+            .getFirst()
+            .getValue();
+
+    assertThat(variableRecord.getValue()).isEqualTo("null");
+  }
+
+  @Test
+  public void shouldNotResolveProcessInstanceKeyInJobTypeExpression() {
+    // given - job type expression using camunda.processInstance.key
+    final var process =
+        Bpmn.createExecutableProcess("processJobType")
+            .startEvent()
+            .serviceTask(
+                "task", b -> b.zeebeJobTypeExpression("string(camunda.processInstance.key)"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("processJobType").create();
+
+    // then - the namespace must not be available, so the expression evaluates to
+    // null which is not a valid job type, creating an incident
+    final var incident =
+        io.camunda.zeebe.test.util.record.RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(incident.getErrorMessage()).contains("string(camunda.processInstance.key)");
+  }
 }

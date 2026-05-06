@@ -98,17 +98,26 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     final var namespacedMergedClusterScope =
         NamespacedEvaluationContext.create().register("env", mergedClusterScope);
 
+    final var camundaVars =
+        CombinedEvaluationContext.withContexts(
+            namespacedMergedClusterScope,
+            namespacedTenantClusterScope,
+            namespacedGlobalClusterScope);
+
     final var namespaceFullClusterContext =
+        NamespacedEvaluationContext.create()
+            .register(
+                "camunda", NamespacedEvaluationContext.create().register("vars", camundaVars));
+
+    // Input-mapping expressions get an additional `camunda.processInstance` namespace, scoped
+    // to this evaluation only. Other expression contexts (output mappings, conditions, etc.)
+    // intentionally do not see it.
+    final var inputMappingNamespaceContext =
         NamespacedEvaluationContext.create()
             .register(
                 "camunda",
                 NamespacedEvaluationContext.create()
-                    .register(
-                        "vars",
-                        CombinedEvaluationContext.withContexts(
-                            namespacedMergedClusterScope,
-                            namespacedTenantClusterScope,
-                            namespacedGlobalClusterScope))
+                    .register("vars", camundaVars)
                     .register(
                         "processInstance",
                         new ProcessInstanceEvaluationContext(
@@ -126,6 +135,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             expressionLanguage,
             CombinedEvaluationContext.withContexts(
                 processVariableContext, namespaceFullClusterContext),
+            config.getExpressionEvaluationTimeout());
+
+    final var inputMappingExpressionProcessor =
+        new ExpressionProcessor(
+            expressionLanguage,
+            CombinedEvaluationContext.withContexts(
+                processVariableContext, inputMappingNamespaceContext),
             config.getExpressionEvaluationTimeout());
 
     expressionBehavior =
@@ -184,7 +200,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(
-            expressionProcessor, processingState, variableBehavior, eventTriggerBehavior);
+            expressionProcessor,
+            inputMappingExpressionProcessor,
+            processingState,
+            variableBehavior,
+            eventTriggerBehavior);
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
