@@ -1,0 +1,13 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "@camunda-shadcn",
+  "homepage": "https://design.camunda.io",
+  "items": [
+    {
+      "name": "button",
+      "type": "registry:ui",
+      "title": "Button",
+      "description": "A clickable element that triggers an action. Use for form submissions, dialog confirmations, navigation that performs work, and any primary call-to-action."
+    }
+  ]
+}
