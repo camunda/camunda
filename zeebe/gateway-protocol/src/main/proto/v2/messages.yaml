@@ -275,7 +275,7 @@ components:
         - correlationKey
         - elementId
         - elementInstanceKey
-        - extensionProperties
+        - toolProperties
         - inboundConnectorType
         - lastUpdatedDate
         - messageName

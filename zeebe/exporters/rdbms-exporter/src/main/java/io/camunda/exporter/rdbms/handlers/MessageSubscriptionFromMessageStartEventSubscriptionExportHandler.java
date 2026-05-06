@@ -11,7 +11,7 @@ import static io.camunda.exporter.rdbms.utils.DateUtil.toOffsetDateTime;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
-import io.camunda.exporter.rdbms.ExporterConfiguration.MessageSubscriptionConfiguration;
+import io.camunda.exporter.rdbms.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
@@ -38,18 +38,18 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionExportHandler
 
   private final MessageSubscriptionWriter messageSubscriptionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
-  private final MessageSubscriptionConfiguration messageSubscriptionConfig;
+  private final ToolsConfiguration messageSubscriptionConfig;
 
   public MessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
       final MessageSubscriptionWriter messageSubscriptionWriter,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
-    this(messageSubscriptionWriter, processCache, new MessageSubscriptionConfiguration());
+    this(messageSubscriptionWriter, processCache, new ToolsConfiguration());
   }
 
   public MessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
       final MessageSubscriptionWriter messageSubscriptionWriter,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final MessageSubscriptionConfiguration messageSubscriptionConfig) {
+      final ToolsConfiguration messageSubscriptionConfig) {
     this.messageSubscriptionWriter = messageSubscriptionWriter;
     this.processCache = processCache;
     this.messageSubscriptionConfig = messageSubscriptionConfig;

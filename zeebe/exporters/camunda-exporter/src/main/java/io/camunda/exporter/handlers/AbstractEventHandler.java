@@ -32,7 +32,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_NAME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_PROPERTIES;
 
-import io.camunda.exporter.config.ExporterConfiguration.MessageSubscriptionConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
@@ -50,14 +50,14 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     implements ExportHandler<MessageSubscriptionEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
-  protected final MessageSubscriptionConfiguration messageSubscriptionConfig;
+  protected final ToolsConfiguration messageSubscriptionConfig;
 
   public AbstractEventHandler(final String indexName) {
-    this(indexName, new MessageSubscriptionConfiguration());
+    this(indexName, new ToolsConfiguration());
   }
 
   public AbstractEventHandler(
-      final String indexName, final MessageSubscriptionConfiguration messageSubscriptionConfig) {
+      final String indexName, final ToolsConfiguration messageSubscriptionConfig) {
     this.indexName = indexName;
     this.messageSubscriptionConfig = messageSubscriptionConfig;
   }

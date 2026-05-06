@@ -44,8 +44,7 @@ public class ExporterConfiguration {
   private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
   private ReplicationConfiguration asyncReplication = new ReplicationConfiguration();
-  private MessageSubscriptionConfiguration messageSubscription =
-      new MessageSubscriptionConfiguration();
+  private ToolsConfiguration tools = new ToolsConfiguration();
 
   public AuditLogConfiguration getAuditLog() {
     return auditLog;
@@ -152,12 +151,12 @@ public class ExporterConfiguration {
     this.asyncReplication = asyncReplication;
   }
 
-  public MessageSubscriptionConfiguration getMessageSubscription() {
-    return messageSubscription;
+  public ToolsConfiguration getTools() {
+    return tools;
   }
 
-  public void setMessageSubscription(final MessageSubscriptionConfiguration messageSubscription) {
-    this.messageSubscription = messageSubscription;
+  public void setTools(final ToolsConfiguration tools) {
+    this.tools = tools;
   }
 
   public void validate() {
@@ -708,10 +707,10 @@ public class ExporterConfiguration {
     }
   }
 
-  public static class MessageSubscriptionConfiguration {
-    private String extensionPropertyToolName = "io.camunda.tool:name";
-    private String extensionPropertyInboundConnectorType = "inbound.type";
-    private String extensionPropertyPrefixToolProperties = "io.camunda.tool:";
+  public static class ToolsConfiguration {
+    private String extensionPropertyToolName;
+    private String extensionPropertyInboundConnectorType;
+    private String extensionPropertyPrefixToolProperties;
 
     public String getExtensionPropertyToolName() {
       return extensionPropertyToolName;

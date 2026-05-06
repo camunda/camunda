@@ -872,8 +872,7 @@ public class BrokerBasedPropertiesOverride {
                   CamundaExporterConfigurationApplier.applyIncidentNotifier(
                       config, unifiedConfiguration);
                   CamundaExporterConfigurationApplier.applyMisc(config, unifiedConfiguration);
-                  CamundaExporterConfigurationApplier.applyMessageSubscription(
-                      config, unifiedConfiguration);
+                  CamundaExporterConfigurationApplier.applyTools(config, unifiedConfiguration);
                 })
             .toArgs());
   }
@@ -984,19 +983,18 @@ public class BrokerBasedPropertiesOverride {
                         .setPauseOnMaxLagExceeded(asyncReplication.isPauseOnMaxLagExceeded());
                   }
 
-                  final var msgSub =
-                      unifiedConfiguration.getCamunda().getData().getToolProperties();
+                  final var toolsConfig = unifiedConfiguration.getCamunda().getData().getTools();
                   config
-                      .getMessageSubscription()
-                      .setExtensionPropertyToolName(msgSub.getExtensionPropertyToolName());
+                      .getTools()
+                      .setExtensionPropertyToolName(toolsConfig.getExtensionPropertyToolName());
                   config
-                      .getMessageSubscription()
+                      .getTools()
                       .setExtensionPropertyInboundConnectorType(
-                          msgSub.getExtensionPropertyInboundConnectorType());
+                          toolsConfig.getExtensionPropertyInboundConnectorType());
                   config
-                      .getMessageSubscription()
+                      .getTools()
                       .setExtensionPropertyPrefixToolProperties(
-                          msgSub.getExtensionPropertyPrefixToolProperties());
+                          toolsConfig.getExtensionPropertyPrefixToolProperties());
                 })
             .toArgs());
   }

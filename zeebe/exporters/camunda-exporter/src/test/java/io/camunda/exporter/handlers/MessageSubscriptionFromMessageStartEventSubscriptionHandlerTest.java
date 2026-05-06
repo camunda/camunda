@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.config.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
@@ -209,6 +210,14 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
                     false,
                     Map.of(startEventId, extProps))));
 
+    final ToolsConfiguration toolsConfig = new ToolsConfiguration();
+    toolsConfig.setExtensionPropertyToolName("io.camunda.tool:name");
+    toolsConfig.setExtensionPropertyInboundConnectorType("inbound.type");
+    toolsConfig.setExtensionPropertyPrefixToolProperties("io.camunda.tool:");
+    final var handlerWithConfig =
+        new MessageSubscriptionFromMessageStartEventSubscriptionHandler(
+            indexName, processCache, toolsConfig);
+
     final ImmutableMessageStartEventSubscriptionRecordValue value =
         ImmutableMessageStartEventSubscriptionRecordValue.builder()
             .withProcessDefinitionKey(processDefinitionKey)
@@ -229,12 +238,11 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
     final MessageSubscriptionEntity entity = new MessageSubscriptionEntity();
 
     // when
-    underTest.updateEntity(record, entity);
+    handlerWithConfig.updateEntity(record, entity);
 
     // then
     assertThat(entity.getToolName()).isEqualTo("myTool");
     assertThat(entity.getInboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
-    // TODO: Add an assertion for the extension properties once they are included in the entity
   }
 
   @Test
@@ -305,7 +313,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
     expectedUpdateFields.put("processDefinitionVersion", null);
     expectedUpdateFields.put("toolName", null);
     expectedUpdateFields.put("inboundConnectorType", null);
-    expectedUpdateFields.put("extensionProperties", null);
+    expectedUpdateFields.put("toolProperties", null);
     expectedUpdateFields.put("metadata", metadataMap);
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 

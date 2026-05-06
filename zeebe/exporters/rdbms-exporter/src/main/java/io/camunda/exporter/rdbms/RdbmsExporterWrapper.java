@@ -250,7 +250,7 @@ public class RdbmsExporterWrapper implements Exporter {
         new MessageSubscriptionExportHandler(
             rdbmsWriters.getMessageSubscriptionWriter(),
             cacheRegistry.processCache(),
-            config.getMessageSubscription()));
+            config.getTools()));
     builder.withHandler(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
         new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler(
@@ -264,7 +264,7 @@ public class RdbmsExporterWrapper implements Exporter {
         new MessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
             rdbmsWriters.getMessageSubscriptionWriter(),
             cacheRegistry.processCache(),
-            config.getMessageSubscription()));
+            config.getTools()));
     builder.withHandler(
         ValueType.HISTORY_DELETION,
         new HistoryDeletionDeletedHandler(rdbmsWriters.getHistoryDeletionWriter()));

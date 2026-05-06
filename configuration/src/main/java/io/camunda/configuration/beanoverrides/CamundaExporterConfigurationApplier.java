@@ -18,8 +18,8 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.BulkConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.MessageSubscriptionConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.PostExportConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.ToolsConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -247,12 +247,12 @@ public final class CamundaExporterConfigurationApplier {
     exporterConfiguration.getFormCache().setMaxCacheSize(source.getFormCache().getMaxSize());
   }
 
-  public static void applyMessageSubscription(
+  public static void applyTools(
       final ExporterConfiguration exporterConfiguration,
       final UnifiedConfiguration unifiedConfiguration) {
 
-    final Tools source = unifiedConfiguration.getCamunda().getData().getToolProperties();
-    final MessageSubscriptionConfiguration target = exporterConfiguration.getMessageSubscription();
+    final Tools source = unifiedConfiguration.getCamunda().getData().getTools();
+    final ToolsConfiguration target = exporterConfiguration.getTools();
 
     target.setExtensionPropertyToolName(source.getExtensionPropertyToolName());
     target.setExtensionPropertyInboundConnectorType(
