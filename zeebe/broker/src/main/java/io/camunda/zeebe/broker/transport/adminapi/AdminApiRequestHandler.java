@@ -23,6 +23,7 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import org.jspecify.annotations.Nullable;
 
 public class AdminApiRequestHandler
     extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
@@ -31,13 +32,15 @@ public class AdminApiRequestHandler
   private final RaftPartition raftPartition;
   private final ClusterConfigurationService clusterConfigurationService;
   private final int nodeId;
+  private final @Nullable String zone;
 
   public AdminApiRequestHandler(
       final AtomixServerTransport transport,
       final PartitionAdminAccess adminAccess,
       final RaftPartition raftPartition,
       final ClusterConfigurationService clusterConfigurationService,
-      final int nodeId) {
+      final int nodeId,
+      final @Nullable String zone) {
     super(ApiRequestReader::new, ApiResponseWriter::new);
     this.transport = transport;
     this.adminAccess = adminAccess;
@@ -45,6 +48,7 @@ public class AdminApiRequestHandler
     this.raftPartition = raftPartition;
     this.clusterConfigurationService = clusterConfigurationService;
     this.nodeId = nodeId;
+    this.zone = zone;
   }
 
   @Override
@@ -282,7 +286,7 @@ public class AdminApiRequestHandler
     // Fire-and-forget: return success immediately, then process asynchronously
     actor.run(
         () -> {
-          final MemberId currentMemberId = MemberId.from(String.valueOf(nodeId));
+          final MemberId currentMemberId = MemberId.from(zone, nodeId);
           clusterConfigurationService
               .getLatestClusterConfiguration()
               .onComplete(

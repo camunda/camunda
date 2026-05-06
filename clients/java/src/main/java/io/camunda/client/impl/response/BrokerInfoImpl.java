@@ -26,6 +26,8 @@ import java.util.Objects;
 public final class BrokerInfoImpl implements BrokerInfo {
 
   private final int nodeId;
+  private final String zone;
+  private final String memberId;
   private final String host;
   private final int port;
   private final String version;
@@ -33,6 +35,9 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   public BrokerInfoImpl(final GatewayOuterClass.BrokerInfo grpcBrokerInfo) {
     nodeId = grpcBrokerInfo.getNodeId();
+    // TODO: use grpcBrokerInfo.getZone() once the gRPC protocol carries the zone (see #51586)
+    zone = "";
+    memberId = "";
     host = grpcBrokerInfo.getHost();
     port = grpcBrokerInfo.getPort();
     version = grpcBrokerInfo.getVersion();
@@ -45,6 +50,9 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   public BrokerInfoImpl(final io.camunda.client.protocol.rest.BrokerInfo httpBrokerInfo) {
     nodeId = httpBrokerInfo.getNodeId();
+    // TODO: use httpBrokerInfo.getZone() once the REST protocol carries the zone (see #51998)
+    zone = "";
+    memberId = "";
     host = httpBrokerInfo.getHost();
     port = httpBrokerInfo.getPort();
     version = httpBrokerInfo.getVersion();
@@ -58,6 +66,20 @@ public final class BrokerInfoImpl implements BrokerInfo {
   @Override
   public int getNodeId() {
     return nodeId;
+  }
+
+  @Override
+  public String getZone() {
+    return zone;
+  }
+
+  @Override
+  public String getMemberId() {
+    if (memberId == null || memberId.isEmpty()) {
+      return String.valueOf(nodeId);
+    } else {
+      return memberId;
+    }
   }
 
   @Override
@@ -87,7 +109,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   @Override
   public int hashCode() {
-    return Objects.hash(nodeId, host, port, version, partitions);
+    return Objects.hash(nodeId, zone, host, port, version, partitions);
   }
 
   @Override
@@ -103,6 +125,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
     final BrokerInfoImpl that = (BrokerInfoImpl) o;
     return nodeId == that.nodeId
         && port == that.port
+        && Objects.equals(zone, that.zone)
         && Objects.equals(host, that.host)
         && Objects.equals(version, that.version)
         && Objects.equals(partitions, that.partitions);
@@ -113,6 +136,9 @@ public final class BrokerInfoImpl implements BrokerInfo {
     return "BrokerInfoImpl{"
         + "nodeId="
         + nodeId
+        + ", zone='"
+        + zone
+        + '\''
         + ", host='"
         + host
         + '\''

@@ -45,7 +45,8 @@ public final class AdminApiRequestHandlerStep implements PartitionTransitionStep
             context.getAdminAccess(),
             context.getRaftPartition(),
             context.getClusterConfigurationService(),
-            context.getNodeId());
+            context.getNodeId(),
+            context.getBrokerCfg().getCluster().getZone());
     final var submitFuture = schedulingService.submitActor(handler);
     concurrencyControl.runOnCompletion(
         submitFuture,
