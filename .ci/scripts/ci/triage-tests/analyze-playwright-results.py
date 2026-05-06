@@ -16,9 +16,18 @@ Analyze Playwright JSON test results from multiple nightly runs to triage failur
 
 Usage:
     python3 analyze-playwright-results.py <artifacts_dir>
+                                          [--spec <openapi-spec.yaml>]
+                                          [--suite-dir <test-suite-dir>]
 
 The artifacts directory must contain subdirectories named after the run label
 (e.g., "api-stable-8.7", "e2e-stable-8.7-v1"), each holding a results.json file.
+
+When --spec and --suite-dir are supplied the script reads the OpenAPI spec and
+the test source files so it can cross-reference each failure against the API
+contract.  This improves classification confidence for http_error and assertion
+failures: if the spec proves a test assertion contradicts the contract the hint
+is upgraded to test_code; if the product's response violates the spec it is
+upgraded to product_regression.
 
 Classification
 --------------
@@ -46,10 +55,12 @@ root_cause_hint values
 test_code           High confidence the test implementation is wrong:
                       outdated locator, data isolation issue, OR
                       same failure present on ALL tested versions (can't be a
-                      regression if it fails everywhere the same way).
+                      regression if it fails everywhere the same way), OR
+                      spec-validated: assertion contradicts the API contract.
 
 product_regression  High confidence the product regressed:
-                      HTTP error / assertion failure on exactly ONE version.
+                      HTTP error / assertion failure on exactly ONE version, OR
+                      spec-validated: product returned a status not defined in spec.
 
 timing              Timeout or race-condition — could be either side.
                     Requires human judgement.
@@ -68,7 +79,8 @@ Output (JSON to stdout):
           "name", "file", "versions", "error", "error_type",
           "retry_outcome",        # "flaky" | "hard_fail"
           "root_cause_hint",      # see above
-          "root_cause_reasons"    # list of human-readable strings explaining the hint
+          "root_cause_reasons",   # list of human-readable strings explaining the hint
+          "spec_validated"        # true when the OpenAPI spec confirmed the hint
         }, ...
       ],
       "run_stats": { "<label>": { "expected", "unexpected", "flaky", "skipped" } }
@@ -79,6 +91,21 @@ import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+
+# spec_validator is an optional sibling module — graceful fallback if missing
+try:
+    import sys as _sys
+    import os as _os
+    _sys.path.insert(0, str(Path(__file__).parent))
+    from spec_validator import (
+        SpecValidator,
+        extract_api_calls,
+        extract_status_from_error,
+        extract_asserted_length,
+    )
+    _SPEC_VALIDATOR_AVAILABLE = True
+except ImportError:
+    _SPEC_VALIDATOR_AVAILABLE = False
 
 
 # ---------------------------------------------------------------------------
@@ -298,10 +325,81 @@ def merge_failures(all_by_label: dict[str, list[TestFailure]]) -> dict[str, Test
 
 
 # ---------------------------------------------------------------------------
+# Spec-based enrichment (optional second pass)
+# ---------------------------------------------------------------------------
+
+def _spec_enrich(
+    failure: "TestFailure",
+    suite_dir: "Path",
+    validator: "SpecValidator",
+) -> tuple[str, list[str]]:
+    """
+    Attempt to cross-reference the failure against the OpenAPI spec.
+
+    Returns (override_hint, extra_reasons).
+    override_hint is non-empty only when spec evidence is strong enough to
+    change the existing root_cause_hint.  extra_reasons is appended to the
+    existing reasons list regardless.
+    """
+    if not _SPEC_VALIDATOR_AVAILABLE:
+        return "", []
+
+    leaf_title = failure.name.rsplit(" > ", 1)[-1]
+    test_file = suite_dir / failure.file
+
+    api_info = extract_api_calls(test_file, leaf_title)
+    if not api_info.get("endpoints"):
+        return "", []
+
+    endpoint = api_info["endpoints"][0]
+    method = (api_info["methods"] or ["get"])[0]
+    extra_reasons: list[str] = []
+    override_hint = ""
+
+    # ── Status-code validation ────────────────────────────────────────────
+    if failure.error_type in ("http_error", "assertion"):
+        actual_status = extract_status_from_error(failure.error)
+        expected_statuses = api_info.get("expected_statuses", [])
+        expected_status = expected_statuses[0] if expected_statuses else None
+
+        if actual_status and expected_status and actual_status != expected_status:
+            result = validator.validate_status_expectation(
+                endpoint, method, expected_status, actual_status
+            )
+            if result:
+                hint, reason = result
+                override_hint = hint
+                extra_reasons.append(f"[spec] {reason}")
+
+    # ── Length-assertion validation (toHaveLength / toHaveCount) ─────────
+    if failure.error_type == "assertion" and not override_hint:
+        asserted_len = extract_asserted_length(failure.error)
+        if asserted_len is not None:
+            # We can only know the exact property path if we read the test
+            # source — as a best-effort, check all top-level array properties
+            # of the 200 response schema to see if ANY lack length constraints.
+            schema = validator.get_response_schema(endpoint, method, "200")
+            if isinstance(schema, dict):
+                for prop_name, prop_schema in schema.get("properties", {}).items():
+                    resolved = validator._resolve_schema(prop_schema)
+                    if resolved.get("type") == "array":
+                        result = validator.check_length_assertion(
+                            endpoint, method, 200, prop_name, asserted_len
+                        )
+                        if result:
+                            hint, reason = result
+                            override_hint = hint
+                            extra_reasons.append(f"[spec] {reason}")
+                            break
+
+    return override_hint, extra_reasons
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
-def main(artifacts_dir: Path) -> None:
+def main(artifacts_dir: Path, spec_path: "Path | None" = None, suite_dir: "Path | None" = None) -> None:
     all_by_label: dict[str, list[TestFailure]] = {}
     run_stats: dict[str, dict] = {}
 
@@ -333,9 +431,32 @@ def main(artifacts_dir: Path) -> None:
         "test_code": [], "product_regression": [], "timing": [], "needs_investigation": []
     }
 
+    # Set up optional spec validator
+    validator: "SpecValidator | None" = None
+    if spec_path and suite_dir and _SPEC_VALIDATOR_AVAILABLE:
+        try:
+            validator = SpecValidator(spec_path)
+            print(f"[info] spec validation enabled from {spec_path}", file=sys.stderr)
+        except Exception as exc:
+            print(f"[warn] could not load spec {spec_path}: {exc}", file=sys.stderr)
+
     all_failures = []
     for f in sorted(merged.values(), key=lambda x: x.name):
         hint, reasons = _root_cause(f, total_versions)
+        spec_validated = False
+
+        if validator and suite_dir:
+            try:
+                override_hint, extra_reasons = _spec_enrich(f, suite_dir, validator)
+                if override_hint:
+                    hint = override_hint
+                    spec_validated = True
+                if extra_reasons:
+                    reasons = reasons + extra_reasons
+                    spec_validated = True
+            except Exception as exc:
+                print(f"[warn] spec enrichment failed for {f.name}: {exc}", file=sys.stderr)
+
         entry = {
             "name":               f.name,
             "file":               f.file,
@@ -345,6 +466,7 @@ def main(artifacts_dir: Path) -> None:
             "retry_outcome":      f.retry_outcome,
             "root_cause_hint":    hint,
             "root_cause_reasons": reasons,
+            "spec_validated":     spec_validated,
         }
         all_failures.append(entry)
         by_hint[hint].append(entry)
@@ -368,7 +490,31 @@ def main(artifacts_dir: Path) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <artifacts_dir>", file=sys.stderr)
+    args = sys.argv[1:]
+    spec_path: "Path | None" = None
+    suite_dir: "Path | None" = None
+
+    if "--spec" in args:
+        idx = args.index("--spec")
+        if idx + 1 >= len(args):
+            print("ERROR: --spec requires a value", file=sys.stderr)
+            sys.exit(1)
+        spec_path = Path(args[idx + 1])
+        args = args[:idx] + args[idx + 2:]
+
+    if "--suite-dir" in args:
+        idx = args.index("--suite-dir")
+        if idx + 1 >= len(args):
+            print("ERROR: --suite-dir requires a value", file=sys.stderr)
+            sys.exit(1)
+        suite_dir = Path(args[idx + 1])
+        args = args[:idx] + args[idx + 2:]
+
+    if len(args) != 1:
+        print(
+            f"Usage: {sys.argv[0]} <artifacts_dir> [--spec <openapi.yaml>] [--suite-dir <dir>]",
+            file=sys.stderr,
+        )
         sys.exit(1)
-    main(Path(sys.argv[1]))
+
+    main(Path(args[0]), spec_path, suite_dir)

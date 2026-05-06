@@ -154,6 +154,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 .ci/scripts/ci/triage-tests/analyze-playwright-results.py artifacts \
+            --spec qa/c8-orchestration-cluster-e2e-test-suite/v2-stateless-tests/request-validation-test-generator/cache/rest-api.yaml \
+            --suite-dir qa/c8-orchestration-cluster-e2e-test-suite \
             > triage-report.json
 
           echo "---- triage-report.json ----"

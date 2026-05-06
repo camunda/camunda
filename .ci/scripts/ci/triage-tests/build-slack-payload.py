@@ -76,7 +76,7 @@ def section(text):
 
 
 payload = {
-    "channel": "c8-orchestration-cluster-e2e-test-results",
+    "channel": "prj-qa-sandbox",
     "text": f"C8 Orchestration Cluster Triage Report — {today}",
     "blocks": [
         {"type": "header", "text": {"type": "plain_text",
