@@ -149,15 +149,39 @@ public class CopilotConversationManager {
   }
 
   private String buildInstanceContext(Map<String, Object> context) {
+    final var parts = new ArrayList<String>();
+
     final Object instanceId = context.get("processInstanceId");
-    if (instanceId == null) {
-      return null;
+    if (instanceId != null) {
+      parts.add(
+          "The user is currently viewing process instance "
+              + instanceId
+              + ". When they refer to 'this instance', 'this process', or use deictic pronouns, "
+              + "they mean this instance. Default to answering in that context unless they explicitly "
+              + "ask about something else.");
     }
-    return "The user is currently viewing process instance "
-        + instanceId
-        + ". When they refer to 'this instance', 'this process', or use deictic pronouns, "
-        + "they mean this instance. Default to answering in that context unless they explicitly "
-        + "ask about something else.";
+
+    if (context.get("incident") instanceof Map<?, ?> incident) {
+      final Object incidentKey = incident.get("incidentKey");
+      final Object errorType = incident.get("errorType");
+      final Object errorMessage = incident.get("errorMessage");
+      final Object elementName = incident.get("elementName");
+      parts.add(
+          "The user is asking about incident "
+              + incidentKey
+              + " (errorType="
+              + errorType
+              + ") on element '"
+              + elementName
+              + "': \""
+              + errorMessage
+              + "\". Explain in plain language what this error means and why it commonly happens, "
+              + "then give concrete recommended steps to resolve it. If the user asks a follow-up "
+              + "that needs more context, use the available tools to fetch additional details about "
+              + "the instance or other incidents.");
+    }
+
+    return parts.isEmpty() ? null : String.join("\n\n", parts);
   }
 
   private ChatResponse streamOnce(ConversationSession session, Map<String, Object> context)

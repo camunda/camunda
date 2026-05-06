@@ -6,12 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {CopilotChat, CopilotSidecar} from '@camunda/copilot-chat'
+import {CopilotChat, CopilotSidecar, openSidecar} from '@camunda/copilot-chat'
+import {useEffect} from 'react'
 import {useLocation} from 'react-router-dom'
 import {useCopilotAdapter} from './useCopilotAdapter'
 import {useCurrentInstanceContext} from './useCurrentInstanceContext'
 import {useInstanceSummary} from './useInstanceSummary'
 import {getSuggestionsForRoute} from './startingPrompts'
+import {setExplainIncidentHandler} from './copilotTriggers'
 
 const INSTANCE_DESCRIPTION =
   'Ask questions about this process instance — understand incidents, trace execution history, and get resolution guidance.'
@@ -29,6 +31,20 @@ const Copilot: React.FC = () => {
   })
   const emptyStateDescription =
     processInstanceId !== null ? INSTANCE_DESCRIPTION : GLOBAL_DESCRIPTION
+
+  useEffect(() => {
+    setExplainIncidentHandler((incident) => {
+      openSidecar()
+      const text = incident.errorMessage
+        ? `Explain this incident: '${incident.errorMessage}' on '${incident.elementName}'`
+        : `Explain this incident on '${incident.elementName}' (errorType: ${incident.errorType})`
+      sendMessage(text, {
+        ...(processInstanceId !== null ? {processInstanceId} : {}),
+        incident,
+      })
+    })
+    return () => setExplainIncidentHandler(null)
+  }, [sendMessage, processInstanceId])
 
   return (
     <CopilotSidecar

@@ -31,6 +31,7 @@ import {
 } from 'modules/utils/incidents';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {ExplainIncidentButton} from './ExplainIncidentButton';
 
 type DecisionInstanceLookup = Record<
   string,
@@ -165,6 +166,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                       More
                     </Button>
                   )}
+                  <ExplainIncidentButton incident={incident} />
                 </FlexContainer>
               </ExpandedField>
             </ExpandedContent>,

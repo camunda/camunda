@@ -117,6 +117,10 @@ type Events =
       eventName: 'incident-filters-cleared';
     }
   | {
+      eventName: 'incident-explain-clicked';
+      errorType: string;
+    }
+  | {
       eventName: 'metadata-popover-opened';
     }
   | {
