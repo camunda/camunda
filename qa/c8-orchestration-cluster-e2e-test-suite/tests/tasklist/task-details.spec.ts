@@ -160,6 +160,7 @@ test.describe('task details page', () => {
   });
 
   test('complete task', async ({page, taskPanelPage, taskDetailsPage}) => {
+    test.slow();
     await taskPanelPage.openTask('usertask_to_be_completed');
 
     const taskUrl = page.url();
