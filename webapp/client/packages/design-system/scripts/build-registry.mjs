@@ -111,9 +111,11 @@ function extractDependencies(source) {
 async function buildItem(component, flavor) {
   const dir = join(COMPONENTS_DIR, component);
   const sourcePath = join(dir, `${component}.${flavor}.tsx`);
-  const source = await readFile(sourcePath, 'utf8');
+  const source = await readOptional(sourcePath);
+  if (source === null) return null;
   const docsMdx = await readOptional(join(dir, `${component}.docs.mdx`));
-  const docs = docsMdx ? stripMdxPreamble(docsMdx) : null;
+  if (docsMdx === null) return null;
+  const docs = stripMdxPreamble(docsMdx);
   const migrationMdx = await readOptional(
     join(dir, `${component}.migration.mdx`),
   );
@@ -148,9 +150,9 @@ async function buildItem(component, flavor) {
 }
 
 async function buildRegistry(flavor, components) {
-  const items = await Promise.all(
-    components.map((c) => buildItem(c, flavor)),
-  );
+  const items = (
+    await Promise.all(components.map((c) => buildItem(c, flavor)))
+  ).filter(Boolean);
   const flavorOut = join(OUTPUT_DIR, flavor);
   await mkdir(join(flavorOut, 'r'), {recursive: true});
   await Promise.all(
