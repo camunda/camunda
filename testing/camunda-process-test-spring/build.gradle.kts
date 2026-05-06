@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     implementation(project(":camunda-process-test-java"))
+    annotationProcessor(libs.org.springframework.boot.spring.boot.configuration.processor)
     implementation(project(":camunda-process-test-json-test-cases"))
     implementation(project(":camunda-process-test-langchain4j"))
     implementation(project(":camunda-spring-boot-starter"))
