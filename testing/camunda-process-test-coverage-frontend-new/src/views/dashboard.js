@@ -82,7 +82,7 @@ export function renderDashboard(data) {
         <table class="table table-hover align-middle">
           <thead><tr>
             <th>Suite</th>
-            <th style="width:80px">Test Cases</th>
+            <th style="width:120px">Test Cases</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
           </tr></thead>
