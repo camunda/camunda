@@ -1861,6 +1861,24 @@ public final class TestHelper {
   }
 
   /**
+   * Waits for a form to be indexed in Elasticsearch/OpenSearch after deployment.
+   *
+   * @param camundaClient CamundaClient
+   * @param formKey the key of the form to retrieve
+   */
+  public static void waitForFormToBeIndexed(final CamundaClient camundaClient, final long formKey) {
+    Awaitility.await("should index form")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var form = camundaClient.newFormGetRequest(formKey).execute();
+              assertThat(form).isNotNull();
+              assertThat(form.getFormKey()).isEqualTo(String.valueOf(formKey));
+            });
+  }
+
+  /**
    * Waits for all provided CamundaFutures to complete. This method executes all futures in parallel
    * and blocks until all have completed.
    *

@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.FormResult;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.FormServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
