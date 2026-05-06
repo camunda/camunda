@@ -446,6 +446,17 @@ class LiquibaseSchemaManagerTest {
     assertThat(LiquibaseSchemaManager.toStableVersion("8.10.0")).contains("8.10.0");
   }
 
+  @Test
+  void shouldAbortStartupWhenVersionCheckIsIndeterminate() {
+    // given: stored schema version is not a valid semantic version → Indeterminate result
+    final var schemaManager = versionCheckManager("not-a-semver", "8.10.0");
+
+    // when / then - Indeterminate must abort startup (not silently succeed)
+    assertThatThrownBy(schemaManager::checkSchemaVersionCompatibility)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Cannot determine version compatibility");
+  }
+
   // ---- helpers ----
 
   /**

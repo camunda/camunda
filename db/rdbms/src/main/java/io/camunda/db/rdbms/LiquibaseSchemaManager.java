@@ -11,7 +11,9 @@ import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -204,9 +206,11 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
    *             #INFERRED_PRE_VERSIONING_SCHEMA_VERSION} (an existing 8.9.x database).
    *         <li>Otherwise → fresh database; skip the check entirely.
    *       </ul>
-   *   <li>Validates the transition using {@link VersionCompatibilityCheck}. Any {@link
-   *       Incompatible} result causes startup to fail with a {@link
-   *       RdbmsSchemaVersionIncompatibleException}.
+   *   <li>Validates the transition using {@link VersionCompatibilityCheck}. Only a {@link
+   *       Compatible} result allows startup to continue. An {@link Incompatible} result throws a
+   *       {@link RdbmsSchemaVersionIncompatibleException}. An {@link Indeterminate} result (e.g.
+   *       the stored schema version is not a valid semantic version) aborts startup with an {@link
+   *       IllegalStateException}.
    *   <li>Any unexpected error (e.g. a DB connection failure) causes startup to fail with an {@link
    *       IllegalStateException}.
    * </ol>
@@ -237,7 +241,13 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
 
       final var result =
           VersionCompatibilityCheck.check(currentSchemaVersion, stableAppVersion.get());
-      if (result instanceof Incompatible) {
+      if (result instanceof Compatible) {
+        LOG.debug(
+            "[RDBMS Schema] Version check passed: schema={}, app={}, result={}",
+            currentSchemaVersion,
+            stableAppVersion.get(),
+            result.getClass().getSimpleName());
+      } else if (result instanceof Incompatible) {
         LOG.error(
             "[RDBMS Schema] Illegal upgrade path: schema={}, app={}. "
                 + "Upgrade sequentially ({} → next minor). Skipping minors is not supported.",
@@ -246,14 +256,20 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
             currentSchemaVersion);
         throw new RdbmsSchemaVersionIncompatibleException(
             currentSchemaVersion, stableAppVersion.get());
+      } else if (result instanceof Indeterminate) {
+        LOG.error(
+            "[RDBMS Schema] Cannot determine version compatibility: schema={}, app={}. "
+                + "The stored schema version may be invalid. Startup aborted.",
+            currentSchemaVersion,
+            stableAppVersion.get());
+        throw new IllegalStateException(
+            "[RDBMS Schema] Cannot determine version compatibility: schema="
+                + currentSchemaVersion
+                + ", app="
+                + stableAppVersion.get()
+                + ". The stored schema version may be invalid. Startup aborted.");
       }
-
-      LOG.debug(
-          "[RDBMS Schema] Version check passed: schema={}, app={}, result={}",
-          currentSchemaVersion,
-          stableAppVersion.get(),
-          result.getClass().getSimpleName());
-    } catch (final RdbmsSchemaVersionIncompatibleException e) {
+    } catch (final RdbmsSchemaVersionIncompatibleException | IllegalStateException e) {
       throw e;
     } catch (final Exception e) {
       LOG.error("[RDBMS Schema] Failed to determine current schema version. Startup aborted.", e);
