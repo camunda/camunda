@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.metrics.VariableStateMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
@@ -54,6 +55,7 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.metrics.variable.VariableStateMetricsScheduler;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
@@ -411,6 +413,16 @@ public final class EngineProcessors {
         writers,
         keyGenerator,
         clock);
+
+    if (config.isVariableStateMetricsEnabled()) {
+      final var variableStateMetrics =
+          new VariableStateMetrics(typedRecordProcessorContext.getMeterRegistry());
+      typedRecordProcessors.withListener(
+          new VariableStateMetricsScheduler(
+              config.getVariableStateMetricsInterval(),
+              processingState.getVariableState(),
+              variableStateMetrics));
+    }
 
     return typedRecordProcessors;
   }

@@ -65,6 +65,21 @@ public interface VariableState {
    */
   Optional<VariableDocumentState> findVariableDocumentState(long scopeKey);
 
+  /**
+   * Iterates all entries in the {@code VARIABLES} column family and returns the sum of the
+   * serialized key length and serialized value length over all entries.
+   *
+   * <p>This is intended to provide an estimate of the live bytes occupied by variables in the
+   * partition's RocksDB state. It is not stored in state and must be invoked from the actor thread
+   * that owns the partition's RocksDB instance.
+   *
+   * <p>This is an O(n) full scan of the VARIABLES column family and should only be invoked on a
+   * slow cadence (not on every metric scrape).
+   *
+   * @return the total serialized byte size of all variables (keys and values)
+   */
+  long calculateVariableStateSize();
+
   /** Data wrapper for a variable. */
   record Variable(long key, long scopeKey, DirectBuffer name, DirectBuffer value) {}
 }

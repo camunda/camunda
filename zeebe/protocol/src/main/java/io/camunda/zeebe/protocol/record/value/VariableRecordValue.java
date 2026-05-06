@@ -41,6 +41,18 @@ public interface VariableRecordValue
   String getValue();
 
   /**
+   * Returns the size of the variable value in bytes (or characters, depending on the
+   * implementation). The default implementation returns the length of the JSON string returned by
+   * {@link #getValue()} as a safe fallback. Implementations backed by msgpack should override this
+   * to return the raw msgpack byte count for cheaper and more accurate measurement.
+   *
+   * @return the size of the variable value, used for size-based metrics
+   */
+  default int getValueLength() {
+    return getValue().length();
+  }
+
+  /**
    * @return the key of the scope the variable belongs to.
    */
   long getScopeKey();

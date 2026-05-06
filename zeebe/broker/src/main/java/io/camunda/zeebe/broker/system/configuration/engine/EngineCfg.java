@@ -20,6 +20,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private BatchOperationCfg batchOperations = new BatchOperationCfg();
   private UsageMetricsCfg usageMetrics = new UsageMetricsCfg();
   private JobMetricsCfg jobMetrics = new JobMetricsCfg();
+  private VariableStateMetricsCfg variableStateMetrics = new VariableStateMetricsCfg();
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
@@ -36,6 +37,7 @@ public final class EngineCfg implements ConfigurationEntry {
     validators.init(globalConfig, brokerBase);
     distribution.init(globalConfig, brokerBase);
     usageMetrics.init(globalConfig, brokerBase);
+    variableStateMetrics.init(globalConfig, brokerBase);
     globalListeners.init(globalConfig, brokerBase);
     expression.init(globalConfig, brokerBase);
     processInstanceCreation.init(globalConfig, brokerBase);
@@ -121,6 +123,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.jobMetrics = jobMetrics;
   }
 
+  public VariableStateMetricsCfg getVariableStateMetrics() {
+    return variableStateMetrics;
+  }
+
+  public void setVariableStateMetrics(final VariableStateMetricsCfg variableStateMetrics) {
+    this.variableStateMetrics = variableStateMetrics;
+  }
+
   public ExpressionCfg getExpression() {
     return expression;
   }
@@ -156,6 +166,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + batchOperations
         + ", usageMetrics="
         + usageMetrics
+        + ", variableStateMetrics="
+        + variableStateMetrics
         + ", distribution="
         + distribution
         + ", maxProcessDepth="
@@ -192,6 +204,8 @@ public final class EngineCfg implements ConfigurationEntry {
         .setBatchOperationQueryRetryMaxDelay(batchOperations.getQueryRetryMaxDelay())
         .setBatchOperationQueryRetryBackoffFactor(batchOperations.getQueryRetryBackoffFactor())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
+        .setVariableStateMetricsInterval(variableStateMetrics.getInterval())
+        .setVariableStateMetricsEnabled(variableStateMetrics.isEnabled())
         .setJobMetricsExportInterval(jobMetrics.getExportInterval())
         .setJobMetricsExportEnabled(jobMetrics.isEnabled())
         .setJobMetricsMaxWorkerNameLength(jobMetrics.getMaxWorkerNameLength())

@@ -18,9 +18,11 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -47,6 +49,7 @@ public class MetricsExporter implements Exporter {
   public static final Duration TIME_TO_LIVE = Duration.ofSeconds(60);
 
   private ExecutionLatencyMetrics executionLatencyMetrics;
+  private VariableMetrics variableMetrics;
   private final TtlKeyCache processInstanceCache;
   private final TtlKeyCache jobCache;
   private InstantSource clock;
@@ -67,11 +70,16 @@ public class MetricsExporter implements Exporter {
   public void configure(final Context context) throws Exception {
     final MeterRegistry meterRegistry = context.getMeterRegistry();
     executionLatencyMetrics = new ExecutionLatencyMetrics(meterRegistry);
+    variableMetrics = new VariableMetrics(meterRegistry);
     clock = context.clock();
     context.setFilter(
         new RecordFilter() {
           private static final Set<ValueType> ACCEPTED_VALUE_TYPES =
-              Set.of(ValueType.JOB, ValueType.JOB_BATCH, ValueType.PROCESS_INSTANCE);
+              Set.of(
+                  ValueType.JOB,
+                  ValueType.JOB_BATCH,
+                  ValueType.PROCESS_INSTANCE,
+                  ValueType.VARIABLE);
 
           @Override
           public boolean acceptType(final RecordType recordType) {
@@ -109,9 +117,20 @@ public class MetricsExporter implements Exporter {
       handleJobBatchRecord(record);
     } else if (currentValueType == ValueType.PROCESS_INSTANCE) {
       handleProcessInstanceRecord(record, recordKey);
+    } else if (currentValueType == ValueType.VARIABLE) {
+      handleVariableRecord(record);
     }
 
     controller.updateLastExportedRecordPosition(record.getPosition());
+  }
+
+  private void handleVariableRecord(final Record<?> record) {
+    if (record.getIntent() != VariableIntent.CREATED) {
+      return;
+    }
+    final var value = (VariableRecordValue) record.getValue();
+    variableMetrics.recordVariableCreated(
+        value.getBpmnProcessId(), String.valueOf(record.getPartitionId()), value.getValueLength());
   }
 
   private void handleProcessInstanceRecord(final Record<?> record, final long recordKey) {

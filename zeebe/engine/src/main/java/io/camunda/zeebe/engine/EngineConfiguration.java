@@ -34,6 +34,8 @@ public final class EngineConfiguration {
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
   public static final Duration DEFAULT_USAGE_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
   public static final Duration DEFAULT_JOB_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
+  public static final Duration DEFAULT_VARIABLE_STATE_METRICS_INTERVAL = Duration.ofSeconds(60);
+  public static final boolean DEFAULT_VARIABLE_STATE_METRICS_ENABLED = true;
   public static final int DEFAULT_JOB_METRICS_MAX_WORKER_NAME_LENGTH = 100;
   public static final int DEFAULT_MAX_ID_FIELD_LENGTH = 32 * 1024;
   public static final int DEFAULT_MAX_NAME_FIELD_LENGTH = 32 * 1024;
@@ -97,6 +99,8 @@ public final class EngineConfiguration {
   private int batchOperationQueryRetryBackoffFactor =
       DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
+  private Duration variableStateMetricsInterval = DEFAULT_VARIABLE_STATE_METRICS_INTERVAL;
+  private boolean variableStateMetricsEnabled = DEFAULT_VARIABLE_STATE_METRICS_ENABLED;
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
   private Duration commandRedistributionMaxBackoff =
@@ -325,6 +329,26 @@ public final class EngineConfiguration {
   public EngineConfiguration setUsageMetricsExportInterval(
       final Duration usageMetricsExportInterval) {
     this.usageMetricsExportInterval = usageMetricsExportInterval;
+    return this;
+  }
+
+  public Duration getVariableStateMetricsInterval() {
+    return variableStateMetricsInterval;
+  }
+
+  public EngineConfiguration setVariableStateMetricsInterval(
+      final Duration variableStateMetricsInterval) {
+    this.variableStateMetricsInterval = variableStateMetricsInterval;
+    return this;
+  }
+
+  public boolean isVariableStateMetricsEnabled() {
+    return variableStateMetricsEnabled;
+  }
+
+  public EngineConfiguration setVariableStateMetricsEnabled(
+      final boolean variableStateMetricsEnabled) {
+    this.variableStateMetricsEnabled = variableStateMetricsEnabled;
     return this;
   }
 
