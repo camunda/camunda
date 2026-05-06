@@ -44,7 +44,7 @@ This document covers **only the identity (authN/authZ) sub-slice** of that effor
   - `/v2/physical-tenants/{physicalTenantId}/**` per-PT bearer-token filter chain.
   - `/v2/cluster/**` cluster-admin filter chain (matcher only — specific controllers like topology, backup, restore are owned by **their respective slices**, not this one). The cluster-admin chain authenticates and authorises any controller mounted under that prefix uniformly.
 - **gRPC parity:** A new gRPC interceptor at the Zeebe gateway reads the request header `Camunda-Physical-Tenant` (gRPC metadata) and resolves the PT for the call. Reuses `PhysicalTenantRegistry` and the per-PT JWT converter — single source of truth for PT auth across REST and gRPC.
-- **Browser login/logout:** tenant-aware OIDC login flow per the §6.4 decision (Option A or Option B). **Mandatory in 8.10** — Option C ("defer login") is **off the table** per the requirements clarification.
+- **Browser login/logout:** tenant-aware OIDC login flow per the §6.4 decision (Option A or Option B). **Mandatory in 8.10** per the requirements clarification.
 - **Cluster-level authentication:** OIDC claim-based + BASIC fallback for cluster-admin break-glass.
 - **Per-PT seeding into per-PT primary + secondary storage** at startup (uses Strong Isolation's per-PT storage beans).
 
@@ -865,9 +865,9 @@ This rule is enforceable by `ResourceAccessProvider` regardless of which slice s
 
 ### 6.4 Login and logout — 🚨 DECISION REQUIRED 🚨 (CTA)
 
-> **Status: open.** Login/logout is **mandatory in 8.10** per the requirements clarification — Option C ("defer login") has been **removed**. The remaining decision is **A vs B**.
+> **Status: open.** Login/logout is **mandatory in 8.10** per the requirements clarification. The decision is **A vs B**.
 >
-> **Action required (CTA):** Identity team + Spring Security reviewers please leave a `+1` on **A** or **B** in the PR thread, or push back with a fourth alternative. Decision deadline: **before M2c starts** (see §14).
+> **Action required (CTA):** Identity team + Spring Security reviewers please leave a `+1` on **A** or **B** in the PR thread, or push back with a third alternative. Decision deadline: **before M2c starts** (see §14).
 >
 > The "no cross-tenant authorization" rule (§6.3) constrains both options the same way — neither A nor B grants cross-PT access via the cluster-admin role.
 
@@ -877,7 +877,7 @@ PR [camunda/camunda#51959](https://github.com/camunda/camunda/pull/51959) (Ana V
 2. **Bearer-token bypass on webapp paths.** The existing `oidcWebappSecurity` chain enables both `oauth2Login` AND `oauth2ResourceServer.jwt(...)` (`WebSecurityConfig.java:1140-1147`). The PoC's `TenantBindingEnforcementFilter` explicitly passes `JwtAuthenticationToken` through. Anyone holding a valid JWT can hit `/{anyPt}/operate/...` unbound to any PT — the filter's "API chain handles bearer" assumption is wrong because the webapp chain *also* accepts Bearer.
 3. **Multi-tab race not actually defended.** The PoC's success-handler check (`registry.getIdpsForTenant(tenantId).contains(idpId)`) is an *authorization* check (is this IdP allowed on this PT?), not a *race detector*. Two tabs picking PTs whose IdP sets overlap (e.g., one shared Keycloak across all PTs — the common enterprise case) end up with the user authenticated to one PT but session-bound to the other.
 
-These are **structural to the choice of HTTP session as the binding store** — fixing one without fixing the foundation just shifts the attack surface. The team converged on two alternatives that resolve all three defects, plus the option to defer entirely.
+These are **structural to the choice of HTTP session as the binding store** — fixing one without fixing the foundation just shifts the attack surface. The team converged on two alternatives that resolve all three defects.
 
 #### Option A — Refined PoC: bind PT in OIDC `state`, not in HTTP session
 
@@ -917,10 +917,6 @@ These are **structural to the choice of HTTP session as the binding store** — 
 **Effort:** ~10-14 engineering days. Bigger upfront delta but kills more downstream work (no enforcement filter, no per-PT login chain, no session-binding handler). Eliminates the picker entirely if we're willing to ship "select PT in webapp navbar after login" as the UX.
 
 **Compatibility with API surface:** ideal — converges API and webapp authentication/authorization on the same token-claim mechanism. The per-PT JWT converter (§4.6) becomes the single source of authority mapping for both surfaces.
-
-#### ~~Option C — Defer (REMOVED per requirements clarification)~~
-
-> Option C ("defer login/logout to a follow-up slice") was removed when login/logout was confirmed mandatory for 8.10. Reference only — not selectable.
 
 #### Comparison summary
 
@@ -1141,7 +1137,7 @@ return RequestExecutor.executeServiceMethod(
 
 > Estimates are rough engineering days assuming one engineer per stream, with the existing test infrastructure available.
 >
-> **The login/logout option (A or B) chosen in §6.4 changes the total** — the milestone set forks at M2c. Option C ("defer login") was removed when login/logout was confirmed mandatory for 8.10. **gRPC parity is mandatory** in M2-grpc. **`/v2/cluster/topology` and `/v2/cluster/backup` controllers are not in scope** (M3 was removed) — this slice ships the cluster-admin filter-chain *matcher* and the no-cross-tenant rule, downstream slices ship the controllers.
+> **The login/logout option (A or B) chosen in §6.4 changes the total** — the milestone set forks at M2c. **gRPC parity is mandatory** in M2-grpc. **`/v2/cluster/topology` and `/v2/cluster/backup` controllers are not in scope** (M3 was removed) — this slice ships the cluster-admin filter-chain *matcher* and the no-cross-tenant rule, downstream slices ship the controllers.
 >
 > | Option | API auth surface (M0–M2b) | gRPC parity (M2-grpc) | Login surface (M2c) | Tests + docs (M4–M5) | **Total (eng-days)** |
 > |---|---|---|---|---|---|
@@ -1310,7 +1306,7 @@ flowchart LR
     M2cB["M2c-B — Login (claim RBAC)<br/>~10-14d (Option B)"]:::optB
     M4["M4 — Integration tests<br/>~4-5d (option-dependent)"]:::par
     M5["M5 — Documentation<br/>~2-3d (option-dependent)"]:::par
-    Decision{"§6.4 decision<br/>A or B<br/>(C removed)"}
+    Decision{"§6.4 decision<br/>A or B"}
     Release([Release])
 
     M0 --> M1
@@ -1407,7 +1403,7 @@ gantt
 | `JwtDecoder` strategy | One shared issuer-aware decoder; per-PT *converter* selecting per-PT `MembershipService`/`ResourceAccessProvider` | Keeps decoder cardinality at 1 regardless of PT count. |
 | "Skip everything else" | Scoped to authentication mechanisms only; CSRF/headers retained | Defense-in-depth not sacrificed. |
 | **gRPC parity** | **Mandatory in this slice** | Per requirements clarification — gRPC is no longer a follow-up. New `PhysicalTenantGrpcInterceptor` reuses `PhysicalTenantRegistry` and converter factory. M2-grpc, ~3 days. |
-| **Login/logout** | **Mandatory in this slice; pick A or B in §6.4** | Per requirements clarification — Option C ("defer") is removed. Decision still pending between **A** (refined PoC with `state` binding, ~5-7d) and **B** (claim-based RBAC, ~10-14d). |
+| **Login/logout** | **Mandatory in this slice; pick A or B in §6.4** | Per requirements clarification. Decision still pending between **A** (refined PoC with `state` binding, ~5-7d) and **B** (claim-based RBAC, ~10-14d). |
 | Logout | Tied to login decision | Cluster-uniform single-session logout via existing `CamundaOidcLogoutSuccessHandler` under both A and B. Per-PT logout cookie isolation excluded. |
 | Cluster-admin store | Claim-based + BASIC fallback, no persisted grant table | As specified in the issue. Audit/revocation flagged as known gap. |
 
