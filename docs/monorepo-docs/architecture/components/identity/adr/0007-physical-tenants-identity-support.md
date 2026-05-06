@@ -8,7 +8,8 @@ Proposed
 
 Camunda 8.9 multi-tenancy is logical: all tenants share one engine and one authorization scope, so a user's role in any logical tenant applies cluster-wide. **Physical Tenants (PT)** introduce a new boundary for the 8.10 release where each tenant is an isolated execution unit within a single Orchestration Cluster — separate data, independent backup/restore, no runtime interference. The umbrella epic is [camunda/product-hub#3430 — *Strong Tenant Isolation in Camunda 8 OC (Self-Managed)*](https://github.com/camunda/product-hub/issues/3430).
 
-This ADR covers the **identity (authN/authZ) slice** of that epic — the line item *"Per-Physical-Tenant authentication and authorization (incl. IDP)"* under *Scope – Milestone 1 → Security and observability*. The slice covers per-PT REST authentication and authorization, browser login/logout, and gRPC `Camunda-Physical-Tenant` header handling. Sibling slices — per-PT primary/secondary storage isolation (Strong Isolation), Connectors multi-PT, observability — are **not** delivered here. The cluster-admin filter-chain matcher this slice provides is the auth contract those downstream controllers consume.
+This ADR covers the **identity (authN/authZ) slice** of that epic — the line item *"Per-Physical-Tenant authentication and authorization (incl. IDP)"* under *Scope – Milestone 1 → Security and observability*. The slice covers per-PT REST authentication and authorization, browser login/logout, and gRPC `Camunda-Physical-Tenant` header handling.
+The cluster-admin filter-chain matcher this slice provides is the auth contract those downstream controllers consume.
 
 Per the epic body, **canonical naming** is fixed: API and config use `physicalTenantId` / `physical-tenants`; Hub UX surfaces this concept as **Environment**; the existing logical-tenant `tenantId` is unchanged. This ADR uses `physicalTenantId` and `physical-tenants` throughout.
 
@@ -94,8 +95,6 @@ Two new `SecurityFilterChain` beans land in `WebSecurityConfig`, ordered **befor
 | 10 | `physicalTenantApiSecurityFilterChain` | `/v2/physical-tenants/{physicalTenantId}/**` | per-PT authN/authZ |
 | 15 | `clusterAdminSecurityFilterChain` | `/v2/cluster/**` | claim-based cluster admin |
 | 20 | (existing legacy `API_PATHS`) | `/v2/**`, `/v1/**`, … | default-PT, unchanged |
-
-The PT chain disables `formLogin`, `oauth2Login`, `AdminUserCheckFilter`, and `WebComponentAuthorizationCheckFilter` — these belong to webapp / login concerns that are out of scope for the API surface. CSRF, security headers, and the request firewall **remain** active. The "skip everything else" instruction in the requirements is interpreted strictly as *skip global authentication mechanisms*, not *skip cross-cutting hardening*. Removing CSRF would defeat defense-in-depth on session-bearing webapp callers; removing the firewall would weaken request-shape validation. Both stay.
 
 The cluster chain runs alongside HTTP BASIC for break-glass access using `camunda.security.initialization.users` — no new identity store is introduced.
 
@@ -196,18 +195,10 @@ Once the team chooses, this section is rewritten to record the chosen design as 
 - **Configuration size grows with PT count.** With 50 PTs (the documented upper end), the YAML re-declares roles / groups / mapping rules / authorizations 50 times. There is no inheritance or templating. This is an accepted cost — a baseline-and-overrides mechanism would be a meaningful design effort and was excluded to keep the slice deliverable. Operators with many PTs are expected to manage YAML through Helm / templating tools or wait for the future Hub policy distribution capability.
 - **Cluster-admin has no revocation, no audit, and no rotation primitive in 8.10.** A fired employee retains cluster-admin access until the token expires; a typo in the configured claim value bricks ops. Operators are expected to monitor the token lifetime of their cluster-admin IdP and to keep the BASIC break-glass user on a rotated password. A minimal grant-on-first-use record is a documented follow-up.
 - **Reserved-ID list is a maintenance landmine.** Every future top-level path (`/v2/billing`, `/v2/console`, …) must be added to the reserved set, or a customer will eventually configure a colliding PT id and silently break. The list is a static constant in the registry and carries a unit test, but a build-time scanner over `@RequestMapping` annotations is a documented follow-up.
-- **Login flow remains cluster-uniform.** Webapp users land on the cluster-level login page that lists every IdP, not just the IdPs assigned to their target PT. Tenant-aware login is owned by the Webapps PT routing slice and is a customer-visible gap in 8.10.
-- **The "skip everything else" instruction was scoped narrowly.** CSRF, security headers, and the request firewall remain active on the PT chain. An interpretation that strips them would simplify the chain definition by ~10 lines but introduce a defense-in-depth regression that this ADR rejects.
-- **Storage model depends on Strong Isolation.** Per-PT primary + secondary storage is a hard prerequisite (per requirements clarification). Identity slice consumes per-PT `MembershipService` / `ResourceAccessProvider` beans from a registry-backed map; Strong Isolation provides those beans. If Strong Isolation slips, identity falls back to legacy single-storage mode (one synthetic `default` PT, 8.9-byte-identical behaviour).
-- **Two PT-related config trees may coexist short-term.** This slice owns `camunda.physical-tenants.{physicalTenantId}` for identity attributes. Sibling slices need to attach non-security per-PT properties (secondary storage, backup repository, broker client) and will likely choose a different top-level location — the placeholder javadoc in `TenantConnectConfigResolver` already references `camunda.physical-tenants` for that purpose. A future cross-slice agreement on a unified top-level tree (e.g. `camunda.physical-tenants` for non-security and a sibling `camunda.physical-tenants` for security, or a single tree with `security:` and `secondary-storage:` sub-blocks) is **not** in this ADR's scope. The shared concept across slices is the **set of configured PT ids**, and the registry abstracts that set.
 
 ### Out of scope for this ADR
 
-- Tenant-aware OIDC login picker, `sso-callback/{physicalTenantId}`, per-PT session cookie scoping (Webapps PT routing).
-- Per-PT `BrokerClient` and `TopologyServices` instances (Strong Isolation).
 - Migration tooling from 8.9 logical-tenant authorizations to 8.10 PT authorizations.
-- Persisted cluster-admin grant store, audit, dynamic PT/IdP management APIs, Hub policy distribution.
-- A `tenantAuthorizer.canRead(actor, physicalTenantId)` granularity inside `/v2/cluster/topology` and `/v2/cluster/backup` (cluster-admin currently sees all PTs by definition).
 - Multi-value `clusterAdmin.value` (`value: [...]`); single-value only in 8.10.
 
 ## References
