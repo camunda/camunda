@@ -9,13 +9,16 @@ package io.camunda.operate.webapp.copilot.tools;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.model.chat.request.json.JsonIntegerSchema;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.IncidentServices;
+import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,17 +39,20 @@ public class CopilotToolRegistry {
   private final ProcessInstanceServices processInstanceServices;
   private final IncidentServices incidentServices;
   private final ElementInstanceServices elementInstanceServices;
+  private final ProcessDefinitionServices processDefinitionServices;
   private final Map<String, Tool> tools = new LinkedHashMap<>();
 
   public CopilotToolRegistry(
       ObjectMapper objectMapper,
       ProcessInstanceServices processInstanceServices,
       IncidentServices incidentServices,
-      ElementInstanceServices elementInstanceServices) {
+      ElementInstanceServices elementInstanceServices,
+      ProcessDefinitionServices processDefinitionServices) {
     this.objectMapper = objectMapper;
     this.processInstanceServices = processInstanceServices;
     this.incidentServices = incidentServices;
     this.elementInstanceServices = elementInstanceServices;
+    this.processDefinitionServices = processDefinitionServices;
     register(listProcesses());
     register(countFailedInstances());
     register(getProcessInstance());
@@ -90,18 +96,34 @@ public class CopilotToolRegistry {
     return new Tool(
         ToolSpecification.builder()
             .name("list_processes")
-            .description(
-                "List process definitions deployed in the current Operate cluster. "
-                    + "Use this when the user asks what processes exist.")
-            .parameters(JsonObjectSchema.builder().build())
+            .description("List process definitions deployed in the current Operate cluster.")
+            .parameters(
+                JsonObjectSchema.builder()
+                    .addProperty(
+                        "limit",
+                        JsonIntegerSchema.builder()
+                            .description("Max number of definitions to return (default 20)")
+                            .build())
+                    .build())
             .build(),
-        // TODO: replace with ProcessDefinitionReader.search(...)
-        (args, auth) ->
-            Map.of(
-                "processes",
-                List.of(
-                    Map.of("id", "order-process", "name", "Order Process", "version", 3),
-                    Map.of("id", "shipping", "name", "Shipping", "version", 1))));
+        (args, auth) -> {
+          final int limit = parseIntOrDefault(args.get("limit"), 20);
+          final var page =
+              processDefinitionServices.search(
+                  ProcessDefinitionQuery.of(q -> q.page(p -> p.size(limit))), auth);
+          final var items =
+              page.items().stream()
+                  .map(
+                      def ->
+                          Map.of(
+                              "processDefinitionKey", def.processDefinitionKey(),
+                              "processDefinitionId", def.processDefinitionId(),
+                              "name", def.name() != null ? def.name() : "",
+                              "version", def.version(),
+                              "tenantId", def.tenantId() != null ? def.tenantId() : ""))
+                  .toList();
+          return Map.of("processes", items, "total", page.total());
+        });
   }
 
   private Tool countFailedInstances() {
@@ -278,6 +300,16 @@ public class CopilotToolRegistry {
       return Long.parseLong(String.valueOf(raw));
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException(name + " must be numeric, got: " + raw);
+    }
+  }
+
+  private static int parseIntOrDefault(Object raw, int fallback) {
+    if (raw == null) return fallback;
+    if (raw instanceof Number n) return n.intValue();
+    try {
+      return Integer.parseInt(String.valueOf(raw));
+    } catch (NumberFormatException e) {
+      return fallback;
     }
   }
 
