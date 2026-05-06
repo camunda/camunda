@@ -20,12 +20,14 @@ import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.BulkRequest.Builder;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import co.elastic.clients.elasticsearch.core.bulk.OperationType;
+import co.elastic.clients.elasticsearch.core.bulk.UpdateAction;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.util.BinaryData;
 import io.camunda.exporter.entities.TestExporterEntity;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -34,6 +36,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,17 +51,19 @@ class ElasticsearchBatchRequestTest {
   private static final String INDEX_WITH_HANDLER = "indexWithHandler";
   private ElasticsearchBatchRequest batchRequest;
   private ElasticsearchClient elasticsearchClient;
-  private Builder requestBuilder;
   private ElasticsearchScriptBuilder scriptBuilder;
+  private JacksonJsonpMapper jsonpMapper;
 
   @BeforeEach
   void setUp() throws IOException {
     elasticsearchClient = mock(ElasticsearchClient.class);
-    requestBuilder = new Builder();
+    jsonpMapper = new JacksonJsonpMapper();
+    when(elasticsearchClient._jsonpMapper()).thenReturn(jsonpMapper);
     scriptBuilder = mock(ElasticsearchScriptBuilder.class);
-    batchRequest =
-        new ElasticsearchBatchRequest(elasticsearchClient, requestBuilder, scriptBuilder);
+    batchRequest = new ElasticsearchBatchRequest(elasticsearchClient, scriptBuilder);
     final BulkResponse bulkResponse = mock(BulkResponse.class);
+    when(bulkResponse.items()).thenReturn(List.of());
+    when(bulkResponse.errors()).thenReturn(false);
     when(elasticsearchClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
   }
 
@@ -82,10 +87,10 @@ class ElasticsearchBatchRequestTest {
 
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isIndex()).isTrue();
-    final IndexOperation<TestExporterEntity> index = bulkOperation.index();
+    final IndexOperation<?> index = bulkOperation.index();
     assertThat(index.index()).isEqualTo(INDEX);
     assertThat(index.id()).isEqualTo(ID);
-    assertThat(index.document()).isEqualTo(entity);
+    assertDocumentEquals(index.document(), entity);
   }
 
   @Test
@@ -110,11 +115,11 @@ class ElasticsearchBatchRequestTest {
     final var bulkOperation = operations.getFirst();
     assertThat(bulkOperation.isIndex()).isTrue();
 
-    final IndexOperation<TestExporterEntity> index = bulkOperation.index();
+    final IndexOperation<?> index = bulkOperation.index();
     assertThat(index.index()).isEqualTo(INDEX);
     assertThat(index.id()).isEqualTo(ID);
     assertThat(index.routing()).isEqualTo(routing);
-    assertThat(index.document()).isEqualTo(entity);
+    assertDocumentEquals(index.document(), entity);
   }
 
   @Test
@@ -141,8 +146,7 @@ class ElasticsearchBatchRequestTest {
     final var update = bulkOperation.update();
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.action().doc()).isEqualTo(updateFields);
-    assertThat(update.action().upsert()).isEqualTo(entity);
+    assertActionEquals(update.binaryAction(), a -> a.doc(updateFields).upsert(entity));
   }
 
   @Test
@@ -171,8 +175,7 @@ class ElasticsearchBatchRequestTest {
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
     assertThat(update.routing()).isEqualTo(routing);
-    assertThat(update.action().doc()).isEqualTo(updateFields);
-    assertThat(update.action().upsert()).isEqualTo(entity);
+    assertActionEquals(update.binaryAction(), a -> a.doc(updateFields).upsert(entity));
   }
 
   @Test
@@ -182,7 +185,7 @@ class ElasticsearchBatchRequestTest {
     final String script = "script";
     final Map<String, Object> params = Map.of("id", "id2");
 
-    final Script scriptWithParameters = mock(Script.class);
+    final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
     // When
@@ -203,8 +206,7 @@ class ElasticsearchBatchRequestTest {
     final var update = bulkOperation.update();
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.action().script()).isEqualTo(scriptWithParameters);
-    assertThat(update.action().upsert()).isEqualTo(entity);
+    assertActionEquals(update.binaryAction(), a -> a.script(scriptWithParameters).upsert(entity));
   }
 
   @Test
@@ -215,7 +217,7 @@ class ElasticsearchBatchRequestTest {
     final Map<String, Object> params = Map.of("id", "id2");
     final String routing = "routing";
 
-    final Script scriptWithParameters = mock(Script.class);
+    final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
     // When
@@ -237,8 +239,7 @@ class ElasticsearchBatchRequestTest {
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
     assertThat(update.routing()).isEqualTo(routing);
-    assertThat(update.action().script()).isEqualTo(scriptWithParameters);
-    assertThat(update.action().upsert()).isEqualTo(entity);
+    assertActionEquals(update.binaryAction(), a -> a.script(scriptWithParameters).upsert(entity));
   }
 
   @Test
@@ -263,7 +264,7 @@ class ElasticsearchBatchRequestTest {
     final var update = bulkOperation.update();
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.action().doc()).isEqualTo(updateFields);
+    assertActionEquals(update.binaryAction(), a -> a.doc(updateFields));
   }
 
   @Test
@@ -289,7 +290,7 @@ class ElasticsearchBatchRequestTest {
     final var update = bulkOperation.update();
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.action().doc()).isEqualTo(entity);
+    assertActionEquals(update.binaryAction(), a -> a.doc(entity));
   }
 
   @Test
@@ -298,7 +299,7 @@ class ElasticsearchBatchRequestTest {
     final String script = "script";
     final Map<String, Object> params = Map.of("id", "id2");
 
-    final Script scriptWithParameters = mock(Script.class);
+    final Script scriptWithParameters = realScript("ctx._source.id = params.id");
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
     // When
@@ -319,7 +320,7 @@ class ElasticsearchBatchRequestTest {
     final var update = bulkOperation.update();
     assertThat(update.index()).isEqualTo(INDEX);
     assertThat(update.id()).isEqualTo(ID);
-    assertThat(update.action().script()).isEqualTo(scriptWithParameters);
+    assertActionEquals(update.binaryAction(), a -> a.script(scriptWithParameters));
   }
 
   @Test
@@ -386,6 +387,26 @@ class ElasticsearchBatchRequestTest {
     // verify that there are two operations in the bulk request
     final List<BulkOperation> operations = captor.getValue().operations();
     assertThat(operations).hasSize(2);
+  }
+
+  @Test
+  void shouldSplitIntoMultipleBulksWhenAccumulatedSizeExceedsCap()
+      throws PersistenceException, IOException {
+    // given - a tiny cap that any 2 operations will exceed, forcing one bulk per op
+    final BatchRequest tinyCapRequest =
+        new ElasticsearchBatchRequest(elasticsearchClient, scriptBuilder).withMaxBytes(1L);
+    final TestExporterEntity entity = new TestExporterEntity().setId(ID);
+
+    // when
+    tinyCapRequest.add(INDEX, entity);
+    tinyCapRequest.add(INDEX, entity);
+    tinyCapRequest.add(INDEX, entity);
+    tinyCapRequest.execute();
+
+    // then - three separate bulk calls, one operation each
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient, org.mockito.Mockito.times(3)).bulk(captor.capture());
+    assertThat(captor.getAllValues()).allSatisfy(req -> assertThat(req.operations()).hasSize(1));
   }
 
   @Test
@@ -479,5 +500,92 @@ class ElasticsearchBatchRequestTest {
     // Then
     verify(errorHandler)
         .accept(INDEX_WITH_HANDLER, new Error(message, item.error().type(), notFound));
+  }
+
+  private void assertDocumentEquals(final Object actualDocument, final Object expectedDocument) {
+    assertThat(actualDocument).isInstanceOf(BinaryData.class);
+    final byte[] actualBytes = readAllBytes((BinaryData) actualDocument);
+    final byte[] expectedBytes = readAllBytes(BinaryData.of(expectedDocument, jsonpMapper));
+    assertThat(actualBytes).isEqualTo(expectedBytes);
+  }
+
+  private void assertActionEquals(
+      final BinaryData actualAction,
+      final Consumer<UpdateAction.Builder<Object, Object>> expectedActionBuilder) {
+    assertThat(actualAction).as("update should carry pre-serialized binary action").isNotNull();
+    final UpdateAction<Object, Object> expected =
+        UpdateAction.of(
+            b -> {
+              expectedActionBuilder.accept(b);
+              return b;
+            });
+    final byte[] actualBytes = readAllBytes(actualAction);
+    final byte[] expectedBytes = readAllBytes(BinaryData.of(expected, jsonpMapper));
+    assertThat(actualBytes).isEqualTo(expectedBytes);
+  }
+
+  private static byte[] readAllBytes(final BinaryData data) {
+    try {
+      return data.asInputStream().readAllBytes();
+    } catch (final IOException e) {
+      throw new AssertionError("failed to read BinaryData", e);
+    }
+  }
+
+  private static Script realScript(final String source) {
+    return Script.of(s -> s.source(source));
+  }
+
+  @Test
+  void chunkByBytesShouldReturnEmptyForNoOps() {
+    assertThat(ElasticsearchBatchRequest.chunkByBytes(List.of(), 100L)).isEmpty();
+  }
+
+  @Test
+  void chunkByBytesShouldReturnSingleChunkWhenUnderLimit() {
+    final var ops =
+        List.of(
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 10L),
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 20L));
+    final var chunks = ElasticsearchBatchRequest.chunkByBytes(ops, 100L);
+    assertThat(chunks).hasSize(1);
+    assertThat(chunks.get(0)).hasSize(2);
+  }
+
+  @Test
+  void chunkByBytesShouldKeepSingleOversizedOpInItsOwnChunk() {
+    final var ops = List.of(new ElasticsearchBatchRequest.SizedOperation(noopOp(), 500L));
+    final var chunks = ElasticsearchBatchRequest.chunkByBytes(ops, 100L);
+    assertThat(chunks).hasSize(1);
+    assertThat(chunks.get(0)).hasSize(1);
+  }
+
+  @Test
+  void chunkByBytesShouldSplitWhenAdditionWouldExceedLimit() {
+    final var ops =
+        List.of(
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 60L),
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 60L),
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 60L));
+    final var chunks = ElasticsearchBatchRequest.chunkByBytes(ops, 100L);
+    assertThat(chunks).hasSize(3);
+    assertThat(chunks).allSatisfy(chunk -> assertThat(chunk).hasSize(1));
+  }
+
+  @Test
+  void chunkByBytesShouldFitExactlyOnBoundary() {
+    final var ops =
+        List.of(
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 50L),
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 50L),
+            new ElasticsearchBatchRequest.SizedOperation(noopOp(), 50L));
+    final var chunks = ElasticsearchBatchRequest.chunkByBytes(ops, 100L);
+    assertThat(chunks).hasSize(2);
+    assertThat(chunks.get(0)).hasSize(2);
+    assertThat(chunks.get(1)).hasSize(1);
+  }
+
+  private static BulkOperation noopOp() {
+    return BulkOperation.of(b -> b.delete(d -> d.index("idx").id("id")));
   }
 }
