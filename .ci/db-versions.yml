@@ -1,0 +1,23 @@
+# Database versions
+#
+# Single source of truth for all database versions tested in CI and deployed to SaaS.
+#
+# ── How to use this file in CI workflows ────────────────────────────────────────
+#   CI workflows read versions from this file via the reusable action:
+#     .github/actions/read-db-versions
+#
+# ── SaaS version ────────────────────────────────────────────────────────────────
+#   The `saas` field under elasticsearch identifies which version is deployed to
+#   SaaS environments. It must always reference one of the listed es8 versions via
+#   a YAML anchor so that the SaaS version cannot drift from what is tested in CI.
+# ────────────────────────────────────────────────────────────────────────────────
+
+elasticsearch:
+  es8:
+    - &saas "8.16.4"
+    - "8.18.8"
+  saas: *saas
+
+opensearch:
+  os2:
+    - "2.19.5"

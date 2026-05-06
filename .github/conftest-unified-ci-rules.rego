@@ -130,6 +130,7 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
 
         # not enforced on "special" jobs needed for control flow in Unified CI
         job_id != "detect-changes"
+        job_id != "generate-db-versions"
         job_id != "check-results"
         job_id != "test-summary"
         job_id != "get-concurrency-group-dynamically"
@@ -212,6 +213,7 @@ get_jobs_without_printmetadata(jobInput) = jobs_without_printmetadata {
 
         # not enforced on Unified CI jobs that are part of change detection control flow structure
         job_id != "detect-changes"
+        job_id != "generate-db-versions"
         job_id != "setup-tests"
         job_id != "check-results"
 
