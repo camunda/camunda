@@ -9,6 +9,10 @@ paths:
         - Cluster Variable
       summary: Create a global-scoped cluster variable
       description: Create a global-scoped cluster variable.
+      x-semantic-establishes:
+        kind: GlobalClusterVariable
+        identifiedBy:
+          - { in: body, name: name, semanticType: ClusterVariableName }
       requestBody:
         required: true
         content:
@@ -39,6 +43,15 @@ paths:
         - Cluster Variable
       summary: Create a tenant-scoped cluster variable
       description: Create a new cluster variable for the given tenant.
+      x-semantic-establishes:
+        kind: TenantClusterVariable
+        identifiedBy:
+          - { in: path, name: tenantId, semanticType: TenantId }
+          - { in: body, name: name,     semanticType: ClusterVariableName }
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -118,12 +131,16 @@ paths:
         - Cluster Variable
       summary: Get a global-scoped cluster variable
       description: Get a global-scoped cluster variable.
+      x-semantic-requires:
+        kind: GlobalClusterVariable
+        bind:
+          name: { from: path, name: name }
       parameters:
         - name: name
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       responses:
         '200':
@@ -156,12 +173,16 @@ paths:
       description: |
         Updates the value of an existing global cluster variable.
         The variable must exist, otherwise a 404 error is returned.
+      x-semantic-requires:
+        kind: GlobalClusterVariable
+        bind:
+          name: { from: path, name: name }
       parameters:
         - name: name
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       requestBody:
         required: true
@@ -198,12 +219,16 @@ paths:
         - Cluster Variable
       summary: Delete a global-scoped cluster variable
       description: Delete a global-scoped cluster variable.
+      x-semantic-requires:
+        kind: GlobalClusterVariable
+        bind:
+          name: { from: path, name: name }
       parameters:
         - name: name
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       responses:
         '204':
@@ -231,6 +256,11 @@ paths:
         - Cluster Variable
       summary: Get a tenant-scoped cluster variable
       description: Get a tenant-scoped cluster variable.
+      x-semantic-requires:
+        kind: TenantClusterVariable
+        bind:
+          tenantId: { from: path, name: tenantId }
+          name:     { from: path, name: name }
       parameters:
         - name: tenantId
           in: path
@@ -242,7 +272,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       responses:
         '200':
@@ -275,6 +305,11 @@ paths:
       description: |
         Updates the value of an existing tenant-scoped cluster variable.
         The variable must exist, otherwise a 404 error is returned.
+      x-semantic-requires:
+        kind: TenantClusterVariable
+        bind:
+          tenantId: { from: path, name: tenantId }
+          name:     { from: path, name: name }
       parameters:
         - name: tenantId
           in: path
@@ -286,7 +321,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       requestBody:
         required: true
@@ -323,6 +358,11 @@ paths:
         - Cluster Variable
       summary: Delete a tenant-scoped cluster variable
       description: Delete a tenant-scoped cluster variable.
+      x-semantic-requires:
+        kind: TenantClusterVariable
+        bind:
+          tenantId: { from: path, name: tenantId }
+          name:     { from: path, name: name }
       parameters:
         - name: tenantId
           in: path
@@ -334,7 +374,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
           description: The name of the cluster variable
       responses:
         '204':
@@ -368,8 +408,9 @@ components:
         - value
       properties:
         name:
-          type: string
           description: The name of the cluster variable. Must be unique within its scope (global or tenant-specific).
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
         value:
           type: object
           description: The value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
@@ -415,8 +456,9 @@ components:
         - tenantId
       properties:
         name:
-          type: string
           description: The name of the cluster variable. Unique within its scope (global or tenant-specific).
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
         scope:
           $ref: '#/components/schemas/ClusterVariableScopeEnum'
         tenantId:

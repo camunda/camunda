@@ -7,7 +7,27 @@ paths:
         - Group
       operationId: createGroup
       summary: Create group
-      description: Create a new group.
+      description: |
+        Create a new group.
+
+        The supplied `groupId` is validated against `^[a-zA-Z0-9_~@.+-]+$`
+        (max 256 characters) by `IdentifierValidator.validateId` in the
+        runtime. This strict validation applies wherever the Groups API
+        is available: in OIDC deployments that set
+        `camunda.security.authentication.oidc.groupsClaim` the Groups
+        API (including this endpoint) is disabled entirely, so group
+        CRUD never sees externally-minted IdP IDs. The BYOG relaxation
+        only loosens validation when a group is referenced *as a member*
+        of a role or tenant (`assignRoleToGroup`,
+        `assignGroupToTenant`); group CRUD itself always uses the strict
+        default-id regex. The constraint is not advertised on the
+        `GroupId` schema so that the same schema can be reused at
+        member-reference sites without falsely rejecting
+        externally-minted IdP group IDs there.
+      x-semantic-establishes:
+        kind: Group
+        identifiedBy:
+          - { in: body, name: groupId, semanticType: GroupId }
       requestBody:
         content:
           application/json:
@@ -71,13 +91,17 @@ paths:
       operationId: getGroup
       summary: Get group
       description: Get a group by its ID.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       responses:
         "200":
           description: The group is successfully returned.
@@ -106,13 +130,17 @@ paths:
       operationId: updateGroup
       summary: Update group
       description: Update a group with the given ID.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       requestBody:
         required: true
         content:
@@ -149,13 +177,17 @@ paths:
       operationId: deleteGroup
       summary: Delete group
       description: Deletes the group with the given ID.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       responses:
         "204":
           description: The group was deleted successfully.
@@ -183,13 +215,19 @@ paths:
       description: |
         Assigns a user to a group, making the user a member of the group.
         Group members inherit the group authorizations, roles, and tenant assignments.
+      x-semantic-establishes:
+        kind: GroupUserMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: groupId,  semanticType: GroupId }
+          - { in: path, name: username, semanticType: Username }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: username
           in: path
           required: true
@@ -230,13 +268,18 @@ paths:
       description: |
         Unassigns a user from a group.
         The user is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
+      x-semantic-requires:
+        kind: GroupUserMembership
+        bind:
+          groupId:  { from: path, name: groupId }
+          username: { from: path, name: username }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: username
           in: path
           required: true
@@ -270,13 +313,17 @@ paths:
       operationId: searchUsersForGroup
       summary: Search group users
       description: Search users assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       requestBody:
         required: false
         content:
@@ -316,19 +363,25 @@ paths:
       description: |
         Assigns a client to a group, making it a member of the group.
         Members of the group inherit the group authorizations, roles, and tenant assignments.
+      x-semantic-establishes:
+        kind: GroupClientMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: groupId,  semanticType: GroupId }
+          - { in: path, name: clientId, semanticType: ClientId }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: clientId
           in: path
           required: true
           description: The client ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The client was assigned successfully to the group.
@@ -363,19 +416,24 @@ paths:
       description: |
         Unassigns a client from a group.
         The client is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
+      x-semantic-requires:
+        kind: GroupClientMembership
+        bind:
+          groupId:  { from: path, name: groupId }
+          clientId: { from: path, name: clientId }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: clientId
           in: path
           required: true
           description: The client ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The client was unassigned successfully from the group.
@@ -403,13 +461,17 @@ paths:
       operationId: searchClientsForGroup
       summary: Search group clients
       description: Search clients assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       requestBody:
         required: false
         content:
@@ -447,19 +509,25 @@ paths:
       operationId: assignMappingRuleToGroup
       summary: Assign a mapping rule to a group
       description: Assigns a mapping rule to a group.
+      x-semantic-establishes:
+        kind: GroupMappingRuleMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: groupId,       semanticType: GroupId }
+          - { in: path, name: mappingRuleId, semanticType: MappingRuleId }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: mappingRuleId
           in: path
           required: true
           description: The mapping rule ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The mapping rule was assigned successfully to the group.
@@ -492,19 +560,24 @@ paths:
       operationId: unassignMappingRuleFromGroup
       summary: Unassign a mapping rule from a group
       description: Unassigns a mapping rule from a group.
+      x-semantic-requires:
+        kind: GroupMappingRuleMembership
+        bind:
+          groupId:       { from: path, name: groupId }
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
         - name: mappingRuleId
           in: path
           required: true
           description: The mapping rule ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The mapping rule was unassigned successfully from the group.
@@ -532,13 +605,17 @@ paths:
       operationId: searchMappingRulesForGroup
       summary: Search group mapping rules
       description: Search mapping rules assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       requestBody:
         required: false
         content:
@@ -576,13 +653,17 @@ paths:
       operationId: searchRolesForGroup
       summary: Search group roles
       description: Search roles assigned to a group.
+      x-semantic-requires:
+        kind: Group
+        bind:
+          groupId: { from: path, name: groupId }
       parameters:
         - name: groupId
           in: path
           required: true
           description: The group ID.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       requestBody:
         required: false
         content:
@@ -621,7 +702,8 @@ components:
       additionalProperties: false
       properties:
         groupId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
           description: The ID of the new group.
         name:
           type: string
@@ -637,8 +719,9 @@ components:
       type: object
       properties:
         groupId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
           description: The ID of the created group.
-          type: string
         name:
           description: The display name of the created group.
           type: string
@@ -667,8 +750,9 @@ components:
       type: object
       properties:
         groupId:
-          type: string
-          description: The unique external group ID.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
+          description: The unique group ID.
         name:
           type: string
           description: The name of the group.
@@ -689,7 +773,8 @@ components:
           type: string
           description: The group name.
         groupId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
           description: The group ID.
         description:
           type: string
@@ -808,7 +893,8 @@ components:
       properties:
         clientId:
           description: The ID of the client.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ClientId'
       required:
         - clientId
 

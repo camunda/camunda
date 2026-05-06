@@ -10,6 +10,10 @@ paths:
       summary: Create mapping rule
       description: |
         Create a new mapping rule
+      x-semantic-establishes:
+        kind: MappingRule
+        identifiedBy:
+          - { in: body, name: mappingRuleId, semanticType: MappingRuleId }
       requestBody:
         content:
           application/json:
@@ -50,13 +54,17 @@ paths:
       summary: Update mapping rule
       description: |
         Update a mapping rule.
+      x-semantic-requires:
+        kind: MappingRule
+        bind:
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to update.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       requestBody:
         content:
           application/json:
@@ -98,13 +106,17 @@ paths:
       summary: Delete a mapping rule
       description: |
         Deletes the mapping rule with the given ID.
+      x-semantic-requires:
+        kind: MappingRule
+        bind:
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to delete.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The mapping rule was deleted successfully.
@@ -129,13 +141,17 @@ paths:
       summary: Get a mapping rule
       description: |
         Gets the mapping rule with the given ID.
+      x-semantic-requires:
+        kind: MappingRule
+        bind:
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to get.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "200":
           description: The mapping rule was returned successfully.
@@ -213,7 +229,8 @@ components:
         - $ref: '#/components/schemas/MappingRuleCreateUpdateRequest'
       properties:
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The unique ID of the mapping rule.
       required:
         - mappingRuleId
@@ -236,7 +253,8 @@ components:
           type: string
           description: The name of the mapping rule.
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The unique ID of the mapping rule.
       required:
         - claimName
@@ -280,7 +298,8 @@ components:
           type: string
           description: The name of the mapping rule.
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The ID of the mapping rule.
       required:
         - claimName
@@ -334,5 +353,6 @@ components:
           type: string
           description: The name of the mapping rule.
         mappingRuleId:
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
           description: The ID of the mapping rule.
