@@ -21,12 +21,14 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class PersistedAuthorization extends UnpackedObject implements DbValue {
+public class PersistedAuthorization extends UnpackedObject
+    implements DbValue, ProjectionOf<AuthorizationRecord, PersistedAuthorization> {
 
   private final LongProperty authorizationKeyProp = new LongProperty("authorizationKey");
   private final StringProperty ownerIdProp = new StringProperty("ownerId");
@@ -54,8 +56,9 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
         .declareProperty(permissionTypesProp);
   }
 
-  public void wrap(final AuthorizationRecord authorizationRecord) {
-    setAuthorizationKey(authorizationRecord.getAuthorizationKey())
+  @Override
+  public PersistedAuthorization wrap(final AuthorizationRecord authorizationRecord) {
+    return setAuthorizationKey(authorizationRecord.getAuthorizationKey())
         .setOwnerId(authorizationRecord.getOwnerId())
         .setOwnerType(authorizationRecord.getOwnerType())
         .setResourcePropertyName(authorizationRecord.getResourcePropertyName())
