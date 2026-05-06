@@ -2,11 +2,17 @@
 # check-action-pins.yml
 #
 # Purpose:
-#   Enforce GitHub Issue #25934 — every 3rd-party GitHub Action MUST be pinned
-#   to a 40-char commit SHA, never a tag or branch. Tag/branch refs are mutable
-#   and expose us to supply-chain attacks: the upstream owner — or anyone who
-#   compromises them — can rewrite the tag to point at malicious code, and our
-#   CI will silently start running it.
+#   Enforce GitHub Issue #25934 — every external 3rd-party GitHub Action MUST
+#   be pinned to a 40-char commit SHA. Tag/branch refs are mutable and expose
+#   us to supply-chain attacks: the upstream owner — or anyone who compromises
+#   them — can rewrite the tag to point at malicious code, and our CI will
+#   silently start running it.
+#
+#   The actual enforced policy is more nuanced than "everything must be
+#   SHA-pinned" — `actions/*`, `github/*`, and `camunda/*` are allowed to use
+#   tag/branch refs because they're either GitHub-owned or our own
+#   infrastructure. Only external 3rd-party actions are required to use SHAs.
+#   See .github/zizmor.yml for the exact per-owner policy.
 #
 # Scope:
 #   This job intentionally only fails on action files that the *current PR*
@@ -35,14 +41,21 @@ name: check-action-pins
 # on `push` to main wouldn't help, since by then the violation is already in.
 #
 # `paths:` filters the PR-level trigger so this workflow is skipped entirely
-# for PRs that don't touch action files. Note that `paths:` filters which
-# *workflow runs* are created — it does NOT filter which files the job
-# inspects. We do per-file filtering further down in the job itself.
+# for PRs that don't touch action files. The patterns mirror exactly what
+# the diff step (Step 2) inspects, so we don't spawn no-op runs for PRs that
+# only touch e.g. shell scripts, JSON config, or README files inside
+# `.github/workflows/` or `.github/actions/`.
+#
+# Note: `paths:` filters which *workflow runs* are created — it does NOT
+# filter which files the job inspects within a triggered run. The per-file
+# filtering further down in Step 2 is what actually scopes zizmor's input.
 on:
   pull_request:
     paths:
-      - '.github/workflows/**'
-      - '.github/actions/**'
+      - '.github/workflows/*.yml'
+      - '.github/workflows/*.yaml'
+      - '.github/actions/**/action.yml'
+      - '.github/actions/**/action.yaml'
 
 # -----------------------------------------------------------------------------
 # Permissions
