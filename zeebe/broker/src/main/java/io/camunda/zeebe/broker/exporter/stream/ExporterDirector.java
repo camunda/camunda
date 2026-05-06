@@ -67,6 +67,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   // using primitive boolean since it is only used in actor
   private boolean allExportersOpened;
 
+  // True while a single container is being closed and reopened to recover from a non-recoverable
+  // export error. Since the actor is single-threaded and records are processed one at a time,
+  // at most one container can require reopen at a time.
+  private boolean reopeningContainerInProgress = false;
+
   // Use concrete type because it must be modifiable
   private final ArrayList<ExporterContainer> containers;
   private final LogStream logStream;
@@ -126,7 +131,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                         descriptorEntry.getValue(),
                         meterRegistry,
                         clock,
-                        this::onReplayRequested))
+                        this::onReplayRequested,
+                        this::reopenContainer))
             .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(meterRegistry);
     metrics.initializeExporterState(exporterPhase);
@@ -348,7 +354,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
             initializationInfo,
             meterRegistry,
             clock,
-            this::onReplayRequested);
+            this::onReplayRequested,
+            this::reopenContainer);
     container.initContainer(actor, metrics, state, exporterPhase);
     try {
       container.configureExporter();
@@ -536,6 +543,99 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void onFailure() {
     isOpened.set(false);
     actor.close();
+  }
+
+  /**
+   * Closes and reopens the given exporter container to recover from a non-recoverable export error.
+   *
+   * <p>This resets all volatile in-memory state of the exporter (positions, execution queues, etc.)
+   * by closing the exporter, re-initializing its metadata from the broker state, and reopening it.
+   * During the reopen, exporting is paused ({@code allExportersOpened = false}) to allow the
+   * exporter's {@code open()} to reconcile positions — including requesting replay if needed.
+   *
+   * <p>Since records are processed strictly one at a time (protected by {@code inExportingPhase}),
+   * only one container can fail with a non-recoverable error per export cycle. A second container
+   * cannot fail until the first export loop completes, which requires the failed container to be
+   * healthy again. Therefore, at most one reopen is active at any given time, and {@code
+   * allExportersOpened = true} is correct when a single container finishes reopening — all other
+   * containers were already open before the reopen started and were never closed.
+   *
+   * <p>After a successful reopen, exporting resumes from the position the exporter determines
+   * during its {@code open()} call. If the reopen fails after exhausting retries, the whole
+   * exporter director is shut down.
+   *
+   * @param container the exporter container that needs to be reopened
+   */
+  private void reopenContainer(final ExporterContainer container) {
+    if (!containers.contains(container)) {
+      LOG.debug(
+          "Exporter '{}' was removed before it could be reopened; skipping reopen.",
+          container.getId());
+      return;
+    }
+
+    if (reopeningContainerInProgress) {
+      // This should not happen given the single-threaded actor model, but guard defensively.
+      LOG.warn(
+          "Reopen already in progress; ignoring duplicate reopen request for exporter '{}'.",
+          container.getId());
+      return;
+    }
+
+    reopeningContainerInProgress = true;
+
+    LOG.info(
+        "Reopening exporter '{}' after a non-recoverable export error to reset its state.",
+        container.getId());
+
+    // Pause export while the container is being reopened so that position reconciliation
+    // (including potential replay) can happen correctly during open().
+    allExportersOpened = false;
+    inExportingPhase = false;
+
+    container.closeExporter();
+    container.initMetadata();
+
+    // 10 seconds matches the timeout used in startActiveExportingMode() for initial exporter open.
+    final var openFuture =
+        new BackOffRetryStrategy(actor, Duration.ofSeconds(10), Duration.ofMillis(150))
+            .runWithRetry(
+                () -> {
+                  if (!containers.contains(container)) {
+                    // Container was removed while reopening; return true to stop retrying and let
+                    // the runOnCompletion handler clean up without triggering onFailure().
+                    return true;
+                  }
+                  try {
+                    container.openExporter();
+                    return true;
+                  } catch (final Exception e) {
+                    LOG.warn("Failed to reopen exporter '{}'. Retrying...", container.getId(), e);
+                    return false;
+                  }
+                },
+                this::isClosed);
+
+    actor.runOnCompletion(
+        openFuture,
+        (result, error) -> {
+          reopeningContainerInProgress = false;
+          if (error != null) {
+            LOG.error(
+                "Failed to reopen exporter '{}' after exhausting retries; shutting down.",
+                container.getId(),
+                error);
+            onFailure();
+          } else {
+            LOG.info("Successfully reopened exporter '{}'.", container.getId());
+            container.markReopenComplete();
+            // All other containers were already open; this container is now open too.
+            allExportersOpened = true;
+            if (state.hasExporters()) {
+              actor.submit(this::readNextEvent);
+            }
+          }
+        });
   }
 
   private void becomeIdle() {

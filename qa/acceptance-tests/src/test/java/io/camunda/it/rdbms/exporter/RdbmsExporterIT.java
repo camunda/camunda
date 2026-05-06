@@ -48,8 +48,8 @@ import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
 import io.camunda.zeebe.auth.Authorization;
-import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -1527,7 +1527,10 @@ class RdbmsExporterIT {
     tamperExporterPosition(tamperedPosition);
     final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
     assertThatThrownBy(() -> exporter.export(processInstanceRecord))
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(ExporterException.class)
+        .satisfies(e -> assertThat(((ExporterException) e).isRecoverable()).isFalse())
+        .hasMessageContaining("Exporter position mismatch")
+        .cause()
         .hasMessageContaining("Exporter position mismatch for partition 1")
         .hasMessageContaining("expected " + currentPosition)
         .hasMessageContaining("but found " + tamperedPosition);
