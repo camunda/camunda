@@ -130,6 +130,12 @@ paths:
   /valid/establishes-foreign-id-with-requires/{widgetId}/{foreignBoundName}:
     $ref: 'widgets.yaml#/paths/~1valid~1establishes-foreign-id-with-requires~1{widgetId}~1{foreignBoundName}'
 
+  # ── External-entity-foreign-owner (camunda/camunda#52322 review) ──
+  /invalid/establishes-external-id-no-accepts-external/{externalThingId}/{externalBoundName}:
+    $ref: 'widgets.yaml#/paths/~1invalid~1establishes-external-id-no-accepts-external~1{externalThingId}~1{externalBoundName}'
+  /valid/establishes-external-id-with-accepts-external/{externalThingId}/{externalBoundName}:
+    $ref: 'widgets.yaml#/paths/~1valid~1establishes-external-id-with-accepts-external~1{externalThingId}~1{externalBoundName}'
+
   # ── Binding existence with $ref'd request body ───────────────
   # Production specs declare `requestBody.content.*.schema` as a `$ref`
   # to a top-level component schema, not as an inline object. The

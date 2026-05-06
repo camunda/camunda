@@ -280,7 +280,7 @@ components:
       type: object
       properties:
         username:
-          description: The user username.
+          description: The username of the user.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/Username'
         name:

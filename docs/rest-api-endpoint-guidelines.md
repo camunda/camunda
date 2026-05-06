@@ -919,6 +919,16 @@ parameters.
 > (e.g. `ClusterVariableName` is shared between
 > `GlobalClusterVariable` and `TenantClusterVariable` as parallel
 > variants, not parent/child).
+>
+> When the foreign identifier is owned by an `external-entity` kind
+> (e.g. `ClientId`, owned by `Client`), `x-semantic-requires` is
+> **not** the answer — direct `requires` on an external-entity is
+> forbidden. The producer MUST instead set `acceptsExternal: true` on
+> that `identifiedBy` entry (see the section below), declaring that
+> the site accepts an externally-minted ID. Without either an
+> `acceptsExternal: true` or a routable `requires`, the producer is
+> unreachable via chain planning and is flagged as an unreachable
+> orphan.
 
 #### Per-tuple `acceptsExternal: true` (camunda/camunda#52322)
 

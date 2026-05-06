@@ -555,6 +555,14 @@ module.exports = (input, _opts, _context) => {
           // Skipped for edge producers — the edge-endpoint resolution
           // below derives implicit `requires` from `identifiedBy` for
           // them by design (registry header `$comment` documents this).
+          //
+          // External-entity foreign owners (e.g. ClientId owned by
+          // Client) cannot be referenced via `x-semantic-requires`
+          // because direct establishes/requires of an external-entity
+          // is forbidden. The only valid pattern is the per-tuple
+          // `acceptsExternal: true` opt-out, mirroring how edge
+          // endpoints declare bimodal acceptance. Anything else is an
+          // unreachable orphan and is flagged below.
           if (
             registeredShape === 'entity' &&
             declaredShape === 'entity' &&
@@ -581,10 +589,51 @@ module.exports = (input, _opts, _context) => {
               // the establishing kind's own identifiers. Accept.
               if (ownIds.has(st)) continue;
               const owners = identifierToKinds.get(st);
-              if (!owners) continue; // unregistered — flagged above
-              const foreignEntityOwners = owners.filter(
-                (o) => o !== est.kind && kindShapes.get(o) === 'entity',
+              if (!owners) continue; // unregistered - flagged above
+              const foreignOwners = owners.filter((o) => o !== est.kind);
+              if (foreignOwners.length === 0) continue;
+              const foreignEntityOwners = foreignOwners.filter(
+                (o) => kindShapes.get(o) === 'entity',
               );
+              const foreignExternalOwners = foreignOwners.filter(
+                (o) => kindShapes.get(o) === 'external-entity',
+              );
+              // External-entity foreign owners
+              // (camunda/camunda#52322 review): an external-entity
+              // kind can never appear as an `x-semantic-requires`
+              // target (the no-direct-establishes/requires-on-
+              // external-entity rule forbids it). If an entity
+              // producer's identity tuple borrows an identifier whose
+              // only foreign owner is external-entity (e.g. ClientId
+              // owned by Client), the producer can never be reached
+              // via the chain planner: nothing can supply the
+              // identifier value because there is no producer for the
+              // external entity in this API. The only valid pattern
+              // is the per-tuple opt-out `acceptsExternal: true`,
+              // mirroring how edge endpoints declare bimodal
+              // acceptance. Without that flag, the producer is an
+              // unreachable orphan; flag it so orphan detection is
+              // not silently suppressed.
+              if (
+                foreignEntityOwners.length === 0 &&
+                foreignExternalOwners.length > 0 &&
+                item.acceptsExternal !== true
+              ) {
+                const extList = foreignExternalOwners.join(', ');
+                errors.push({
+                  message: `x-semantic-establishes.identifiedBy[${i}] on ${method.toUpperCase()} ${pathKey} declares semanticType '${st}', which is owned only by external-entity kind${foreignExternalOwners.length > 1 ? 's' : ''} [${extList}]. External entities cannot be referenced via x-semantic-requires (forbidden by the no-direct-establishes/requires-on-external-entity rule), so this producer is unreachable via chain planning. Either set 'acceptsExternal: true' on this identifiedBy entry to declare that the site accepts an externally-minted ID, or remove the foreign identifier from identifiedBy.`,
+                  path: [
+                    'paths',
+                    pathKey,
+                    method,
+                    'x-semantic-establishes',
+                    'identifiedBy',
+                    i,
+                    'semanticType',
+                  ],
+                });
+                continue;
+              }
               if (foreignEntityOwners.length === 0) continue;
               const satisfied = foreignEntityOwners.some((o) =>
                 requiredKindsOnOp.has(o),

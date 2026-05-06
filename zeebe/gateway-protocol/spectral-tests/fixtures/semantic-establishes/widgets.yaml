@@ -1156,3 +1156,82 @@ paths:
       responses:
         '201':
           description: Created.
+
+  # ── External-entity-foreign-owner (camunda/camunda#52322 review) ──
+  # An entity producer whose `identifiedBy` borrows an identifier owned
+  # only by an external-entity kind cannot satisfy the dependency via
+  # `x-semantic-requires` (forbidden by the no-direct-establishes/
+  # requires-on-external-entity rule). The only valid pattern is the
+  # per-tuple `acceptsExternal: true` opt-out. Without it the producer
+  # is unreachable via chain planning, and orphan detection would be
+  # silently suppressed because `identifierToKinds` includes
+  # external-entity identifiers.
+
+  # 40. Producer establishes ExternalBound via (externalThingId:
+  #     ExternalThingId, externalBoundName: ExternalBoundName) WITHOUT
+  #     `acceptsExternal: true`. Should fail.
+  /invalid/establishes-external-id-no-accepts-external/{externalThingId}/{externalBoundName}:
+    post:
+      operationId: establishesExternalIdNoAcceptsExternal
+      summary: Establishes ExternalBound borrowing ExternalThingId without acceptsExternal
+      description: |
+        Should fail — `ExternalThingId` is owned by `ExternalThing`,
+        which is shape:external-entity. `x-semantic-requires` cannot
+        target external-entity kinds, so the only way to declare
+        bimodal acceptance is the per-tuple `acceptsExternal: true`
+        flag. Without it the producer is unreachable via chain
+        planning.
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: externalThingId
+          in: path
+          required: true
+          description: The external thing id (foreign external-entity identifier).
+          schema: { type: string }
+        - name: externalBoundName
+          in: path
+          required: true
+          description: The ExternalBound name.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: ExternalBound
+        identifiedBy:
+          - { in: path, name: externalThingId,   semanticType: ExternalThingId }
+          - { in: path, name: externalBoundName, semanticType: ExternalBoundName }
+      responses:
+        '201':
+          description: Created.
+
+  # 41. Same producer, but the foreign external-entity identifier tuple
+  #     entry is marked `acceptsExternal: true`. Must lint clean.
+  /valid/establishes-external-id-with-accepts-external/{externalThingId}/{externalBoundName}:
+    post:
+      operationId: establishesExternalIdWithAcceptsExternal
+      summary: Establishes ExternalBound borrowing ExternalThingId with acceptsExternal:true
+      description: |
+        Should pass. The foreign external-entity identifier
+        `ExternalThingId` is paired with `acceptsExternal: true`,
+        declaring that this site accepts an externally-minted ID
+        (mirrors how edge endpoints opt into bimodal acceptance).
+      x-added-in-version: "8.8"
+      tags: [Test]
+      parameters:
+        - name: externalThingId
+          in: path
+          required: true
+          description: The external thing id (externally minted).
+          schema: { type: string }
+        - name: externalBoundName
+          in: path
+          required: true
+          description: The ExternalBound name.
+          schema: { type: string }
+      x-semantic-establishes:
+        kind: ExternalBound
+        identifiedBy:
+          - { in: path, name: externalThingId,   semanticType: ExternalThingId, acceptsExternal: true }
+          - { in: path, name: externalBoundName, semanticType: ExternalBoundName }
+      responses:
+        '201':
+          description: Created.

@@ -15,7 +15,7 @@ paths:
         runtime. This constraint applies in every deployment, including
         BYOG/OIDC: the BYOG relaxation only loosens validation when a
         group is referenced *as a member* of a role or tenant
-        (`assignGroupToRole`, `assignGroupToTenant`); group CRUD itself
+        (`assignRoleToGroup`, `assignGroupToTenant`); group CRUD itself
         always uses the strict default-id regex. The constraint is not
         advertised on the `GroupId` schema so that the same schema can be
         reused at member-reference sites without falsely rejecting

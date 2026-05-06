@@ -57,7 +57,12 @@
     "own `identifiers` (the multi-owner sibling pattern, e.g.",
     "ClusterVariableName shared by GlobalClusterVariable and",
     "TenantClusterVariable as parallel variants), and for edges (whose",
-    "implicit requires are derived from `identifiedBy` — see above)."
+    "implicit requires are derived from `identifiedBy` — see above).",
+    "When the foreign identifier is owned by an `external-entity` kind",
+    "(e.g. `ClientId`, owned by `Client`), the producer MUST instead",
+    "set `acceptsExternal: true` on that `identifiedBy` entry — direct",
+    "`x-semantic-requires` on an external-entity kind is forbidden, so",
+    "the per-tuple flag is the only way to declare bimodal acceptance."
   ],
   "kinds": [
     {

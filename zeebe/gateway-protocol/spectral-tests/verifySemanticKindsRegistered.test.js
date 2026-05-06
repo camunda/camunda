@@ -738,8 +738,13 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
   //   - Multi-owner sibling pattern — identifier appears on both the
   //     establishing kind's own `identifiers` and a sibling's (e.g.
   //     ClusterVariableName, owned by both Global and Tenant variants).
-  //   - Foreign owner is `external-entity` — referenced via edges only,
-  //     never required directly.
+  //   - External-entity foreign owner with the per-tuple
+  //     `acceptsExternal: true` opt-out — the site declares bimodal
+  //     acceptance (mirrors the edge-endpoint flag). External-entity
+  //     owners WITHOUT `acceptsExternal: true` are now flagged: they
+  //     can never be reached via `x-semantic-requires` (forbidden by
+  //     the no-direct-establishes/requires-on-external-entity rule),
+  //     so the producer is unreachable via chain planning.
   describe('verify-semantic-kinds-registered: foreign-identifier-without-requires', () => {
     it('flags an entity producer whose identifiedBy borrows a foreign-owned identifier without a corresponding x-semantic-requires', () => {
       const v = registryViolations.filter(
@@ -769,6 +774,30 @@ describe('verifySemanticKindsRegistered + schema rules', () => {
             e.message.includes('assignWidgetFrobLink') ||
             e.message.includes('assignWidgetExternalLink') ||
             e.message.includes('assignWidgetBimodalLink')),
+      );
+      assert.equal(v.length, 0, JSON.stringify(v, null, 2));
+    });
+
+    it('flags an entity producer whose identifiedBy borrows an external-entity-owned identifier without acceptsExternal:true', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes(
+            '/invalid/establishes-external-id-no-accepts-external',
+          ) &&
+          e.message.includes("'ExternalThingId'") &&
+          e.message.includes('external-entity kind') &&
+          e.message.includes('[ExternalThing]') &&
+          e.message.includes("acceptsExternal: true"),
+      );
+      assert.equal(v.length, 1, JSON.stringify(registryViolations, null, 2));
+    });
+
+    it('does not flag the same shape when the foreign-external identifier tuple is marked acceptsExternal:true', () => {
+      const v = registryViolations.filter(
+        (e) =>
+          e.message.includes(
+            '/valid/establishes-external-id-with-accepts-external',
+          ) && e.message.includes('external-entity kind'),
       );
       assert.equal(v.length, 0, JSON.stringify(v, null, 2));
     });

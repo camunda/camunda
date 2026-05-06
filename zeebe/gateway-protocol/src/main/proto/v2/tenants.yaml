@@ -1107,7 +1107,7 @@ components:
       type: object
       properties:
         groupId:
-          description: The groupId of the group.
+          description: The group ID.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/GroupId'
       required:
