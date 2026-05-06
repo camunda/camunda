@@ -239,7 +239,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="=membersToAdd" target="membersToAdd" />
           <zeebe:input source="=membersToRemove" target="membersToRemove" />
-          <zeebe:input source="=currentClusterConfiguration" target="currentClusterConfiguration" />
+          <zeebe:input source="=currentClusterConfiguration" target="configuration" />
           <zeebe:input source="=direction" target="direction" />
           <zeebe:output source="=workPayload" target="workPayload" />
         </zeebe:ioMapping>
