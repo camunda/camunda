@@ -476,7 +476,10 @@ test.describe('MCP Message Subscription Search API Tests', () => {
   test('SC-API-04 — extensionProperties contains tool metadata', async ({
     request,
   }) => {
-    test.skip(true, 'Skipped due to bug 52514: https://github.com/camunda/camunda/issues/52514');
+    test.skip(
+      true,
+      'Skipped due to bug 52514: https://github.com/camunda/camunda/issues/52514',
+    );
     await expect(async () => {
       const res = await request.post(
         buildUrl('/message-subscriptions/search'),
