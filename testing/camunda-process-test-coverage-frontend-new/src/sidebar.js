@@ -31,7 +31,8 @@ export function renderSidebar(data) {
 }
 
 /**
- * Highlights the sidebar item matching the current route.
+ * Highlights the sidebar item matching the current route and expands the
+ * relevant suite if the route is suite- or run-scoped.
  * @param {{ view: string, [key: string]: string }} route
  */
 export function updateSidebarActive(route) {
@@ -46,10 +47,11 @@ export function updateSidebarActive(route) {
     document
       .querySelectorAll(`[data-process-id="${CSS.escape(route.processId)}"]`)
       .forEach((el) => el.classList.add('active'));
-  } else if (route.view === 'suite') {
+  } else if (route.view === 'suite' || route.view === 'suiteProcess') {
     document
       .querySelectorAll(`[data-suite-id="${CSS.escape(route.suiteId)}"][data-route="suite"]`)
       .forEach((el) => el.classList.add('active'));
+    expandSuiteInSidebar(route.suiteId);
   } else if (route.view === 'run' || route.view === 'runProcess') {
     // Match on BOTH suiteId AND runName so two suites with identically-named
     // test runs don't both get highlighted simultaneously.
@@ -58,6 +60,26 @@ export function updateSidebarActive(route) {
         `[data-suite-id="${CSS.escape(route.suiteId)}"][data-run-name="${CSS.escape(route.runName)}"]`
       )
       .forEach((el) => el.classList.add('active'));
+    expandSuiteInSidebar(route.suiteId);
+  }
+}
+
+/**
+ * Programmatically expands the sidebar entry for the given suite.
+ * @param {string} suiteId
+ */
+function expandSuiteInSidebar(suiteId) {
+  const suiteLink = document.querySelector(
+    `[data-suite-id="${CSS.escape(suiteId)}"][data-route="suite"]`
+  );
+  if (!suiteLink) return;
+  const suiteItem = suiteLink.closest('.nav-suite');
+  if (!suiteItem) return;
+  const collapseEl = suiteItem.querySelector('.collapse');
+  if (!collapseEl) return;
+  const instance = Collapse.getInstance(collapseEl);
+  if (instance && !collapseEl.classList.contains('show')) {
+    instance.show();
   }
 }
 
@@ -123,8 +145,7 @@ function buildSuiteHtml(suite) {
     <li class="nav-suite">
       <div class="d-flex align-items-center nav-item-suite">
         <button class="nav-caret-btn"
-                data-bs-toggle="collapse"
-                data-bs-target="#${collapseId}"
+                data-collapse-target="#${collapseId}"
                 aria-expanded="false"
                 aria-label="Toggle ${escapeHtml(suite.name)}">
           <i class="bi bi-caret-right-fill nav-caret" aria-hidden="true"></i>
@@ -171,12 +192,16 @@ function buildRunHtml(suite, run) {
 }
 
 function attachCollapseListeners() {
-  document.querySelectorAll('[data-bs-toggle="collapse"]').forEach((btn) => {
-    const targetId = btn.getAttribute('data-bs-target');
+  document.querySelectorAll('[data-collapse-target]').forEach((btn) => {
+    const targetId = btn.getAttribute('data-collapse-target');
     const target = document.querySelector(targetId);
     if (!target) return;
-    // Create Bootstrap Collapse instance without toggling on creation
-    Collapse.getOrCreateInstance(target, { toggle: false });
+    // Create Bootstrap Collapse instance without auto-toggling
+    const collapseInstance = new Collapse(target, { toggle: false });
+    // Drive toggle entirely via this click handler (avoids data-api conflicts)
+    btn.addEventListener('click', () => {
+      collapseInstance.toggle();
+    });
     target.addEventListener('show.bs.collapse', () => {
       btn.querySelector('.nav-caret')?.classList.replace('bi-caret-right-fill', 'bi-caret-down-fill');
       btn.setAttribute('aria-expanded', 'true');

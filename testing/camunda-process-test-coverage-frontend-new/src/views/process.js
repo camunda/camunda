@@ -15,33 +15,48 @@ import { renderBpmnDiagram } from '../bpmn.js';
  * Renders the process details view into #content.
  * @param {string} processId
  * @param {object} data window.COVERAGE_DATA
- * @param {{ suiteId: string, runName: string } | null} [context] Optional run context for scoped coverage.
+ * @param {{ suiteId: string, runName?: string } | null} [context] Optional context for scoped coverage.
  */
 export async function renderProcess(processId, data, context = null) {
   const suites = data.suites || [];
   const definitions = data.definitions || {};
 
-  // Resolve coverage: run-scoped or global aggregate
+  // Resolve coverage: run-scoped, suite-scoped, or global aggregate
   let cov = null;
   let breadcrumbHtml = '';
 
   if (context) {
     const suite = suites.find((s) => s.id === context.suiteId);
-    const run = suite?.runs?.find((r) => r.name === context.runName);
-    // If suite or run is not found, cov stays null and the diagram renders without highlighting
-    cov = run?.coverages?.find((c) => c.processDefinitionId === processId) ?? null;
-
-    // Breadcrumb: Suite > Run > Process
     const sid = encodeURIComponent(context.suiteId);
-    const rn = encodeURIComponent(context.runName);
-    breadcrumbHtml = `
-      <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="#/suite/${sid}">${escapeHtml(suite?.name ?? context.suiteId)}</a></li>
-          <li class="breadcrumb-item"><a href="#/suite/${sid}/run/${rn}">${escapeHtml(context.runName)}</a></li>
-          <li class="breadcrumb-item active" aria-current="page">${escapeHtml(processId)}</li>
-        </ol>
-      </nav>`;
+
+    if (context.runName) {
+      // Run-scoped: coverage from a specific test run
+      const run = suite?.runs?.find((r) => r.name === context.runName);
+      cov = run?.coverages?.find((c) => c.processDefinitionId === processId) ?? null;
+
+      // Breadcrumb: Suite > Run > Process
+      const rn = encodeURIComponent(context.runName);
+      breadcrumbHtml = `
+        <nav aria-label="breadcrumb" class="mb-3">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="#/suite/${sid}">${escapeHtml(suite?.name ?? context.suiteId)}</a></li>
+            <li class="breadcrumb-item"><a href="#/suite/${sid}/run/${rn}">${escapeHtml(context.runName)}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">${escapeHtml(processId)}</li>
+          </ol>
+        </nav>`;
+    } else {
+      // Suite-scoped: aggregated coverage for this process within the suite
+      cov = suite?.coverages?.find((c) => c.processDefinitionId === processId) ?? null;
+
+      // Breadcrumb: Suite > Process
+      breadcrumbHtml = `
+        <nav aria-label="breadcrumb" class="mb-3">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="#/suite/${sid}">${escapeHtml(suite?.name ?? context.suiteId)}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">${escapeHtml(processId)}</li>
+          </ol>
+        </nav>`;
+    }
   } else {
     cov = (data.coverages || []).find((c) => c.processDefinitionId === processId) ?? null;
   }

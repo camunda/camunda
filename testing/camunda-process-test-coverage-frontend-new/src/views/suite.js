@@ -28,6 +28,7 @@ export function renderSuite(suiteId, data) {
 
   const suiteCoverages = suite.coverages || [];
   const runs = suite.runs || [];
+  const sid = encodeURIComponent(suite.id);
   const avgCoverage =
     suiteCoverages.length > 0
       ? suiteCoverages.reduce((s, c) => s + c.coverage, 0) / suiteCoverages.length
@@ -63,7 +64,7 @@ export function renderSuite(suiteId, data) {
     for (const cov of sorted) {
       const pid = encodeURIComponent(cov.processDefinitionId);
       html += `
-            <tr class="clickable-row" onclick="navigate('/process/${pid}')">
+            <tr class="clickable-row" onclick="navigate('/suite/${sid}/process/${pid}')">
               <td>
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
                 ${escapeHtml(cov.processDefinitionId)}
@@ -79,13 +80,11 @@ export function renderSuite(suiteId, data) {
   if (runs.length === 0) {
     html += '<p class="text-muted">No test cases recorded for this suite.</p>';
   } else {
-    const sid = encodeURIComponent(suite.id);
     html += `
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead><tr>
             <th>Test Case</th>
-            <th style="width:80px">Processes</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
           </tr></thead>
@@ -104,7 +103,6 @@ export function renderSuite(suiteId, data) {
                 <i class="bi bi-file-earmark-code-fill me-2 text-info" aria-hidden="true"></i>
                 <strong>${escapeHtml(run.name)}</strong>
               </td>
-              <td><span class="text-muted">${runCoverages.length}</span></td>
               <td>${progressBarHtml(runAvg)}</td>
               <td>${badgeHtml(runAvg)}</td>
             </tr>`;

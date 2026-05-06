@@ -6,7 +6,7 @@
  *   #/process/<processId>                       → { view: 'process', processId }
  *   #/suite/<suiteId>                           → { view: 'suite', suiteId }
  *   #/suite/<suiteId>/run/<runName>             → { view: 'run', suiteId, runName }
- *   #/suite/<suiteId>/run/<runName>/process/<p> → { view: 'runProcess', suiteId, runName, processId }
+ *   #/suite/<suiteId>/process/<p>                      → { view: 'suiteProcess', suiteId, processId }
  */
 
 'use strict';
@@ -39,6 +39,13 @@ export function parseRoute() {
           };
         }
         return { view: 'run', suiteId, runName };
+      }
+      if (parts[2] === 'process') {
+        return {
+          view: 'suiteProcess',
+          suiteId,
+          processId: decodeURIComponent(parts[3] || ''),
+        };
       }
       return { view: 'suite', suiteId };
     }
