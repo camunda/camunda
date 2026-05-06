@@ -1,0 +1,406 @@
+/*
+ * Camunda Process Test Coverage Report – Custom Styles
+ *
+ * Colours follow the Camunda brand guidelines:
+ *   Blue:        #0072CE  (primary / links)
+ *   Green:       #26D07C  (success / high coverage)
+ *   Orange:      #FC5D0B  (warning / low coverage)
+ *   Light Grey:  #E6E7E8  (backgrounds, hover)
+ *   Mid Grey:    #888B8D  (muted text, borders)
+ *   Dark:        #1C2127  (text, header)
+ */
+
+/* ── Reset / base ──────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: #1c2127;
+  background-color: #f8f9fa;
+  overflow: hidden; /* prevent double scrollbar – content areas scroll independently */
+}
+
+/* ── App shell ─────────────────────────────────────────────────────────────── */
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+
+.app-header {
+  background-color: #1c2127;
+  color: #ffffff;
+  border-bottom: 3px solid #0072ce;
+  flex-shrink: 0;
+  padding: 0.6rem 1.25rem;
+}
+
+.app-header-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ── Body layout ───────────────────────────────────────────────────────────── */
+
+.app-body {
+  flex: 1;
+  min-height: 0; /* allows flex children to scroll */
+  overflow: hidden;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────────── */
+
+.app-sidebar {
+  width: 280px;
+  min-width: 220px;
+  background-color: #f0f1f2;
+  border-right: 1px solid #dee2e6;
+  overflow-y: auto;
+  flex-shrink: 0;
+  padding: 0.75rem 0;
+}
+
+/* ── Main content ──────────────────────────────────────────────────────────── */
+
+.app-content {
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* ── Navigation list ───────────────────────────────────────────────────────── */
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-list .nav-list {
+  padding-left: 0.5rem;
+}
+
+.nav-section-header {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 1rem 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888b8d;
+  margin-top: 0.5rem;
+}
+
+/* Base nav item */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0.35rem 1rem;
+  color: #1c2127;
+  text-decoration: none;
+  border-radius: 4px;
+  margin: 1px 0.5rem;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+  font-size: 0.85rem;
+  overflow: hidden;
+}
+
+.nav-item:hover {
+  background-color: #e6e7e8;
+  color: #1c2127;
+  text-decoration: none;
+}
+
+.nav-item.active {
+  background-color: #d0e8f9;
+  color: #0072ce;
+  font-weight: 600;
+}
+
+.nav-item-top {
+  font-weight: 600;
+}
+
+/* Suite / run wrapper items */
+.nav-item-suite,
+.nav-item-run {
+  padding: 0.3rem 0.75rem 0.3rem 1rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  margin: 1px 0.5rem;
+  transition: background-color 0.15s ease;
+}
+
+.nav-item-suite:hover,
+.nav-item-run:hover {
+  background-color: #e6e7e8;
+}
+
+.nav-suite-link,
+.nav-run-link {
+  display: flex;
+  align-items: center;
+  color: #1c2127;
+  text-decoration: none;
+  overflow: hidden;
+  font-size: 0.85rem;
+}
+
+.nav-suite-link:hover,
+.nav-run-link:hover {
+  color: #0072ce;
+}
+
+.nav-suite-link.active,
+.nav-run-link.active {
+  color: #0072ce;
+  font-weight: 600;
+}
+
+.nav-item-process,
+.nav-item-process-leaf {
+  font-size: 0.8rem;
+}
+
+.nav-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-caret {
+  font-size: 0.65rem;
+  color: #888b8d;
+  flex-shrink: 0;
+}
+
+/* ── Coverage badges & bars ─────────────────────────────────────────────────── */
+
+.coverage-badge {
+  display: inline-block;
+  padding: 0.15em 0.55em;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.coverage-badge.coverage-high {
+  background-color: #d4f5e4;
+  color: #0f6b38;
+}
+
+.coverage-badge.coverage-medium {
+  background-color: #fff3cd;
+  color: #8a5000;
+}
+
+.coverage-badge.coverage-low {
+  background-color: #fde8df;
+  color: #a32300;
+}
+
+/* Progress bar */
+.coverage-bar-wrap {
+  width: 150px;
+  height: 8px;
+  background-color: #dee2e6;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.coverage-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.coverage-bar.coverage-high {
+  background-color: #26d07c;
+}
+
+.coverage-bar.coverage-medium {
+  background-color: #ffc107;
+}
+
+.coverage-bar.coverage-low {
+  background-color: #fc5d0b;
+}
+
+/* Inline coverage colours for stat cards */
+.coverage-stat-value.coverage-high {
+  color: #0f6b38;
+}
+
+.coverage-stat-value.coverage-medium {
+  color: #8a5000;
+}
+
+.coverage-stat-value.coverage-low {
+  color: #a32300;
+}
+
+/* ── Stat cards ─────────────────────────────────────────────────────────────── */
+
+.stat-card {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  transition: box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.coverage-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0072ce;
+  line-height: 1.1;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #888b8d;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── View headers ───────────────────────────────────────────────────────────── */
+
+.view-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  color: #1c2127;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* ── Tables ─────────────────────────────────────────────────────────────────── */
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover td {
+  background-color: #f0f4fb;
+}
+
+/* ── BPMN canvas ─────────────────────────────────────────────────────────────── */
+
+.bpmn-canvas {
+  width: 100%;
+  height: 460px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+/*
+ * Coverage highlighting – applied via canvas.addMarker()
+ * Marker class: "coverage-completed"
+ */
+
+/* Completed shapes (tasks, events, gateways) */
+.coverage-completed:not(.djs-connection) .djs-visual > :first-child {
+  stroke: #0072ce !important;
+  fill: #d0e8f9 !important;
+}
+
+/* Completed connection default path stroke */
+.coverage-completed.djs-connection .djs-visual path {
+  stroke: #0072ce !important;
+  stroke-width: 2px !important;
+}
+
+/* Completed connection arrowhead */
+.coverage-completed.djs-connection .djs-visual > :nth-child(2) path {
+  fill: #0072ce !important;
+  stroke: #0072ce !important;
+}
+
+/* ── Element list (completed elements panel) ────────────────────────────────── */
+
+.element-list {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+/* ── List group overrides ────────────────────────────────────────────────────── */
+
+.list-group-item {
+  font-size: 0.875rem;
+}
+
+.list-group-item-action:hover {
+  background-color: #f0f4fb;
+}
+
+/* ── Breadcrumb ──────────────────────────────────────────────────────────────── */
+
+.breadcrumb {
+  font-size: 0.8rem;
+}
+
+/* ── Responsive tweaks ───────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .app-sidebar {
+    width: 200px;
+    min-width: 180px;
+  }
+
+  .coverage-bar-wrap {
+    width: 100px;
+  }
+}
+
+@media (max-width: 576px) {
+  .app-sidebar {
+    display: none;
+  }
+
+  .app-content {
+    padding: 1rem;
+  }
+}

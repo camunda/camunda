@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-testing</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-process-test-coverage-frontend-new</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Camunda Process Test Coverage Frontend (New)</name>
+  <description>Lightweight frontend for visualising Camunda process test coverage reports.
+    Webpack bundles camunda-bpmn-js, Bootstrap 5, and the application into static
+    HTML/CSS/JS resources that are packaged into this JAR and consumed by
+    camunda-process-test-java via a Maven dependency.</description>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <skip.fe.build>false</skip.fe.build>
+    <!--
+      Maven resource root – everything placed here becomes a classpath resource.
+      The Webpack build writes to <fe.output.dir>/coverage/ so the JAR contains:
+        coverage/index.html
+        coverage/static/bundle.js
+        coverage/static/bundle.css
+        ...
+      These paths match what CoverageReportUtil looks for on the classpath.
+    -->
+    <fe.output.dir>${project.build.directory}/generated-frontend-resources</fe.output.dir>
+  </properties>
+
+  <build>
+    <!--
+      Include the webpack output directory as a Maven resource root so that all
+      built files are packaged into the JAR without filtering.
+    -->
+    <resources>
+      <resource>
+        <filtering>false</filtering>
+        <directory>${fe.output.dir}</directory>
+      </resource>
+    </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <configuration>
+          <workingDirectory>${project.basedir}</workingDirectory>
+          <installDirectory>${project.basedir}</installDirectory>
+        </configuration>
+        <executions>
+
+          <!-- 1. Install Node and npm -->
+          <execution>
+            <id>install-node-and-npm</id>
+            <goals>
+              <goal>install-node-and-npm</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <skip>${skip.fe.build}</skip>
+              <nodeVersion>v24.13.0</nodeVersion>
+              <npmVersion>11.9.0</npmVersion>
+            </configuration>
+          </execution>
+
+          <!-- 2. Install npm dependencies -->
+          <execution>
+            <id>npm-install</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <skip>${skip.fe.build}</skip>
+              <arguments>install</arguments>
+            </configuration>
+          </execution>
+
+          <!-- 3. Webpack production build -->
+          <execution>
+            <id>npm-build</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <skip>${skip.fe.build}</skip>
+              <arguments>run build</arguments>
+              <environmentVariables>
+                <!--
+                  Passes the target coverage sub-directory to webpack.config.js via BUILD_PATH.
+                  Webpack writes coverage/index.html and coverage/static/... inside fe.output.dir,
+                  which Maven then packages into the JAR as classpath resources.
+                -->
+                <BUILD_PATH>${fe.output.dir}/coverage</BUILD_PATH>
+              </environmentVariables>
+            </configuration>
+          </execution>
+
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>skipFrontendBuild</id>
+      <properties>
+        <skip.fe.build>true</skip.fe.build>
+      </properties>
+    </profile>
+  </profiles>
+</project>

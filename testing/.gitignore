@@ -1,3 +1,5 @@
 camunda-process-test-coverage-frontend/node/*
 camunda-process-test-coverage-frontend/node_modules/*
 camunda-process-test-java/src/main/resources/coverage/*
+camunda-process-test-coverage-frontend-new/node/*
+camunda-process-test-coverage-frontend-new/node_modules/*
