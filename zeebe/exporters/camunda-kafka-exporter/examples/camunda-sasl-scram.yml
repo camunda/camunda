@@ -1,0 +1,42 @@
+camunda:
+  webapps:
+    operate:
+      enabled: false
+    tasklist:
+      enabled: false
+    identity:
+      enabled: false
+    admin:
+      enabled: false
+  data:
+    secondary-storage:
+      autoconfigure-camunda-exporter: false
+
+zeebe:
+  broker:
+    exporters:
+      camunda-kafka:
+        className: io.camunda.exporter.kafka.CamundaKafkaExporter
+        args:
+          maxBatchSize: 100
+          maxQueueSize: 10000
+          overflowPolicy: drop_oldest
+          flushIntervalMs: 1000
+          producer:
+            servers: kafka:19093
+            clientId: zeebe
+            # SASL/SCRAM-SHA-512 over TLS.
+            # In production, inject username/password via a secrets manager or
+            # environment variable substitution rather than hardcoding them here.
+            config: |
+              security.protocol=SASL_SSL
+              sasl.mechanism=SCRAM-SHA-512
+              sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="zeebe" password="zeebe-secret";
+              ssl.truststore.location=/etc/camunda/kafka/truststore.p12
+              ssl.truststore.password=changeit
+              ssl.truststore.type=PKCS12
+
+          records:
+            defaults:
+              topic: zeebe
+              type: event

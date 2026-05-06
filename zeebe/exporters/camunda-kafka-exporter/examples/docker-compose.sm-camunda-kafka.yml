@@ -1,0 +1,44 @@
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: camunda-kafka-sm
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: camunda-zookeeper-sm
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_INIT_LIMIT: 5
+
+  camunda:
+    image: ${CAMUNDA_DOCKER_IMAGE:-camunda/camunda:SNAPSHOT}
+    container_name: camunda-sm
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+      - "26500:26500"
+      - "26501:26501"
+      - "26502:26502"
+    volumes:
+      - ./camunda.yml:/usr/local/camunda/config/application.yaml:ro
+    environment:
+      - CAMUNDA_MODE=all-in-one
+      - CAMUNDA_INSECURE=true
+      - SPRING_PROFILES_ACTIVE=rdbmsH2
+      - ZEEBE_BROKER_NETWORK_HOST=0.0.0.0
