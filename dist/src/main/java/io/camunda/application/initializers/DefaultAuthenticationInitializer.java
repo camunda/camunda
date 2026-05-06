@@ -39,7 +39,7 @@ public class DefaultAuthenticationInitializer
               "zeebe.broker.gateway.security.enabled", false, // embedded gateway
               "zeebe.gateway.security.enabled", false, // dedicated gateway
               "camunda.security.authentication.unprotected-api", true,
-              "camunda.security,authorizations.enabled", false);
+              "camunda.security.authorizations.enabled", false);
       DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
     }
   }
