@@ -24,7 +24,6 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.Comparator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -225,8 +224,7 @@ public class MessageSubscriptionSearchIT {
   }
 
   @Test
-  @Disabled("Will be re-eavaluated once we start exporting extensionProperties again")
-  void shouldReturnExtensionPropertiesForStartEventSubscription() {
+  void shouldReturnToolPropertiesForStartEventSubscription() {
     // when
     final var result =
         camundaClient
@@ -238,9 +236,9 @@ public class MessageSubscriptionSearchIT {
     // then
     assertThat(result.items()).hasSize(1);
     final var sub = result.items().getFirst();
-    assertThat(sub.getExtensionProperties())
-        .containsEntry("customKey", "customValue")
-        .containsEntry("env", "test");
+    // toolProperties only includes keys prefixed with "io.camunda.tool:";
+    // the test process has no such keys, so the map is empty.
+    assertThat(sub.getToolProperties()).isEmpty();
   }
 
   @Test

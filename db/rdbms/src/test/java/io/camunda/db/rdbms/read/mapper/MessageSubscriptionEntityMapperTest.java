@@ -37,7 +37,7 @@ public class MessageSubscriptionEntityMapperTest {
             .tenantId("tenantId")
             .processDefinitionName("My Process")
             .processDefinitionVersion(2)
-            .extensionProperties(Map.of("key1", "value1"))
+            .toolProperties(Map.of("key1", "value1"))
             .build();
 
     // When
@@ -66,7 +66,7 @@ public class MessageSubscriptionEntityMapperTest {
             .tenantId(null)
             .processDefinitionName(null)
             .processDefinitionVersion(null)
-            .extensionProperties(null)
+            .toolProperties(null)
             .build();
 
     // When
@@ -88,6 +88,6 @@ public class MessageSubscriptionEntityMapperTest {
     assertThat(entity.processDefinitionName())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.processDefinitionVersion()).isNull();
-    assertThat(entity.extensionProperties()).isEqualTo(Map.of());
+    assertThat(entity.toolProperties()).isEqualTo(Map.of());
   }
 }

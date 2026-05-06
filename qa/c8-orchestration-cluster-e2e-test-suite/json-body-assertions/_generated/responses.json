@@ -5000,6 +5000,10 @@
                   "nullable": true
                 },
                 {
+                  "name": "toolProperties",
+                  "type": "object"
+                },
+                {
                   "name": "inboundConnectorType",
                   "type": "string",
                   "nullable": true
@@ -5076,12 +5080,7 @@
                   "nullable": true
                 }
               ],
-              "optional": [
-                {
-                  "name": "extensionProperties",
-                  "type": "object"
-                }
-              ]
+              "optional": []
             }
           },
           {

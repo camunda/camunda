@@ -275,7 +275,7 @@ components:
         - correlationKey
         - elementId
         - elementInstanceKey
-        - extensionProperties
+        - toolProperties
         - inboundConnectorType
         - lastUpdatedDate
         - messageName
@@ -344,7 +344,7 @@ components:
           description: The correlation key of the message subscription.
         messageSubscriptionType:
           $ref: '#/components/schemas/MessageSubscriptionTypeEnum'
-        extensionProperties:
+        toolProperties:
           type: object
           additionalProperties:
             type: string

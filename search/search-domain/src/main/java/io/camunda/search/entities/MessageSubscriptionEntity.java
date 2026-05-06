@@ -32,7 +32,7 @@ public record MessageSubscriptionEntity(
     String tenantId,
     @Nullable String processDefinitionName,
     @Nullable Integer processDefinitionVersion,
-    Map<String, String> extensionProperties,
+    Map<String, String> toolProperties,
     @Nullable String toolName,
     @Nullable String inboundConnectorType)
     implements TenantOwnedEntity {
@@ -47,7 +47,7 @@ public record MessageSubscriptionEntity(
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
-    extensionProperties = extensionProperties != null ? extensionProperties : new HashMap<>();
+    toolProperties = toolProperties != null ? toolProperties : new HashMap<>();
     // Pre-8.10 rows have no messageSubscriptionType stored; default them to PROCESS_EVENT.
     messageSubscriptionType =
         messageSubscriptionType != null
@@ -75,7 +75,7 @@ public record MessageSubscriptionEntity(
     private @Nullable String tenantId;
     private @Nullable String processDefinitionName;
     private @Nullable Integer processDefinitionVersion;
-    private @Nullable Map<String, String> extensionProperties;
+    private @Nullable Map<String, String> toolProperties;
     private @Nullable String toolName;
     private @Nullable String inboundConnectorType;
 
@@ -135,8 +135,8 @@ public record MessageSubscriptionEntity(
       return this;
     }
 
-    public Builder extensionProperties(final Map<String, String> extensionProperties) {
-      this.extensionProperties = extensionProperties;
+    public Builder toolProperties(final Map<String, String> toolProperties) {
+      this.toolProperties = toolProperties;
       return this;
     }
 
@@ -188,7 +188,7 @@ public record MessageSubscriptionEntity(
           tenantId,
           processDefinitionName,
           processDefinitionVersion,
-          extensionProperties,
+          toolProperties,
           toolName,
           inboundConnectorType);
     }
