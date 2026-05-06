@@ -6,11 +6,11 @@ This guide covers everything you need to contribute to this frontend module.
 
 ## Prerequisites
 
-| Tool | Version |
-|------|---------|
-| Node.js | ≥ 20 (CI uses v24.13.0 via `frontend-maven-plugin`) |
-| npm | ≥ 10 (CI uses 11.9.0) |
-| Java / Maven | 21 / 3.x (for Maven integration) |
+|     Tool     |                       Version                       |
+|--------------|-----------------------------------------------------|
+| Node.js      | ≥ 20 (CI uses v24.13.0 via `frontend-maven-plugin`) |
+| npm          | ≥ 10 (CI uses 11.9.0)                               |
+| Java / Maven | 21 / 3.x (for Maven integration)                    |
 
 ---
 
@@ -30,10 +30,12 @@ npm run dev
 ### Previewing with real data
 
 1. Run the example module tests to generate a coverage report:
+
    ```bash
    ./mvnw verify -pl testing/camunda-process-test-example -am -Dquickly -DskipTests=false -DskipITs -T1C
    ```
 2. Open the generated HTML report:
+
    ```
    testing/camunda-process-test-example/target/coverage-report/index.html
    ```
@@ -81,13 +83,13 @@ Webpack (`webpack.config.js`) handles:
 
 Hash-based routing (`window.location.hash`) provides deep-linkable URLs:
 
-| Hash | View |
-|------|------|
-| `#/` | Dashboard |
-| `#/process/<processId>` | Process details (global aggregate coverage) |
-| `#/suite/<suiteId>` | Suite details |
-| `#/suite/<suiteId>/run/<runName>` | Test-case details |
-| `#/suite/<suiteId>/run/<runName>/process/<processId>` | Process view scoped to a test run |
+|                         Hash                          |                    View                     |
+|-------------------------------------------------------|---------------------------------------------|
+| `#/`                                                  | Dashboard                                   |
+| `#/process/<processId>`                               | Process details (global aggregate coverage) |
+| `#/suite/<suiteId>`                                   | Suite details                               |
+| `#/suite/<suiteId>/run/<runName>`                     | Test-case details                           |
+| `#/suite/<suiteId>/run/<runName>/process/<processId>` | Process view scoped to a test run           |
 
 ### BPMN rendering
 
@@ -122,3 +124,4 @@ npm install camunda-bpmn-js@latest
 # Rebuild
 npm run build
 ```
+
