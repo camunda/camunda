@@ -52,8 +52,8 @@
 
   // ── Tile (mirrors DashboardRenderer .grid-entry) ──
   .tile {
-    background-color: $layer-02;
-    border: 1px solid $border-subtle-01;
+    background-color: var(--white, #{$layer-01});
+    border: 1px solid var(--silver-darken-80, #{$border-subtle-01});
     border-radius: 4px;
     display: flex;
     flex-direction: column;
@@ -184,7 +184,7 @@
     align-items: center;
     text-align: center;
     padding: $spacing-05;
-    background-color: $layer-01;
+    background-color: var(--silver-base-97, #{$layer-02});
     border-radius: 4px;
   }
 
