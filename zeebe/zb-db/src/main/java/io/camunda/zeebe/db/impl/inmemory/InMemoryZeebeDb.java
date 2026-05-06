@@ -25,7 +25,9 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BiConsumer;
@@ -149,6 +151,12 @@ public class InMemoryZeebeDb<
   }
 
   public void forEachCommittedEntry(final BiConsumer<byte[], DbValue> consumer) {
-    committedData.forEach(consumer);
+    final ArrayList<Map.Entry<byte[], DbValue>> snapshot;
+    synchronized (this) {
+      snapshot = new ArrayList<>(committedData.entrySet());
+    }
+    for (final var entry : snapshot) {
+      consumer.accept(entry.getKey(), entry.getValue());
+    }
   }
 }

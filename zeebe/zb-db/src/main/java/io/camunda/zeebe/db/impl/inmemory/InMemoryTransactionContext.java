@@ -171,10 +171,12 @@ final class InMemoryTransactionContext implements TransactionContext {
     }
 
     void commitInternal() {
-      for (final byte[] key : pendingDeletes) {
-        db.committedData.remove(key);
+      synchronized (db) {
+        for (final byte[] key : pendingDeletes) {
+          db.committedData.remove(key);
+        }
+        db.committedData.putAll(pendingWrites);
       }
-      db.committedData.putAll(pendingWrites);
       inTransaction = false;
       pendingWrites.clear();
       pendingDeletes.clear();
