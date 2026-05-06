@@ -60,8 +60,19 @@ public class CachingJwtDecoder implements JwtDecoder {
 
   private static final Logger LOG = LoggerFactory.getLogger(CachingJwtDecoder.class);
 
+  /**
+   * Number of misses between INFO-level cache-stats summary log lines. Tuned to surface a working
+   * cache without flooding logs — at 1k misses per summary, a 100 RPS workload with no hits emits
+   * ~6 lines/min; a 95 % hit rate at the same RPS emits one line per ~3 minutes.
+   */
+  private static final long MISS_LOG_INTERVAL = 1_000L;
+
   private final JwtDecoder delegate;
   private final Cache<String, Jwt> cache;
+  private final java.util.concurrent.atomic.AtomicLong missCounter =
+      new java.util.concurrent.atomic.AtomicLong();
+  private final java.util.concurrent.atomic.AtomicLong hitCounter =
+      new java.util.concurrent.atomic.AtomicLong();
 
   public CachingJwtDecoder(final JwtDecoder delegate, final long maxSize, final Duration maxTtl) {
     this.delegate = Objects.requireNonNull(delegate, "delegate");
@@ -69,6 +80,9 @@ public class CachingJwtDecoder implements JwtDecoder {
         Caffeine.newBuilder()
             .maximumSize(maxSize)
             .expireAfter(new TokenExpiry(Objects.requireNonNull(maxTtl, "maxTtl")))
+            // Record stats so cache.stats() returns hit / miss / load-time counters; useful for
+            // ad-hoc diagnostics without needing to interpret the log-driven counters below.
+            .recordStats()
             .build();
     LOG.info(
         "Caching JWT decoder enabled: maxSize={} maxTtl={} (delegate {})",
@@ -87,13 +101,42 @@ public class CachingJwtDecoder implements JwtDecoder {
     final String key = sha256Hex(token);
     final Jwt cached = cache.getIfPresent(key);
     if (cached != null) {
+      hitCounter.incrementAndGet();
       return cached;
+    }
+
+    final long misses = missCounter.incrementAndGet();
+    if (LOG.isDebugEnabled()) {
+      // Log first 12 hex chars of the SHA-256 key — enough to correlate misses for the same
+      // token across requests, not enough to reconstruct the token.
+      LOG.debug("JWT decoder cache miss (key={}…)", key.substring(0, Math.min(12, key.length())));
+    }
+    if (misses % MISS_LOG_INTERVAL == 0) {
+      logCacheStats(misses);
     }
 
     // get(key, loader) is atomic per key — concurrent misses on the same token coalesce onto one
     // delegate decode. The loader may throw JwtException, which Caffeine surfaces to all waiters
     // without caching anything.
     return cache.get(key, k -> delegate.decode(token));
+  }
+
+  /**
+   * Emit an INFO-level summary of cache effectiveness — request count split into hits / misses,
+   * resulting hit rate, current entry count, and the underlying Caffeine stats record. Called from
+   * the miss path every {@link #MISS_LOG_INTERVAL} misses so the rate is bounded by miss volume.
+   */
+  private void logCacheStats(final long misses) {
+    final long hits = hitCounter.get();
+    final long total = hits + misses;
+    final double hitRate = total == 0 ? 0.0 : (double) hits / total;
+    LOG.info(
+        "JWT decoder cache stats: hits={} misses={} hitRate={} size={} stats={}",
+        hits,
+        misses,
+        String.format("%.3f", hitRate),
+        cache.estimatedSize(),
+        cache.stats());
   }
 
   /** Drop every cached entry — useful when a JWKS rollover invalidates previously-valid tokens. */
