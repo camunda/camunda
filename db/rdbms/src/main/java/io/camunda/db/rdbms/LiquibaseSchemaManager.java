@@ -436,8 +436,6 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
     }
   }
 
-  private record SchemaVersionState(int rowCount, String version) {}
-
   private String getPrefix() {
     final var params = getParameters();
     return params != null ? params.getOrDefault("prefix", "") : "";
@@ -517,4 +515,6 @@ public class LiquibaseSchemaManager extends MultiTenantSpringLiquibase
   protected LockService getLockService(final Database database) {
     return LockServiceFactory.getInstance().getLockService(database);
   }
+
+  private record SchemaVersionState(int rowCount, String version) {}
 }
