@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-package io.camunda.configuration.beanoverrides;
+package io.camunda.tasklist;
 
 import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
 import io.camunda.configuration.InterceptorPlugin;
@@ -14,6 +14,7 @@ import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.SecondaryStorageSecurity;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.beanoverrides.LegacyTasklistProperties;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.tasklist.property.ProxyProperties;
 import io.camunda.tasklist.property.SslProperties;

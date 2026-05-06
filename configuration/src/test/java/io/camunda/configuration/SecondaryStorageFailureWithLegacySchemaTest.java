@@ -10,8 +10,8 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
+import io.camunda.operate.OperatePropertiesOverride;
+import io.camunda.tasklist.TasklistPropertiesOverride;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 

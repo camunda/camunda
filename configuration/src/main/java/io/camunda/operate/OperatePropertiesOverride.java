@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.configuration.beanoverrides;
+package io.camunda.operate;
 
 import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
 import io.camunda.configuration.InterceptorPlugin;
@@ -13,6 +13,7 @@ import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.SecondaryStorageSecurity;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.beanoverrides.LegacyOperateProperties;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
