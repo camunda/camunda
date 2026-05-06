@@ -39,6 +39,16 @@ module.exports = {
     clean: true,
   },
 
+  watchOptions: {
+    // Avoid exhausting inotify watchers by skipping large/derived folders.
+    ignored: [
+      '**/node_modules/**',
+      '**/target/**',
+      '**/.git/**',
+      '**/coverage/**',
+    ],
+  },
+
   plugins: [
     // Extract CSS to a separate file so fonts resolve correctly via relative paths.
     new MiniCssExtractPlugin({ filename: 'bundle.css' }),
