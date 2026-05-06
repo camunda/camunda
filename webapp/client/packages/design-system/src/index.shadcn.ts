@@ -7,4 +7,3 @@
  */
 
 export * from './components/ThemeProvider';
-export * from './components/ui/button/button.shadcn';
