@@ -10,8 +10,10 @@ package io.camunda.authentication.perf;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
+import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -42,6 +44,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -107,18 +110,20 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 @AutoConfigureMockMvc
 @AutoConfigureWebMvc
 @ActiveProfiles("consolidated-auth")
-@Disabled("Local perf harness — enable manually; see ROOT_CAUSE.md")
+// @Disabled("Local perf harness — enable manually; see ROOT_CAUSE.md")
 public class RestApiAuthPerfHarness {
+
+  @RegisterExtension
+  static WireMockExtension wireMock =
+      WireMockExtension.newInstance()
+          .configureStaticDsl(true)
+          .options(wireMockConfig().notifier(new Slf4jNotifier(false)).dynamicPort())
+          .build();
 
   private static final int WARMUP_REQUESTS = 1_000;
   private static final int LATENCY_REQUESTS = 5_000;
   private static final int CONCURRENT_THREADS = 16;
   private static final int CONCURRENT_REQUESTS_PER_THREAD = 1_000;
-
-  @RegisterExtension
-  static WireMockExtension wireMock =
-      WireMockExtension.newInstance().configureStaticDsl(true).build();
-
   private static RSAKey rsaJwk;
   private static String issuerUri;
 
@@ -133,20 +138,31 @@ public class RestApiAuthPerfHarness {
   }
 
   @BeforeAll
-  static void publishJwks() throws JOSEException {
+  static void generateKeyAndStubForContextLoad() throws JOSEException {
     rsaJwk =
         new RSAKeyGenerator(2048)
             .keyID("perf-kid")
             .keyUse(KeyUse.SIGNATURE)
             .algorithm(JWSAlgorithm.RS256)
             .generate();
+    // openid-configuration is read once during Spring context startup (ClientRegistrations
+    // .fromIssuerLocation). Must be stubbed before context refresh.
+    stubIdpEndpoints();
+  }
+
+  @BeforeEach
+  void rePublishStubsAfterPerTestReset() {
+    // WireMockExtension resets stubs between tests; the JWT decoder fetches the JWKS on every
+    // test, so re-register the stubs here as well.
+    stubIdpEndpoints();
+  }
+
+  private static void stubIdpEndpoints() {
     final var jwksBody =
         JSONObjectUtils.toJSONString(new JWKSet(rsaJwk.toPublicJWK()).toJSONObject());
-    stubFor(get(urlMatching(".*/issuer/jwks.json")).willReturn(okJson(jwksBody)));
-    // Spring auto-config probes /.well-known/openid-configuration if jwk-set-uri is unset; we
-    // set it explicitly above, but stub it anyway so any probe doesn't 404 noisily.
+    stubFor(get(urlEqualTo("/issuer/jwks.json")).willReturn(okJson(jwksBody)));
     stubFor(
-        get(urlMatching(".*/issuer/.well-known/openid-configuration"))
+        get(urlEqualTo("/issuer/.well-known/openid-configuration"))
             .willReturn(okJson(openIdConfigBody())));
   }
 
@@ -271,15 +287,31 @@ public class RestApiAuthPerfHarness {
   }
 
   private static String openIdConfigBody() {
-    return "{\"issuer\":\""
-        + "http://localhost:"
-        + wireMock.getPort()
-        + "/issuer"
-        + "\",\"jwks_uri\":\""
-        + "http://localhost:"
-        + wireMock.getPort()
-        + "/issuer/jwks.json"
-        + "\",\"subject_types_supported\":[\"public\"]}";
+    final var base = "http://localhost:" + wireMock.getPort() + "/issuer";
+    // Spring's ClientRegistrations.fromIssuerLocation eagerly reads the well-known doc during
+    // context startup; Nimbus NPEs if token_endpoint or authorization_endpoint are missing
+    // (AuthorizationServerMetadata.getTokenEndpointURI() returns null). Provide all the
+    // mandatory + commonly-required fields so registration succeeds.
+    return "{"
+        + "\"issuer\":\""
+        + base
+        + "\","
+        + "\"authorization_endpoint\":\""
+        + base
+        + "/oauth/authorize\","
+        + "\"token_endpoint\":\""
+        + base
+        + "/oauth/token\","
+        + "\"userinfo_endpoint\":\""
+        + base
+        + "/userinfo\","
+        + "\"jwks_uri\":\""
+        + base
+        + "/jwks.json\","
+        + "\"response_types_supported\":[\"code\"],"
+        + "\"subject_types_supported\":[\"public\"],"
+        + "\"id_token_signing_alg_values_supported\":[\"RS256\"]"
+        + "}";
   }
 
   /**
