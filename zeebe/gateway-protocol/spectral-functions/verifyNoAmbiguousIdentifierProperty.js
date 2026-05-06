@@ -36,7 +36,7 @@ function collectBannedProperties(schema, allowedProps, schemaName, basePath, err
     for (const propName of Object.keys(schema.properties)) {
       if (BANNED.has(propName) && !allowedProps.has(propName)) {
         errors.push({
-          message: `Schema "${schemaName}" has ambiguous property "${propName}". Use a qualified name like "entityName${propName.charAt(0).toUpperCase() + propName.slice(1)}" instead. If this is a grandfathered exception, add it to the allowlist in .spectral.yaml.`,
+          message: `Schema "${schemaName}" has ambiguous property "${propName}". Use a qualified name like "entityName${propName.charAt(0).toUpperCase() + propName.slice(1)}" instead. The allowlist is reserved for already-published grandfathered contracts — see https://github.com/camunda/camunda/issues/52510.`,
           path: [...basePath, 'properties', propName],
         });
       }
