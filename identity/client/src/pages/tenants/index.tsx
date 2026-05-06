@@ -11,10 +11,24 @@ import Lazy from "src/components/router/Lazy";
 import PageRoutes from "src/components/router/PageRoutes";
 import Detail from "src/pages/tenants/detail";
 
-const Tenants: FC = () => (
+type TenantsProps = {
+  isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
+  docsUrl: string;
+};
+
+const Tenants: FC<TenantsProps> = ({
+  isOIDC,
+  isCamundaGroupsEnabled,
+  docsUrl,
+}) => (
   <PageRoutes
-    indexElement={<Lazy load={() => import("./List")} />}
-    detailElement={<Detail />}
+    indexElement={
+      <Lazy load={() => import("./List")} elementProps={{ isOIDC, docsUrl }} />
+    }
+    detailElement={
+      <Detail isOIDC={isOIDC} isCamundaGroupsEnabled={isCamundaGroupsEnabled} />
+    }
   />
 );
 

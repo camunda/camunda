@@ -13,11 +13,14 @@ import EntityList, {
   type DataTableHeader,
 } from "src/components/entityList/EntityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import { isTenantsApiEnabled } from "src/configuration";
 import { useMcpProcessTools, type McpProcessTool } from "./useMcpProcessTools";
 import { ExpandedToolDetails } from "./components/ExpandedToolDetails";
 
-const List: FC = () => {
+type ListProps = {
+  isTenantsApiEnabled: boolean;
+};
+
+const List: FC<ListProps> = ({ isTenantsApiEnabled }) => {
   const { t } = useTranslate("mcpProcesses");
   const { t: tComponents } = useTranslate();
 

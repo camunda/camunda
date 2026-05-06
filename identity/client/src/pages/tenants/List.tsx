@@ -22,7 +22,12 @@ import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
 import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
-const List: FC = () => {
+type ListProps = {
+  isOIDC: boolean;
+  docsUrl: string;
+};
+
+const List: FC<ListProps> = ({ isOIDC, docsUrl }) => {
   const { t } = useTranslate("tenants");
   const navigate = useNavigate();
   const {
@@ -34,7 +39,10 @@ const List: FC = () => {
     ...paginationProps
   } = usePaginatedApi(searchTenant);
 
-  const [addTenant, addTenantModal] = useModal(AddModal, reload);
+  const [addTenant, addTenantModal] = useModal(AddModal, reload, {
+    isOIDC,
+    docsUrl,
+  });
   const [editTenant, editTenantModal] = useEntityModal(EditModal, reload);
   const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, reload);
 

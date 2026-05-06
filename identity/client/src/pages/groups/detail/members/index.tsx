@@ -16,16 +16,16 @@ import { useEntityModal } from "src/components/modal";
 import AssignMembersModal from "src/pages/groups/detail/members/AssignMembersModal";
 import AssignMemberModal from "src/pages/groups/detail/members/AssignMemberModal";
 import DeleteModal from "src/pages/groups/detail/members/DeleteModal";
-import { isOIDC } from "src/configuration";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 import { UserKeys } from "src/utility/api/users";
 import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type MembersProps = {
   groupId: string;
+  isOIDC: boolean;
 };
 
-const Members: FC<MembersProps> = ({ groupId }) => {
+const Members: FC<MembersProps> = ({ groupId, isOIDC }) => {
   const { t } = useTranslate("groups");
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(

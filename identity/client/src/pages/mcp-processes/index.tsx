@@ -10,8 +10,19 @@ import { FC } from "react";
 import Lazy from "src/components/router/Lazy";
 import PageRoutes from "src/components/router/PageRoutes";
 
-const McpProcesses: FC = () => (
-  <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
+type McpProcessesProps = {
+  isTenantsApiEnabled: boolean;
+};
+
+const McpProcesses: FC<McpProcessesProps> = ({ isTenantsApiEnabled }) => (
+  <PageRoutes
+    indexElement={
+      <Lazy
+        load={() => import("./List")}
+        elementProps={{ isTenantsApiEnabled }}
+      />
+    }
+  />
 );
 
 export default McpProcesses;

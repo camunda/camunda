@@ -16,14 +16,6 @@ import {
   getClientConfigString,
 } from "src/configuration/clientConfig";
 
-const adminPath = "/admin";
-
-const apiBaseUrl = "/v2";
-
-const loginApiUrl = "/login";
-
-const logoutApiUrl = "/logout";
-
 export const isOIDC = getClientConfigBoolean("isOidc", false);
 export const isCamundaGroupsEnabled = getClientConfigBoolean(
   "isCamundaGroupsEnabled",
@@ -42,25 +34,3 @@ export const resourcePermissions = getClientConfigObject(
   "resourcePermissions",
   {} as Record<ResourceType, PermissionType[]>,
 ) as Record<ResourceType, PermissionType[]>;
-
-export function getApiBaseUrl() {
-  return getBasePathBeforeAdmin() + apiBaseUrl;
-}
-
-export function getLoginApiUrl() {
-  return getBasePathBeforeAdmin() + loginApiUrl;
-}
-
-export function getLogoutApiUrl() {
-  return getBasePathBeforeAdmin() + logoutApiUrl;
-}
-
-export function getBaseUrl() {
-  return getBasePathBeforeAdmin() + adminPath;
-}
-
-export function getBasePathBeforeAdmin(): string {
-  const uiPath = window.location.pathname;
-  const endIndex = uiPath.indexOf(adminPath);
-  return uiPath.substring(0, endIndex);
-}

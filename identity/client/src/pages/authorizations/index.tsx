@@ -9,11 +9,47 @@
 import { FC } from "react";
 import Lazy from "src/components/router/Lazy";
 import PageRoutes from "src/components/router/PageRoutes";
+import type {
+  PermissionType,
+  ResourceType,
+} from "@camunda/camunda-api-zod-schemas/8.10";
 
-const Authorizations: FC = () => (
+type AuthorizationsProps = {
+  isOIDC: boolean;
+  isCamundaGroupsEnabled: boolean;
+  isTenantsApiEnabled: boolean;
+  resourcePermissions: Record<ResourceType, PermissionType[]>;
+};
+
+const Authorizations: FC<AuthorizationsProps> = ({
+  isOIDC,
+  isCamundaGroupsEnabled,
+  isTenantsApiEnabled,
+  resourcePermissions,
+}) => (
   <PageRoutes
-    indexElement={<Lazy load={() => import("./List")} />}
-    detailElement={<Lazy load={() => import("./List")} />}
+    indexElement={
+      <Lazy
+        load={() => import("./List")}
+        elementProps={{
+          isOIDC,
+          isCamundaGroupsEnabled,
+          isTenantsApiEnabled,
+          resourcePermissions,
+        }}
+      />
+    }
+    detailElement={
+      <Lazy
+        load={() => import("./List")}
+        elementProps={{
+          isOIDC,
+          isCamundaGroupsEnabled,
+          isTenantsApiEnabled,
+          resourcePermissions,
+        }}
+      />
+    }
   />
 );
 

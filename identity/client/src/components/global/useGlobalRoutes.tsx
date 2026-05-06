@@ -19,10 +19,12 @@ import OperationsLog from "src/pages/operations-log";
 import GlobalTaskListeners from "src/pages/global-task-listeners";
 import McpProcesses from "src/pages/mcp-processes";
 import {
+  docsUrl,
   isCamundaGroupsEnabled,
   isOIDC,
   isSaaS,
   isTenantsApiEnabled,
+  resourcePermissions,
 } from "src/configuration";
 import { Paths } from "src/components/global/routePaths";
 
@@ -56,7 +58,7 @@ export const useGlobalRoutes = () => {
           path: `${Paths.groups()}/*`,
           key: Paths.groups(),
           label: t("groups"),
-          element: <Groups />,
+          element: <Groups isOIDC={isOIDC} />,
         },
       ]
     : [];
@@ -67,7 +69,13 @@ export const useGlobalRoutes = () => {
           path: `${Paths.tenants()}/*`,
           key: Paths.tenants(),
           label: t("tenants"),
-          element: <Tenants />,
+          element: (
+            <Tenants
+              isOIDC={isOIDC}
+              isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+              docsUrl={docsUrl}
+            />
+          ),
         },
       ]
     : [];
@@ -79,14 +87,26 @@ export const useGlobalRoutes = () => {
       path: `${Paths.roles()}/*`,
       key: Paths.roles(),
       label: t("roles"),
-      element: <Roles />,
+      element: (
+        <Roles
+          isOIDC={isOIDC}
+          isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+        />
+      ),
     },
     ...tenantsDependentRoutes,
     {
       path: `${Paths.authorizations()}/*`,
       key: Paths.authorizations(),
       label: t("authorizations"),
-      element: <Authorizations />,
+      element: (
+        <Authorizations
+          isOIDC={isOIDC}
+          isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+          isTenantsApiEnabled={isTenantsApiEnabled}
+          resourcePermissions={resourcePermissions}
+        />
+      ),
     },
     {
       path: `${Paths.globalTaskListeners()}/*`,
@@ -104,7 +124,7 @@ export const useGlobalRoutes = () => {
       path: `${Paths.mcpProcesses()}/*`,
       key: Paths.mcpProcesses(),
       label: t("mcpProcesses"),
-      element: <McpProcesses />,
+      element: <McpProcesses isTenantsApiEnabled={isTenantsApiEnabled} />,
     },
     {
       path: `${Paths.operationsLog()}/*`,

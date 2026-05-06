@@ -16,16 +16,16 @@ import { TrashCan } from "@carbon/react/icons";
 import DeleteModal from "src/pages/tenants/detail/members/DeleteModal";
 import AssignMembersModal from "src/pages/tenants/detail/members/AssignMembersModal";
 import AssignMemberModal from "src/pages/tenants/detail/members/AssignMemberModal";
-import { isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
 import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 import TabEmptyState from "src/components/layout/TabEmptyState";
 
 type MembersProps = {
   tenantId: string;
+  isOIDC: boolean;
 };
 
-const Members: FC<MembersProps> = ({ tenantId }) => {
+const Members: FC<MembersProps> = ({ tenantId, isOIDC }) => {
   const { t } = useTranslate("tenants");
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(

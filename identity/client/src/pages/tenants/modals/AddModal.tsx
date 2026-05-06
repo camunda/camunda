@@ -22,7 +22,6 @@ import { spacing06 } from "@carbon/elements";
 import { documentationHref } from "src/components/documentation";
 import TextField from "src/components/form/TextField";
 import Modal, { FormModal, UseModalProps } from "src/components/modal";
-import { docsUrl, isOIDC } from "src/configuration";
 import { useApiCall } from "src/utility/api";
 import { createTenant } from "src/utility/api/tenants";
 import useTranslate from "src/utility/localization";
@@ -54,11 +53,21 @@ const OIDC_ASSIGN_ENTITY_ITEMS = [
   "assignClients",
 ] as const;
 
-const ASSIGN_ENTITY_ITEMS = isOIDC
-  ? ([...BASE_ASSIGN_ENTITY_ITEMS, ...OIDC_ASSIGN_ENTITY_ITEMS] as const)
-  : BASE_ASSIGN_ENTITY_ITEMS;
+type AddTenantModalProps = UseModalProps & {
+  isOIDC: boolean;
+  docsUrl: string;
+};
 
-const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
+const AddTenantModal: FC<AddTenantModalProps> = ({
+  open,
+  onClose,
+  onSuccess,
+  isOIDC,
+  docsUrl,
+}) => {
+  const ASSIGN_ENTITY_ITEMS = isOIDC
+    ? ([...BASE_ASSIGN_ENTITY_ITEMS, ...OIDC_ASSIGN_ENTITY_ITEMS] as const)
+    : BASE_ASSIGN_ENTITY_ITEMS;
   const { t, Translate } = useTranslate("tenants");
   const navigate = useNavigate();
   const [createdTenant, setCreatedTenant] = useState<{

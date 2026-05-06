@@ -9,13 +9,9 @@
 import { FC } from "react";
 import PageRoutes from "src/components/router/PageRoutes.tsx";
 import Lazy from "src/components/router/Lazy.tsx";
-import Detail from "src/pages/groups/detail";
 
 const ClusterVariables: FC = () => (
-  <PageRoutes
-    indexElement={<Lazy load={() => import("./List")} />}
-    detailElement={<Detail />}
-  />
+  <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
 );
 
 export default ClusterVariables;
