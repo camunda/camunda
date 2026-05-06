@@ -45,13 +45,13 @@ When an external RDBMS URL is configured, `cmd/c8run/main.go` attempts to auto-d
 
 Vendor detection from the JDBC URL prefix:
 
-| JDBC URL prefix | Vendor | Auto-detection |
-|---|---|---|
-| `jdbc:oracle:*` | Oracle | Yes — searches for `ojdbc*.jar` |
-| `jdbc:mysql:*` | MySQL | Yes — searches for `mysql-connector*.jar` |
+|   JDBC URL prefix   |   Vendor   |                       Auto-detection                       |
+|---------------------|------------|------------------------------------------------------------|
+| `jdbc:oracle:*`     | Oracle     | Yes — searches for `ojdbc*.jar`                            |
+| `jdbc:mysql:*`      | MySQL      | Yes — searches for `mysql-connector*.jar`                  |
 | `jdbc:postgresql:*` | PostgreSQL | No — not auto-detected; provide `--extra-driver` if needed |
-| `jdbc:mariadb:*` | MariaDB | No — not auto-detected; provide `--extra-driver` if needed |
-| `jdbc:sqlserver:*` | SQL Server | No — not auto-detected; provide `--extra-driver` if needed |
+| `jdbc:mariadb:*`    | MariaDB    | No — not auto-detected; provide `--extra-driver` if needed |
+| `jdbc:sqlserver:*`  | SQL Server | No — not auto-detected; provide `--extra-driver` if needed |
 
 C8Run only fails early for missing drivers it explicitly validates during detection (currently Oracle/MySQL). For PostgreSQL, MariaDB, and SQL Server, a missing driver may only surface later at runtime.
 

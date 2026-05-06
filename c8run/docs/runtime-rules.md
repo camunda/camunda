@@ -14,21 +14,21 @@ H2 is the default secondary storage for C8Run. It is supported for local develop
 
 ## Connectors Launcher Compatibility
 
-| Connector bundle version | Launcher |
-|---|---|
-| `8.9.0` and newer (including snapshots) | Spring Boot `PropertiesLauncher` |
-| Older than `8.9.0` | Legacy connector runtime main class |
+|        Connector bundle version         |              Launcher               |
+|-----------------------------------------|-------------------------------------|
+| `8.9.0` and newer (including snapshots) | Spring Boot `PropertiesLauncher`    |
+| Older than `8.9.0`                      | Legacy connector runtime main class |
 
 Do not change this version gate without verifying both launcher paths still work.
 
 ## Default Ports
 
-| Endpoint | Default port |
-|---|---|
-| Web / REST | `8080` |
-| Connectors health | `8086` |
-| Camunda metrics | `9600` |
-| Zeebe gRPC | `26500` |
+|     Endpoint      | Default port |
+|-------------------|--------------|
+| Web / REST        | `8080`       |
+| Connectors health | `8086`       |
+| Camunda metrics   | `9600`       |
+| Zeebe gRPC        | `26500`      |
 
 The `--port` flag changes the main web/REST port. If the user did not set `CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS`, Connectors defaults to the selected Camunda port.
 
