@@ -15,10 +15,17 @@
 Apply deterministic fixes to flaky Playwright tests.
 
 Strategies applied:
-  - timeout errors  → insert `test.slow();` as the first statement in the test
-    body, which triples the default timeout.
-  - other flaky     → insert a `// TODO(triage-agent): flaky – investigate`
-    comment above the test so it's visible during review.
+  - root_cause_hint == "timing" AND error_type == "timeout"
+      → insert `test.slow();` as the first statement in the test body.
+        This triples the default timeout and is only appropriate when the
+        triage report is confident the failure is a genuine timing / race
+        condition, not a wrong assertion or test-isolation bug.
+  - all other flaky tests
+      → insert a `// TODO(triage-agent): flaky – <hint>: <reason>` comment
+        above the test so the human reviewer sees the classification and
+        reasons from the triage report without any code being changed.
+        This avoids masking real test-code or product issues with a timeout
+        increase that wouldn't fix the underlying problem.
 
 Usage:
     python3 apply-timeout-fixes.py <triage-report.json> <test-suite-dir> [--version-label <label>]
@@ -88,9 +95,10 @@ def _apply_slow(content: str, test_title: str) -> tuple[str, bool]:
     return new_content, modified
 
 
-def _apply_todo_comment(content: str, test_title: str) -> tuple[str, bool]:
+def _apply_todo_comment(content: str, test_title: str, detail: str = "investigate") -> tuple[str, bool]:
     """Insert a TODO comment on the line before the named test call."""
     modified = False
+    comment_text = f"// TODO(triage-agent): flaky – {detail}"
 
     def replacer(m: re.Match) -> str:
         nonlocal modified
@@ -105,7 +113,7 @@ def _apply_todo_comment(content: str, test_title: str) -> tuple[str, bool]:
         # matches the indentation of the surrounding describe block.
         line_start = content.rfind("\n", 0, m.start()) + 1
         indent = content[line_start:m.start()]
-        return indent + "// TODO(triage-agent): flaky – investigate\n" + m.group(0)
+        return indent + comment_text + "\n" + m.group(0)
 
     new_content = _TEST_OPEN_RE.sub(replacer, content)
     return new_content, modified
@@ -115,24 +123,45 @@ def _apply_todo_comment(content: str, test_title: str) -> tuple[str, bool]:
 # Per-test fix dispatch
 # ---------------------------------------------------------------------------
 
-def fix_test_in_file(ts_file: Path, test_name: str, error_type: str) -> tuple[bool, str]:
+def fix_test_in_file(
+    ts_file: Path,
+    test_name: str,
+    error_type: str,
+    root_cause_hint: str,
+    root_cause_reasons: list[str],
+) -> tuple[bool, str]:
     """
     Apply the appropriate fix for a single test in *ts_file*.
 
     Returns (was_modified, fix_description).
     The caller is responsible for writing the file back.
-    """
-    # Extract the leaf test title from the full "Suite > … > title" path
-    leaf_title = test_name.rsplit(" > ", 1)[-1]
 
+    Decision logic
+    --------------
+    test.slow() is inserted ONLY when the triage report agrees the failure is a
+    genuine timing / race-condition issue (root_cause_hint == "timing") AND the
+    error itself is a timeout.  For every other category — wrong assertion,
+    data isolation, product regression, or ambiguous signals — we insert an
+    informative TODO comment instead, because test.slow() would mask the real
+    problem without fixing it.
+    """
+    leaf_title = test_name.rsplit(" > ", 1)[-1]
     content = ts_file.read_text(encoding="utf-8")
 
-    if error_type == "timeout":
+    if error_type == "timeout" and root_cause_hint == "timing":
         new_content, changed = _apply_slow(content, leaf_title)
         fix_desc = "added test.slow()"
     else:
-        new_content, changed = _apply_todo_comment(content, leaf_title)
-        fix_desc = "added TODO comment"
+        # Build a concise detail string from the triage reasons so reviewers
+        # know exactly why the test was flagged (e.g. "test_code: locator/
+        # selector error — typically an outdated test selector").
+        hint_label = root_cause_hint.replace("_", " ") if root_cause_hint else "investigate"
+        if root_cause_reasons:
+            detail = f"{hint_label}: {root_cause_reasons[0]}"
+        else:
+            detail = hint_label
+        new_content, changed = _apply_todo_comment(content, leaf_title, detail)
+        fix_desc = f"added TODO comment ({hint_label})"
 
     if changed:
         ts_file.write_text(new_content, encoding="utf-8")
@@ -181,8 +210,13 @@ def main(report_path: Path, suite_dir: Path, version_label: str | None = None) -
                                  "reason": f"file not found ({len(matches)} glob matches)"})
                 continue
 
+        root_cause_hint = test.get("root_cause_hint", "")
+        root_cause_reasons = test.get("root_cause_reasons", [])
+
         try:
-            changed, fix_desc = fix_test_in_file(ts_file, test_name, error_type)
+            changed, fix_desc = fix_test_in_file(
+                ts_file, test_name, error_type, root_cause_hint, root_cause_reasons
+            )
         except Exception as exc:
             skipped.append({"file": rel_file, "test": test_name, "reason": str(exc)})
             continue
