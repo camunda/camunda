@@ -865,7 +865,8 @@ observation point for a derived entity all carry it.
       shape: edge               # required for membership-style relationships
       identifiedBy:
         - { in: path, name: roleId,  semanticType: RoleId }
-        - { in: path, name: groupId, semanticType: GroupId }
+        # BYOG: under OIDC `groupsClaim`, runtime accepts external IdP IDs.
+        - { in: path, name: groupId, semanticType: GroupId, acceptsExternal: true }
 ```
 
 Field reference:
@@ -889,9 +890,9 @@ Maps each member of the established tuple to a local parameter of the
 consumer.
 
 ```yaml
-/groups/{groupId}/users/{username}:
-  put:
-    operationId: assignUserToGroup
+/groups/{groupId}:
+  get:
+    operationId: getGroup
     x-semantic-requires:
       kind: Group
       bind:
@@ -902,6 +903,15 @@ The planner uses `requires` to schedule a call to a `Group`-establishing
 operation (e.g. `createGroup`) before this one. The `bind` map propagates
 the identifier values produced by the upstream call into this call's
 parameters.
+
+> **Edge producers do not declare explicit `x-semantic-requires`.**
+> The planner derives the implicit requires for an `edge` producer
+> from each foreign identifier in its `identifiedBy` tuple (resolved
+> via single-owner identifier resolution). Adding an explicit
+> `x-semantic-requires` on a membership endpoint such as
+> `assignUserToGroup` or `assignRoleToGroup` is redundant — use this
+> annotation only on entity consumers (operations without an
+> `x-semantic-establishes`, or whose `shape` defaults to `entity`).
 
 > **Composite-key entities — declare a `requires` for every foreign
 > identifier you borrow.** When an entity producer's `identifiedBy`
@@ -929,7 +939,7 @@ parameters.
 > `acceptsExternal: true` or a routable `requires`, the producer is
 > unreachable via chain planning and is flagged as an unreachable
 > orphan.
-
+>
 > **Producer must include the establishing kind's own identifier.**
 > An entity producer's `identifiedBy` MUST contain at least one entry
 > whose `semanticType` is one of the establishing kind's own
@@ -940,7 +950,7 @@ parameters.
 > Enforced by `verify-semantic-kinds-registered`. Edge producers are
 > exempt (every edge `identifiedBy` is a foreign identifier by
 > definition, resolved via single-owner edge-endpoint resolution).
-
+>
 > **Consumer must bind the full identifier tuple.** Every
 > `x-semantic-requires.bind` for an entity-kind consumer MUST cover
 > the kind's complete identity tuple. For composite-key entities

@@ -12,13 +12,17 @@ paths:
 
         The supplied `groupId` is validated against `^[a-zA-Z0-9_~@.+-]+$`
         (max 256 characters) by `IdentifierValidator.validateId` in the
-        runtime. This constraint applies in every deployment, including
-        BYOG/OIDC: the BYOG relaxation only loosens validation when a
-        group is referenced *as a member* of a role or tenant
-        (`assignRoleToGroup`, `assignGroupToTenant`); group CRUD itself
-        always uses the strict default-id regex. The constraint is not
-        advertised on the `GroupId` schema so that the same schema can be
-        reused at member-reference sites without falsely rejecting
+        runtime. This strict validation applies wherever the Groups API
+        is available: in OIDC deployments that set
+        `camunda.security.authentication.oidc.groupsClaim` the Groups
+        API (including this endpoint) is disabled entirely, so group
+        CRUD never sees externally-minted IdP IDs. The BYOG relaxation
+        only loosens validation when a group is referenced *as a member*
+        of a role or tenant (`assignRoleToGroup`,
+        `assignGroupToTenant`); group CRUD itself always uses the strict
+        default-id regex. The constraint is not advertised on the
+        `GroupId` schema so that the same schema can be reused at
+        member-reference sites without falsely rejecting
         externally-minted IdP group IDs there.
       x-semantic-establishes:
         kind: Group
