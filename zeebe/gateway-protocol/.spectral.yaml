@@ -11,6 +11,7 @@ functions:
   - verifyResponsePropertiesRequired
   - verifyDeprecatedEnumMembers
   - verifyAddedInVersion
+  - verifyNoAmbiguousIdentifierProperty
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -158,3 +159,89 @@ rules:
     message: "{{error}}"
     then:
       function: verifyAddedInVersion
+
+  # Guard against new schemas introducing ambiguous bare identifier properties.
+  # Existing schemas are grandfathered via the allowlist below — do not add new
+  # entries without discussion. See https://github.com/camunda/camunda/issues/52510
+  no-ambiguous-identifier-property:
+    description: "Schema properties must not use bare `id`, `key`, or `name` — use qualified names like `entityNameId`."
+    severity: error
+    given: "$.components.schemas[*]"
+    message: "{{error}}"
+    then:
+      function: verifyNoAmbiguousIdentifierProperty
+      functionOptions:
+        allowlist:
+          # Grandfathered schemas — these pre-date the naming convention and
+          # cannot be renamed without breaking published SDK consumers.
+          CreateGlobalTaskListenerRequest: [id]
+          GlobalTaskListenerResult: [id]
+          GlobalTaskListenerSearchQueryFilterRequest: [id]
+          CreateClusterVariableRequest: [name]
+          ClusterVariableResultBase: [name]
+          ClusterVariableResult: [name]
+          ClusterVariableSearchResult: [name]
+          ClusterVariableSearchQueryFilterRequest: [name]
+          DecisionDefinitionFilter: [name]
+          DecisionDefinitionResult: [name]
+          DeploymentDecisionResult: [name]
+          GroupCreateRequest: [name]
+          GroupCreateResult: [name]
+          GroupUpdateRequest: [name]
+          GroupUpdateResult: [name]
+          GroupResult: [name]
+          GroupFilter: [name]
+          MappingRuleCreateUpdateRequest: [name]
+          MappingRuleCreateRequest: [name]
+          MappingRuleUpdateRequest: [name]
+          MappingRuleCreateUpdateResult: [name]
+          MappingRuleCreateResult: [name]
+          MappingRuleUpdateResult: [name]
+          MappingRuleResult: [name]
+          MappingRuleFilter: [name]
+          MessageCorrelationRequest: [name]
+          MessagePublicationRequest: [name]
+          ProcessDefinitionFilter: [name]
+          ProcessDefinitionResult: [name]
+          RoleCreateRequest: [name]
+          RoleCreateResult: [name]
+          RoleUpdateRequest: [name]
+          RoleUpdateResult: [name]
+          RoleResult: [name]
+          RoleFilter: [name]
+          TenantCreateRequest: [name]
+          TenantCreateResult: [name]
+          TenantUpdateRequest: [name]
+          TenantUpdateResult: [name]
+          TenantResult: [name]
+          TenantFilter: [name]
+          UserTaskFilter: [name]
+          UserTaskResult: [name]
+          UserTaskVariableFilter: [name]
+          UserRequest: [name]
+          UserCreateResult: [name]
+          UserUpdateRequest: [name]
+          UserUpdateResult: [name]
+          UserResult: [name]
+          UserFilter: [name]
+          VariableFilter: [name]
+          VariableResultBase: [name]
+          VariableResult: [name]
+          VariableSearchResult: [name]
+          VariableValueFilterProperty: [name]
+
+  # Same ban for truly-inline schemas (request/response bodies, parameters).
+  # Uses `resolved: false` so $ref pointers (which point at component schemas
+  # already covered above) are NOT followed — only schemas literally defined
+  # inline are checked. No allowlist: inline schemas are new code by definition.
+  no-ambiguous-identifier-property-inline:
+    description: "Inline schema properties must not use bare `id`, `key`, or `name` — use qualified names like `entityNameId`."
+    severity: error
+    resolved: false
+    given:
+      - "$.paths[*][*].requestBody.content[*].schema"
+      - "$.paths[*][*].responses[*].content[*].schema"
+      - "$.paths[*][*].parameters[*].schema"
+    message: "{{error}}"
+    then:
+      function: verifyNoAmbiguousIdentifierProperty

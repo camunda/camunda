@@ -1,0 +1,131 @@
+# Domain file for no-ambiguous-identifier-property rule test fixture.
+# Contains both valid schemas (qualified names or allowlisted) and invalid
+# schemas (bare id/key/name that are NOT allowlisted).
+openapi: "3.0.3"
+info:
+  title: Ambiguous identifier test schemas
+  version: "1.0"
+
+paths:
+  # ── Valid inline: $ref to a component schema (not flagged) ────
+  /valid-things:
+    post:
+      operationId: createValidThing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidSchema'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidSchema'
+  # ── Invalid inline: truly inline schema with bare `name` ──────
+  /bad-inline-things:
+    post:
+      operationId: createBadInlineThing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Bare name in inline schema — should be flagged.
+                qualifiedProp:
+                  type: string
+      responses:
+        "200":
+          description: OK
+
+components:
+  schemas:
+    # ── Valid: uses qualified property names ─────────────────────
+    ValidSchema:
+      type: object
+      properties:
+        processDefinitionKey:
+          type: string
+          description: The key of the process definition.
+        tenantName:
+          type: string
+          description: The name of the tenant.
+        globalListenerId:
+          type: string
+          description: The ID of the global listener.
+        description:
+          type: string
+          description: Some other property that is fine.
+
+    # ── Valid: allowlisted schema with bare `id` ────────────────
+    # Uses a real allowlisted schema name so the production ruleset
+    # recognises it.
+    CreateGlobalTaskListenerRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Grandfathered bare id.
+
+    # ── Valid: allowlisted schema with bare `name` ──────────────
+    CreateClusterVariableRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Grandfathered bare name.
+
+    # ── Invalid: bare `id` not in allowlist ─────────────────────
+    BadIdSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          description: This bare id should be flagged.
+        otherProp:
+          type: string
+          description: A normal property.
+
+    # ── Invalid: bare `key` not in allowlist ────────────────────
+    BadKeySchema:
+      type: object
+      properties:
+        key:
+          type: string
+          description: This bare key should be flagged.
+
+    # ── Invalid: bare `name` not in allowlist ───────────────────
+    BadNameSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: This bare name should be flagged.
+
+    # ── Invalid: multiple banned properties on one schema ───────
+    MultiViolationSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Bare id.
+        key:
+          type: string
+          description: Bare key.
+        name:
+          type: string
+          description: Bare name.
+
+    # ── Invalid: bare `id` inside an allOf member ───────────────
+    AllOfBadIdSchema:
+      type: object
+      allOf:
+        - type: object
+          properties:
+            id:
+              type: string
+              description: Bare id hidden inside allOf.
