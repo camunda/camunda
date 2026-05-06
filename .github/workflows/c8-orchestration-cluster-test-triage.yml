@@ -117,8 +117,17 @@ jobs:
             fi
 
             mkdir -p "$dest"
-            gh api "/repos/${REPO}/actions/artifacts/${artifact_id}/zip" > "${dest}/artifact.zip"
-            unzip -q "${dest}/artifact.zip" -d "$dest/"
+            if ! gh api "/repos/${REPO}/actions/artifacts/${artifact_id}/zip" \
+                > "${dest}/artifact.zip" 2>/dev/null; then
+              echo "::warning::Failed to download artifact zip for ${label} – skipping."
+              rm -f "${dest}/artifact.zip"
+              continue
+            fi
+            if ! unzip -q "${dest}/artifact.zip" -d "$dest/" 2>/dev/null; then
+              echo "::warning::Failed to extract artifact for ${label} – skipping."
+              rm -f "${dest}/artifact.zip"
+              continue
+            fi
             rm "${dest}/artifact.zip"
             echo "Downloaded: ${label} (run ${run_id}, artifact ${artifact_id})"
             downloaded=$((downloaded + 1))
@@ -126,16 +135,22 @@ jobs:
 
           echo "downloaded=${downloaded}" >> "$GITHUB_OUTPUT"
 
-      # ── Fail fast if nothing was downloaded ─────────────────────────────────
+      # ── Gate: skip analysis when no data is available ───────────────────────
       - name: Check artifact downloads
-        if: steps.download.outputs.downloaded == '0'
+        id: check
         run: |
-          echo "::error::No nightly artifacts could be downloaded. Ensure nightly runs have completed and the workflow has 'actions: read' permission."
-          exit 1
+          downloaded="${{ steps.download.outputs.downloaded }}"
+          if [[ -z "$downloaded" || "$downloaded" == "0" ]]; then
+            echo "::notice::No nightly artifacts downloaded — skipping triage (nightly runs may not have completed yet)."
+            echo "has_data=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_data=true" >> "$GITHUB_OUTPUT"
+          fi
 
       # ── Analyse ─────────────────────────────────────────────────────────────
       - name: Analyse test results
         id: analyse
+        if: steps.check.outputs.has_data == 'true'
         run: |
           set -euo pipefail
           python3 .ci/scripts/ci/triage-tests/analyze-playwright-results.py artifacts \
@@ -176,7 +191,7 @@ jobs:
 
       - name: Apply flaky-test fixes per branch and open PRs
         id: fix
-        if: steps.analyse.outputs.flaky != '0' && steps.analyse.outputs.flaky != ''
+        if: steps.check.outputs.has_data == 'true' && steps.analyse.outputs.flaky != '0' && steps.analyse.outputs.flaky != ''
         env:
           GH_TOKEN: ${{ github.token }}
           DRY_RUN:  ${{ github.event.inputs.dry_run || 'false' }}
@@ -328,6 +343,7 @@ jobs:
       # ── Build Slack payload ──────────────────────────────────────────────────
       - name: Build Slack triage payload
         id: slack_payload
+        if: steps.check.outputs.has_data == 'true'
         env:
           TOTAL:      ${{ steps.analyse.outputs.total }}
           TEST_CODE:  ${{ steps.analyse.outputs.test_code }}
@@ -362,7 +378,7 @@ jobs:
 
       # ── Post to Slack ────────────────────────────────────────────────────────
       - name: Post triage report to Slack
-        if: github.event.inputs.dry_run != 'true'
+        if: steps.check.outputs.has_data == 'true' && github.event.inputs.dry_run != 'true'
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           method: chat.postMessage

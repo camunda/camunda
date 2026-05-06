@@ -1,0 +1,25 @@
+self-hosted-runner:
+  # Camunda GCP and AWS self-hosted runner labels used across workflows.
+  labels:
+    - aws-arm-core-4-longrunning
+    - aws-core-8-default
+    - gcp-core-16-default
+    - gcp-core-16-longrunning
+    - gcp-core-2-default
+    - gcp-core-32-longrunning
+    - gcp-core-32-release
+    - gcp-core-4-default
+    - gcp-core-4-release
+    - gcp-core-8-default
+    - gcp-perf-core-16-default
+    - gcp-perf-core-8-default
+
+# Configuration variables in array of strings defined in your repository or
+# organization. `null` means disabling configuration variables check.
+config-variables: null
+
+paths:
+  # ci.yml intentionally uses `if: ${{ false }}` to temporarily disable a job.
+  .github/workflows/ci.yml:
+    ignore:
+      - 'constant expression .+ in condition'
