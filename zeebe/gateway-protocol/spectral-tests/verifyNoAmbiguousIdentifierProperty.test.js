@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const { lintFixtureFile, filterByRule, filterByPathSegment } = require('./helpers');
 
 const RULE = 'no-ambiguous-identifier-property';
+const RULE_INLINE = 'no-ambiguous-identifier-property-inline';
 const FIXTURE = 'ambiguous-identifier';
 
 describe('verifyNoAmbiguousIdentifierProperty', () => {
@@ -89,6 +90,47 @@ describe('verifyNoAmbiguousIdentifierProperty', () => {
   describe('total violation count', () => {
     it('produces exactly 7 violations total', () => {
       assert.equal(violations.length, 7);
+    });
+  });
+});
+
+describe('verifyNoAmbiguousIdentifierProperty (inline schemas)', () => {
+  let inlineViolations;
+
+  before(() => {
+    const allResults = lintFixtureFile(FIXTURE, 'things.yaml');
+    inlineViolations = filterByRule(allResults, RULE_INLINE);
+  });
+
+  describe('valid: $ref inline schema is not flagged', () => {
+    it('produces no violations for /valid-things', () => {
+      const v = inlineViolations.filter(r =>
+        r.path.some(seg => String(seg).includes('/valid-things'))
+      );
+      assert.equal(v.length, 0);
+    });
+  });
+
+  describe('invalid: truly inline schema with bare name', () => {
+    it('flags the inline schema under /bad-inline-things', () => {
+      const v = inlineViolations.filter(r =>
+        r.path.some(seg => String(seg).includes('/bad-inline-things'))
+      );
+      assert.equal(v.length, 1);
+      assert.match(v[0].message, /ambiguous property "name"/);
+    });
+
+    it('includes "(inline schema)" in the label', () => {
+      const v = inlineViolations.filter(r =>
+        r.path.some(seg => String(seg).includes('/bad-inline-things'))
+      );
+      assert.match(v[0].message, /\(inline schema\)/);
+    });
+  });
+
+  describe('total inline violation count', () => {
+    it('produces exactly 1 inline violation total', () => {
+      assert.equal(inlineViolations.length, 1);
     });
   });
 });

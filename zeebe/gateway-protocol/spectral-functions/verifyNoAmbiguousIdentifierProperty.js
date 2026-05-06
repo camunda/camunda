@@ -7,7 +7,8 @@
 // grandfathered via the allowlist in `.spectral.yaml` — see the issue
 // https://github.com/camunda/camunda/issues/52510 for rationale.
 //
-// Applied to each schema under $.components.schemas[*].
+// Applied to component schemas ($.components.schemas[*]) and inline schemas
+// under request bodies, responses, and parameters.
 
 const BANNED = new Set(['id', 'key', 'name']);
 
@@ -16,14 +17,37 @@ module.exports = (input, opts, context) => {
     return [];
   }
 
-  const schemaName = context.path[context.path.length - 1];
+  // Determine if we're on a named component schema (allowlist applies)
+  // or an inline schema (no allowlist — inline schemas are never grandfathered).
+  const isComponentSchema =
+    context.path.length >= 3 &&
+    context.path[0] === 'components' &&
+    context.path[1] === 'schemas';
+
+  const schemaName = isComponentSchema
+    ? context.path[2]
+    : deriveInlineLabel(context.path);
+
   const allowlist = (opts && opts.allowlist) || {};
-  const allowedProps = new Set(allowlist[schemaName] || []);
+  const allowedProps = isComponentSchema
+    ? new Set(allowlist[schemaName] || [])
+    : new Set(); // inline schemas have no allowlist
 
   const errors = [];
   collectBannedProperties(input, allowedProps, schemaName, context.path, errors);
   return errors;
 };
+
+/**
+ * Derives a human-readable label for an inline schema from its JSON path.
+ * Example path: ['paths', '/things', 'post', 'requestBody', 'content', 'application/json', 'schema']
+ * Produces: "POST /things (inline request body)"
+ */
+function deriveInlineLabel(pathSegments) {
+  const pathStr = pathSegments[1] || '?';
+  const method = (pathSegments[2] || '?').toUpperCase();
+  return `${method} ${pathStr} (inline schema)`;
+}
 
 /**
  * Recursively collects banned property names from a schema, traversing
