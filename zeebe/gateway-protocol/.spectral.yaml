@@ -12,6 +12,7 @@ functions:
   - verifyDeprecatedEnumMembers
   - verifyAddedInVersion
   - verifySemanticKindsRegistered
+  - verifyNoAmbiguousIdentifierProperty
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -249,3 +250,37 @@ rules:
     message: "{{error}}"
     then:
       function: verifySemanticKindsRegistered
+
+  # Guard against new schemas introducing ambiguous bare identifier properties.
+  # Existing schemas are grandfathered via the allowlist below — do not add new
+  # entries without discussion. See https://github.com/camunda/camunda/issues/52510
+  no-ambiguous-identifier-property:
+    description: "Schema properties must not use bare `id` or `key` — use qualified names like `entityNameId`."
+    severity: error
+    given: "$.components.schemas[*]"
+    message: "{{error}}"
+    then:
+      function: verifyNoAmbiguousIdentifierProperty
+      functionOptions:
+        allowlist:
+          # Grandfathered schemas — these pre-date the naming convention and
+          # cannot be renamed without breaking published SDK consumers.
+          CreateGlobalTaskListenerRequest: [id]
+          GlobalTaskListenerResult: [id]
+          GlobalTaskListenerSearchQueryFilterRequest: [id]
+
+  # Same ban for truly-inline schemas (request/response bodies, parameters).
+  # Uses `resolved: false` so $ref pointers (which point at component schemas
+  # already covered above) are NOT followed — only schemas literally defined
+  # inline are checked. No allowlist: inline schemas are new code by definition.
+  no-ambiguous-identifier-property-inline:
+    description: "Inline schema properties must not use bare `id` or `key` — use qualified names like `entityNameId`."
+    severity: error
+    resolved: false
+    given:
+      - "$.paths[*][*].requestBody.content[*].schema"
+      - "$.paths[*][*].responses[*].content[*].schema"
+      - "$.paths[*][*].parameters[*].schema"
+    message: "{{error}}"
+    then:
+      function: verifyNoAmbiguousIdentifierProperty
