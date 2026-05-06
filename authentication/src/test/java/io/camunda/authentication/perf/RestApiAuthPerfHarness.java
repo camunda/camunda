@@ -432,5 +432,36 @@ public class RestApiAuthPerfHarness {
     public List<Object> placeholderToSatisfyAutowire() {
       return List.of();
     }
+
+    /**
+     * Override the test-context {@link io.camunda.security.auth.CamundaAuthenticationProvider} so
+     * the harness exercises the same caching wrapper as a real deployment. The harness's default
+     * provider (from {@code WebSecurityConfigTestContext}) is unwrapped; this {@code @Primary} bean
+     * takes precedence and lets us measure the impact of the cross-request token cache locally.
+     *
+     * <p>Disable via {@code -Dharness.camundaAuthCache.enabled=false} to fall back to the harness's
+     * default unwrapped provider.
+     */
+    @Bean
+    @Primary
+    @ConditionalOnProperty(
+        name = "harness.camundaAuthCache.enabled",
+        havingValue = "true",
+        matchIfMissing = true)
+    public io.camunda.security.auth.CamundaAuthenticationProvider
+        cachingCamundaAuthenticationProvider(
+            final java.util.List<io.camunda.security.auth.CamundaAuthenticationHolder> holders,
+            final java.util.List<
+                    io.camunda.security.auth.CamundaAuthenticationConverter<
+                        org.springframework.security.core.Authentication>>
+                converters) {
+      final var delegate =
+          new io.camunda.authentication.DefaultCamundaAuthenticationProvider(
+              new io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder(holders),
+              new io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter(
+                  converters));
+      return new io.camunda.authentication.CachingCamundaAuthenticationProvider(
+          delegate, 10_000L, java.time.Duration.ofMinutes(5));
+    }
   }
 }
