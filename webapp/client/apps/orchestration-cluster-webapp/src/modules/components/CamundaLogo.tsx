@@ -8,12 +8,7 @@
 
 import Logo from '#/assets/logo.svg?react';
 import styles from './CamundaLogo.module.scss';
-import cn from 'classnames';
 
-const CamundaLogo: React.FC<React.ComponentProps<typeof Logo>> = ({children, className, ...rest}) => (
-	<Logo {...rest} className={cn(className, styles['logo'])}>
-		{children}
-	</Logo>
-);
+const CamundaLogo: React.FC<React.ComponentProps<typeof Logo>> = () => <Logo className={styles['logo']} />;
 
 export {CamundaLogo};
