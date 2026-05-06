@@ -71,13 +71,30 @@ import org.springframework.test.context.DynamicPropertySource;
  * io.camunda.authentication.service.MembershipService} variants, so the same {@code
  * harness.membership} property + {@code harness.simulatedDbLatencyMs} apply.
  *
- * <p>Recommended usage with async-profiler:
+ * <p><b>Profile from IntelliJ (recommended).</b> Right-click the {@code multiThreadThroughput} (or
+ * {@code singleThreadLatency}) method → <em>Profile … with → Async Profiler</em>. Pick
+ * <em>Wall-clock</em> for I/O wait, <em>CPU</em> for hot paths. The profile is captured for the
+ * full test run. To make the run long enough for a meaningful flame graph, raise the load duration
+ * via system properties (Run/Debug Configuration → VM options):
+ *
+ * <pre>
+ *   -Dharness.durationSeconds=30
+ *   -Dharness.membership=real-mocked
+ *   -Dharness.simulatedDbLatencyMs=5
+ *   -Dharness.threads=32
+ * </pre>
+ *
+ * <p>{@code harness.durationSeconds &gt; 0} switches both scenarios to a tight time-bounded loop
+ * (instead of fixed iteration counts), which is the right shape for profiling.
+ *
+ * <p><b>Profile from CLI with async-profiler.</b>
  *
  * <pre>
  *   # Terminal A — start the harness with profiler-wait enabled
  *   HARNESS_WAIT_FOR_PROFILER=true ./mvnw verify -pl authentication \
  *       -Dtest=RestApiAuthTomcatPerfHarness#multiThreadThroughput \
  *       -DskipTests=false -DskipITs -Dquickly \
+ *       -Dharness.durationSeconds=30 \
  *       -Dharness.membership=real-mocked -Dharness.simulatedDbLatencyMs=5
  *
  *   # The test prints its PID and pauses on stdin. In Terminal B, attach a profiler:
@@ -117,8 +134,16 @@ public class RestApiAuthTomcatPerfHarness {
 
   private static final int WARMUP_REQUESTS = 1_000;
   private static final int LATENCY_REQUESTS = 5_000;
-  private static final int CONCURRENT_THREADS = 16;
+  private static final int CONCURRENT_THREADS = Integer.getInteger("harness.threads", 16);
   private static final int CONCURRENT_REQUESTS_PER_THREAD = 1_000;
+
+  /**
+   * If set to a positive value, both scenarios run for at least this many seconds in a tight loop
+   * instead of using the fixed iteration counts. Useful when attaching a profiler — async-profiler
+   * needs ~10–30 s of sustained activity to produce a usable flame graph. Set via {@code
+   * -Dharness.durationSeconds=30} (or higher) when launching.
+   */
+  private static final long DURATION_SECONDS = Long.getLong("harness.durationSeconds", 0L);
 
   @RegisterExtension
   static WireMockExtension wireMock =
@@ -178,15 +203,23 @@ public class RestApiAuthTomcatPerfHarness {
       hit(http, endpoint, token);
     }
 
-    final var timings = new long[LATENCY_REQUESTS];
+    final var timings = new java.util.ArrayList<Long>();
     final var startWall = System.nanoTime();
-    for (int i = 0; i < LATENCY_REQUESTS; i++) {
+    final var deadline =
+        DURATION_SECONDS > 0
+            ? startWall + java.time.Duration.ofSeconds(DURATION_SECONDS).toNanos()
+            : Long.MAX_VALUE;
+    final var iterCap = DURATION_SECONDS > 0 ? Integer.MAX_VALUE : LATENCY_REQUESTS;
+    for (int i = 0; i < iterCap && System.nanoTime() < deadline; i++) {
       final var t0 = System.nanoTime();
       hit(http, endpoint, token);
-      timings[i] = System.nanoTime() - t0;
+      timings.add(System.nanoTime() - t0);
     }
     final var elapsedNanos = System.nanoTime() - startWall;
-    printStats("single-thread latency (Tomcat)", timings, elapsedNanos);
+    printStats(
+        "single-thread latency (Tomcat)",
+        timings.stream().mapToLong(Long::longValue).toArray(),
+        elapsedNanos);
   }
 
   @Test
@@ -202,19 +235,25 @@ public class RestApiAuthTomcatPerfHarness {
 
     final var pool = Executors.newFixedThreadPool(CONCURRENT_THREADS);
     final var latch = new CountDownLatch(CONCURRENT_THREADS);
-    final var perThreadTimings = Collections.synchronizedList(new ArrayList<long[]>());
+    final var perThreadTimings =
+        Collections.synchronizedList(new ArrayList<java.util.ArrayList<Long>>());
     final var failures = Collections.synchronizedList(new ArrayList<Throwable>());
 
     final var startWall = System.nanoTime();
+    final var deadline =
+        DURATION_SECONDS > 0
+            ? startWall + java.time.Duration.ofSeconds(DURATION_SECONDS).toNanos()
+            : Long.MAX_VALUE;
+    final var iterCap = DURATION_SECONDS > 0 ? Integer.MAX_VALUE : CONCURRENT_REQUESTS_PER_THREAD;
     for (int t = 0; t < CONCURRENT_THREADS; t++) {
       pool.submit(
           () -> {
             try {
-              final var local = new long[CONCURRENT_REQUESTS_PER_THREAD];
-              for (int i = 0; i < CONCURRENT_REQUESTS_PER_THREAD; i++) {
+              final var local = new java.util.ArrayList<Long>();
+              for (int i = 0; i < iterCap && System.nanoTime() < deadline; i++) {
                 final var t0 = System.nanoTime();
                 hit(http, endpoint, token);
-                local[i] = System.nanoTime() - t0;
+                local.add(System.nanoTime() - t0);
               }
               perThreadTimings.add(local);
             } catch (final Throwable e) {
@@ -232,7 +271,11 @@ public class RestApiAuthTomcatPerfHarness {
     if (!failures.isEmpty()) {
       throw new AssertionError("Concurrent run had failures", failures.getFirst());
     }
-    final var flat = perThreadTimings.stream().flatMapToLong(Arrays::stream).toArray();
+    final var flat =
+        perThreadTimings.stream()
+            .flatMap(java.util.Collection::stream)
+            .mapToLong(Long::longValue)
+            .toArray();
     printStats(CONCURRENT_THREADS + "-thread throughput (Tomcat)", flat, elapsedNanos);
   }
 
