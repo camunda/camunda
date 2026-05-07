@@ -448,6 +448,8 @@ components:
     AgentInstanceCreationResult:
       description: Response returned after successfully creating an agent instance.
       type: object
+      x-semantic-provider:
+        - agentInstanceKey
       required:
         - agentInstanceKey
       properties:
