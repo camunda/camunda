@@ -43,7 +43,9 @@ public final class LoadDemo {
   public static void main(final String[] args) throws Exception {
     System.out.println("[LoadDemo] firing " + INSTANCES + " instances, " + PACING + " apart…");
 
-    try (var cluster = LiveBpmn.cluster().testcontainer()) {
+    // Demo flow assumes a local cluster on localhost:26500 (start `c8run start` or
+    // `docker compose up -d` first). Swap to .testcontainer() for a JVM-managed container.
+    try (var cluster = LiveBpmn.cluster().localhost()) {
       final Run run =
           LiveBpmn.createExecutableProcess("load")
               .startEvent()

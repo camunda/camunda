@@ -45,7 +45,9 @@ public final class OrderDemos {
   public static void main(final String[] args) throws Exception {
     final String mode = args.length > 0 ? args[0] : "inline";
 
-    try (var cluster = LiveBpmn.cluster().testcontainer()) {
+    // Demo flow assumes a local cluster on localhost:26500 (start `c8run start` or
+    // `docker compose up -d` first). Swap to .testcontainer() for a JVM-managed container.
+    try (var cluster = LiveBpmn.cluster().localhost()) {
 
       final Run run =
           switch (mode) {

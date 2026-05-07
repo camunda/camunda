@@ -43,7 +43,10 @@ public final class MinimalDemo {
   public static void main(final String[] args) throws Exception {
     final List<String> names = List.of("Stephan", "", "World"); // empty triggers fail
 
-    try (final var cluster = LiveBpmn.cluster().testcontainer()) {
+    // Demo flow assumes a local cluster on localhost:26500 (start `c8run start` or
+    // `docker compose up -d` first). Swap to .testcontainer() if you'd rather have one
+    // booted from this JVM — slower but zero-config.
+    try (final var cluster = LiveBpmn.cluster().localhost()) {
       LiveBpmn.createExecutableProcess("hello")
           .startEvent()
           .serviceTask(

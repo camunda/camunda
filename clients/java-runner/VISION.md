@@ -2,28 +2,30 @@
 
 > Where this could go beyond the hackday.
 
-## The through-line: **everything as code, debuggable end-to-end**
+## The through-line: **composition + isolation, all as code**
 
-Today, BPMN sits in a `.bpmn` file. Workers sit in a service. Deployments sit in a CI pipeline.
-Tests sit in another module. Onboarding sits in Confluence. Each one a different surface, a
-different tool, a different mental context. None of them debuggable from a single breakpoint.
+Camunda already had the pieces:
 
-LiveBpmn collapses all of it into one runnable Java file:
+- **BPMN as code** via `zeebe-bpmn-model` (`Bpmn.createExecutableProcess(...)`).
+- **Deploy + worker registration** via the Java SDK.
+- **Breakpoints** in any worker lambda — that's just Java.
 
-- The **process model** is code — the fluent chain or `fromFile(...)` adoption.
-- The **worker logic** is code — lambdas with IDE breakpoints.
-- The **deployment** is code — `.run(N, cluster)` is the deployer.
-- The **cluster** is code — `cluster().testcontainer()` boots one.
-- The **test** is code — same `main()` you ran becomes an `@Test` with `runner.assertCompleted(...)`.
-- The **tutorial** is code — onboarding markdown with executable cells.
-- The **agent** is code — generated, runnable, observable, correctable.
+What was missing was the *seam* that unified them and a way to **scope a run to one person**.
+Today, two devs both trying out an "order" process on the same cluster collide. An AI agent
+iterating on a workflow blows away whatever the previous iteration deployed. There was no
+private universe.
 
-When everything is code and debuggable, *the IDE becomes the BPM platform*. Stack traces cross
-worker / process / cluster boundaries unbroken. You can step from a service-task lambda into a
-gateway-condition evaluation into the SDK call into the broker response. There is one truth.
+LiveBpmn brings two things:
 
-The vision items below all extend the same kernel: once that gap is gone, what becomes possible
-that wasn't before?
+1. **Composition** — process model, worker logic, deployment, cluster, all in one fluent unit
+   you can `Run/Debug` from your IDE.
+2. **Isolation** — every `.run()` is prefixed with `<user>-<5-char-random>`, pinned to its own
+   `processDefinitionKey`, tagged for findability. Two simultaneous runs from two different
+   devs, or twenty parallel iterations from one AI agent, never collide.
+
+When the surface is unified *and* every run is private, the IDE becomes the BPM platform — a
+process, its workers, its deployment, and its tests are one debuggable artifact. The vision
+items below all extend that kernel.
 
 ---
 
@@ -91,43 +93,7 @@ these next to it in CI. Builds straight on top of `RunOptions.variables(IntFunct
 
 ---
 
-## 3. Executable onboarding & runbooks
-
-Today: an "Onboarding" wiki page with diagrams the new hire can't actually run. A Confluence
-runbook with a screenshot of Operate from a year ago. A post-mortem with a stack trace and no way
-to reproduce.
-
-Tomorrow: every one of those is an executable Markdown file. New team member opens
-`Onboarding.md` in IntelliJ, runs cells inline, sees the order flow execute, sets a breakpoint in
-cell 3, sees how an incident is created in cell 5. Onboarding becomes *practice* instead of
-*reading*.
-
-```markdown
-## Day 1: How an order moves through our system
-
-```java
-LiveBpmn.fromFile("orders.bpmn")
-    .bind("validate", validate)  // ← step into this on cell 3
-    .bind("charge",   charge)
-    .bind("ship",     ship)
-    .run(3, cluster).await();
-```
-
-Click "Run" on this cell. You should see three orders complete. Now break on `charge` and
-inspect `paymentMethod` for instance 3 — it should be `credit-card` because amount ≥ 500.
-```
-
-Same pattern works for runbooks (`IncidentX.md` reproduces the failure with one click) and
-post-mortems (`PR-2378-postmortem.md` runs the actual broken flow against the actual fixed flow,
-side by side). Knowledge that exists only as static text becomes knowledge that *runs*.
-
-Implementation is light: integrate with IntelliJ's Markdown plugin or build a tiny
-`LiveBpmn.fromMarkdown(...)` that extracts the first ```java fenced block. No new platform
-needed.
-
----
-
-## 4. The JavaScript sibling — Play with code workers
+## 3. The JavaScript sibling — Play with code workers
 
 LiveBpmn is the IDE/runtime answer. Camunda Play is the browser/design-time answer. Today they
 don't talk: a designer plays a process in the modeler, then a developer rewrites the worker logic
@@ -153,6 +119,22 @@ made (lambdas-as-workers) translates trivially across runtimes — Java today, J
 tomorrow, Python in a notebook the day after.
 
 ---
+
+## Further ideas
+
+Smaller follow-ups, less ambitious than the three above but easy to imagine on top of the kernel:
+
+- **Executable onboarding / runbooks / post-mortems.** Markdown files where the first ```java
+  cell is a runnable LiveBpmn snippet. New hires execute, breakpoint, learn by doing instead of
+  by reading. Implementation: a tiny `LiveBpmn.fromMarkdown(...)`.
+- **JUnit 5 extension `@LiveBpmnTest`.** Each test method gets a scoped `Run` plus assertion
+  helpers (`assertCompleted`, `assertNoIncidents`). Replaces docker-compose + camunda-process-test
+  boilerplate.
+- **`Run.dumpModelTo(Path)`** so the deployed (prefixed) BPMN can be opened in Modeler for
+  inspection.
+- **Live BPMN file watch + auto-redeploy.** `fromFileWatching(path)` triggers a redeploy on
+  every save — designer in Modeler, dev in IDE, instances flow through the new diagram seconds
+  later.
 
 ## What we explicitly aren't building
 

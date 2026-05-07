@@ -5,16 +5,24 @@
 
 ## The 30-second pitch
 
-> **Process automation just got the IDE treatment.** Define a BPMN process, plug in workers as
-> Java lambdas, hit run — your file deploys to a real Camunda 8 cluster, fires N instances, and
-> your IDE breakpoints fire inside the workers. One file, one keystroke, one truth — process,
-> workers, deployment, cluster, all as code and debuggable end-to-end.
+> Camunda already has the pieces — BPMN-as-code, an SDK that deploys, workers you can debug. But
+> they live in different files, different threads, different intent. **LiveBpmn composes them
+> into one runnable unit, and scopes every run to you alone.** A dev, a designer, or an AI can
+> iterate on a process — define it, run it, debug it, throw it away — without ever touching
+> production or stepping on a colleague.
 
 ## Slide content (drop these on slides 1–4)
 
-### Slide 1 — *the problem*
-> Today: BPMN file. Worker service. CI pipeline. Test module. Wiki page. Five surfaces. Five
-> tools. None debuggable end-to-end.
+### Slide 1 — *the problem isn't tools, it's composition + isolation*
+> The pieces are already there:
+>
+> - **BPMN as code** — `zeebe-bpmn-model` (`Bpmn.createExecutableProcess(...)`).
+> - **Deploy + workers** — the Java SDK (`client.newDeployResourceCommand()`, `newWorker()`).
+> - **Lambda breakpoints** — your IDE.
+>
+> What's missing: a single fluent surface that unifies them, and a per-run prefix that gives
+> *you* a private universe inside the shared cluster. No collisions, no production interference,
+> no "wait don't deploy that yet."
 
 ### Slide 2 — *the kernel*
 > **Everything as code. Debuggable end-to-end.**
@@ -34,7 +42,27 @@
 
 ### Slide 4 — *what's next*
 > AI-generated Java that the runner verifies by execution. Property-based tests for processes.
-> Markdown onboarding that runs. The IDE becomes the BPM platform. **(See VISION.md.)**
+  > Markdown onboarding that runs. The IDE becomes the BPM platform. **(See VISION.md.)**
+
+## Demo prep checklist (do this 5 minutes before)
+
+1. **Start a local Camunda 8 cluster** so the demo doesn't wait on container boot. Either:
+   - `cd c8run && ./c8run start` (preferred — faster, simpler), or
+   - `docker compose up -d` with the snippet from [README.md](README.md).
+
+   Verify:
+   ```bash
+   curl -fsS http://localhost:8080/v2/topology > /dev/null && echo "ready"
+   ```
+
+2. **Open Operate** at <http://localhost:8080/operate> — leave it on screen 2.
+
+3. **Confirm the examples point at the local cluster.** All three (`MinimalDemo`, `OrderDemos`,
+   `LoadDemo`) use `LiveBpmn.cluster().localhost()` already. If the demo machine has no local
+   cluster, swap to `.testcontainer()` and accept the boot wait.
+
+4. **Pre-warm the JVM.** Run `MinimalDemo.main()` once before the audience arrives so the JIT
+   warmups don't add visible latency mid-demo.
 
 ## 3-minute live demo transcript
 
@@ -46,8 +74,8 @@
 >
 > *Right-click → Run.*
 >
-> "JVM starts, container boots — that's slf4j-simple streaming Camunda's startup logs into our
-> console. Twenty seconds. Watch."
+> "Connects to my local cluster — c8run started before the demo, so this is instant. Three
+> instances run, breakpoint hits inside the lambda, instances complete."
 
 **Beat 2 — set a breakpoint, re-run (0:30 → 1:15)**
 
@@ -81,14 +109,15 @@
 
 **Beat 5 — close on the vision (2:30 → 3:00)**
 
-> "That's the kernel: process and workers and deployment and cluster, all as code, all
-> debuggable in one place. Three things this unlocks. **One** — AI doesn't generate BPMN
-> files we have to deploy; it generates this Java directly, runs it, observes the output, and
-> self-corrects. The runner is the verification engine. **Two** — property-based testing for
-> processes; QuickCheck-for-workflows. **Three** — onboarding markdown that runs. New hire
-> opens `Day1.md`, executes cells inline, sees real instances flow.
+> "Two things make this matter. **Composition** — Camunda already had BPMN-as-code, deploy,
+> workers, breakpoints. They were in different files. Now they're in one. **Isolation** — every
+> run gets a per-user prefix. Two devs, two tries, an AI agent, all on the same cluster, none
+> stepping on each other.
 >
-> When everything is code and debuggable, the IDE becomes the BPM platform."
+> Where this goes: AI doesn't emit BPMN we have to deploy — it emits *this* Java directly,
+> runs it, observes the output, self-corrects. The runner is the verification engine. Plus
+> property-based testing for processes — QuickCheck-for-workflows. When everything is code and
+> debuggable, the IDE becomes the BPM platform."
 
 ## Eye-opener features to add for the demo
 
