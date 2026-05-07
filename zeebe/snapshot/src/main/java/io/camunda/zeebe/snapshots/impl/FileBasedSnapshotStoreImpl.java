@@ -209,7 +209,8 @@ public final class FileBasedSnapshotStoreImpl {
     if (metadata.totalSizeBytes() > 0L) {
       return metadata;
     }
-    final var computed = SnapshotFileSize.computeFromDirectory(snapshotDirectory);
+    final var computed =
+        FileUtil.directorySize(snapshotDirectory, SnapshotChecksum::isNotMetadataFile);
     return new FileBasedSnapshotMetadata(
         metadata.version(),
         metadata.processedPosition(),

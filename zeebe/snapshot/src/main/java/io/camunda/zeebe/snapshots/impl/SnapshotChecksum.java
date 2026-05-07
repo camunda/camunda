@@ -68,7 +68,13 @@ final class SnapshotChecksum {
     }
   }
 
-  private static boolean isNotMetadataFile(final Path file) {
+  /**
+   * Returns true for snapshot data files, excluding the metadata file. The metadata file is
+   * excluded from both checksum computation and directory size accounting because it is handled
+   * separately in both cases: during persist it is written last (after the checksum/size are
+   * already captured), and on receive it is decoded directly from its own chunk.
+   */
+  static boolean isNotMetadataFile(final Path file) {
     return !file.getFileName().toString().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
   }
 

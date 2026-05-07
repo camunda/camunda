@@ -174,7 +174,8 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       // Total size is captured before the metadata file is written, so it covers exactly the data
       // files produced by the snapshot callback. Used by replication-lag accounting on the leader
       // to know an in-flight snapshot install's total size without filesystem I/O on the hot path.
-      final var totalSizeBytes = SnapshotFileSize.computeFromDirectory(directory);
+      final var totalSizeBytes =
+          FileUtil.directorySize(directory, SnapshotChecksum::isNotMetadataFile);
       final var metadata =
           isBootstrap
               ? FileBasedSnapshotMetadata.forBootstrap(

@@ -276,7 +276,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 Long.MAX_VALUE,
                 Long.MAX_VALUE,
                 false,
-                SnapshotFileSize.computeFromDirectory(directory));
+                FileUtil.directorySize(directory, SnapshotChecksum::isNotMetadataFile));
       } else if (metadata.totalSizeBytes() <= 0L) {
         // Sender included metadata but predates totalSizeBytes. Compute from the just-received
         // directory and override in memory only — the on-disk metadata is part of the SFV
@@ -289,7 +289,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 metadata.maxExportedPosition(),
                 metadata.lastFollowupEventPosition(),
                 metadata.isBootstrap(),
-                SnapshotFileSize.computeFromDirectory(directory));
+                FileUtil.directorySize(directory, SnapshotChecksum::isNotMetadataFile));
       }
       final PersistedSnapshot value =
           snapshotStore.persistNewSnapshot(directory, snapshotId, checksumCollection, metadata);
