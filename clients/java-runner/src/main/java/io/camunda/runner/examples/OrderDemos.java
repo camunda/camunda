@@ -15,7 +15,6 @@
  */
 package io.camunda.runner.examples;
 
-import io.camunda.runner.Cluster;
 import io.camunda.runner.Job;
 import io.camunda.runner.LiveBpmn;
 import io.camunda.runner.Run;
@@ -27,151 +26,88 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.IntFunction;
 
 /**
- * Two ways to wire the same order flow, side by side. Run with {@code inline} (default) or {@code
- * bindings} as the program argument:
+ * Two ways to wire the same order flow, side by side in one {@code main}.
  *
  * <pre>
  *   java io.camunda.runner.examples.OrderDemos            # inline (default)
  *   java io.camunda.runner.examples.OrderDemos bindings   # binding API
  * </pre>
  *
- * <p>The two forms appear directly below each other so they read side by side. They produce
- * identical behaviour and identical Operate output — only the wiring differs.
+ * <p>Both branches use the same {@link Handlers handler methods} so they produce identical
+ * behaviour — only the wiring differs.
  */
 public final class OrderDemos {
 
   private OrderDemos() {}
 
-  /** Per-instance input variables. ~1-in-5 instances trips the express path (amount ≥ 500). */
-  private static final IntFunction<Map<String, Object>> INITIAL_VARIABLES =
-      i -> {
-        final double amount = i % 5 == 0 ? 750.00 + i : 49.99 + i;
-        return Map.of(
-            "orderId",
-            String.format("ORDER-%04d", 1000 + i),
-            "customerId",
-            "CUST-" + (100 + (i % 7)),
-            "amount",
-            amount);
-      };
-
   public static void main(final String[] args) throws Exception {
     final String mode = args.length > 0 ? args[0] : "inline";
+
     try (var cluster = LiveBpmn.cluster().testcontainer()) {
+
       final Run run =
           switch (mode) {
-            case "bindings" -> Bindings.run(cluster);
-            case "inline" -> Inline.run(cluster);
+
+            // ---- INLINE form: build process and attach lambdas in one chain ----
+            case "inline" ->
+                LiveBpmn.createExecutableProcess("order")
+                    .startEvent()
+                    .serviceTask("validate", Handlers::validate)
+                    .serviceTask("charge", Handlers::charge)
+                    .serviceTask("ship", Handlers::ship)
+                    .endEvent()
+                    .run(RunOptions.of(3).variables(Handlers::initialVariables), cluster);
+
+            // ---- BINDING form: build model first, attach lambdas by element id ----
+            case "bindings" -> {
+              final BpmnModelInstance model =
+                  Bpmn.createExecutableProcess("order")
+                      .startEvent()
+                      .serviceTask("validate", t -> t.zeebeJobType("validate"))
+                      .serviceTask("charge", t -> t.zeebeJobType("charge"))
+                      .serviceTask("ship", t -> t.zeebeJobType("ship"))
+                      .endEvent()
+                      .done();
+              yield LiveBpmn.of(model)
+                  .bind("validate", Handlers::validate)
+                  .bind("charge", Handlers::charge)
+                  .bind("ship", Handlers::ship)
+                  .run(RunOptions.of(3).variables(Handlers::initialVariables), cluster);
+            }
+
             default ->
                 throw new IllegalArgumentException(
                     "unknown mode '" + mode + "' — use 'inline' or 'bindings'");
           };
+
       System.out.println("Operate: " + run.operateUrl());
       run.await(Duration.ofMinutes(2));
       System.out.println("done; handled per task = " + run.workersHandled());
     }
   }
 
-  // =========================================================================
-  // INLINE form — lambda bodies sit at each service task, in one fluent chain
-  // =========================================================================
-  static final class Inline {
+  /** Handler functions + per-instance variable generator. Used by both wiring branches above. */
+  private static final class Handlers {
 
-    private Inline() {}
+    private Handlers() {}
 
-    static Run run(final Cluster cluster) {
-      return LiveBpmn.createExecutableProcess("order")
-          .startEvent("received")
-          .serviceTask(
-              "validate",
-              (Job job) -> {
-                final String orderId = job.variable("orderId", String.class);
-                final String customerId = job.variable("customerId", String.class);
-                final double amount = job.variable("amount", Number.class).doubleValue();
-                sleep(20 + ThreadLocalRandom.current().nextInt(30));
-                final boolean valid = amount > 0 && amount < 10_000;
-                final String reason =
-                    valid ? "ok" : (amount <= 0 ? "non-positive amount" : "over limit");
-                System.out.printf(
-                    "[validate] order=%s customer=%s amount=%.2f -> %s%n",
-                    orderId, customerId, amount, reason);
-                return Map.of("valid", valid, "validationReason", reason);
-              })
-          .serviceTask(
-              "charge",
-              (Job job) -> {
-                final String orderId = job.variable("orderId", String.class);
-                final double amount = job.variable("amount", Number.class).doubleValue();
-                sleep(50 + ThreadLocalRandom.current().nextInt(100));
-                final String paymentMethod = amount >= 500 ? "credit-card" : "wallet";
-                final String paymentId = "P-" + orderId + "-" + System.currentTimeMillis();
-                System.out.printf(
-                    "[charge]   order=%s amount=%.2f via %s -> %s%n",
-                    orderId, amount, paymentMethod, paymentId);
-                final Map<String, Object> out = new HashMap<>();
-                out.put("paymentId", paymentId);
-                out.put("paymentMethod", paymentMethod);
-                out.put("chargedAt", Instant.now().toString());
-                return out;
-              })
-          .serviceTask(
-              "ship",
-              (Job job) -> {
-                final String orderId = job.variable("orderId", String.class);
-                final String paymentId = job.variable("paymentId", String.class);
-                final double amount = job.variable("amount", Number.class).doubleValue();
-                sleep(30 + ThreadLocalRandom.current().nextInt(40));
-                final String carrier = amount >= 500 ? "Express-DHL" : "Standard-Post";
-                final String trackingId =
-                    carrier.substring(0, 1) + "-" + job.getProcessInstanceKey();
-                System.out.printf(
-                    "[ship]     order=%s payment=%s -> %s (%s)%n",
-                    orderId, paymentId, trackingId, carrier);
-                return Map.of("trackingId", trackingId, "carrier", carrier);
-              })
-          .endEvent("delivered")
-          .run(RunOptions.of(3).variables(INITIAL_VARIABLES), cluster);
-    }
-  }
-
-  // =========================================================================
-  // BINDING form — build the model, then attach lambdas by element id
-  // =========================================================================
-  static final class Bindings {
-
-    private Bindings() {}
-
-    static Run run(final Cluster cluster) {
-      final BpmnModelInstance model =
-          Bpmn.createExecutableProcess("order")
-              .startEvent("received")
-              .serviceTask("validate", t -> t.zeebeJobType("validate"))
-              .serviceTask("charge", t -> t.zeebeJobType("charge"))
-              .serviceTask("ship", t -> t.zeebeJobType("ship"))
-              .endEvent("delivered")
-              .done();
-
-      return LiveBpmn.of(model)
-          .bind("validate", Bindings::validate)
-          .bind("charge", Bindings::charge)
-          .bind("ship", Bindings::ship)
-          .run(RunOptions.of(3).variables(INITIAL_VARIABLES), cluster);
+    /** Three orders with growing amounts — the third one (600) trips the express threshold. */
+    static Map<String, Object> initialVariables(final int i) {
+      return Map.of(
+          "orderId", "ORDER-" + (i + 1),
+          "customerId", "CUST-" + (i + 1),
+          "amount", 200.0 * (i + 1));
     }
 
     static Map<String, Object> validate(final Job job) {
       final String orderId = job.variable("orderId", String.class);
-      final String customerId = job.variable("customerId", String.class);
       final double amount = job.variable("amount", Number.class).doubleValue();
       sleep(20 + ThreadLocalRandom.current().nextInt(30));
       final boolean valid = amount > 0 && amount < 10_000;
-      final String reason = valid ? "ok" : (amount <= 0 ? "non-positive amount" : "over limit");
-      System.out.printf(
-          "[validate] order=%s customer=%s amount=%.2f -> %s%n",
-          orderId, customerId, amount, reason);
-      return Map.of("valid", valid, "validationReason", reason);
+      System.out.printf("[validate] %s amount=%.2f -> %s%n", orderId, amount, valid ? "ok" : "no");
+      return Map.of("valid", valid);
     }
 
     static Map<String, Object> charge(final Job job) {
@@ -179,10 +115,8 @@ public final class OrderDemos {
       final double amount = job.variable("amount", Number.class).doubleValue();
       sleep(50 + ThreadLocalRandom.current().nextInt(100));
       final String paymentMethod = amount >= 500 ? "credit-card" : "wallet";
-      final String paymentId = "P-" + orderId + "-" + System.currentTimeMillis();
-      System.out.printf(
-          "[charge]   order=%s amount=%.2f via %s -> %s%n",
-          orderId, amount, paymentMethod, paymentId);
+      final String paymentId = "P-" + orderId;
+      System.out.printf("[charge]   %s via %s -> %s%n", orderId, paymentMethod, paymentId);
       final Map<String, Object> out = new HashMap<>();
       out.put("paymentId", paymentId);
       out.put("paymentMethod", paymentMethod);
@@ -198,16 +132,16 @@ public final class OrderDemos {
       final String carrier = amount >= 500 ? "Express-DHL" : "Standard-Post";
       final String trackingId = carrier.substring(0, 1) + "-" + job.getProcessInstanceKey();
       System.out.printf(
-          "[ship]     order=%s payment=%s -> %s (%s)%n", orderId, paymentId, trackingId, carrier);
+          "[ship]     %s payment=%s -> %s (%s)%n", orderId, paymentId, trackingId, carrier);
       return Map.of("trackingId", trackingId, "carrier", carrier);
     }
-  }
 
-  private static void sleep(final long ms) {
-    try {
-      Thread.sleep(ms);
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
+    private static void sleep(final long ms) {
+      try {
+        Thread.sleep(ms);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
   }
 }
