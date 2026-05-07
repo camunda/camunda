@@ -145,7 +145,7 @@ A general Grafana dashboard covering all sorts of metrics is the [Zeebe Dashboar
 
 More details about observability can be read [here](../docs/observability.md).
 
-For a full list of Prometheus metrics, SLO targets, and PromQL queries used to evaluate load tests, see [load-tests/docs/metrics.md](../../load-tests/docs/metrics.md).
+For a full list of Prometheus metrics, SLO targets, and PromQL queries used to evaluate load tests, see [docs/metrics.md](docs/metrics.md).
 
 ## Test Scenarios
 
