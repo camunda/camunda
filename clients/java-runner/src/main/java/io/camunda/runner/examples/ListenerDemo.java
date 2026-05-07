@@ -19,7 +19,6 @@ import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerE
 import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType.start;
 import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType.assigning;
 import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType.completing;
-import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType.creating;
 
 import io.camunda.runner.Job;
 import io.camunda.runner.LiveBpmn;
@@ -70,10 +69,11 @@ public final class ListenerDemo {
                       t.zeebeAssignee("demo"))
               .listeners(
                   l ->
+                      //                      l.on(
+                      //                              creating,
+                      //                              (Job job) -> System.out.println("[tl-creating]
+                      //   review created"))
                       l.on(
-                              creating,
-                              (Job job) -> System.out.println("[tl-creating]   review created"))
-                          .on(
                               assigning,
                               (Job job) -> System.out.println("[tl-assigning]  review claimed"))
                           .on(
