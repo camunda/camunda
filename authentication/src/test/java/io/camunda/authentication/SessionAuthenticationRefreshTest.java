@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication;
 
-import static io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder.LAST_REFRESH_ATTR;
+import static io.camunda.security.spring.context.holder.HttpSessionBasedAuthenticationHolder.LAST_REFRESH_ATTR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
