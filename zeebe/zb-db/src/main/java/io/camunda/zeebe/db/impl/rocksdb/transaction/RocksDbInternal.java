@@ -25,7 +25,7 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksObject;
 import org.rocksdb.Status;
 import org.rocksdb.Status.Code;
-import org.rocksdb.Transaction;
+import org.rocksdb.WriteBatchWithIndex;
 
 public final class RocksDbInternal {
 
@@ -34,8 +34,22 @@ public final class RocksDbInternal {
 
   static Field nativeHandle;
 
+  /**
+   * WriteBatchWithIndex.put(long handle, byte[] key, int keyLength, byte[] value, int valueLength,
+   * long cfHandle) — package-private final method, no offset params.
+   */
   static MethodHandle putWithHandle;
+
+  /**
+   * WriteBatchWithIndex.getFromBatchAndDB(long handle, long dbHandle, long readOptionsHandle,
+   * byte[] key, int keyLength, long cfHandle) — private static native, no offset param.
+   */
   static MethodHandle getWithHandle;
+
+  /**
+   * WriteBatchWithIndex.delete(long handle, byte[] key, int keyLength, long cfHandle) —
+   * package-private final method, no offset param.
+   */
   static MethodHandle removeWithHandle;
 
   static {
@@ -50,7 +64,6 @@ public final class RocksDbInternal {
 
   private static void resolveInternalMethods() throws NoSuchFieldException, NoSuchMethodException {
     nativeHandles();
-
     putWithHandle();
     getWithHandle();
     removeWithHandle();
@@ -62,23 +75,14 @@ public final class RocksDbInternal {
   }
 
   /*
-   private native void put(final long handle, final byte[] key, final int keyOffset,
-        final int keyLength, final byte[] value, final int valueOffset, final int valueLength,
-        final long columnFamilyHandle, final boolean assumeTracked) throws RocksDBException;
-  */
+   * final void put(final long handle, final byte[] key, final int keyLength,
+   *     final byte[] value, final int valueLength, final long columnFamilyHandle)
+   *     throws RocksDBException;
+   */
   private static void putWithHandle() throws NoSuchMethodException {
     final var method =
-        Transaction.class.getDeclaredMethod(
-            "put",
-            Long.TYPE,
-            byte[].class,
-            Integer.TYPE,
-            Integer.TYPE,
-            byte[].class,
-            Integer.TYPE,
-            Integer.TYPE,
-            Long.TYPE,
-            Boolean.TYPE);
+        WriteBatchWithIndex.class.getDeclaredMethod(
+            "put", Long.TYPE, byte[].class, Integer.TYPE, byte[].class, Integer.TYPE, Long.TYPE);
     method.setAccessible(true);
     try {
       putWithHandle = MethodHandles.lookup().unreflect(method);
@@ -88,14 +92,20 @@ public final class RocksDbInternal {
   }
 
   /*
-   private native byte[] get(final long handle, final long readOptionsHandle, final byte[] key,
-      final int keyOffset, final int keyLength, final long columnFamilyHandle)
-      throws RocksDBException;
-  */
+   * private static native byte[] getFromBatchAndDB(final long handle, final long dbHandle,
+   *     final long readOptionsHandle, final byte[] key, final int keyLength,
+   *     final long columnFamilyHandle) throws RocksDBException;
+   */
   private static void getWithHandle() throws NoSuchMethodException {
     final var method =
-        Transaction.class.getDeclaredMethod(
-            "get", Long.TYPE, Long.TYPE, byte[].class, Integer.TYPE, Integer.TYPE, Long.TYPE);
+        WriteBatchWithIndex.class.getDeclaredMethod(
+            "getFromBatchAndDB",
+            Long.TYPE,
+            Long.TYPE,
+            Long.TYPE,
+            byte[].class,
+            Integer.TYPE,
+            Long.TYPE);
     method.setAccessible(true);
     try {
       getWithHandle = MethodHandles.lookup().unreflect(method);
@@ -104,10 +114,14 @@ public final class RocksDbInternal {
     }
   }
 
+  /*
+   * final void delete(final long handle, final byte[] key, final int keyLength,
+   *     final long columnFamilyHandle) throws RocksDBException;
+   */
   private static void removeWithHandle() throws NoSuchMethodException {
     final var method =
-        Transaction.class.getDeclaredMethod(
-            "delete", Long.TYPE, byte[].class, Integer.TYPE, Long.TYPE, Boolean.TYPE);
+        WriteBatchWithIndex.class.getDeclaredMethod(
+            "delete", Long.TYPE, byte[].class, Integer.TYPE, Long.TYPE);
     method.setAccessible(true);
     try {
       removeWithHandle = MethodHandles.lookup().unreflect(method);
