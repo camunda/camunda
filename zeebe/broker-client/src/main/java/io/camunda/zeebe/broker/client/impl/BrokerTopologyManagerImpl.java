@@ -98,7 +98,7 @@ public final class BrokerTopologyManagerImpl extends Actor
    * registering this instance as a listener, to close the race where a {@code MEMBER_ADDED} event
    * fires between the actor starting and the listener being attached.
    */
-  public void checkForMissingEvents() {
+  public void initializeTopologyFromMembership() {
     final Set<Member> members = membersSupplier.get();
     if (members == null || members.isEmpty()) {
       return;
@@ -151,7 +151,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     // Get the initial member state before the listener is registered.
     // Also called AFTER registering this as a membership listener, to cover the window
     // between the snapshot here and listener attachment.
-    checkForMissingEvents();
+    initializeTopologyFromMembership();
   }
 
   @Override

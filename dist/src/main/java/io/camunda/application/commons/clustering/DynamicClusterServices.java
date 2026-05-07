@@ -78,7 +78,7 @@ public class DynamicClusterServices {
     clusterMembershipService.addListener(brokerTopologyManager);
     // Re-seed after the listener is attached: closes the race where a MEMBER_ADDED
     // event fires between the actor's initial snapshot and listener registration.
-    brokerTopologyManager.checkForMissingEvents();
+    brokerTopologyManager.initializeTopologyFromMembership();
     return brokerTopologyManager;
   }
 
@@ -92,7 +92,7 @@ public class DynamicClusterServices {
     clusterMembershipService.addListener(brokerTopologyManager);
     // Re-seed after the listener is attached: closes the race where a MEMBER_ADDED
     // event fires between the actor's initial snapshot and listener registration.
-    brokerTopologyManager.checkForMissingEvents();
+    brokerTopologyManager.initializeTopologyFromMembership();
     gatewayClusterConfigurationService.addUpdateListener(brokerTopologyManager);
     return brokerTopologyManager;
   }
