@@ -19,50 +19,38 @@ import io.camunda.runner.Job;
 import io.camunda.runner.LiveBpmn;
 import io.camunda.runner.RunOptions;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 /**
- * The smallest demo: one service task, inline lambda, showing the job-control verbs ({@code
- * job.variable}, {@code job.complete(map)}, {@code job.fail(reason)}) in their full beauty.
+ * Smallest LiveBpmn demo — two service tasks, variables flowing.
  *
- * <p>This is the "look at how this reads" example. Compare with {@link OrderDemos} for a real
- * multi-task flow.
+ * <pre>
+ *   start -> greet -> print -> end
+ * </pre>
+ *
+ * <p>{@code greet} (Function&lt;Job, Map&gt; form): reads {@code name}, returns {@code greeting}.
+ * Auto-complete with the returned map.
+ *
+ * <p>{@code print} (Consumer&lt;Job&gt; form): reads {@code greeting}, writes stdout. Auto-complete
+ * on fall-through.
  */
 public final class MinimalDemo {
 
   private MinimalDemo() {}
 
   public static void main(final String[] args) throws Exception {
-    System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
-
+    final List<String> names = List.of("Stephan", "Anna", "World");
     try (var cluster = LiveBpmn.cluster().testcontainer()) {
       LiveBpmn.createExecutableProcess("hello")
           .startEvent()
           .serviceTask(
               "greet",
-              (Job job) -> {
-                final String name = job.variable("name", String.class);
-                if (name == null || name.isBlank()) {
-                  job.fail("missing 'name' variable");
-                  return;
-                }
-                System.out.println(
-                    "hello, " + name + "! (instance " + job.getProcessInstanceKey() + ")");
-                job.complete(Map.of("greeting", "hello, " + name));
-              })
+              (Job job) -> Map.of("greeting", "hello, " + job.variable("name", String.class)))
+          .serviceTask(
+              "print", (Job job) -> System.out.println(job.variable("greeting", String.class)))
           .endEvent()
-          .run(
-              RunOptions.of(3)
-                  .variables(
-                      i ->
-                          Map.of(
-                              "name",
-                              switch (i) {
-                                case 0 -> "Stephan";
-                                case 1 -> "Anna";
-                                default -> "World";
-                              })),
-              cluster)
+          .run(RunOptions.of(names.size()).variables(i -> Map.of("name", names.get(i))), cluster)
           .await(Duration.ofMinutes(1));
     }
   }
