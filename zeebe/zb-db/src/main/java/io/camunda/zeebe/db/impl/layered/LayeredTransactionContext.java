@@ -123,15 +123,6 @@ final class LayeredTransactionContext implements TransactionContext {
     }
   }
 
-  private record ColumnFamilyCacheKey(
-      Class<?> columnFamilyEnumType,
-      String columnFamilyName,
-      Class<?> keyType,
-      Class<?> valueType) {}
-
-  private record BoundColumnFamily(
-      ColumnFamily<?, ?> columnFamily, Class<?> keyType, Class<?> valueType) {}
-
   static final class LayeredTransaction implements ZeebeDbTransaction {
 
     private final LayeredZeebeDb<?> db;
@@ -178,9 +169,8 @@ final class LayeredTransactionContext implements TransactionContext {
     }
 
     void addTombstone(final byte[] rawKey) {
-      final var copy = Arrays.copyOf(rawKey, rawKey.length);
-      pendingTombstoneRemovals.remove(copy);
-      pendingTombstones.add(copy);
+      pendingTombstoneRemovals.remove(rawKey);
+      pendingTombstones.add(rawKey);
     }
 
     void clearTombstone(final byte[] rawKey) {
@@ -272,4 +262,13 @@ final class LayeredTransactionContext implements TransactionContext {
       persistentTransaction = null;
     }
   }
+
+  private record ColumnFamilyCacheKey(
+      Class<?> columnFamilyEnumType,
+      String columnFamilyName,
+      Class<?> keyType,
+      Class<?> valueType) {}
+
+  private record BoundColumnFamily(
+      ColumnFamily<?, ?> columnFamily, Class<?> keyType, Class<?> valueType) {}
 }

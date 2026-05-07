@@ -431,19 +431,18 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
 
   private NavigableMap<byte[], DbValue> materializeMergedEntries(final PrefixRange prefixRange) {
     final NavigableMap<byte[], DbValue> merged = new TreeMap<>(Arrays::compareUnsigned);
-    final NavigableSet<byte[]> tombstones = context.visibleTombstones();
 
     // Use the prefix key to scope iteration to only matching entries.
-    // The prefix bytes already include the column family prefix, so we reconstruct
-    // a DbKey that covers just the user-facing prefix portion.
     final var prefixDbKey = new PrefixDbKey(prefixRange.lowerBound());
 
-    // Iterate only the matching range in the persistent layer
+    // Iterate only the matching range in the persistent layer.
+    // Check tombstones inline instead of building a full tombstone snapshot upfront —
+    // avoids O(total-tombstones) allocation+copy on every single iteration call.
     persistentColumnFamily.whileEqualPrefix(
         prefixDbKey,
         (key, value) -> {
           final byte[] rawKey = serializeKey(key);
-          if (!tombstones.contains(rawKey)) {
+          if (!context.isTombstoned(rawKey)) {
             merged.putIfAbsent(rawKey, cloneValue(value));
           }
           return true;
@@ -454,7 +453,7 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
         prefixDbKey,
         (key, value) -> {
           final byte[] rawKey = serializeKey(key);
-          if (!tombstones.contains(rawKey)) {
+          if (!context.isTombstoned(rawKey)) {
             merged.put(rawKey, cloneValue(value));
           }
           return true;
