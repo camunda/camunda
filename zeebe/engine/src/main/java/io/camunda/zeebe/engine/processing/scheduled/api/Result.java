@@ -28,7 +28,7 @@ public final class Result {
   private final List<InterPartitionSend> interPartitionSends;
   private final Decision decision;
 
-  Result(
+  public Result(
       final List<AppendedCommand> appendedCommands,
       final List<InterPartitionSend> interPartitionSends,
       final Decision decision) {

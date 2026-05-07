@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.scheduled.runtime;
 
-import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result.AppendedCommand;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result.Decision;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result.InterPartitionSend;
 import io.camunda.zeebe.engine.processing.scheduled.api.Schedule;
 import io.camunda.zeebe.engine.processing.scheduled.api.ScheduledTask;
-import io.camunda.zeebe.engine.processing.scheduled.api.Sink;
 import io.camunda.zeebe.engine.processing.scheduled.api.TaskContext;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -28,6 +30,8 @@ import io.camunda.zeebe.util.AtomicUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
@@ -38,24 +42,17 @@ import org.slf4j.LoggerFactory;
  * service (the "how"). One instance manages a single task and is registered as a lifecycle listener
  * via {@code typedRecordProcessors.withListener(managed)}.
  *
- * <p>Provides the cross-cutting concerns once for every task that uses the new API:
- *
- * <ul>
- *   <li>full lifecycle: {@code onRecovered / onPaused / onResumed / onClose / onFailed}
- *   <li>three legacy patterns expressed as one config: fixed-rate, on-demand, self-rescheduling
- *   <li>cooperative yielding via a per-run time budget exposed on {@link TaskContext}
- *   <li>error handling: exceptions are caught, logged, counted; the task is always rescheduled
- *   <li>logging on lifecycle transitions and slow runs
- *   <li>per-task metrics tagged with {@code task=<name>}
- *   <li>external wake-up via {@link #requestRun(long)}
- * </ul>
+ * <p>Provides the cross-cutting concerns once for every task that uses the new API: full lifecycle,
+ * scheduling cadence translation, cooperative yielding, error handling, slow-run logging, per-task
+ * metrics, external wake-up via {@link #requestRun(long)}, and resume-cursor storage between
+ * yields.
  */
-public final class ManagedScheduledTask implements StreamProcessorLifecycleAware, Task {
+public final class ManagedScheduledTask<C> implements StreamProcessorLifecycleAware, Task {
 
   private static final Logger LOG = LoggerFactory.getLogger(ManagedScheduledTask.class);
   private static final long SLOW_RUN_THRESHOLD_MS = 100;
 
-  private final ScheduledTask task;
+  private final ScheduledTask<C> task;
   private final Schedule schedule;
   private final InterPartitionCommandSender interPartitionCommandSender;
   private final ScheduledTaskMetrics metrics;
@@ -67,8 +64,11 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
   private volatile boolean enabled;
   private final AtomicReference<NextRun> nextRun = new AtomicReference<>(NextRun.NONE);
 
+  /** Cursor saved by the previous run's {@code yieldNow(c)}; {@code null} otherwise. */
+  private C resumeCursor;
+
   public ManagedScheduledTask(
-      final ScheduledTask task,
+      final ScheduledTask<C> task,
       final Schedule schedule,
       final InterPartitionCommandSender interPartitionCommandSender,
       final MeterRegistry meterRegistry) {
@@ -82,12 +82,6 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
   // External API
   // ---------------------------------------------------------------------------
 
-  /**
-   * Requests an execution at-or-before {@code timestampMs}. Used by code paths that know they have
-   * just produced new work the task should observe (e.g. a newly-deployed timer that becomes due
-   * sooner than the currently-scheduled run). No-op if the task is not enabled or if a run is
-   * already scheduled at or before the requested timestamp (within {@code minResolution}).
-   */
   public void requestRun(final long timestampMs) {
     if (!enabled) {
       return;
@@ -140,7 +134,6 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    // The pending NextRun is consumed; clear so external requestRun() can schedule fresh.
     nextRun.set(NextRun.NONE);
 
     final long startMs = clock.millis();
@@ -149,11 +142,13 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
             ? Long.MAX_VALUE
             : startMs + schedule.yieldBudget().toMillis();
 
-    final RunContext ctx = new RunContext(taskResultBuilder, yieldAfterMs);
+    final ResultBuilderImpl<C> builder = new ResultBuilderImpl<>(taskResultBuilder);
+    final RunContext<C> ctx = new RunContext<>(yieldAfterMs, resumeCursor, builder);
 
-    Outcome outcome;
+    Decision decision;
     try {
-      outcome = task.run(ctx);
+      final Result result = task.run(ctx);
+      decision = result.decision();
     } catch (final RuntimeException e) {
       metrics.recordError();
       LOG.warn(
@@ -161,7 +156,7 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
           task.name(),
           e.toString(),
           e);
-      outcome = Outcome.IDLE;
+      decision = Decision.IDLE;
     }
 
     final long elapsed = clock.millis() - startMs;
@@ -170,11 +165,12 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
       LOG.info("Scheduled task '{}' run took {}ms", task.name(), elapsed);
     }
 
-    if (outcome instanceof Outcome.YieldNow) {
+    updateResumeCursor(decision);
+    if (decision instanceof Decision.YieldNow) {
       metrics.recordYield();
     }
 
-    scheduleNext(outcome);
+    scheduleNext(decision);
 
     return taskResultBuilder.build();
   }
@@ -184,21 +180,22 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
   // ---------------------------------------------------------------------------
 
   private void scheduleInitial() {
-    // Always run once promptly after recovery/resume so the task can observe entries that became
-    // due while we were paused (or that were already in state at startup). For pure on-demand
-    // schedules the task itself decides via Outcome.AwaitDueAt / Outcome.IDLE whether to keep
-    // firing afterwards.
     rescheduleIfEarlier(0L);
   }
 
-  private void scheduleNext(final Outcome outcome) {
+  @SuppressWarnings("unchecked")
+  private void updateResumeCursor(final Decision decision) {
+    resumeCursor = decision instanceof Decision.YieldNow yield ? (C) yield.cursor() : null;
+  }
+
+  private void scheduleNext(final Decision decision) {
     if (!enabled) {
       return;
     }
-    switch (outcome) {
-      case Outcome.YieldNow ignored -> rescheduleIfEarlier(0L);
-      case Outcome.AwaitDueAt due -> rescheduleIfEarlier(due.timestampMs());
-      case Outcome.Idle ignored -> {
+    switch (decision) {
+      case Decision.YieldNow ignored -> rescheduleIfEarlier(0L);
+      case Decision.AwaitDueAt due -> rescheduleIfEarlier(due.timestampMs());
+      case Decision.Idle ignored -> {
         if (schedule.fallbackInterval() != null) {
           rescheduleIfEarlier(clock.millis() + schedule.fallbackInterval().toMillis());
         }
@@ -206,11 +203,6 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
     }
   }
 
-  /**
-   * Schedules a run at-or-before {@code requestedAtMs}, but no earlier than {@code now +
-   * minResolution}. If a run is already scheduled at-or-before the requested time, this is a no-op.
-   * Otherwise the previously-scheduled run is cancelled and replaced.
-   */
   private void rescheduleIfEarlier(final long requestedAtMs) {
     final long minResolutionMs = schedule.minResolution().toMillis();
     final long scheduleAt = Math.max(requestedAtMs, clock.millis() + minResolutionMs);
@@ -240,6 +232,7 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
 
   private void disableAndCancel() {
     enabled = false;
+    resumeCursor = null;
     final NextRun cleared = nextRun.getAndSet(NextRun.NONE);
     cleared.cancel();
   }
@@ -248,7 +241,6 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
   // Inner types
   // ---------------------------------------------------------------------------
 
-  /** State of the next pending execution; used for atomic replacement and cancellation. */
   private record NextRun(long scheduledAt, SimpleProcessingScheduleService.ScheduledTask handle) {
 
     static final NextRun NONE = new NextRun(Long.MAX_VALUE, null);
@@ -264,15 +256,17 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
     }
   }
 
-  /** TaskContext + Sink wrapper for a single run. Counts items emitted for metrics. */
-  private final class RunContext implements TaskContext, Sink {
+  /** Per-run TaskContext. The Builder is created in {@link #execute} and shared with the task. */
+  private final class RunContext<X> implements TaskContext<X> {
 
-    private final TaskResultBuilder builder;
     private final long yieldAfterMs;
+    private final X resumeCursor;
+    private final Result.Builder<X> builder;
 
-    RunContext(final TaskResultBuilder builder, final long yieldAfterMs) {
-      this.builder = builder;
+    RunContext(final long yieldAfterMs, final X resumeCursor, final Result.Builder<X> builder) {
       this.yieldAfterMs = yieldAfterMs;
+      this.resumeCursor = resumeCursor;
+      this.builder = builder;
     }
 
     @Override
@@ -281,8 +275,8 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
     }
 
     @Override
-    public Sink sink() {
-      return this;
+    public int partitionId() {
+      return partitionId;
     }
 
     @Override
@@ -291,14 +285,36 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
     }
 
     @Override
-    public int partitionId() {
-      return partitionId;
+    public X resumeCursor() {
+      return resumeCursor;
+    }
+
+    @Override
+    public Result.Builder<X> result() {
+      return builder;
+    }
+  }
+
+  /**
+   * Per-run Result.Builder that delegates appends to the engine's {@link TaskResultBuilder} and
+   * inter-partition sends to {@link InterPartitionCommandSender}. The terminal methods produce the
+   * immutable {@link Result} with the accumulated state.
+   */
+  private final class ResultBuilderImpl<X> implements Result.Builder<X> {
+
+    private final TaskResultBuilder underlying;
+    private final List<AppendedCommand> appendedCommands = new ArrayList<>();
+    private final List<InterPartitionSend> interPartitionSends = new ArrayList<>();
+
+    ResultBuilderImpl(final TaskResultBuilder underlying) {
+      this.underlying = underlying;
     }
 
     @Override
     public boolean append(final Intent intent, final UnifiedRecordValue value) {
-      final boolean fit = builder.appendCommandRecord(intent, value);
+      final boolean fit = underlying.appendCommandRecord(intent, value);
       if (fit) {
+        appendedCommands.add(new AppendedCommand(-1L, intent, value));
         metrics.recordAppend();
       }
       return fit;
@@ -306,8 +322,9 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
 
     @Override
     public boolean append(final long key, final Intent intent, final UnifiedRecordValue value) {
-      final boolean fit = builder.appendCommandRecord(key, intent, value);
+      final boolean fit = underlying.appendCommandRecord(key, intent, value);
       if (fit) {
+        appendedCommands.add(new AppendedCommand(key, intent, value));
         metrics.recordAppend();
       }
       return fit;
@@ -329,7 +346,26 @@ public final class ManagedScheduledTask implements StreamProcessorLifecycleAware
       }
       interPartitionCommandSender.sendCommand(
           receiverPartitionId, valueType, intent, recordKey, value, authInfo);
+      interPartitionSends.add(
+          new InterPartitionSend(
+              receiverPartitionId, valueType, intent, recordKey, value, authInfo));
       metrics.recordInterPartitionSend();
+    }
+
+    @Override
+    public Result idle() {
+      return new Result(appendedCommands, interPartitionSends, Decision.IDLE);
+    }
+
+    @Override
+    public Result awaitDueAt(final long timestampMs) {
+      return new Result(
+          appendedCommands, interPartitionSends, new Decision.AwaitDueAt(timestampMs));
+    }
+
+    @Override
+    public Result yieldNow(final X cursor) {
+      return new Result(appendedCommands, interPartitionSends, new Decision.YieldNow(cursor));
     }
   }
 }
