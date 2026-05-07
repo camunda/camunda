@@ -17,7 +17,7 @@ info:
     all accepted on input). Responses always use the canonical casing
     shown in this specification.
 
-    This permissive request behaviour is a server-side convenience and
+    This permissive request behavior is a server-side convenience and
     is **not** part of the OpenAPI enum contract — SDKs generated from
     this specification by strict generators may reject non-canonical
     casing on the client side. For portability across SDKs, always
