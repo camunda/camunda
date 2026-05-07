@@ -157,12 +157,7 @@ final class InMemoryTransactionContext implements TransactionContext {
     }
 
     boolean isDeleted(final byte[] key) {
-      for (final byte[] deleted : pendingDeletes) {
-        if (Arrays.equals(deleted, key)) {
-          return true;
-        }
-      }
-      return false;
+      return pendingDeletes.contains(key);
     }
 
     NavigableMap<byte[], DbValue> getPendingWrites() {
