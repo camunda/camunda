@@ -68,26 +68,23 @@ export function renderRun(suiteId, runIndex, data) {
       ${statCard(toPercent(avgCoverage), 'Avg. Coverage', 'bi-bar-chart-fill', coverageClass(avgCoverage))}
     </div>
 
-    <h3 class="section-title">Coverage</h3>`;
+    <h3 class="section-title">Processes Covered</h3>`;
 
-  if (runCoverages.length === 0 && runDecisionCoverages.length === 0) {
-    html += '<p class="text-muted">No coverage data recorded for this test case.</p>';
+  if (runCoverages.length === 0) {
+    html += '<p class="text-muted">No process coverage data recorded for this test case.</p>';
   } else {
-    const sortedProcesses = [...runCoverages].sort((a, b) => b.coverage - a.coverage);
-    const sortedDecisions = [...runDecisionCoverages].sort((a, b) => b.coverage - a.coverage);
-
+    const sorted = [...runCoverages].sort((a, b) => b.coverage - a.coverage);
     html += `
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead><tr>
-            <th>Name</th>
-            <th style="width:80px">Type</th>
+            <th>Process</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
           </tr></thead>
           <tbody>`;
 
-    for (const cov of sortedProcesses) {
+    for (const cov of sorted) {
       const pid = encodeURIComponent(cov.processDefinitionId);
       html += `
             <tr class="clickable-row"
@@ -96,11 +93,27 @@ export function renderRun(suiteId, runIndex, data) {
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
                 ${escapeHtml(cov.processDefinitionId)}
               </td>
-              <td><span class="badge bg-primary-subtle text-primary">Process</span></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;
     }
+    html += '</tbody></table></div>';
+  }
+
+  html += '<h3 class="section-title mt-4">Decisions Covered</h3>';
+  if (runDecisionCoverages.length === 0) {
+    html += '<p class="text-muted">No decision coverage data recorded for this test case.</p>';
+  } else {
+    const sortedDecisions = [...runDecisionCoverages].sort((a, b) => b.coverage - a.coverage);
+    html += `
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr>
+            <th>Decision</th>
+            <th style="width:200px">Coverage</th>
+            <th style="width:100px">Ratio</th>
+          </tr></thead>
+          <tbody>`;
 
     for (const cov of sortedDecisions) {
       const did = encodeURIComponent(cov.decisionDefinitionId);
@@ -111,7 +124,6 @@ export function renderRun(suiteId, runIndex, data) {
                 <i class="bi bi-table me-2 text-success" aria-hidden="true"></i>
                 ${escapeHtml(cov.decisionDefinitionId)}
               </td>
-              <td><span class="badge bg-success-subtle text-success">Decision</span></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;

@@ -2,21 +2,24 @@
  * DMN decision table rendering with camunda-dmn-js.
  *
  * Coverage highlighting:
- *   - Matched rules → CSS marker 'coverage-matched-rule' (blue highlight)
+ *   - Matched rules → CSS class 'coverage-matched-rule' (blue highlight)
+ *
+ * The decision table viewer in dmn-js renders as an HTML table (not SVG),
+ * so highlighting is applied via DOM class manipulation on rows identified
+ * by their `data-row-id` attribute (which matches the DMN rule id).
  */
 
 'use strict';
 
-import { BaseModeler } from 'camunda-dmn-js';
+import NavigatedViewer from 'dmn-js/lib/NavigatedViewer';
 
 // Import decision table and DRD styles
-import 'camunda-dmn-js/dist/assets/diagram-js.css';
-import 'camunda-dmn-js/dist/assets/dmn-js-shared.css';
-import 'camunda-dmn-js/dist/assets/dmn-js-drd.css';
-import 'camunda-dmn-js/dist/assets/dmn-js-decision-table.css';
-import 'camunda-dmn-js/dist/assets/dmn-js-decision-table-controls.css';
+import 'dmn-js/dist/assets/diagram-js.css';
+import 'dmn-js/dist/assets/dmn-js-shared.css';
+import 'dmn-js/dist/assets/dmn-js-drd.css';
+import 'dmn-js/dist/assets/dmn-js-decision-table.css';
 
-/** Active DMN modeler instance – destroyed on navigation away from a decision page. */
+/** Active DMN viewer instance – destroyed on navigation away from a decision page. */
 let dmnViewer = null;
 
 /**
@@ -48,7 +51,7 @@ export async function renderDmnDecision(xml, decisionId, matchedRuleIds = []) {
   const container = document.getElementById('dmn-canvas');
   if (!container) return;
 
-  dmnViewer = new BaseModeler({ container });
+  dmnViewer = new NavigatedViewer({ container });
 
   try {
     await dmnViewer.importXML(xml);
@@ -60,22 +63,22 @@ export async function renderDmnDecision(xml, decisionId, matchedRuleIds = []) {
     );
 
     if (decisionView) {
-      dmnViewer.open(decisionView);
+      await dmnViewer.open(decisionView);
     }
 
-    // Highlight matched rules using canvas markers
+    // The decision table renders as an HTML table (not SVG canvas).
+    // Highlight matched rules by adding a CSS class to their <tr> rows,
+    // found via the `data-row-id` attribute emitted by dmn-js-decision-table.
     if (matchedRuleIds.length > 0) {
-      const activeViewer = dmnViewer.getActiveViewer();
-      if (activeViewer) {
-        const canvas = activeViewer.get('canvas');
-        for (const ruleId of matchedRuleIds) {
-          try {
-            canvas.addMarker(ruleId, 'coverage-matched-rule');
-          } catch (_) {
-            // Rule element not found in this decision
-          }
+      const matchedSet = new Set(matchedRuleIds);
+      const cells = container.querySelectorAll('[data-row-id]');
+      cells.forEach((cell) => {
+        const rowId = cell.getAttribute('data-row-id');
+        if (matchedSet.has(rowId)) {
+          const row = cell.closest('tr');
+          if (row) row.classList.add('coverage-matched-rule');
         }
-      }
+      });
     }
   } catch (err) {
     console.error('Could not import DMN diagram', err);

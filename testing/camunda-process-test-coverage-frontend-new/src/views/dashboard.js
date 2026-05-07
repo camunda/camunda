@@ -52,17 +52,16 @@ export function renderDashboard(data) {
       ${statCard(toPercent(avgCoverage), 'Avg. Coverage', 'bi-bar-chart-fill', coverageClass(avgCoverage), cardCol)}
     </div>
 
-    <h3 class="section-title">Coverage</h3>`;
+    <h3 class="section-title">Process Coverage</h3>`;
 
-  if (sortedProcesses.length === 0 && sortedDecisions.length === 0) {
-    html += '<p class="text-muted">No coverage data available.</p>';
+  if (sortedProcesses.length === 0) {
+    html += '<p class="text-muted">No process coverage data available.</p>';
   } else {
     html += `
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead><tr>
-            <th>Name</th>
-            <th style="width:80px">Type</th>
+            <th>Process</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
           </tr></thead>
@@ -76,11 +75,26 @@ export function renderDashboard(data) {
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
                 <strong>${escapeHtml(cov.processDefinitionId)}</strong>
               </td>
-              <td><span class="badge bg-primary-subtle text-primary">Process</span></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;
     }
+    html += '</tbody></table></div>';
+  }
+
+  html += '<h3 class="section-title mt-4">Decision Coverage</h3>';
+  if (sortedDecisions.length === 0) {
+    html += '<p class="text-muted">No decision coverage data available.</p>';
+  } else {
+    html += `
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr>
+            <th>Decision</th>
+            <th style="width:200px">Coverage</th>
+            <th style="width:100px">Ratio</th>
+          </tr></thead>
+          <tbody>`;
 
     for (const cov of sortedDecisions) {
       const did = encodeURIComponent(cov.decisionDefinitionId);
@@ -90,12 +104,10 @@ export function renderDashboard(data) {
                 <i class="bi bi-table me-2 text-success" aria-hidden="true"></i>
                 <strong>${escapeHtml(cov.decisionDefinitionId)}</strong>
               </td>
-              <td><span class="badge bg-success-subtle text-success">Decision</span></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;
     }
-
     html += '</tbody></table></div>';
   }
 
