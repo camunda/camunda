@@ -231,6 +231,7 @@ jobs:
 
   pr-track:
     name: Open auto-fix PRs
+    if: false
     needs: ai-triage
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -290,6 +291,7 @@ jobs:
 
   issue-track:
     name: Open auto-triage issues
+    if: false
     needs: ai-triage
     runs-on: ubuntu-latest
     timeout-minutes: 15
