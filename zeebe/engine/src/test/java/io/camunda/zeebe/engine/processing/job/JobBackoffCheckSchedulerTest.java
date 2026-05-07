@@ -13,7 +13,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result.Decision;
 import io.camunda.zeebe.engine.processing.scheduled.runtime.FakeTaskContext;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -32,10 +33,10 @@ final class JobBackoffCheckSchedulerTest {
     final var scheduler = new JobBackoffCheckScheduler(state);
 
     // when
-    final Outcome outcome = scheduler.run(FakeTaskContext.create().withClockMillis(123L));
+    final Result result = scheduler.run(FakeTaskContext.create().withClockMillis(123L));
 
     // then
-    assertThat(outcome).isEqualTo(Outcome.IDLE);
+    assertThat(result.decision()).isEqualTo(Decision.IDLE);
   }
 
   @Test
@@ -46,11 +47,11 @@ final class JobBackoffCheckSchedulerTest {
     final var scheduler = new JobBackoffCheckScheduler(state);
 
     // when
-    final Outcome outcome = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
+    final Result result = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
 
     // then
-    assertThat(outcome).isInstanceOf(Outcome.AwaitDueAt.class);
-    assertThat(((Outcome.AwaitDueAt) outcome).timestampMs()).isEqualTo(5_000L);
+    assertThat(result.decision()).isInstanceOf(Decision.AwaitDueAt.class);
+    assertThat(((Decision.AwaitDueAt) result.decision()).timestampMs()).isEqualTo(5_000L);
   }
 
   @Test
@@ -69,10 +70,11 @@ final class JobBackoffCheckSchedulerTest {
     visitor.getValue().test(43L, record);
 
     // then
-    assertThat(ctx.appended()).hasSize(2);
-    assertThat(ctx.appended().get(0).key()).isEqualTo(42L);
-    assertThat(ctx.appended().get(0).intent()).isEqualTo(JobIntent.RECUR_AFTER_BACKOFF);
-    assertThat(ctx.appended().get(1).key()).isEqualTo(43L);
+    assertThat(ctx.lastResult().appendedCommands()).hasSize(2);
+    assertThat(ctx.lastResult().appendedCommands().get(0).key()).isEqualTo(42L);
+    assertThat(ctx.lastResult().appendedCommands().get(0).intent())
+        .isEqualTo(JobIntent.RECUR_AFTER_BACKOFF);
+    assertThat(ctx.lastResult().appendedCommands().get(1).key()).isEqualTo(43L);
   }
 
   @SuppressWarnings("unchecked")
