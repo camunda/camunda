@@ -1639,4 +1639,101 @@ public class ExecutionListenerCancelTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
+
+  @Test
+  public void shouldExecuteCancelElWhenProcessIsTerminatedByModification() {
+    // given: process with cancel EL and a service task; modification will empty the process
+    final long processInstanceKey =
+        createProcessInstance(
+            ENGINE,
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .zeebeCancelExecutionListener(CANCEL_EL_TYPE)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
+                .endEvent()
+                .done());
+
+    final long serviceTaskInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst()
+            .getKey();
+
+    // when: modification terminates the only active element
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(serviceTaskInstanceKey)
+        .modify();
+
+    // then: the cancel-EL job is created; complete it
+    ENGINE.job().ofInstance(processInstanceKey).withType(CANCEL_EL_TYPE).complete();
+
+    // then: the process terminates after the cancel listener runs
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldExecuteCancelElWhenProcessIsTerminatedByModificationOfNestedSubprocess() {
+    // given: process with cancel EL and an embedded subprocess containing the only active task
+    final long processInstanceKey =
+        createProcessInstance(
+            ENGINE,
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .zeebeCancelExecutionListener(CANCEL_EL_TYPE)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    s ->
+                        s.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("sub_task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
+                            .endEvent())
+                .endEvent()
+                .done());
+
+    final long subTaskInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("sub_task")
+            .getFirst()
+            .getKey();
+
+    // when: modification terminates the only active leaf — terminateFlowScopes walks up
+    // through the subprocess and delegates to the stream processor at the process
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(subTaskInstanceKey)
+        .modify();
+
+    // then: cancel-EL job fires after the subprocess is gone but before the process terminates
+    ENGINE.job().ofInstance(processInstanceKey).withType(CANCEL_EL_TYPE).complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
 }
