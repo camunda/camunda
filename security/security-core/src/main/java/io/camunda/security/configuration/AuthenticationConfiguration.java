@@ -9,6 +9,7 @@ package io.camunda.security.configuration;
 
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 
 public class AuthenticationConfiguration {
   public static final AuthenticationMethod DEFAULT_METHOD = AuthenticationMethod.BASIC;
@@ -19,7 +20,7 @@ public class AuthenticationConfiguration {
   private OidcConfiguration oidcAuthenticationConfiguration = new OidcConfiguration();
   private boolean unprotectedApi = DEFAULT_UNPROTECTED_API;
 
-  private ProvidersConfiguration providers;
+  private OidcProvidersConfiguration providers;
 
   public boolean getUnprotectedApi() {
     return unprotectedApi;
@@ -53,11 +54,11 @@ public class AuthenticationConfiguration {
     oidcAuthenticationConfiguration = configuration;
   }
 
-  public ProvidersConfiguration getProviders() {
+  public OidcProvidersConfiguration getProviders() {
     return providers;
   }
 
-  public void setProviders(final ProvidersConfiguration providers) {
+  public void setProviders(final OidcProvidersConfiguration providers) {
     this.providers = providers;
   }
 
