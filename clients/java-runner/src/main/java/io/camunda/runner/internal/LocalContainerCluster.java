@@ -42,6 +42,7 @@ public final class LocalContainerCluster implements Cluster {
   private final String imageVersion;
   private volatile GenericContainer<?> container;
   private volatile CamundaClient client;
+  private volatile URI restAddress;
 
   /**
    * Default image tag — a known-stable published tag. We avoid {@code latest} because its boot
@@ -113,10 +114,11 @@ public final class LocalContainerCluster implements Cluster {
           container.getMappedPort(REST_PORT));
     }
     final String host = container.getHost();
+    restAddress = URI.create("http://" + host + ":" + container.getMappedPort(REST_PORT));
     client =
         CamundaClient.newClientBuilder()
             .grpcAddress(URI.create("http://" + host + ":" + container.getMappedPort(GRPC_PORT)))
-            .restAddress(URI.create("http://" + host + ":" + container.getMappedPort(REST_PORT)))
+            .restAddress(restAddress)
             .build();
     return client;
   }
@@ -124,6 +126,14 @@ public final class LocalContainerCluster implements Cluster {
   @Override
   public boolean ownsClient() {
     return true;
+  }
+
+  @Override
+  public URI restAddress() {
+    if (restAddress == null) {
+      throw new IllegalStateException("restAddress() called before client() materialised");
+    }
+    return restAddress;
   }
 
   @Override

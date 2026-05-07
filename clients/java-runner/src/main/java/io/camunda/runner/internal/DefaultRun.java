@@ -20,10 +20,12 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.runner.Cluster;
 import io.camunda.runner.Run;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +47,8 @@ public final class DefaultRun implements Run {
   private final List<Long> instances;
   private final Cluster cluster;
   private final WorkerRegistration workers;
+  private final URI restAddress;
+  private final Map<String, String> jobTypeToElementId;
   private final AtomicBoolean closed = new AtomicBoolean();
   private final Thread shutdownHook;
 
@@ -55,7 +59,9 @@ public final class DefaultRun implements Run {
       final Instant startedAt,
       final List<Long> instances,
       final Cluster cluster,
-      final WorkerRegistration workers) {
+      final WorkerRegistration workers,
+      final URI restAddress,
+      final Map<String, String> jobTypeToElementId) {
     this.runId = runId;
     this.processId = processId;
     this.processDefinitionKey = processDefinitionKey;
@@ -63,6 +69,8 @@ public final class DefaultRun implements Run {
     this.instances = List.copyOf(instances);
     this.cluster = cluster;
     this.workers = workers;
+    this.restAddress = restAddress;
+    this.jobTypeToElementId = Map.copyOf(jobTypeToElementId);
     this.shutdownHook = new Thread(this::closeQuietly, "livebpmn-shutdown-" + runId);
     Runtime.getRuntime().addShutdownHook(shutdownHook);
   }
@@ -94,7 +102,23 @@ public final class DefaultRun implements Run {
 
   @Override
   public Map<String, Long> workersHandled() {
-    return workers.handledSnapshot();
+    final Map<String, Long> byJobType = workers.handledSnapshot();
+    final LinkedHashMap<String, Long> byElementId = new LinkedHashMap<>();
+    byJobType.forEach(
+        (jobType, count) -> {
+          final String elementId = jobTypeToElementId.getOrDefault(jobType, jobType);
+          byElementId.put(elementId, count);
+        });
+    return byElementId;
+  }
+
+  @Override
+  public String operateUrl() {
+    String base = restAddress.toString();
+    if (base.endsWith("/")) {
+      base = base.substring(0, base.length() - 1);
+    }
+    return base + "/operate/processes?process=" + processId;
   }
 
   @Override

@@ -27,6 +27,7 @@ public final class LocalhostCluster implements Cluster {
   private static final Logger LOG = LoggerFactory.getLogger(LocalhostCluster.class);
 
   private final int grpcPort;
+  private final URI restAddress = URI.create("http://localhost:8080");
   private volatile CamundaClient client;
 
   public LocalhostCluster(final int grpcPort) {
@@ -40,7 +41,7 @@ public final class LocalhostCluster implements Cluster {
       client =
           CamundaClient.newClientBuilder()
               .grpcAddress(URI.create("http://localhost:" + grpcPort))
-              .restAddress(URI.create("http://localhost:8080"))
+              .restAddress(restAddress)
               .build();
     }
     return client;
@@ -49,6 +50,11 @@ public final class LocalhostCluster implements Cluster {
   @Override
   public boolean ownsClient() {
     return true;
+  }
+
+  @Override
+  public URI restAddress() {
+    return restAddress;
   }
 
   @Override

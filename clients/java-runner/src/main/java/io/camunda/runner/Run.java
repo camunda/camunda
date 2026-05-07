@@ -41,8 +41,14 @@ public interface Run extends AutoCloseable {
   /** Process instance keys created by this run (eager, pre-await). */
   List<Long> instances();
 
-  /** Local jobs-handled counters keyed by jobType. Real-time, not from the secondary store. */
+  /**
+   * Local jobs-handled counters keyed by clean elementId (e.g. {@code validate}, not {@code
+   * stephan-r7f3a-validate}). Real-time, not from the secondary store.
+   */
   Map<String, Long> workersHandled();
+
+  /** A link to this run's process in Operate, ready to paste into a browser. */
+  String operateUrl();
 
   /**
    * Blocks until every created instance reaches a terminal state (COMPLETED, TERMINATED) or carries

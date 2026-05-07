@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.List;
@@ -99,6 +100,38 @@ final class ModelRewriterTest {
     final ServiceTask task = result.model().getModelElementById("validate");
     assertThat(task).isNotNull();
     assertThat(task.getId()).isEqualTo("validate");
+  }
+
+  @Test
+  void shouldPreserveSequenceFlowConditionExpressionsAfterClone() {
+    // given — a process with an exclusive gateway and two conditional outgoing flows
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("approval")
+            .startEvent()
+            .exclusiveGateway("decision")
+            .condition("=approved = true")
+            .endEvent("approved-end")
+            .moveToNode("decision")
+            .condition("=approved = false")
+            .endEvent("rejected-end")
+            .done();
+
+    // when
+    final ModelRewriter.Rewritten result = ModelRewriter.rewrite(model, "u-x", List.of());
+
+    // then — both conditions survive the clone+rewrite round-trip
+    final long withCondition =
+        result.model().getModelElementsByType(SequenceFlow.class).stream()
+            .filter(sf -> sf.getConditionExpression() != null)
+            .count();
+    assertThat(withCondition).isEqualTo(2);
+    final List<String> conditionTexts =
+        result.model().getModelElementsByType(SequenceFlow.class).stream()
+            .map(SequenceFlow::getConditionExpression)
+            .filter(c -> c != null)
+            .map(c -> c.getTextContent())
+            .toList();
+    assertThat(conditionTexts).containsExactlyInAnyOrder("=approved = true", "=approved = false");
   }
 
   @Test

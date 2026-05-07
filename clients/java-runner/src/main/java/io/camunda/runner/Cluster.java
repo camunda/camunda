@@ -16,6 +16,7 @@
 package io.camunda.runner;
 
 import io.camunda.client.CamundaClient;
+import java.net.URI;
 
 /**
  * A handle to a Camunda cluster the runner can deploy to. The {@link CamundaClient} is materialised
@@ -33,6 +34,14 @@ public interface Cluster extends AutoCloseable {
 
   /** Whether the runner owns the client lifecycle (i.e. should close it). */
   boolean ownsClient();
+
+  /**
+   * Returns the REST base URI for this cluster (e.g. {@code http://localhost:8080}). Used to
+   * compose user-facing links such as the Operate process URL. Must be called after {@link
+   * #client()} has materialised the underlying client (since for testcontainer clusters the REST
+   * port is assigned at boot time).
+   */
+  URI restAddress();
 
   @Override
   void close();

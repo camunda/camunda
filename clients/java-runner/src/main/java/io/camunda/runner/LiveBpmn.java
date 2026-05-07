@@ -95,7 +95,17 @@ public final class LiveBpmn {
 
   /** Runs {@code n} instances against the supplied {@link Cluster}. */
   public Run run(final int n, final Cluster cluster) {
-    return RunnerPipeline.execute(done(), bindings, n, cluster);
+    return run(RunOptions.of(n), cluster);
+  }
+
+  /** Power form: runs the configured number of instances against a smart-default cluster. */
+  public Run run(final RunOptions opts) {
+    return run(opts, new LocalContainerCluster());
+  }
+
+  /** Power form: runs the configured options against the supplied {@link Cluster}. */
+  public Run run(final RunOptions opts, final Cluster cluster) {
+    return RunnerPipeline.execute(done(), bindings, opts, cluster);
   }
 
   // ---------------------------------------------------------------------------
@@ -199,6 +209,24 @@ public final class LiveBpmn {
   /** Connects the current flow node to an already-defined element by id. */
   public LiveBpmn sequenceFlowTo(final String id) {
     currentBuilder = asFlowNodeBuilder().connectTo(id);
+    return this;
+  }
+
+  /**
+   * Repositions the builder cursor on a previously-defined node so a new branch can be added.
+   * Mirror of {@link AbstractFlowNodeBuilder#moveToNode(String)}.
+   */
+  public LiveBpmn moveToNode(final String id) {
+    currentBuilder = asFlowNodeBuilder().moveToNode(id);
+    return this;
+  }
+
+  /**
+   * Repositions the cursor onto the last-added gateway. Mirror of {@link
+   * AbstractFlowNodeBuilder#moveToLastGateway()}.
+   */
+  public LiveBpmn moveToLastGateway() {
+    currentBuilder = asFlowNodeBuilder().moveToLastGateway();
     return this;
   }
 

@@ -139,10 +139,59 @@ Find your run in Operate by filtering on the process id (e.g. `stephan-r7f3a-ord
 
 ## Tips
 
-- **Image version pinning for `.testcontainer()`**: defaults to `camunda/camunda:8.8.0`. Override via JVM arg `-Dio.camunda.process.test.camundaDockerImageVersion=8.7.0` (or whichever stable tag you prefer).
+- **Image version pinning for `.testcontainer()`**: defaults to `camunda/camunda:8.9.4` (the stable tag the runner is verified against). Override via JVM arg `-Dio.camunda.process.test.camundaDockerImageVersion=8.7.0` (or whichever stable tag you prefer).
 - **Logs**: SLF4J binding is bundled (`slf4j-simple`). The runner emits INFO logs for cluster boot, deploy, worker registration, and instance creation. Container stdout streams into your console under logger `camunda-container` when `.testcontainer()` is used.
 - **Cleanup**: `try-with-resources` on `Cluster` closes workers and (for owned clusters) shuts down the container/client. The deployment stays in the cluster for inspection.
 - **Existing models**: if you already have a `BpmnModelInstance` from `Bpmn.createExecutableProcess(...)`, adopt it via `LiveBpmn.of(model).bind(elementId, lambda)…run(N, cluster)`.
+
+## Realistic examples
+
+Each lives under `src/main/java/io/camunda/runner/examples/` and has a `main()`:
+
+| Example | What it shows |
+|---------|---------------|
+| `OrderDemo` | Happy path with variables threaded through `validate -> charge -> ship` via `job.variable(name, Class)` and `Map.of(...)` returns. |
+| `ApprovalDemo` | Exclusive gateway with two FEEL-conditioned branches (`=approved = true` / `=approved = false`). |
+| `LoadDemo` | Paced creation of 50 instances 100 ms apart so they trickle into Operate visibly. |
+| `AdoptDemo` | Adopt an existing `BpmnModelInstance` and bind workers via `LiveBpmn.of(model).bind(elementId, lambda)`. |
+
+After instance creation the runner logs a clickable URL (`Operate: http://...:port/operate/processes?process=<prefixedId>`) — paste it into your browser to watch the run flow.
+
+## Variables and gateways
+
+Every service-task lambda takes a `Job` and returns a `Map<String, Object>` of variable updates (or `null` for none):
+
+```java
+.serviceTask("validate", (Job job) -> {
+  String orderId = job.variable("orderId", String.class);
+  double amount  = job.variable("amount", Number.class).doubleValue();
+  return Map.of("valid", amount > 0);   // becomes process variables, visible to later tasks
+})
+```
+
+Provide initial variables with `RunOptions`:
+
+```java
+.run(
+    RunOptions.of(3)
+        .variables(i -> Map.of("orderId", "ORDER-" + (1000 + i), "amount", 19.99 + i)),
+    cluster);
+```
+
+For exclusive gateways, set FEEL condition expressions on outgoing flows. Use `.moveToNode("<gatewayId>")` to come back to the gateway and add the second branch:
+
+```java
+.exclusiveGateway("decision")
+.condition("=approved = true")
+.serviceTask("ship", (Job j) -> Map.of("status", "shipped"))
+.endEvent()
+.moveToNode("decision")
+.condition("=approved = false")
+.serviceTask("reject", (Job j) -> Map.of("status", "rejected"))
+.endEvent()
+```
+
+`RunOptions` also supports `pacing(Duration)` (spacing between `createInstance` calls), `tags(String...)` (extra instance tags) and `timeout(Duration)`.
 
 ## Build
 

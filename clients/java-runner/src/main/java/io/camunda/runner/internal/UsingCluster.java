@@ -17,6 +17,7 @@ package io.camunda.runner.internal;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.runner.Cluster;
+import java.net.URI;
 
 /** Bring-your-own-client cluster. The runner does not close the wrapped client. */
 public final class UsingCluster implements Cluster {
@@ -35,6 +36,12 @@ public final class UsingCluster implements Cluster {
   @Override
   public boolean ownsClient() {
     return false;
+  }
+
+  @Override
+  public URI restAddress() {
+    final URI configured = client.getConfiguration().getRestAddress();
+    return configured != null ? configured : URI.create("http://localhost:8080");
   }
 
   @Override

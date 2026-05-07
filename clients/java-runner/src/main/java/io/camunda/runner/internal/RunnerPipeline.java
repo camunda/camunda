@@ -21,10 +21,12 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.runner.Cluster;
 import io.camunda.runner.Run;
+import io.camunda.runner.RunOptions;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
@@ -43,6 +45,15 @@ public final class RunnerPipeline {
       final Map<String, BoundHandler> bindings,
       final int instanceCount,
       final Cluster cluster) {
+    return execute(model, bindings, RunOptions.of(instanceCount), cluster);
+  }
+
+  public static Run execute(
+      final BpmnModelInstance model,
+      final Map<String, BoundHandler> bindings,
+      final RunOptions opts,
+      final Cluster cluster) {
+    final int instanceCount = opts.instances();
     if (instanceCount < 0) {
       throw new IllegalArgumentException("instanceCount must be >= 0, got " + instanceCount);
     }
@@ -88,27 +99,49 @@ public final class RunnerPipeline {
 
     final Instant startedAt = Instant.now();
     final List<Long> instances = new ArrayList<>(instanceCount);
-    final String[] tags = new String[] {"runId:" + runId, "user:" + user, "script:" + script};
+    final String[] baseTags = new String[] {"runId:" + runId, "user:" + user, "script:" + script};
+    final String[] extraTags = opts.extraTags();
+    final String[] allTags = new String[baseTags.length + extraTags.length];
+    System.arraycopy(baseTags, 0, allTags, 0, baseTags.length);
+    System.arraycopy(extraTags, 0, allTags, baseTags.length, extraTags.length);
+
+    final java.time.Duration pacing = opts.pacingOrNull();
     for (int i = 0; i < instanceCount; i++) {
-      final ProcessInstanceEvent event =
+      final Map<String, Object> vars = opts.variablesFor(i);
+      var step =
           client
               .newCreateInstanceCommand()
               .processDefinitionKey(processDefinitionKey)
-              .tags(tags)
-              .send()
-              .join();
+              .tags(allTags);
+      if (vars != null && !vars.isEmpty()) {
+        step = step.variables(vars);
+      }
+      final ProcessInstanceEvent event = step.send().join();
       instances.add(event.getProcessInstanceKey());
+      if (pacing != null && i < instanceCount - 1) {
+        LockSupport.parkNanos(pacing.toNanos());
+      }
     }
     LOG.info("created {} instance(s) for runId={}", instances.size(), runId);
 
-    return new DefaultRun(
-        runId,
-        rewritten.prefixedProcessId(),
-        processDefinitionKey,
-        startedAt,
-        instances,
-        cluster,
-        workers);
+    final Map<String, String> jobTypeToElementId = new LinkedHashMap<>();
+    rewritten
+        .jobTypesByElementId()
+        .forEach((elementId, jobType) -> jobTypeToElementId.put(jobType, elementId));
+
+    final DefaultRun run =
+        new DefaultRun(
+            runId,
+            rewritten.prefixedProcessId(),
+            processDefinitionKey,
+            startedAt,
+            instances,
+            cluster,
+            workers,
+            cluster.restAddress(),
+            jobTypeToElementId);
+    LOG.info("Operate: {}", run.operateUrl());
+    return run;
   }
 
   private static boolean bindingsContainUserTasks(

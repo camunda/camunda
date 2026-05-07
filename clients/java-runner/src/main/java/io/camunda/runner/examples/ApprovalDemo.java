@@ -23,50 +23,49 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * Realistic happy-path demo: variables flow from one task to the next, each task reads with {@code
- * job.variable(name, Class)} and returns updates as a {@link Map}.
+ * Exclusive gateway with two branches: review computes an {@code approved} flag; flow forks on a
+ * FEEL condition into a "ship" or "reject" path.
  */
-public final class OrderDemo {
+public final class ApprovalDemo {
 
-  private OrderDemo() {}
+  private ApprovalDemo() {}
 
   public static void main(final String[] args) throws Exception {
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
 
-    System.out.println("[OrderDemo] booting cluster (first run pulls the image, ~1-2 min)…");
+    System.out.println("[ApprovalDemo] booting cluster…");
     try (var cluster = LiveBpmn.cluster().testcontainer()) {
-      System.out.println("[OrderDemo] cluster ready, deploying & creating instances…");
       final Run run =
-          LiveBpmn.createExecutableProcess("order")
+          LiveBpmn.createExecutableProcess("approval")
               .startEvent()
               .serviceTask(
-                  "validate",
+                  "review",
                   (Job job) -> {
-                    final String orderId = job.variable("orderId", String.class);
-                    final Number amountNum = job.variable("amount", Number.class);
-                    final double amount = amountNum.doubleValue();
-                    System.out.println("[validate] order=" + orderId + " amount=" + amount);
-                    return Map.of("valid", amount > 0);
+                    final double amount = job.variable("amount", Number.class).doubleValue();
+                    final boolean approved = amount < 1000;
+                    System.out.println("[review] amount=" + amount + " approved=" + approved);
+                    return Map.of("approved", approved);
                   })
-              .serviceTask(
-                  "charge",
-                  (Job job) -> {
-                    final String orderId = job.variable("orderId", String.class);
-                    System.out.println("[charge]   charging " + orderId);
-                    return Map.of("paymentId", "P-" + orderId);
-                  })
+              .exclusiveGateway("decision")
+              .condition("=approved = true")
               .serviceTask(
                   "ship",
                   (Job job) -> {
-                    final String paymentId = job.variable("paymentId", String.class);
-                    System.out.println("[ship]     payment=" + paymentId);
-                    return Map.of("trackingId", "T-" + job.getProcessInstanceKey());
+                    System.out.println("[ship] approved -> shipping");
+                    return Map.of("status", "shipped");
+                  })
+              .endEvent()
+              .moveToNode("decision")
+              .condition("=approved = false")
+              .serviceTask(
+                  "reject",
+                  (Job job) -> {
+                    System.out.println("[reject] amount too high -> rejecting");
+                    return Map.of("status", "rejected");
                   })
               .endEvent()
               .run(
-                  RunOptions.of(3)
-                      .variables(
-                          i -> Map.of("orderId", "ORDER-" + (1000 + i), "amount", 19.99 + i)),
+                  RunOptions.of(4).variables(i -> Map.of("amount", 100.0 * (i + 1) * (i + 1))),
                   cluster);
       System.out.println("Operate: " + run.operateUrl());
       run.await(Duration.ofMinutes(2));
