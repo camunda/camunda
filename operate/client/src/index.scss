@@ -6,11 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-@use '@carbon/react' as * with (
-  $font-path: '@ibm/plex'
-);
-@use '@carbon/react/scss/themes';
-@use '@carbon/react/scss/theme';
+// Carbon theme tokens, IBM Plex fonts, and shadcn globals are loaded
+// automatically by `@camunda/design-system` (side-effect imports inside
+// `src/index.{shadcn,carbon}.ts`). This file holds Operate-specific resets
+// and overrides only.
 
 * {
   box-sizing: border-box;
@@ -96,24 +95,13 @@ svg {
     'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
 }
 
-.cds--modal {
-  p {
-    @include type-style('body-01');
-    margin: var(--cds-spacing-05) 0;
-  }
-}
-
 .cds--g10 {
-  @include theme.theme(themes.$g10);
-
   // Monaco editor scrollbar colours – light theme (mirrors Monaco's "light" / "vs" theme)
   --monaco-scrollbar-thumb: rgba(100, 100, 100, 0.4);
   --monaco-scrollbar-thumb-hover: rgba(100, 100, 100, 0.7);
 }
 
 .cds--g100 {
-  @include theme.theme(themes.$g100);
-
   // Monaco editor scrollbar colours – dark theme (mirrors Monaco's "vs-dark" theme)
   --monaco-scrollbar-thumb: rgba(121, 121, 121, 0.4);
   --monaco-scrollbar-thumb-hover: rgba(100, 100, 100, 0.7);

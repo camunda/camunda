@@ -1,0 +1,32 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+// Foundational Carbon theme tokens + IBM Plex fonts. Loaded regardless of
+// design-system mode (shadcn or carbon) because Operate/Tasklist's
+// styled-components reference `var(--cds-spacing-*)`/`var(--cds-color-*)`
+// throughout. Component CSS rules live in `carbon.scss` (carbon mode only)
+// or are emitted by Tailwind utilities scanned from the source tree
+// (shadcn mode). Side-effect imported by `src/index.{shadcn,carbon}.ts`.
+
+@use '@carbon/react/scss/config' with (
+  $font-path: '@ibm/plex'
+);
+@use '@carbon/react/scss/fonts';
+@use '@carbon/react/scss/themes';
+@use '@carbon/react/scss/theme';
+
+:root,
+.cds--g10,
+[data-carbon-theme='g10'] {
+  @include theme.theme(themes.$g10);
+}
+
+.cds--g100,
+[data-carbon-theme='g100'] {
+  @include theme.theme(themes.$g100);
+}

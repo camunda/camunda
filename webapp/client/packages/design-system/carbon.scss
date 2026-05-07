@@ -5,11 +5,20 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-@use '@carbon/react/scss/themes';
-@use '@carbon/react/scss/theme';
 
+// Theme tokens + fonts come from `theme.scss`; this file adds the per-component
+// CSS rules used in carbon mode (loaded by `src/index.carbon.ts`). Shadcn mode
+// skips this file — its components ship as Tailwind utilities scanned from the
+// source tree.
+@use './theme';
 @use '@carbon/react/scss/layer';
 @use '@carbon/react/scss/grid';
+
+// Foundational utilities Carbon components emit class rules into.
+@use '@carbon/styles/scss/utilities/visually-hidden';
+@use '@carbon/styles/scss/utilities/skeleton';
+@use '@carbon/styles/scss/utilities/text-truncate';
+@use '@carbon/styles/scss/utilities/focus-outline';
 
 
 @use '@carbon/react/scss/components/breadcrumb';
@@ -46,15 +55,3 @@
 @use '@carbon/react/scss/components/tooltip';
 @use '@carbon/react/scss/components/treeview';
 @use '@carbon/react/scss/components/ui-shell';
-
-:root {
-  @include theme.theme(themes.$g10);
-}
-
-[data-carbon-theme='g10'] {
-  @include theme.theme(themes.$g10);
-}
-
-[data-carbon-theme='g100'] {
-  @include theme.theme(themes.$g100);
-}

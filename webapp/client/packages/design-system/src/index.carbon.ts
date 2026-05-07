@@ -6,6 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+// Mode CSS — loaded as side effects so consumers don't manage stylesheets
+// manually. `carbon.scss` brings in Carbon's per-component rules and pulls in
+// `theme.scss` transitively (Carbon theme tokens + IBM Plex fonts). Switching
+// to shadcn mode is a one-line edit in `src/index.ts`.
+import '../carbon.scss';
+
 export * from './components/ThemeProvider';
 export * from './components/ui/actionable-notification/actionable-notification.carbon';
 export * from './components/ui/breadcrumb/breadcrumb.carbon';

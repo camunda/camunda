@@ -1,0 +1,22 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@import 'tailwindcss';
+
+/* Import globals.css here (not just as a JS side-effect) so that the
+   `@theme inline` token mappings are processed within the Tailwind entry-point
+   context. Without this, Tailwind v4 generates utilities like `bg-primary`
+   referencing `--color-primary`, but `--color-primary` is never registered in
+   the theme and the utility has no effect. */
+@import '../../../webapp/client/packages/design-system/globals.css';
+
+/* Tailwind v4 doesn't scan node_modules by default. Point it at the
+   design-system source (resolved through the symlink) so utilities
+   referenced inside `<name>.shadcn.tsx` / `<name>.adapter.tsx` get
+   generated. */
+@source '../../../webapp/client/packages/design-system/src/**/*.{ts,tsx}';

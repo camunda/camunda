@@ -6,6 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+// Mode CSS — loaded as side effects so consumers don't manage stylesheets
+// manually. `theme.scss` ships Carbon's CSS tokens + IBM Plex fonts (always
+// needed for `var(--cds-*)` references in styled-components). `globals.css`
+// ships shadcn's neutral palette + Tailwind layer setup. `carbon-navigation.scss`
+// loads the Carbon component CSS rules required by C3Navigation (which is built
+// on Carbon primitives in @camunda/camunda-composite-components). Switching to
+// carbon mode is a one-line edit in `src/index.ts`.
+import '../theme.scss';
+import '../globals.css';
+import '../carbon-navigation.scss';
+
 export * from './components/ThemeProvider';
 export * from './components/ui/header/theme.carbon';
 
@@ -59,43 +70,20 @@ export * from './components/ui/stack/stack.adapter';
 export * from './components/ui/tree-view/tree-view.adapter';
 export * from './components/ui/unordered-list/unordered-list.adapter';
 
-// Carbon-only fallbacks. These identifiers have no shadcn equivalent in this
-// package yet but are imported by consumers (e.g. Operate's DataTable
-// composition uses Carbon's render-prop API). They render Carbon directly
-// regardless of the active mode; replace each with a shadcn-backed adapter
-// when one becomes available.
-export {
-  DataTable,
-  DataTableSkeleton,
-  OrderedList,
-  PasswordInput,
-  TableBatchActions,
-  TableContainer,
-  TableExpandHeader,
-  TableExpandRow,
-  TableExpandedRow,
-  TableSelectAll,
-  TableSelectRow,
-  TableToolbar,
-} from '@carbon/react';
-export type {
-  ButtonSize,
-  DataTableHeader,
-  DataTableProps,
-  DataTableRenderProps,
-  DataTableRow,
-  DataTableSkeletonProps,
-  OrderedListProps,
-  PasswordInputProps,
-  TableBatchActionsProps,
-  TableContainerProps,
-  TableExpandHeaderProps,
-  TableExpandRowProps,
-  TableExpandedRowProps,
-  TableSelectAllProps,
-  TableSelectRowProps,
-  TableToolbarProps,
-} from '@carbon/react';
+// Migrated from Carbon — full table family backed by shadcn primitives.
+export * from './components/ui/data-table/data-table.adapter';
+export * from './components/ui/data-table-skeleton/data-table-skeleton.adapter';
+export * from './components/ui/table-container/table-container.adapter';
+export * from './components/ui/table-toolbar/table-toolbar.adapter';
+export * from './components/ui/table-batch-actions/table-batch-actions.adapter';
+export * from './components/ui/table-expand/table-expand.adapter';
+export * from './components/ui/table-select/table-select.adapter';
+export * from './components/ui/ordered-list/ordered-list.adapter';
+export * from './components/ui/password-input/password-input.adapter';
+
+// Carbon utility type re-export — `ButtonSize` has no shadcn equivalent and
+// is consumed by Operate's Button-derived components.
+export type {ButtonSize} from '@carbon/react';
 
 // Canonical shadcn primitives — referenced internally by the adapters above
 // and re-exported here for consumers who want the raw shadcn API.

@@ -10,3 +10,9 @@ declare module '*?raw' {
   const content: string;
   export default content;
 }
+
+// Side-effect imports of stylesheets from `index.{shadcn,carbon}.ts`. Vite
+// processes these via PostCSS / Sass at build time; TS just needs to know
+// they're importable as modules.
+declare module '*.css';
+declare module '*.scss';

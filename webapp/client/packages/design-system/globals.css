@@ -138,3 +138,10 @@
     @apply font-sans;
   }
 }
+
+/* Outside @layer so it wins over host stylesheets that set
+   `svg { fill: currentColor }` (e.g. Carbon icon resets in Operate).
+   Lucide icons are stroke-based and must not be filled. */
+svg.lucide {
+  fill: none !important;
+}

@@ -8,7 +8,11 @@
 
 import type {Preview} from '@storybook/react';
 import {ThemeProvider} from '../src/components/ThemeProvider';
+// Stories render Carbon AND shadcn variants side-by-side, so load both
+// stylesheets here directly (bypassing the index.{shadcn,carbon}.ts
+// auto-load to keep both APIs visible at once).
 import '../carbon.scss';
+import '../globals.css';
 import './preview.css';
 
 export const globalTypes = {

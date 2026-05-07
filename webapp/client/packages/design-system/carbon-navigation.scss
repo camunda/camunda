@@ -1,0 +1,38 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+// Carbon component CSS needed by C3Navigation from @camunda/camunda-composite-components.
+// C3Navigation is built directly on Carbon primitives (Header, HeaderNavigation,
+// HeaderGlobalBar, Tag, Toggletip, SideNav, etc.). Until that package migrates
+// to @camunda/design-system wrappers, these rules must be loaded in shadcn mode.
+//
+// `theme.scss` already emits the --cds-* CSS custom properties; the @use './theme'
+// here is required at Sass compile time so Carbon's mixins can resolve their token
+// references. The resulting :root declarations are identical and are harmlessly
+// overwritten by the ones from theme.scss.
+
+@use './theme';
+@use '@carbon/react/scss/layer';
+
+@use '@carbon/styles/scss/utilities/focus-outline';
+@use '@carbon/styles/scss/utilities/visually-hidden';
+
+// Primitives C3Navigation builds on
+@use '@carbon/react/scss/components/button';
+@use '@carbon/react/scss/components/link';
+@use '@carbon/react/scss/components/stack';
+@use '@carbon/react/scss/components/tag';
+
+// Tooltip family — DefinitionTooltip + Toggletip + their popover backing
+@use '@carbon/react/scss/components/popover';
+@use '@carbon/react/scss/components/tooltip';
+@use '@carbon/react/scss/components/toggletip';
+
+// Navigation shell — Header, HeaderName, HeaderNavigation, HeaderGlobalBar,
+// HeaderGlobalAction, HeaderPanel, SideNav, SwitcherDivider, etc.
+@use '@carbon/react/scss/components/ui-shell';
