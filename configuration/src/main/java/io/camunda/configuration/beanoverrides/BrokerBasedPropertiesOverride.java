@@ -794,7 +794,7 @@ public class BrokerBasedPropertiesOverride {
   private void populateBackupScheduler(
       final BrokerBasedProperties override, final PrimaryStorageBackup primaryStorageBackup) {
 
-    // TMP validateSchedulerConfiguration(primaryStorageBackup);
+    validateSchedulerConfiguration(primaryStorageBackup);
 
     final BackupCfg backupCfg = override.getData().getBackup();
     backupCfg.setRequired(primaryStorageBackup.isRequired());

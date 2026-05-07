@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.variable.DocumentEntry;
 import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
@@ -28,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * A behavior which allows processors to mutate the variable state. Use this anywhere where you
@@ -42,8 +44,17 @@ public final class VariableBehavior {
    * Variables in an output mapping (or any variable document merge) whose name starts with this
    * prefix are routed to the cluster variable state instead of the local process variable scope.
    * The remainder of the name (after the prefix) is used as the cluster variable name.
+   *
+   * <p>Note: Zeebe output mapping target paths with dots (e.g. {@code
+   * target="camunda.vars.cluster.foo"}) are translated by the FEEL/output-mapping engine into a
+   * nested map under a top-level entry named {@code camunda}. To detect that case we also navigate
+   * such nested structures (see {@link #CLUSTER_VARIABLE_NAMESPACE_ROOT}).
    */
   public static final String CLUSTER_VARIABLE_NAME_PREFIX = "camunda.vars.cluster.";
+
+  private static final String CLUSTER_VARIABLE_NAMESPACE_ROOT = "camunda";
+  private static final String CLUSTER_VARIABLE_NAMESPACE_VARS = "vars";
+  private static final String CLUSTER_VARIABLE_NAMESPACE_CLUSTER = "cluster";
 
   private final VariableState variableState;
   private final StateWriter stateWriter;
@@ -54,6 +65,8 @@ public final class VariableBehavior {
   private final IndexedDocument indexedDocument = new IndexedDocument();
   private final VariableRecord variableRecord = new VariableRecord();
   private final ClusterVariableRecord clusterVariableRecord = new ClusterVariableRecord();
+  private final MsgPackReader clusterVariableMsgPackReader = new MsgPackReader();
+  private final UnsafeBuffer clusterVariableValueView = new UnsafeBuffer();
   private final VariableSourceRecord variableSourceRecord;
 
   public VariableBehavior(
@@ -295,14 +308,28 @@ public final class VariableBehavior {
   }
 
   /**
-   * Removes any document entries whose name starts with {@link #CLUSTER_VARIABLE_NAME_PREFIX} and
-   * emits a {@link ClusterVariableIntent#UPDATE} command for each. Internal commands bypass
-   * authorization checks in {@link
+   * Removes any document entries that should be routed to the cluster variable state and emits a
+   * {@link ClusterVariableIntent#UPDATE} command for each. Two name shapes are detected:
+   *
+   * <ul>
+   *   <li><b>Direct prefix</b>: a single entry whose name literally starts with {@link
+   *       #CLUSTER_VARIABLE_NAME_PREFIX} (e.g. a job worker that returns a variable named {@code
+   *       "camunda.vars.cluster.foo"}). The remainder of the name is the cluster variable name.
+   *   <li><b>Nested map</b>: an entry named {@code camunda} whose msgpack value is a map of the
+   *       shape {@code {vars: {cluster: {<name>: <value>, ...}}}}. This is what Zeebe's output
+   *       mapping produces when the target path uses dots, e.g. {@code
+   *       target="camunda.vars.cluster.foo"}. Each key inside the {@code cluster} map is treated as
+   *       a cluster variable update.
+   * </ul>
+   *
+   * <p>Internal commands bypass authorization checks in {@link
    * io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableUpdateProcessor}.
    *
    * <p>For PoC simplicity: when a tenant id is present and non-blank we emit a TENANT-scoped
    * update; otherwise we emit a GLOBAL-scoped update. The processor will reject the update if the
-   * cluster variable does not exist in the chosen scope.
+   * cluster variable does not exist in the chosen scope. When the nested map case is matched the
+   * entire {@code camunda} entry is dropped from the local document — sibling content under {@code
+   * camunda.*} that isn't a cluster variable would be lost.
    */
   private void extractAndEmitClusterVariableUpdates(final String tenantId) {
     if (commandWriter == null) {
@@ -312,27 +339,104 @@ public final class VariableBehavior {
     while (iterator.hasNext()) {
       final DocumentEntry entry = iterator.next();
       final String fullName = BufferUtil.bufferAsString(entry.getName());
-      if (!fullName.startsWith(CLUSTER_VARIABLE_NAME_PREFIX)) {
+
+      if (fullName.startsWith(CLUSTER_VARIABLE_NAME_PREFIX)) {
+        final String clusterVariableName =
+            fullName.substring(CLUSTER_VARIABLE_NAME_PREFIX.length());
+        if (clusterVariableName.isEmpty()) {
+          continue;
+        }
+        emitClusterVariableUpdate(
+            clusterVariableName, BufferUtil.cloneBuffer(entry.getValue()), tenantId);
+        iterator.remove();
         continue;
       }
-      final String clusterVariableName = fullName.substring(CLUSTER_VARIABLE_NAME_PREFIX.length());
-      if (clusterVariableName.isEmpty()) {
-        continue;
+
+      if (CLUSTER_VARIABLE_NAMESPACE_ROOT.equals(fullName)
+          && extractAndEmitFromNestedClusterMap(entry.getValue(), tenantId)) {
+        iterator.remove();
       }
-      clusterVariableRecord.reset();
-      clusterVariableRecord
-          .setName(clusterVariableName)
-          .setValue(BufferUtil.cloneBuffer(entry.getValue()));
-      if (tenantId != null
-          && !tenantId.isBlank()
-          && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
-        clusterVariableRecord.setTenantId(tenantId).setTenantScope();
-      } else {
-        clusterVariableRecord.setGlobalScope();
-      }
-      commandWriter.appendNewCommand(ClusterVariableIntent.UPDATE, clusterVariableRecord);
-      iterator.remove();
     }
+  }
+
+  /**
+   * Treats {@code value} as a msgpack map of shape {@code {vars: {cluster: {<name>: <v>, ...}}}}
+   * and emits a cluster variable UPDATE command for each entry inside the inner {@code cluster}
+   * map. Returns {@code true} iff at least one update was emitted.
+   */
+  private boolean extractAndEmitFromNestedClusterMap(
+      final DirectBuffer value, final String tenantId) {
+    try {
+      clusterVariableMsgPackReader.wrap(value, 0, value.capacity());
+      final int topLevelMapSize = clusterVariableMsgPackReader.readMapHeader();
+      if (!seekToKeyInMap(topLevelMapSize, CLUSTER_VARIABLE_NAMESPACE_VARS)) {
+        return false;
+      }
+      final int varsMapSize = clusterVariableMsgPackReader.readMapHeader();
+      if (!seekToKeyInMap(varsMapSize, CLUSTER_VARIABLE_NAMESPACE_CLUSTER)) {
+        return false;
+      }
+      final int clusterMapSize = clusterVariableMsgPackReader.readMapHeader();
+      boolean emittedAny = false;
+      for (int i = 0; i < clusterMapSize; i++) {
+        final int nameLength = clusterVariableMsgPackReader.readStringLength();
+        final String varName =
+            BufferUtil.bufferAsString(
+                clusterVariableMsgPackReader.getBuffer(),
+                clusterVariableMsgPackReader.getOffset(),
+                nameLength);
+        clusterVariableMsgPackReader.skipBytes(nameLength);
+
+        final int valueOffset = clusterVariableMsgPackReader.getOffset();
+        clusterVariableMsgPackReader.skipValue();
+        final int valueLength = clusterVariableMsgPackReader.getOffset() - valueOffset;
+
+        clusterVariableValueView.wrap(
+            clusterVariableMsgPackReader.getBuffer(), valueOffset, valueLength);
+        emitClusterVariableUpdate(
+            varName, BufferUtil.cloneBuffer(clusterVariableValueView), tenantId);
+        emittedAny = true;
+      }
+      return emittedAny;
+    } catch (final RuntimeException ignored) {
+      return false;
+    }
+  }
+
+  /**
+   * Walks {@code mapSize} key/value pairs from the current reader position looking for {@code
+   * targetKey}. Returns true with the reader positioned at the matched value, or false (with the
+   * reader fully consumed past the map) if no match is found.
+   */
+  private boolean seekToKeyInMap(final int mapSize, final String targetKey) {
+    for (int i = 0; i < mapSize; i++) {
+      final int keyLength = clusterVariableMsgPackReader.readStringLength();
+      final String key =
+          BufferUtil.bufferAsString(
+              clusterVariableMsgPackReader.getBuffer(),
+              clusterVariableMsgPackReader.getOffset(),
+              keyLength);
+      clusterVariableMsgPackReader.skipBytes(keyLength);
+      if (targetKey.equals(key)) {
+        return true;
+      }
+      clusterVariableMsgPackReader.skipValue();
+    }
+    return false;
+  }
+
+  private void emitClusterVariableUpdate(
+      final String name, final DirectBuffer value, final String tenantId) {
+    clusterVariableRecord.reset();
+    clusterVariableRecord.setName(name).setValue(value);
+    if (tenantId != null
+        && !tenantId.isBlank()
+        && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
+      clusterVariableRecord.setTenantId(tenantId).setTenantScope();
+    } else {
+      clusterVariableRecord.setGlobalScope();
+    }
+    commandWriter.appendNewCommand(ClusterVariableIntent.UPDATE, clusterVariableRecord);
   }
 
   private VariableRecord getVariableRecordCopy(final VariableRecord variableRecord) {
