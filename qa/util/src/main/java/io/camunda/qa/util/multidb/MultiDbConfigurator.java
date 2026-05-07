@@ -196,6 +196,7 @@ public class MultiDbConfigurator {
                   .setPolicyName(indexPrefix + "-ilm");
               cfg.getData().getSecondaryStorage().getOpensearch().setUsername(userName);
               cfg.getData().getSecondaryStorage().getOpensearch().setPassword(userPassword);
+              cfg.getData().getSecondaryStorage().getOpensearch().setAwsEnabled(isAws);
               overrideRefreshInterval(cfg.getData().getSecondaryStorage().getOpensearch());
             });
 
