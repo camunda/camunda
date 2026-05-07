@@ -38,13 +38,12 @@ public final class NextValueManager {
   public long getNextValue() {
     return nextValueColumnFamily.updateAndGet(
         nextValueKey,
-        r -> {
-          var value = r;
-          if (r == null) {
-            value = new NextValue(initialValue);
-          }
-          return value.increment();
-        });
+        () -> {
+          final var value = new NextValue();
+          value.set(initialValue);
+          return value;
+        },
+        NextValue::increment);
   }
 
   public void setValue(final String key, final long value) {
