@@ -657,7 +657,7 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
+      await operateFiltersPanelPage.displayOptionalFilter('Operation ID');
       await operateFiltersPanelPage.fillBatchOperationIdFilter(operationId);
 
       await waitForAssertion({
@@ -666,7 +666,7 @@ test.describe('Process Instances Filters', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
+          await operateFiltersPanelPage.displayOptionalFilter('Operation ID');
           await operateFiltersPanelPage.fillBatchOperationIdFilter(operationId);
         },
       });

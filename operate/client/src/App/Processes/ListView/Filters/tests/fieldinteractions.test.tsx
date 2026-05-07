@@ -53,7 +53,7 @@ describe('Interaction with other fields during validation', () => {
     });
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
+    await user.click(screen.getByText('Operation ID'));
     await user.type(screen.getByLabelText(/^operation id$/i), 'a');
 
     vi.runOnlyPendingTimers();
@@ -88,7 +88,7 @@ describe('Interaction with other fields during validation', () => {
     expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
+    await user.click(screen.getByText('Operation ID'));
     await user.type(screen.getByLabelText(/^operation id$/i), 'abc');
 
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
@@ -230,7 +230,7 @@ describe('Interaction with other fields during validation', () => {
     });
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
+    await user.click(screen.getByText('Operation ID'));
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Parent Process Instance Key'));
 

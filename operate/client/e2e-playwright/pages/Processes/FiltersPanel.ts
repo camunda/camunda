@@ -13,7 +13,7 @@ type OptionalFilter =
   | 'Process Instance Key(s)'
   | 'Parent Process Instance Key'
   | 'Business ID'
-  | 'Operation Id'
+  | 'Operation ID'
   | 'Error Message'
   | 'Start Date Range'
   | 'End Date Range'
