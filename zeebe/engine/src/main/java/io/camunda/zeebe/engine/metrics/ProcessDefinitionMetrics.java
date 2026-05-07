@@ -23,15 +23,16 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class ProcessDefinitionMetrics {
 
   private final MeterRegistry registry;
-  private final AtomicLong totalVersions = new AtomicLong(0);
   private final AtomicLong totalUniqueProcessIds = new AtomicLong(0);
 
-  // processDefinitionKey -> version entry metadata and size
-  private final Map<Long, VersionEntry> versionsByKey = new HashMap<>();
-  // bpmnProcessId -> set of processDefinitionKeys with that ID (tracks which process IDs are live)
+  // processDefinitionKey -> (bpmnProcessId, sizeBytes) — to know what to subtract on deletion
+  private final Map<Long, KeyEntry> entriesByKey = new HashMap<>();
+  // bpmnProcessId -> set of processDefinitionKeys with that ID
   private final Map<String, Set<Long>> keysByProcessId = new HashMap<>();
-  // processDefinitionKey -> registered Gauge (to allow removal on deletion)
-  private final Map<Long, Gauge> sizeGaugesByKey = new HashMap<>();
+  // bpmnProcessId -> running total of bytes across all deployed versions
+  private final Map<String, AtomicLong> totalSizeByProcessId = new HashMap<>();
+  // bpmnProcessId -> registered Gauge (to allow removal when last version is deleted)
+  private final Map<String, Gauge> sizeGaugesByProcessId = new HashMap<>();
 
   public ProcessDefinitionMetrics(final MeterRegistry registry, final ProcessState processState) {
     this.registry = Objects.requireNonNull(registry);
@@ -41,26 +42,16 @@ public final class ProcessDefinitionMetrics {
         process -> {
           if (process.getState() == PersistedProcessState.ACTIVE) {
             final String bpmnProcessId = BufferUtil.bufferAsString(process.getBpmnProcessId());
-            addEntry(
-                process.getKey(),
-                bpmnProcessId,
-                process.getVersion(),
-                process.getResource().capacity());
+            addEntry(process.getKey(), bpmnProcessId, process.getResource().capacity());
           }
           return true;
         });
 
-    totalVersions.set(versionsByKey.size());
     totalUniqueProcessIds.set(keysByProcessId.size());
 
     final var definitionsDoc = EngineMetricsDoc.DEPLOYED_PROCESS_DEFINITIONS;
     Gauge.builder(definitionsDoc.getName(), totalUniqueProcessIds, AtomicLong::get)
         .description(definitionsDoc.getDescription())
-        .register(registry);
-
-    final var versionsDoc = EngineMetricsDoc.DEPLOYED_PROCESS_DEFINITION_VERSIONS;
-    Gauge.builder(versionsDoc.getName(), totalVersions, AtomicLong::get)
-        .description(versionsDoc.getDescription())
         .register(registry);
   }
 
@@ -70,15 +61,11 @@ public final class ProcessDefinitionMetrics {
    * scan.
    */
   public void processDefinitionDeployed(
-      final long processDefinitionKey,
-      final String bpmnProcessId,
-      final int version,
-      final int sizeBytes) {
-    final var keys = addEntry(processDefinitionKey, bpmnProcessId, version, sizeBytes);
+      final long processDefinitionKey, final String bpmnProcessId, final int sizeBytes) {
+    final var keys = addEntry(processDefinitionKey, bpmnProcessId, sizeBytes);
     if (keys.size() == 1) {
       totalUniqueProcessIds.incrementAndGet();
     }
-    totalVersions.incrementAndGet();
   }
 
   /**
@@ -86,47 +73,51 @@ public final class ProcessDefinitionMetrics {
    * processing only (not during replay).
    */
   public void processDefinitionDeleted(final long processDefinitionKey) {
-    final var entry = versionsByKey.remove(processDefinitionKey);
+    final var entry = entriesByKey.remove(processDefinitionKey);
     if (entry == null) {
       return;
     }
 
-    final var gauge = sizeGaugesByKey.remove(processDefinitionKey);
-    if (gauge != null) {
-      registry.remove(gauge);
-    }
-
     final var keys = keysByProcessId.get(entry.bpmnProcessId());
-    if (keys != null) {
-      keys.remove(processDefinitionKey);
-      if (keys.isEmpty()) {
-        keysByProcessId.remove(entry.bpmnProcessId());
-        totalUniqueProcessIds.decrementAndGet();
-      }
+    if (keys == null) {
+      return;
     }
-    totalVersions.decrementAndGet();
+    keys.remove(processDefinitionKey);
+
+    if (keys.isEmpty()) {
+      keysByProcessId.remove(entry.bpmnProcessId());
+      totalSizeByProcessId.remove(entry.bpmnProcessId());
+      final var gauge = sizeGaugesByProcessId.remove(entry.bpmnProcessId());
+      if (gauge != null) {
+        registry.remove(gauge);
+      }
+      totalUniqueProcessIds.decrementAndGet();
+    } else {
+      totalSizeByProcessId.get(entry.bpmnProcessId()).addAndGet(-entry.sizeBytes());
+    }
   }
 
   private Set<Long> addEntry(
-      final long processDefinitionKey,
-      final String bpmnProcessId,
-      final int version,
-      final int sizeBytes) {
-    final var entry = new VersionEntry(bpmnProcessId, version, sizeBytes);
-    versionsByKey.put(processDefinitionKey, entry);
+      final long processDefinitionKey, final String bpmnProcessId, final int sizeBytes) {
+    entriesByKey.put(processDefinitionKey, new KeyEntry(bpmnProcessId, sizeBytes));
     final var keys = keysByProcessId.computeIfAbsent(bpmnProcessId, id -> new HashSet<>());
     keys.add(processDefinitionKey);
 
-    final var sizeDoc = EngineMetricsDoc.PROCESS_DEFINITION_RESOURCE_SIZE;
-    final var gauge =
-        Gauge.builder(sizeDoc.getName(), entry, VersionEntry::sizeBytes)
-            .description(sizeDoc.getDescription())
-            .tag(ProcessDefinitionKeyNames.BPMN_PROCESS_ID.asString(), bpmnProcessId)
-            .tag(ProcessDefinitionKeyNames.VERSION.asString(), String.valueOf(version))
-            .register(registry);
-    sizeGaugesByKey.put(processDefinitionKey, gauge);
+    final var totalSize =
+        totalSizeByProcessId.computeIfAbsent(bpmnProcessId, id -> new AtomicLong());
+    totalSize.addAndGet(sizeBytes);
+
+    sizeGaugesByProcessId.computeIfAbsent(
+        bpmnProcessId,
+        id -> {
+          final var sizeDoc = EngineMetricsDoc.PROCESS_DEFINITION_RESOURCE_SIZE;
+          return Gauge.builder(sizeDoc.getName(), totalSize, AtomicLong::get)
+              .description(sizeDoc.getDescription())
+              .tag(ProcessDefinitionKeyNames.BPMN_PROCESS_ID.asString(), id)
+              .register(registry);
+        });
     return keys;
   }
 
-  private record VersionEntry(String bpmnProcessId, int version, int sizeBytes) {}
+  private record KeyEntry(String bpmnProcessId, int sizeBytes) {}
 }

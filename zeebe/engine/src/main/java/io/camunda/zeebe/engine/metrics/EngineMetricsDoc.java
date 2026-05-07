@@ -319,39 +319,14 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Total number of deployed process definition versions across all process IDs */
-  DEPLOYED_PROCESS_DEFINITION_VERSIONS {
-    @Override
-    public String getDescription() {
-      return "Total number of deployed process definition versions across all process IDs";
-    }
-
-    @Override
-    public String getName() {
-      return "zeebe.process.definition.versions.count";
-    }
-
-    @Override
-    public Type getType() {
-      return Type.GAUGE;
-    }
-
-    @Override
-    public KeyName[] getAdditionalKeyNames() {
-      return PartitionKeyNames.values();
-    }
-  },
-
-  /** Size in bytes of the BPMN resource for each deployed process definition version */
+  /** Total size in bytes of all deployed versions of each process definition */
   PROCESS_DEFINITION_RESOURCE_SIZE {
     private static final KeyName[] KEY_NAMES =
-        new KeyName[] {
-          ProcessDefinitionKeyNames.BPMN_PROCESS_ID, ProcessDefinitionKeyNames.VERSION
-        };
+        new KeyName[] {ProcessDefinitionKeyNames.BPMN_PROCESS_ID};
 
     @Override
     public String getDescription() {
-      return "Size in bytes of the BPMN resource for each deployed process definition version";
+      return "Total size in bytes of all deployed versions of each process definition";
     }
 
     @Override
@@ -517,14 +492,6 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "bpmnProcessId";
-      }
-    },
-
-    /** The version number of the process definition */
-    VERSION {
-      @Override
-      public String asString() {
-        return "version";
       }
     }
   }

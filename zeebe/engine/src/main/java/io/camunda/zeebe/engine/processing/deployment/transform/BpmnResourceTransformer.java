@@ -156,10 +156,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
               final var processRecord = new ProcessRecord().wrap(metadata, resource.getResource());
               stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
               processDefinitionMetrics.processDefinitionDeployed(
-                  key,
-                  processRecord.getBpmnProcessId(),
-                  processRecord.getVersion(),
-                  resource.getResource().length);
+                  key, processRecord.getBpmnProcessId(), resource.getResource().length);
             });
   }
 

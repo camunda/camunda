@@ -268,7 +268,6 @@ public final class DeploymentCreateProcessor
                   processDefinitionMetrics.processDefinitionDeployed(
                       metadata.getKey(),
                       processRecord.getBpmnProcessId(),
-                      processRecord.getVersion(),
                       resource.getResource().length);
                 }
               }
