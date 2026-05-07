@@ -53,7 +53,7 @@ public class GetFormIT {
 
     // then
     assertThat(form).isNotNull();
-    assertThat(form.getFormKey()).isEqualTo(String.valueOf(deployedFormKey));
+    assertThat(form.getFormKey()).isEqualTo(deployedFormKey);
     assertThat(form.getFormId()).isEqualTo(deployedFormId);
     assertThat(form.getVersion()).isEqualTo(1);
     assertThat(form.getSchema()).isNotNull();
@@ -94,7 +94,7 @@ public class GetFormIT {
 
     // then
     assertThat(formV2).isNotNull();
-    assertThat(formV2.getFormKey()).isEqualTo(String.valueOf(secondFormKey));
+    assertThat(formV2.getFormKey()).isEqualTo(secondFormKey);
     assertThat(formV2.getFormId()).isEqualTo(secondFormId);
     assertThat(formV2.getVersion()).isEqualTo(1);
     assertThat(formV2.getTenantId()).isEqualTo("<default>");
@@ -104,7 +104,7 @@ public class GetFormIT {
 
     // then - should still be accessible
     assertThat(formV1).isNotNull();
-    assertThat(formV1.getFormKey()).isEqualTo(String.valueOf(deployedFormKey));
+    assertThat(formV1.getFormKey()).isEqualTo(deployedFormKey);
     assertThat(formV1.getFormId()).isEqualTo(deployedFormId);
   }
 }

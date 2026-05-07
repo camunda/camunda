@@ -1874,7 +1874,7 @@ public final class TestHelper {
             () -> {
               final var form = camundaClient.newFormGetRequest(formKey).execute();
               assertThat(form).isNotNull();
-              assertThat(form.getFormKey()).isEqualTo(String.valueOf(formKey));
+              assertThat(form.getFormKey()).isEqualTo(formKey);
             });
   }
 

@@ -68,10 +68,8 @@ import org.slf4j.LoggerFactory;
 public final class ProtocolFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolFactory.class);
   private static final String PROTOCOL_PACKAGE_NAME = Record.class.getPackage().getName() + "*";
-  private static final long DATE_RANGE_MIN =
-      Instant.parse("2000-01-01T00:00:00Z").getEpochSecond();
-  private static final long DATE_RANGE_MAX =
-      Instant.parse("2099-12-31T23:59:59Z").getEpochSecond();
+  private static final long DATE_RANGE_MIN = Instant.parse("2000-01-01T00:00:00Z").getEpochSecond();
+  private static final long DATE_RANGE_MAX = Instant.parse("2099-12-31T23:59:59Z").getEpochSecond();
 
   private final CustomRandomizerRegistry randomizerRegistry;
   private final EasyRandomParameters parameters;
