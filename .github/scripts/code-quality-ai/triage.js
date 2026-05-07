@@ -3,11 +3,13 @@
  * AI triage for the code quality pipeline.
  *
  * Reads a CodeQL SARIF file and classifies each finding into one of
- * two tracks:
+ * three tracks:
  *
- *   pr_eligible — simple, local fixes safe for an auto-PR
- *   issue_only  — architectural, concurrency, security-sensitive, or
- *                 otherwise context-dependent; needs human triage
+ *   pr_eligible    — simple, local fixes safe for an auto-PR
+ *   issue_only     — architectural, concurrency, security-sensitive, or
+ *                    otherwise context-dependent; needs human triage
+ *   false_positive — rule fired but code context shows it does not apply;
+ *                    dropped from output (logged to false_positives array)
  *
  * The default classifier is a static rule-ID allowlist. When
  * `ENABLE_AI_TRIAGE=true`, the dispatch in `classify()` routes findings
@@ -17,8 +19,33 @@
  * model from `BEDROCK_INFERENCE_PROFILE_ARN`.
  */
 import fs from "node:fs";
+import path from "node:path";
 
 import { AnthropicBedrock } from "@anthropic-ai/bedrock-sdk";
+
+const CONTEXT_LINES = 20;
+
+/**
+ * Read N lines of code around a finding's line number for use in the prompt.
+ * Returns null if the file cannot be read (e.g. path not resolvable).
+ */
+function buildContextSnippet(repoRoot, filePath, line) {
+  const fullPath = path.isAbsolute(filePath)
+    ? filePath
+    : path.join(repoRoot, filePath);
+  try {
+    const content = fs.readFileSync(fullPath, "utf8");
+    const lines = content.split("\n");
+    const start = Math.max(0, line - 1 - CONTEXT_LINES);
+    const end = Math.min(lines.length, line + CONTEXT_LINES);
+    return lines
+      .slice(start, end)
+      .map((l, i) => `${start + i + 1}\t${l}`)
+      .join("\n");
+  } catch {
+    return null;
+  }
+}
 
 const RULE_TRACK = {
   // Pure rename to a non-deprecated successor; safe to auto-fix.
@@ -66,7 +93,16 @@ function classifyWithRules(finding) {
 
 const CLASSIFICATION_SYSTEM_PROMPT = `You are classifying static analysis findings for an automated code-quality pipeline.
 
-Each finding is routed to one of two tracks:
+You will be given the finding metadata AND the actual code context around the flagged line.
+Use the code to verify whether the finding is genuine before classifying.
+
+Each finding is routed to one of three tracks:
+
+False positive — the rule fired but the code context shows it does not apply.
+  Requires positive evidence in the code, not just uncertainty. Examples:
+  - A deprecated method that is an @Override with no available non-deprecated successor
+  - A null-check finding on a value that is provably non-null by construction
+  - A taint finding where the value is fully sanitized before the flagged use
 
 PR-eligible — fix is local, low-risk, safe to apply automatically. ALL of:
   - Local change (single function or file, no cross-module impact)
@@ -81,10 +117,10 @@ Issue-only — needs human triage. ANY of:
   - Low-confidence or context-dependent
   - Any finding where the fix could plausibly introduce a new bug
 
-When in doubt, choose issue_only.
+When in doubt, prefer issue_only over pr_eligible or false_positive.
 
 Respond with a single JSON object and no other text:
-{"track": "pr_eligible" | "issue_only", "confidence": <0..1>, "reason": "<brief justification>"}`;
+{"track": "pr_eligible" | "issue_only" | "false_positive", "confidence": <0..1>, "reason": "<brief justification>"}`;
 
 let bedrockClient = null;
 function getBedrockClient() {
@@ -119,7 +155,11 @@ function parseClassification(rawText) {
   } catch {
     throw new Error(`Claude returned non-JSON classification: ${rawText}`);
   }
-  if (parsed.track !== "pr_eligible" && parsed.track !== "issue_only") {
+  if (
+    parsed.track !== "pr_eligible" &&
+    parsed.track !== "issue_only" &&
+    parsed.track !== "false_positive"
+  ) {
     throw new Error(`Claude returned invalid track: ${parsed.track}`);
   }
   const confidence =
@@ -134,41 +174,51 @@ function parseClassification(rawText) {
 /**
  * Classify a finding via Claude on AWS Bedrock.
  * @param {Finding} finding
+ * @param {string} repoRoot
  * @returns {Promise<Classification>}
  */
-async function classifyWithClaude(finding) {
+async function classifyWithClaude(finding, repoRoot) {
   const model = process.env.BEDROCK_INFERENCE_PROFILE_ARN;
   if (!model) {
     throw new Error(
       "BEDROCK_INFERENCE_PROFILE_ARN env var is required for Bedrock dispatch.",
     );
   }
+  const snippet = buildContextSnippet(repoRoot, finding.file, finding.line);
   const userPrompt = [
     `Rule: ${finding.rule}`,
     `File: ${finding.file}`,
     `Line: ${finding.line}`,
     `Message: ${finding.message}`,
     "",
+    snippet
+      ? `Code context (line numbers prefixed):\n\`\`\`java\n${snippet}\n\`\`\``
+      : "(code context unavailable — classify based on rule and message only)",
+    "",
     "Classify this finding.",
   ].join("\n");
 
+  console.log(`Prompt for ${finding.finding_id}:\n${userPrompt}\n`);
   const response = await getBedrockClient().messages.create({
     model,
     max_tokens: 512,
     system: CLASSIFICATION_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }],
   });
-  return parseClassification(extractText(response));
+  const rawText = extractText(response);
+  console.log(`Response for ${finding.finding_id}:\n${rawText}\n`);
+  return parseClassification(rawText);
 }
 
 /**
  * Pick a classifier based on environment configuration.
  * @param {Finding} finding
+ * @param {string} repoRoot
  * @returns {Promise<Classification>}
  */
-async function classify(finding) {
+async function classify(finding, repoRoot) {
   if (process.env.ENABLE_AI_TRIAGE === "true") {
-    return classifyWithClaude(finding);
+    return classifyWithClaude(finding, repoRoot);
   }
   return classifyWithRules(finding);
 }
@@ -194,12 +244,13 @@ function toFinding(result) {
 }
 
 /**
- * Triage a parsed SARIF object into pr_eligible / issue_only lists.
+ * Triage a parsed SARIF object into pr_eligible / issue_only / false_positives.
  * At most `maxTickets` results are processed to keep runtime bounded.
  * @param {object} sarif
  * @param {number} [maxTickets=5]
+ * @param {string} [repoRoot=process.cwd()]
  */
-export async function triage(sarif, maxTickets = 5) {
+export async function triage(sarif, maxTickets = 5, repoRoot = process.cwd()) {
   const findings = (sarif.runs ?? [])
     .flatMap((run) => run.results ?? [])
     .map(toFinding)
@@ -208,24 +259,23 @@ export async function triage(sarif, maxTickets = 5) {
 
   const classified = [];
   for (const finding of findings) {
-    const c = await classify(finding);
-    classified.push({
-      ...finding,
-      confidence: c.confidence,
-      prEligible: c.track === "pr_eligible",
-      reason: c.reason ?? ISSUE_REASON_DEFAULT,
-    });
+    const c = await classify(finding, repoRoot);
+    classified.push({ ...finding, track: c.track, confidence: c.confidence, reason: c.reason });
   }
 
   const pr_eligible = classified
-    .filter((f) => f.prEligible)
-    .map(({ prEligible, reason, ...f }) => f);
+    .filter((f) => f.track === "pr_eligible")
+    .map(({ track, reason, ...f }) => f);
 
   const issue_only = classified
-    .filter((f) => !f.prEligible)
-    .map(({ prEligible, ...f }) => f);
+    .filter((f) => f.track === "issue_only")
+    .map(({ track, ...f }) => ({ ...f, reason: f.reason ?? ISSUE_REASON_DEFAULT }));
 
-  return { pr_eligible, issue_only };
+  const false_positives = classified
+    .filter((f) => f.track === "false_positive")
+    .map(({ track, ...f }) => f);
+
+  return { pr_eligible, issue_only, false_positives };
 }
 
 function readSarif(inputPath) {
@@ -246,7 +296,7 @@ function writeJson(outputPath, payload) {
 }
 
 function parseArgs(argv) {
-  const args = { input: "-", output: "-", maxTickets: 5 };
+  const args = { input: "-", output: "-", maxTickets: 5, repoRoot: process.cwd() };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -259,6 +309,9 @@ function parseArgs(argv) {
       case "--max-tickets":
         args.maxTickets = Number.parseInt(argv[++i]);
         break;
+      case "--repo-root":
+        args.repoRoot = argv[++i];
+        break;
       case "-h":
       case "--help":
         console.log(
@@ -267,6 +320,7 @@ function parseArgs(argv) {
             "  --input PATH       SARIF file (default: stdin)",
             "  --output PATH      classified JSON (default: stdout)",
             "  --max-tickets N    max findings to triage (default: 5)",
+            "  --repo-root PATH   repository root for reading source files (default: cwd)",
             "",
             "Env (Claude/Bedrock dispatch — set ENABLE_AI_TRIAGE=true):",
             "  AWS_REGION                       (required)",
@@ -289,13 +343,10 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const sarif = readSarif(args.input);
-  const out = await triage(sarif, args.maxTickets);
+  const out = await triage(sarif, args.maxTickets, args.repoRoot);
   writeJson(args.output, out);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((err) => {
-    console.error(err.message);
-    process.exit(1);
-  });
+  await main();
 }

@@ -223,7 +223,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_SECRET }}
           BEDROCK_INFERENCE_PROFILE_ARN: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_ARN }}
-        run: node triage.js --input "${{ steps.locate.outputs.sarif }}" --output triaged.json --max-tickets ${{ env.MAX_TICKETS }}
+        run: node triage.js --input "${{ steps.locate.outputs.sarif }}" --output triaged.json --max-tickets ${{ env.MAX_TICKETS }} --repo-root "$GITHUB_WORKSPACE"
 
       - name: Upload triage output
         if: always()
