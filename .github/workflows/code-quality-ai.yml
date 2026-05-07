@@ -194,16 +194,10 @@ jobs:
   codeql-scan:
     name: CodeQL scan (Java)
     needs: hotspots
-    timeout-minutes: 60
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: ./.github/actions/setup-build
-        with:
-          maven-cache-key-modifier: code-quality-ai
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       - name: Download dynamic CodeQL config
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -215,13 +209,8 @@ jobs:
         uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           languages: java-kotlin
-          build-mode: manual
+          build-mode: none
           config-file: ./hotspots/codeql-config-dynamic.yml
-
-      # Build only the target module (and its dependencies via -am).
-      # CodeQL observes the compile step to build its database.
-      - name: Build target module
-        run: ./mvnw install -pl zeebe/engine -am -Dquickly -T1C
 
       - name: Perform CodeQL analysis
         id: analyze
