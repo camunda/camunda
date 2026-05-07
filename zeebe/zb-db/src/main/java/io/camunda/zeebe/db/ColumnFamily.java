@@ -48,13 +48,53 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
    *
    * @throws IllegalStateException if the key does not exist
    */
-  default <A> A updateAndGet(final KeyType key, final Function<ValueType, A> mutator) {
-    final var value = get(key);
-    if (value == null) {
-      throw new io.camunda.zeebe.db.ZeebeDbInconsistentException("Key " + key + " does not exist");
+  default <A> @Nullable A updateAndGet(final KeyType key, final Function<ValueType, A> mutator) {
+    return updateAndGet(key, null, mutator);
+  }
+
+  /**
+   * Reads the value for the given key, applies the mutator in-place, and writes it back.
+   *
+   * <p>If {@code valueSupplier} is {@code null}, this behaves like a strict update and throws if
+   * the key does not exist. If {@code valueSupplier} is provided, this behaves like an upsert: when
+   * the key is missing the supplier is used to create the initial value, the mutator is applied,
+   * and the value is inserted.
+   *
+   * <p>Default implementations use {@link #get(DbKey)} on the read path. Implementations backed by
+   * in-memory storage can override this to mutate the stored object directly without any copies.
+   *
+   * <p><b>Important:</b> the value reference passed to the mutator is mutable state and must NOT be
+   * captured or stored beyond the lambda scope. If a supplier is provided, it must return a fresh
+   * instance that is safe to become stored state.
+   *
+   * @throws IllegalStateException if the key does not exist and no supplier is provided
+   */
+  default <A> @Nullable A updateAndGet(
+      final KeyType key,
+      final @Nullable Supplier<ValueType> valueSupplier,
+      final Function<ValueType, A> mutator) {
+    final ValueType value;
+    final boolean missing;
+
+    final var existingValue = get(key);
+    if (existingValue == null) {
+      if (valueSupplier == null) {
+        throw new io.camunda.zeebe.db.ZeebeDbInconsistentException(
+            "Key " + key + " does not exist");
+      }
+      value = valueSupplier.get();
+      missing = true;
+    } else {
+      value = existingValue;
+      missing = false;
     }
+
     final var result = mutator.apply(value);
-    update(key, value);
+    if (missing || valueSupplier != null) {
+      upsert(key, value);
+    } else {
+      update(key, value);
+    }
     return result;
   }
 
@@ -68,9 +108,21 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
    *
    * @throws IllegalStateException if the key does not exist
    */
-  default void update(final KeyType key, final java.util.function.Consumer<ValueType> mutator) {
+  default void update(final KeyType key, final Consumer<ValueType> mutator) {
+    update(key, null, mutator);
+  }
+
+  /**
+   * In-place update with optional upsert semantics. See {@link #updateAndGet(DbKey, Supplier,
+   * Function)} for details.
+   */
+  default void update(
+      final KeyType key,
+      final @Nullable Supplier<ValueType> valueSupplier,
+      final Consumer<ValueType> mutator) {
     updateAndGet(
         key,
+        valueSupplier,
         value -> {
           mutator.accept(value);
           return null;

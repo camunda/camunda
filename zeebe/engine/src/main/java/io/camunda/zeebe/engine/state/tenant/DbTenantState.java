@@ -40,10 +40,12 @@ public class DbTenantState implements MutableTenantState {
   @Override
   public void updateTenant(final TenantRecord updatedTenantRecord) {
     tenantId.wrapString(updatedTenantRecord.getTenantId());
-    final var persistedTenant = tenantsColumnFamily.get(tenantId);
-    persistedTenant.setName(updatedTenantRecord.getName());
-    persistedTenant.setDescription(updatedTenantRecord.getDescription());
-    tenantsColumnFamily.update(tenantId, persistedTenant);
+    tenantsColumnFamily.update(
+        tenantId,
+        persistedTenant -> {
+          persistedTenant.setName(updatedTenantRecord.getName());
+          persistedTenant.setDescription(updatedTenantRecord.getDescription());
+        });
   }
 
   @Override

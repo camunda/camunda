@@ -99,20 +99,40 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   /**
    * In-place mutation for the layered DB. If the entry is already in the active (in-memory) layer,
    * it is mutated directly without any copies. If it is only in the persistent layer, it is
-   * read-through into the active layer first, then mutated in-place.
+   * read-through into the active layer first, then mutated in-place. If a supplier is provided and
+   * the entry does not exist in either layer, a fresh value from the supplier is inserted into the
+   * active layer and then mutated.
    */
   @Override
-  public void update(final KeyType key, final java.util.function.Consumer<ValueType> mutator) {
+  public <A> @Nullable A updateAndGet(
+      final KeyType key,
+      final @Nullable Supplier<ValueType> valueSupplier,
+      final java.util.function.Function<ValueType, A> mutator) {
+    final var result = new Holder<A>();
     context.runInTransaction(
         () -> {
-          // Ensure the entry is in the active layer (read-through if needed).
-          if (get(key) == null) {
-            throw new ZeebeDbInconsistentException(
-                "Key " + key + " in ColumnFamily " + columnFamily + " does not exist");
+          final var rawKey = serializeKey(key);
+
+          if (context.isTombstoned(rawKey)) {
+            if (valueSupplier == null) {
+              throw new ZeebeDbInconsistentException(
+                  "Key " + key + " in ColumnFamily " + columnFamily + " does not exist");
+            }
+            context.clearTombstone(rawKey);
+            result.value = activeColumnFamily.updateAndGet(key, valueSupplier, mutator);
+            return;
           }
-          // Now mutate in-place on the active layer's stored object.
-          activeColumnFamily.update(key, mutator);
+
+          if (!activeColumnFamily.exists(key)) {
+            final var persistentValue = persistentColumnFamily.get(key, this::newValueInstance);
+            if (persistentValue != null) {
+              activeColumnFamily.upsert(key, persistentValue);
+            }
+          }
+
+          result.value = activeColumnFamily.updateAndGet(key, valueSupplier, mutator);
         });
+    return result.value;
   }
 
   @Override

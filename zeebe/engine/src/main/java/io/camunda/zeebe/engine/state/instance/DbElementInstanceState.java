@@ -290,16 +290,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     this.gatewayElementId.wrapBuffer(gatewayElementId);
     this.sequenceFlowElementId.wrapBuffer(sequenceFlowElementId);
 
-    final var number = numberOfTakenSequenceFlowsColumnFamily.get(numberOfTakenSequenceFlowsKey);
-
-    var newValue = 1;
-    if (number != null) {
-      newValue = number.getValue() + 1;
-    }
-    numberOfTakenSequenceFlows.wrapInt(newValue);
-
-    numberOfTakenSequenceFlowsColumnFamily.upsert(
-        numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
+    numberOfTakenSequenceFlowsColumnFamily.updateAndGet(
+        numberOfTakenSequenceFlowsKey,
+        DbInt::new,
+        number -> {
+          number.wrapInt(number.getValue() + 1);
+          return null;
+        });
   }
 
   @Override
@@ -310,12 +307,17 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
         flowScopeKeyAndElementId,
-        (key, number) -> {
-          final var newValue = number.getValue() - 1;
-          if (newValue > 0) {
-            numberOfTakenSequenceFlows.wrapInt(newValue);
-            numberOfTakenSequenceFlowsColumnFamily.update(key, numberOfTakenSequenceFlows);
-          } else {
+        (key, ignored) -> {
+          final var newValue =
+              numberOfTakenSequenceFlowsColumnFamily.updateAndGet(
+                  key,
+                  number -> {
+                    final var updatedValue = number.getValue() - 1;
+                    number.wrapInt(updatedValue);
+                    return updatedValue;
+                  });
+
+          if (newValue <= 0) {
             numberOfTakenSequenceFlowsColumnFamily.deleteExisting(key);
           }
         });
@@ -330,14 +332,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     this.gatewayElementId.wrapBuffer(gatewayElementId);
     this.sequenceFlowElementId.wrapBuffer(sequenceFlowElementId);
 
-    final var number = numberOfTakenSequenceFlowsColumnFamily.get(numberOfTakenSequenceFlowsKey);
+    final var newValue =
+        numberOfTakenSequenceFlowsColumnFamily.updateAndGet(
+            numberOfTakenSequenceFlowsKey,
+            number -> {
+              final var updatedValue = number.getValue() - 1;
+              number.wrapInt(updatedValue);
+              return updatedValue;
+            });
 
-    final var newValue = number.getValue() - 1;
-    if (newValue > 0) {
-      numberOfTakenSequenceFlows.wrapInt(newValue);
-      numberOfTakenSequenceFlowsColumnFamily.update(
-          numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
-    } else {
+    if (newValue <= 0) {
       numberOfTakenSequenceFlowsColumnFamily.deleteExisting(numberOfTakenSequenceFlowsKey);
     }
   }

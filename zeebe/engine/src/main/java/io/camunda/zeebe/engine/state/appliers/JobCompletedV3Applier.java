@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
@@ -34,12 +33,14 @@ class JobCompletedV3Applier implements TypedEventApplier<JobIntent, JobRecord> {
     jobState.complete(key, value);
 
     final long elementInstanceKey = value.getElementInstanceKey();
-    final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
-
-    if (elementInstance != null) {
-      elementInstance.setJobKey(-1);
-      elementInstanceState.updateInstance(elementInstance);
-    }
+    elementInstanceState.updateInstance(
+        elementInstanceKey,
+        elementInstance -> {
+          if (elementInstance != null) {
+            elementInstance.setJobKey(-1);
+            elementInstanceState.updateInstance(elementInstance);
+          }
+        });
 
     jobMetricsState.incrementMetric(value, JobMetricsExportState.COMPLETED);
   }

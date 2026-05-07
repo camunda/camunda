@@ -130,19 +130,34 @@ class InMemoryColumnFamily<
    * mutator operates on the actual stored object.
    */
   @Override
-  public <A> @Nullable A updateAndGet(final KeyType key, final Function<ValueType, A> mutator) {
+  public <A> @Nullable A updateAndGet(
+      final KeyType key,
+      final @Nullable Supplier<ValueType> valueSupplier,
+      final Function<ValueType, A> mutator) {
     final var mutableObject = new MutableObject<A>();
     try (final var timer = metrics.measurePutLatency()) {
       ensureInOpenTransaction(
           transaction -> {
-            final var result =
-                transaction.update(serializeKey(key), value -> mutator.apply((ValueType) value));
-            if (result != null) {
-              mutableObject.setValue(result);
+            final byte[] rawKey = serializeKey(key);
+            if (valueSupplier == null && transaction.get(rawKey) == null) {
+              throw new ZeebeDbInconsistentException(
+                  "Key " + key + " in ColumnFamily " + columnFamily + " does not exist");
             }
+
+            final var result =
+                transaction.update(
+                    rawKey,
+                    valueSupplier,
+                    value -> {
+                      final var typedValue = (ValueType) value;
+                      final var mutationResult = mutator.apply(typedValue);
+                      assertForeignKeysExist(transaction, key, typedValue);
+                      return mutationResult;
+                    });
+            mutableObject.setValue(result);
           });
     }
-    return mutableObject.get();
+    return mutableObject.getValue();
   }
 
   @Override

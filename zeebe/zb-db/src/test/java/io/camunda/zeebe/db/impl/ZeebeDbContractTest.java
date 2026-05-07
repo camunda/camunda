@@ -117,6 +117,72 @@ abstract class ZeebeDbContractTest {
   }
 
   @Test
+  void shouldUpdateValueWithMutator() {
+    // given
+    key.wrapLong(1);
+    value.wrapLong(10);
+    cf.insert(key, value);
+
+    // when
+    final var updatedValue =
+        cf.updateAndGet(
+            key,
+            storedValue -> {
+              storedValue.wrapLong(storedValue.getValue() + 10);
+              return storedValue.getValue();
+            });
+
+    // then
+    assertThat(updatedValue).isEqualTo(20L);
+    assertThat(cf.get(key).getValue()).isEqualTo(20L);
+  }
+
+  @Test
+  void shouldUpsertMissingValueWithMutatorSupplier() {
+    // given
+    key.wrapLong(1);
+
+    // when
+    final var updatedValue =
+        cf.updateAndGet(
+            key,
+            DbLong::new,
+            storedValue -> {
+              storedValue.wrapLong(storedValue.getValue() + 10);
+              return storedValue.getValue();
+            });
+
+    // then
+    assertThat(updatedValue).isEqualTo(10L);
+    assertThat(cf.get(key).getValue()).isEqualTo(10L);
+  }
+
+  @Test
+  void shouldUpdateValueWithConsumerMutator() {
+    // given
+    key.wrapLong(1);
+    value.wrapLong(10);
+    cf.insert(key, value);
+
+    // when
+    cf.update(key, storedValue -> storedValue.wrapLong(storedValue.getValue() + 5));
+
+    // then
+    assertThat(cf.get(key).getValue()).isEqualTo(15L);
+  }
+
+  @Test
+  void shouldThrowOnMutatorUpdateMissingKeyWithoutSupplier() {
+    // given
+    key.wrapLong(1);
+
+    // when / then
+    assertThatThrownBy(() -> cf.update(key, storedValue -> storedValue.wrapLong(10)))
+        .isInstanceOf(ZeebeDbInconsistentException.class)
+        .hasMessageContaining("does not exist");
+  }
+
+  @Test
   void shouldUpsertNewAndExistingValue() {
     key.wrapLong(1);
     value.wrapLong(1);

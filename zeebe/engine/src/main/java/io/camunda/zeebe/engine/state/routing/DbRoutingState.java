@@ -122,11 +122,15 @@ public final class DbRoutingState implements MutableRoutingState {
     final var desiredState = columnFamily.get(key);
     if (desiredState.getPartitions().contains(partitionId)) {
       key.wrapString(CURRENT_KEY);
-      final var current = columnFamily.get(key);
-      final var newPartitions = new TreeSet<>(current.getPartitions());
-      newPartitions.add(partitionId);
-      current.setPartitions(newPartitions);
-      columnFamily.update(key, current);
+      final var newPartitions =
+          columnFamily.updateAndGet(
+              key,
+              current -> {
+                final var updatedPartitions = new TreeSet<>(current.getPartitions());
+                updatedPartitions.add(partitionId);
+                current.setPartitions(updatedPartitions);
+                return updatedPartitions;
+              });
       return newPartitions.equals(desiredState.getPartitions());
     } else {
       return false;
