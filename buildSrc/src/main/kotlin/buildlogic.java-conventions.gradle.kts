@@ -61,6 +61,7 @@ publishing {
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "utf-8"
+    options.compilerArgs.add("-parameters")
     options.errorprone.isEnabled.set(name == "compileJava")
 }
 

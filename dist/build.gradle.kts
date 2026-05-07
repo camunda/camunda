@@ -121,6 +121,10 @@ tasks.named("compileJava") {
     dependsOn(syncOpenApiGeneratedSources)
 }
 
+tasks.named<ProcessResources>("processResources") {
+    filter<ReplaceTokens>("tokens" to mapOf("project.version" to project.version.toString()))
+}
+
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val elasticsearchVersion =
     versionCatalog.findVersion("co-elastic-clients-elasticsearch-java").get().requiredVersion
@@ -448,6 +452,16 @@ tasks.named("assemble") {
     dependsOn(assembleDist, distTar, distZip)
 }
 
+configurations.named("runtimeClasspath") {
+    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    exclude(group = "ch.qos.logback", module = "logback-classic")
+    exclude(group = "ch.qos.logback", module = "logback-core")
+    exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
+}
+
 configurations.named("testRuntimeClasspath") {
     exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+    exclude(group = "ch.qos.logback", module = "logback-classic")
+    exclude(group = "ch.qos.logback", module = "logback-core")
+    exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j")
 }
