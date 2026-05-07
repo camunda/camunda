@@ -52,6 +52,9 @@ jobs:
     name: Cleanup
     needs: verify
     if: always()
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:
