@@ -62,6 +62,8 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
    */
   private final ReadWriteLock stateLock = new ReentrantReadWriteLock();
 
+  private volatile boolean closed;
+
   public LayeredZeebeDb(
       final ZeebeDb<ColumnFamilyType> activeDb,
       final ZeebeDb<ColumnFamilyType> persistentDb,
@@ -171,6 +173,9 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
     // from freeing native RocksDB resources while the flush is still writing.
     stateLock.readLock().lock();
     try {
+      if (closed) {
+        return; // DB was closed before we acquired the lock — nothing to snapshot
+      }
       final var flushed = LayeredSnapshotFlusher.flush(this);
       persistentDb.createSnapshot(snapshotDir);
       // Tombstone removal only needs to remove the specific set we flushed.
@@ -215,6 +220,7 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
     // loses entries but keeps the processedPosition — causing NPEs during replay.
     stateLock.writeLock().lock();
     try {
+      closed = true;
       activeDb.close();
     } finally {
       try {

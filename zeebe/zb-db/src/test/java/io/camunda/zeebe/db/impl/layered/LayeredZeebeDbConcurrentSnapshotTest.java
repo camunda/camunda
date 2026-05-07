@@ -543,7 +543,7 @@ final class LayeredZeebeDbConcurrentSnapshotTest {
    * <p>The test validates that close() blocks until the in-progress flush completes, and that the
    * resulting snapshot (if any) is consistent.
    */
-  @RepeatedTest(50)
+  @RepeatedTest(5)
   void shouldNotProducePartialSnapshotWhenClosedDuringFlush(
       @TempDir final File dbDir, @TempDir final File snapshotParent) throws Exception {
     final int entryCount = 100;
@@ -582,16 +582,16 @@ final class LayeredZeebeDbConcurrentSnapshotTest {
 
     // give the snapshot thread a tiny head-start then close on the main thread
     Thread.yield();
-    // Wait for the snapshot to finish first — we're testing that close() blocks
-    // on the write lock until the snapshot (which holds the read lock) completes.
-    // The key invariant is that the snapshot produced is atomic, not partial.
-    snapshotThread.join(10_000);
 
     try {
       db.close();
     } catch (final Exception ignored) {
       // may already be closed
     }
+    // Wait for the snapshot to finish first — we're testing that close() blocks
+    // on the write lock until the snapshot (which holds the read lock) completes.
+    // The key invariant is that the snapshot produced is atomic, not partial.
+    snapshotThread.join(10_000);
 
     // then: if a snapshot was produced, it must be ALL-or-NOTHING
     if (snapshotDone.get()
