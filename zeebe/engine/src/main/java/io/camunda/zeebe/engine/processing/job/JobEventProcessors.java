@@ -55,14 +55,14 @@ public final class JobEventProcessors {
             bpmnBehaviors.stateBehavior());
 
     final var jobBackoffChecker =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             new JobBackoffCheckScheduler(scheduledTaskStateFactory.get().getJobState()),
             Schedule.onDemand(
                 java.time.Duration.ofMillis(JobBackoffCheckScheduler.BACKOFF_RESOLUTION)),
             interPartitionCommandSender,
             meterRegistry);
     final var jobTimeoutChecker =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             new JobTimeoutCheckScheduler(
                 scheduledTaskStateFactory.get().getJobState(),
                 config.getJobsTimeoutCheckerBatchLimit()),

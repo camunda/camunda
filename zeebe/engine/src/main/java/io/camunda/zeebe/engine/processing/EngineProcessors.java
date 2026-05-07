@@ -127,7 +127,7 @@ public final class EngineProcessors {
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
 
     final ManagedScheduledTask timerChecker =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             new io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler(
                 scheduledTaskStateFactory.get().getTimerState()),
             Schedule.onDemand(java.time.Duration.ofMillis(100))
@@ -764,7 +764,7 @@ public final class EngineProcessors {
                   RoutingInfo.forStaticPartitions(staticPartitionsCount)),
               config);
       typedRecordProcessors.withListener(
-          new ManagedScheduledTask(
+          new ManagedScheduledTask<>(
               task,
               Schedule.fixedRate(config.getCommandRedistributionInterval()),
               interPartitionCommandSender,

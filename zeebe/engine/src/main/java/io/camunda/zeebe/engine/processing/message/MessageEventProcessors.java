@@ -149,7 +149,7 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 authCheckBehavior))
         .withListener(
-            new io.camunda.zeebe.engine.processing.scheduled.runtime.ManagedScheduledTask(
+            new io.camunda.zeebe.engine.processing.scheduled.runtime.ManagedScheduledTask<>(
                 new MessageTimeToLiveCheckScheduler(
                     scheduledTaskStateFactory.get().getMessageState()),
                 io.camunda.zeebe.engine.processing.scheduled.api.Schedule.fixedRate(
