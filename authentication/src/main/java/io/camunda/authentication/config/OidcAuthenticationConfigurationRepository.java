@@ -8,7 +8,7 @@
 package io.camunda.authentication.config;
 
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.configuration.ProvidersConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +35,7 @@ public class OidcAuthenticationConfigurationRepository {
         .ifPresent(c -> providers.put(REGISTRATION_ID, c));
 
     Optional.ofNullable(authenticationConfiguration.getProviders())
-        .map(ProvidersConfiguration::getOidc)
+        .map(OidcProvidersConfiguration::getOidc)
         .ifPresent(providers::putAll);
 
     return providers;

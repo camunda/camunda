@@ -30,9 +30,9 @@ import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.security.configuration.ProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -502,7 +502,7 @@ public class WebSecurityConfig {
 
       return Optional.ofNullable(securityConfiguration.getAuthentication())
           .map(AuthenticationConfiguration::getProviders)
-          .map(ProvidersConfiguration::getOidc)
+          .map(OidcProvidersConfiguration::getOidc)
           .map(Map::values)
           .map(
               values ->
