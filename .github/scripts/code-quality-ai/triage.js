@@ -145,22 +145,31 @@ function extractText(response) {
 function parseClassification(rawText) {
   // Claude sometimes wraps the JSON in prose or markdown; extract the first
   // {...} object anywhere in the response.
-  const match = rawText.match(/{[\s\S]*}/);
+  const match = rawText.match(/\{"track"[\s\S]*}/);
+  const errorResponse = {
+    "track": "failed",
+    "confidence": 0,
+    "reason": rawText,
+  }
+
   if (!match) {
-    throw new Error(`Claude returned non-JSON classification: ${rawText}`);
+    console.error(`Claude returned non-JSON classification: ${rawText}`);
+    return errorResponse;
   }
   let parsed;
   try {
     parsed = JSON.parse(match[0]);
   } catch {
-    throw new Error(`Claude returned non-JSON classification: ${rawText}`);
+    console.error(`Claude returned non-JSON classification: ${rawText}`);
+    return errorResponse;
   }
   if (
     parsed.track !== "pr_eligible" &&
     parsed.track !== "issue_only" &&
     parsed.track !== "false_positive"
   ) {
-    throw new Error(`Claude returned invalid track: ${parsed.track}`);
+    console.error(`Claude returned invalid track: ${parsed.track}`);
+    return errorResponse;
   }
   const confidence =
     typeof parsed.confidence === "number" ? parsed.confidence : 0.5;
