@@ -17,4 +17,48 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
 
-public interface AgentInstanceRecordValue extends RecordValue {}
+public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRelated, TenantOwned {
+
+  /**
+   * @return the unique key of the agent instance
+   */
+  long getAgentInstanceKey();
+
+  /**
+   * @return the unique key of the element instance that the agent instance was last associated with
+   */
+  long getElementInstanceKey();
+
+  /**
+   * @return the ID of the process element representing the agent
+   */
+  String getElementId();
+
+  /**
+   * @return the key of the process instance containing this agent
+   */
+  @Override
+  long getProcessInstanceKey();
+
+  /**
+   * @return the key of the process definition
+   */
+  @Override
+  long getProcessDefinitionKey();
+
+  /**
+   * @return the version of the process definition
+   */
+  int getProcessDefinitionVersion();
+
+  /**
+   * @return the version tag of the process definition
+   */
+  String getVersionTag();
+
+  /**
+   * @return the ID of the tenant that owns this agent instance
+   */
+  @Override
+  String getTenantId();
+}

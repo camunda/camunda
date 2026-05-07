@@ -7,13 +7,118 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class AgentInstanceRecord extends UnifiedRecordValue
     implements AgentInstanceRecordValue {
 
+  private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
+  private final StringProperty elementIdProp = new StringProperty("elementId", "");
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty("processDefinitionKey", -1L);
+  private final IntegerProperty processDefinitionVersionProp =
+      new IntegerProperty("processDefinitionVersion", -1);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
   public AgentInstanceRecord() {
-    super(0); // expectedDeclaredProperties — increment as fields are added
+    super(8);
+    declareProperty(agentInstanceKeyProp)
+        .declareProperty(elementInstanceKeyProp)
+        .declareProperty(elementIdProp)
+        .declareProperty(processInstanceKeyProp)
+        .declareProperty(processDefinitionKeyProp)
+        .declareProperty(processDefinitionVersionProp)
+        .declareProperty(versionTagProp)
+        .declareProperty(tenantIdProp);
+  }
+
+  @Override
+  public long getAgentInstanceKey() {
+    return agentInstanceKeyProp.getValue();
+  }
+
+  public AgentInstanceRecord setAgentInstanceKey(final long agentInstanceKey) {
+    agentInstanceKeyProp.setValue(agentInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
+  }
+
+  public AgentInstanceRecord setElementInstanceKey(final long elementInstanceKey) {
+    elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
+  }
+
+  @Override
+  public String getElementId() {
+    return BufferUtil.bufferAsString(elementIdProp.getValue());
+  }
+
+  public AgentInstanceRecord setElementId(final String elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
+  }
+
+  public AgentInstanceRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProp.getValue();
+  }
+
+  public AgentInstanceRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProp.setValue(processDefinitionKey);
+    return this;
+  }
+
+  @Override
+  public int getProcessDefinitionVersion() {
+    return processDefinitionVersionProp.getValue();
+  }
+
+  public AgentInstanceRecord setProcessDefinitionVersion(final int processDefinitionVersion) {
+    processDefinitionVersionProp.setValue(processDefinitionVersion);
+    return this;
+  }
+
+  @Override
+  public String getVersionTag() {
+    return BufferUtil.bufferAsString(versionTagProp.getValue());
+  }
+
+  public AgentInstanceRecord setVersionTag(final String versionTag) {
+    versionTagProp.setValue(versionTag);
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public AgentInstanceRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }
