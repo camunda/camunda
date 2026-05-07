@@ -26,6 +26,7 @@ import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
@@ -413,27 +414,31 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
     final NavigableMap<byte[], DbValue> merged = new TreeMap<>(Arrays::compareUnsigned);
     final NavigableSet<byte[]> tombstones = context.visibleTombstones();
 
-    persistentColumnFamily.forEach(
+    // Use the prefix key to scope iteration to only matching entries.
+    // The prefix bytes already include the column family prefix, so we reconstruct
+    // a DbKey that covers just the user-facing prefix portion.
+    final var prefixDbKey = new PrefixDbKey(prefixRange.lowerBound());
+
+    // Iterate only the matching range in the persistent layer
+    persistentColumnFamily.whileEqualPrefix(
+        prefixDbKey,
         (key, value) -> {
           final byte[] rawKey = serializeKey(key);
-          if (prefixRange.contains(rawKey) && !tombstones.contains(rawKey)) {
+          if (!tombstones.contains(rawKey)) {
             merged.putIfAbsent(rawKey, cloneValue(value));
           }
+          return true;
         });
 
-    activeColumnFamily.forEach(
+    // Iterate only the matching range in the active layer (overwrites persistent)
+    activeColumnFamily.whileEqualPrefix(
+        prefixDbKey,
         (key, value) -> {
           final byte[] rawKey = serializeKey(key);
-          if (prefixRange.contains(rawKey) && !tombstones.contains(rawKey)) {
+          if (!tombstones.contains(rawKey)) {
             merged.put(rawKey, cloneValue(value));
           }
-        });
-
-    tombstones.forEach(
-        rawKey -> {
-          if (prefixRange.contains(rawKey)) {
-            merged.remove(rawKey);
-          }
+          return true;
         });
 
     return merged;
@@ -576,6 +581,46 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
 
   private static final class Holder<T> {
     private @Nullable T value;
+  }
+
+  /**
+   * A DbKey that wraps raw serialized prefix bytes (including the CF prefix). When passed to {@code
+   * whileEqualPrefix} on a child column family, the CF prefix portion is stripped because each
+   * child column family prepends its own CF prefix during serialization. This key writes only the
+   * user-key portion so the child layer's serialization produces the correct lookup.
+   */
+  private static final class PrefixDbKey implements DbKey {
+    private final byte[] userKeyBytes;
+    private final int userKeyLength;
+
+    PrefixDbKey(final byte[] fullPrefixBytes) {
+      // fullPrefixBytes = [8-byte CF prefix] + [user key bytes]
+      userKeyLength = fullPrefixBytes.length - Long.BYTES;
+      if (userKeyLength > 0) {
+        userKeyBytes = new byte[userKeyLength];
+        System.arraycopy(fullPrefixBytes, Long.BYTES, userKeyBytes, 0, userKeyLength);
+      } else {
+        userKeyBytes = new byte[0];
+      }
+    }
+
+    @Override
+    public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+      // not used — this is a write-only key for prefix queries
+    }
+
+    @Override
+    public int getLength() {
+      return userKeyLength;
+    }
+
+    @Override
+    public int write(final MutableDirectBuffer buffer, final int offset) {
+      if (userKeyLength > 0) {
+        buffer.putBytes(offset, userKeyBytes, 0, userKeyLength);
+      }
+      return userKeyLength;
+    }
   }
 
   private record PrefixRange(byte[] lowerBound) {
