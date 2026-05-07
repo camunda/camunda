@@ -386,7 +386,7 @@ public final class ProcessInstanceModificationModifyProcessor
           final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
 
           terminateElement(elementInstance);
-          terminateFlowScopes(flowScopeKey, requiredKeysForActivation);
+          terminateFlowScopes(flowScopeKey, requiredKeysForActivation, process);
         });
 
     stateWriter.appendFollowUpEvent(
@@ -1432,7 +1432,9 @@ public final class ProcessInstanceModificationModifyProcessor
   }
 
   private void terminateFlowScopes(
-      final long elementInstanceKey, final Set<Long> requiredKeysForActivation) {
+      final long elementInstanceKey,
+      final Set<Long> requiredKeysForActivation,
+      final DeployedProcess process) {
     var currentElementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
     while (canTerminateElementInstance(currentElementInstance, requiredKeysForActivation)) {
@@ -1447,11 +1449,12 @@ public final class ProcessInstanceModificationModifyProcessor
                 currentElementInstanceRecord.getBpmnProcessId()));
       }
 
-      // Delegate process-level termination to the BPMN stream processor by writing a
-      // TERMINATE_ELEMENT command, so that the cancel execution listener chain runs before
-      // the process reaches ELEMENT_TERMINATED. Inner flow scopes have no cancel listeners
-      // (forbidden by the validator) and continue to be terminated directly.
-      if (currentElementInstanceRecord.getBpmnElementType() == BpmnElementType.PROCESS) {
+      // Delegate process-level termination to the BPMN stream processor only when the process
+      // declares at least one cancel execution listener, so that the cancel listener chain runs
+      // before the process reaches ELEMENT_TERMINATED. Otherwise the process is terminated
+      // directly to keep the record stream byte-identical to previous broker versions.
+      if (currentElementInstanceRecord.getBpmnElementType() == BpmnElementType.PROCESS
+          && process.getProcess().hasCancelExecutionListeners()) {
         commandWriter.appendFollowUpCommand(
             currentElementInstance.getKey(),
             ProcessInstanceIntent.TERMINATE_ELEMENT,
