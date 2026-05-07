@@ -257,6 +257,9 @@ jobs:
       - name: Extract Maven Central deployment ID
         id: extract-deployment-id
         if: always() && steps.maven-perform-release.conclusion != 'skipped'
+        # Never block the release on extraction failure — the deployment ID is
+        # for downstream automation only; manual recovery is always possible.
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
@@ -264,11 +267,19 @@ jobs:
           # The central-publishing-maven-plugin only emits the deployment ID via a log line:
           #   "Uploaded bundle successfully, deployment name: ..., deploymentId: <uuid>..."
           # It is not persisted to disk by the plugin. So we fetch this job's log from the GHA API after the maven step has run and grep it.
-          job_id=$(gh api --paginate \
-            "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" \
-            --jq ".jobs[] | select(.runner_name == \"$RUNNER_NAME\") | .id")
+          # Using curl directly because gh CLI is not installed on the release runner image.
+          api="https://api.github.com/repos/${{ github.repository }}"
 
-          deployment_id=$(gh api "/repos/${{ github.repository }}/actions/jobs/${job_id}/logs" 2>/dev/null \
+          job_id=$(curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs?per_page=100" \
+            | jq -r ".jobs[] | select(.runner_name == \"$RUNNER_NAME\") | .id")
+
+          deployment_id=$(curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/actions/jobs/${job_id}/logs" \
             | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
             | tail -1 \
             | awk '{print $2}' || true)
