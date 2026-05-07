@@ -46,6 +46,14 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
+    <!-- runtime SLF4J binding so example main() classes (and the runner's own log lines)
+         actually surface output. Library consumers that have their own binding still win. -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
     <!-- test scope -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>

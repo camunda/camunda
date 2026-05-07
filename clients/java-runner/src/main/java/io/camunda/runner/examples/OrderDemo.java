@@ -26,7 +26,14 @@ public final class OrderDemo {
   private OrderDemo() {}
 
   public static void main(final String[] args) throws Exception {
+    // make slf4j-simple verbose so the runner's progress is visible from the IDE.
+    System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
+    System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
+    System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "HH:mm:ss.SSS");
+
+    System.out.println("[OrderDemo] booting cluster (first run pulls the image, ~1-2 min)…");
     try (var cluster = LiveBpmn.cluster().testcontainer()) {
+      System.out.println("[OrderDemo] cluster ready, deploying & creating instances…");
       final var run =
           LiveBpmn.createExecutableProcess("order")
               .startEvent()
