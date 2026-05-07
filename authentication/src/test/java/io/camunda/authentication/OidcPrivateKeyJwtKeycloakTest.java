@@ -29,7 +29,7 @@ import com.nimbusds.jwt.SignedJWT;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
 import io.camunda.authentication.config.controllers.TestApiController;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
@@ -111,7 +111,7 @@ import org.springframework.web.util.UriComponentsBuilder;
       "camunda.security.authentication.oidc.client-id=" + OidcPrivateKeyJwtKeycloakTest.CLIENT_ID,
       "camunda.security.authentication.oidc.redirect-uri=http://localhost/sso-callback",
       "camunda.security.authentication.oidc.clientAuthenticationMethod="
-          + OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT,
+          + OidcConfiguration.CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT,
       "camunda.security.authentication.oidc.assertion.keystore.path= ${user.dir}/src/test/resources/keystore.p12",
       "camunda.security.authentication.oidc.assertion.keystore.password=password",
       "camunda.security.authentication.oidc.assertion.keystore.keyAlias=camunda-standalone",
