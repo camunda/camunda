@@ -1,25 +1,28 @@
 /**
- * Process details view – BPMN diagram with coverage highlighting.
+ * Decision details view – DMN decision table with matched rule highlighting.
  *
  * Supports two modes:
- *   - Overall coverage  (no context): shows aggregate coverage from data.coverages
+ *   - Overall coverage  (no context): shows aggregate coverage from data.decisionCoverages
  *   - Run-scoped coverage (context):  shows the coverage of a specific test run
+ *
+ * Runs are identified by their zero-based index in suite.runs[] to support
+ * parameterized tests where multiple runs can share the same display name.
  */
 
 'use strict';
 
 import { escapeHtml, toPercent, progressBarHtml, badgeHtml, coverageClass, statCard } from '../utils.js';
-import { renderBpmnDiagram } from '../bpmn.js';
+import { renderDmnDecision } from '../dmn.js';
 
 /**
- * Renders the process details view into #content.
- * @param {string} processId
+ * Renders the decision details view into #content.
+ * @param {string} decisionId
  * @param {object} data window.COVERAGE_DATA
  * @param {{ suiteId: string, runIndex?: number } | null} [context] Optional context for scoped coverage.
  */
-export async function renderProcess(processId, data, context = null) {
+export async function renderDecision(decisionId, data, context = null) {
   const suites = data.suites || [];
-  const definitions = data.definitions || {};
+  const decisionDefinitions = data.decisionDefinitions || {};
 
   // Resolve coverage: run-scoped, suite-scoped, or global aggregate
   let cov = null;
@@ -32,74 +35,63 @@ export async function renderProcess(processId, data, context = null) {
     if (context.runIndex !== undefined) {
       // Run-scoped: coverage from a specific test run (identified by index)
       const run = suite?.runs?.[context.runIndex];
-      cov = run?.coverages?.find((c) => c.processDefinitionId === processId) ?? null;
+      cov = run?.decisionCoverages?.find((c) => c.decisionDefinitionId === decisionId) ?? null;
 
-      // Breadcrumb: Suite > Run > Process
+      // Breadcrumb: Suite > Run > Decision
       breadcrumbHtml = `
         <nav aria-label="breadcrumb" class="mb-3">
           <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="#/suite/${sid}">${escapeHtml(suite?.name ?? context.suiteId)}</a></li>
             <li class="breadcrumb-item"><a href="#/suite/${sid}/run/${context.runIndex}">${escapeHtml(run?.name ?? String(context.runIndex))}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">${escapeHtml(processId)}</li>
+            <li class="breadcrumb-item active" aria-current="page">${escapeHtml(decisionId)}</li>
           </ol>
         </nav>`;
     } else {
-      // Suite-scoped: aggregated coverage for this process within the suite
-      cov = suite?.coverages?.find((c) => c.processDefinitionId === processId) ?? null;
+      // Suite-scoped: aggregated coverage for this decision within the suite
+      cov = suite?.decisionCoverages?.find((c) => c.decisionDefinitionId === decisionId) ?? null;
 
-      // Breadcrumb: Suite > Process
+      // Breadcrumb: Suite > Decision
       breadcrumbHtml = `
         <nav aria-label="breadcrumb" class="mb-3">
           <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="#/suite/${sid}">${escapeHtml(suite?.name ?? context.suiteId)}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">${escapeHtml(processId)}</li>
+            <li class="breadcrumb-item active" aria-current="page">${escapeHtml(decisionId)}</li>
           </ol>
         </nav>`;
     }
   } else {
-    cov = (data.coverages || []).find((c) => c.processDefinitionId === processId) ?? null;
+    cov = (data.decisionCoverages || []).find((c) => c.decisionDefinitionId === decisionId) ?? null;
   }
 
-  const xml = definitions[processId];
+  const xml = decisionDefinitions[decisionId];
 
   let html = breadcrumbHtml + `
     <h2 class="view-title">
-      <i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i>
-      ${escapeHtml(processId)}
+      <i class="bi bi-table me-2" aria-hidden="true"></i>
+      ${escapeHtml(decisionId)}
     </h2>`;
 
   if (cov) {
+    const matchedCount = (cov.matchedRuleIds || []).length;
     html += `
       <div class="row g-3 mb-4">
         ${statCard(toPercent(cov.coverage), 'Coverage', 'bi-bar-chart-fill', coverageClass(cov.coverage))}
-        ${statCard((cov.completedElements || []).length, 'Completed Elements', 'bi-check-circle-fill')}
-        ${statCard((cov.takenSequenceFlows || []).length, 'Taken Flows', 'bi-arrow-right-circle-fill')}
+        ${statCard(matchedCount, 'Matched Rules', 'bi-check-circle-fill')}
       </div>`;
   }
 
   html += `
-    <h3 class="section-title">BPMN Diagram</h3>
+    <h3 class="section-title">Decision Table</h3>
     <div class="bpmn-canvas-wrapper">
-      <div id="bpmn-canvas" class="bpmn-canvas"></div>
-      <div class="bpmn-controls">
-        <button class="bpmn-zoom-btn" onclick="window.bpmnZoomReset()" title="Fit to viewport">
-          <i class="bi bi-fullscreen" aria-hidden="true"></i>
-        </button>
-        <button class="bpmn-zoom-btn" onclick="window.bpmnZoomIn()" title="Zoom in">
-          <i class="bi bi-zoom-in" aria-hidden="true"></i>
-        </button>
-        <button class="bpmn-zoom-btn" onclick="window.bpmnZoomOut()" title="Zoom out">
-          <i class="bi bi-zoom-out" aria-hidden="true"></i>
-        </button>
-      </div>
+      <div id="dmn-canvas" class="bpmn-canvas"></div>
     </div>`;
 
   // Show test suite coverage table only in global mode
   if (!context) {
-    const suitesForProcess = suites.filter((s) =>
-      (s.coverages || []).some((c) => c.processDefinitionId === processId)
+    const suitesForDecision = suites.filter((s) =>
+      (s.decisionCoverages || []).some((c) => c.decisionDefinitionId === decisionId)
     );
-    if (suitesForProcess.length > 0) {
+    if (suitesForDecision.length > 0) {
       html += `
         <h3 class="section-title mt-4">Test Suite Coverage</h3>
         <div class="table-responsive">
@@ -111,9 +103,9 @@ export async function renderProcess(processId, data, context = null) {
             </tr></thead>
             <tbody>`;
 
-      for (const suite of suitesForProcess) {
-        const suiteCov = (suite.coverages || []).find(
-          (c) => c.processDefinitionId === processId
+      for (const suite of suitesForDecision) {
+        const suiteCov = (suite.decisionCoverages || []).find(
+          (c) => c.decisionDefinitionId === decisionId
         );
         const sid = encodeURIComponent(suite.id);
         html += `
@@ -132,14 +124,15 @@ export async function renderProcess(processId, data, context = null) {
 
   document.getElementById('content').innerHTML = html;
 
-  // Render BPMN diagram (async, after HTML is in DOM)
+  // Render DMN diagram (async, after HTML is in DOM)
+  const matchedRuleIds = cov?.matchedRuleIds || [];
   if (xml) {
-    await renderBpmnDiagram(xml, cov);
+    await renderDmnDecision(xml, decisionId, matchedRuleIds);
   } else {
-    const canvas = document.getElementById('bpmn-canvas');
+    const canvas = document.getElementById('dmn-canvas');
     if (canvas) {
       canvas.innerHTML =
-        '<p class="text-muted p-3">No BPMN definition available for this process.</p>';
+        '<p class="text-muted p-3">No DMN definition available for this decision.</p>';
     }
   }
 }

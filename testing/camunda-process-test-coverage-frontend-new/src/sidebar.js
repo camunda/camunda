@@ -47,17 +47,20 @@ export function updateSidebarActive(route) {
     document
       .querySelectorAll(`[data-process-id="${CSS.escape(route.processId)}"]`)
       .forEach((el) => el.classList.add('active'));
-  } else if (route.view === 'suite' || route.view === 'suiteProcess') {
+  } else if (route.view === 'decision') {
+    document
+      .querySelectorAll(`[data-decision-id="${CSS.escape(route.decisionId)}"]`)
+      .forEach((el) => el.classList.add('active'));
+  } else if (route.view === 'suite' || route.view === 'suiteProcess' || route.view === 'suiteDecision') {
     document
       .querySelectorAll(`[data-suite-id="${CSS.escape(route.suiteId)}"][data-route="suite"]`)
       .forEach((el) => el.classList.add('active'));
     expandSuiteInSidebar(route.suiteId);
-  } else if (route.view === 'run' || route.view === 'runProcess') {
-    // Match on BOTH suiteId AND runName so two suites with identically-named
-    // test runs don't both get highlighted simultaneously.
+  } else if (route.view === 'run' || route.view === 'runProcess' || route.view === 'runDecision') {
+    // Match on BOTH suiteId AND runIndex so two suites can't cross-highlight.
     document
       .querySelectorAll(
-        `[data-suite-id="${CSS.escape(route.suiteId)}"][data-run-name="${CSS.escape(route.runName)}"]`
+        `[data-suite-id="${CSS.escape(route.suiteId)}"][data-run-index="${route.runIndex}"]`
       )
       .forEach((el) => el.classList.add('active'));
     expandSuiteInSidebar(route.suiteId);
@@ -88,6 +91,7 @@ function expandSuiteInSidebar(suiteId) {
 function buildSidebarHtml(data) {
   const suites = data.suites || [];
   const globalCoverages = data.coverages || [];
+  const globalDecisionCoverages = data.decisionCoverages || [];
 
   let html = `<ul class="nav-list" role="list">
     <li>
@@ -115,6 +119,31 @@ function buildSidebarHtml(data) {
          title="${escapeHtml(cov.processDefinitionId)}">
         <i class="bi bi-diagram-3-fill me-2" aria-hidden="true"></i>
         <span class="nav-item-label">${escapeHtml(cov.processDefinitionId)}</span>
+        ${badgeHtml(cov.coverage)}
+      </a>
+    </li>`;
+    }
+  }
+
+  // ── Decisions ──────────────────────────────────────────────────────────────
+  if (globalDecisionCoverages.length > 0) {
+    html += `
+    <li class="nav-section-header">
+      <i class="bi bi-table me-2" aria-hidden="true"></i>Decisions
+    </li>`;
+
+    const sortedDecisions = [...globalDecisionCoverages].sort((a, b) => b.coverage - a.coverage);
+    for (const cov of sortedDecisions) {
+      const did = encodeURIComponent(cov.decisionDefinitionId);
+      html += `
+    <li>
+      <a class="nav-item nav-item-decision"
+         href="#/decision/${did}"
+         data-route="decision"
+         data-decision-id="${escapeHtml(cov.decisionDefinitionId)}"
+         title="${escapeHtml(cov.decisionDefinitionId)}">
+        <i class="bi bi-table me-2" aria-hidden="true"></i>
+        <span class="nav-item-label">${escapeHtml(cov.decisionDefinitionId)}</span>
         ${badgeHtml(cov.coverage)}
       </a>
     </li>`;
@@ -162,9 +191,9 @@ function buildSuiteHtml(suite) {
       <div class="collapse ms-3" id="${collapseId}">
         <ul class="nav-list" role="list">`;
 
-  for (const run of suite.runs || []) {
-    html += buildRunHtml(suite, run);
-  }
+  (suite.runs || []).forEach((run, runIndex) => {
+    html += buildRunHtml(suite, run, runIndex);
+  });
 
   html += `
         </ul>
@@ -173,17 +202,16 @@ function buildSuiteHtml(suite) {
   return html;
 }
 
-function buildRunHtml(suite, run) {
+function buildRunHtml(suite, run, runIndex) {
   const sid = encodeURIComponent(suite.id);
-  const rn = encodeURIComponent(run.name);
 
   return `
           <li>
             <a class="nav-item nav-item-run"
-               href="#/suite/${sid}/run/${rn}"
+               href="#/suite/${sid}/run/${runIndex}"
                data-route="run"
                data-suite-id="${escapeHtml(suite.id)}"
-               data-run-name="${escapeHtml(run.name)}"
+               data-run-index="${runIndex}"
                title="${escapeHtml(run.name)}">
               <i class="bi bi-file-earmark-code-fill me-2" aria-hidden="true"></i>
               <span class="nav-item-label">${escapeHtml(run.name)}</span>

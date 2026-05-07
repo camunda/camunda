@@ -16,18 +16,25 @@
 package io.camunda.process.test.impl.coverage.report;
 
 import io.camunda.process.test.impl.coverage.model.Coverage;
+import io.camunda.process.test.impl.coverage.model.DecisionCoverage;
 import java.util.Collection;
+import java.util.Collections;
 
 public class AggregatedSuiteInfo {
   private final String id;
   private final String name;
   private final Collection<Coverage> coverages;
+  private final Collection<DecisionCoverage> decisionCoverages;
 
   public AggregatedSuiteInfo(
-      final String id, final String name, final Collection<Coverage> coverages) {
+      final String id,
+      final String name,
+      final Collection<Coverage> coverages,
+      final Collection<DecisionCoverage> decisionCoverages) {
     this.id = id;
     this.name = name;
     this.coverages = coverages;
+    this.decisionCoverages = decisionCoverages;
   }
 
   public String getId() {
@@ -40,5 +47,9 @@ public class AggregatedSuiteInfo {
 
   public Collection<Coverage> getCoverages() {
     return coverages;
+  }
+
+  public Collection<DecisionCoverage> getDecisionCoverages() {
+    return Collections.unmodifiableCollection(decisionCoverages);
   }
 }

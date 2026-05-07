@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.coverage.report;
 
 import io.camunda.process.test.impl.coverage.model.Coverage;
+import io.camunda.process.test.impl.coverage.model.DecisionCoverage;
 import io.camunda.process.test.impl.coverage.model.Model;
 import java.util.Collection;
 
@@ -23,14 +24,17 @@ public class AggregatedCoverageReport {
   private final Collection<AggregatedSuiteInfo> suites;
   private final Collection<Model> models;
   private final Collection<Coverage> coverages;
+  private final Collection<DecisionCoverage> decisionCoverages;
 
   public AggregatedCoverageReport(
       final Collection<AggregatedSuiteInfo> suites,
       final Collection<Model> models,
-      final Collection<Coverage> coverages) {
+      final Collection<Coverage> coverages,
+      final Collection<DecisionCoverage> decisionCoverages) {
     this.suites = suites;
     this.models = models;
     this.coverages = coverages;
+    this.decisionCoverages = decisionCoverages;
   }
 
   public Collection<AggregatedSuiteInfo> getSuites() {
@@ -43,5 +47,9 @@ public class AggregatedCoverageReport {
 
   public Collection<Coverage> getCoverages() {
     return coverages;
+  }
+
+  public Collection<DecisionCoverage> getDecisionCoverages() {
+    return decisionCoverages;
   }
 }

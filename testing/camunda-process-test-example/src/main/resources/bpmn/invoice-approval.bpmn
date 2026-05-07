@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0olvceo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.34.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0olvceo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.45.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
   <bpmn:process id="Process_InvoiceApproval" isExecutable="true">
     <bpmn:documentation>Process used in testing best practices: https://docs.camunda.io/docs/components/best-practices/development/testing-process-definitions/</bpmn:documentation>
     <bpmn:startEvent id="StartEvent_InvoiceReceived" name="Invoice&#10;received">
       <bpmn:outgoing>Flow_1uxrs29</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_1uxrs29" sourceRef="StartEvent_InvoiceReceived" targetRef="UserTask_ApproveInvoice" />
+    <bpmn:sequenceFlow id="Flow_1uxrs29" sourceRef="StartEvent_InvoiceReceived" targetRef="Activity_13m8dmh" />
     <bpmn:userTask id="UserTask_ApproveInvoice" name="Approve invoice">
       <bpmn:extensionElements>
         <zeebe:userTask />
         <zeebe:assignmentDefinition assignee="=approver" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_1uxrs29</bpmn:incoming>
+      <bpmn:incoming>Flow_18gfesz</bpmn:incoming>
       <bpmn:outgoing>Flow_1tw8iiv</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:exclusiveGateway id="Gateway_Approved" name="Approved?">
@@ -31,7 +31,7 @@
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1e1ex9c</bpmn:incoming>
-      <bpmn:incoming>Flow_1vsogh6</bpmn:incoming>
+      <bpmn:incoming>Flow_0100zsp</bpmn:incoming>
       <bpmn:outgoing>Flow_1nim9jq</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="Flow_1nim9jq" sourceRef="ServiceTask_ArchiveInvoice" targetRef="ServiceTask_AddInvoiceAccounting" />
@@ -85,7 +85,7 @@
         <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P5D</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
-    <bpmn:sequenceFlow id="Flow_1vsogh6" name="auto approve on delays" sourceRef="TimerEvent_ApprovalTakesTooLong" targetRef="ServiceTask_ArchiveInvoice" />
+    <bpmn:sequenceFlow id="Flow_1vsogh6" name="auto approve on delays" sourceRef="TimerEvent_ApprovalTakesTooLong" targetRef="Gateway_01p7tlq" />
     <bpmn:boundaryEvent id="ErrorEvent_Archive" name="Error from archive system" attachedToRef="ServiceTask_ArchiveInvoice">
       <bpmn:outgoing>Flow_12n68lk</bpmn:outgoing>
       <bpmn:errorEventDefinition id="ErrorEventDefinition_0q5g5la" errorRef="Error_0ii4buv" />
@@ -100,118 +100,174 @@
       <bpmn:incoming>Flow_12n68lk</bpmn:incoming>
       <bpmn:outgoing>Flow_0ins96q</bpmn:outgoing>
     </bpmn:userTask>
+    <bpmn:businessRuleTask id="Activity_13m8dmh" name="Auto-approve invoice">
+      <bpmn:extensionElements>
+        <zeebe:calledDecision decisionId="auto-approve-invoice" resultVariable="auto_approve" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1uxrs29</bpmn:incoming>
+      <bpmn:outgoing>Flow_1qd3ttg</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:sequenceFlow id="Flow_1qd3ttg" sourceRef="Activity_13m8dmh" targetRef="Gateway_051082l" />
+    <bpmn:exclusiveGateway id="Gateway_051082l" name="Auto-approve?" default="Flow_18gfesz">
+      <bpmn:incoming>Flow_1qd3ttg</bpmn:incoming>
+      <bpmn:outgoing>Flow_18gfesz</bpmn:outgoing>
+      <bpmn:outgoing>Flow_13t4hip</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_18gfesz" name="No" sourceRef="Gateway_051082l" targetRef="UserTask_ApproveInvoice" />
+    <bpmn:exclusiveGateway id="Gateway_01p7tlq">
+      <bpmn:incoming>Flow_13t4hip</bpmn:incoming>
+      <bpmn:incoming>Flow_1vsogh6</bpmn:incoming>
+      <bpmn:outgoing>Flow_0100zsp</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_13t4hip" name="Yes" sourceRef="Gateway_051082l" targetRef="Gateway_01p7tlq">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=auto_approve = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0100zsp" sourceRef="Gateway_01p7tlq" targetRef="ServiceTask_ArchiveInvoice" />
   </bpmn:process>
   <bpmn:error id="Error_0ii4buv" name="ErrorArchive" errorCode="LEGACY_ERROR_ARCHIVE" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_InvoiceApproval">
-      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_InvoiceReceived">
-        <dc:Bounds x="182" y="162" width="36" height="36" />
+      <bpmndi:BPMNShape id="Activity_1umhx0l_di" bpmnElement="Activity_13m8dmh">
+        <dc:Bounds x="290" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_051082l_di" bpmnElement="Gateway_051082l" isMarkerVisible="true">
+        <dc:Bounds x="455" y="225" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="179" y="205" width="42" height="27" />
+          <dc:Bounds x="444" y="282" width="73" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_115ht5g_di" bpmnElement="UserTask_ApproveInvoice">
-        <dc:Bounds x="270" y="140" width="100" height="80" />
+        <dc:Bounds x="570" y="210" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1bwxwsm_di" bpmnElement="Gateway_Approved" isMarkerVisible="true">
-        <dc:Bounds x="425" y="155" width="50" height="50" />
+        <dc:Bounds x="725" y="225" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="423" y="133" width="53" height="14" />
+          <dc:Bounds x="723" y="203" width="54" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_11y3lg1_di" bpmnElement="ServiceTask_ArchiveInvoice">
-        <dc:Bounds x="530" y="140" width="100" height="80" />
+        <dc:Bounds x="830" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_05jy8py_di" bpmnElement="ServiceTask_AddInvoiceAccounting">
+        <dc:Bounds x="1100" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_031ssda_di" bpmnElement="EndEvent_InvoiceApproved">
+        <dc:Bounds x="1242" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1237" y="275" width="46" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_01p7tlq_di" bpmnElement="Gateway_01p7tlq" isMarkerVisible="true">
+        <dc:Bounds x="615" y="85" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1fks3oq_di" bpmnElement="EndEvent_InvoiceRejected">
-        <dc:Bounds x="692" y="372" width="36" height="36" />
+        <dc:Bounds x="992" y="472" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="690" y="415" width="40" height="27" />
+          <dc:Bounds x="990" y="515" width="40" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0o8o3m5_di" bpmnElement="ServiceTask_SendRejection">
-        <dc:Bounds x="530" y="350" width="100" height="80" />
+        <dc:Bounds x="830" y="450" width="100" height="80" />
         <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_05jy8py_di" bpmnElement="ServiceTask_AddInvoiceAccounting">
-        <dc:Bounds x="800" y="140" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_031ssda_di" bpmnElement="EndEvent_InvoiceApproved">
-        <dc:Bounds x="942" y="162" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="937" y="205" width="46" height="27" />
-        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_07mepkk_di" bpmnElement="UserTask_ManuallyArchiveInvoice">
-        <dc:Bounds x="640" y="240" width="100" height="80" />
+        <dc:Bounds x="980" y="330" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0zu9aj1_di" bpmnElement="ErrorEvent_Archive">
-        <dc:Bounds x="592" y="202" width="36" height="36" />
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_InvoiceReceived">
+        <dc:Bounds x="202" y="232" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="533" y="236" width="74" height="27" />
+          <dc:Bounds x="199" y="275" width="42" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1jw0vjp_di" bpmnElement="TimerEvent_ApprovalTakesTooLong">
-        <dc:Bounds x="322" y="122" width="36" height="36" />
+        <dc:Bounds x="622" y="192" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="353" y="113" width="33" height="14" />
+          <dc:Bounds x="653" y="183" width="33" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0zu9aj1_di" bpmnElement="ErrorEvent_Archive">
+        <dc:Bounds x="892" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="833" y="306" width="74" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1uxrs29_di" bpmnElement="Flow_1uxrs29">
-        <di:waypoint x="218" y="180" />
-        <di:waypoint x="270" y="180" />
+        <di:waypoint x="238" y="250" />
+        <di:waypoint x="290" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1qd3ttg_di" bpmnElement="Flow_1qd3ttg">
+        <di:waypoint x="390" y="250" />
+        <di:waypoint x="455" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18gfesz_di" bpmnElement="Flow_18gfesz">
+        <di:waypoint x="505" y="250" />
+        <di:waypoint x="570" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="530" y="232" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13t4hip_di" bpmnElement="Flow_13t4hip">
+        <di:waypoint x="480" y="225" />
+        <di:waypoint x="480" y="110" />
+        <di:waypoint x="615" y="110" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="528" y="123" width="19" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1tw8iiv_di" bpmnElement="Flow_1tw8iiv">
-        <di:waypoint x="370" y="180" />
-        <di:waypoint x="425" y="180" />
+        <di:waypoint x="670" y="250" />
+        <di:waypoint x="725" y="250" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1e1ex9c_di" bpmnElement="Flow_1e1ex9c">
-        <di:waypoint x="475" y="180" />
-        <di:waypoint x="530" y="180" />
+        <di:waypoint x="775" y="250" />
+        <di:waypoint x="830" y="250" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="494" y="162" width="18" height="14" />
+          <dc:Bounds x="794" y="232" width="18" height="14" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1nim9jq_di" bpmnElement="Flow_1nim9jq">
-        <di:waypoint x="630" y="180" />
-        <di:waypoint x="800" y="180" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0uj4u0a_di" bpmnElement="Flow_0uj4u0a">
-        <di:waypoint x="450" y="205" />
-        <di:waypoint x="450" y="390" />
-        <di:waypoint x="530" y="390" />
+        <di:waypoint x="750" y="275" />
+        <di:waypoint x="750" y="490" />
+        <di:waypoint x="830" y="490" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="459" y="213" width="13" height="14" />
+          <dc:Bounds x="759" y="285" width="13" height="14" />
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0100zsp_di" bpmnElement="Flow_0100zsp">
+        <di:waypoint x="665" y="110" />
+        <di:waypoint x="880" y="110" />
+        <di:waypoint x="880" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1nim9jq_di" bpmnElement="Flow_1nim9jq">
+        <di:waypoint x="930" y="250" />
+        <di:waypoint x="1100" y="250" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0alauu5_di" bpmnElement="Flow_0alauu5">
-        <di:waypoint x="630" y="390" />
-        <di:waypoint x="692" y="390" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0gdmsq5_di" bpmnElement="Flow_0gdmsq5">
-        <di:waypoint x="900" y="180" />
-        <di:waypoint x="942" y="180" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1vsogh6_di" bpmnElement="Flow_1vsogh6">
-        <di:waypoint x="340" y="122" />
-        <di:waypoint x="340" y="90" />
-        <di:waypoint x="580" y="90" />
-        <di:waypoint x="580" y="140" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="250" y="86" width="80" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_12n68lk_di" bpmnElement="Flow_12n68lk">
-        <di:waypoint x="610" y="238" />
-        <di:waypoint x="610" y="280" />
-        <di:waypoint x="640" y="280" />
+        <di:waypoint x="930" y="490" />
+        <di:waypoint x="992" y="490" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0ins96q_di" bpmnElement="Flow_0ins96q">
-        <di:waypoint x="740" y="280" />
-        <di:waypoint x="770" y="280" />
-        <di:waypoint x="770" y="200" />
-        <di:waypoint x="800" y="200" />
+        <di:waypoint x="1080" y="370" />
+        <di:waypoint x="1150" y="370" />
+        <di:waypoint x="1150" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0gdmsq5_di" bpmnElement="Flow_0gdmsq5">
+        <di:waypoint x="1200" y="250" />
+        <di:waypoint x="1242" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12n68lk_di" bpmnElement="Flow_12n68lk">
+        <di:waypoint x="910" y="308" />
+        <di:waypoint x="910" y="370" />
+        <di:waypoint x="980" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1vsogh6_di" bpmnElement="Flow_1vsogh6">
+        <di:waypoint x="640" y="192" />
+        <di:waypoint x="640" y="135" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="660" y="136" width="80" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

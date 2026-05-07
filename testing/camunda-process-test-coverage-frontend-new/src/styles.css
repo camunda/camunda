@@ -463,3 +463,29 @@ body {
     padding: 1rem;
   }
 }
+
+/* ── DMN Decision Table (dmn-js) ────────────────────────────────────────────── */
+
+/*
+ * Coverage highlighting for decision table rows.
+ * Applied via DOM class manipulation in dmn.js: rows are found by their
+ * `data-row-id` attribute (emitted by dmn-js-decision-table) and the class
+ * is added to the <tr> element. Blue matches the BPMN coverage-completed colour.
+ */
+tr.coverage-matched-rule {
+  background-color: #d0e8f9 !important;
+}
+
+tr.coverage-matched-rule td {
+  background-color: #d0e8f9 !important;
+}
+
+/* Minimum height for the DMN viewer container */
+#dmn-canvas .dmn-decision-table-container {
+  min-height: 200px;
+}
+
+/* Hide the "View DRD" button – we only render the decision table view */
+#dmn-canvas .view-drd {
+  display: none !important;
+}

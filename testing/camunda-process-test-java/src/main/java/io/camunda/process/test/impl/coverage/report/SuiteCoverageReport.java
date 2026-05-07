@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.coverage.report;
 
 import io.camunda.process.test.impl.coverage.model.Coverage;
+import io.camunda.process.test.impl.coverage.model.DecisionCoverage;
 import io.camunda.process.test.impl.coverage.model.Model;
 import io.camunda.process.test.impl.coverage.model.Run;
 import java.util.Collection;
@@ -27,18 +28,21 @@ public class SuiteCoverageReport {
   private final Collection<Run> runs;
   private final Collection<Model> models;
   private final Collection<Coverage> coverages;
+  private final Collection<DecisionCoverage> decisionCoverages;
 
   public SuiteCoverageReport(
       final String suiteId,
       final String suiteName,
       final Collection<Run> runs,
       final Collection<Model> models,
-      final Collection<Coverage> coverages) {
+      final Collection<Coverage> coverages,
+      final Collection<DecisionCoverage> decisionCoverages) {
     id = suiteId;
     name = suiteName;
     this.runs = runs;
     this.models = models;
     this.coverages = coverages;
+    this.decisionCoverages = decisionCoverages;
   }
 
   public String getId() {
@@ -59,5 +63,9 @@ public class SuiteCoverageReport {
 
   public Collection<Coverage> getCoverages() {
     return coverages;
+  }
+
+  public Collection<DecisionCoverage> getDecisionCoverages() {
+    return decisionCoverages;
   }
 }
