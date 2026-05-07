@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record;
 
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -79,6 +80,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
@@ -365,6 +367,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.GLOBAL_LISTENER,
         new Mapping<>(GlobalListenerRecordValue.class, GlobalListenerIntent.class));
+    mapping.put(
+        ValueType.AGENT_INSTANCE,
+        new Mapping<>(AgentInstanceRecordValue.class, AgentInstanceIntent.class));
     return mapping;
   }
 
