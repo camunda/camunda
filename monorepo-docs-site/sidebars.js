@@ -113,6 +113,8 @@ const sidebars = {
       items: [
         'frontend/getting-started',
         'frontend/project-outline',
+        'frontend/orchestration-cluster-webapp',
+        'frontend/camunda-api-zod-schemas',
         'frontend/data-loading',
         'frontend/forms',
         {
