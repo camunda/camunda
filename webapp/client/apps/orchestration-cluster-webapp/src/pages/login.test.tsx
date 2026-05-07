@@ -7,7 +7,7 @@
  */
 
 import {render} from 'vitest-browser-react';
-import {Login} from './index';
+import {Login} from './login';
 import {it} from '#/vitest-modules/test-extend';
 import {describe, expect, vi} from 'vitest';
 
