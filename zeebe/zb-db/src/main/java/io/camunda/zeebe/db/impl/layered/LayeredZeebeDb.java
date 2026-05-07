@@ -133,19 +133,6 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
     }
   }
 
-  /**
-   * Removes only the given tombstones from the committed set. Unlike a blanket clear, this does not
-   * discard tombstones that the engine added between the capture and the cleanup.
-   */
-  void removeCommittedTombstones(final NavigableSet<byte[]> toRemove) {
-    stateLock.writeLock().lock();
-    try {
-      toRemove.forEach(committedTombstones::remove);
-    } finally {
-      stateLock.writeLock().unlock();
-    }
-  }
-
   record FlushSnapshot(
       ArrayList<Map.Entry<byte[], DbValue>> entries, NavigableSet<byte[]> tombstones) {}
 
@@ -191,8 +178,19 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
 
   @Override
   public void createSnapshot(final File snapshotDir) {
-    LayeredSnapshotFlusher.flush(this);
-    persistentDb.createSnapshot(snapshotDir);
+    // Hold the read lock for the entire snapshot operation — capture, flush to RocksDB,
+    // and checkpoint creation. This prevents close() (which acquires the write lock)
+    // from freeing native RocksDB resources while the flush is still writing.
+    stateLock.readLock().lock();
+    try {
+      final var flushed = LayeredSnapshotFlusher.flush(this);
+      persistentDb.createSnapshot(snapshotDir);
+      // Tombstone removal only needs to remove the specific set we flushed.
+      // Safe under the read lock because committedTombstones is a ConcurrentSkipListMap.
+      flushed.forEach(committedTombstones::remove);
+    } finally {
+      stateLock.readLock().unlock();
+    }
   }
 
   @Override
@@ -223,10 +221,19 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
 
   @Override
   public void close() throws Exception {
+    // Acquire the write lock to ensure no concurrent flush capture is in progress.
+    // Without this, close() can clear committedData (via activeDb.close()) while
+    // captureFlushSnapshot() is iterating it, producing a partial snapshot that
+    // loses entries but keeps the processedPosition — causing NPEs during replay.
+    stateLock.writeLock().lock();
     try {
       activeDb.close();
     } finally {
-      persistentDb.close();
+      try {
+        persistentDb.close();
+      } finally {
+        stateLock.writeLock().unlock();
+      }
     }
   }
 

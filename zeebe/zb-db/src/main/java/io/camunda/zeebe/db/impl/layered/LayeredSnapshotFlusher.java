@@ -9,13 +9,18 @@ package io.camunda.zeebe.db.impl.layered;
 
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
+import java.util.NavigableSet;
 import org.agrona.concurrent.UnsafeBuffer;
 
 final class LayeredSnapshotFlusher {
 
   private LayeredSnapshotFlusher() {}
 
-  static void flush(final LayeredZeebeDb<?> db) {
+  /**
+   * Flushes the in-memory state to RocksDB and returns the set of tombstones that were applied. The
+   * caller is responsible for removing these from the committed tombstones.
+   */
+  static NavigableSet<byte[]> flush(final LayeredZeebeDb<?> db) {
     final var persistentDb = (ZeebeTransactionDb<?>) db.persistentDb();
 
     // Capture committed entries AND tombstones atomically under the LayeredZeebeDb monitor.
@@ -49,8 +54,6 @@ final class LayeredSnapshotFlusher {
           }
         });
 
-    // Only remove the tombstones we actually applied — do NOT clear all committed
-    // tombstones, as the engine may have added new ones between the capture and now.
-    db.removeCommittedTombstones(snapshot.tombstones());
+    return snapshot.tombstones();
   }
 }
