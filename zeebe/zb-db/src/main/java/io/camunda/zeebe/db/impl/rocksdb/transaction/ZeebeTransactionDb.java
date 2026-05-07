@@ -37,21 +37,23 @@ import java.util.function.Supplier;
 import org.rocksdb.Checkpoint;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksObject;
+import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 
 public class ZeebeTransactionDb<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-    implements ZeebeDb<ColumnFamilyNames> {
+    implements ZeebeDb<ColumnFamilyNames>, TransactionRenovator {
 
   private static final Logger LOG = Loggers.DB_LOGGER;
   private static final String ERROR_MESSAGE_CLOSE_RESOURCE =
       "Expected to close RocksDB resource successfully, but exception was thrown. Will continue to close remaining resources.";
-  private final RocksDB rocksDB;
+  private final OptimisticTransactionDB optimisticTransactionDB;
   private final List<AutoCloseable> closables;
   private final ReadOptions prefixReadOptions;
   private final ReadOptions defaultReadOptions;
@@ -65,7 +67,7 @@ public class ZeebeTransactionDb<
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
-      final RocksDB rocksDB,
+      final OptimisticTransactionDB optimisticTransactionDB,
       final List<AutoCloseable> closables,
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
@@ -73,7 +75,7 @@ public class ZeebeTransactionDb<
       final MeterRegistry meterRegistry) {
     this.defaultHandle = defaultHandle;
     defaultNativeHandle = getNativeHandle(defaultHandle);
-    this.rocksDB = rocksDB;
+    this.optimisticTransactionDB = optimisticTransactionDB;
     this.closables = closables;
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.accessMetricsConfiguration = accessMetricsConfiguration;
@@ -103,8 +105,9 @@ public class ZeebeTransactionDb<
         Arrays.asList(
             new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, options.cfOptions()));
     final List<ColumnFamilyHandle> cfHandles = new ArrayList<>();
-    final RocksDB rocksDB = RocksDB.open(options.dbOptions(), path, cfDescriptors, cfHandles);
-    closables.add(rocksDB);
+    final OptimisticTransactionDB optimisticTransactionDB =
+        OptimisticTransactionDB.open(options.dbOptions(), path, cfDescriptors, cfHandles);
+    closables.add(optimisticTransactionDB);
 
     if (cfHandles.size() != 1) {
       throw new IllegalStateException(
@@ -120,7 +123,7 @@ public class ZeebeTransactionDb<
 
     return new ZeebeTransactionDb<>(
         defaultColumnFamilyHandle,
-        rocksDB,
+        optimisticTransactionDB,
         closables,
         rocksDbConfiguration,
         consistencyChecksSettings,
@@ -182,11 +185,11 @@ public class ZeebeTransactionDb<
       // Checkpoint creates hard-links to SST files and copies the WAL, but with WAL
       // disabled the memtable data would be silently lost. Force a memtable flush so
       // all data is in SST files before creating the checkpoint.
-      rocksDB.flush(new org.rocksdb.FlushOptions().setWaitForFlush(true));
+      optimisticTransactionDB.flush(new org.rocksdb.FlushOptions().setWaitForFlush(true));
     } catch (final RocksDBException e) {
       throw new ZeebeDbException("Failed to flush memtable before snapshot", e);
     }
-    try (final Checkpoint checkpoint = Checkpoint.create(rocksDB)) {
+    try (final Checkpoint checkpoint = Checkpoint.create(optimisticTransactionDB)) {
       try {
         checkpoint.createCheckpoint(snapshotDir.getAbsolutePath());
       } catch (final RocksDBException rocksException) {
@@ -200,7 +203,7 @@ public class ZeebeTransactionDb<
   public Optional<String> getProperty(final String propertyName) {
     String propertyValue = null;
     try {
-      propertyValue = rocksDB.getProperty(defaultHandle, propertyName);
+      propertyValue = optimisticTransactionDB.getProperty(defaultHandle, propertyName);
     } catch (final RocksDBException rde) {
       LOG.debug(rde.getMessage(), rde);
     }
@@ -209,7 +212,8 @@ public class ZeebeTransactionDb<
 
   @Override
   public TransactionContext createContext() {
-    final var zeebeTransaction = new ZeebeTransaction(rocksDB, defaultWriteOptions);
+    final Transaction transaction = optimisticTransactionDB.beginTransaction(defaultWriteOptions);
+    final var zeebeTransaction = new ZeebeTransaction(transaction, this);
     closables.add(zeebeTransaction);
     return new DefaultTransactionContext(zeebeTransaction);
   }
@@ -228,7 +232,12 @@ public class ZeebeTransactionDb<
 
   @Override
   public void exportMetrics() {
-    metricExporter.exportMetrics(rocksDB);
+    metricExporter.exportMetrics(optimisticTransactionDB);
+  }
+
+  @Override
+  public Transaction renewTransaction(final Transaction oldTransaction) {
+    return optimisticTransactionDB.beginTransaction(defaultWriteOptions, oldTransaction);
   }
 
   @Override

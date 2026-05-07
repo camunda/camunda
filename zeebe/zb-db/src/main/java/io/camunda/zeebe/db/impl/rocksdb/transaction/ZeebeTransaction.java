@@ -15,39 +15,23 @@ import io.camunda.zeebe.db.ZeebeDbTransaction;
 import org.agrona.LangUtil;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
-import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
-import org.rocksdb.WriteBatchWithIndex;
-import org.rocksdb.WriteOptions;
+import org.rocksdb.Transaction;
 
 public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
-  private final long nativeHandle;
-  private final long dbNativeHandle;
-  private final WriteBatchWithIndex writeBatch;
-  private final RocksDB db;
-  private final WriteOptions writeOptions;
+  private final TransactionRenovator transactionRenovator;
 
+  private long nativeHandle;
   private boolean inCurrentTransaction;
+  private Transaction transaction;
 
-  public ZeebeTransaction(final RocksDB db, final WriteOptions writeOptions) {
-    // overwriteKey=true collapses repeated writes for the same key into a single index entry.
-    // This ensures the delta-only WriteBatchWithIndex#newIterator does not return duplicates per
-    // key. While we don't use it, it's still good to be prepared for it, and there is no cost to
-    // setting this flag.
-    writeBatch = new WriteBatchWithIndex(true);
-    this.db = db;
-    this.writeOptions = writeOptions;
-    try {
-      // clear() uses placement new (Rep::Clear in write_batch_with_index.cc) — the native pointer
-      // is stable across resets, so caching the handle here is safe for the object's lifetime.
-      // If a future RocksDB upgrade changes clear() semantics, re-read the handle on each reset.
-      nativeHandle = RocksDbInternal.nativeHandle.getLong(writeBatch);
-      dbNativeHandle = RocksDbInternal.nativeHandle.getLong(db);
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
-    }
+  public ZeebeTransaction(
+      final Transaction transaction, final TransactionRenovator transactionRenovator) {
+    this.transactionRenovator = transactionRenovator;
+    this.transaction = transaction;
+    nativeHandle = readNativeHandle(transaction);
   }
 
   public void put(
@@ -57,10 +41,9 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final byte[] value,
       final int valueLength)
       throws Exception {
-    // WriteBatchWithIndex.put is an instance method; the receiver must be the first arg.
     try {
       RocksDbInternal.putWithHandle.invokeExact(
-          writeBatch, nativeHandle, key, keyLength, value, valueLength, columnFamilyHandle);
+          nativeHandle, key, 0, keyLength, value, 0, valueLength, columnFamilyHandle, false);
     } catch (final Throwable e) {
       LangUtil.rethrowUnchecked(e);
     }
@@ -75,7 +58,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     try {
       return (byte[])
           RocksDbInternal.getWithHandle.invokeExact(
-              nativeHandle, dbNativeHandle, readOptionsHandle, key, keyLength, columnFamilyHandle);
+              nativeHandle, readOptionsHandle, key, 0, keyLength, columnFamilyHandle);
     } catch (final Throwable e) {
       LangUtil.rethrowUnchecked(e);
       return null; // unreachable
@@ -84,21 +67,21 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
   public void delete(final long columnFamilyHandle, final byte[] key, final int keyLength)
       throws Exception {
-    // WriteBatchWithIndex.delete is an instance method; the receiver must be the first arg.
     try {
       RocksDbInternal.removeWithHandle.invokeExact(
-          writeBatch, nativeHandle, key, keyLength, columnFamilyHandle);
+          nativeHandle, key, keyLength, columnFamilyHandle, false);
     } catch (final Throwable e) {
       LangUtil.rethrowUnchecked(e);
     }
   }
 
   public RocksIterator newIterator(final ReadOptions options, final ColumnFamilyHandle handle) {
-    return writeBatch.newIteratorWithBase(handle, db.newIterator(handle, options));
+    return transaction.getIterator(options, handle);
   }
 
   void resetTransaction() {
-    writeBatch.clear();
+    transaction = transactionRenovator.renewTransaction(transaction);
+    nativeHandle = readNativeHandle(transaction);
     inCurrentTransaction = true;
   }
 
@@ -147,17 +130,24 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
   void commitInternal() throws RocksDBException {
     inCurrentTransaction = false;
-    db.write(writeOptions, writeBatch);
-    writeBatch.clear();
+    transaction.commit();
   }
 
   void rollbackInternal() throws RocksDBException {
     inCurrentTransaction = false;
-    writeBatch.clear();
+    transaction.rollback();
   }
 
   @Override
   public void close() {
-    writeBatch.close();
+    transaction.close();
+  }
+
+  private long readNativeHandle(final Transaction transaction) {
+    try {
+      return RocksDbInternal.nativeHandle.getLong(transaction);
+    } catch (final IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

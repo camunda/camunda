@@ -8,10 +8,12 @@
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
@@ -26,11 +28,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Verifies the transaction isolation contract for ZeebeTransactionDb backed by WriteBatchWithIndex.
- * These tests own the behavioral guarantee that was previously provided implicitly by RocksDB's
- * OptimisticTransactionDB.
- */
+/** Verifies the transaction isolation contract for ZeebeTransactionDb. */
 final class ZeebeTransactionIsolationTest {
 
   @TempDir File tempDir;
@@ -225,6 +223,27 @@ final class ZeebeTransactionIsolationTest {
           // then - the iterator yields the key exactly once
           assertThat(hits.get()).isOne();
         });
+  }
+
+  @Test
+  void shouldDetectWriteWriteConflictBetweenConcurrentTransactions() throws Exception {
+    // given
+    final var firstValue = new DbString();
+    firstValue.wrapString("first");
+    final var secondValue = new DbString();
+    secondValue.wrapString("second");
+
+    final var firstTransaction = writeCtx.getCurrentTransaction();
+    writeCf.upsert(key, firstValue);
+
+    final var secondTransaction = readCtx.getCurrentTransaction();
+    readCf.upsert(key, secondValue);
+
+    // when
+    firstTransaction.commit();
+
+    // then
+    assertThatThrownBy(secondTransaction::commit).isInstanceOf(ZeebeDbException.class);
   }
 
   @Test
