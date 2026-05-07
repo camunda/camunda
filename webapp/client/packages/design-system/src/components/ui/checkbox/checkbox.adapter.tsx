@@ -97,7 +97,7 @@ function Checkbox(props: CheckboxProps) {
 
   if (labelText !== undefined) {
     return (
-      <label className={cn('inline-flex items-center gap-2', className)}>
+      <label className={cn('flex items-center gap-2', className)}>
         {box}
         <span>{labelText}</span>
       </label>
