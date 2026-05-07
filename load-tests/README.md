@@ -305,7 +305,7 @@ It is as easy as it sounds; we can label an existing PR with the [**benchmark**]
 
 This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
 
-#### Trigger Camunda load test GitHub Workflow
+#### Trigger Camunda load test GitHub workflow (recommended)
 
 The [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is the **easiest** way to run a load test for a specific branch or main (default) with more customization. We support setting up load tests for different Camunda/Zeebe versions by selecting the specific workflow revision as part of the workflow dispatch form (UI).
 
@@ -318,6 +318,84 @@ It allows high customization:
 * Specification of arbitrary Helm arguments — making it possible to customize the load test set up.
 
 ![load-test-gha](docs/assets/load-test-gha.png)
+
+##### Workflow inputs, Helm values, and common pitfalls
+
+Use the workflow inputs as follows:
+
+- `scenario`: picks the base workload profile to run.
+- `platform-helm-values`: passes extra flags to the [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm).
+- `load-test-load`: passes extra flags to the [Camunda load test Helm Chart](https://github.com/camunda/camunda-load-tests-helm).
+
+If you need custom tuning, start with the closest `scenario` and then add targeted overrides in the Helm inputs.
+
+> [!Important]
+>
+> Follow Helm's guidance on [`--set-string`](https://helm.sh/docs/helm/helm_install/) and [values best practices](https://helm.sh/docs/chart_best_practices/values/): quote each copied `key=value` argument for shell safety, and use `--set-string` whenever the target chart value must remain a string.
+>
+> [!Warning]
+>
+> Recent team learnings showed two easy-to-miss schema validation failures:
+>
+> - `orchestration.env[0].value=false` can fail with `got boolean, want string` when passed as a boolean-looking value.
+> - `orchestration.cpuThreadCount` is currently defined as a string in our default values (`"3"` in [`camunda-platform-values.yaml`](camunda-platform-values.yaml)), so `--set orchestration.cpuThreadCount=4` may fail while `--set-string 'orchestration.cpuThreadCount=4'` keeps the expected type.
+
+##### Copy-paste-ready examples
+
+Use the following values directly in the workflow form:
+
+1. **Disable persistent sessions via a platform environment variable**
+   - `scenario`: `realistic` (or any other scenario)
+   - `platform-helm-values`:
+
+     ```text
+     --set 'orchestration.env[0].name=CAMUNDA_PERSISTENT_SESSIONS_ENABLED' --set-string 'orchestration.env[0].value=false'
+     ```
+2. **Increase broker thread counts where the chart expects strings**
+   - `scenario`: `max`
+   - `platform-helm-values`:
+
+     ```text
+     --set-string 'orchestration.cpuThreadCount=4' --set-string 'orchestration.ioThreadCount=4'
+     ```
+3. **Tune the workload chart while keeping numeric values numeric**
+   - `scenario`: `typical`
+   - `load-test-load`:
+
+     ```text
+     --set starter.rate=75 --set workers.worker.replicas=8
+     ```
+4. **Combine platform and workload overrides safely**
+   - `scenario`: `max`
+   - `platform-helm-values`:
+
+     ```text
+     --set-string 'orchestration.cpuThreadCount=4' --set-string 'orchestration.resources.requests.memory=4Gi' --set-string 'orchestration.resources.limits.memory=4Gi'
+     ```
+   - `load-test-load`:
+
+     ```text
+     --set starter.rate=350 --set workers.worker.replicas=10
+     ```
+5. **Override a string path in the load test chart**
+   - `scenario`: `typical`
+   - `load-test-load`:
+
+     ```text
+     --set-string 'starter.bpmnXmlPath=bpmn/typical_process.bpmn' --set starter.rate=50
+     ```
+
+##### Supported workload scenarios
+
+Select the `scenario` input in the workflow dispatch form:
+
+- `max` — artificial stress workload (currently `300` PI/s) for upper-bound throughput checks and quick regression validation; this is the default ad-hoc option. See also the [max / stress load test](../docs/testing/reliability-testing.md#max--stress-load-test).
+- `realistic` — complex, customer-like workload with multi-instance activities, call activities, and DMN; use this for release-like validation and broader functional realism. See [realistic load](../docs/testing/reliability-testing.md#realistic-load).
+- `typical` — straight-through baseline with a representative BPMN model and `50` PI/s target load; use it for sustained baseline comparisons. See [typical load](../docs/testing/reliability-testing.md#typical-load).
+- `latency` — low-throughput artificial workload (`1` PI/s, `1` worker) to isolate latency and reduce blast radius while debugging. See [latency load test](../docs/testing/reliability-testing.md#latency-load-test).
+- `archiver` — multi-instance archiver-focused scenario with no workers; use it when validating archiver or secondary-storage-related behavior. Its current wiring is defined in [`load-tests/setup/default/Makefile`](setup/default/Makefile).
+
+For manual runs and deeper scenario details, see [`load-tests/setup/README.md`](setup/README.md#running-specific-scenarios).
 
 ##### Creating load test for old versions
 
