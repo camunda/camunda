@@ -61,8 +61,10 @@ public final class ListenerDemo {
                       l.on(start, (Job job) -> System.out.println("[el-start] greet activating"))
                           .on(end, (Job job) -> System.out.println("[el-end]   greet completed")))
 
-              // user task with task listeners — completes via Tasklist
-              .userTask("review")
+              // user task with task listeners — completes via Tasklist.
+              // Pre-assign to "demo" (c8run's default user) so it shows up on the default
+              // "Assigned to me" filter without the user having to switch tabs.
+              .userTask("review", t -> t.zeebeAssignee("demo"))
               .listeners(
                   l ->
                       l.on(
@@ -79,10 +81,14 @@ public final class ListenerDemo {
 
       System.out.println();
       System.out.println("──────────────────────────────────────────────────────────────────");
-      System.out.println(" The user task 'review' is now waiting. To finish the run:");
+      System.out.println(" The user task 'review' is now waiting (pre-assigned to 'demo').");
+      System.out.println(" To finish the run:");
       System.out.println("   1) open  http://localhost:8080/tasklist");
-      System.out.println("   2) claim and complete the task");
-      System.out.println("   3) watch [tl-assigning] / [tl-completing] fire below");
+      System.out.println("   2) sign in as 'demo' / 'demo' (c8run default)");
+      System.out.println("   3) the task should appear under 'Assigned to me'.");
+      System.out.println("      If empty, switch the filter to 'Unassigned' or 'All open'.");
+      System.out.println("   4) click the task, complete it");
+      System.out.println("   5) watch [tl-completing] fire below");
       System.out.println("──────────────────────────────────────────────────────────────────");
       System.out.println();
 
