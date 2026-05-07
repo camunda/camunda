@@ -69,7 +69,6 @@ const cloudEnv = {
 
 const selfManagedEnv = {
   SPRING_PROFILES_ACTIVE: 'ccsm',
-  ZEEBE_IMPORT_ENABLED: 'true',
   CAMUNDA_OPTIMIZE_ZEEBE_ENABLED: 'true',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL: 'http://localhost:18080/auth/realms/camunda-platform',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:
@@ -87,7 +86,8 @@ const selfManagedEnv = {
   OPTIMIZE_OPENSEARCH_HOST: 'localhost',
   OPTIMIZE_OPENSEARCH_HTTP_PORT: '9200',
   CAMUNDA_OPTIMIZE_API_AUDIENCE: 'optimize',
-  CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: true,
+  CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: 'true',
+  OPTIMIZE_LOG_LEVEL: 'DEBUG',
   SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:
     'http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs',
   MANAGEMENT_SERVER_PORT: '19600',
@@ -215,9 +215,22 @@ function startDocker() {
     process.on('SIGINT', stopDocker);
     process.on('SIGTERM', stopDocker);
 
-    // wait for the zeebe rest endpoint to be up before resolving the promise
-    serverCheck('http://localhost:9600/ready', resolve);
+    waitForDockerDependencies().then(resolve);
   });
+}
+
+function waitForDockerDependencies() {
+  const dependencies = ['http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s'];
+
+  if (mode === 'self-managed') {
+    dependencies.push('http://localhost:18080/auth', 'http://localhost:9600/ready');
+  }
+
+  return Promise.all(dependencies.map(waitForServerCheck));
+}
+
+function waitForServerCheck(url) {
+  return new Promise((resolve) => serverCheck(url, resolve));
 }
 
 function setVersionInfo() {
