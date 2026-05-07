@@ -55,12 +55,16 @@ jobs:
           exportEnv: false
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+            secret/data/products/camunda/ci/anthropic ANTHROPIC_API_KEY;
 
       # ── Python ──────────────────────────────────────────────────────────────
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.x"
+
+      - name: Install Python dependencies
+        run: pip install anthropic pyyaml --quiet
 
       # ── Download artifacts ───────────────────────────────────────────────────
       # For each nightly workflow we fetch the most recent completed run, then
@@ -148,9 +152,11 @@ jobs:
       - name: Analyse test results
         id: analyse
         if: steps.check.outputs.has_data == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
-          python3 .ci/scripts/ci/triage-tests/analyze-playwright-results.py artifacts \
+          python3 .ci/scripts/ci/triage-tests/claude-triage.py artifacts \
             --spec qa/c8-orchestration-cluster-e2e-test-suite/v2-stateless-tests/request-validation-test-generator/cache/rest-api.yaml \
             --suite-dir qa/c8-orchestration-cluster-e2e-test-suite \
             > triage-report.json
@@ -194,8 +200,9 @@ jobs:
         id: fix
         if: steps.check.outputs.has_data == 'true' && steps.analyse.outputs.flaky != '0' && steps.analyse.outputs.flaky != ''
         env:
-          GH_TOKEN: ${{ github.token }}
-          DRY_RUN:  ${{ github.event.inputs.dry_run || 'false' }}
+          GH_TOKEN:          ${{ github.token }}
+          DRY_RUN:           ${{ github.event.inputs.dry_run || 'false' }}
+          ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
 
@@ -214,7 +221,7 @@ jobs:
           # after each git checkout below.
           TRIAGE_SCRIPTS=$(mktemp -d)
           cp -r .ci/scripts/ci/triage-tests/. "$TRIAGE_SCRIPTS/"
-          APPLY_FIXES="${TRIAGE_SCRIPTS}/apply-timeout-fixes.py"
+          APPLY_FIXES="${TRIAGE_SCRIPTS}/claude-fix.py"
 
           total_fixed=0
           all_pr_urls=""

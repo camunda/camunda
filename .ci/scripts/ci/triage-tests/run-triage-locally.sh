@@ -141,8 +141,14 @@ if [[ "$downloaded" -eq 0 ]]; then
 fi
 
 # ── Analyse ─────────────────────────────────────────────────────────────────
-echo "▶ Analysing test results..."
-python3 "${SCRIPT_DIR}/analyze-playwright-results.py" "${ARTIFACTS_DIR}" \
+echo "▶ Analysing test results with Claude claude-sonnet-4-6..."
+if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
+  echo "ERROR: ANTHROPIC_API_KEY must be set for Claude-powered triage." >&2
+  exit 1
+fi
+python3 "${SCRIPT_DIR}/claude-triage.py" "${ARTIFACTS_DIR}" \
+  --spec "${REPO_ROOT}/qa/c8-orchestration-cluster-e2e-test-suite/v2-stateless-tests/request-validation-test-generator/cache/rest-api.yaml" \
+  --suite-dir "${REPO_ROOT}/qa/c8-orchestration-cluster-e2e-test-suite" \
   > "${WORK_DIR}/triage-report.json"
 
 # Pretty-print summary
