@@ -73,6 +73,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
@@ -326,6 +327,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.JOB_METRICS_BATCH, this::summarizeJobMetricsBatch);
     valueLoggers.put(ValueType.GLOBAL_LISTENER, this::summarizeGlobalListener);
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
+    valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -506,6 +508,29 @@ public class CompactRecordLogger {
 
   private String summarizeMiscValue(final Record<?> record) {
     return record.getValue().getClass().getSimpleName() + " " + record.getValue().toJson();
+  }
+
+  private String summarizeAgentInstance(final Record<?> record) {
+    final var value = (AgentInstanceRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result.append(shortenKey(value.getAgentInstanceKey()));
+    result.append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
+    result.append(
+        summarizeProcessInformation(
+            value.getProcessDefinitionKey(), value.getProcessInstanceKey()));
+
+    final var definition = value.getDefinition();
+    if (definition != null && !StringUtils.isEmpty(definition.getModel())) {
+      result.append(" model:").append(definition.getModel());
+      if (!StringUtils.isEmpty(definition.getProvider())) {
+        result.append("/").append(definition.getProvider());
+      }
+    }
+
+    result.append(" status:").append(value.getStatus());
+
+    return result.toString();
   }
 
   private String summarizeDeployment(final Record<?> record) {
