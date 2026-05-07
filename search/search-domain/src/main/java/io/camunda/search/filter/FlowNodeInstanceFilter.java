@@ -15,6 +15,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -42,7 +43,8 @@ public record FlowNodeInstanceFilter(
     // (pre-8.8 data).
     // Once all data has consistent elementInstanceScopeKey population, this flag and related logic
     // can be removed.
-    Boolean useTreePathPrefix)
+    Boolean useTreePathPrefix,
+    List<FlowNodeInstanceFilter> orFilters)
     implements FilterBase {
 
   public static FlowNodeInstanceFilter of(
@@ -69,6 +71,7 @@ public record FlowNodeInstanceFilter(
     private List<Long> elementInstanceScopeKeys;
     private List<Integer> levels;
     private Boolean useTreePathPrefix;
+    private List<FlowNodeInstanceFilter> orFilters;
 
     public Builder copyFrom(final FlowNodeInstanceFilter filter) {
       flowNodeInstanceKeys(filter.flowNodeInstanceKeys());
@@ -88,6 +91,7 @@ public record FlowNodeInstanceFilter(
       elementInstanceScopeKeys(filter.elementInstanceScopeKeys());
       levels(filter.levels());
       useTreePathPrefix(filter.useTreePathPrefix());
+      orFilters(filter.orFilters());
       return this;
     }
 
@@ -264,6 +268,19 @@ public record FlowNodeInstanceFilter(
       return this;
     }
 
+    public Builder addOrOperation(final FlowNodeInstanceFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<FlowNodeInstanceFilter> orFilters) {
+      this.orFilters = orFilters;
+      return this;
+    }
+
     @Override
     public FlowNodeInstanceFilter build() {
       return new FlowNodeInstanceFilter(
@@ -283,7 +300,8 @@ public record FlowNodeInstanceFilter(
           Objects.requireNonNullElse(endDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(elementInstanceScopeKeys, Collections.emptyList()),
           Objects.requireNonNullElse(levels, Collections.emptyList()),
-          useTreePathPrefix);
+          useTreePathPrefix,
+          orFilters);
     }
   }
 }

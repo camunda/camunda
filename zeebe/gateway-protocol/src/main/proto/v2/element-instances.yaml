@@ -258,7 +258,42 @@ components:
             - $ref: '#/components/schemas/ElementInstanceFilter'
 
     ElementInstanceFilter:
-      description: Element instance filter.
+      description: Element instance search filter.
+      allOf:
+        - $ref: '#/components/schemas/ElementInstanceFilterFields'
+        - type: object
+          properties:
+            $or:
+              description: |
+                Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+                Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+                <br>
+                <em>Example:</em>
+
+                ```json
+                {
+                  "processInstanceKey": "2251799813685323",
+                  "$or": [
+                    { "elementName": { "$like": "*Order*" } },
+                    { "elementId":   { "$like": "*Order*" } }
+                  ]
+                }
+                ```
+                This matches element instances scoped to the given process instance whose:
+
+                <ul style="padding-left: 20px; margin-left: 20px;">
+                  <li style="list-style-type: disc;"><code>elementName</code> contains <em>Order</em>, or</li>
+                  <li style="list-style-type: disc;"><code>elementId</code> contains <em>Order</em></li>
+                </ul>
+                <br>
+                <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
+              type: array
+              items:
+                $ref: '#/components/schemas/ElementInstanceFilterFields'
+
+    ElementInstanceFilterFields:
+      description: Element instance filter fields.
       type: object
       properties:
         processDefinitionId:

@@ -20,158 +20,69 @@ import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.function.Consumer;
 
-public interface ElementInstanceFilter extends SearchRequestFilter {
+public interface ElementInstanceFilter extends ElementInstanceFilterBase {
 
-  /**
-   * Filters element instances by the specified key.
-   *
-   * @param value the key of element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter elementInstanceKey(final long value);
 
-  /**
-   * Filters element instances by process definition key.
-   *
-   * @param value the process definition key of element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter processDefinitionKey(final long value);
 
-  /**
-   * Filters element instances by bpmn process id.
-   *
-   * @param value the bpmn process id of element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter processDefinitionId(final String value);
 
-  /**
-   * Filters element instances by process instance key.
-   *
-   * @param value the process instance key of element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter processInstanceKey(final long value);
 
-  /**
-   * Filters element instances by element id (exact match).
-   *
-   * @param value the element id of element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter elementId(final String value);
 
-  /**
-   * Filters element instances by element id using advanced {@link StringProperty} operations.
-   *
-   * @param fn the element id filter configuration
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter elementId(final Consumer<StringProperty> fn);
 
-  /**
-   * Filters element instances by element name (exact match). This only works for data created with
-   * 8.8 and onwards. Instances from prior versions don't contain this data.
-   *
-   * @param value the element name of element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter elementName(final String value);
 
-  /**
-   * Filters element instances by element name using advanced {@link StringProperty} operations.
-   * This only works for data created with 8.8 and onwards.
-   *
-   * @param fn the element name filter configuration
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter elementName(final Consumer<StringProperty> fn);
 
-  /**
-   * Filters element instances by state.
-   *
-   * @param value the state of element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter state(final ElementInstanceState value);
 
-  /** Filter by state using {@link ElementInstanceStateProperty} consumer */
+  @Override
   ElementInstanceFilter state(final Consumer<ElementInstanceStateProperty> fn);
 
-  /**
-   * Filters element instances by type.
-   *
-   * @param value the type of element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter type(final ElementInstanceType value);
 
-  /**
-   * Filters element instances by incident (has an incident)
-   *
-   * @param value has the element instance an incident
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter hasIncident(final boolean value);
 
-  /**
-   * Filters element instances by incident key.
-   *
-   * @param value the incident key for element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter incidentKey(final long value);
 
-  /**
-   * Filters element instances by tenant id.
-   *
-   * @param value the tenant id for element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter tenantId(final String value);
 
-  /**
-   * Filters element instances by start date.
-   *
-   * @param value the start date of the element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter startDate(final OffsetDateTime value);
 
-  /**
-   * Filters element instances by the specified {@link DateTimeProperty} start date.
-   *
-   * @param startDate the start date of the element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter startDate(final Consumer<DateTimeProperty> startDate);
 
-  /**
-   * Filters element instances by end date.
-   *
-   * @param value the end date of the element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter endDate(final OffsetDateTime value);
 
-  /**
-   * Filters element instances by the specified {@link DateTimeProperty} end date.
-   *
-   * @param endDate the end date of the element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter endDate(final Consumer<DateTimeProperty> endDate);
 
-  /**
-   * Filters element instances by the specified scope key.
-   *
-   * @param value the scope key of the element instance
-   * @return the updated filter
-   */
+  @Override
   ElementInstanceFilter elementInstanceScopeKey(final long value);
+
+  /** Filter by or conjunction using {@link ElementInstanceFilterBase} consumer. */
+  ElementInstanceFilter orFilters(List<Consumer<ElementInstanceFilterBase>> filters);
 }

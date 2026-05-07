@@ -18,6 +18,7 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.filter.ElementInstanceFilterBase;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
@@ -25,9 +26,12 @@ import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ElementInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.ElementInstanceFilterMapper;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.ElementInstanceFilterFields;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class ElementInstanceFilterImpl
@@ -161,6 +165,20 @@ public class ElementInstanceFilterImpl
   @Override
   public ElementInstanceFilter elementInstanceScopeKey(final long value) {
     filter.setElementInstanceScopeKey(ParseUtil.keyToString(value));
+    return this;
+  }
+
+  @Override
+  public ElementInstanceFilter orFilters(final List<Consumer<ElementInstanceFilterBase>> fns) {
+    for (final Consumer<ElementInstanceFilterBase> fn : fns) {
+      final ElementInstanceFilterImpl orFilter = new ElementInstanceFilterImpl();
+      fn.accept(orFilter);
+      final io.camunda.client.protocol.rest.ElementInstanceFilter protocolFilter =
+          orFilter.getSearchRequestProperty();
+      final ElementInstanceFilterFields protocolFilterFields =
+          ElementInstanceFilterMapper.from(protocolFilter);
+      filter.add$OrItem(protocolFilterFields);
+    }
     return this;
   }
 

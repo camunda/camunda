@@ -32,6 +32,7 @@ import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
+import io.camunda.gateway.protocol.model.ElementInstanceFilterFields;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
@@ -837,6 +838,32 @@ public class SearchQueryFilterMapper {
 
   static Either<List<String>, FlowNodeInstanceFilter> toElementInstanceFilter(
       final io.camunda.gateway.protocol.model.@Nullable ElementInstanceFilter filter) {
+    final List<String> validationErrors = new ArrayList<>();
+
+    final Either<List<String>, FlowNodeInstanceFilter.Builder> builder =
+        toElementInstanceFilterFields(filter);
+    if (builder.isLeft()) {
+      validationErrors.addAll(builder.getLeft());
+    }
+
+    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+      for (final ElementInstanceFilterFields or : filter.get$Or()) {
+        final var orBuilder = toElementInstanceFilterFields(or);
+        if (orBuilder.isLeft()) {
+          validationErrors.addAll(orBuilder.getLeft());
+        } else if (builder.isRight()) {
+          builder.get().addOrOperation(orBuilder.get().build());
+        }
+      }
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.get().build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, FlowNodeInstanceFilter.Builder> toElementInstanceFilterFields(
+      final @Nullable ElementInstanceFilterFields filter) {
     final var builder = FilterBuilders.flowNodeInstance();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -876,9 +903,7 @@ public class SearchQueryFilterMapper {
           .map(mapKeyToLong("elementInstanceScopeKey", validationErrors))
           .ifPresent(builder::elementInstanceScopeKeys);
     }
-    return validationErrors.isEmpty()
-        ? Either.right(builder.build())
-        : Either.left(validationErrors);
+    return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
   static Either<List<String>, UserTaskFilter> toUserTaskFilter(
