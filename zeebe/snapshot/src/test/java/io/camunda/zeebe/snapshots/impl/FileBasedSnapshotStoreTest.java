@@ -131,6 +131,45 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
+  public void shouldComputeTotalSizeBytesForLegacySnapshotOnStoreOpen() throws IOException {
+    // given a persisted snapshot whose on-disk metadata was written before totalSizeBytes existed.
+    // We simulate by overwriting the metadata file with legacy JSON and recomputing the SFV
+    // checksum file (the metadata file is part of the snapshot's checksum, so any modification
+    // requires the SFV file to be rewritten in lockstep — exactly what we don't allow at runtime).
+    final var persistedSnapshot = takeTransientSnapshot().persist().join();
+    final var metadataFile =
+        persistedSnapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
+    final var legacyMetadataJson =
+        // language=JSON
+        """
+        {
+          "version": 1,
+          "processedPosition": 0,
+          "exportedPosition": 0,
+          "lastFollowupEventPosition": 0,
+          "bootstrap": false
+        }""";
+    Files.writeString(metadataFile, legacyMetadataJson, StandardOpenOption.TRUNCATE_EXISTING);
+    SnapshotChecksum.persist(
+        persistedSnapshot.getChecksumPath(),
+        SnapshotChecksum.calculate(persistedSnapshot.getPath()));
+
+    // when reopening the store
+    snapshotStore.close();
+    snapshotStore = createStore(rootDirectory);
+
+    // then totalSizeBytes is computed eagerly from disk and exposed on the loaded snapshot
+    final var loaded = snapshotStore.getLatestSnapshot().orElseThrow();
+    final long expected = SNAPSHOT_CONTENT.getBytes(StandardCharsets.UTF_8).length;
+    assertThat(loaded.getTotalSizeInBytes())
+        .as(
+            "store-open path computes totalSizeBytes for snapshots whose on-disk metadata predates"
+                + " the field, without modifying the on-disk metadata file")
+        .isEqualTo(expected);
+    assertThat(loaded.getMetadata().totalSizeBytes()).isEqualTo(expected);
+  }
+
+  @Test
   public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() throws IOException {
     // given
     final FileBasedSnapshotStore otherStore = createStore(rootDirectory);
@@ -436,6 +475,9 @@ public class FileBasedSnapshotStoreTest {
         snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
 
     // then
+    // totalSizeBytes counts the 3 non-metadata files written by takeTransientSnapshotWithFiles
+    // (table-0.sst, table-1.sst, table-2.sst), each containing "test" (4 bytes).
+    final long expectedTotalSize = 3L * "test".getBytes(StandardCharsets.UTF_8).length;
     assertThat(copiedSnapshot)
         .satisfies(
             s -> {
@@ -443,7 +485,8 @@ public class FileBasedSnapshotStoreTest {
               assertThat(s.getPath().getFileName().toString()).startsWith("1-1-0-0-0-");
               assertThat(s.getMetadata())
                   .isEqualTo(
-                      FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION));
+                      FileBasedSnapshotMetadata.forBootstrap(
+                          FileBasedSnapshotStoreImpl.VERSION, expectedTotalSize));
             });
 
     assertThat(snapshotStore.getBootstrapSnapshot())

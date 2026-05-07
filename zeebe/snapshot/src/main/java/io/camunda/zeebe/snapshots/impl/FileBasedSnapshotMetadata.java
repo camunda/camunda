@@ -50,7 +50,12 @@ public record FileBasedSnapshotMetadata(
   }
 
   public static FileBasedSnapshotMetadata forBootstrap(final int version) {
-    return new FileBasedSnapshotMetadata(version, 0L, 0L, 0L, 0L, true, 0L);
+    return forBootstrap(version, 0L);
+  }
+
+  public static FileBasedSnapshotMetadata forBootstrap(
+      final int version, final long totalSizeBytes) {
+    return new FileBasedSnapshotMetadata(version, 0L, 0L, 0L, 0L, true, totalSizeBytes);
   }
 
   public void encode(final OutputStream output) throws IOException {

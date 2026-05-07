@@ -130,6 +130,22 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
+  public long getTotalSizeInBytes() {
+    final var size = metadata == null ? 0L : metadata.totalSizeBytes();
+    if (size <= 0L) {
+      // Should never happen: metadata is populated at every construction site
+      // (transient persist computes from disk, store-open and receive paths compute eagerly
+      // when the on-disk metadata predates this field). If it does, something upstream is
+      // skipping the eager-compute step and the rebalance pre-check would silently under-report.
+      throw new IllegalStateException(
+          "totalSizeBytes was not populated for snapshot "
+              + getId()
+              + "; legacy snapshots must have it computed at store open or during reception");
+    }
+    return size;
+  }
+
+  @Override
   public ActorFuture<SnapshotReservation> reserve() {
     final CompletableActorFuture<SnapshotReservation> snapshotLocked =
         new CompletableActorFuture<>();

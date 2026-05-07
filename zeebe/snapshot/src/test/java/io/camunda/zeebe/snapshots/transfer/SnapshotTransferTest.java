@@ -106,13 +106,17 @@ public class SnapshotTransferTest {
     actorScheduler.workUntilDone();
 
     // then
+    final long expectedTotalSize =
+        SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS.values().stream()
+            .mapToLong(content -> content.getBytes(java.nio.charset.StandardCharsets.UTF_8).length)
+            .sum();
     assertThat(persistedSnapshotFuture)
         .succeedsWithin(Duration.ofSeconds(30))
         .satisfies(
             snapshot -> {
               assertThat(snapshot.getId()).startsWith("1-1-0-0-0-");
               assertThat(snapshot.getMetadata())
-                  .isEqualTo(FileBasedSnapshotMetadata.forBootstrap(1));
+                  .isEqualTo(FileBasedSnapshotMetadata.forBootstrap(1, expectedTotalSize));
               assertThat(snapshot.isBootstrap()).isTrue();
               assertThat(snapshot.files()).isNotEmpty();
             });

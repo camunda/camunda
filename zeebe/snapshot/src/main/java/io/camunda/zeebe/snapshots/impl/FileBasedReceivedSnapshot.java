@@ -266,8 +266,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     try {
       if (metadata == null) {
-        // backward compatibility — totalSizeBytes left as 0; production must fall back to a
-        // one-time Files.size walk for legacy snapshots (see replication lag tracking plan).
+        // Backward compatibility: sender did not include a metadata chunk at all. Build one and
+        // compute totalSizeBytes from the just-received directory.
         metadata =
             new FileBasedSnapshotMetadata(
                 FileBasedSnapshotStoreImpl.VERSION,
@@ -276,7 +276,20 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 Long.MAX_VALUE,
                 Long.MAX_VALUE,
                 false,
-                0L);
+                SnapshotFileSize.computeFromDirectory(directory));
+      } else if (metadata.totalSizeBytes() <= 0L) {
+        // Sender included metadata but predates totalSizeBytes. Compute from the just-received
+        // directory and override in memory only — the on-disk metadata is part of the SFV
+        // checksum and cannot be modified.
+        metadata =
+            new FileBasedSnapshotMetadata(
+                metadata.version(),
+                metadata.processedPosition(),
+                metadata.minExportedPosition(),
+                metadata.maxExportedPosition(),
+                metadata.lastFollowupEventPosition(),
+                metadata.isBootstrap(),
+                SnapshotFileSize.computeFromDirectory(directory));
       }
       final PersistedSnapshot value =
           snapshotStore.persistNewSnapshot(directory, snapshotId, checksumCollection, metadata);

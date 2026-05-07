@@ -189,13 +189,35 @@ public final class FileBasedSnapshotStoreImpl {
         return null;
       }
 
-      final var metadata = collectMetadata(path, snapshotId);
+      final var metadata = ensureTotalSizeBytes(collectMetadata(path, snapshotId), path);
       return new FileBasedSnapshot(
           path, checksumPath, actualChecksum, snapshotId, metadata, this::onSnapshotDeleted, actor);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;
     }
+  }
+
+  /**
+   * Returns metadata with {@code totalSizeBytes} populated. If the metadata loaded from disk
+   * predates this field, computes the size by walking the snapshot directory once. The result stays
+   * in memory only — the on-disk metadata file is not rewritten, since it is part of the snapshot's
+   * checksum and any modification would invalidate integrity.
+   */
+  private FileBasedSnapshotMetadata ensureTotalSizeBytes(
+      final FileBasedSnapshotMetadata metadata, final Path snapshotDirectory) throws IOException {
+    if (metadata.totalSizeBytes() > 0L) {
+      return metadata;
+    }
+    final var computed = SnapshotFileSize.computeFromDirectory(snapshotDirectory);
+    return new FileBasedSnapshotMetadata(
+        metadata.version(),
+        metadata.processedPosition(),
+        metadata.minExportedPosition(),
+        metadata.maxExportedPosition(),
+        metadata.lastFollowupEventPosition(),
+        metadata.isBootstrap(),
+        computed);
   }
 
   private FileBasedSnapshotMetadata collectMetadata(
