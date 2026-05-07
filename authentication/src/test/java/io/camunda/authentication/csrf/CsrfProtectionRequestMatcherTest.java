@@ -12,7 +12,7 @@ import static com.google.common.net.HttpHeaders.REFERER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.config.WebSecurityConfig;
-import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
