@@ -67,10 +67,6 @@ public final class WorkerRegistration {
               .jobType(jobType)
               .handler(counting)
               .name(runId + "-" + key.handleKey())
-              // Streaming is more reliable than REST polling for listener-kind jobs on some broker
-              // versions; we observed 503s on /v2/jobs/activation under load. gRPC streaming is
-              // the broker's preferred path for low-latency activation.
-              .streamEnabled(true)
               .open();
       openWorkers.add(worker);
       LOG.info("registered worker for jobType={} (binding={})", jobType, key);

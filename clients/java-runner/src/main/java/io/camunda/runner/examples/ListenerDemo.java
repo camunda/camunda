@@ -17,29 +17,26 @@ package io.camunda.runner.examples;
 
 import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType.end;
 import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType.start;
-import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType.assigning;
-import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType.completing;
 
 import io.camunda.runner.Job;
 import io.camunda.runner.LiveBpmn;
-import io.camunda.runner.Run;
 import io.camunda.runner.RunOptions;
 import java.time.Duration;
 import java.util.Map;
 
 /**
- * Listener demo covering both kinds with one unified {@code .on(...)} surface:
+ * Listener demo: a service task with execution listeners on both lifecycle events plus a downstream
+ * service task that consumes a variable produced by the body lambda.
  *
- * <ul>
- *   <li><b>Execution listeners</b> on the {@code greet} service task — fire on element activation /
- *       completion.
- *   <li><b>Task listeners</b> on the {@code review} user task — fire on user-task lifecycle events
- *       (creating, assigning, completing).
- * </ul>
+ * <pre>
+ *   start -> greet -> print -> end
+ * </pre>
  *
- * <p>The user task hangs waiting for human completion. Open Tasklist (<a
- * href="http://localhost:8080/tasklist">localhost:8080/tasklist</a>), claim the task, complete it,
- * and watch the {@code [tl-*]} listener output finish.
+ * <p>Listener attachments use the unified {@code .on(eventType, lambda)} surface (Java's enum-typed
+ * overload resolution picks execution-listener vs task-listener). Task listeners on user tasks use
+ * the same {@code .on(...)} method with a {@link
+ * io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType} constant — see the README
+ * for the binding form.
  */
 public final class ListenerDemo {
 
@@ -47,56 +44,19 @@ public final class ListenerDemo {
 
   public static void main(final String[] args) throws Exception {
     try (final var cluster = LiveBpmn.cluster().localhost()) {
-      final Run run =
-          LiveBpmn.createExecutableProcess("hello")
-              .startEvent()
-
-              // service task with execution listeners
-              .serviceTask(
-                  "greet",
-                  (Job job) -> Map.of("greeting", "hi " + job.variable("name", String.class)))
-              .listeners(
-                  l ->
-                      l.on(start, (Job job) -> System.out.println("[el-start] greet activating"))
-                          .on(end, (Job job) -> System.out.println("[el-end]   greet completed")))
-
-              // user task with task listeners — completes via Tasklist.
-              // Pre-assign to "demo" (c8run's default user) so it shows up on the default
-              // "Assigned to me" filter without the user having to switch tabs.
-              .userTask(
-                  "review",
-                  (io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder t) ->
-                      t.zeebeAssignee("demo"))
-              .listeners(
-                  l ->
-                      //                      l.on(
-                      //                              creating,
-                      //                              (Job job) -> System.out.println("[tl-creating]
-                      //   review created"))
-                      l.on(
-                              assigning,
-                              (Job job) -> System.out.println("[tl-assigning]  review claimed"))
-                          .on(
-                              completing,
-                              (Job job) -> System.out.println("[tl-completing] review completed")))
-              .endEvent()
-              .run(RunOptions.of(1).variables(i -> Map.of("name", "World")), cluster);
-
-      System.out.println();
-      System.out.println("──────────────────────────────────────────────────────────────────");
-      System.out.println(" The user task 'review' is now waiting (pre-assigned to 'demo').");
-      System.out.println(" To finish the run:");
-      System.out.println("   1) open  http://localhost:8080/tasklist");
-      System.out.println("   2) sign in as 'demo' / 'demo' (c8run default)");
-      System.out.println("   3) the task should appear under 'Assigned to me'.");
-      System.out.println("      If empty, switch the filter to 'Unassigned' or 'All open'.");
-      System.out.println("   4) click the task, complete it");
-      System.out.println("   5) watch [tl-completing] fire below");
-      System.out.println("──────────────────────────────────────────────────────────────────");
-      System.out.println();
-
-      run.await(Duration.ofMinutes(5));
-      System.out.println("done; handled = " + run.workersHandled());
+      LiveBpmn.createExecutableProcess("hello")
+          .startEvent()
+          .serviceTask(
+              "greet", (Job job) -> Map.of("greeting", "hi " + job.variable("name", String.class)))
+          .listeners(
+              l ->
+                  l.on(start, (Job job) -> System.out.println("[el-start] greet activating"))
+                      .on(end, (Job job) -> System.out.println("[el-end]   greet completed")))
+          .serviceTask(
+              "print", (Job job) -> System.out.println(job.variable("greeting", String.class)))
+          .endEvent()
+          .run(RunOptions.of(2).variables(i -> Map.of("name", "World " + i)), cluster)
+          .await(Duration.ofMinutes(1));
     }
   }
 }
