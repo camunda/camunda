@@ -81,6 +81,7 @@ RUN addgroup --gid 1001 camunda && \
     chown -R 1001:0 ${TASKLIST_HOME} && \
     chmod -R 0775 ${TASKLIST_HOME}
 
+COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${TASKLIST_HOME}/config/jvm.options
 COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/tasklist ${TASKLIST_HOME}
 
 # rename tasklist-migrate script to migrate (as expected by SaaS)

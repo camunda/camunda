@@ -183,6 +183,7 @@ VOLUME ${ZB_HOME}/documents
 VOLUME /driver-lib
 
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
+COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${ZB_HOME}/config/jvm.options
 COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
 

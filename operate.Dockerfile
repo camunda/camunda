@@ -83,6 +83,7 @@ RUN addgroup --gid 1001 camunda && \
     chown -R 1001:0 ${OPE_HOME} && \
     chmod -R 0775 ${OPE_HOME}
 
+COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${OPE_HOME}/config/jvm.options
 COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/operate ${OPE_HOME}
 
 USER 1001:1001
