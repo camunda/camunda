@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
 import {observer} from 'mobx-react';
+import {useMatch, useNavigate, useLocation} from 'react-router-dom';
 import {Button} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
+import {Paths} from 'modules/Routes';
 import {Title} from 'modules/components/FiltersPanel/styled';
 import {
   variableFilterStore,
@@ -29,12 +30,28 @@ const getConditionLabel = (condition: VariableCondition): string => {
 };
 
 const VariableFilter: React.FC = observer(() => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const isModalOpen = useMatch(Paths.processesVariables()) !== null;
+  const navigate = useNavigate();
+  const location = useLocation();
   const {conditions} = variableFilterStore;
+
+  const openModal = () => {
+    navigate({
+      pathname: Paths.processesVariables(),
+      search: location.search,
+    });
+  };
+
+  const closeModal = () => {
+    navigate({
+      pathname: Paths.processes(),
+      search: location.search,
+    });
+  };
 
   const handleApply = (newConditions: VariableCondition[]) => {
     variableFilterStore.setConditions(newConditions);
-    setIsModalOpen(false);
+    closeModal();
   };
 
   return (
@@ -55,7 +72,7 @@ const VariableFilter: React.FC = observer(() => {
         kind="ghost"
         size="sm"
         renderIcon={Edit}
-        onClick={() => setIsModalOpen(true)}
+        onClick={openModal}
         data-testid="open-variable-filter-modal"
       >
         {conditions.length === 0 ? 'Add conditions' : 'Edit conditions'}
@@ -66,7 +83,7 @@ const VariableFilter: React.FC = observer(() => {
         isOpen={isModalOpen}
         initialConditions={conditions}
         onApply={handleApply}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeModal}
       />
     </>
   );

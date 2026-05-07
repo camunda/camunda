@@ -93,7 +93,9 @@ const routes = createRoutesFromElements(
           const {Processes} = await import('./Processes/index');
           return {Component: Processes};
         }}
-      />
+      >
+        <Route path="variables" element={null} />
+      </Route>
       <Route
         path={Paths.processInstance(undefined, true)}
         lazy={async () => {

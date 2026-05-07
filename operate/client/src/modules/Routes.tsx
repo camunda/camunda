@@ -20,6 +20,9 @@ const Paths = {
   processes() {
     return '/processes';
   },
+  processesVariables() {
+    return '/processes/variables';
+  },
   processInstance(
     processInstanceId: string | null = ':processInstanceId',
     isParent = false,
