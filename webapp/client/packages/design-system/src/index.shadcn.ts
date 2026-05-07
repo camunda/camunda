@@ -7,6 +7,7 @@
  */
 
 export * from './components/ThemeProvider';
+export * from './components/ui/header/theme.carbon';
 
 // Carbon-API adapters — same identifier names as `index.carbon.ts`, backed by
 // shadcn primitives. Flipping `index.ts` from `./index.carbon` to `./index.shadcn`
@@ -57,6 +58,44 @@ export * from './components/ui/section/section.adapter';
 export * from './components/ui/stack/stack.adapter';
 export * from './components/ui/tree-view/tree-view.adapter';
 export * from './components/ui/unordered-list/unordered-list.adapter';
+
+// Carbon-only fallbacks. These identifiers have no shadcn equivalent in this
+// package yet but are imported by consumers (e.g. Operate's DataTable
+// composition uses Carbon's render-prop API). They render Carbon directly
+// regardless of the active mode; replace each with a shadcn-backed adapter
+// when one becomes available.
+export {
+  DataTable,
+  DataTableSkeleton,
+  OrderedList,
+  PasswordInput,
+  TableBatchActions,
+  TableContainer,
+  TableExpandHeader,
+  TableExpandRow,
+  TableExpandedRow,
+  TableSelectAll,
+  TableSelectRow,
+  TableToolbar,
+} from '@carbon/react';
+export type {
+  ButtonSize,
+  DataTableHeader,
+  DataTableProps,
+  DataTableRenderProps,
+  DataTableRow,
+  DataTableSkeletonProps,
+  OrderedListProps,
+  PasswordInputProps,
+  TableBatchActionsProps,
+  TableContainerProps,
+  TableExpandHeaderProps,
+  TableExpandRowProps,
+  TableExpandedRowProps,
+  TableSelectAllProps,
+  TableSelectRowProps,
+  TableToolbarProps,
+} from '@carbon/react';
 
 // Canonical shadcn primitives — referenced internally by the adapters above
 // and re-exported here for consumers who want the raw shadcn API.

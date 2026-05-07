@@ -16,7 +16,8 @@ import {
   useLocation,
 } from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {ThemeProvider} from '@camunda/design-system';
+import {observer} from 'mobx-react';
 import {Notifications} from 'modules/notifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {Paths} from 'modules/Routes';
@@ -210,7 +211,7 @@ const router = createBrowserRouter(routes, {
   basename: import.meta.env.DEV ? '/' : getClientConfig().baseName,
 });
 
-const App: React.FC = () => {
+const App: React.FC = observer(() => {
   useEffect(() => {
     tracking.track({
       eventName: 'operate-loaded',
@@ -220,16 +221,18 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary FallbackComponent={ForbiddenPage}>
-      <ThemeProvider>
-        <ReactQueryProvider>
-          <ThemeSwitcher />
-          <Notifications />
-          <NetworkStatusWatcher />
-          <RouterProvider router={router} />
-        </ReactQueryProvider>
+      <ThemeProvider theme={currentTheme.theme}>
+        <div className="carbonThemeProvider">
+          <ReactQueryProvider>
+            <ThemeSwitcher />
+            <Notifications />
+            <NetworkStatusWatcher />
+            <RouterProvider router={router} />
+          </ReactQueryProvider>
+        </div>
       </ThemeProvider>
     </ErrorBoundary>
   );
-};
+});
 
 export {App};

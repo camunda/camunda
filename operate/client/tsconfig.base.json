@@ -16,6 +16,7 @@
     "noUncheckedSideEffectImports": true,
     "erasableSyntaxOnly": true,
 
+
     /* Type Checking */
     "strict": true,
     "noFallthroughCasesInSwitch": true,

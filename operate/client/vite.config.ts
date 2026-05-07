@@ -12,11 +12,12 @@
 import {defineConfig, type PluginOption, type UserConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
+import tailwindcss from '@tailwindcss/vite';
 import sbom from 'rollup-plugin-sbom';
 import {configDefaults} from 'vitest/config';
 import {playwright} from '@vitest/browser-playwright';
 
-const plugins: PluginOption[] = [react(), svgr()];
+const plugins: PluginOption[] = [react(), svgr(), tailwindcss()];
 const outDir = 'build';
 
 function getReporters(): Pick<
@@ -80,6 +81,11 @@ export default defineConfig(({mode}) => ({
   },
   resolve: {
     tsconfigPaths: true,
+    // `@camunda/design-system` is symlinked into node_modules and lives in a
+    // sibling workspace (`webapp/client/`) that ships its own React 19 copy.
+    // Without dedupe, Vite would resolve `react`/`react-dom` from each side
+    // separately, producing two React instances and "Invalid hook call" errors.
+    dedupe: ['react', 'react-dom'],
   },
   test: {
     globals: true,

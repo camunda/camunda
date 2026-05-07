@@ -11,10 +11,10 @@ import {useLayoutEffect, type ReactNode} from 'react';
 
 export type ThemeMode = 'light' | 'dark';
 
-const CARBON_THEME: Record<ThemeMode, string> = {
+const CARBON_THEME = {
   light: 'g10',
   dark: 'g100',
-};
+} as const satisfies Record<ThemeMode, 'g10' | 'g100'>;
 
 interface ThemeProviderProps {
   theme: ThemeMode;
@@ -22,12 +22,14 @@ interface ThemeProviderProps {
 }
 
 function ThemeProvider({theme, children}: ThemeProviderProps) {
-  useLayoutEffect(() => {
-    document.documentElement.dataset['carbonTheme'] = CARBON_THEME[theme];
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
+  const carbonTheme = CARBON_THEME[theme];
 
-  return <GlobalTheme>{children}</GlobalTheme>;
+  useLayoutEffect(() => {
+    document.documentElement.dataset['carbonTheme'] = carbonTheme;
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme, carbonTheme]);
+
+  return <GlobalTheme theme={carbonTheme}>{children}</GlobalTheme>;
 }
 
 export {ThemeProvider};
