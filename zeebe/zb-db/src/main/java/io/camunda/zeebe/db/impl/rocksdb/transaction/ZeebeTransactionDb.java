@@ -177,6 +177,15 @@ public class ZeebeTransactionDb<
 
   @Override
   public void createSnapshot(final File snapshotDir) {
+    try {
+      // When WAL is disabled, data written via db.write() sits in the memtable only.
+      // Checkpoint creates hard-links to SST files and copies the WAL, but with WAL
+      // disabled the memtable data would be silently lost. Force a memtable flush so
+      // all data is in SST files before creating the checkpoint.
+      rocksDB.flush(new org.rocksdb.FlushOptions().setWaitForFlush(true));
+    } catch (final RocksDBException e) {
+      throw new ZeebeDbException("Failed to flush memtable before snapshot", e);
+    }
     try (final Checkpoint checkpoint = Checkpoint.create(rocksDB)) {
       try {
         checkpoint.createCheckpoint(snapshotDir.getAbsolutePath());
