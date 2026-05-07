@@ -216,7 +216,8 @@ async function classifyWithClaude(finding, repoRoot) {
   });
   const rawText = extractText(response);
   console.log(`Response for ${finding.finding_id}:\n${rawText}\n`);
-  return parseClassification(rawText);
+  const classification = parseClassification(rawText);
+  return { ...classification, triage_prompt: userPrompt, triage_response: rawText };
 }
 
 /**
@@ -269,12 +270,19 @@ export async function triage(sarif, maxTickets = 5, repoRoot = process.cwd()) {
   const classified = [];
   for (const finding of findings) {
     const c = await classify(finding, repoRoot);
-    classified.push({ ...finding, track: c.track, confidence: c.confidence, reason: c.reason });
+    classified.push({
+    ...finding,
+    track: c.track,
+    confidence: c.confidence,
+    reason: c.reason,
+    triage_prompt: c.triage_prompt,
+    triage_response: c.triage_response,
+  });
   }
 
   const pr_eligible = classified
     .filter((f) => f.track === "pr_eligible")
-    .map(({ track, reason, ...f }) => f);
+    .map(({ track, ...f }) => ({ ...f, reason: f.reason ?? ISSUE_REASON_DEFAULT }));
 
   const issue_only = classified
     .filter((f) => f.track === "issue_only")

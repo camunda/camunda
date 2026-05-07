@@ -48,36 +48,71 @@ function buildIssueTitle(finding, token) {
 
 function buildIssueBody(finding) {
   const docUrl = ruleDocUrl(finding.rule);
-  const lines = [
-    "## Auto-detected code quality finding",
+  const parts = [
+    "### <!-- Component -->",
     "",
-    "Routed to the issue track by the [Code Quality AI Pipeline](../docs/code-quality-ai-pipeline-plan.md) ",
-    "because the AI classifier judged it unsafe to auto-fix. Human triage required.",
+    "_To be filled in by the triaging engineer._",
     "",
-    "### Finding",
+    "### Description",
     "",
-    `- **Rule:** \`${finding.rule}\`${docUrl ? ` — [docs](${docUrl})` : ""}`,
+    `Auto-detected by the [Code Quality AI Pipeline](../docs/code-quality-ai-pipeline-plan.md) via CodeQL rule \`${finding.rule}\`${docUrl ? ` ([docs](${docUrl}))` : ""}.`,
+    "",
+    "### CodeQL Scan Detail",
+    "",
+    `- **Rule:** \`${finding.rule}\`${docUrl ? ` ([docs](${docUrl}))` : ""}`,
     `- **File:** \`${finding.file}\``,
     `- **Line:** ${finding.line}`,
-    `- **Confidence (triage):** ${finding.confidence}`,
     `- **Finding ID:** \`${finding.finding_id}\``,
+    `- **Confidence (triage):** ${finding.confidence}`,
     "",
-    "### Message",
+    "**Message:**",
     "",
     "> " + (finding.message || "(no message)").replace(/\n/g, "\n> "),
     "",
-    "### Why this is not auto-fixable",
+    "**Triage decision:**",
     "",
     finding.reason || "(no reason supplied)",
+  ];
+
+  if (finding.triage_prompt) {
+    parts.push(
+      "",
+      "<details>",
+      "<summary>Original triage prompt sent to Claude</summary>",
+      "",
+      "```",
+      finding.triage_prompt,
+      "```",
+      "",
+      "</details>",
+    );
+  }
+
+  if (finding.triage_response) {
+    parts.push(
+      "",
+      "<details>",
+      "<summary>Claude's triage response</summary>",
+      "",
+      "```json",
+      finding.triage_response,
+      "```",
+      "",
+      "</details>",
+    );
+  }
+
+  parts.push(
     "",
-    "### Suggested next step",
+    "### Next Steps",
     "",
     "1. Review the rule docs (linked above) to understand the failure mode.",
     "2. Decide whether this is a true positive in this context.",
     "3. If yes, apply the fix manually or add this rule to the PR-eligible allowlist once the fix shape is well-understood.",
     "4. If no, suppress at the call site with a justifying comment.",
-  ];
-  return lines.join("\n");
+  );
+
+  return parts.join("\n");
 }
 
 function ownersToAssignees(owners) {
@@ -93,13 +128,15 @@ function ownersToAssignees(owners) {
 
 function buildIssuePayload(finding, repoRoot) {
   const token = findingIdToken(finding.finding_id);
+  const assignees = ownersToAssignees(lookupCodeowners(finding.file, repoRoot));
+  if (finding.track === "pr_eligible") assignees.push("claude");
   return {
     finding_id: finding.finding_id,
     token,
     title: buildIssueTitle(finding, token),
     body: buildIssueBody(finding),
     labels: [severityLabel(finding)],
-    assignees: ownersToAssignees(lookupCodeowners(finding.file, repoRoot)),
+    assignees,
   };
 }
 
@@ -208,7 +245,10 @@ function logDryRunPreview(preview) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const triaged = JSON.parse(fs.readFileSync(args.triaged, "utf8"));
-  const candidates = (triaged.issue_only ?? []).slice(0, args.maxIssues);
+  const candidates = [
+    ...(triaged.pr_eligible ?? []),
+    ...(triaged.issue_only ?? []),
+  ].slice(0, args.maxIssues);
 
   const summary = args.dryRun
     ? { dry_run: true, would_open: [], skipped: [] }
