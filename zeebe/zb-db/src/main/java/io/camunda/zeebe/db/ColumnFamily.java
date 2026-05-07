@@ -268,6 +268,20 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
   void deleteIfExists(KeyType key);
 
   /**
+   * Deletes all entries whose key matches the given prefix. This is semantically equivalent to
+   * iterating via {@link #whileEqualPrefix(DbKey, BiConsumer)} and calling {@link
+   * #deleteExisting(DbKey)} for each entry, but implementations may provide a more efficient bulk
+   * path (e.g. skipping merged iteration in a layered DB).
+   */
+  default void deleteByPrefix(final DbKey prefix) {
+    whileEqualPrefix(
+        prefix,
+        (key, value) -> {
+          deleteExisting(key);
+        });
+  }
+
+  /**
    * Checks for key existence in the column family.
    *
    * @param key the key to look for

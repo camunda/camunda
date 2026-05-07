@@ -318,6 +318,25 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
     context.runInTransaction(() -> deleteInternal(key));
   }
 
+  /**
+   * Optimized bulk prefix delete that iterates each layer independently instead of doing the
+   * expensive merged iteration + per-entry {@link #deleteInternal}. For scopes created after the
+   * last snapshot (nothing in RocksDB), the persistent scan returns nothing instantly.
+   */
+  @Override
+  public void deleteByPrefix(final DbKey prefix) {
+    context.runInTransaction(
+        () -> {
+          // 1. Delete all matching entries from the active (in-memory) layer — fast TreeMap
+          //    range operation, no RocksDB involved.
+          activeColumnFamily.deleteByPrefix(prefix);
+
+          // 2. Single RocksDB prefix scan: add tombstones for any persistent entries.
+          //    For newly-created scopes this scan returns nothing instantly.
+          persistentColumnFamily.deleteByPrefix(prefix);
+        });
+  }
+
   @Override
   public boolean exists(final KeyType key) {
     final boolean[] result = {false};
