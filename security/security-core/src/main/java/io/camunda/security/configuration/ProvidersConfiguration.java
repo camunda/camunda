@@ -7,17 +7,18 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import java.util.Map;
 
 public class ProvidersConfiguration {
 
-  private Map<String, OidcAuthenticationConfiguration> oidc;
+  private Map<String, OidcConfiguration> oidc;
 
-  public Map<String, OidcAuthenticationConfiguration> getOidc() {
+  public Map<String, OidcConfiguration> getOidc() {
     return oidc;
   }
 
-  public void setOidc(final Map<String, OidcAuthenticationConfiguration> oidc) {
+  public void setOidc(final Map<String, OidcConfiguration> oidc) {
     this.oidc = oidc;
   }
 }

@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.config;
 
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,7 +19,7 @@ class OidcClientRegistrationTest {
 
   @Test
   public void validAuthenticationMethodIsSet() {
-    final var config = new OidcAuthenticationConfiguration();
+    final var config = new OidcConfiguration();
     config.setClientId("clientId");
     config.setRedirectUri("redirectUri");
     config.setAuthorizationUri("authorizationUri");
@@ -32,7 +32,7 @@ class OidcClientRegistrationTest {
 
   @Test
   public void invalidAuthenticationMethodThrows() {
-    final var config = new OidcAuthenticationConfiguration();
+    final var config = new OidcConfiguration();
     config.setClientId("clientId");
     config.setRedirectUri("redirectUri");
     config.setAuthorizationUri("authorizationUri");
@@ -48,7 +48,7 @@ class OidcClientRegistrationTest {
   @Test
   void shouldEnableUserInfoEndpoint() {
     // given
-    final var config = new OidcAuthenticationConfiguration();
+    final var config = new OidcConfiguration();
     final var builder =
         ClientRegistration.withRegistrationId("foo").userInfoUri("http://localhost:8080");
     config.setClientId("clientId");
@@ -76,7 +76,7 @@ class OidcClientRegistrationTest {
   @Test
   void shouldDisableUserInfoEndpoint() {
     // given
-    final var config = new OidcAuthenticationConfiguration();
+    final var config = new OidcConfiguration();
     final var builder =
         ClientRegistration.withRegistrationId("foo").userInfoUri("http://localhost:8080");
     config.setClientId("clientId");
@@ -104,7 +104,7 @@ class OidcClientRegistrationTest {
   @ParameterizedTest
   @NullAndEmptySource
   public void shouldFallbackToValidDefaultRedirectUri(final String blankRedirectUri) {
-    final var config = new OidcAuthenticationConfiguration();
+    final var config = new OidcConfiguration();
     config.setClientId("clientId");
     config.setAuthorizationUri("authorizationUri");
     config.setRedirectUri(blankRedirectUri);

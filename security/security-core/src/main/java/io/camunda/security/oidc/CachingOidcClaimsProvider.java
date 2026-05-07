@@ -10,8 +10,8 @@ package io.camunda.security.oidc;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcUserInfoAugmentationConfiguration;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -45,7 +45,7 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
   private static final String CACHE_METRIC = "camunda.oidc.userinfo.cache";
   private static final String FETCH_METRIC = "camunda.oidc.userinfo.fetch";
 
-  private final OidcAuthenticationConfiguration oidcConfig;
+  private final OidcConfiguration oidcConfig;
   private final Map<String, URI> userInfoUriByIssuer;
   private final OidcUserInfoClient userInfoClient;
   private final Cache<String, CacheEntry> cache;
@@ -56,7 +56,7 @@ public class CachingOidcClaimsProvider implements OidcClaimsProvider {
   private final Duration clockSkew;
 
   public CachingOidcClaimsProvider(
-      final OidcAuthenticationConfiguration oidcConfig,
+      final OidcConfiguration oidcConfig,
       final Map<String, URI> userInfoUriByIssuer,
       final OidcUserInfoClient userInfoClient,
       final MeterRegistry meterRegistry) {

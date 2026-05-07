@@ -25,7 +25,7 @@ class OidcUserInfoAugmentationConfigurationTest {
 
   @Test
   void oidcAuthenticationConfigurationExposesNonNullAugmentationByDefault() {
-    final var oidc = new OidcAuthenticationConfiguration();
+    final var oidc = new OidcConfiguration();
 
     assertThat(oidc.getUserInfoAugmentation()).isNotNull();
     assertThat(oidc.getUserInfoAugmentation().isEnabled()).isFalse();

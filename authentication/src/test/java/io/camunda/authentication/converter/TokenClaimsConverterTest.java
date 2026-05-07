@@ -20,8 +20,8 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.AuthenticationConfiguration;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -61,7 +61,7 @@ public class TokenClaimsConverterTest {
     @Mock private GroupServices groupServices;
     @Mock private SecurityConfiguration securityConfiguration;
     @Mock private AuthenticationConfiguration authenticationConfiguration;
-    @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
+    @Mock private OidcConfiguration oidcAuthenticationConfiguration;
 
     @BeforeEach
     public void setUp() throws Exception {
@@ -168,7 +168,7 @@ public class TokenClaimsConverterTest {
     @Mock private GroupServices groupServices;
     @Mock private SecurityConfiguration securityConfiguration;
     @Mock private AuthenticationConfiguration authenticationConfiguration;
-    @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
+    @Mock private OidcConfiguration oidcAuthenticationConfiguration;
 
     @BeforeEach
     public void setUp() throws Exception {
@@ -400,7 +400,7 @@ public class TokenClaimsConverterTest {
     @Mock private GroupServices groupServices;
     @Mock private SecurityConfiguration securityConfiguration;
     @Mock private AuthenticationConfiguration authenticationConfiguration;
-    @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
+    @Mock private OidcConfiguration oidcAuthenticationConfiguration;
 
     @BeforeEach
     public void setUp() throws Exception {

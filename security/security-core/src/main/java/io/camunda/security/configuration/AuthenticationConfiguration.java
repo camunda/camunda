@@ -8,6 +8,7 @@
 package io.camunda.security.configuration;
 
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 
 public class AuthenticationConfiguration {
   public static final AuthenticationMethod DEFAULT_METHOD = AuthenticationMethod.BASIC;
@@ -15,8 +16,7 @@ public class AuthenticationConfiguration {
 
   private AuthenticationMethod method = DEFAULT_METHOD;
   private String authenticationRefreshInterval = "PT30S";
-  private OidcAuthenticationConfiguration oidcAuthenticationConfiguration =
-      new OidcAuthenticationConfiguration();
+  private OidcConfiguration oidcAuthenticationConfiguration = new OidcConfiguration();
   private boolean unprotectedApi = DEFAULT_UNPROTECTED_API;
 
   private ProvidersConfiguration providers;
@@ -45,11 +45,11 @@ public class AuthenticationConfiguration {
     this.authenticationRefreshInterval = authenticationRefreshInterval;
   }
 
-  public OidcAuthenticationConfiguration getOidc() {
+  public OidcConfiguration getOidc() {
     return oidcAuthenticationConfiguration;
   }
 
-  public void setOidc(final OidcAuthenticationConfiguration configuration) {
+  public void setOidc(final OidcConfiguration configuration) {
     oidcAuthenticationConfiguration = configuration;
   }
 

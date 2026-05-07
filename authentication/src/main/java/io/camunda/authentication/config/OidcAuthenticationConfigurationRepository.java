@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.config;
 
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.ProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.HashMap;
@@ -18,16 +18,16 @@ import java.util.Optional;
 public class OidcAuthenticationConfigurationRepository {
 
   public static final String REGISTRATION_ID = "oidc";
-  private final Map<String, OidcAuthenticationConfiguration> providers;
+  private final Map<String, OidcConfiguration> providers;
 
   public OidcAuthenticationConfigurationRepository(
       final SecurityConfiguration securityConfiguration) {
     providers = initializeProviders(securityConfiguration);
   }
 
-  protected Map<String, OidcAuthenticationConfiguration> initializeProviders(
+  protected Map<String, OidcConfiguration> initializeProviders(
       final SecurityConfiguration securityConfiguration) {
-    final var providers = new HashMap<String, OidcAuthenticationConfiguration>();
+    final var providers = new HashMap<String, OidcConfiguration>();
     final var authenticationConfiguration = securityConfiguration.getAuthentication();
 
     Optional.ofNullable(authenticationConfiguration.getOidc())
@@ -41,12 +41,11 @@ public class OidcAuthenticationConfigurationRepository {
     return providers;
   }
 
-  public OidcAuthenticationConfiguration getOidcAuthenticationConfigurationById(
-      final String registrationId) {
+  public OidcConfiguration getOidcAuthenticationConfigurationById(final String registrationId) {
     return providers.get(registrationId);
   }
 
-  public Map<String, OidcAuthenticationConfiguration> getOidcAuthenticationConfigurations() {
+  public Map<String, OidcConfiguration> getOidcAuthenticationConfigurations() {
     return providers;
   }
 }

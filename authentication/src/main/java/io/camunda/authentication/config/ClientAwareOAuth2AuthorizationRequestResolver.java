@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.config;
 
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +29,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  * ID extracted from the request URI.
  *
  * <p>This resolver supports customization of the authorization request per client, such as
- * including additional parameters defined in {@link OidcAuthenticationConfiguration}.
+ * including additional parameters defined in {@link OidcConfiguration}.
  *
  * <p>Expected request pattern: {@code /oauth2/authorization/{registrationId}}
  *
@@ -155,7 +155,7 @@ public class ClientAwareOAuth2AuthorizationRequestResolver
   }
 
   protected Consumer<Builder> createAuthorizationRequestCustomizer(
-      final OidcAuthenticationConfiguration oidcProvider) {
+      final OidcConfiguration oidcProvider) {
     return customizer -> {
       final var additionalParameters = oidcProvider.getAuthorizeRequest().getAdditionalParameters();
       if (additionalParameters != null && !additionalParameters.isEmpty()) {

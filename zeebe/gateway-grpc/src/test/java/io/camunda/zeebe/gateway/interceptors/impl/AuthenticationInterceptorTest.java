@@ -21,7 +21,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.BasicAuth;
@@ -187,7 +187,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
     oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
@@ -218,7 +218,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("sub");
     oidcAuthenticationConfiguration.setClientIdClaim("client_id");
 
@@ -255,7 +255,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
     oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
@@ -291,7 +291,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
     oidcAuthenticationConfiguration.setClientIdClaim("client_id");
 
@@ -335,7 +335,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
     oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
@@ -370,7 +370,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
     oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
@@ -404,7 +404,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
     oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
@@ -440,7 +440,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
     oidcAuthenticationConfiguration.setClientIdClaim("application_id");
     oidcAuthenticationConfiguration.setPreferUsernameClaim(true);
@@ -477,7 +477,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
     oidcAuthenticationConfiguration.setClientIdClaim("missing_claim");
 
@@ -514,7 +514,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
     oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
@@ -551,7 +551,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
     oidcAuthenticationConfiguration.setClientIdClaim("application_id");
     oidcAuthenticationConfiguration.setGroupsClaim("$.groups[*]");
@@ -585,7 +585,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcAuthenticationConfiguration = new OidcConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
     oidcAuthenticationConfiguration.setClientIdClaim("client_id");
     oidcAuthenticationConfiguration.setGroupsClaim("$.groups[*]");

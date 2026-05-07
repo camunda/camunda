@@ -16,7 +16,7 @@ import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +110,7 @@ public class BrokerRequestAuthorizationConverterTest {
     final var groups = List.of("group1", "group2");
     final var authentication = CamundaAuthentication.of(b -> b.groupIds(groups));
 
-    final var oidcConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcConfiguration = new OidcConfiguration();
     oidcConfiguration.setGroupsClaim("groups");
     final var securityConfiguration = new SecurityConfiguration();
     securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
@@ -132,7 +132,7 @@ public class BrokerRequestAuthorizationConverterTest {
     final var groups = List.of("group1", "group2");
     final var authentication = CamundaAuthentication.of(b -> b.groupIds(groups));
 
-    final var oidcConfiguration = new OidcAuthenticationConfiguration();
+    final var oidcConfiguration = new OidcConfiguration();
     oidcConfiguration.setGroupsClaim("groups");
     final var securityConfiguration = new SecurityConfiguration();
     securityConfiguration.getAuthentication().setOidc(oidcConfiguration);

@@ -13,7 +13,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
 import java.util.List;
@@ -28,7 +28,7 @@ class AuthenticationHandlerOidcUserInfoTest {
   void usesClaimsProviderResultForGroupsAndPrincipal() throws Exception {
     final var jwtDecoder = mock(JwtDecoder.class);
     final var claimsProvider = mock(OidcClaimsProvider.class);
-    final var oidc = new OidcAuthenticationConfiguration();
+    final var oidc = new OidcConfiguration();
     oidc.setUsernameClaim("sub");
     oidc.setGroupsClaim("groups");
 
@@ -53,7 +53,7 @@ class AuthenticationHandlerOidcUserInfoTest {
   void failsClosedWhenClaimsProviderThrows() {
     final var jwtDecoder = mock(JwtDecoder.class);
     final var claimsProvider = mock(OidcClaimsProvider.class);
-    final var oidc = new OidcAuthenticationConfiguration();
+    final var oidc = new OidcConfiguration();
     oidc.setUsernameClaim("sub");
 
     final var jwt =
@@ -76,7 +76,7 @@ class AuthenticationHandlerOidcUserInfoTest {
     // .withCause(e), no upstream error strings).
     final var jwtDecoder = mock(JwtDecoder.class);
     final var claimsProvider = mock(OidcClaimsProvider.class);
-    final var oidc = new OidcAuthenticationConfiguration();
+    final var oidc = new OidcConfiguration();
     oidc.setUsernameClaim("sub");
 
     // (1) claims-provider failure with a URL-bearing cause
