@@ -7,10 +7,11 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.security.api.model.config.AssertionConfiguration;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidDigestAlgorithm;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidEncoding;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidSource;
 import io.camunda.security.auth.OidcGroupsLoader;
-import io.camunda.security.configuration.AssertionConfiguration.KidDigestAlgorithm;
-import io.camunda.security.configuration.AssertionConfiguration.KidEncoding;
-import io.camunda.security.configuration.AssertionConfiguration.KidSource;
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.Arrays;
