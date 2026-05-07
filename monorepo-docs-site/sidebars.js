@@ -127,6 +127,7 @@ const sidebars = {
             'frontend/development-process/creating-a-new-page',
             'frontend/development-process/extending-an-existing-page',
             'frontend/development-process/working-on-large-feature',
+            'frontend/development-process/generating-svg-components',
           ],
         },
         'frontend/testing',
