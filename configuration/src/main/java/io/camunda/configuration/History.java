@@ -29,7 +29,7 @@ public class History {
   }
 
   public boolean isProcessInstanceEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix + ".process-instance-enabled",
         processInstanceEnabled,
         Boolean.class,

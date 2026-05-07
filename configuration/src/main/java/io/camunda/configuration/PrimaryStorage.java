@@ -38,7 +38,7 @@ public class PrimaryStorage {
   private RocksDb rocksDb = new RocksDb();
 
   public String getDirectory() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".directory",
         directory,
         String.class,
@@ -51,7 +51,7 @@ public class PrimaryStorage {
   }
 
   public String getRuntimeDirectory() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".runtime-directory",
         runtimeDirectory,
         String.class,

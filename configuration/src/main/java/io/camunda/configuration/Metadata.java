@@ -37,7 +37,7 @@ public class Metadata {
   private int gossipFanout = ClusterConfigurationGossiperConfig.DEFAULT_GOSSIP_FANOUT;
 
   public Duration getSyncDelay() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".sync-delay", syncDelay, Duration.class, SUPPORTED, LEGACY_SYNC_DELAY_PROPERTIES);
   }
 
@@ -46,7 +46,7 @@ public class Metadata {
   }
 
   public Duration getSyncRequestTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".sync-request-timeout",
         syncRequestTimeout,
         Duration.class,
@@ -59,7 +59,7 @@ public class Metadata {
   }
 
   public int getGossipFanout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".gossip-fanout",
         gossipFanout,
         Integer.class,

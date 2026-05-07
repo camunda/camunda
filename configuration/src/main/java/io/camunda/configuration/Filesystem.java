@@ -19,7 +19,7 @@ public class Filesystem {
   private String basePath;
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".base-path",
         basePath,
         String.class,

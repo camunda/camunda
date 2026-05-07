@@ -45,7 +45,7 @@ public class Ssl {
   private KeyStore keyStore = new KeyStore();
 
   public boolean isEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enabled",
         enabled,
         Boolean.class,
@@ -58,7 +58,7 @@ public class Ssl {
   }
 
   public File getCertificate() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".certificate",
         certificate,
         File.class,
@@ -71,7 +71,7 @@ public class Ssl {
   }
 
   public File getCertificatePrivateKey() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".certificate-private-key",
         certificatePrivateKey,
         File.class,
