@@ -39,6 +39,8 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
@@ -589,6 +591,163 @@ final class ManagedScheduledTaskTest {
 
     // then
     verify(scheduleService, atLeastOnce()).runAt(eq(FIXED_NOW_MS + 100), any(Task.class));
+  }
+
+  @Test
+  void shouldExposeSavedCursorOnNextRunAfterYieldNow() {
+    // given — a task that yields with a String cursor on the first run, then asserts the
+    // runtime hands the same cursor back on the second run.
+    final List<String> seenCursors = new ArrayList<>();
+    final boolean[] firstRun = {true};
+    final ScheduledTask<String> task =
+        new ScheduledTask<>() {
+          @Override
+          public String name() {
+            return "cursor-yield";
+          }
+
+          @Override
+          public Result run(final TaskContext<String> ctx) {
+            seenCursors.add(ctx.resumeCursor());
+            if (firstRun[0]) {
+              firstRun[0] = false;
+              return ctx.result().yieldNow("saved");
+            }
+            return ctx.result().idle();
+          }
+        };
+    final var managed =
+        new ManagedScheduledTask<>(
+            task,
+            Schedule.fixedRate(Duration.ofSeconds(30)).withYieldBudget(Duration.ofMillis(50)),
+            interPartitionSender,
+            new SimpleMeterRegistry());
+    managed.onRecovered(context);
+
+    // when — run twice
+    managed.execute(mock(TaskResultBuilder.class));
+    managed.execute(mock(TaskResultBuilder.class));
+
+    // then — first run saw null (no cursor yet), second run saw the saved cursor
+    assertThat(seenCursors).containsExactly(null, "saved");
+  }
+
+  @Test
+  void shouldClearSavedCursorAfterIdle() {
+    // given — first run yields with a cursor, second run terminates with idle, third run should
+    // see a null cursor again.
+    final List<String> seenCursors = new ArrayList<>();
+    final int[] runIndex = {0};
+    final ScheduledTask<String> task =
+        new ScheduledTask<>() {
+          @Override
+          public String name() {
+            return "cursor-clear-on-idle";
+          }
+
+          @Override
+          public Result run(final TaskContext<String> ctx) {
+            seenCursors.add(ctx.resumeCursor());
+            return switch (runIndex[0]++) {
+              case 0 -> ctx.result().yieldNow("saved");
+              case 1 -> ctx.result().idle();
+              default -> ctx.result().idle();
+            };
+          }
+        };
+    final var managed =
+        new ManagedScheduledTask<>(
+            task,
+            Schedule.fixedRate(Duration.ofSeconds(30)).withYieldBudget(Duration.ofMillis(50)),
+            interPartitionSender,
+            new SimpleMeterRegistry());
+    managed.onRecovered(context);
+
+    // when — run three times
+    managed.execute(mock(TaskResultBuilder.class));
+    managed.execute(mock(TaskResultBuilder.class));
+    managed.execute(mock(TaskResultBuilder.class));
+
+    // then — null, "saved" (carried from yield), null (cleared by idle)
+    assertThat(seenCursors).containsExactly(null, "saved", null);
+  }
+
+  @Test
+  void shouldClearSavedCursorAfterAwaitDueAt() {
+    // given
+    final List<String> seenCursors = new ArrayList<>();
+    final int[] runIndex = {0};
+    final ScheduledTask<String> task =
+        new ScheduledTask<>() {
+          @Override
+          public String name() {
+            return "cursor-clear-on-await";
+          }
+
+          @Override
+          public Result run(final TaskContext<String> ctx) {
+            seenCursors.add(ctx.resumeCursor());
+            return switch (runIndex[0]++) {
+              case 0 -> ctx.result().yieldNow("saved");
+              case 1 -> ctx.result().awaitDueAt(FIXED_NOW_MS + 60_000);
+              default -> ctx.result().idle();
+            };
+          }
+        };
+    final var managed =
+        new ManagedScheduledTask<>(
+            task,
+            Schedule.fixedRate(Duration.ofSeconds(30)).withYieldBudget(Duration.ofMillis(50)),
+            interPartitionSender,
+            new SimpleMeterRegistry());
+    managed.onRecovered(context);
+
+    // when — run three times
+    managed.execute(mock(TaskResultBuilder.class));
+    managed.execute(mock(TaskResultBuilder.class));
+    managed.execute(mock(TaskResultBuilder.class));
+
+    // then — cursor cleared by awaitDueAt
+    assertThat(seenCursors).containsExactly(null, "saved", null);
+  }
+
+  @Test
+  void shouldClearSavedCursorOnPaused() {
+    // given — yield with a cursor, then pause+resume; next run should see null.
+    final List<String> seenCursors = new ArrayList<>();
+    final int[] runIndex = {0};
+    final ScheduledTask<String> task =
+        new ScheduledTask<>() {
+          @Override
+          public String name() {
+            return "cursor-clear-on-pause";
+          }
+
+          @Override
+          public Result run(final TaskContext<String> ctx) {
+            seenCursors.add(ctx.resumeCursor());
+            return switch (runIndex[0]++) {
+              case 0 -> ctx.result().yieldNow("saved");
+              default -> ctx.result().idle();
+            };
+          }
+        };
+    final var managed =
+        new ManagedScheduledTask<>(
+            task,
+            Schedule.fixedRate(Duration.ofSeconds(30)).withYieldBudget(Duration.ofMillis(50)),
+            interPartitionSender,
+            new SimpleMeterRegistry());
+    managed.onRecovered(context);
+    managed.execute(mock(TaskResultBuilder.class)); // first run: yields with "saved"
+
+    // when — pause clears the cursor; resume re-arms; second run starts fresh
+    managed.onPaused();
+    managed.onResumed();
+    managed.execute(mock(TaskResultBuilder.class));
+
+    // then
+    assertThat(seenCursors).containsExactly(null, null);
   }
 
   // ---------------------------------------------------------------------------
