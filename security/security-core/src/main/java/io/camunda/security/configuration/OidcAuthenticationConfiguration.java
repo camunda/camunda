@@ -11,6 +11,8 @@ import io.camunda.security.api.model.config.AssertionConfiguration;
 import io.camunda.security.api.model.config.AssertionConfiguration.KidDigestAlgorithm;
 import io.camunda.security.api.model.config.AssertionConfiguration.KidEncoding;
 import io.camunda.security.api.model.config.AssertionConfiguration.KidSource;
+import io.camunda.security.api.model.config.oidc.AuthorizeRequestConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcUserInfoAugmentationConfiguration;
 import io.camunda.security.auth.OidcGroupsLoader;
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;

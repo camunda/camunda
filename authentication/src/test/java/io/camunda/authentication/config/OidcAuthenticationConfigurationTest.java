@@ -13,7 +13,7 @@ import io.camunda.security.api.model.config.AssertionConfiguration;
 import io.camunda.security.api.model.config.AssertionConfiguration.KidDigestAlgorithm;
 import io.camunda.security.api.model.config.AssertionConfiguration.KidEncoding;
 import io.camunda.security.api.model.config.KeystoreConfiguration;
-import io.camunda.security.configuration.AuthorizeRequestConfiguration;
+import io.camunda.security.api.model.config.oidc.AuthorizeRequestConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import java.util.ArrayList;
 import java.util.List;
