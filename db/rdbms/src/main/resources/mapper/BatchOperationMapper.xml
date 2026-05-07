@@ -125,48 +125,51 @@
   <insert id="createIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
     databaseId="mssql">
-    MERGE ${prefix}BATCH_OPERATION AS target
-    USING (SELECT #{batchOperationKey} AS BATCH_OPERATION_KEY,
-                  #{state} AS STATE,
-                  #{operationType} AS OPERATION_TYPE,
-                  #{startDate, jdbcType=TIMESTAMP} AS START_DATE,
-                  #{endDate, jdbcType=TIMESTAMP} AS END_DATE,
-                  #{actorType} AS ACTOR_TYPE,
-                  #{actorId} AS ACTOR_ID,
-                  #{operationsTotalCount} AS OPERATIONS_TOTAL_COUNT,
-                  #{operationsFailedCount} AS OPERATIONS_FAILED_COUNT,
-                  #{operationsCompletedCount} AS OPERATIONS_COMPLETED_COUNT) AS source
-    ON (target.BATCH_OPERATION_KEY = source.BATCH_OPERATION_KEY)
-    WHEN NOT MATCHED THEN
-      INSERT (BATCH_OPERATION_KEY, STATE, OPERATION_TYPE, START_DATE, END_DATE, ACTOR_TYPE, ACTOR_ID,
-              OPERATIONS_TOTAL_COUNT, OPERATIONS_FAILED_COUNT, OPERATIONS_COMPLETED_COUNT)
-      VALUES (source.BATCH_OPERATION_KEY, source.STATE, source.OPERATION_TYPE, source.START_DATE,
-              source.END_DATE, source.ACTOR_TYPE, source.ACTOR_ID, source.OPERATIONS_TOTAL_COUNT,
-              source.OPERATIONS_FAILED_COUNT, source.OPERATIONS_COMPLETED_COUNT);
+    BEGIN TRY
+      INSERT INTO ${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY,
+      STATE,
+      OPERATION_TYPE,
+      START_DATE,
+      END_DATE,
+      ACTOR_TYPE,
+      ACTOR_ID,
+      OPERATIONS_TOTAL_COUNT,
+      OPERATIONS_FAILED_COUNT,
+      OPERATIONS_COMPLETED_COUNT)
+      VALUES (#{batchOperationKey},
+      #{state},
+      #{operationType},
+      #{startDate, jdbcType=TIMESTAMP},
+      #{endDate, jdbcType=TIMESTAMP},
+      #{actorType},
+      #{actorId},
+      #{operationsTotalCount},
+      #{operationsFailedCount},
+      #{operationsCompletedCount});
+    END TRY
+    BEGIN CATCH
+      IF ERROR_NUMBER() != 2627 -- Violation of primary key (duplicate key)
+        THROW;
+    END CATCH
   </insert>
 
   <insert id="createIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
     databaseId="oracle">
-    MERGE INTO ${prefix}BATCH_OPERATION target
-    USING (SELECT #{batchOperationKey} AS BATCH_OPERATION_KEY,
-                  #{state} AS STATE,
-                  #{operationType} AS OPERATION_TYPE,
-                  #{startDate} AS START_DATE,
-                  #{endDate} AS END_DATE,
-                  #{actorType} AS ACTOR_TYPE,
-                  #{actorId} AS ACTOR_ID,
-                  #{operationsTotalCount} AS OPERATIONS_TOTAL_COUNT,
-                  #{operationsFailedCount} AS OPERATIONS_FAILED_COUNT,
-                  #{operationsCompletedCount} AS OPERATIONS_COMPLETED_COUNT
-           FROM dual) source
-    ON (target.BATCH_OPERATION_KEY = source.BATCH_OPERATION_KEY)
-    WHEN NOT MATCHED THEN
-    INSERT (BATCH_OPERATION_KEY, STATE, OPERATION_TYPE, START_DATE, END_DATE, ACTOR_TYPE, ACTOR_ID,
+    INSERT /*+ IGNORE_ROW_ON_DUPKEY_INDEX(${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY)) */
+    INTO ${prefix}BATCH_OPERATION
+    (BATCH_OPERATION_KEY, STATE, OPERATION_TYPE, START_DATE, END_DATE, ACTOR_TYPE, ACTOR_ID,
     OPERATIONS_TOTAL_COUNT, OPERATIONS_FAILED_COUNT, OPERATIONS_COMPLETED_COUNT)
-    VALUES (source.BATCH_OPERATION_KEY, source.STATE, source.OPERATION_TYPE, source.START_DATE,
-    source.END_DATE, source.ACTOR_TYPE, source.ACTOR_ID, source.OPERATIONS_TOTAL_COUNT,
-    source.OPERATIONS_FAILED_COUNT, source.OPERATIONS_COMPLETED_COUNT)
+    VALUES (#{batchOperationKey},
+    #{state},
+    #{operationType},
+    #{startDate},
+    #{endDate},
+    #{actorType},
+    #{actorId},
+    #{operationsTotalCount},
+    #{operationsFailedCount},
+    #{operationsCompletedCount})
   </insert>
 
   <insert id="createIfNotExists"
