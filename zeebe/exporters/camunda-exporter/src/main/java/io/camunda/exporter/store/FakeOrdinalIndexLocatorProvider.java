@@ -7,10 +7,12 @@
  */
 package io.camunda.exporter.store;
 
+import com.google.common.base.Strings;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.AuditLogProcessInstanceRelated;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
@@ -25,7 +27,7 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
       100 * 60 * 60 * APPROX_IDS_BETWEEN_ROOT_PROCESS_INSTANCES;
   private final Set<String> ordinalBasedIndexes;
   private final NoopIndexLocator noopIndexLocator = new NoopIndexLocator();
-  private final Set<Integer> ordinals = ConcurrentHashMap.newKeySet();
+  private final Map<Integer, FixedOrdinalIndexLocator> ordinals = new ConcurrentHashMap<>();
 
   public FakeOrdinalIndexLocatorProvider(final Set<String> ordinalBasedIndexes) {
     this.ordinalBasedIndexes = ordinalBasedIndexes;
@@ -38,10 +40,16 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
       if (rootProcessInstanceKey > 0) {
         final long key = Protocol.decodeKeyInPartition(rootProcessInstanceKey);
         final int ordinal = (int) (key / IDS_PER_ORDINAL);
-        if (!ordinals.contains(ordinal) && ordinals.add(ordinal)) {
-          LOGGER.info("New ordinal started: {} ({} ordinals total)", ordinal, ordinals.size());
+        var locator = ordinals.get(ordinal);
+        if (locator == null) {
+          final var newLocator = new FixedOrdinalIndexLocator(ordinal);
+          locator = ordinals.putIfAbsent(ordinal, newLocator);
+          if (locator == null) {
+            LOGGER.info("New ordinal started: {} ({} ordinals total)", ordinal, ordinals.size());
+            locator = newLocator;
+          }
         }
-        return new FixedOrdinalIndexLocator(ordinal);
+        return locator;
       }
     }
     return noopIndexLocator;
@@ -57,9 +65,11 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
 
   class FixedOrdinalIndexLocator implements IndexLocator {
     private final int ordinal;
+    private final String suffix;
 
     public FixedOrdinalIndexLocator(final int ordinal) {
       this.ordinal = ordinal;
+      suffix = "ord" + Strings.padStart(String.valueOf(ordinal), 5, '0');
     }
 
     @Override
@@ -67,7 +77,8 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
       if (!ordinalBasedIndexes.contains(baseIndexName)) {
         return baseIndexName;
       }
-      return baseIndexName + "ord%05d".formatted(ordinal);
+
+      return baseIndexName + suffix;
     }
   }
 }
