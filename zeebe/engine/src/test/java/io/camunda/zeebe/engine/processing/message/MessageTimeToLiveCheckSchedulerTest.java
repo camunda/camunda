@@ -34,7 +34,7 @@ final class MessageTimeToLiveCheckSchedulerTest {
     final Result result = scheduler.run(ctx);
 
     // then
-    assertThat(result.decision()).isEqualTo(Decision.IDLE);
+    assertThat(result.decision()).isEqualTo(Decision.Idle.INSTANCE);
     assertThat(result.appendedCommands()).isEmpty();
   }
 
@@ -50,7 +50,7 @@ final class MessageTimeToLiveCheckSchedulerTest {
     final Result result = scheduler.run(ctx);
 
     // then
-    assertThat(result.decision()).isEqualTo(Decision.IDLE);
+    assertThat(result.decision()).isEqualTo(Decision.Idle.INSTANCE);
     assertThat(result.appendedCommands()).hasSize(1);
     assertThat(result.appendedCommands().get(0).intent()).isEqualTo(MessageBatchIntent.EXPIRE);
   }

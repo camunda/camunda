@@ -51,7 +51,7 @@ final class DueDateTimerCheckSchedulerTest {
     final Result result = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
 
     // then
-    assertThat(result.decision()).isEqualTo(Decision.IDLE);
+    assertThat(result.decision()).isEqualTo(Decision.Idle.INSTANCE);
   }
 
   @Test

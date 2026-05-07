@@ -174,12 +174,12 @@ public final class Result { /* immutable; package-private fields read by Managed
 The runtime owns the cursor. Lifecycle is implicit, tied to which terminal
 the task calls:
 
-| Terminal           | Cursor effect                            |
-|--------------------|------------------------------------------|
-| `idle()`           | cleared                                  |
-| `awaitDueAt(ts)`   | cleared                                  |
-| `yieldNow(cursor)` | stored (may be `null` for `<Void>`)      |
-| `yieldNow()`       | stored as `null`                         |
+|      Terminal      |            Cursor effect            |
+|--------------------|-------------------------------------|
+| `idle()`           | cleared                             |
+| `awaitDueAt(ts)`   | cleared                             |
+| `yieldNow(cursor)` | stored (may be `null` for `<Void>`) |
+| `yieldNow()`       | stored as `null`                    |
 
 Stream processor lifecycle events:
 
@@ -230,13 +230,13 @@ persistence across instance recreation.
 
 ## Task migrations
 
-| Task                                | `<C>`               | Notes                                                                                              |
-|-------------------------------------|---------------------|----------------------------------------------------------------------------------------------------|
-| `DueDateTimerCheckScheduler`        | `Void`              | Re-scans from start each run; no continuation.                                                     |
-| `JobBackoffCheckScheduler`          | `Void`              | Returns `awaitDueAt` / `idle`; no mid-iteration yield.                                             |
-| `MessageTimeToLiveCheckScheduler`   | `Void`              | Single-shot expire-check.                                                                          |
-| `CommandRedistributionScheduler`    | `Void`              | `retryCyclesPerDistribution` is accumulated state across runs (not a resume cursor); stays a field. |
-| `JobTimeoutCheckScheduler`          | `JobTimeoutCursor`  | New record bundling `(executionTimestamp, DeadlineIndex resumeFrom)`. Instance fields are deleted. |
+|               Task                |       `<C>`        |                                                Notes                                                |
+|-----------------------------------|--------------------|-----------------------------------------------------------------------------------------------------|
+| `DueDateTimerCheckScheduler`      | `Void`             | Re-scans from start each run; no continuation.                                                      |
+| `JobBackoffCheckScheduler`        | `Void`             | Returns `awaitDueAt` / `idle`; no mid-iteration yield.                                              |
+| `MessageTimeToLiveCheckScheduler` | `Void`             | Single-shot expire-check.                                                                           |
+| `CommandRedistributionScheduler`  | `Void`             | `retryCyclesPerDistribution` is accumulated state across runs (not a resume cursor); stays a field. |
+| `JobTimeoutCheckScheduler`        | `JobTimeoutCursor` | New record bundling `(executionTimestamp, DeadlineIndex resumeFrom)`. Instance fields are deleted.  |
 
 ### Mechanical translation pattern (`DueDateTimerCheckScheduler`)
 
@@ -329,3 +329,4 @@ fields are deleted.
   preserve the "all entries within one continuation evaluated against one
   `now`" guarantee. The migration sketch above does this; covered by the
   existing test that asserts the timestamp is stable across yields.
+

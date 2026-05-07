@@ -156,7 +156,7 @@ public final class ManagedScheduledTask<C> implements StreamProcessorLifecycleAw
           task.name(),
           e.toString(),
           e);
-      decision = Decision.IDLE;
+      decision = Decision.Idle.INSTANCE;
     }
 
     final long elapsed = clock.millis() - startMs;
@@ -354,7 +354,7 @@ public final class ManagedScheduledTask<C> implements StreamProcessorLifecycleAw
 
     @Override
     public Result idle() {
-      return new Result(appendedCommands, interPartitionSends, Decision.IDLE);
+      return new Result(appendedCommands, interPartitionSends, Decision.Idle.INSTANCE);
     }
 
     @Override

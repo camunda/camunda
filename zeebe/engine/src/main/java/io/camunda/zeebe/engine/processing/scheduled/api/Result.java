@@ -141,8 +141,6 @@ public final class Result {
 
   /** What the task tells the runtime about when it should fire next. */
   public sealed interface Decision {
-    /** Done; runtime falls back to its configured interval (or stays idle for on-demand). */
-    Idle IDLE = new Idle();
 
     /** No more due entries until this absolute timestamp (millis since epoch). */
     record AwaitDueAt(long timestampMs) implements Decision {}
@@ -153,7 +151,10 @@ public final class Result {
      */
     record YieldNow(Object cursor) implements Decision {}
 
-    record Idle() implements Decision {}
+    /** Done; runtime falls back to its configured interval (or stays idle for on-demand). */
+    record Idle() implements Decision {
+      public static final Idle INSTANCE = new Idle();
+    }
   }
 
   /** A local command appended during a run. */

@@ -36,7 +36,7 @@ final class JobBackoffCheckSchedulerTest {
     final Result result = scheduler.run(FakeTaskContext.create().withClockMillis(123L));
 
     // then
-    assertThat(result.decision()).isEqualTo(Decision.IDLE);
+    assertThat(result.decision()).isEqualTo(Decision.Idle.INSTANCE);
   }
 
   @Test

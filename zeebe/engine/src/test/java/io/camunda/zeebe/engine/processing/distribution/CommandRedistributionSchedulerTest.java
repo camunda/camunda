@@ -47,7 +47,7 @@ final class CommandRedistributionSchedulerTest {
     final Result result = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
 
     // then
-    assertThat(result.decision()).isEqualTo(Decision.IDLE);
+    assertThat(result.decision()).isEqualTo(Decision.Idle.INSTANCE);
     verify(distributionBehavior, never()).onScheduledRetry(eq(DISTRIBUTION_KEY), any());
   }
 

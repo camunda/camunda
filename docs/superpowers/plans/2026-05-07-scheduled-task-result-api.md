@@ -1151,9 +1151,11 @@ public final class MessageTimeToLiveCheckScheduler implements ScheduledTask<Void
 - [ ] **Step 3: Run the test class**
 
 Run:
+
 ```bash
 ./mvnw verify -pl zeebe/engine -Dtest=MessageTimeToLiveCheckSchedulerTest -DskipTests=false -DskipITs -Dquickly -T1C
 ```
+
 Expected: 2 tests pass. The rest of the module still won't compile (other tasks pending), so test-compile of the broader test sources may emit unrelated errors — Surefire still runs the requested class. If the requested test is reported as not found, it means test-compile failed broadly; in that case it's safer to verify with a JUnit 5 explicit selector after Task 9, when all tests compile.
 
 If the test is not reachable yet (broad test-compile fails), skip this verification and run it as part of the rolling green-up at Task 9.
@@ -2119,11 +2121,13 @@ public final class JobTimeoutCheckScheduler implements ScheduledTask<JobTimeoutC
 By this point all five task migrations are done; the module should compile (apart from `ManagedScheduledTaskTest` and the registration sites, both updated in subsequent tasks — but those haven't been touched yet so they still reference `Outcome` and the non-generic constructor). To verify the migrated tests in isolation:
 
 Run:
+
 ```bash
 ./mvnw verify -pl zeebe/engine \
   -Dtest='MessageTimeToLiveCheckSchedulerTest,JobBackoffCheckSchedulerTest,DueDateTimerCheckSchedulerTest,CommandRedistributionSchedulerTest,JobTimeoutCheckSchedulerTest' \
   -DskipTests=false -DskipITs -Dquickly -T1C
 ```
+
 Expected: 16 tests pass (3 + 3 + 5 + 3 + 4 — note `JobTimeoutCheckSchedulerTest` gains a 4th test for the first-run-uses-clock-now assertion). If test-compile fails because `ManagedScheduledTaskTest` or the registration sites still reference deleted types, that's expected — Surefire will refuse to run anything until test sources compile. In that case, proceed to Task 10 first; the scheduler tests will be exercised by the green-up at the end of Task 12.
 
 - [ ] **Step 5: Stage and commit**
@@ -2837,9 +2841,11 @@ final class ManagedScheduledTaskTest {
 - [ ] **Step 2: Run the test class**
 
 Run:
+
 ```bash
 ./mvnw verify -pl zeebe/engine -Dtest=ManagedScheduledTaskTest -DskipTests=false -DskipITs -Dquickly -T1C
 ```
+
 Expected: 22 tests pass (same count as before — pure translation, no new tests in this commit).
 
 - [ ] **Step 3: Stage and commit**
@@ -3041,17 +3047,21 @@ Append the following methods to `ManagedScheduledTaskTest` immediately before th
 - [ ] **Step 2: Run the test class**
 
 Run:
+
 ```bash
 ./mvnw verify -pl zeebe/engine -Dtest=ManagedScheduledTaskTest -DskipTests=false -DskipITs -Dquickly -T1C
 ```
+
 Expected: 26 tests pass (22 translated + 4 new cursor-lifecycle tests).
 
 - [ ] **Step 3: Run the full module's unit tests**
 
 Run:
+
 ```bash
 ./mvnw verify -pl zeebe/engine -DskipTests=false -DskipITs -Dquickly -T1C
 ```
+
 Expected: `BUILD SUCCESS`. All scheduler unit tests + the runtime test pass. The five integration-style assertion paths from the prior PoC are intact.
 
 If any unrelated test fails, investigate before continuing — do not skip or quarantine.
@@ -3082,9 +3092,11 @@ EOF
 - [ ] **Step 1: Format**
 
 Run:
+
 ```bash
 ./mvnw license:format spotless:apply -pl zeebe/engine -T1C
 ```
+
 Expected: `BUILD SUCCESS`. License headers normalized, Google Java Format applied. If this command introduces changes (formatting drift), the changes are mechanical and safe.
 
 - [ ] **Step 2: Inspect formatting changes (if any)**
@@ -3107,17 +3119,21 @@ EOF
 - [ ] **Step 3: Build + test the full module one more time**
 
 Run:
+
 ```bash
 ./mvnw install -pl zeebe/engine -am -DskipTests=false -DskipITs -Dquickly -T1C
 ```
+
 Expected: `BUILD SUCCESS`. The `-am` flag ensures upstream module changes (none expected) are picked up. This is the final pre-push gate.
 
 - [ ] **Step 4: Push the branch**
 
 Run:
+
 ```bash
 git push -u origin korthout-camunda-8991-scheduled-tasks-result-api
 ```
+
 Expected: branch created on origin, no force-push needed (this is a fresh branch).
 
 - [ ] **Step 5: Open the PR**

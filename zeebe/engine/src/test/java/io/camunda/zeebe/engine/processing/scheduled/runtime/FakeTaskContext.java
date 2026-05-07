@@ -139,7 +139,7 @@ public final class FakeTaskContext<C> implements TaskContext<C> {
 
     @Override
     public Result idle() {
-      return capture(Decision.IDLE);
+      return capture(Decision.Idle.INSTANCE);
     }
 
     @Override
