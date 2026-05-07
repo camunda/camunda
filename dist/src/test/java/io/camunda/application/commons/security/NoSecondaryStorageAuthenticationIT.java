@@ -17,8 +17,8 @@ import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.AuthenticationConfiguration;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +99,7 @@ public class NoSecondaryStorageAuthenticationIT {
     public SecurityConfiguration securityConfiguration() {
       final var config = new SecurityConfiguration();
       final var authConfig = new AuthenticationConfiguration();
-      final var oidcConfig = new OidcAuthenticationConfiguration();
+      final var oidcConfig = new OidcConfiguration();
       oidcConfig.setUsernameClaim("preferred_username");
       oidcConfig.setClientIdClaim("azp");
       oidcConfig.setGroupsClaim("groups");

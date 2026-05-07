@@ -16,9 +16,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.identity.webapp.controllers.AdminClientConfigController;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SaasConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -164,7 +164,7 @@ public class AdminClientConfigControllerTest {
     authentication.setMethod(authMethod);
 
     if (authMethod == AuthenticationMethod.OIDC) {
-      final var oidcConfig = new OidcAuthenticationConfiguration();
+      final var oidcConfig = new OidcConfiguration();
       oidcConfig.setGroupsClaim(groupsClaim);
       authentication.setOidc(oidcConfig);
     }
