@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
 import io.camunda.zeebe.engine.processing.scheduled.api.ScheduledTask;
 import io.camunda.zeebe.engine.processing.scheduled.api.TaskContext;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
  * <p>Lifecycle, scheduling cadence (default fallback interval 1 minute), error handling, logging
  * and metrics are provided by {@code ManagedScheduledTask}.
  */
-public final class MessageTimeToLiveCheckScheduler implements ScheduledTask {
+public final class MessageTimeToLiveCheckScheduler implements ScheduledTask<Void> {
 
   private final MessageState messageState;
 
@@ -35,13 +35,14 @@ public final class MessageTimeToLiveCheckScheduler implements ScheduledTask {
   }
 
   @Override
-  public Outcome run(final TaskContext ctx) {
+  public Result run(final TaskContext<Void> ctx) {
+    final Result.Builder<Void> result = ctx.result();
     final boolean hasExpired =
         messageState.visitMessagesWithDeadlineBeforeTimestamp(
             ctx.clock().millis(), null, (deadline, key) -> false);
     if (hasExpired) {
-      ctx.sink().append(MessageBatchIntent.EXPIRE, new MessageBatchRecord());
+      result.append(MessageBatchIntent.EXPIRE, new MessageBatchRecord());
     }
-    return Outcome.IDLE;
+    return result.idle();
   }
 }

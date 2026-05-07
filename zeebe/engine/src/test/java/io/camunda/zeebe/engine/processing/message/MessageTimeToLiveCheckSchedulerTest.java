@@ -13,7 +13,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result.Decision;
 import io.camunda.zeebe.engine.processing.scheduled.runtime.FakeTaskContext;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
@@ -30,11 +31,11 @@ final class MessageTimeToLiveCheckSchedulerTest {
     final var ctx = FakeTaskContext.create().withClockMillis(1_000L);
 
     // when
-    final Outcome outcome = scheduler.run(ctx);
+    final Result result = scheduler.run(ctx);
 
     // then
-    assertThat(outcome).isEqualTo(Outcome.IDLE);
-    assertThat(ctx.appended()).isEmpty();
+    assertThat(result.decision()).isEqualTo(Decision.IDLE);
+    assertThat(result.appendedCommands()).isEmpty();
   }
 
   @Test
@@ -46,11 +47,11 @@ final class MessageTimeToLiveCheckSchedulerTest {
     final var ctx = FakeTaskContext.create().withClockMillis(1_000L);
 
     // when
-    final Outcome outcome = scheduler.run(ctx);
+    final Result result = scheduler.run(ctx);
 
     // then
-    assertThat(outcome).isEqualTo(Outcome.IDLE);
-    assertThat(ctx.appended()).hasSize(1);
-    assertThat(ctx.appended().get(0).intent()).isEqualTo(MessageBatchIntent.EXPIRE);
+    assertThat(result.decision()).isEqualTo(Decision.IDLE);
+    assertThat(result.appendedCommands()).hasSize(1);
+    assertThat(result.appendedCommands().get(0).intent()).isEqualTo(MessageBatchIntent.EXPIRE);
   }
 }
