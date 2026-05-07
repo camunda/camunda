@@ -9,11 +9,11 @@ package io.camunda.authentication.config;
 
 import static io.camunda.security.configuration.OidcAuthenticationConfiguration.DEFAULT_CLOCK_SKEW;
 
-import io.camunda.security.configuration.AssertionConfiguration;
-import io.camunda.security.configuration.AssertionConfiguration.KidDigestAlgorithm;
-import io.camunda.security.configuration.AssertionConfiguration.KidEncoding;
+import io.camunda.security.api.model.config.AssertionConfiguration;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidDigestAlgorithm;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidEncoding;
+import io.camunda.security.api.model.config.KeystoreConfiguration;
 import io.camunda.security.configuration.AuthorizeRequestConfiguration;
-import io.camunda.security.configuration.KeystoreConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import java.util.ArrayList;
 import java.util.List;
