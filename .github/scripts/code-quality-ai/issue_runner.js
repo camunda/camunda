@@ -40,10 +40,9 @@ function severityLabel(finding) {
 }
 
 function buildIssueTitle(finding, token) {
-  const file = finding.file ?? "(unknown file)";
   const summary = (finding.message || finding.rule || "").split("\n")[0];
   const trimmed = summary.length > 80 ? summary.slice(0, 77) + "..." : summary;
-  return `[ai-triage] ${finding.rule}: ${trimmed} — ${file} [${token}]`;
+  return `[ai-triage] ${finding.rule}: ${trimmed} (${token})`;
 }
 
 function buildIssueBody(finding) {
@@ -79,11 +78,9 @@ function buildIssueBody(finding) {
       "",
       "<details>",
       "<summary>Original triage prompt sent to Claude</summary>",
-      "",
-      "```",
+      "<p>",
       finding.triage_prompt,
-      "```",
-      "",
+      "</p>",
       "</details>",
     );
   }
@@ -93,11 +90,9 @@ function buildIssueBody(finding) {
       "",
       "<details>",
       "<summary>Claude's triage response</summary>",
-      "",
-      "```json",
+      "<p>",
       finding.triage_response,
-      "```",
-      "",
+      "<p/>",
       "</details>",
     );
   }

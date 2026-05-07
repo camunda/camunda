@@ -19,9 +19,9 @@ on:
         description: "Dry run — don't actually open PRs / issues, just print what would be created"
         type: boolean
         default: false
-  push:
-    branches:
-      - feat/ai-code-quality-pipeline
+  #push:
+  #  branches:
+  #    - feat/ai-code-quality-pipeline
   # Nightly schedule disabled while the pipeline is under team review.
   # Re-enable by uncommenting the block below once the scaffold is approved.
   # schedule:
