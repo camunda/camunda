@@ -192,7 +192,7 @@ function parseArgs(argv) {
         args.maxIssues = parseInt(argv[++i], 10);
         break;
       case "--dry-run":
-        args.dryRun = true;
+        args.dryRun = argv[++i] !== "false";
         break;
       case "--repo":
         args.repo = argv[++i];
