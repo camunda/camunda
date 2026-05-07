@@ -15,6 +15,10 @@ on:
         description: "Max issues / PRs to open (per run)"
         type: number
         default: 5
+      dry_run:
+        description: "Dry run — don't actually open PRs / issues, just print what would be created"
+        type: boolean
+        default: true
   push:
     branches:
       - feat/ai-code-quality-pipeline
@@ -39,6 +43,10 @@ concurrency:
 env:
   CODE_MAAT_VERSION: "1.0.4"
   MAX_TICKETS: ${{ inputs.max_tickets || 5 }}
+  # Defaults to true (dry-run) on push events where no input is available.
+  # Boolean inputs come through as the strings 'true'/'false', so we
+  # compare against 'false' explicitly.
+  DRY_RUN_FLAG: ${{ inputs.dry_run == 'false' && '' || '--dry-run' }}
 
 jobs:
   hotspots:
@@ -231,7 +239,7 @@ jobs:
           retention-days: 30
 
   pr-track:
-    name: Open auto-fix PRs (dry-run)
+    name: Open auto-fix PRs
     needs: ai-triage
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -279,7 +287,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
-        run: node pr_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-prs ${{ env.MAX_TICKETS }} --dry-run --output pr-summary.json
+        run: node pr_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-prs ${{ env.MAX_TICKETS }} ${{ env.DRY_RUN_FLAG }} --output pr-summary.json
 
       - name: Upload PR-track summary
         if: always()
@@ -290,7 +298,7 @@ jobs:
           retention-days: 30
 
   issue-track:
-    name: Open auto-triage issues (dry-run)
+    name: Open auto-triage issues
     needs: ai-triage
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -320,7 +328,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: node issue_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-issues ${{ env.MAX_TICKETS }} --dry-run --output issue-summary.json
+        run: node issue_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-issues ${{ env.MAX_TICKETS }} ${{ env.DRY_RUN_FLAG }} --output issue-summary.json
 
       - name: Upload issue-track summary
         if: always()
