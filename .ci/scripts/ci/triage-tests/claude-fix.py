@@ -52,7 +52,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 # Reuse the same regex helpers from apply-timeout-fixes.py
 _TEST_OPEN_RE = re.compile(
     r"""(test(?:\.only)?\s*\(\s*)"""
-    r"""(['"])((?:(?!\2).|\\.)*)\2"""
+    r"""(['"`])((?:(?!\2).|\\.)*)\2"""
     r"""[\s\S]*?=>\s*(\{)""",
     re.MULTILINE,
 )

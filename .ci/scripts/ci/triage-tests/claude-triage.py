@@ -387,8 +387,8 @@ def main(
     all_by_label: dict[str, list[TestFailure]] = {}
     run_stats: dict[str, dict] = {}
 
-    for json_file in sorted(artifacts_dir.glob("*/results.json")):
-        label = json_file.parent.name
+    for json_file in sorted(artifacts_dir.rglob("results.json")):
+        label = json_file.relative_to(artifacts_dir).parts[0]
         try:
             report = json.load(json_file.open())
         except Exception as exc:

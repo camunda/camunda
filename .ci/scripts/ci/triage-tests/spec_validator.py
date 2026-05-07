@@ -220,7 +220,7 @@ def _find_test_body(content: str, leaf_title: str) -> Optional[str]:
     """Extract the arrow-function body of the test with the given title."""
     escaped = re.escape(leaf_title)
     open_re = re.compile(
-        r"""test(?:\.only)?\s*\(\s*['"]""" + escaped + r"""['"]\s*,\s*async\s*\([^)]*\)\s*=>\s*\{""",
+        r"""test(?:\.only)?\s*\(\s*['"`]""" + escaped + r"""['"`]\s*,\s*async\s*\([^)]*\)\s*=>\s*\{""",
         re.DOTALL,
     )
     m = open_re.search(content)

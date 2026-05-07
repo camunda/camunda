@@ -41,7 +41,7 @@ set -euo pipefail
 
 REPO="camunda/camunda"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
 WORK_DIR="$(mktemp -d)"
 ARTIFACTS_DIR="${WORK_DIR}/artifacts"
 POST_TO_SLACK=false
@@ -103,7 +103,7 @@ for entry in "${RUNS[@]}"; do
   dest="${ARTIFACTS_DIR}/${label}"
 
   run_id=$(gh api \
-    "/repos/${REPO}/actions/workflows/${workflow}/runs?per_page=1&status=completed" \
+    "/repos/${REPO}/actions/workflows/${workflow}/runs?per_page=1&status=completed&event=schedule" \
     --jq '.workflow_runs[0].id // empty' 2>/dev/null) || true
 
   if [[ -z "$run_id" ]]; then

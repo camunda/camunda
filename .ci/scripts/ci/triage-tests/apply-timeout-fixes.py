@@ -66,9 +66,9 @@ from pathlib import Path
 # Anchoring on `=>\s*{` rather than the first `{` avoids matching the `{`
 # inside parameter destructuring (e.g. `async ({request, page}) => {`).
 _TEST_OPEN_RE = re.compile(
-    r"""(test(?:\.only)?\s*\(\s*)"""   # test( or test.only(
-    r"""(['"])((?:(?!\2).|\\.)*)\2"""  # 'title' or "title"
-    r"""[\s\S]*?=>\s*(\{)""",         # => {   (arrow function body opening)
+    r"""(test(?:\.only)?\s*\(\s*)"""    # test( or test.only(
+    r"""(['"`])((?:(?!\2).|\\.)*)\2"""  # 'title', "title", or `title`
+    r"""[\s\S]*?=>\s*(\{)""",          # => {   (arrow function body opening)
     re.MULTILINE,
 )
 
