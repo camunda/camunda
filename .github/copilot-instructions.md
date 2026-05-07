@@ -49,20 +49,26 @@ All builds use the Maven wrapper (`./mvnw`). Use `-T1C` (one thread per CPU core
 builds. Use `-T2` (two threads total) when running builds alongside other resource-intensive
 processes (e.g., an IDE, Docker containers, or other concurrent builds).
 
+Pass `-q` (quiet) by default when invoking Maven from an AI agent — only errors are shown, which
+keeps build progress noise out of the agent's context window. Verbose output bloats context and
+measurably degrades model performance ("context rot"); failures still surface with `-q` because
+errors are not suppressed. Drop `-q` only when actively debugging a build that succeeds but
+misbehaves.
+
 ### Module-scoped builds (preferred)
 
 ```bash
 # Build a module and its dependencies (recommended for monorepo work)
-./mvnw install -pl <module> -am -Dquickly -T1C
+./mvnw install -pl <module> -am -Dquickly -T1C -q
 
 # Build only a single module (requires dependencies to be already installed and unchanged)
-./mvnw install -pl <module> -Dquickly -T1C
+./mvnw install -pl <module> -Dquickly -T1C -q
 
 # Run a single test class in a module
-./mvnw verify -pl <module> -Dtest=MyTestClass -DskipTests=false -DskipITs -Dquickly
+./mvnw verify -pl <module> -Dtest=MyTestClass -DskipTests=false -DskipITs -Dquickly -q
 
 # Run a single integration test in a module
-./mvnw verify -pl <module> -Dit.test=MyIT -DskipTests=false -DskipUTs -Dquickly
+./mvnw verify -pl <module> -Dit.test=MyIT -DskipTests=false -DskipUTs -Dquickly -q
 ```
 
 Note: `-Dquickly` skips tests, checks, and Optimize. Add `-DskipTests=false` to re-enable tests.
