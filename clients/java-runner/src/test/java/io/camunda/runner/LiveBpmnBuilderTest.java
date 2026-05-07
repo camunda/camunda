@@ -18,6 +18,7 @@ package io.camunda.runner;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.runner.internal.BindingKey;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
@@ -159,8 +160,8 @@ class LiveBpmnBuilderTest {
     // Implementer note: expose bindings via a package-private Map<String, Object> bindings()
     // accessor on LiveBpmn (or the return type of createExecutableProcess()).
     // The Map key is the elementId string; value is a non-null handler (any Object).
-    assertThat(builder.bindings()).containsKey("validate");
-    assertThat(builder.bindings().get("validate")).isNotNull();
+    assertThat(builder.bindings()).containsKey(BindingKey.serviceTask("validate"));
+    assertThat(builder.bindings().get(BindingKey.serviceTask("validate"))).isNotNull();
 
     // The underlying BPMN element must have *some* zeebeJobType set as a placeholder.
     // Placeholder convention: the elementId itself (i.e. "validate") or the sentinel
@@ -200,8 +201,8 @@ class LiveBpmnBuilderTest {
             .done();
 
     // then
-    assertThat(builder.bindings()).containsKey("ship");
-    assertThat(builder.bindings().get("ship")).isNotNull();
+    assertThat(builder.bindings()).containsKey(BindingKey.serviceTask("ship"));
+    assertThat(builder.bindings().get(BindingKey.serviceTask("ship"))).isNotNull();
 
     final ServiceTask serviceTask = (ServiceTask) model.getModelElementById("ship");
     assertThat(serviceTask).isNotNull();
@@ -229,8 +230,8 @@ class LiveBpmnBuilderTest {
         builder.userTask("review", (Job job) -> Map.of("approved", false)).endEvent().done();
 
     // then
-    assertThat(builder.bindings()).containsKey("review");
-    assertThat(builder.bindings().get("review")).isNotNull();
+    assertThat(builder.bindings()).containsKey(BindingKey.serviceTask("review"));
+    assertThat(builder.bindings().get(BindingKey.serviceTask("review"))).isNotNull();
 
     final UserTask userTask = (UserTask) model.getModelElementById("review");
     assertThat(userTask).isNotNull();
@@ -257,8 +258,8 @@ class LiveBpmnBuilderTest {
             .done();
 
     // then
-    assertThat(builder.bindings()).containsKey("approve");
-    assertThat(builder.bindings().get("approve")).isNotNull();
+    assertThat(builder.bindings()).containsKey(BindingKey.serviceTask("approve"));
+    assertThat(builder.bindings().get(BindingKey.serviceTask("approve"))).isNotNull();
 
     final UserTask userTask = (UserTask) model.getModelElementById("approve");
     assertThat(userTask).isNotNull();
@@ -314,8 +315,8 @@ class LiveBpmnBuilderTest {
         LiveBpmn.of(existingModel).bind("validate", (Job job) -> Map.of("valid", true));
 
     // then — binding recorded
-    assertThat(builder.bindings()).containsKey("validate");
-    assertThat(builder.bindings().get("validate")).isNotNull();
+    assertThat(builder.bindings()).containsKey(BindingKey.serviceTask("validate"));
+    assertThat(builder.bindings().get(BindingKey.serviceTask("validate"))).isNotNull();
 
     // the original model must not have been structurally altered
     final ServiceTask originalTask = (ServiceTask) existingModel.getModelElementById("validate");

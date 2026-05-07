@@ -40,15 +40,15 @@ public final class WorkerRegistration {
    */
   public void register(
       final CamundaClient client,
-      final Map<String, BoundHandler> bindings,
-      final Map<String, String> jobTypeByElementId,
+      final Map<BindingKey, BoundHandler> bindings,
+      final Map<BindingKey, String> jobTypeByBinding,
       final String runId) {
 
-    for (final Map.Entry<String, BoundHandler> entry : bindings.entrySet()) {
-      final String elementId = entry.getKey();
-      final String jobType = jobTypeByElementId.get(elementId);
+    for (final Map.Entry<BindingKey, BoundHandler> entry : bindings.entrySet()) {
+      final BindingKey key = entry.getKey();
+      final String jobType = jobTypeByBinding.get(key);
       if (jobType == null) {
-        // user-task binding skipped during rewrite — we never get here because rewrite throws
+        // skipped during rewrite — should not happen for valid bindings
         continue;
       }
       final AtomicLong counter = new AtomicLong();
@@ -57,12 +57,8 @@ public final class WorkerRegistration {
       final JobHandler base = adapter(entry.getValue());
       final JobHandler counting =
           (jobClient, job) -> {
-            try {
-              base.handle(jobClient, job);
-              counter.incrementAndGet();
-            } catch (final Exception e) {
-              throw e;
-            }
+            base.handle(jobClient, job);
+            counter.incrementAndGet();
           };
 
       final JobWorker worker =
@@ -70,10 +66,10 @@ public final class WorkerRegistration {
               .newWorker()
               .jobType(jobType)
               .handler(counting)
-              .name(runId + "-" + elementId)
+              .name(runId + "-" + key.handleKey())
               .open();
       openWorkers.add(worker);
-      LOG.info("registered worker for jobType={} (elementId={})", jobType, elementId);
+      LOG.info("registered worker for jobType={} (binding={})", jobType, key);
     }
   }
 

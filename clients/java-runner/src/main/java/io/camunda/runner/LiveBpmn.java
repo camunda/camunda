@@ -15,6 +15,7 @@
  */
 package io.camunda.runner;
 
+import io.camunda.runner.internal.BindingKey;
 import io.camunda.runner.internal.BoundHandler;
 import io.camunda.runner.internal.LocalContainerCluster;
 import io.camunda.runner.internal.RunnerPipeline;
@@ -25,7 +26,15 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ZeebeExecutionListenersBuilder;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -47,19 +56,29 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
  * surface for the subset that LiveBpmn hand-wraps. Anything not mirrored is reachable via {@link
  * #raw()}.
  *
- * <p>Phase 1 scope: builder + lambda capture. The runner pipeline ({@code run()}, cluster
- * provisioning, deployment, worker registration) lands in Phase 2.
- *
  * <p>Lambda placeholder convention: the {@link #serviceTask(String, Function)} / {@link
  * #serviceTask(String, Consumer)} overloads (and the {@code userTask} equivalents) set {@code
- * zeebeJobType} on the BPMN element to <em>the elementId itself</em>. Phase 2 rewrites this to the
- * prefixed form ({@code <runId>-<elementId>}) before deployment.
+ * zeebeJobType} on the BPMN element to <em>the elementId itself</em>. The {@code onStart} / {@code
+ * onEnd} / {@code onTaskListener} overloads set the listener {@code type} attribute to a structured
+ * placeholder ({@code <elementId>:el:start} etc.). Phase 2's runner rewrites all placeholders to
+ * the prefixed form ({@code <runId>-<placeholder>}) before deployment.
  */
 public final class LiveBpmn {
 
   private final BpmnModelInstance adoptedModel;
-  private final Map<String, BoundHandler> bindings = new LinkedHashMap<>();
+  private final Map<BindingKey, BoundHandler> bindings = new LinkedHashMap<>();
   private Object currentBuilder;
+
+  /**
+   * The id of the most recent flow node that listeners can attach to. Updated by {@link
+   * #serviceTask}, {@link #userTask}, {@link #startEvent}, {@link #endEvent}, {@link
+   * #exclusiveGateway}, {@link #parallelGateway}. Listener attachment methods read this; they do
+   * not mutate it.
+   */
+  private String lastAttachableId;
+
+  /** Tracks whether the last attachable element is a UserTask (for task-listener guards). */
+  private boolean lastAttachableIsUserTask;
 
   private LiveBpmn(final ProcessBuilder processBuilder) {
     this.currentBuilder = processBuilder;
@@ -157,26 +176,31 @@ public final class LiveBpmn {
 
   public LiveBpmn startEvent() {
     currentBuilder = asProcessBuilder().startEvent();
+    setAttachable(null, false); // unnamed element — listeners won't have a stable target
     return this;
   }
 
   public LiveBpmn startEvent(final String id) {
     currentBuilder = asProcessBuilder().startEvent(id);
+    setAttachable(id, false);
     return this;
   }
 
   public LiveBpmn endEvent() {
     currentBuilder = asFlowNodeBuilder().endEvent();
+    setAttachable(null, false);
     return this;
   }
 
   public LiveBpmn endEvent(final String id) {
     currentBuilder = asFlowNodeBuilder().endEvent(id);
+    setAttachable(id, false);
     return this;
   }
 
   public LiveBpmn serviceTask(final String id, final Consumer<ServiceTaskBuilder> configure) {
     currentBuilder = asFlowNodeBuilder().serviceTask(id, configure);
+    setAttachable(id, false);
     return this;
   }
 
@@ -188,7 +212,8 @@ public final class LiveBpmn {
     final ServiceTaskBuilder builder = asFlowNodeBuilder().serviceTask(id);
     builder.zeebeJobType(id);
     currentBuilder = builder;
-    bindings.put(id, new BoundHandler.OfFunction(handler));
+    bindings.put(BindingKey.serviceTask(id), new BoundHandler.OfFunction(handler));
+    setAttachable(id, false);
     return this;
   }
 
@@ -197,12 +222,20 @@ public final class LiveBpmn {
     final ServiceTaskBuilder builder = asFlowNodeBuilder().serviceTask(id);
     builder.zeebeJobType(id);
     currentBuilder = builder;
-    bindings.put(id, new BoundHandler.OfConsumer(handler));
+    bindings.put(BindingKey.serviceTask(id), new BoundHandler.OfConsumer(handler));
+    setAttachable(id, false);
     return this;
   }
 
   public LiveBpmn userTask(final String id, final Consumer<UserTaskBuilder> configure) {
     currentBuilder = asFlowNodeBuilder().userTask(id, configure);
+    setAttachable(id, true);
+    return this;
+  }
+
+  public LiveBpmn userTask(final String id) {
+    currentBuilder = asFlowNodeBuilder().userTask(id);
+    setAttachable(id, true);
     return this;
   }
 
@@ -217,7 +250,8 @@ public final class LiveBpmn {
   public LiveBpmn userTask(final String id, final Function<Job, Map<String, Object>> handler) {
     final UserTaskBuilder builder = asFlowNodeBuilder().userTask(id);
     currentBuilder = builder;
-    bindings.put(id, new BoundHandler.OfFunction(handler));
+    bindings.put(BindingKey.serviceTask(id), new BoundHandler.OfFunction(handler));
+    setAttachable(id, true);
     return this;
   }
 
@@ -225,27 +259,32 @@ public final class LiveBpmn {
   public LiveBpmn userTask(final String id, final JobConsumer handler) {
     final UserTaskBuilder builder = asFlowNodeBuilder().userTask(id);
     currentBuilder = builder;
-    bindings.put(id, new BoundHandler.OfConsumer(handler));
+    bindings.put(BindingKey.serviceTask(id), new BoundHandler.OfConsumer(handler));
+    setAttachable(id, true);
     return this;
   }
 
   public LiveBpmn exclusiveGateway() {
     currentBuilder = asFlowNodeBuilder().exclusiveGateway();
+    setAttachable(null, false);
     return this;
   }
 
   public LiveBpmn exclusiveGateway(final String id) {
     currentBuilder = asFlowNodeBuilder().exclusiveGateway(id);
+    setAttachable(id, false);
     return this;
   }
 
   public LiveBpmn parallelGateway() {
     currentBuilder = asFlowNodeBuilder().parallelGateway();
+    setAttachable(null, false);
     return this;
   }
 
   public LiveBpmn parallelGateway(final String id) {
     currentBuilder = asFlowNodeBuilder().parallelGateway(id);
+    setAttachable(id, false);
     return this;
   }
 
@@ -291,19 +330,82 @@ public final class LiveBpmn {
   }
 
   // ---------------------------------------------------------------------------
+  // Listener attachment (inline form)
+  // ---------------------------------------------------------------------------
+
+  public LiveBpmn onStart(final Function<Job, Map<String, Object>> handler) {
+    return attachExecutionListener("start", new BoundHandler.OfFunction(handler));
+  }
+
+  public LiveBpmn onStart(final JobConsumer handler) {
+    return attachExecutionListener("start", new BoundHandler.OfConsumer(handler));
+  }
+
+  public LiveBpmn onEnd(final Function<Job, Map<String, Object>> handler) {
+    return attachExecutionListener("end", new BoundHandler.OfFunction(handler));
+  }
+
+  public LiveBpmn onEnd(final JobConsumer handler) {
+    return attachExecutionListener("end", new BoundHandler.OfConsumer(handler));
+  }
+
+  public LiveBpmn onTaskListener(
+      final ZeebeTaskListenerEventType eventType,
+      final Function<Job, Map<String, Object>> handler) {
+    return attachTaskListener(eventType, new BoundHandler.OfFunction(handler));
+  }
+
+  public LiveBpmn onTaskListener(
+      final ZeebeTaskListenerEventType eventType, final JobConsumer handler) {
+    return attachTaskListener(eventType, new BoundHandler.OfConsumer(handler));
+  }
+
+  // ---------------------------------------------------------------------------
   // Bindings for adopted models
   // ---------------------------------------------------------------------------
 
   public LiveBpmn bind(final String elementId, final Function<Job, Map<String, Object>> handler) {
     requireServiceTask(elementId);
-    bindings.put(elementId, new BoundHandler.OfFunction(handler));
+    bindings.put(BindingKey.serviceTask(elementId), new BoundHandler.OfFunction(handler));
     return this;
   }
 
   public LiveBpmn bind(final String elementId, final JobConsumer handler) {
     requireServiceTask(elementId);
-    bindings.put(elementId, new BoundHandler.OfConsumer(handler));
+    bindings.put(BindingKey.serviceTask(elementId), new BoundHandler.OfConsumer(handler));
     return this;
+  }
+
+  public LiveBpmn bindOnStart(
+      final String elementId, final Function<Job, Map<String, Object>> handler) {
+    return bindExecutionListener(elementId, "start", new BoundHandler.OfFunction(handler));
+  }
+
+  public LiveBpmn bindOnStart(final String elementId, final JobConsumer handler) {
+    return bindExecutionListener(elementId, "start", new BoundHandler.OfConsumer(handler));
+  }
+
+  public LiveBpmn bindOnEnd(
+      final String elementId, final Function<Job, Map<String, Object>> handler) {
+    return bindExecutionListener(elementId, "end", new BoundHandler.OfFunction(handler));
+  }
+
+  public LiveBpmn bindOnEnd(final String elementId, final JobConsumer handler) {
+    return bindExecutionListener(elementId, "end", new BoundHandler.OfConsumer(handler));
+  }
+
+  public LiveBpmn bindTaskListener(
+      final String elementId,
+      final ZeebeTaskListenerEventType eventType,
+      final Function<Job, Map<String, Object>> handler) {
+    return bindTaskListener0(elementId, eventType, new BoundHandler.OfFunction(handler));
+  }
+
+  public LiveBpmn bindTaskListener(
+      final String elementId,
+      final ZeebeTaskListenerEventType eventType,
+      final JobConsumer handler) {
+    return bindTaskListener0(elementId, eventType, new BoundHandler.OfConsumer(handler));
   }
 
   // ---------------------------------------------------------------------------
@@ -325,14 +427,157 @@ public final class LiveBpmn {
     return adoptedModel != null ? adoptedModel : currentModel();
   }
 
-  /** Package-private: lambda bindings keyed by element id, for the runner pipeline. */
-  Map<String, BoundHandler> bindings() {
+  /** Package-private: lambda bindings keyed by binding key, for the runner pipeline. */
+  Map<BindingKey, BoundHandler> bindings() {
     return Collections.unmodifiableMap(bindings);
   }
 
   // ---------------------------------------------------------------------------
   // Internals
   // ---------------------------------------------------------------------------
+
+  private void setAttachable(final String id, final boolean isUserTask) {
+    this.lastAttachableId = id;
+    this.lastAttachableIsUserTask = isUserTask;
+  }
+
+  private LiveBpmn attachExecutionListener(final String startOrEnd, final BoundHandler handler) {
+    if (lastAttachableId == null) {
+      throw new IllegalStateException(
+          "on"
+              + capitalize(startOrEnd)
+              + "() requires a preceding attachable element"
+              + " (serviceTask/userTask/startEvent/endEvent/gateway with an explicit id)");
+    }
+    if (!(currentBuilder instanceof ZeebeExecutionListenersBuilder<?> listenersBuilder)) {
+      throw new IllegalStateException(
+          "on"
+              + capitalize(startOrEnd)
+              + "() requires a builder supporting execution listeners,"
+              + " but got "
+              + currentBuilder.getClass().getName());
+    }
+    final BindingKey key = BindingKey.executionListener(lastAttachableId, startOrEnd);
+    final String placeholder = key.placeholderType();
+    if ("start".equals(startOrEnd)) {
+      listenersBuilder.zeebeStartExecutionListener(placeholder);
+    } else {
+      listenersBuilder.zeebeEndExecutionListener(placeholder);
+    }
+    bindings.put(key, handler);
+    return this;
+  }
+
+  private LiveBpmn attachTaskListener(
+      final ZeebeTaskListenerEventType eventType, final BoundHandler handler) {
+    Objects.requireNonNull(eventType, "eventType");
+    if (lastAttachableId == null) {
+      throw new IllegalStateException("onTaskListener() requires a preceding userTask(...) call");
+    }
+    if (!lastAttachableIsUserTask) {
+      throw new IllegalStateException(
+          "onTaskListener() can only attach to a userTask; last attachable element '"
+              + lastAttachableId
+              + "' is not a UserTask");
+    }
+    if (!(currentBuilder instanceof UserTaskBuilder userTaskBuilder)) {
+      throw new IllegalStateException(
+          "onTaskListener() requires the current builder to be a UserTaskBuilder; got "
+              + currentBuilder.getClass().getName());
+    }
+    final BindingKey key = BindingKey.taskListener(lastAttachableId, eventType);
+    final String placeholder = key.placeholderType();
+    final ZeebeTaskListenerEventType resolved = eventType.resolve();
+    userTaskBuilder.zeebeTaskListener(b -> b.eventType(resolved).type(placeholder));
+    bindings.put(key, handler);
+    return this;
+  }
+
+  private LiveBpmn bindExecutionListener(
+      final String elementId, final String startOrEnd, final BoundHandler handler) {
+    final BpmnModelInstance model = adoptedModel != null ? adoptedModel : currentModel();
+    final ModelElementInstance element = model.getModelElementById(elementId);
+    if (element == null) {
+      throw new IllegalArgumentException(
+          "no element with id '" + elementId + "' exists in the model");
+    }
+    if (!(element instanceof io.camunda.zeebe.model.bpmn.instance.BaseElement base)) {
+      throw new IllegalArgumentException(
+          "element '" + elementId + "' does not support execution listeners");
+    }
+    final ZeebeExecutionListeners listeners =
+        base.getSingleExtensionElement(ZeebeExecutionListeners.class);
+    final ZeebeExecutionListenerEventType wantEvent =
+        "start".equals(startOrEnd)
+            ? ZeebeExecutionListenerEventType.start
+            : ZeebeExecutionListenerEventType.end;
+    boolean found = false;
+    if (listeners != null) {
+      for (final ZeebeExecutionListener l : listeners.getExecutionListeners()) {
+        if (l.getEventType() == wantEvent) {
+          found = true;
+          break;
+        }
+      }
+    }
+    if (!found) {
+      throw new IllegalArgumentException(
+          "element '"
+              + elementId
+              + "' has no <zeebe:executionListener eventType=\""
+              + startOrEnd
+              + "\"/> in the adopted model; bind"
+              + capitalize(startOrEnd)
+              + " requires the listener to already exist");
+    }
+    bindings.put(BindingKey.executionListener(elementId, startOrEnd), handler);
+    return this;
+  }
+
+  private LiveBpmn bindTaskListener0(
+      final String elementId,
+      final ZeebeTaskListenerEventType eventType,
+      final BoundHandler handler) {
+    Objects.requireNonNull(eventType, "eventType");
+    final BpmnModelInstance model = adoptedModel != null ? adoptedModel : currentModel();
+    final ModelElementInstance element = model.getModelElementById(elementId);
+    if (element == null) {
+      throw new IllegalArgumentException(
+          "no element with id '" + elementId + "' exists in the model");
+    }
+    if (!(element instanceof UserTask userTask)) {
+      throw new IllegalArgumentException(
+          "element '" + elementId + "' is not a UserTask; task listeners require a UserTask");
+    }
+    final ZeebeTaskListeners listeners =
+        userTask.getSingleExtensionElement(ZeebeTaskListeners.class);
+    final ZeebeTaskListenerEventType resolved = eventType.resolve();
+    boolean found = false;
+    if (listeners != null) {
+      for (final ZeebeTaskListener l : listeners.getTaskListeners()) {
+        final ZeebeTaskListenerEventType lEvent = l.getEventType();
+        if (lEvent != null && lEvent.resolve() == resolved) {
+          found = true;
+          break;
+        }
+      }
+    }
+    if (!found) {
+      throw new IllegalArgumentException(
+          "user task '"
+              + elementId
+              + "' has no <zeebe:taskListener eventType=\""
+              + resolved.name()
+              + "\"/> in the adopted model; bindTaskListener requires the listener to already"
+              + " exist");
+    }
+    bindings.put(BindingKey.taskListener(elementId, eventType), handler);
+    return this;
+  }
+
+  private static String capitalize(final String s) {
+    return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
+  }
 
   private ProcessBuilder asProcessBuilder() {
     if (currentBuilder instanceof ProcessBuilder pb) {

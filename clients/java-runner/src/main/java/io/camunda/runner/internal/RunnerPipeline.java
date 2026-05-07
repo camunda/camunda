@@ -44,7 +44,7 @@ public final class RunnerPipeline {
 
   public static Run execute(
       final BpmnModelInstance model,
-      final Map<String, BoundHandler> bindings,
+      final Map<BindingKey, BoundHandler> bindings,
       final int instanceCount,
       final Cluster cluster) {
     return execute(model, bindings, RunOptions.of(instanceCount), cluster);
@@ -52,7 +52,7 @@ public final class RunnerPipeline {
 
   public static Run execute(
       final BpmnModelInstance model,
-      final Map<String, BoundHandler> bindings,
+      final Map<BindingKey, BoundHandler> bindings,
       final RunOptions opts,
       final Cluster cluster) {
     final int instanceCount = opts.instances();
@@ -60,9 +60,10 @@ public final class RunnerPipeline {
       throw new IllegalArgumentException("instanceCount must be >= 0, got " + instanceCount);
     }
 
-    // Defensive: user-task lambda dispatch is not yet wired.
+    // Defensive: user-task BODY dispatch is not yet wired. Listener-only bindings on user tasks
+    // are allowed.
     if (!model.getModelElementsByType(UserTask.class).isEmpty()
-        && bindingsContainUserTasks(model, bindings)) {
+        && serviceTaskBindingHitsUserTask(model, bindings)) {
       throw new UnsupportedOperationException("user-task lambda dispatch is not yet supported");
     }
 
@@ -96,7 +97,7 @@ public final class RunnerPipeline {
     LOG.info("deployed processDefinitionKey={}", processDefinitionKey);
 
     final WorkerRegistration workers = new WorkerRegistration();
-    workers.register(client, bindings, rewritten.jobTypesByElementId(), runId);
+    workers.register(client, bindings, rewritten.jobTypesByBinding(), runId);
 
     // Brief wait so worker subscriptions are active before the first instance is created.
     LockSupport.parkNanos(java.time.Duration.ofMillis(150).toNanos());
@@ -128,10 +129,10 @@ public final class RunnerPipeline {
     }
     LOG.info("created {} instance(s) for runId={}", instances.size(), runId);
 
-    final Map<String, String> jobTypeToElementId = new LinkedHashMap<>();
+    final Map<String, String> jobTypeToHandleKey = new LinkedHashMap<>();
     rewritten
-        .jobTypesByElementId()
-        .forEach((elementId, jobType) -> jobTypeToElementId.put(jobType, elementId));
+        .jobTypesByBinding()
+        .forEach((key, jobType) -> jobTypeToHandleKey.put(jobType, key.handleKey()));
 
     final DefaultRun run =
         new DefaultRun(
@@ -143,15 +144,18 @@ public final class RunnerPipeline {
             cluster,
             workers,
             cluster.restAddress(),
-            jobTypeToElementId);
+            jobTypeToHandleKey);
     // DefaultRun has already logged the Operate URL (and may have auto-opened the browser).
     return run;
   }
 
-  private static boolean bindingsContainUserTasks(
-      final BpmnModelInstance model, final Map<String, BoundHandler> bindings) {
-    for (final String id : bindings.keySet()) {
-      if (model.getModelElementById(id) instanceof UserTask) {
+  private static boolean serviceTaskBindingHitsUserTask(
+      final BpmnModelInstance model, final Map<BindingKey, BoundHandler> bindings) {
+    for (final BindingKey key : bindings.keySet()) {
+      if (key.kind() != BindingKind.SERVICE_TASK) {
+        continue;
+      }
+      if (model.getModelElementById(key.elementId()) instanceof UserTask) {
         return true;
       }
     }
@@ -170,10 +174,16 @@ public final class RunnerPipeline {
    * </ul>
    */
   private static void warnAboutUnboundServiceTasks(
-      final BpmnModelInstance model, final java.util.Set<String> boundIds) {
+      final BpmnModelInstance model, final java.util.Set<BindingKey> boundKeys) {
+    final java.util.Set<String> boundServiceTaskIds = new java.util.HashSet<>();
+    for (final BindingKey key : boundKeys) {
+      if (key.kind() == BindingKind.SERVICE_TASK) {
+        boundServiceTaskIds.add(key.elementId());
+      }
+    }
     for (final ServiceTask task : model.getModelElementsByType(ServiceTask.class)) {
       final String elementId = task.getId();
-      if (boundIds.contains(elementId)) {
+      if (boundServiceTaskIds.contains(elementId)) {
         continue;
       }
       final ZeebeTaskDefinition def = task.getSingleExtensionElement(ZeebeTaskDefinition.class);

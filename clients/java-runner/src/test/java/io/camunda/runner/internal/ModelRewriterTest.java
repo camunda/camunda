@@ -44,7 +44,7 @@ final class ModelRewriterTest {
     final BpmnModelInstance original = simpleModel();
 
     // when
-    ModelRewriter.rewrite(original, "stephan-r7f3a", List.of("validate"));
+    ModelRewriter.rewrite(original, "stephan-r7f3a", List.of(BindingKey.serviceTask("validate")));
 
     // then
     final Process originalProcess =
@@ -62,7 +62,7 @@ final class ModelRewriterTest {
 
     // when
     final ModelRewriter.Rewritten result =
-        ModelRewriter.rewrite(model, "stephan-r7f3a", List.of("validate"));
+        ModelRewriter.rewrite(model, "stephan-r7f3a", List.of(BindingKey.serviceTask("validate")));
 
     // then
     assertThat(result.prefixedProcessId()).isEqualTo("stephan-r7f3a-order");
@@ -78,13 +78,14 @@ final class ModelRewriterTest {
 
     // when
     final ModelRewriter.Rewritten result =
-        ModelRewriter.rewrite(model, "stephan-r7f3a", List.of("validate"));
+        ModelRewriter.rewrite(model, "stephan-r7f3a", List.of(BindingKey.serviceTask("validate")));
 
     // then
     final ServiceTask task = result.model().getModelElementById("validate");
     assertThat(task.getSingleExtensionElement(ZeebeTaskDefinition.class).getType())
         .isEqualTo("stephan-r7f3a-validate");
-    assertThat(result.jobTypesByElementId()).containsEntry("validate", "stephan-r7f3a-validate");
+    assertThat(result.jobTypesByBinding())
+        .containsEntry(BindingKey.serviceTask("validate"), "stephan-r7f3a-validate");
   }
 
   @Test
@@ -94,7 +95,7 @@ final class ModelRewriterTest {
 
     // when
     final ModelRewriter.Rewritten result =
-        ModelRewriter.rewrite(model, "stephan-r7f3a", List.of("validate"));
+        ModelRewriter.rewrite(model, "stephan-r7f3a", List.of(BindingKey.serviceTask("validate")));
 
     // then
     final ServiceTask task = result.model().getModelElementById("validate");
@@ -140,7 +141,8 @@ final class ModelRewriterTest {
     final BpmnModelInstance model = simpleModel();
 
     // expect
-    assertThatThrownBy(() -> ModelRewriter.rewrite(model, "p", Set.of("ghost")))
+    assertThatThrownBy(
+            () -> ModelRewriter.rewrite(model, "p", Set.of(BindingKey.serviceTask("ghost"))))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("ghost");
   }
@@ -152,8 +154,85 @@ final class ModelRewriterTest {
         Bpmn.createExecutableProcess("p").startEvent().userTask("review").endEvent().done();
 
     // expect
-    assertThatThrownBy(() -> ModelRewriter.rewrite(model, "p", Set.of("review")))
+    assertThatThrownBy(
+            () -> ModelRewriter.rewrite(model, "p", Set.of(BindingKey.serviceTask("review"))))
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("user-task");
+  }
+
+  // ---------------------------------------------------------------------------
+  // Listener rewrites
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldPrefixExecutionListenerType() {
+    // given — service task carrying a start execution listener
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("order")
+            .startEvent()
+            .serviceTask(
+                "validate",
+                t -> t.zeebeJobType("validate").zeebeStartExecutionListener("validate:el:start"))
+            .endEvent()
+            .done();
+
+    // when
+    final ModelRewriter.Rewritten result =
+        ModelRewriter.rewrite(
+            model, "u-x", List.of(BindingKey.executionListener("validate", "start")));
+
+    // then — listener type prefixed; element id untouched
+    final ServiceTask task = result.model().getModelElementById("validate");
+    assertThat(task.getId()).isEqualTo("validate");
+    final var listeners =
+        task.getSingleExtensionElement(
+            io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners.class);
+    assertThat(listeners).isNotNull();
+    final var first = listeners.getExecutionListeners().iterator().next();
+    assertThat(first.getType()).isEqualTo("u-x-validate:el:start");
+    assertThat(result.jobTypesByBinding())
+        .containsEntry(BindingKey.executionListener("validate", "start"), "u-x-validate:el:start");
+  }
+
+  @Test
+  void shouldPrefixTaskListenerType() {
+    // given — user task with an assigning task listener
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("order")
+            .startEvent()
+            .userTask(
+                "review",
+                t ->
+                    t.zeebeTaskListener(
+                        b ->
+                            b.eventType(
+                                    io.camunda.zeebe.model.bpmn.instance.zeebe
+                                        .ZeebeTaskListenerEventType.assigning)
+                                .type("review:tl:assigning")))
+            .endEvent()
+            .done();
+
+    // when
+    final ModelRewriter.Rewritten result =
+        ModelRewriter.rewrite(
+            model,
+            "u-x",
+            List.of(
+                BindingKey.taskListener(
+                    "review",
+                    io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType
+                        .assigning)));
+
+    // then
+    final var task =
+        (io.camunda.zeebe.model.bpmn.instance.UserTask)
+            result.model().getModelElementById("review");
+    assertThat(task.getId()).isEqualTo("review");
+    final var listeners =
+        task.getSingleExtensionElement(
+            io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners.class);
+    assertThat(listeners).isNotNull();
+    final var first = listeners.getTaskListeners().iterator().next();
+    assertThat(first.getType()).isEqualTo("u-x-review:tl:assigning");
   }
 }

@@ -50,7 +50,7 @@ public final class DefaultRun implements Run {
   private final Cluster cluster;
   private final WorkerRegistration workers;
   private final URI restAddress;
-  private final Map<String, String> jobTypeToElementId;
+  private final Map<String, String> jobTypeToHandleKey;
   private final AtomicBoolean closed = new AtomicBoolean();
   private final Thread shutdownHook;
 
@@ -63,7 +63,7 @@ public final class DefaultRun implements Run {
       final Cluster cluster,
       final WorkerRegistration workers,
       final URI restAddress,
-      final Map<String, String> jobTypeToElementId) {
+      final Map<String, String> jobTypeToHandleKey) {
     this.runId = runId;
     this.processId = processId;
     this.processDefinitionKey = processDefinitionKey;
@@ -72,7 +72,7 @@ public final class DefaultRun implements Run {
     this.cluster = cluster;
     this.workers = workers;
     this.restAddress = restAddress;
-    this.jobTypeToElementId = Map.copyOf(jobTypeToElementId);
+    this.jobTypeToHandleKey = Map.copyOf(jobTypeToHandleKey);
     this.shutdownHook = new Thread(this::closeQuietly, "livebpmn-shutdown-" + runId);
     Runtime.getRuntime().addShutdownHook(shutdownHook);
     maybeOpenBrowser();
@@ -134,7 +134,7 @@ public final class DefaultRun implements Run {
     final LinkedHashMap<String, Long> byElementId = new LinkedHashMap<>();
     byJobType.forEach(
         (jobType, count) -> {
-          final String elementId = jobTypeToElementId.getOrDefault(jobType, jobType);
+          final String elementId = jobTypeToHandleKey.getOrDefault(jobType, jobType);
           byElementId.put(elementId, count);
         });
     return byElementId;
