@@ -298,6 +298,44 @@ class InMemoryColumnFamily<
   }
 
   @Override
+  public void deleteByPrefix(final DbKey prefix) {
+    try (final var timer = metrics.measureDeleteLatency()) {
+      ensureInOpenTransaction(
+          transaction -> {
+            final byte[] prefixBytes = computePrefix(prefix);
+            final Optional<byte[]> upperBound = computePrefixUpperBound(prefixBytes);
+
+            // Delete matching keys from pending writes. We snapshot to an array first
+            // because transaction.delete() removes from pendingWrites.
+            for (final byte[] k :
+                subMapKeys(transaction.getPendingWrites(), prefixBytes, upperBound)
+                    .toArray(byte[][]::new)) {
+              transaction.delete(k);
+            }
+
+            // Delete matching keys from committed data. This view is safe to iterate
+            // directly — transaction.delete() doesn't modify committedData.
+            for (final byte[] k : subMapKeys(db.committedData, prefixBytes, upperBound)) {
+              if (!transaction.isDeleted(k)) {
+                transaction.delete(k);
+              }
+            }
+          });
+    }
+  }
+
+  /** Returns the key set of the [prefix, upperBound) sub-range — a view, no copy. */
+  private java.util.NavigableSet<byte[]> subMapKeys(
+      final NavigableMap<byte[], ?> map,
+      final byte[] prefix,
+      final Optional<byte[]> upperBound) {
+    return (upperBound.isPresent()
+            ? map.subMap(prefix, true, upperBound.get(), false)
+            : map.tailMap(prefix, true))
+        .navigableKeySet();
+  }
+
+  @Override
   public boolean exists(final KeyType key) {
     try (final var timer = metrics.measureGetLatency()) {
       final boolean[] result = {false};
