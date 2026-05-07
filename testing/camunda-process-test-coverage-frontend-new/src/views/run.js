@@ -73,7 +73,7 @@ export function renderRun(suiteId, runIndex, data) {
   if (runCoverages.length === 0) {
     html += '<p class="text-muted">No process coverage data recorded for this test case.</p>';
   } else {
-    const sorted = [...runCoverages].sort((a, b) => b.coverage - a.coverage);
+    const sortedProcesses = [...runCoverages].sort((a, b) => b.coverage - a.coverage);
     html += `
       <div class="table-responsive">
         <table class="table table-hover align-middle">
@@ -84,7 +84,7 @@ export function renderRun(suiteId, runIndex, data) {
           </tr></thead>
           <tbody>`;
 
-    for (const cov of sorted) {
+    for (const cov of sortedProcesses) {
       const pid = encodeURIComponent(cov.processDefinitionId);
       html += `
             <tr class="clickable-row"
