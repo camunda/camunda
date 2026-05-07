@@ -21,7 +21,22 @@ public static void main(final String[] args) throws Exception {
 }
 ```
 
-See [DESIGN.md](DESIGN.md) for the full API and architecture.
+See [DESIGN.md](DESIGN.md) for the API and architecture, [VISION.md](VISION.md) for where this
+could go.
+
+## What you can do with it today
+
+- **Iterate on a real process at the speed of a `main()`.** Define BPMN and worker logic in one
+  file, hit run, watch instances flow in Operate. No `mvn deploy`, no docker-compose, no separate
+  worker app to keep in sync.
+- **Adopt existing `.bpmn` files.** Hand a Modeler-exported file to `LiveBpmn.fromFile(...)` and
+  hook lambdas to its element ids — designer drew it, you run it.
+- **Set IDE breakpoints inside service-task lambdas.** They fire N times. Step through real
+  process execution without a remote debugger or attached worker app.
+- **Reproduce a flow from a snippet.** Paste a `main()` into a bug ticket; reviewers run it
+  unchanged against their own local cluster. Bug repros become executable.
+- **Stress-shape your process.** `RunOptions.of(N).pacing(...)` fires N instances at a chosen
+  rate so you can see throughput, gateway splits, and bottlenecks in Operate.
 
 ## Cluster modes
 
