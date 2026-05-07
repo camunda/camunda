@@ -17,7 +17,6 @@ import io.camunda.client.api.search.response.Form;
 import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -25,12 +24,10 @@ import org.junit.jupiter.api.Test;
 public class GetFormIT {
 
   private static CamundaClient camundaClient;
-  private static long deployedFormKey;
-  private static String deployedFormId;
 
-  @BeforeAll
-  static void setUp() {
-    // Deploy a form
+  @Test
+  void shouldGetFormByKey() {
+    // given
     final DeploymentEvent deployment =
         camundaClient
             .newDeployResourceCommand()
@@ -39,23 +36,18 @@ public class GetFormIT {
             .join();
 
     assertThat(deployment.getForm()).hasSize(1);
-    deployedFormKey = deployment.getForm().getFirst().getFormKey();
-    deployedFormId = deployment.getForm().getFirst().getFormId();
+    final long formKey = deployment.getForm().getFirst().getFormKey();
+    final String formId = deployment.getForm().getFirst().getFormId();
+    TestHelper.waitForFormToBeIndexed(camundaClient, formKey);
 
-    // Wait for form to be indexed
-    TestHelper.waitForFormToBeIndexed(camundaClient, deployedFormKey);
-  }
-
-  @Test
-  void shouldGetFormByKey() {
     // when
-    final Form form = camundaClient.newFormGetRequest(deployedFormKey).send().join();
+    final Form form = camundaClient.newFormGetRequest(formKey).send().join();
 
     // then
     assertThat(form).isNotNull();
-    assertThat(form.getFormKey()).isEqualTo(deployedFormKey);
-    assertThat(form.getFormId()).isEqualTo(deployedFormId);
-    assertThat(form.getVersion()).isEqualTo(1);
+    assertThat(form.getFormKey()).isEqualTo(formKey);
+    assertThat(form.getFormId()).isEqualTo(formId);
+    assertThat(form.getVersion()).isGreaterThanOrEqualTo(1);
     assertThat(form.getSchema()).isNotNull();
     assertThat(form.getSchema()).contains("\"type\": \"default\"");
     assertThat(form.getTenantId()).isEqualTo("<default>");
@@ -74,7 +66,19 @@ public class GetFormIT {
 
   @Test
   void shouldGetFormWithDifferentVersions() {
-    // given - deploy a second version of the same form
+    // given - deploy two versions of the same form
+    final DeploymentEvent firstDeployment =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("form/form.form")
+            .send()
+            .join();
+
+    assertThat(firstDeployment.getForm()).hasSize(1);
+    final long firstFormKey = firstDeployment.getForm().getFirst().getFormKey();
+    final String firstFormId = firstDeployment.getForm().getFirst().getFormId();
+    TestHelper.waitForFormToBeIndexed(camundaClient, firstFormKey);
+
     final DeploymentEvent secondDeployment =
         camundaClient
             .newDeployResourceCommand()
@@ -85,26 +89,19 @@ public class GetFormIT {
     assertThat(secondDeployment.getForm()).hasSize(1);
     final long secondFormKey = secondDeployment.getForm().getFirst().getFormKey();
     final String secondFormId = secondDeployment.getForm().getFirst().getFormId();
-
-    // Wait for form to be indexed
     TestHelper.waitForFormToBeIndexed(camundaClient, secondFormKey);
 
-    // when - get the second version
+    // when
+    final Form formV1 = camundaClient.newFormGetRequest(firstFormKey).send().join();
     final Form formV2 = camundaClient.newFormGetRequest(secondFormKey).send().join();
 
-    // then
-    assertThat(formV2).isNotNull();
+    // then - both versions are accessible and v2 has a higher version number
+    assertThat(formV1.getFormKey()).isEqualTo(firstFormKey);
+    assertThat(formV1.getFormId()).isEqualTo(firstFormId);
+
     assertThat(formV2.getFormKey()).isEqualTo(secondFormKey);
     assertThat(formV2.getFormId()).isEqualTo(secondFormId);
-    assertThat(formV2.getVersion()).isEqualTo(1);
+    assertThat(formV2.getVersion()).isEqualTo(formV1.getVersion() + 1);
     assertThat(formV2.getTenantId()).isEqualTo("<default>");
-
-    // when - get the first version again
-    final Form formV1 = camundaClient.newFormGetRequest(deployedFormKey).send().join();
-
-    // then - should still be accessible
-    assertThat(formV1).isNotNull();
-    assertThat(formV1.getFormKey()).isEqualTo(deployedFormKey);
-    assertThat(formV1.getFormId()).isEqualTo(deployedFormId);
   }
 }
