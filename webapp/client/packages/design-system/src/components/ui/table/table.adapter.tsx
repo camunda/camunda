@@ -23,7 +23,6 @@ import {
 import {warnDroppedProps} from '../../../lib/utils';
 
 import type {
-  TableBatchActionProps as CarbonTableBatchActionProps,
   TableBodyProps as CarbonTableBodyProps,
   TableCellProps as CarbonTableCellProps,
   TableHeadProps as CarbonTableHeadProps,
@@ -40,7 +39,6 @@ export type TableProps = React.ComponentProps<'table'> & {
   overflowMenuOnHover?: boolean;
   experimentalAutoAlign?: boolean;
 };
-export type TableBatchActionProps = CarbonTableBatchActionProps;
 export type TableBodyProps = CarbonTableBodyProps;
 export type TableCellProps = CarbonTableCellProps;
 export type TableHeadProps = CarbonTableHeadProps;
@@ -197,51 +195,4 @@ function TableRow(props: TableRowProps) {
   );
 }
 
-function TableBatchAction(props: TableBatchActionProps) {
-  const {
-    children,
-    className,
-    renderIcon,
-    iconDescription,
-    onClick,
-    disabled,
-    hasIconOnly,
-    ...rest
-  } = props as TableBatchActionProps & {
-    children?: React.ReactNode;
-    className?: string;
-    renderIcon?: React.ElementType;
-    iconDescription?: string;
-    onClick?: React.MouseEventHandler<HTMLButtonElement>;
-    disabled?: boolean;
-    hasIconOnly?: boolean;
-  };
-
-  warnDroppedProps('TableBatchAction', {
-    renderIcon,
-    iconDescription,
-    hasIconOnly,
-  });
-
-  return (
-    <button
-      type="button"
-      className={className}
-      onClick={onClick}
-      disabled={disabled}
-      {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)}
-    >
-      {children}
-    </button>
-  );
-}
-
-export {
-  Table,
-  TableBatchAction,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-};
+export {Table, TableBody, TableCell, TableHead, TableHeader, TableRow};

@@ -19,6 +19,32 @@ This file is the single source-of-truth for the Carbon-to-shadcn migration in th
 - `done` — shadcn implementation, story, and migration guide are all in place
 - `n/a` — no shadcn equivalent exists; row is informational only
 
+## Mode switching (single control point)
+
+The package has two modes:
+
+- **shadcn** (default) — `src/index.ts` re-exports from `src/index.shadcn.ts`. Components resolve to shadcn-backed adapters; CSS auto-loaded as side effects: `theme.scss` (Carbon design tokens + IBM Plex fonts) + `globals.css` (shadcn neutral palette + Tailwind layer setup).
+- **carbon** — flip `src/index.ts` to re-export from `src/index.carbon.ts`. Components resolve to bare `@carbon/react` re-exports; CSS auto-loaded: `carbon.scss` (Carbon's per-component rules; pulls in `theme.scss` transitively).
+
+**One file controls both** (JS + CSS): `src/index.ts`. Consumers never import stylesheets manually — `import {Button} from '@camunda/design-system'` is enough. The raw stylesheet exports (`@camunda/design-system/{theme,carbon}.scss`, `@camunda/design-system/globals.css`) remain in `package.json` `exports` for tools like Storybook that need both modes loaded simultaneously, but app code shouldn't reach for them.
+
+**Theme tokens always load** regardless of mode. `theme.scss` is included by both `index.shadcn.ts` (directly) and `index.carbon.ts` (via `carbon.scss`'s `@use './theme'`). This is intentional — Operate's and Tasklist's styled-components reference `var(--cds-spacing-*)` / `var(--cds-color-*)` extensively. Migrating those callsites off `--cds-*` is a separate workstream; until it lands, both modes need the tokens.
+
+## Adapter convention
+
+Every wrapper folder ships three files: `<name>.carbon.tsx` (bare Carbon re-export), `<name>.shadcn.tsx` (the shadcn primitive), and `<name>.adapter.tsx` (the public surface, exported from `index.shadcn.ts`).
+
+The adapter's job is to translate Carbon-shaped props into shadcn-shaped props so consumer call-sites compile unchanged. Examples: `Tag` adapter maps `type='red'` → `<Badge variant='destructive'>`; `Button` adapter maps `kind='primary'` → `variant='default'`; `Modal` adapter branches on `danger` to render `AlertDialog` instead of `Dialog`. Lossy props (Carbon-only flags with no shadcn analogue) are dropped with a dev-only `warnDroppedProps` warning.
+
+**Exception — passthrough adapters.** When the shadcn primitive is intentionally built to mirror Carbon's exact API (same prop names, same render-prop contract), the adapter has nothing to translate and becomes a one-line re-export. `data-table` is the only wrapper that takes this route, and it does so deliberately:
+
+- Carbon's `DataTable` is a render-prop API (`<DataTable rows={...} headers={...}>{({getHeaderProps, getRowProps, ...}) => ...}</DataTable>`) used pervasively by the webapps. Translating to a different shape would force every call-site to rewrite its render function.
+- The shadcn `data-table.shadcn.tsx` therefore reproduces Carbon's prop API (`rows`, `headers`, `isSortable`, `radio`, helper-prop shapes) under a Tailwind-driven implementation.
+- Trade-off: the "shadcn primitive" looks Carbon-shaped, so we are locked into that surface until/unless we add a more idiomatic `<DataTable.Header>`-style API behind the same identifier — at which point the adapter file gains real translation logic.
+- The adapter file stays as a re-export so the folder structure remains uniform across every wrapper.
+
+If you find yourself reaching for another passthrough adapter, prefer designing the shadcn primitive on its own terms and putting translation logic in the adapter — that's how the other 30 wrappers are structured.
+
 ## Mapping table
 
 ### Direct matches (Carbon name == shadcn name)
@@ -100,6 +126,22 @@ Primitives with no Carbon counterpart, pulled in as dependencies of the wrappers
 | spinner | spinner | inline-loading, loading | placed (canonical primitive) |
 | switch | switch | toggle | placed (canonical primitive; NOT shadcn `toggle` — that's a different primitive) |
 
+### Carbon fallbacks (migration complete)
+
+Originally re-exported from `@carbon/react` directly via `src/index.shadcn.ts`. All 9 wrappers now have shadcn-backed adapters and the design-system is single-stylesheet for consumers that don't import `@carbon/react` UI components directly. Operate's `index.scss` no longer imports `@camunda/design-system/carbon.scss`. Tasklist still imports it because `tasklist/client/src/` continues to use `Button`/`Heading`/`Stack`/`OverflowMenu`/`TextInput`/`Modal*`/`Select`/`Popover` directly from `@carbon/react`; migrating those call-sites to design-system identifiers is a separate workstream.
+
+| Wrapper | Carbon component(s) | shadcn approach | Match type | Status | Notes |
+|---|---|---|---|---|---|
+| data-table | DataTable | composed — render-prop wrapper around shadcn `Table` + state hooks for sort/expand/select/batch | local | done | Render-prop primitive + all sub-components shipped. **Passthrough adapter** — see "Adapter convention" above; the shadcn primitive deliberately mirrors Carbon's render-prop API so call-sites compile unchanged. |
+| data-table-skeleton | DataTableSkeleton | composed — `Skeleton` rows in shadcn `Table` shell | local | done | Honours `columnCount`/`rowCount`/`headers`/`showHeader`/`showToolbar`/`zebra`; row height keyed off `size` (xs/sm/md/lg/xl) |
+| table-container | TableContainer | custom — flex column with `title`/`description` header slot | local | done | `decorator` and `aiEnabled` (Carbon AI label) dropped with `warnDroppedProps`; `stickyHeader`→`sticky`, `useStaticWidth`→`fitContent` |
+| table-toolbar | TableToolbar, TableToolbarContent, TableToolbarSearch, TableToolbarMenu, TableToolbarAction | custom — flex bar + composes existing primitives (`InputGroup`/`DropdownMenu`/`Button`) | local | in progress | `TableToolbar` and `TableToolbarContent` shipped; `TableToolbarSearch`/`TableToolbarMenu`/`TableToolbarAction` deferred (rare in webapps; wrap Carbon `Search`/`OverflowMenu`) |
+| table-batch-actions | TableBatchActions, TableBatchAction | custom — animated overlay bar with selection count, cancel, per-action buttons | local | done | `translateWithId` honoured for selection label; `renderIcon`/`hasIconOnly` supported on actions |
+| table-expand | TableExpandHeader, TableExpandRow, TableExpandedRow | custom — `<th>`/`<tr>`/`<tr>` + lucide Chevron toggle + `aria-expanded`/`aria-controls` | local | done | Carbon's deprecated `enableExpando` aliased to `enableToggle`; deprecated `ariaLabel` dropped via `warnDroppedProps` |
+| table-select | TableSelectAll, TableSelectRow | composed — shadcn `Checkbox` (or native `radio`) inside `<th>`/`<td>` | local | done | Synthesises `event.target.checked` so callers reading the Carbon-shaped `MouseEvent<HTMLInputElement>` continue to work |
+| password-input | PasswordInput | composed — `InputGroup` + `Input` + visibility toggle button with `Eye`/`EyeOff` icons | local | done | Carbon's labelText/helperText/invalidText rendered around the field; `enableCounter`/`tooltipPosition`/`light`/`inline` dropped via `warnDroppedProps` |
+| ordered-list | OrderedList | custom — styled `<ol>` mirroring `unordered-list` | local | done | `nested`/`native`/`isExpressive` honoured via `data-` attributes and Tailwind |
+
 ## Stats
 
-**43 Carbon wrappers** total — **11 direct**, **19 conceptual**, **13 Camunda-built** (no shadcn upstream). **43 done**, **0 to go** — every wrapper now has a `*.shadcn.tsx` implementation, story, and migration guide.
+**52 Carbon wrappers** total — **11 direct**, **19 conceptual**, **13 Camunda-built**, **9 migrated Carbon fallbacks**. **51 done**, **1 in progress** (`table-toolbar` — `Search`/`Menu`/`Action` sub-parts deferred).
