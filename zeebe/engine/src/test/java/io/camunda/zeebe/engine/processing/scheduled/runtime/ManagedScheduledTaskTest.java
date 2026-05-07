@@ -20,7 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
 import io.camunda.zeebe.engine.processing.scheduled.api.Schedule;
 import io.camunda.zeebe.engine.processing.scheduled.api.ScheduledTask;
 import io.camunda.zeebe.engine.processing.scheduled.api.TaskContext;
@@ -40,6 +40,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -71,9 +72,9 @@ final class ManagedScheduledTaskTest {
   @Test
   void shouldScheduleImmediatelyOnRecoveredWhenFallbackConfigured() {
     // given
-    final var task = newRecordingTask(Outcome.IDLE);
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.fixedRate(Duration.ofSeconds(30)),
             interPartitionSender,
@@ -82,17 +83,16 @@ final class ManagedScheduledTaskTest {
     // when
     managed.onRecovered(context);
 
-    // then — runtime schedules a prompt initial run (clamped to now + minResolution)
+    // then
     verify(scheduleService).runAt(anyLong(), any(Task.class));
   }
 
   @Test
   void shouldScheduleInitialRunOnRecoveredEvenWhenPureOnDemand() {
-    // given — pure on-demand still needs a single prompt initial check so it can pick up entries
-    // that became due while paused / already in state at recovery.
-    final var task = newRecordingTask(Outcome.IDLE);
+    // given
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.onDemand(Duration.ofMillis(100)),
             interPartitionSender,
@@ -101,16 +101,16 @@ final class ManagedScheduledTaskTest {
     // when
     managed.onRecovered(context);
 
-    // then — clamped to now + minResolution
+    // then
     verify(scheduleService).runAt(eq(FIXED_NOW_MS + 100), any(Task.class));
   }
 
   @Test
   void shouldUseAsyncSchedulingWhenAsyncIsTrue() {
     // given
-    final var task = newRecordingTask(Outcome.IDLE);
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.fixedRate(Duration.ofSeconds(30)).withAsync(true),
             interPartitionSender,
@@ -128,9 +128,9 @@ final class ManagedScheduledTaskTest {
   void shouldScheduleAtAwaitDueAtTimestamp() {
     // given
     final long dueAt = FIXED_NOW_MS + 60_000;
-    final var task = newRecordingTask(new Outcome.AwaitDueAt(dueAt));
+    final var task = newRecordingTask(builder -> builder.awaitDueAt(dueAt));
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.onDemand(Duration.ofMillis(10)),
             interPartitionSender,
@@ -148,9 +148,9 @@ final class ManagedScheduledTaskTest {
   @Test
   void shouldRescheduleImmediatelyOnYieldNow() {
     // given
-    final var task = newRecordingTask(Outcome.YIELD_NOW);
+    final var task = newRecordingTask(Result.Builder::yieldNow);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.fixedRate(Duration.ofSeconds(30)).withYieldBudget(Duration.ofMillis(50)),
             interPartitionSender,
@@ -161,7 +161,7 @@ final class ManagedScheduledTaskTest {
     // when
     managed.execute(mock(TaskResultBuilder.class));
 
-    // then — clamped to now + minResolution
+    // then
     verify(scheduleService)
         .runAt(eq(FIXED_NOW_MS + Schedule.DEFAULT_MIN_RESOLUTION.toMillis()), any(Task.class));
   }
@@ -170,9 +170,9 @@ final class ManagedScheduledTaskTest {
   void shouldRescheduleAtFallbackOnIdle() {
     // given
     final Duration fallback = Duration.ofSeconds(30);
-    final var task = newRecordingTask(Outcome.IDLE);
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task, Schedule.fixedRate(fallback), interPartitionSender, new SimpleMeterRegistry());
     managed.onRecovered(context);
     clearInvocations(scheduleService);
@@ -187,9 +187,9 @@ final class ManagedScheduledTaskTest {
   @Test
   void shouldNotRescheduleOnIdleWhenPureOnDemand() {
     // given
-    final var task = newRecordingTask(Outcome.IDLE);
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.onDemand(Duration.ofMillis(10)),
             interPartitionSender,
@@ -200,16 +200,16 @@ final class ManagedScheduledTaskTest {
     // when
     managed.execute(mock(TaskResultBuilder.class));
 
-    // then — pure on-demand stays idle; no reschedule
+    // then
     verifyNoInteractions(scheduleService);
   }
 
   @Test
   void shouldHonorRequestRunAfterInitialRunConsumed() {
-    // given — pure-on-demand task; after the initial check returned IDLE the runtime is idle
-    final var task = newRecordingTask(Outcome.IDLE);
+    // given
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.onDemand(Duration.ofMillis(10)),
             interPartitionSender,
@@ -227,10 +227,10 @@ final class ManagedScheduledTaskTest {
 
   @Test
   void shouldClampRequestRunToMinResolution() {
-    // given — drain the initial post-recovery run first
-    final var task = newRecordingTask(Outcome.IDLE);
+    // given
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.onDemand(Duration.ofMillis(100)),
             interPartitionSender,
@@ -239,10 +239,10 @@ final class ManagedScheduledTaskTest {
     managed.execute(mock(TaskResultBuilder.class));
     clearInvocations(scheduleService);
 
-    // when — caller asks for a run "right now"
+    // when
     managed.requestRun(FIXED_NOW_MS);
 
-    // then — runtime clamps to now + minResolution
+    // then
     verify(scheduleService).runAt(eq(FIXED_NOW_MS + 100), any(Task.class));
   }
 
@@ -259,9 +259,9 @@ final class ManagedScheduledTaskTest {
         .thenReturn(initialHandle)
         .thenReturn(firstHandle)
         .thenReturn(secondHandle);
-    final var task = newRecordingTask(Outcome.IDLE);
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.onDemand(Duration.ofMillis(10)),
             interPartitionSender,
@@ -282,10 +282,10 @@ final class ManagedScheduledTaskTest {
 
   @Test
   void shouldNotRescheduleWhenAlreadyScheduledEarlier() {
-    // given — drain initial post-recovery run first
-    final var task = newRecordingTask(Outcome.IDLE);
+    // given
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.onDemand(Duration.ofMillis(10)),
             interPartitionSender,
@@ -298,21 +298,20 @@ final class ManagedScheduledTaskTest {
     managed.requestRun(FIXED_NOW_MS + 100);
     managed.requestRun(FIXED_NOW_MS + 1_000);
 
-    // then — second call is a no-op since 1000 > 100
+    // then
     verify(scheduleService, times(1)).runAt(anyLong(), any(Task.class));
   }
 
   @Test
   void shouldIgnoreRequestRunWhenNotEnabled() {
     // given
-    final var task = newRecordingTask(Outcome.IDLE);
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.onDemand(Duration.ofMillis(10)),
             interPartitionSender,
             new SimpleMeterRegistry());
-    // no onRecovered called — task is disabled
 
     // when
     managed.requestRun(FIXED_NOW_MS + 1_000);
@@ -327,9 +326,9 @@ final class ManagedScheduledTaskTest {
     final SimpleProcessingScheduleService.ScheduledTask handle =
         mock(SimpleProcessingScheduleService.ScheduledTask.class);
     when(scheduleService.runAt(anyLong(), any(Task.class))).thenReturn(handle);
-    final var task = newRecordingTask(Outcome.IDLE);
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.onDemand(Duration.ofMillis(10)),
             interPartitionSender,
@@ -342,7 +341,6 @@ final class ManagedScheduledTaskTest {
 
     // then
     verify(handle).cancel();
-    // further requests are ignored
     clearInvocations(scheduleService);
     managed.requestRun(FIXED_NOW_MS + 100);
     verifyNoInteractions(scheduleService);
@@ -351,9 +349,9 @@ final class ManagedScheduledTaskTest {
   @Test
   void shouldReenableAndScheduleOnResumed() {
     // given
-    final var task = newRecordingTask(Outcome.IDLE);
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.fixedRate(Duration.ofSeconds(30)),
             interPartitionSender,
@@ -372,9 +370,9 @@ final class ManagedScheduledTaskTest {
   @Test
   void shouldDisableOnCloseAndOnFailed() {
     // given
-    final var task = newRecordingTask(Outcome.IDLE);
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.onDemand(Duration.ofMillis(10)),
             interPartitionSender,
@@ -384,12 +382,11 @@ final class ManagedScheduledTaskTest {
     // when
     managed.onClose();
 
-    // then — disabled
+    // then
     clearInvocations(scheduleService);
     managed.requestRun(FIXED_NOW_MS + 100);
     verifyNoInteractions(scheduleService);
 
-    // and onFailed has the same effect after re-enabling via onResumed
     managed.onResumed();
     managed.onFailed();
     clearInvocations(scheduleService);
@@ -400,21 +397,21 @@ final class ManagedScheduledTaskTest {
   @Test
   void shouldCatchExceptionsFromTaskAndReschedulePerFallback() {
     // given
-    final ScheduledTask task =
-        new ScheduledTask() {
+    final ScheduledTask<Void> task =
+        new ScheduledTask<>() {
           @Override
           public String name() {
             return "boom";
           }
 
           @Override
-          public Outcome run(final TaskContext ctx) {
+          public Result run(final TaskContext<Void> ctx) {
             throw new RuntimeException("boom");
           }
         };
     final Duration fallback = Duration.ofSeconds(30);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task, Schedule.fixedRate(fallback), interPartitionSender, new SimpleMeterRegistry());
     managed.onRecovered(context);
     clearInvocations(scheduleService);
@@ -424,7 +421,7 @@ final class ManagedScheduledTaskTest {
     when(builder.build()).thenReturn(mock(TaskResult.class));
     final TaskResult result = managed.execute(builder);
 
-    // then — exception swallowed; reschedule at now + fallback; result still produced
+    // then
     assertThat(result).isNotNull();
     verify(scheduleService).runAt(eq(FIXED_NOW_MS + fallback.toMillis()), any(Task.class));
   }
@@ -432,22 +429,22 @@ final class ManagedScheduledTaskTest {
   @Test
   void shouldExposeContextToTask() {
     // given
-    final AtomicReference<TaskContext> seen = new AtomicReference<>();
-    final ScheduledTask task =
-        new ScheduledTask() {
+    final AtomicReference<TaskContext<Void>> seen = new AtomicReference<>();
+    final ScheduledTask<Void> task =
+        new ScheduledTask<>() {
           @Override
           public String name() {
             return "capture";
           }
 
           @Override
-          public Outcome run(final TaskContext ctx) {
+          public Result run(final TaskContext<Void> ctx) {
             seen.set(ctx);
-            return Outcome.IDLE;
+            return ctx.result().idle();
           }
         };
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.fixedRate(Duration.ofSeconds(30)),
             interPartitionSender,
@@ -461,7 +458,6 @@ final class ManagedScheduledTaskTest {
     assertThat(seen.get()).isNotNull();
     assertThat(seen.get().clock().millis()).isEqualTo(FIXED_NOW_MS);
     assertThat(seen.get().partitionId()).isEqualTo(1);
-    // no yield budget configured -> shouldYield always false
     assertThat(seen.get().shouldYield()).isFalse();
   }
 
@@ -472,21 +468,22 @@ final class ManagedScheduledTaskTest {
     final TaskResultBuilder builder = mock(TaskResultBuilder.class);
     when(builder.appendCommandRecord(anyLong(), any(), any())).thenReturn(true);
     when(builder.build()).thenReturn(mock(TaskResult.class));
-    final ScheduledTask task =
-        new ScheduledTask() {
+    final ScheduledTask<Void> task =
+        new ScheduledTask<>() {
           @Override
           public String name() {
             return "appender";
           }
 
           @Override
-          public Outcome run(final TaskContext ctx) {
-            ctx.sink().append(42L, JobIntent.TIME_OUT, record);
-            return Outcome.IDLE;
+          public Result run(final TaskContext<Void> ctx) {
+            final Result.Builder<Void> r = ctx.result();
+            r.append(42L, JobIntent.TIME_OUT, record);
+            return r.idle();
           }
         };
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.fixedRate(Duration.ofSeconds(30)),
             interPartitionSender,
@@ -504,21 +501,22 @@ final class ManagedScheduledTaskTest {
   void shouldDelegateInterPartitionSendToSender() {
     // given
     final var record = new JobRecord();
-    final ScheduledTask task =
-        new ScheduledTask() {
+    final ScheduledTask<Void> task =
+        new ScheduledTask<>() {
           @Override
           public String name() {
             return "sender";
           }
 
           @Override
-          public Outcome run(final TaskContext ctx) {
-            ctx.sink().sendInterPartition(2, ValueType.JOB, JobIntent.CANCEL, 7L, record);
-            return Outcome.IDLE;
+          public Result run(final TaskContext<Void> ctx) {
+            final Result.Builder<Void> r = ctx.result();
+            r.sendInterPartition(2, ValueType.JOB, JobIntent.CANCEL, 7L, record);
+            return r.idle();
           }
         };
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.fixedRate(Duration.ofSeconds(30)),
             interPartitionSender,
@@ -535,30 +533,30 @@ final class ManagedScheduledTaskTest {
 
   @Test
   void shouldExposeShouldYieldOnceBudgetElapsed() {
-    // given — controllable clock so we can advance time within a single run
+    // given
     final var controlClock = StreamClock.controllable(InstantSource.system());
     controlClock.pinAt(Instant.ofEpochMilli(FIXED_NOW_MS));
     when(context.getClock()).thenReturn(controlClock);
 
     final AtomicReference<Boolean> beforeBudget = new AtomicReference<>();
     final AtomicReference<Boolean> afterBudget = new AtomicReference<>();
-    final ScheduledTask task =
-        new ScheduledTask() {
+    final ScheduledTask<Void> task =
+        new ScheduledTask<>() {
           @Override
           public String name() {
             return "yielder";
           }
 
           @Override
-          public Outcome run(final TaskContext ctx) {
+          public Result run(final TaskContext<Void> ctx) {
             beforeBudget.set(ctx.shouldYield());
             controlClock.pinAt(Instant.ofEpochMilli(FIXED_NOW_MS + 100));
             afterBudget.set(ctx.shouldYield());
-            return Outcome.YIELD_NOW;
+            return ctx.result().yieldNow();
           }
         };
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.fixedRate(Duration.ofSeconds(30)).withYieldBudget(Duration.ofMillis(50)),
             interPartitionSender,
@@ -575,22 +573,10 @@ final class ManagedScheduledTaskTest {
 
   @Test
   void shouldClearPendingNextRunBeforeExecutingTaskBody() {
-    // given — task that requests a run from inside its body, before returning Idle.
-    final ScheduledTask task =
-        new ScheduledTask() {
-          @Override
-          public String name() {
-            return "self-trigger";
-          }
-
-          @Override
-          public Outcome run(final TaskContext ctx) {
-            // simulates an external requestRun mid-execution; should be honored on its own.
-            return Outcome.IDLE;
-          }
-        };
+    // given
+    final var task = newRecordingTask(Result.Builder::idle);
     final var managed =
-        new ManagedScheduledTask(
+        new ManagedScheduledTask<>(
             task,
             Schedule.fixedRate(Duration.ofSeconds(30)),
             interPartitionSender,
@@ -599,7 +585,7 @@ final class ManagedScheduledTaskTest {
 
     // when
     managed.execute(mock(TaskResultBuilder.class));
-    managed.requestRun(FIXED_NOW_MS + 100); // should reschedule, since the prior run was consumed
+    managed.requestRun(FIXED_NOW_MS + 100);
 
     // then
     verify(scheduleService, atLeastOnce()).runAt(eq(FIXED_NOW_MS + 100), any(Task.class));
@@ -609,16 +595,22 @@ final class ManagedScheduledTaskTest {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  private static ScheduledTask newRecordingTask(final Outcome outcome) {
-    return new ScheduledTask() {
+  /**
+   * Build a {@link ScheduledTask} that always returns the same {@link Result}, picked by applying
+   * {@code terminal} to {@code ctx.result()}. Used wherever the previous test built an {@code
+   * Outcome} singleton (e.g. {@code Outcome.IDLE}, {@code Outcome.YIELD_NOW}).
+   */
+  private static ScheduledTask<Void> newRecordingTask(
+      final Function<Result.Builder<Void>, Result> terminal) {
+    return new ScheduledTask<>() {
       @Override
       public String name() {
         return "recording";
       }
 
       @Override
-      public Outcome run(final TaskContext ctx) {
-        return outcome;
+      public Result run(final TaskContext<Void> ctx) {
+        return terminal.apply(ctx.result());
       }
     };
   }
