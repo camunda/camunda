@@ -148,7 +148,7 @@ async function generateFix(finding, repoRoot) {
   return parseFixResponse(extractText(response));
 }
 
-function applyFix(filePath, oldString, newString) {
+function previewFix(filePath, oldString, newString) {
   const content = fs.readFileSync(filePath, "utf8");
   const idx = content.indexOf(oldString);
   if (idx === -1) {
@@ -157,7 +157,12 @@ function applyFix(filePath, oldString, newString) {
   if (content.indexOf(oldString, idx + 1) !== -1) {
     throw new Error("old_string is ambiguous (multiple occurrences)");
   }
-  fs.writeFileSync(filePath, content.replace(oldString, newString));
+  return { original: content, updated: content.replace(oldString, newString) };
+}
+
+function applyFix(filePath, oldString, newString) {
+  const { updated } = previewFix(filePath, oldString, newString);
+  fs.writeFileSync(filePath, updated);
 }
 
 function moduleForFile(filePath) {
@@ -231,8 +236,24 @@ function buildPrBody(finding, fix) {
   ].join("\n");
 }
 
+function resolveReviewers(filePath, repoRoot) {
+  const owners = lookupCodeowners(filePath, repoRoot);
+  const teamReviewers = [];
+  const userReviewers = [];
+  for (const owner of owners) {
+    if (!owner.startsWith("@")) continue;
+    const stripped = owner.slice(1);
+    if (stripped.includes("/")) {
+      teamReviewers.push(stripped.split("/")[1]);
+    } else {
+      userReviewers.push(stripped);
+    }
+  }
+  return { userReviewers, teamReviewers };
+}
+
 async function processFinding(finding, opts) {
-  const { repoRoot, repo, runId } = opts;
+  const { repoRoot, repo, runId, dryRun } = opts;
   const filePath = path.join(repoRoot, finding.file);
   if (!fs.existsSync(filePath)) {
     return { status: "skipped", reason: "file does not exist" };
@@ -249,6 +270,38 @@ async function processFinding(finding, opts) {
   }
   if (typeof fix.old_string !== "string" || typeof fix.new_string !== "string") {
     return { status: "skipped", reason: "AI response missing old_string/new_string" };
+  }
+
+  // Dry-run: validate the apply step (old_string unique) but don't touch
+  // the working tree, run Maven, push, or hit GitHub. Print everything
+  // a reviewer would need to evaluate the proposed PR.
+  if (dryRun) {
+    try {
+      previewFix(filePath, fix.old_string, fix.new_string);
+    } catch (err) {
+      return { status: "skipped", reason: `apply check failed: ${err.message}` };
+    }
+    const branch = buildBranchName(finding, runId);
+    const { userReviewers, teamReviewers } = resolveReviewers(
+      finding.file,
+      repoRoot,
+    );
+    return {
+      status: "dry_run",
+      preview: {
+        finding_id: finding.finding_id,
+        title: fix.summary,
+        branch,
+        labels: ["ai-fix:auto-pr"],
+        reviewers: { users: userReviewers, teams: teamReviewers },
+        body: buildPrBody(finding, fix),
+        fix: {
+          summary: fix.summary,
+          old_string: fix.old_string,
+          new_string: fix.new_string,
+        },
+      },
+    };
   }
 
   try {
@@ -277,18 +330,10 @@ async function processFinding(finding, opts) {
   git(["push", "-u", "origin", branch], { cwd: repoRoot });
   git(["checkout", "-"], { cwd: repoRoot });
 
-  const owners = lookupCodeowners(finding.file, repoRoot);
-  const teamReviewers = [];
-  const userReviewers = [];
-  for (const owner of owners) {
-    if (!owner.startsWith("@")) continue;
-    const stripped = owner.slice(1);
-    if (stripped.includes("/")) {
-      teamReviewers.push(stripped.split("/")[1]);
-    } else {
-      userReviewers.push(stripped);
-    }
-  }
+  const { userReviewers, teamReviewers } = resolveReviewers(
+    finding.file,
+    repoRoot,
+  );
 
   const prNumber = await openPr(repo, {
     title: fix.summary,
@@ -311,6 +356,7 @@ function parseArgs(argv) {
     triaged: "triaged.json",
     output: "-",
     maxPrs: 5,
+    dryRun: false,
     repo: process.env.GITHUB_REPOSITORY ?? "",
     repoRoot: process.cwd(),
     runId: process.env.GITHUB_RUN_ID ?? `local-${Date.now()}`,
@@ -326,6 +372,9 @@ function parseArgs(argv) {
         break;
       case "--max-prs":
         args.maxPrs = parseInt(argv[++i], 10);
+        break;
+      case "--dry-run":
+        args.dryRun = true;
         break;
       case "--repo":
         args.repo = argv[++i];
@@ -344,6 +393,7 @@ function parseArgs(argv) {
             "  --triaged PATH    triaged.json input (default: triaged.json)",
             "  --output PATH     summary JSON (default: stdout). Use - for stdout.",
             "  --max-prs N       cap auto-PRs per run (default: 5)",
+            "  --dry-run         don't push or open a PR; print what would be created",
             "  --repo OWNER/NAME (default: $GITHUB_REPOSITORY)",
             "  --repo-root PATH  (default: cwd)",
             "  --run-id ID       suffix for branch names (default: $GITHUB_RUN_ID)",
@@ -354,7 +404,7 @@ function parseArgs(argv) {
             "Required env:",
             "  AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY",
             "  BEDROCK_INFERENCE_PROFILE_ARN",
-            "  GITHUB_TOKEN  (contents:write + pull-requests:write)",
+            "  GITHUB_TOKEN  (contents:write + pull-requests:write; not needed for --dry-run)",
           ].join("\n"),
         );
         process.exit(0);
@@ -370,18 +420,38 @@ function parseArgs(argv) {
   return args;
 }
 
+function logDryRunPreview(preview) {
+  const sep = "=".repeat(72);
+  console.error(`\n${sep}\nDRY RUN — would open PR for ${preview.finding_id}\n${sep}`);
+  console.error(`title:     ${preview.title}`);
+  console.error(`branch:    ${preview.branch}`);
+  console.error(`labels:    ${preview.labels.join(", ")}`);
+  console.error(
+    `reviewers: users=[${preview.reviewers.users.join(", ")}] teams=[${preview.reviewers.teams.join(", ")}]`,
+  );
+  console.error(`---- fix.summary ----\n${preview.fix.summary}`);
+  console.error(`---- fix.old_string ----\n${preview.fix.old_string}`);
+  console.error(`---- fix.new_string ----\n${preview.fix.new_string}`);
+  console.error(`---- PR body ----\n${preview.body}`);
+  console.error(sep);
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const triagedRaw = fs.readFileSync(args.triaged, "utf8");
   const triaged = JSON.parse(triagedRaw);
   const candidates = (triaged.pr_eligible ?? []).slice(0, args.maxPrs);
 
-  const summary = { opened: [], skipped: [] };
+  const summary = args.dryRun
+    ? { dry_run: true, would_open: [], skipped: [] }
+    : { dry_run: false, opened: [], skipped: [] };
+
   for (const finding of candidates) {
     const result = await processFinding(finding, {
       repoRoot: args.repoRoot,
       repo: args.repo,
       runId: args.runId,
+      dryRun: args.dryRun,
     });
     if (result.status === "opened") {
       summary.opened.push({
@@ -392,6 +462,9 @@ async function main() {
       console.error(
         `OPENED PR #${result.pr} (${result.branch}) for ${finding.finding_id}`,
       );
+    } else if (result.status === "dry_run") {
+      summary.would_open.push(result.preview);
+      logDryRunPreview(result.preview);
     } else {
       summary.skipped.push({
         finding_id: finding.finding_id,

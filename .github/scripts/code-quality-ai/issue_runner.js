@@ -89,22 +89,33 @@ function ownersToAssignees(owners) {
   return users;
 }
 
-async function processFinding(repo, finding, repoRoot) {
-  const title = buildIssueTitle(finding);
-  const body = buildIssueBody(finding);
-  const owners = lookupCodeowners(finding.file, repoRoot);
-  const assignees = ownersToAssignees(owners);
+function buildIssuePayload(finding, repoRoot) {
+  return {
+    finding_id: finding.finding_id,
+    title: buildIssueTitle(finding),
+    body: buildIssueBody(finding),
+    labels: [severityLabel(finding)],
+    assignees: ownersToAssignees(lookupCodeowners(finding.file, repoRoot)),
+  };
+}
+
+async function processFinding(repo, finding, repoRoot, dryRun) {
+  const payload = buildIssuePayload(finding, repoRoot);
+
+  if (dryRun) {
+    return { status: "dry_run", preview: payload };
+  }
 
   const issueNumber = await openIssue(repo, {
-    title,
-    body,
-    labels: [severityLabel(finding)],
-    assignees,
+    title: payload.title,
+    body: payload.body,
+    labels: payload.labels,
+    assignees: payload.assignees,
   });
   // openIssue applies labels via the create payload; double-applying is a
   // no-op but lets us add additional labels later if needed.
-  await addLabels(repo, issueNumber, [severityLabel(finding)]);
-  return { issue: issueNumber };
+  await addLabels(repo, issueNumber, payload.labels);
+  return { status: "opened", issue: issueNumber };
 }
 
 function parseArgs(argv) {
@@ -112,6 +123,7 @@ function parseArgs(argv) {
     triaged: "triaged.json",
     output: "-",
     maxIssues: 10,
+    dryRun: false,
     repo: process.env.GITHUB_REPOSITORY ?? "",
     repoRoot: process.cwd(),
   };
@@ -127,6 +139,9 @@ function parseArgs(argv) {
       case "--max-issues":
         args.maxIssues = parseInt(argv[++i], 10);
         break;
+      case "--dry-run":
+        args.dryRun = true;
+        break;
       case "--repo":
         args.repo = argv[++i];
         break;
@@ -141,6 +156,7 @@ function parseArgs(argv) {
             "  --triaged PATH      triaged.json input (default: triaged.json)",
             "  --output PATH       summary JSON (default: stdout). Use - for stdout.",
             "  --max-issues N      cap auto-issues per run (default: 10)",
+            "  --dry-run           don't open issues; print what would be created",
             "  --repo OWNER/NAME   (default: $GITHUB_REPOSITORY)",
             "  --repo-root PATH    (default: cwd)",
             "",
@@ -148,7 +164,7 @@ function parseArgs(argv) {
             "JSON is written to stdout (or --output).",
             "",
             "Required env:",
-            "  GITHUB_TOKEN  (issues:write)",
+            "  GITHUB_TOKEN  (issues:write; not needed for --dry-run)",
           ].join("\n"),
         );
         process.exit(0);
@@ -164,22 +180,45 @@ function parseArgs(argv) {
   return args;
 }
 
+function logDryRunPreview(preview) {
+  const sep = "=".repeat(72);
+  console.error(`\n${sep}\nDRY RUN — would open issue for ${preview.finding_id}\n${sep}`);
+  console.error(`title:     ${preview.title}`);
+  console.error(`labels:    ${preview.labels.join(", ")}`);
+  console.error(`assignees: ${preview.assignees.join(", ") || "(none)"}`);
+  console.error(`---- body ----\n${preview.body}`);
+  console.error(sep);
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const triaged = JSON.parse(fs.readFileSync(args.triaged, "utf8"));
   const candidates = (triaged.issue_only ?? []).slice(0, args.maxIssues);
 
-  const summary = { opened: [], skipped: [] };
+  const summary = args.dryRun
+    ? { dry_run: true, would_open: [], skipped: [] }
+    : { dry_run: false, opened: [], skipped: [] };
+
   for (const finding of candidates) {
     try {
-      const result = await processFinding(args.repo, finding, args.repoRoot);
-      summary.opened.push({
-        finding_id: finding.finding_id,
-        issue: result.issue,
-      });
-      console.error(
-        `OPENED issue #${result.issue} for ${finding.finding_id}`,
+      const result = await processFinding(
+        args.repo,
+        finding,
+        args.repoRoot,
+        args.dryRun,
       );
+      if (result.status === "dry_run") {
+        summary.would_open.push(result.preview);
+        logDryRunPreview(result.preview);
+      } else {
+        summary.opened.push({
+          finding_id: finding.finding_id,
+          issue: result.issue,
+        });
+        console.error(
+          `OPENED issue #${result.issue} for ${finding.finding_id}`,
+        );
+      }
     } catch (err) {
       summary.skipped.push({
         finding_id: finding.finding_id,
