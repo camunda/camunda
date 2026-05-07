@@ -1,0 +1,33 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as SectionStories from './section.stories';
+
+<Meta of={SectionStories} name="Docs" />
+
+# Section
+
+Pairs with `Heading` to deliver an outline-correct, context-aware document hierarchy. Each `Section` increments a heading level provided through React context; `Heading` reads that level and renders the matching `<h1>` … `<h6>` element automatically.
+
+## When to use
+
+- **Reusable content blocks** — drop a chunk of UI somewhere different in the page tree and let it pick up the right heading depth without rewriting tags.
+- **Outlines that mirror the visual structure** — preserves a valid heading hierarchy for screen readers and SEO without manual `h2`/`h3` bookkeeping.
+- **Polymorphic semantics** — pass `as="article"`, `as="aside"`, etc. when `<section>` isn't the right element; the level context still cascades.
+
+## When not to use
+
+- **Page hero or top-of-page title** — render a plain `<h1>` directly. There is no level cascade to manage at the top.
+- **Visual-only emphasis** — if you only want big text, use the typography utility classes (e.g. `text-4xl font-semibold`) on a `<span>` or `<p>`.
+
+## Composition
+
+- `<Section>` is polymorphic via `as`; defaults to `<section>`.
+- `level` overrides the auto-incremented level — the next nested `<Heading>` will use the override and the next `<Section>` will increment from there.
+- The cascade only affects descendants. Headings outside of any `<Section>` default to `<h1>`.

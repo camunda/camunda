@@ -12,7 +12,7 @@ import {Calendar as CalendarIcon} from 'lucide-react';
 import * as React from 'react';
 import type {DateRange} from 'react-day-picker';
 import {Button} from '../button/button.shadcn';
-import {cn} from '@/lib/utils';
+import {cn} from '../../../lib/utils';
 import {
   DatePicker as CarbonDatePicker,
   DatePickerInput as CarbonDatePickerInput,

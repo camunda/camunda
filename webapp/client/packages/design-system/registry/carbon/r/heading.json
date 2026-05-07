@@ -1,0 +1,25 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "heading",
+  "type": "registry:ui",
+  "title": "Heading",
+  "description": "A context-aware heading element. Renders the right `<h1>` … `<h6>` automatically based on how deeply it is nested inside `<Section>` components. Always pair with `Section` — without one, `Heading` defaults to `<h1>`.",
+  "dependencies": [
+    "@carbon/react"
+  ],
+  "files": [
+    {
+      "path": "components/ui/heading.tsx",
+      "type": "registry:ui",
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {Heading} from '@carbon/react';\n"
+    }
+  ],
+  "meta": {
+    "flavor": "carbon",
+    "package": "@camunda/design-system",
+    "packageSubpath": "@camunda/design-system/carbon",
+    "import": "import {Heading} from '@camunda/design-system/carbon';",
+    "docs": "# Heading\n\nA context-aware heading element. Renders the right `<h1>` … `<h6>` automatically based on how deeply it is nested inside `<Section>` components. Always pair with `Section` — without one, `Heading` defaults to `<h1>`.\n\n## When to use\n\n- **Headings that travel** — the same content block can appear at different depths of the page tree without rewriting the tag.\n- **Multi-author code where outline correctness keeps slipping** — let the framework do the bookkeeping.\n- **Reusable cards/widgets/dialogs** — wrap them in `<Section>` once at the call site and the headings inside snap to the right level.\n\n## When not to use\n\n- **A single static heading at the top of the page** — write `<h1>` directly. Less indirection for trivial cases.\n- **Display-only typography** — if it's not actually a section heading, use a `<p>` with type utilities.\n\n## Composition\n\n- The wrapper consumes the `SectionContext` exposed by `section/section.shadcn.tsx`.\n- Default typography per level: `text-4xl/3xl/2xl/xl/lg/base font-semibold tracking-tight`. Override via `className`.\n- All native `<h1>` props are forwarded.",
+    "migrationGuide": "# Heading — Carbon → shadcn migration guide\n\n`Heading` is the read-side of the `Section`/`Heading` pair. It pulls the current level from React context and renders the matching `<h{level}>`. The shadcn version is functionally identical to Carbon's — only the typography styling differs.\n\n## Mapping\n\n| Carbon prop | shadcn prop | Notes |\n|---|---|---|\n| `className` | `className` | Forwarded. Use to override Tailwind defaults. |\n| any `<h1>` HTML attribute | same | Forwarded; `id`, `aria-*`, `data-*`, etc. all flow through. |\n\n## Carbon features missing in shadcn\n\n- **IBM Plex Sans type ramp** — Carbon's `Heading` uses the IBM type scale tokens. shadcn uses Tailwind's built-in type scale.\n- **`heading-01` … `heading-07` SCSS mixins** — not exposed. Override via `className` if you need a specific scale.\n\n## shadcn features missing in Carbon\n\n- **`data-level` attribute on the rendered heading** — useful for styling hooks (`[data-slot=heading][data-level='2']`).\n\n## Behavioural differences\n\n- **Default font weight** — both default to semibold. Carbon: `font-weight: 600`. shadcn: `font-semibold` (`font-weight: 600`). Match.\n- **Tracking/letter-spacing** — shadcn applies `tracking-tight`. Carbon's tokens are more conservative.\n- **Standalone `Heading` (no Section wrapper)** — both render `<h1>`.\n\n## Migration checklist\n\n1. `import {Heading} from '@camunda/design-system/shadcn'`.\n2. Wrap content in `<Section>` to control depth.\n3. If a particular heading needs a non-default font size or weight, pass it via `className` (e.g. `<Heading className=\"text-2xl font-medium\">`).\n4. Audit pages: shadcn headings already use `font-semibold tracking-tight`. If your design tokens define a different default, override globally in `globals.css` via `[data-slot=heading]`."
+  }
+}

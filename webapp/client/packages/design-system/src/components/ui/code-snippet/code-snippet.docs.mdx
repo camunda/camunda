@@ -1,0 +1,38 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as CodeSnippetStories from './code-snippet.stories';
+
+<Meta of={CodeSnippetStories} name="Docs" />
+
+# CodeSnippet
+
+Renders a code block with an optional copy-to-clipboard button. Three modes:
+
+- **inline** — renders an `<code>` chip suitable for in-prose use; the whole element is the copy target.
+- **single** — single-line code block; truncates and shows a copy button in the corner.
+- **multi** — multi-line code block; long content can be expanded/collapsed past `maxCollapsedNumberOfRows`.
+
+## When to use
+
+- **Display API examples, install commands, configuration snippets**.
+- **Anything where users typically need to copy the text** — the copy button is the differentiator vs. a plain `<pre><code>`.
+
+## When not to use
+
+- **Heavy syntax highlighting** — pair with a syntax-highlighter library (Shiki, Prism, etc.) inside the `children` slot.
+- **Diffs / multi-file viewers** — use a dedicated diff component.
+
+## Composition
+
+- `children` is rendered as the visual content; `copyText` overrides what's actually copied (defaults to extracted inner text).
+- `feedback` and `feedbackTimeout` control the post-copy aria-live announcement.
+- `wrapText` enables soft-wrap inside the multi-line block.
+- `maxCollapsedNumberOfRows` (default `15`) controls when the show-more toggle appears.
+- The copy uses `navigator.clipboard.writeText`. If unavailable (older browsers / non-HTTPS dev contexts), the call fails silently — pass `hideCopyButton` to prevent confusion.

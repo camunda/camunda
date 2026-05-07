@@ -1,0 +1,33 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as GridStories from './grid.stories';
+
+<Meta of={GridStories} name="Docs" />
+
+# Grid
+
+A 16-column CSS grid container that pairs with `Column` to lay out responsive page-level layouts. Mirrors Carbon's 2x grid: same column count, same breakpoint-driven spans, same `condensed` / `narrow` gutter modes.
+
+## When to use
+
+- **Page layouts** — heroes, feature rows, dashboard tiles where column counts shift across breakpoints.
+- **Forms with side-by-side fields** that need to stack on small screens.
+
+## When not to use
+
+- **Single-axis lists** — use `Stack`. Less ceremony, no column math.
+- **Dense data** — use `Table`.
+
+## Composition
+
+- `<Grid>` defaults to 16 columns. Pass `columns={12}` for a smaller grid.
+- `condensed` collapses gutter to 1px (Carbon style); `narrow` uses 1rem; default is 2rem.
+- `<Column>` reads the column count from context. If you nest a `<Grid>` inside a `<Column>`, the inner grid uses its own column count.
+- Both elements are polymorphic via `as`.

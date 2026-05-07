@@ -1,0 +1,34 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as ListStories from './unordered-list.stories';
+
+<Meta of={ListStories} name="Docs" />
+
+# UnorderedList
+
+A styled `<ul>` with consistent disc bullets, indentation, and item spacing. Pairs with `ListItem` (which renders an `<li>`).
+
+## When to use
+
+- **Bulleted prose lists** — release notes, requirements, "what's included" sections.
+- **Nested lists** — pass `nested` on the inner `UnorderedList` to remove the disc duplication and tighten spacing.
+- **Expressive copy** — pass `isExpressive` for slightly larger type with more leading.
+
+## When not to use
+
+- **Numbered steps** — render `<ol>` directly (or add an `OrderedList` wrapper if you need one).
+- **Navigation** — use a `<nav>` element with anchors instead.
+- **Selectable rows** — see `ContainedList` or `Table`.
+
+## Composition
+
+- Both components are pure HTML wrappers — no JS, no portals.
+- Tailwind: `list-disc pl-5 text-sm leading-6`. `nested` adds `mt-1 mb-0 ml-4`. `isExpressive` switches to `text-base leading-7`.
+- Override with `className` on either component when a specific list needs different rhythm.

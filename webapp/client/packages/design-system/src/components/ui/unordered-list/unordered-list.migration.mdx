@@ -1,0 +1,45 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/UnorderedList/Migration" />
+
+# UnorderedList — Carbon → shadcn migration guide
+
+A 1-to-1 functional match. Carbon's `UnorderedList` and `ListItem` map to plain `<ul>` and `<li>` with Tailwind list utilities.
+
+## Mapping
+
+| Carbon prop | shadcn prop | Notes |
+|---|---|---|
+| `nested` | `nested` | On the inner list. Removes outer margin and pulls indentation in. |
+| `isExpressive` | `isExpressive` | Larger type / more leading. |
+| `className` | `className` | Forwarded. |
+| any `<ul>` HTML attr | same | Forwarded. |
+
+## Carbon features missing in shadcn
+
+- **IBM type-token alignment** — Carbon uses `body-compact-01` / `body-01` tokens. shadcn uses Tailwind's `text-sm` / `text-base`. Override via `className` if exact parity matters.
+- **`OrderedList`** — not part of this migration (no Camunda usage). Use `<ol>` directly with the same Tailwind list classes.
+
+## shadcn features missing in Carbon
+
+- **`data-nested` and `data-expressive`** attributes for CSS hooks.
+
+## Behavioural differences
+
+- **Bullet colour** — Carbon: matches text colour. shadcn: `marker:text-muted-foreground`. Override via `className` if you want bullets to match the text.
+- **Margin between items** — Carbon: `0.5rem`. shadcn: Tailwind `mt-1` (`0.25rem`). Tighten or loosen with `className` on the `<li>`.
+
+## Migration checklist
+
+1. Swap `import {UnorderedList, ListItem} from '@carbon/react'` → `from '@camunda/design-system/shadcn'`.
+2. Keep `nested` and `isExpressive` props as-is.
+3. If you need bullet/text colour parity with Carbon, add `marker:text-foreground` to the outer list.
+4. Drop `@use '@carbon/styles/scss/components/list'` imports.

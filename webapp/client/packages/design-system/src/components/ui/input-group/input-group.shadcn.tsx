@@ -9,7 +9,7 @@
 import * as React from 'react';
 import {cva, type VariantProps} from 'class-variance-authority';
 
-import {cn} from '@/lib/utils';
+import {cn} from '../../../lib/utils';
 import {Button} from '../button/button.shadcn';
 import {Input} from '../text-input/text-input.shadcn';
 import {Textarea} from '../text-area/text-area.shadcn';

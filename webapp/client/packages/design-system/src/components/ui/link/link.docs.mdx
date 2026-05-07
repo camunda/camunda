@@ -1,0 +1,34 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as LinkStories from './link.stories';
+
+<Meta of={LinkStories} name="Docs" />
+
+# Link
+
+A styled `<a>` element. Comes in three sizes, an inline variant for in-prose links, optional trailing icon, optional visited styles, and `asChild` for routing-library integration.
+
+## When to use
+
+- **External or internal navigation** — anywhere a user clicks to go somewhere else.
+- **In-text references** — use `inline` so the underline is always visible.
+- **As a routed link** — wrap with `asChild` and pass your router's `<NavLink>` or `<RouterLink>` as the only child.
+
+## When not to use
+
+- **Action buttons** — clicks that don't navigate (e.g. "Submit", "Open dialog") should be a `Button`.
+- **Plain decorative anchors** — if there's no destination, don't use a link.
+
+## Composition
+
+- The default rendered element is `<a>`. With `asChild`, it acts as a `Slot` and forwards props to the child component (e.g. `react-router`'s `NavLink`).
+- `renderIcon` accepts a Lucide-style icon component and renders it after the label.
+- `visited={true}` opts in to a purple visited colour. Carbon enables this opt-in too.
+- `disabled` sets `aria-disabled` and removes the element from the tab order — but the underlying `<a>` still renders (set `href={undefined}` if you want to remove navigation).

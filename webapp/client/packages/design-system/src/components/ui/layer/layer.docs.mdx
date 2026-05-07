@@ -1,0 +1,32 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as LayerStories from './layer.stories';
+
+<Meta of={LayerStories} name="Docs" />
+
+# Layer
+
+Tracks contextual depth for nested surfaces (background, card, muted) and exposes the current depth via the `useLayer()` hook. Components inside a `Layer` can read the level and adjust their own styling — useful for things like input groups that need a darker background when placed inside a card.
+
+## When to use
+
+- **Nested cards / surfaces** — wrap a region with `<Layer withBackground>` to bump the background tone.
+- **Custom components that need to know their depth** — call `useLayer()` to read the current `level` (0/1/2) and adjust styles.
+
+## When not to use
+
+- **Pages with flat, single-tone surfaces** — skip `Layer`, just style directly.
+
+## Composition
+
+- Default behaviour: each nested `Layer` increments the level (clamped at 2 — Carbon's `$layer-3` is the deepest). Pass `level={n}` to override.
+- `withBackground` applies a Tailwind background class for the current level: `bg-background` / `bg-card` / `bg-muted`.
+- The rendered element gets `data-layer-level={0|1|2}` for CSS targeting.
+- `useLayer()` returns `{level: 0 | 1 | 2}`.

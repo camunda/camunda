@@ -34,10 +34,28 @@
       "description": "A binary or tri-state input for selecting one or more independent options. Use inside forms, list multi-select, or \"select all\" headers — anywhere the user toggles state independently per row."
     },
     {
+      "name": "code-snippet",
+      "type": "registry:ui",
+      "title": "CodeSnippet",
+      "description": "Renders a code block with an optional copy-to-clipboard button. Three modes:"
+    },
+    {
+      "name": "column",
+      "type": "registry:ui",
+      "title": "Column",
+      "description": "A child of `Grid`. Sets `grid-column` for itself based on either a constant `span`, or breakpoint-specific spans (`sm` / `md` / `lg` / `xl` / `max`). Supports `offset`, `start`, and `end` for fine-grained placement."
+    },
+    {
       "name": "combo-box",
       "type": "registry:ui",
       "title": "ComboBox",
       "description": "A searchable, type-to-filter selection input. Use when the user picks one (or several) options from a list large enough that an open `Select` would be unwieldy, or when free-form filtering improves discoverability."
+    },
+    {
+      "name": "contained-list",
+      "type": "registry:ui",
+      "title": "ContainedList",
+      "description": "A vertical, divider-separated list with an optional header (label + action) and rich item slots (icon, content, action). Two visual modes: `on-page` (full-bleed, dividers only) and `disclosed` (boxed, looks like a card)."
     },
     {
       "name": "date-picker",
@@ -50,6 +68,24 @@
       "type": "registry:ui",
       "title": "Dropdown",
       "description": "A single-select listbox for picking one option from a fixed set. The shadcn migration target is **`Select`**, not `DropdownMenu` — `DropdownMenu` is the action-menu primitive (Carbon's `OverflowMenu` / `MenuButton`)."
+    },
+    {
+      "name": "grid",
+      "type": "registry:ui",
+      "title": "Grid",
+      "description": "A 16-column CSS grid container that pairs with `Column` to lay out responsive page-level layouts. Mirrors Carbon's 2x grid: same column count, same breakpoint-driven spans, same `condensed` / `narrow` gutter modes."
+    },
+    {
+      "name": "header",
+      "type": "registry:ui",
+      "title": "Header",
+      "description": "A sticky top app bar. Composes from a small set of slots: brand name (`HeaderName`), primary navigation (`HeaderNavigation` + `HeaderMenuItem`), and a right-aligned action bar (`HeaderGlobalBar` + `HeaderGlobalAction`)."
+    },
+    {
+      "name": "heading",
+      "type": "registry:ui",
+      "title": "Heading",
+      "description": "A context-aware heading element. Renders the right `<h1>` … `<h6>` automatically based on how deeply it is nested inside `<Section>` components. Always pair with `Section` — without one, `Heading` defaults to `<h1>`."
     },
     {
       "name": "icon-button",
@@ -70,6 +106,18 @@
       "description": "A dismissible inline status banner with an X close button. Compose `Alert` + status icon + an `<AlertTitle>` / `<AlertDescription>` + a ghost `Button` for the close action."
     },
     {
+      "name": "layer",
+      "type": "registry:ui",
+      "title": "Layer",
+      "description": "Tracks contextual depth for nested surfaces (background, card, muted) and exposes the current depth via the `useLayer()` hook. Components inside a `Layer` can read the level and adjust their own styling — useful for things like input groups that need a darker background when placed inside a card."
+    },
+    {
+      "name": "link",
+      "type": "registry:ui",
+      "title": "Link",
+      "description": "A styled `<a>` element. Comes in three sizes, an inline variant for in-prose links, optional trailing icon, optional visited styles, and `asChild` for routing-library integration."
+    },
+    {
       "name": "loading",
       "type": "registry:ui",
       "title": "Loading",
@@ -86,6 +134,12 @@
       "type": "registry:ui",
       "title": "Modal",
       "description": "A focus-trapped overlay panel for tasks that require the user's full attention. Use for forms, multi-step flows, or detail views that interrupt the page until explicitly dismissed."
+    },
+    {
+      "name": "multi-select",
+      "type": "registry:ui",
+      "title": "MultiSelect",
+      "description": "A select-like trigger that opens a popover containing a list of items, each with a checkbox. Supports controlled or uncontrolled selection, helper/invalid text, and a clear-all chip."
     },
     {
       "name": "overflow-menu",
@@ -106,6 +160,12 @@
       "description": "A small floating panel anchored to a trigger. Use for transient, non-modal supplementary content — tooltips with rich markup, settings panels, lightweight forms — that is dismissed by clicking outside or pressing Escape."
     },
     {
+      "name": "section",
+      "type": "registry:ui",
+      "title": "Section",
+      "description": "Pairs with `Heading` to deliver an outline-correct, context-aware document hierarchy. Each `Section` increments a heading level provided through React context; `Heading` reads that level and renders the matching `<h1>` … `<h6>` element automatically."
+    },
+    {
       "name": "select",
       "type": "registry:ui",
       "title": "Select",
@@ -122,6 +182,12 @@
       "type": "registry:ui",
       "title": "SkeletonText",
       "description": "A line-shaped placeholder for text content while loading. Use to reserve space for headings, single labels, or paragraphs of body copy until the real text arrives."
+    },
+    {
+      "name": "stack",
+      "type": "registry:ui",
+      "title": "Stack",
+      "description": "A layout primitive that lays out its children in a single direction with a consistent gap. Replaces ad-hoc `margin-top`/`margin-bottom` rules with one `gap` value that the parent controls."
     },
     {
       "name": "structured-list",
@@ -182,6 +248,18 @@
       "type": "registry:ui",
       "title": "Tooltip",
       "description": "A short, text-only label that appears on hover or focus of a trigger. Use to clarify icon-only buttons, abbreviate long labels, or surface secondary info that doesn't deserve permanent screen space."
+    },
+    {
+      "name": "tree-view",
+      "type": "registry:ui",
+      "title": "TreeView",
+      "description": "A hierarchical, keyboard-navigable list. Each node may be expandable (renders a chevron) and selectable. Used for navigating element instance trees, file systems, BPMN element histories, and similar nested data."
+    },
+    {
+      "name": "unordered-list",
+      "type": "registry:ui",
+      "title": "UnorderedList",
+      "description": "A styled `<ul>` with consistent disc bullets, indentation, and item spacing. Pairs with `ListItem` (which renders an `<li>`)."
     }
   ]
 }

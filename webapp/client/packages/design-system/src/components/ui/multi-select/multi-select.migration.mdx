@@ -1,0 +1,69 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/MultiSelect/Migration" />
+
+# MultiSelect — Carbon → shadcn migration guide
+
+Carbon's `MultiSelect` is a Downshift-based combobox with built-in multi-select behaviour, ListBox styling, and an extensive set of i18n / sorting / feedback knobs. shadcn ships nothing equivalent — the wrapper composes `Popover` + `Checkbox` to recreate the surface used by Camunda's apps today (selection by clicking checkboxes, count chip, clear-all).
+
+## Mapping (subset shipped)
+
+| Carbon prop | shadcn prop | Notes |
+|---|---|---|
+| `id` | `id` | Required. Used to wire `<label htmlFor>` and `aria-describedby`. |
+| `items` | `items` | Generic array. |
+| `itemToString` | `itemToString` | Used for label and equality. Defaults to `item.label`. |
+| `itemToElement` | `itemToElement` | Optional custom render per option. |
+| `initialSelectedItems` | `initialSelectedItems` | Uncontrolled initial state. |
+| `selectedItems` | `selectedItems` | Controlled. |
+| `onChange` | `onChange` | Same shape: `({selectedItems}) => …`. |
+| `label` (placeholder) | `label` | Static placeholder text shown in the trigger. |
+| `titleText` | `titleText` | The form label above the trigger. |
+| `hideLabel` | `hideLabel` | `sr-only` the label. |
+| `helperText` | `helperText` | Below the trigger. |
+| `invalid` / `invalidText` | `invalid` / `invalidText` | Error styles + message. |
+| `disabled` | `disabled` | Trigger non-interactive. |
+| `readOnly` | `readOnly` | Visually subdued, no-op clicks. |
+| `size` | `size` | `'sm'` / `'md'` / `'lg'`. |
+| `open` | `open` | Controlled popover state. |
+| `onMenuChange` | `onMenuChange` | Open/close callback. |
+
+## Carbon features dropped
+
+- **Filterable variant (`FilterableMultiSelect`)** — type-to-filter combobox. Not provided. Use `Combobox` chips, or extend `MultiSelect` to filter `items` upstream.
+- **`selectionFeedback` (top / fixed / top-after-reopen)** — Carbon's option for jumping selected items to the top. Not provided; items render in array order.
+- **`compareItems`, `sortItems`, `locale`** — Carbon's localized sorting helpers. Sort `items` upstream.
+- **`downshiftProps`** — escape hatch into Downshift internals. shadcn doesn't use Downshift.
+- **`decorator` / `slug`** — Carbon AI experimental. Not provided.
+- **`autoAlign`, `direction`** — popover positioning. shadcn uses Radix Popover defaults (auto-flips); pass `side` via the underlying `<PopoverContent>` if you want to customize (would need a small refactor).
+- **`light` (deprecated upstream)** — use `Layer` instead.
+- **i18n keys (`translateWithId`, `clearAnnouncement`)** — use the locale-string props directly.
+
+## shadcn features added
+
+- **Built on shared primitives** — uses the local `Popover` and `Checkbox`. Smaller bundle, fewer transitive deps, easier to customize.
+- **`data-readonly`, `data-slot=multi-select-trigger`** — for CSS hooks.
+
+## Behavioural differences
+
+- **Type-to-filter** — Carbon's `MultiSelect` doesn't support search either; you'd need `FilterableMultiSelect`. shadcn matches.
+- **Keyboard navigation inside the popover** — basic (Tab cycles; click toggles). Carbon's Downshift navigation is richer (Up/Down/Enter). If you need Up/Down navigation, switch to `Combobox` and emulate multi-select via the `ChipsInput` family.
+- **Selection display** — Carbon shows a count chip + label; shadcn matches.
+- **`onChange` payload shape** — same: `{ selectedItems }`. Carbon may pass `null`; shadcn always passes an array.
+
+## Migration checklist
+
+1. Swap the import.
+2. If you used `FilterableMultiSelect`, evaluate whether your users actually need search; if so, migrate to the `Combobox` chips family separately.
+3. Pre-sort `items` if you relied on Carbon's `selectionFeedback="top"`.
+4. Replace `compareItems` / `sortItems` / `locale` with a localized `Array.prototype.sort` upstream.
+5. If you need full Down/Up keyboard navigation in the listbox, plan a follow-up to compose `Combobox` instead.
+6. Drop `@use '@carbon/styles/scss/components/multi-select'` imports.

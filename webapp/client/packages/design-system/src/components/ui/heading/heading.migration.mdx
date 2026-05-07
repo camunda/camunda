@@ -1,0 +1,44 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/Heading/Migration" />
+
+# Heading — Carbon → shadcn migration guide
+
+`Heading` is the read-side of the `Section`/`Heading` pair. It pulls the current level from React context and renders the matching `<h{level}>`. The shadcn version is functionally identical to Carbon's — only the typography styling differs.
+
+## Mapping
+
+| Carbon prop | shadcn prop | Notes |
+|---|---|---|
+| `className` | `className` | Forwarded. Use to override Tailwind defaults. |
+| any `<h1>` HTML attribute | same | Forwarded; `id`, `aria-*`, `data-*`, etc. all flow through. |
+
+## Carbon features missing in shadcn
+
+- **IBM Plex Sans type ramp** — Carbon's `Heading` uses the IBM type scale tokens. shadcn uses Tailwind's built-in type scale.
+- **`heading-01` … `heading-07` SCSS mixins** — not exposed. Override via `className` if you need a specific scale.
+
+## shadcn features missing in Carbon
+
+- **`data-level` attribute on the rendered heading** — useful for styling hooks (`[data-slot=heading][data-level='2']`).
+
+## Behavioural differences
+
+- **Default font weight** — both default to semibold. Carbon: `font-weight: 600`. shadcn: `font-semibold` (`font-weight: 600`). Match.
+- **Tracking/letter-spacing** — shadcn applies `tracking-tight`. Carbon's tokens are more conservative.
+- **Standalone `Heading` (no Section wrapper)** — both render `<h1>`.
+
+## Migration checklist
+
+1. `import {Heading} from '@camunda/design-system/shadcn'`.
+2. Wrap content in `<Section>` to control depth.
+3. If a particular heading needs a non-default font size or weight, pass it via `className` (e.g. `<Heading className="text-2xl font-medium">`).
+4. Audit pages: shadcn headings already use `font-semibold tracking-tight`. If your design tokens define a different default, override globally in `globals.css` via `[data-slot=heading]`.

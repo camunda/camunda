@@ -61,23 +61,25 @@ This file is the single source-of-truth for the Carbon-to-shadcn migration in th
 | toast-notification | ToastNotification | sonner | conceptual | done | Paradigm shift: declarative `<Toast>` JSX → imperative `toast(...)` + global `<Toaster />` |
 | toggle | Toggle | switch | conceptual | done | Carbon Toggle = shadcn Switch; do NOT use shadcn `toggle` (that's a pressable button) |
 
-### No shadcn equivalent
+### Camunda-built primitives (no upstream shadcn equivalent — recreated in plain HTML/Tailwind)
 
-| Wrapper | Carbon component(s) | shadcn equivalent | Match type | Status | Notes |
+These wrappers have no shadcn/ui upstream counterpart. Each one is implemented directly inside this package on top of Tailwind, Radix Slot, and existing local primitives (Popover, Checkbox, Button) — no new dependencies. Export names match Carbon so consumers can swap `'@camunda/design-system/carbon'` ↔ `'@camunda/design-system/shadcn'` with minimal call-site changes.
+
+| Wrapper | Carbon component(s) | shadcn approach | Match type | Status | Notes |
 |---|---|---|---|---|---|
-| code-snippet | CodeSnippet | — | none | n/a |  |
-| column | Column | — | none | n/a | Carbon grid system |
-| contained-list | ContainedList, ContainedListItem | — | none | n/a |  |
-| grid | Grid | — | none | n/a | Carbon grid system |
-| header | Header | — | none | n/a | Carbon UIShell |
-| heading | Heading | — | none | n/a | Use typography utility classes |
-| layer | Layer | — | none | n/a | Carbon contextual layering |
-| link | Link | — | none | n/a | Use `<a>` or routing lib |
-| multi-select | MultiSelect | — | none | n/a | Compose from combobox + checkbox |
-| section | Section | — | none | n/a | Use `<section>` |
-| stack | Stack | — | none | n/a | Use flex utilities |
-| tree-view | TreeView, TreeNode | — | none | n/a |  |
-| unordered-list | UnorderedList, ListItem | — | none | n/a | Use `<ul>`/`<li>` |
+| code-snippet | CodeSnippet | custom — `<pre><code>` + Button + clipboard API | local | done | inline / single / multi types; expand-collapse for multi; drops Carbon's tooltip-on-button |
+| column | Column | custom — CSS grid + scoped `<style>` for breakpoints | local | done | `xlg` renamed to `xl`; percentage spans dropped |
+| contained-list | ContainedList, ContainedListItem | custom — `<section>` + `<ul>` + Tailwind | local | done | on-page / disclosed kinds; sm/md/lg/xl sizes |
+| grid | Grid | custom — CSS grid via inline `gridTemplateColumns` | local | done | 16-col by default; `condensed`/`narrow` gutter modes |
+| header | Header | custom — sticky `<header>` + slot helpers | local | done | Subset of UIShell (Header / Name / Navigation / MenuItem / GlobalBar / GlobalAction) |
+| heading | Heading | custom — context-aware `<h1>` … `<h6>` | local | done | Pairs with Section; reads `useSectionLevel()` |
+| layer | Layer | custom — context with `data-layer-level` + bg tones | local | done | Three levels (0/1/2); `withBackground` swaps `bg-background` / `bg-card` / `bg-muted` |
+| link | Link | custom — styled `<a>` (cva) + Radix Slot | local | done | `asChild` instead of polymorphic `as`; `disabled` keeps `<a>` (Carbon swaps to `<p>`) |
+| multi-select | MultiSelect | composed — Popover + Checkbox | local | done | Drops Downshift-only features (selectionFeedback, compareItems, downshiftProps); covers the Camunda surface |
+| section | Section | custom — context provider + polymorphic `<section>` | local | done | Pairs with Heading; auto-increments level (clamped at 6) |
+| stack | Stack | custom — flex utility wrapper | local | done | `gap` accepts numeric step (1–10) or CSS string |
+| tree-view | TreeView, TreeNode | custom — `<ul role="tree">` + context + keyboard nav | local | done | Up/Down/Left/Right/Enter/Space; controlled or uncontrolled active/selected/expanded |
+| unordered-list | UnorderedList, ListItem | custom — `<ul>` + `<li>` with Tailwind list utilities | local | done | `nested` and `isExpressive` props preserved |
 
 ## Infrastructure (shadcn-only)
 
@@ -100,4 +102,4 @@ Primitives with no Carbon counterpart, pulled in as dependencies of the wrappers
 
 ## Stats
 
-**43 Carbon wrappers** total — **11 direct**, **19 conceptual**, **13 with no shadcn equivalent**. **30 done**, **0 to go** (all migratable rows complete; 13 no-equivalent rows are informational only).
+**43 Carbon wrappers** total — **11 direct**, **19 conceptual**, **13 Camunda-built** (no shadcn upstream). **43 done**, **0 to go** — every wrapper now has a `*.shadcn.tsx` implementation, story, and migration guide.

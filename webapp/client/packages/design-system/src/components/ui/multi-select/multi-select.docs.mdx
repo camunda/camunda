@@ -1,0 +1,35 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as MultiSelectStories from './multi-select.stories';
+
+<Meta of={MultiSelectStories} name="Docs" />
+
+# MultiSelect
+
+A select-like trigger that opens a popover containing a list of items, each with a checkbox. Supports controlled or uncontrolled selection, helper/invalid text, and a clear-all chip.
+
+## When to use
+
+- **Filtering by multiple values** — process states, tags, owners, etc.
+- **Form fields where users may pick zero, one, or many options.**
+
+## When not to use
+
+- **Single-select with search** — use `Combobox`.
+- **Native single-select** — use `Select` (Radix-based) or the Carbon `Dropdown` re-export.
+- **Free text entry with chips** — use the `combobox-chips` family from `Combobox`.
+
+## Composition
+
+- Built on the local `Popover` and `Checkbox` primitives — no new dependencies.
+- `items` is a generic array; `itemToString` renders the option label and is used for keyed equality. Provide a custom function if items aren't simple `{ label }` shapes.
+- `selectedItems` (controlled) or `initialSelectedItems` (uncontrolled).
+- The trigger shows a count chip + the static `label` text + clear-all (when there's a selection) + a chevron. There are no chips inside the trigger by default — use `Combobox` chips if you need that pattern.
+- `invalid` + `invalidText` swap the helper text for an error message and apply destructive border/ring styles.

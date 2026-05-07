@@ -1,0 +1,54 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/ContainedList/Migration" />
+
+# ContainedList — Carbon → shadcn migration guide
+
+`ContainedList` is unique to Carbon — there's no shadcn primitive that does exactly this. The wrapper recreates the API using a plain `<section>` + `<ul>` + Tailwind, mirroring all the props.
+
+## Mapping
+
+| Carbon prop (List) | shadcn prop | Notes |
+|---|---|---|
+| `kind` | `kind` | `'on-page'` (default) / `'disclosed'`. |
+| `label` | `label` | Renders as `<h3>` in the header. Used for `aria-labelledby`. |
+| `action` | `action` | Right-side slot in the header. |
+| `isInset` | `isInset` | Pulls dividers in by `mx-4`. |
+| `size` | `size` | `'sm'` / `'md'` (default) / `'lg'` / `'xl'`. |
+| `className` | `className` | Forwarded to the `<section>`. |
+| Carbon prop (Item) | shadcn prop | Notes |
+| `renderIcon` | `renderIcon` | Component reference; rendered with `size-4` and muted colour. |
+| `action` | `action` | Right-side slot in the row. |
+| `disabled` | `disabled` | Visually disabled + non-interactive. |
+| `onClick` | `onClick` | Makes the row a `<button>` for keyboard semantics. |
+
+## Carbon features missing in shadcn
+
+- **Animated disclosed expansion** — Carbon: smooth height animation. shadcn: instant.
+- **Carbon's exact density per size** — shadcn approximates with Tailwind padding scales.
+- **`aria-busy` while loading** — Carbon ships a skeleton state. shadcn: pair with the generic `Skeleton` instead.
+
+## shadcn features missing in Carbon
+
+- **`data-interactive` attribute** — set when the item has an `onClick`. Useful for CSS hooks.
+
+## Behavioural differences
+
+- **Heading semantics** — both use `<h3>` for the label and `aria-labelledby`. Same.
+- **Interactive items render as `<button>`** — same as Carbon. Means `tab` focuses each row in turn.
+- **Disabled keyboard interaction** — Carbon: ignores key events. shadcn: removes `<button>` + sets `pointer-events-none`. Effectively identical.
+
+## Migration checklist
+
+1. Swap `import {ContainedList, ContainedListItem} from '@carbon/react'` → `from '@camunda/design-system/shadcn'`.
+2. If you used `renderIcon` with a Carbon icon, swap to a Lucide icon (or any component accepting `className`).
+3. If you depend on the disclosed-mode height animation, accept the loss or reach for a third-party `Disclosure` primitive.
+4. Drop `@use '@carbon/styles/scss/components/contained-list'` imports.

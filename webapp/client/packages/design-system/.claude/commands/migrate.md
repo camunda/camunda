@@ -1,61 +1,47 @@
-# Migrate a UI component wrapper from Carbon to shadcn/ui
+# Generate a Carbon → shadcn prop adapter
 
-Migrate the wrapper named `$ARGUMENTS` from a bare Carbon re-export to a shadcn/ui component
-with a Carbon-compatible API, so no consumer changes are required during the transition.
+Generate `<name>.adapter.tsx` for the wrapper named `$ARGUMENTS`. With no argument
+(or `$ARGUMENTS` equal to `all`), generate adapters for every wrapper in `MAPPING.md`
+that has a shadcn equivalent and is missing an adapter file.
 
-Assumptions (must be true before running this command):
+The adapter takes Carbon-shaped props and renders the corresponding shadcn primitive,
+translating value enums (e.g. `kind` → `variant`, `size` → `size`) and dropping props
+with no shadcn equivalent (with a dev-only `console.warn`). Consumers keep importing
+the same identifier names (e.g. `Tag`, `Modal`, `ActionableNotification`); switching
+the package from Carbon to shadcn is a one-line change in `src/index.ts`.
 
-- shadcn is initialised (`components.json` exists at the package root)
-- `src/lib/utils.ts` exports the `cn` helper
-- A Carbon-compatible base theme is already applied in `globals.css`
-- The component folder already exists at `src/components/ui/<name>/` with a `<name>.carbon.tsx`
-  that re-exports the Carbon component directly from `@carbon/react`
-- `src/index.carbon.ts` and `src/index.shadcn.ts` exist as the package's aggregate entry files
+This skill produces ONLY the adapter file and updates `src/index.shadcn.ts`. It does
+NOT touch `<name>.carbon.tsx`, `<name>.shadcn.tsx`, stories, docs, or `globals.css`.
 
-All component folders live in:
-`packages/design-system/src/components/ui/`
+## Assumptions
 
-All shell commands run from:
-`packages/design-system/`
+- `MAPPING.md` is up to date at `src/components/ui/MAPPING.md`
+- Each component folder already has `<name>.carbon.tsx` (Carbon re-export) and
+  `<name>.shadcn.tsx` (canonical shadcn primitive or a re-export of one from a sibling
+  primitive folder)
+- `src/index.carbon.ts` and `src/index.shadcn.ts` exist
+- `@carbon/react` types live at `../../node_modules/@carbon/react/es/components/<ComponentName>/<ComponentName>.d.ts`
+  (path relative to `packages/design-system/`)
 
----
+All paths in this document are relative to `packages/design-system/`.
 
-## File structure for each migrated component
+## File structure after running
 
 ```
 src/components/ui/<name>/
-  <name>.carbon.tsx   — standalone Carbon re-export (no dependency on our new code)
-  <name>.shadcn.tsx   — full shadcn implementation: single <Name> export with all Carbon behaviours
-  <name>.types.ts     — shared types: props interface, kind/size unions, kindMap/sizeMap
-  <name>.stories.tsx  — Storybook stories comparing Carbon and shadcn versions side by side
+  <name>.carbon.tsx      — UNCHANGED bare Carbon re-export
+  <name>.shadcn.tsx      — UNCHANGED canonical shadcn primitive (or re-export)
+  <name>.adapter.tsx     — NEW: Carbon-API surface, renders shadcn underneath
+  <name>.stories.tsx     — UNCHANGED
+  <name>.docs.mdx        — UNCHANGED
+  <name>.migration.mdx   — UNCHANGED
 ```
 
-**Architecture**: `<name>.carbon.tsx` and `<name>.shadcn.tsx` are parallel, independent
-implementations. Neither imports from the other. Both are distributed via the package's
-`/carbon` and `/shadcn` entry points so consumers can opt in explicitly. `<name>.types.ts` is
-the only shared file — both implementations may import from it.
+`src/index.shadcn.ts` after the sweep mirrors `src/index.carbon.ts`'s identifier
+names: every Carbon wrapper resolves through the adapter (or directly through
+`<name>.carbon` for the 13 rows in MAPPING.md's "No shadcn equivalent" table).
 
-**Source of truth for what must be implemented**: the Carbon component's API (Step 2). Every
-behavioural prop in the Carbon component must be replicated in `<name>.shadcn.tsx` using shadcn
-and Radix primitives — nothing is silently dropped without explicit justification in the final
-report (Step 12).
-
-**Companions** — shadcn components installed alongside the primary one (Step 3) follow the
-same architecture. They split into two cases by whether a Carbon equivalent exists. Companion
-folders may not exist yet — create them as needed. The table below is the canonical rule per
-companion; the steps reference it instead of restating.
-
-### Companion Rules
-
-| Step                | With Carbon counterpart                                                                                                                                                                  | Without Carbon counterpart                                                                                          |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| 3 (classify)        | Locate Carbon equivalent, read its `.d.ts` (same pattern as Step 2)                                                                                                                      | Mark as shadcn-only primitive                                                                                       |
-| 6 (install/folder)  | Move to `<companion>/<companion>.shadcn.tsx` + license header. If folder is new, also create `<companion>.carbon.tsx` re-exporting from `@carbon/react` (with license)                   | Move to `<companion>/<companion>.shadcn.tsx` + license header. No `.carbon.tsx`                                     |
-| 7 (implement)       | Rewrite `.shadcn.tsx` as a self-contained component exposing a Carbon-compatible API (license, `cva()` styling matching Carbon tokens, `rounded-none`, no inline comments). Add `.types.ts` only if the prop mapping is non-trivial | Keep shadcn CLI output as the implementation. Ensure license header is present and any radius is `rounded-none`     |
-| 9 (export)          | Append to **both** `index.carbon.ts` and `index.shadcn.ts`                                                                                                                               | Append **only** to `index.shadcn.ts`                                                                                |
-| 10 (stories)        | `.stories.tsx` with side-by-side Carbon vs shadcn comparison (same pattern as primary)                                                                                                   | shadcn-only `.stories.tsx` demonstrating the primitive's variants/states. No Carbon comparison                      |
-
-Every file must begin with the Camunda license header:
+Every new file begins with the Camunda license header:
 
 ```ts
 /*
@@ -67,202 +53,215 @@ Every file must begin with the Camunda license header:
  */
 ```
 
-This applies to ALL files in the folder, including any file created or overwritten by the
-shadcn CLI.
+---
+
+## Step 1 — Resolve the target list
+
+If `$ARGUMENTS` is empty, equal to `all`, or `--all`:
+
+- Read `src/components/ui/MAPPING.md` and collect every wrapper name from the
+  "Direct matches" and "Conceptual matches" tables that does NOT yet have a
+  `<name>.adapter.tsx` file at `src/components/ui/<name>/`.
+- Skip every row in the "No shadcn equivalent" table (those are Carbon-only by
+  design — `index.shadcn.ts` re-exports `<name>.carbon` for them in Step 5).
+
+Otherwise process the single wrapper named in `$ARGUMENTS`. Verify it appears in
+either the "Direct matches" or "Conceptual matches" table — refuse to generate an
+adapter for a "No shadcn equivalent" row.
 
 ---
 
-## Step 1 — Read the current wrapper
+## Step 2 — Read the Carbon API surface
 
-Read `src/components/ui/<name>/<name>.carbon.tsx` to identify the Carbon component being
-re-exported.
+For each target:
 
----
+1. Read `src/components/ui/<name>/<name>.carbon.tsx` to enumerate the identifiers
+   the adapter must mirror — single (`Tag`) or compound (`Tabs, TabList, TabPanel,
+   TabPanels, Tab`) — and the prop type names re-exported.
+2. For each identifier, read its Carbon type definition at:
 
-## Step 2 — Read the Carbon TypeScript API
+   ```
+   ../../node_modules/@carbon/react/es/components/<ComponentName>/<ComponentName>.d.ts
+   ```
 
-Read the type definitions from:
+   Some components live under a different folder than their export name (e.g.
+   `ModalHeader` → `node_modules/@carbon/react/es/components/ComposedModal/ModalHeader.d.ts`).
+   If `<ExportName>.d.ts` is not present in `components/<ExportName>/`, search
+   `components/` for the file.
 
-```
-../../node_modules/@carbon/react/es/components/<ComponentName>/<ComponentName>.d.ts
-```
-
-(path relative to `packages/design-system/`)
-
-Extract every prop, its type, and all valid values — especially string union literals like `kind`
-and `size`. For each prop, note whether it controls visual appearance, behaviour, or both.
-Every behavioural prop must be implemented in `<name>.shadcn.tsx` (Step 7).
-
----
-
-## Step 3 — Fetch the shadcn component API via MCP
-
-Use the shadcn MCP server to identify the shadcn equivalent and get its full props interface
-(variants, sizes, defaults). Also search for companion shadcn components that cover Carbon
-behaviours the primary shadcn component does not support on its own (e.g. Tooltip for
-icon-only buttons, Slot for polymorphic rendering).
-
-For each companion, apply the **Step 3** row of Companion Rules. Install all companions in
-Step 6.
+   Extract every prop, its type, valid string-union literals, and whether it is
+   marked `@deprecated`. Deprecated props still need adapter handling — drop with
+   warning, do not error.
 
 ---
 
-## Step 4 — Generate the prop mapping and write `<name>.types.ts`
+## Step 3 — Read the shadcn primitive
 
-Compare the Carbon and shadcn APIs and produce a typed mapping for each relevant Carbon prop:
+Read `src/components/ui/<name>/<name>.shadcn.tsx`. There are two cases:
 
-- Map every Carbon prop value to its closest shadcn equivalent
-- Behavioural Carbon props with no direct shadcn equivalent are still mapped here; they are
-  implemented using companion components in Step 7
+- The file IS the shadcn primitive (e.g. `button.shadcn.tsx`, `dialog.shadcn.tsx`).
+  Use those exports directly.
+- The file re-exports from a sibling primitive folder (e.g. `tag.shadcn.tsx`
+  re-exports `Badge` from `../badge/badge.shadcn`). Read the sibling file to learn
+  the primitive's API.
 
-Write all types and maps to:
-`src/components/ui/<name>/<name>.types.ts`
+Note the primitive's prop names, variant/size enums, and any required structural
+composition (e.g. `<Dialog>` requires a `<DialogContent>` child).
 
-This file contains the Carbon-compatible props interface, kind/size union types, and the `kindMap`/
-`sizeMap` constant records. Nothing
-type-related is defined inline in the component files — they all import from here.
-
----
-
-## Step 5 — Extract Carbon's design tokens via subagent
-
-Spawn the `carbon-token-extractor` subagent. It reads the three Carbon SCSS source files
-(`_<component>-tokens.scss`, `_vars.scss`, `_<component>.scss`) and returns compact markdown
-tables resolving every token to a concrete value. This keeps the raw SCSS out of the main
-context.
-
-Use the Agent tool with:
-
-- `subagent_type`: `carbon-token-extractor`
-- `description`: `Extract <component> tokens`
-- `prompt`: the kebab-case Carbon component name (e.g. `button`, `tag`, `notification`) plus
-  any per-component context the agent should know (e.g. "Carbon exposes `kind` values
-  primary/secondary/ghost/danger; map all of them.")
-
-The agent returns:
-
-- One color table per variant — columns: state (default/hover/active/disabled/focus) ×
-  bg/fg/border for both light and dark themes, all values resolved to hex.
-- A single sizing table covering height, width, min-width, max-width, padding-x, padding-y,
-  font-size, font-weight per Carbon size.
-- A trailing notes list for anything that doesn't fit the tables (box-shadow, opacity,
-  conditional borders, unresolved tokens, etc.).
-
-Treat the returned tables as the source of truth for Step 7's `cva()` variants and any new
-`globals.css` CSS variables. If the agent flags unresolved tokens in its notes, read those
-specific files yourself before proceeding.
+If MAPPING.md's row for this wrapper indicates a conditional primitive choice
+(e.g. "Modal: `danger` → AlertDialog else Dialog"), read both primitives.
 
 ---
 
-## Step 6 — Install the shadcn component and companions
+## Step 4 — Write `<name>.adapter.tsx`
 
-Install the primary component and every companion identified in Step 3:
+The adapter file:
 
-```bash
-npx shadcn@latest add <component-name> --overwrite
-npx shadcn@latest add <companion> --overwrite
-```
+- Begins with the Camunda license header.
+- Imports the shadcn primitive(s) from `./<name>.shadcn` (or sibling primitive folder
+  if `<name>.shadcn.tsx` is itself a re-export).
+- Imports Carbon prop types from `@carbon/react` as `type` imports for the public
+  prop-type re-exports.
+- Exports the SAME identifiers as `<name>.carbon.tsx` (e.g. `Tag`, or
+  `Tabs`+`TabList`+`TabPanel`+`TabPanels`+`Tab`).
+- Re-exports the Carbon prop type as the public type:
+  `export type TagProps = CarbonTagProps;` so consumer type imports keep compiling.
 
-The CLI writes each component flat at `src/components/ui/<x>.tsx`. For the primary, apply
-the same folder treatment:
+### Prop translation
 
-```bash
-mkdir -p src/components/ui/<x>
-mv src/components/ui/<x>.tsx src/components/ui/<x>/<x>.shadcn.tsx
-```
-
-Add the Camunda license header at the top of the moved file. No file may remain at the flat
-`src/components/ui/<x>.tsx` path after this step.
-
-For each companion, apply the **Step 6** row of Companion Rules.
-
----
-
-## Step 7 — Write the full implementation to `<name>.shadcn.tsx`
-
-Rewrite `src/components/ui/<name>/<name>.shadcn.tsx` as a single self-contained component.
-The file exports one component (`<Name>`) and its props type (`<Name>Props`). The `cva()`
-call and any internal helpers are unexported implementation details.
-
-**Styling** — `cva()` variants must match Carbon token values from Step 5:
-
-- **Colors**: prefer CSS variables in `globals.css` (at the package root). For every new CSS
-  variable: add the light value (`white-theme`/`g-10`) to `:root`, the dark value (`g-100`)
-  to `.dark`, and register it in the `@theme inline` block. Fall back to inline Tailwind
-  arbitrary values only if a CSS variable approach would be disproportionately complex. If
-  light and dark values are identical, still set the variable in both blocks for clarity.
-- **Sizing/spacing**: use Tailwind utilities matching Carbon measurements (e.g. `$spacing-05`
-  = `1rem` → `px-4`).
-- **Border radius**: always `rounded-none` — Carbon uses 0 radius.
-- No inline comments anywhere.
-
-**Behaviour** — `<Name>` implements every behavioural prop from the Carbon API (Step 2) using
-the shadcn/Radix companions installed in Step 6. Imports its props interface and maps from
-`./<name>.types`. Re-exports `<Name>Props` so type imports continue to work unchanged.
-
-For each companion, apply the **Step 7** row of Companion Rules.
-
----
-
-## Step 8 — Verify `<name>.carbon.tsx` is untouched
-
-The file already exists as a plain Carbon re-export. Do not modify it. Confirm it still
-re-exports only from `@carbon/react` with no local imports.
-
----
-
-## Step 9 — Update the aggregate entry files
-
-Add the primary component to both entry files in `src/`:
-
-**`src/index.carbon.ts`** — append:
+For each Carbon prop value with a closest shadcn equivalent, define a small inline
+lookup constant typed against both APIs:
 
 ```ts
+const KIND_TO_VARIANT: Record<NonNullable<CarbonButtonProps['kind']>, ButtonShadcnVariant> = {
+  primary: 'default',
+  secondary: 'secondary',
+  tertiary: 'outline',
+  ghost: 'ghost',
+  danger: 'destructive',
+  'danger--tertiary': 'destructive',
+  'danger--ghost': 'destructive',
+};
+```
+
+Lookup constants are inline implementation detail — do not export them.
+
+### Lossy props
+
+For Carbon props with no shadcn equivalent, drop them and emit a dev-only warning
+using the shared helper:
+
+```ts
+import {warnDroppedProps} from '../../../lib/utils';
+
+function MyComponent(props: MyProps) {
+  const {supportedA, unsupportedB, unsupportedC, ...rest} = props;
+  warnDroppedProps('MyComponent', {unsupportedB, unsupportedC});
+  // ...
+}
+```
+
+`warnDroppedProps(component, dropped)` lives in `src/lib/utils.ts`. It is a no-op
+in production (gated by `process.env['NODE_ENV']`) and emits a single
+`console.warn` per render listing the dropped props. Call it in the adapter
+function body — running once per render is acceptable for dev-only warnings.
+
+**Use relative imports, not `@/lib/utils`.** The `@/*` alias only resolves under
+the design-system's own `tsconfig.json`; consumers (Operate, Tasklist) follow
+package source files at typecheck time and cannot resolve the alias. From any
+`src/components/ui/<name>/<name>.adapter.tsx`, the correct path is
+`../../../lib/utils`.
+
+Passing destructured props through `warnDroppedProps` also satisfies the
+`noUnusedLocals` TypeScript rule: every Carbon prop pulled out of `props` is either
+used by the adapter or surfaces in the dropped-props object, so nothing is silently
+unused.
+
+Do NOT warn for deprecated props that map cleanly to a shadcn equivalent (e.g.
+Carbon's `filter`/`onClose` → render Badge with a close button is a deliberate
+mapping, not a drop). Only warn when the prop is genuinely unsupported.
+
+### Behavioural mismatches
+
+Some adapters can't be a thin function — they require composition logic:
+
+- **Carbon monolithic → shadcn compound** (e.g. `<Modal modalHeading="..." primaryButtonText="...">`
+  → render `<Dialog><DialogContent><DialogHeader><DialogTitle>...`): the adapter
+  internally builds the compound structure from the Carbon string props.
+- **Conditional primitive** (e.g. Modal `danger=true` → render `AlertDialog` instead
+  of `Dialog`): branch inside the adapter.
+- **Pair-by-index → pair-by-value** (Carbon Tabs): synthesise a `value` from each
+  child's index and thread it through both the trigger list and the panels list.
+
+Encode the logic in the adapter; do not push it back to consumers.
+
+### Style and conventions
+
+- Use `forwardRef` only when the underlying shadcn primitive accepts a ref.
+- No inline doc comments inside the adapter body. The MAPPING.md row is the
+  documentation; the adapter is the implementation.
+- A short header comment block (1–3 lines under the license) is allowed only if it
+  states a non-obvious WHY (e.g. "Renders AlertDialog when `danger` is true").
+- No `.types.ts` file. Keep all types inline in the adapter.
+- No `MigrationMap` re-export, no `kindMap`/`sizeMap` exported names. Prop maps are
+  unexported `const`s.
+
+---
+
+## Step 5 — Update `src/index.shadcn.ts`
+
+After all targets are processed, rewrite `src/index.shadcn.ts` so it exposes the
+exact same identifier names as `src/index.carbon.ts`. Each entry follows one of
+two patterns:
+
+```ts
+// Wrapper has a shadcn equivalent → re-export from the adapter
+export * from './components/ui/<name>/<name>.adapter';
+
+// Wrapper has no shadcn equivalent (per MAPPING.md "No shadcn equivalent" table)
+// → fall back to the Carbon implementation so the export surface stays stable
 export * from './components/ui/<name>/<name>.carbon';
 ```
 
-**`src/index.shadcn.ts`** — append:
+Order the entries to match `src/index.carbon.ts` (alphabetical, with the
+`ThemeProvider` re-export at the top).
 
-```ts
-export * from './components/ui/<name>/<name>.shadcn';
-```
-
-For each companion, apply the **Step 9** row of Companion Rules.
-
----
-
-## Step 10 — Create stories
-
-Write `src/components/ui/<name>/<name>.stories.tsx` to import both implementations and show
-them side by side. Use a single file — no separate comparison file. Import the carbon version
-from `./<name>.carbon` and the shadcn version from `./<name>.shadcn`. Each story should render
-both variants so visual differences are immediately visible.
-
-For each companion, apply the **Step 10** row of Companion Rules.
+If the current `src/index.shadcn.ts` exports raw shadcn primitives under shadcn
+names (e.g. `Badge`, `Dialog`), replace those entries — the adapter mirror is now
+the only contract.
 
 ---
 
-## Step 11 — Type-check
+## Step 6 — Type-check
 
 ```bash
 npm run typecheck -w @camunda/design-system
 ```
 
-Fix any errors. Common issues:
+Common failures and fixes:
 
-- Carbon props absent from the shadcn component → destructure them out before spreading `rest`
-- Polymorphic `as` prop on Carbon components → use `asChild` + `Slot` instead
+- Carbon prop absent from the shadcn primitive → destructure it out (so it goes
+  into a `dropped` object the warning helper inspects) before spreading `rest`.
+- Polymorphic `as` prop on a Carbon component → use `asChild` + `Slot` if the
+  shadcn primitive supports it; otherwise drop with a warning.
+- `forwardRef` ref-type mismatch → match the shadcn primitive's ref element type
+  (often different from Carbon's, e.g. `<button>` vs `<div>`); document this in
+  MAPPING.md if it changes the consumer-facing ref shape.
 
 ---
 
-## Step 12 — Report
+## Step 7 — Report
 
-Summarise:
+For each adapter generated, report:
 
-- The full generated prop mapping (Carbon → shadcn)
-- Which Carbon color tokens were mapped to CSS variables vs inline Tailwind values
-- Any Carbon props dropped entirely and why
-- Any type simplifications made
-- Known visual gaps (hover/active states) to address in follow-up iterations
-- Companions installed, each classified as **with Carbon counterpart** or **shadcn-only**,
-  and the files created for each
+- The file path and a one-line summary of what it renders.
+- Carbon → shadcn prop value translations (e.g. `kind: 'primary' → variant: 'default'`).
+- Carbon props dropped with a dev-only warning, and the rationale.
+- Whether the adapter is a single component or compound (list every exported
+  identifier).
+- Any behavioural caveats consumers should know about (e.g. "passes `open`/
+  `onOpenChange` instead of `open`/`onRequestClose` to its children — controlled
+  state still works because the adapter translates").
+
+When `$ARGUMENTS` is `all`, group the report by component and end with a count of
+adapters created vs. skipped.
