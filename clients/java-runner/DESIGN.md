@@ -37,23 +37,30 @@ standalone repo.
 
 ## Public API surface
 
-### Facade: `LiveBpmn`
+### Single class: `LiveBpmn`
+
+`LiveBpmn` is both the facade *and* the builder type — one class, one import, slim surface.
+Static factory methods construct instances; instance methods continue the chain.
 
 ```java
 public final class LiveBpmn {
-  public static RunnableProcessBuilder createExecutableProcess(String id);
-  public static RunnableProcessBuilder of(BpmnModelInstance existingModel);
+  // --- static factories ---
+  public static LiveBpmn createExecutableProcess(String id);
+  public static LiveBpmn of(BpmnModelInstance existingModel);
   public static ClusterFactory cluster();
+
+  // --- instance builder methods (mirror the bpmn-model builder shape) ---
+  // see below
 }
 ```
 
-### Builder: `RunnableProcessBuilder` (and friends)
+### Builder methods on `LiveBpmn`
 
 Mirrors the shape of the BPMN model builder — same method names, same return-type chaining —
 for the **subset** we hand-write. Everything else is reachable via `.raw()`.
 
 ```java
-RunnableProcessBuilder
+LiveBpmn
     .startEvent() / startEvent(id)
     .serviceTask(String id, Function<Job, Map<String, Object>> handler)   // return = vars
     .serviceTask(String id, Consumer<Job> handler)                        // auto-complete
@@ -73,7 +80,7 @@ RunnableProcessBuilder
     .run(int n, Cluster cluster)    // -> Run
     .run(RunOptions opts)           // -> Run, smart default cluster
     .run(RunOptions opts, Cluster cluster)
-    .on(Cluster cluster)            // -> RunnableProcessBuilder (configures, returns builder)
+    .on(Cluster cluster)            // -> LiveBpmn (configures, returns builder)
 ```
 
 **Method overloads on `serviceTask` / `userTask`:** the existing
