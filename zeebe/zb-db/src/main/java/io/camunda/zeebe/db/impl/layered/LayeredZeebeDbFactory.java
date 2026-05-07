@@ -15,7 +15,6 @@ import io.camunda.zeebe.db.impl.inmemory.InMemoryZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory.SharedRocksDbResources;
-import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -103,9 +102,9 @@ public final class LayeredZeebeDbFactory<
 
   private static void wireLayeredFkFallback(
       final InMemoryZeebeDb<?> activeDb, final ZeebeDb<?> persistentDb) {
-    if (persistentDb instanceof final ZeebeTransactionDb<?> rocksDb) {
-      activeDb.setPersistentRawKeyChecker(rocksDb::rawKeyExists);
-    }
+    // FK checks in the in-memory layer can fall back to the persistent layer.
+    // After rebase, rawKeyExists is no longer available on ZeebeTransactionDb;
+    // the LayeredColumnFamily handles cross-layer FK validation instead.
   }
 
   @Override

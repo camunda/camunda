@@ -117,6 +117,12 @@ public class RawTransactionalColumnFamily {
     transaction.put(transactionDb.getDefaultNativeHandle(), key, keyLen, value, valueLen);
   }
 
+  /** Raw delete from the DB ignoring the prefix key and "virtual" column family. */
+  public void rawDelete(final ZeebeTransaction transaction, final byte[] key, final int keyLen)
+      throws Exception {
+    transaction.delete(transactionDb.getDefaultNativeHandle(), key, keyLen);
+  }
+
   /**
    * Iterates over the column family with prefix {@param prefixKey}
    *
