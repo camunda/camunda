@@ -41,6 +41,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private FileBasedSnapshotMetadata metadata;
   private ByteBuffer metadataBuffer;
   private long writtenMetadataBytes;
+  private long receivedDataBytes;
   private SfvChecksumImpl checksumCollection;
 
   FileBasedReceivedSnapshot(
@@ -114,6 +115,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       } catch (final IOException e) {
         throw new SnapshotWriteException("Cannot decode snapshot metadata");
       }
+    } else {
+      receivedDataBytes += snapshotChunk.getContent().length;
     }
   }
 
@@ -266,8 +269,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     try {
       if (metadata == null) {
-        // Backward compatibility: sender did not include a metadata chunk at all. Build one and
-        // compute totalSizeBytes from the just-received directory.
+        // Backward compatibility with senders that do not include a metadata chunk.
         metadata =
             new FileBasedSnapshotMetadata(
                 FileBasedSnapshotStoreImpl.VERSION,
@@ -276,11 +278,10 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 Long.MAX_VALUE,
                 Long.MAX_VALUE,
                 false,
-                FileUtil.directorySize(directory, SnapshotChecksum::isNotMetadataFile));
+                receivedDataBytes);
       } else if (metadata.totalSizeBytes() <= 0L) {
-        // Sender included metadata but predates totalSizeBytes. Compute from the just-received
-        // directory and override in memory only — the on-disk metadata is part of the SFV
-        // checksum and cannot be modified.
+        // Sender included metadata but predates totalSizeBytes. Override in memory only — the
+        // on-disk metadata is part of the SFV checksum and cannot be modified.
         metadata =
             new FileBasedSnapshotMetadata(
                 metadata.version(),
@@ -289,7 +290,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 metadata.maxExportedPosition(),
                 metadata.lastFollowupEventPosition(),
                 metadata.isBootstrap(),
-                FileUtil.directorySize(directory, SnapshotChecksum::isNotMetadataFile));
+                receivedDataBytes);
       }
       final PersistedSnapshot value =
           snapshotStore.persistNewSnapshot(directory, snapshotId, checksumCollection, metadata);
