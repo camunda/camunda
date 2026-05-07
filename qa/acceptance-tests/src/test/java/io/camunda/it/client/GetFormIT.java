@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 @MultiDbTest
 @CompatibilityTest
-public class FormFetchIT {
+public class GetFormIT {
 
   private static CamundaClient camundaClient;
   private static long deployedFormKey;
