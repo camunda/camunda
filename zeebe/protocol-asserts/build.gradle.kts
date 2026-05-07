@@ -15,7 +15,9 @@ import com.google.common.reflect.TypeToken
 import org.assertj.assertions.generator.AssertionsEntryPointType
 import org.assertj.assertions.generator.BaseAssertionGenerator
 import org.assertj.assertions.generator.description.converter.ClassToClassDescriptionConverter
+import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.compile.JavaCompile
 import java.lang.reflect.Modifier
 import java.net.URLClassLoader
@@ -151,6 +153,10 @@ sourceSets.named("main") {
 
 tasks.named("classes") {
     dependsOn(compileGeneratedAssertjJava)
+}
+
+tasks.named<Jar>("jar") {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 val generatedAssertions by configurations.creating {
