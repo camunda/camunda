@@ -26,7 +26,7 @@ from `operate/client`, `tasklist/client`, and `identity/client`.
 apps/orchestration-cluster-webapp/
 ├── src/
 │   ├── assets/svg/         # SVG sources (see Generating SVG components)
-│   ├── modules/            # This folders contains all app parts separated by feature (e.g. login, http, errors, etc.)
+│   ├── modules/            # Building blocks the app is assembled from (see Modules below)
 │   ├── pages/              # Standalone pages. Each file assembles all compponents of a page. Like main page content, error, loading, etc.
 │   ├── routes/             # TanStack Router file-based routes. Each page is plugged into a route here.
 │   ├── vitest-modules/     # Unit test utils
@@ -40,6 +40,30 @@ apps/orchestration-cluster-webapp/
 ├── shared-test-modules/    # Test utils shared between unit and Playwright tests
 └── vite.config.ts
 ```
+
+## Modules
+
+`src/modules/` holds the building blocks the app is assembled from,
+split by **meaningful unit** — not by feature. A module owns one small
+concern that one or more pages reuse.
+
+Two common shapes:
+
+- **Cross-cutting** — `http` for requests, `errors` for generic error
+  UI, `theme`, `tracking`, etc.
+- **Shared between related pages** — e.g., a layout module shared by
+  the process instances and decision instances pages, or a filters module
+  those pages share.
+
+Small, self-contained pages can live entirely inside a single module
+folder. The `login` module is an example.
+
+Keep each module's internal structure flat. React components live in a
+`components/` subfolder; everything else (hooks, utilities, stores,
+etc.) sits at the module root.
+
+There is **no** `modules/process-instances/` covering an entire large page;
+pages are assembled in `src/pages/` from these building blocks.
 
 ## Scripts
 
