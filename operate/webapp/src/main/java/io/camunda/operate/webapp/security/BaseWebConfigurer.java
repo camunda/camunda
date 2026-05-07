@@ -134,10 +134,11 @@ public abstract class BaseWebConfigurer {
                         .includeSubDomains(
                             webSecurityConfig.getHttpStrictTransportSecurityIncludeSubDomains());
                   })
-              // Disabled so Tasklist's same-origin iframe document previews work when
-              // Operate and Tasklist share a JVM (C8Run). CSP frame-ancestors 'self'
-              // above still blocks cross-origin framing on modern browsers.
-              .frameOptions(fo -> fo.disable());
+              // SAMEORIGIN (instead of Spring's default DENY) so Tasklist's same-origin
+              // iframe document previews work when Operate and Tasklist share a JVM
+              // (C8Run), while keeping clickjacking defense-in-depth as a fallback for
+              // browsers that ignore CSP frame-ancestors or for custom CSP overrides.
+              .frameOptions(fo -> fo.sameOrigin());
         });
   }
 
