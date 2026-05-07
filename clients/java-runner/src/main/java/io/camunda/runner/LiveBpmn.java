@@ -228,14 +228,25 @@ public final class LiveBpmn {
     return this;
   }
 
+  /**
+   * Mark every {@code userTask(...)} as a modern Camunda user task ({@code <zeebe:userTask/>}).
+   * This is the only flavor that supports task listeners, and it's the recommended path on 8.6+.
+   * Legacy job-based user tasks remain reachable via {@link #raw()} / a vanilla {@code
+   * Bpmn.createExecutableProcess(...)} model adopted via {@link #of}.
+   */
   public LiveBpmn userTask(final String id, final Consumer<UserTaskBuilder> configure) {
-    currentBuilder = asFlowNodeBuilder().userTask(id, configure);
+    final UserTaskBuilder b = asFlowNodeBuilder().userTask(id);
+    b.zeebeUserTask();
+    configure.accept(b);
+    currentBuilder = b;
     setAttachable(id, true);
     return this;
   }
 
   public LiveBpmn userTask(final String id) {
-    currentBuilder = asFlowNodeBuilder().userTask(id);
+    final UserTaskBuilder b = asFlowNodeBuilder().userTask(id);
+    b.zeebeUserTask();
+    currentBuilder = b;
     setAttachable(id, true);
     return this;
   }
@@ -250,6 +261,7 @@ public final class LiveBpmn {
    */
   public LiveBpmn userTask(final String id, final Function<Job, Map<String, Object>> handler) {
     final UserTaskBuilder builder = asFlowNodeBuilder().userTask(id);
+    builder.zeebeUserTask();
     currentBuilder = builder;
     bindings.put(BindingKey.serviceTask(id), new BoundHandler.OfFunction(handler));
     setAttachable(id, true);
@@ -259,6 +271,7 @@ public final class LiveBpmn {
   /** See note on {@link #userTask(String, Function)}. */
   public LiveBpmn userTask(final String id, final JobConsumer handler) {
     final UserTaskBuilder builder = asFlowNodeBuilder().userTask(id);
+    builder.zeebeUserTask();
     currentBuilder = builder;
     bindings.put(BindingKey.serviceTask(id), new BoundHandler.OfConsumer(handler));
     setAttachable(id, true);
