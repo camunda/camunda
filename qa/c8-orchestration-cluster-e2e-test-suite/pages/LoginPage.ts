@@ -51,14 +51,25 @@ export class LoginPage {
   }
 
   async login(username: string, password: string) {
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(this.usernameInput).toBeVisible({timeout: 30000});
-      },
-      onFailure: async () => {
-        await this.page.reload();
-      },
-    });
+    // Camunda apps share an auth session: navigating to /<app>/login when
+    // already authenticated redirects to the app home, so the login form
+    // never renders. Skip login in that case rather than hanging on a
+    // username input that will never appear.
+    try {
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(this.usernameInput).toBeVisible({timeout: 30000});
+        },
+        onFailure: async () => {
+          await this.page.reload();
+        },
+      });
+    } catch (error) {
+      if (!this.page.url().includes('/login')) {
+        return;
+      }
+      throw error;
+    }
     await this.clickUsername();
     await this.fillUsername(username);
     await this.fillPassword(password);

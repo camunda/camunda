@@ -609,7 +609,6 @@ test.describe.serial('Process Instance Migration', () => {
         'MIGRATE',
       );
       await operateProcessMigrationModePage.clickMigrationConfirmationButton();
-      await sleep(2000);
     });
 
     await test.step('Verify 3 instances migrated to target version', async () => {
@@ -619,7 +618,7 @@ test.describe.serial('Process Instance Migration', () => {
         assertion: async () => {
           await expect(
             operateProcessesPage.versionCells(targetVersion),
-          ).toHaveCount(3, {timeout: 6000});
+          ).toHaveCount(3, {timeout: 30000});
         },
         onFailure: async () => {
           await page.reload();

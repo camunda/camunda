@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -1011,8 +1012,18 @@ class OperateProcessInstancePage {
   }
 
   async verifyIncidentCount(expectedCount: number): Promise<void> {
-    const actualCount = await this.getIncidentCount();
-    expect(actualCount).toBe(expectedCount);
+    // Post-migration the incident is reindexed against the new element id;
+    // poll until the incident table reflects the expected count to avoid
+    // racing against eventual-consistency propagation.
+    await waitForAssertion({
+      assertion: async () => {
+        const actualCount = await this.getIncidentCount();
+        expect(actualCount).toBe(expectedCount);
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
   }
 
   getOperationsLogTableRowCount(): Promise<number> {
