@@ -22,9 +22,11 @@ const Content = styled.div`
 
 const FullWidthTextInput = styled(TextInput)`
   width: 100%;
+  flex: 0 0 auto;
 `;
 
 const ContextHint = styled.div`
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: var(--cds-spacing-02);
@@ -38,18 +40,15 @@ const WarningFilled = styled(BaseWarningFilled)`
 `;
 
 const ResultContainer = styled.div`
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 
-  .cds--tabs,
-  .cds--tab-content {
-    height: 100%;
-  }
-
-  .cds--tab-content {
+  > [role='tabpanel'] {
+    flex: 1 1 auto;
+    min-height: 0;
     padding: var(--cds-spacing-04) 0;
     overflow: auto;
   }

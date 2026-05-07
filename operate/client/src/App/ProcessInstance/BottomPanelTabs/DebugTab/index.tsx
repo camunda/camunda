@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, type KeyboardEvent} from 'react';
+import {useEffect, useState, type KeyboardEvent} from 'react';
 import {useMutation} from '@tanstack/react-query';
 import {evaluateExpression} from 'modules/api/v2/expression/evaluateExpression';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
@@ -31,9 +31,11 @@ const DebugTab: React.FC = () => {
   const showInactiveElementWarning =
     isElementSelected && !useElementContext;
 
-  const {mutate, data, error, isPending} = useMutation({
+  const {mutate, reset, data, error, isPending} = useMutation({
     mutationFn: (value: string) => {
-      const expression = value.startsWith('=') ? value : `=${value}`;
+      const expression = value.trim().startsWith('=')
+        ? value.trim()
+        : `=${value}`.trim();
       const context = useElementContext
         ? {elementInstanceKey: resolvedElementInstance.elementInstanceKey}
         : {processInstanceKey: processInstanceId ?? ''};
@@ -48,6 +50,19 @@ const DebugTab: React.FC = () => {
     }
   };
 
+  const handleChange = (value: string) => {
+    setExpression(value);
+    if (value.trim() === '') {
+      reset();
+    }
+  };
+
+  const selectedElementInstanceKey =
+    resolvedElementInstance?.elementInstanceKey ?? null;
+  useEffect(() => {
+    reset();
+  }, [selectedElementInstanceKey, reset]);
+
   return (
     <Content>
       <FullWidthTextInput
@@ -55,7 +70,7 @@ const DebugTab: React.FC = () => {
         labelText="Expression"
         placeholder="Enter a FEEL expression and press Enter"
         value={expression}
-        onChange={({target}) => setExpression(target.value)}
+        onChange={({target}) => handleChange(target.value)}
         onKeyDown={handleKeyDown}
       />
       <ContextHint>
@@ -66,8 +81,8 @@ const DebugTab: React.FC = () => {
           />
         )}
         {useElementContext
-          ? `Evaluated against Element Instance ${resolvedElementInstance.elementInstanceKey}`
-          : `Evaluated against Process Instance ${processInstanceId ?? ''}`}
+          ? `Evaluate against Element Instance ${resolvedElementInstance.elementInstanceKey}`
+          : `Evaluate against Process Instance ${processInstanceId ?? ''}`}
         {showInactiveElementWarning &&
           ' — selected element is not active, falling back to the process instance'}
       </ContextHint>

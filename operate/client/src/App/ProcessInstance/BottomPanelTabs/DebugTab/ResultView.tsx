@@ -58,7 +58,7 @@ const ResultView: React.FC<Props> = ({data, error, isPending}) => {
   }
 
   if (data === undefined) {
-    return null;
+    return <ResultContainer />;
   }
 
   const response = data.response;
