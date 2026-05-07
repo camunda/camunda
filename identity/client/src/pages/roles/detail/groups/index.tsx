@@ -29,9 +29,13 @@ const Groups: FC<GroupsProps> = ({ roleId, isCamundaGroupsEnabled }) => {
   const { t } = useTranslate("roles");
 
   const { groups, loading, success, reload, paginationProps } =
-    useEnrichedGroups(getGroupsByRoleId, {
-      roleId,
-    });
+    useEnrichedGroups(
+      getGroupsByRoleId,
+      {
+        roleId,
+      },
+      isCamundaGroupsEnabled,
+    );
 
   const isGroupsEmpty = !groups || groups.length === 0;
   const [assignGroups, assignGroupsModal] = useEntityModal(

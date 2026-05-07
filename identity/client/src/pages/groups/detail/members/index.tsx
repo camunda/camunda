@@ -33,6 +33,7 @@ const Members: FC<MembersProps> = ({ groupId, isOIDC }) => {
     {
       groupId,
     },
+    isOIDC,
   );
 
   const isUsersListEmpty = !users || users.length === 0;

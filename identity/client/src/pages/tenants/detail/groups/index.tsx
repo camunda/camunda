@@ -29,9 +29,13 @@ const Groups: FC<GroupsProps> = ({ tenantId, isCamundaGroupsEnabled }) => {
   const { t } = useTranslate("tenants");
 
   const { groups, loading, success, reload, paginationProps } =
-    useEnrichedGroups(getGroupsByTenantId, {
-      tenantId,
-    });
+    useEnrichedGroups(
+      getGroupsByTenantId,
+      {
+        tenantId,
+      },
+      isCamundaGroupsEnabled,
+    );
 
   const isGroupsEmpty = !groups || groups.length === 0;
   const [assignGroups, assignGroupsModal] = useEntityModal(

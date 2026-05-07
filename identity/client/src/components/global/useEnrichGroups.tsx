@@ -7,7 +7,6 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { isCamundaGroupsEnabled } from "src/configuration";
 import { useApiCall, usePaginatedApiCall } from "src/utility/api";
 import { ApiDefinition } from "src/utility/api/request";
 import { searchGroups } from "src/utility/api/groups";
@@ -31,6 +30,7 @@ export function useEnrichedGroups<P>(
     P
   >,
   params: P,
+  isCamundaGroupsEnabled: boolean,
 ): UseEnrichedGroupsResult {
   const [callSearchMembers, paginationProps] =
     usePaginatedApiCall(apiDefinition);

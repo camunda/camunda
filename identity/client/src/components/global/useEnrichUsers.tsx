@@ -7,7 +7,6 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { isOIDC } from "src/configuration";
 import { useApiCall, usePaginatedApiCall } from "src/utility/api";
 import type {
   User,
@@ -31,6 +30,7 @@ export function useEnrichedUsers<P>(
     P
   >,
   params: P,
+  isOIDC: boolean,
 ): UseEnrichedUsersResult {
   const [callSearchMembers, paginationProps] =
     usePaginatedApiCall(apiDefinition);

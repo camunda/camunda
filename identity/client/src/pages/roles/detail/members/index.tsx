@@ -33,6 +33,7 @@ const Members: FC<MembersProps> = ({ roleId, isOIDC }) => {
     {
       roleId,
     },
+    isOIDC,
   );
 
   const isUsersListEmpty = !users || users?.length === 0;
