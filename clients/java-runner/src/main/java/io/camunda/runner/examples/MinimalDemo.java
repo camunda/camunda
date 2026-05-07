@@ -23,30 +23,39 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Smallest LiveBpmn demo — two service tasks, variables flowing.
+ * Smallest LiveBpmn demo — two service tasks showing the two ways a lambda can finish.
  *
  * <pre>
  *   start -> greet -> print -> end
  * </pre>
  *
- * <p>{@code greet} (Function&lt;Job, Map&gt; form): reads {@code name}, returns {@code greeting}.
- * Auto-complete with the returned map.
- *
- * <p>{@code print} (Consumer&lt;Job&gt; form): reads {@code greeting}, writes stdout. Auto-complete
- * on fall-through.
+ * <ul>
+ *   <li>{@code greet} — explicit control: calls {@link Job#fail(String)} on bad input, otherwise
+ *       {@link Job#complete(Map)} with a new variable. (Consumer&lt;Job&gt; form.)
+ *   <li>{@code print} — auto-complete: writes to stdout and falls off the end. The runner
+ *       auto-completes with no variable updates. (Consumer&lt;Job&gt; form too.)
+ * </ul>
  */
 public final class MinimalDemo {
 
   private MinimalDemo() {}
 
   public static void main(final String[] args) throws Exception {
-    final List<String> names = List.of("Stephan", "Anna", "World");
+    final List<String> names = List.of("Stephan", "", "World"); // empty triggers fail
+
     try (var cluster = LiveBpmn.cluster().testcontainer()) {
       LiveBpmn.createExecutableProcess("hello")
           .startEvent()
           .serviceTask(
               "greet",
-              (Job job) -> Map.of("greeting", "hello, " + job.variable("name", String.class)))
+              (Job job) -> {
+                final String name = job.variable("name", String.class);
+                if (name == null || name.isBlank()) {
+                  job.fail("missing 'name' variable");
+                  return;
+                }
+                job.complete(Map.of("greeting", "hello, " + name));
+              })
           .serviceTask(
               "print", (Job job) -> System.out.println(job.variable("greeting", String.class)))
           .endEvent()

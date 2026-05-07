@@ -15,6 +15,7 @@
  */
 package io.camunda.runner.examples;
 
+import io.camunda.runner.Cluster;
 import io.camunda.runner.Job;
 import io.camunda.runner.LiveBpmn;
 import io.camunda.runner.Run;
@@ -29,97 +30,23 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntFunction;
 
 /**
- * Two side-by-side demos of the same order flow:
+ * Two ways to wire the same order flow, side by side. Run with {@code inline} (default) or {@code
+ * bindings} as the program argument:
  *
- * <ul>
- *   <li>{@link Inline#main} — fluent chain with the lambda <em>at</em> each service task.
- *   <li>{@link Bindings#main} — same flow, but lambdas attached by element id via {@code
- *       LiveBpmn.of(model).bind(...)}. The migration story for code that already builds a {@link
- *       BpmnModelInstance} with vanilla {@code Bpmn.createExecutableProcess(...)}.
- * </ul>
+ * <pre>
+ *   java io.camunda.runner.examples.OrderDemos            # inline (default)
+ *   java io.camunda.runner.examples.OrderDemos bindings   # binding API
+ * </pre>
  *
- * <p>Both share the handlers and the initial-variable generator below so behaviour is
- * apples-to-apples — only the wiring differs.
- *
- * <p>Run either by right-clicking {@link Inline} or {@link Bindings} in your IDE.
+ * <p>The two forms appear directly below each other so they read side by side. They produce
+ * identical behaviour and identical Operate output — only the wiring differs.
  */
 public final class OrderDemos {
 
   private OrderDemos() {}
 
-  public static final String PROCESS_ID = "order";
-
-  // --------------------------------------------------------------------------
-  // Shared BPMN model
-  // --------------------------------------------------------------------------
-
-  static BpmnModelInstance model() {
-    return Bpmn.createExecutableProcess(PROCESS_ID)
-        .startEvent("received")
-        .serviceTask("validate", t -> t.zeebeJobType("validate"))
-        .serviceTask("charge", t -> t.zeebeJobType("charge"))
-        .serviceTask("ship", t -> t.zeebeJobType("ship"))
-        .endEvent("delivered")
-        .done();
-  }
-
-  // --------------------------------------------------------------------------
-  // Shared handlers (realistic: simulate I/O latency, branch on data, emit
-  // multiple output variables). Used as method references by both demos.
-  // --------------------------------------------------------------------------
-
-  static Map<String, Object> validate(final Job job) {
-    final String orderId = job.variable("orderId", String.class);
-    final String customerId = job.variable("customerId", String.class);
-    final double amount = job.variable("amount", Number.class).doubleValue();
-
-    sleep(20 + ThreadLocalRandom.current().nextInt(30)); // ~20-50 ms "DB lookup"
-
-    final boolean valid = amount > 0 && amount < 10_000;
-    final String reason = valid ? "ok" : (amount <= 0 ? "non-positive amount" : "over limit");
-
-    System.out.printf(
-        "[validate] order=%s customer=%s amount=%.2f -> %s%n", orderId, customerId, amount, reason);
-    return Map.of("valid", valid, "validationReason", reason);
-  }
-
-  static Map<String, Object> charge(final Job job) {
-    final String orderId = job.variable("orderId", String.class);
-    final double amount = job.variable("amount", Number.class).doubleValue();
-
-    sleep(50 + ThreadLocalRandom.current().nextInt(100)); // ~50-150 ms "payment gateway"
-
-    final String paymentMethod = amount >= 500 ? "credit-card" : "wallet";
-    final String paymentId = "P-" + orderId + "-" + System.currentTimeMillis();
-
-    System.out.printf(
-        "[charge]   order=%s amount=%.2f via %s -> %s%n",
-        orderId, amount, paymentMethod, paymentId);
-
-    final Map<String, Object> out = new HashMap<>();
-    out.put("paymentId", paymentId);
-    out.put("paymentMethod", paymentMethod);
-    out.put("chargedAt", Instant.now().toString());
-    return out;
-  }
-
-  static Map<String, Object> ship(final Job job) {
-    final String orderId = job.variable("orderId", String.class);
-    final String paymentId = job.variable("paymentId", String.class);
-    final double amount = job.variable("amount", Number.class).doubleValue();
-
-    sleep(30 + ThreadLocalRandom.current().nextInt(40)); // ~30-70 ms "warehouse"
-
-    final String carrier = amount >= 500 ? "Express-DHL" : "Standard-Post";
-    final String trackingId = carrier.substring(0, 1) + "-" + job.getProcessInstanceKey();
-
-    System.out.printf(
-        "[ship]     order=%s payment=%s -> %s (%s)%n", orderId, paymentId, trackingId, carrier);
-    return Map.of("trackingId", trackingId, "carrier", carrier);
-  }
-
-  /** Per-instance variable generator. ~1-in-5 instances trips the express path. */
-  static final IntFunction<Map<String, Object>> INITIAL_VARIABLES =
+  /** Per-instance input variables. ~1-in-5 instances trips the express path (amount ≥ 500). */
+  private static final IntFunction<Map<String, Object>> INITIAL_VARIABLES =
       i -> {
         final double amount = i % 5 == 0 ? 750.00 + i : 49.99 + i;
         return Map.of(
@@ -131,67 +58,156 @@ public final class OrderDemos {
             amount);
       };
 
+  public static void main(final String[] args) throws Exception {
+    final String mode = args.length > 0 ? args[0] : "inline";
+    try (var cluster = LiveBpmn.cluster().testcontainer()) {
+      final Run run =
+          switch (mode) {
+            case "bindings" -> Bindings.run(cluster);
+            case "inline" -> Inline.run(cluster);
+            default ->
+                throw new IllegalArgumentException(
+                    "unknown mode '" + mode + "' — use 'inline' or 'bindings'");
+          };
+      System.out.println("Operate: " + run.operateUrl());
+      run.await(Duration.ofMinutes(2));
+      System.out.println("done; handled per task = " + run.workersHandled());
+    }
+  }
+
+  // =========================================================================
+  // INLINE form — lambda bodies sit at each service task, in one fluent chain
+  // =========================================================================
+  static final class Inline {
+
+    private Inline() {}
+
+    static Run run(final Cluster cluster) {
+      return LiveBpmn.createExecutableProcess("order")
+          .startEvent("received")
+          .serviceTask(
+              "validate",
+              (Job job) -> {
+                final String orderId = job.variable("orderId", String.class);
+                final String customerId = job.variable("customerId", String.class);
+                final double amount = job.variable("amount", Number.class).doubleValue();
+                sleep(20 + ThreadLocalRandom.current().nextInt(30));
+                final boolean valid = amount > 0 && amount < 10_000;
+                final String reason =
+                    valid ? "ok" : (amount <= 0 ? "non-positive amount" : "over limit");
+                System.out.printf(
+                    "[validate] order=%s customer=%s amount=%.2f -> %s%n",
+                    orderId, customerId, amount, reason);
+                return Map.of("valid", valid, "validationReason", reason);
+              })
+          .serviceTask(
+              "charge",
+              (Job job) -> {
+                final String orderId = job.variable("orderId", String.class);
+                final double amount = job.variable("amount", Number.class).doubleValue();
+                sleep(50 + ThreadLocalRandom.current().nextInt(100));
+                final String paymentMethod = amount >= 500 ? "credit-card" : "wallet";
+                final String paymentId = "P-" + orderId + "-" + System.currentTimeMillis();
+                System.out.printf(
+                    "[charge]   order=%s amount=%.2f via %s -> %s%n",
+                    orderId, amount, paymentMethod, paymentId);
+                final Map<String, Object> out = new HashMap<>();
+                out.put("paymentId", paymentId);
+                out.put("paymentMethod", paymentMethod);
+                out.put("chargedAt", Instant.now().toString());
+                return out;
+              })
+          .serviceTask(
+              "ship",
+              (Job job) -> {
+                final String orderId = job.variable("orderId", String.class);
+                final String paymentId = job.variable("paymentId", String.class);
+                final double amount = job.variable("amount", Number.class).doubleValue();
+                sleep(30 + ThreadLocalRandom.current().nextInt(40));
+                final String carrier = amount >= 500 ? "Express-DHL" : "Standard-Post";
+                final String trackingId =
+                    carrier.substring(0, 1) + "-" + job.getProcessInstanceKey();
+                System.out.printf(
+                    "[ship]     order=%s payment=%s -> %s (%s)%n",
+                    orderId, paymentId, trackingId, carrier);
+                return Map.of("trackingId", trackingId, "carrier", carrier);
+              })
+          .endEvent("delivered")
+          .run(RunOptions.of(3).variables(INITIAL_VARIABLES), cluster);
+    }
+  }
+
+  // =========================================================================
+  // BINDING form — build the model, then attach lambdas by element id
+  // =========================================================================
+  static final class Bindings {
+
+    private Bindings() {}
+
+    static Run run(final Cluster cluster) {
+      final BpmnModelInstance model =
+          Bpmn.createExecutableProcess("order")
+              .startEvent("received")
+              .serviceTask("validate", t -> t.zeebeJobType("validate"))
+              .serviceTask("charge", t -> t.zeebeJobType("charge"))
+              .serviceTask("ship", t -> t.zeebeJobType("ship"))
+              .endEvent("delivered")
+              .done();
+
+      return LiveBpmn.of(model)
+          .bind("validate", Bindings::validate)
+          .bind("charge", Bindings::charge)
+          .bind("ship", Bindings::ship)
+          .run(RunOptions.of(3).variables(INITIAL_VARIABLES), cluster);
+    }
+
+    static Map<String, Object> validate(final Job job) {
+      final String orderId = job.variable("orderId", String.class);
+      final String customerId = job.variable("customerId", String.class);
+      final double amount = job.variable("amount", Number.class).doubleValue();
+      sleep(20 + ThreadLocalRandom.current().nextInt(30));
+      final boolean valid = amount > 0 && amount < 10_000;
+      final String reason = valid ? "ok" : (amount <= 0 ? "non-positive amount" : "over limit");
+      System.out.printf(
+          "[validate] order=%s customer=%s amount=%.2f -> %s%n",
+          orderId, customerId, amount, reason);
+      return Map.of("valid", valid, "validationReason", reason);
+    }
+
+    static Map<String, Object> charge(final Job job) {
+      final String orderId = job.variable("orderId", String.class);
+      final double amount = job.variable("amount", Number.class).doubleValue();
+      sleep(50 + ThreadLocalRandom.current().nextInt(100));
+      final String paymentMethod = amount >= 500 ? "credit-card" : "wallet";
+      final String paymentId = "P-" + orderId + "-" + System.currentTimeMillis();
+      System.out.printf(
+          "[charge]   order=%s amount=%.2f via %s -> %s%n",
+          orderId, amount, paymentMethod, paymentId);
+      final Map<String, Object> out = new HashMap<>();
+      out.put("paymentId", paymentId);
+      out.put("paymentMethod", paymentMethod);
+      out.put("chargedAt", Instant.now().toString());
+      return out;
+    }
+
+    static Map<String, Object> ship(final Job job) {
+      final String orderId = job.variable("orderId", String.class);
+      final String paymentId = job.variable("paymentId", String.class);
+      final double amount = job.variable("amount", Number.class).doubleValue();
+      sleep(30 + ThreadLocalRandom.current().nextInt(40));
+      final String carrier = amount >= 500 ? "Express-DHL" : "Standard-Post";
+      final String trackingId = carrier.substring(0, 1) + "-" + job.getProcessInstanceKey();
+      System.out.printf(
+          "[ship]     order=%s payment=%s -> %s (%s)%n", orderId, paymentId, trackingId, carrier);
+      return Map.of("trackingId", trackingId, "carrier", carrier);
+    }
+  }
+
   private static void sleep(final long ms) {
     try {
       Thread.sleep(ms);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // Demo 1: inline-lambda API
-  // --------------------------------------------------------------------------
-
-  /** Build the process and attach lambdas in one fluent chain. */
-  public static final class Inline {
-
-    private Inline() {}
-
-    public static void main(final String[] args) throws Exception {
-      System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
-
-      try (var cluster = LiveBpmn.cluster().testcontainer()) {
-        final Run run =
-            LiveBpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent("received")
-                .serviceTask("validate", OrderDemos::validate)
-                .serviceTask("charge", OrderDemos::charge)
-                .serviceTask("ship", OrderDemos::ship)
-                .endEvent("delivered")
-                .run(RunOptions.of(3).variables(INITIAL_VARIABLES), cluster);
-
-        System.out.println("Operate: " + run.operateUrl());
-        run.await(Duration.ofMinutes(2));
-        System.out.println("done; handled per task = " + run.workersHandled());
-      }
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // Demo 2: binding API (same handlers, attached by element id after the model
-  // is built — useful when the BPMN definition lives separately).
-  // --------------------------------------------------------------------------
-
-  public static final class Bindings {
-
-    private Bindings() {}
-
-    public static void main(final String[] args) throws Exception {
-      System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
-
-      try (var cluster = LiveBpmn.cluster().testcontainer()) {
-        final Run run =
-            LiveBpmn.of(model())
-                .bind("validate", OrderDemos::validate)
-                .bind("charge", OrderDemos::charge)
-                .bind("ship", OrderDemos::ship)
-                .run(RunOptions.of(3).variables(INITIAL_VARIABLES), cluster);
-
-        System.out.println("Operate: " + run.operateUrl());
-        run.await(Duration.ofMinutes(2));
-        System.out.println("done; handled per task = " + run.workersHandled());
-      }
     }
   }
 }
