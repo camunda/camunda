@@ -38,7 +38,7 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
       if (rootProcessInstanceKey > 0) {
         final long key = Protocol.decodeKeyInPartition(rootProcessInstanceKey);
         final int ordinal = (int) (key / IDS_PER_ORDINAL);
-        if (ordinals.add(ordinal)) {
+        if (!ordinals.contains(ordinal) && ordinals.add(ordinal)) {
           LOGGER.info("New ordinal started: {} ({} ordinals total)", ordinal, ordinals.size());
         }
         return new FixedOrdinalIndexLocator(ordinal);
