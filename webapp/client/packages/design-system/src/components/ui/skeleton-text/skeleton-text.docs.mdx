@@ -1,0 +1,37 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as SkeletonTextStories from './skeleton-text.stories';
+
+<Meta of={SkeletonTextStories} name="Docs" />
+
+# SkeletonText
+
+A line-shaped placeholder for text content while loading. Use to reserve space for headings, single labels, or paragraphs of body copy until the real text arrives.
+
+## When to use
+
+- **Single line of body text** — `<Skeleton className="h-4 w-full" />` (or a fixed width like `w-[180px]`).
+- **Heading placeholder** — `<Skeleton className="h-7 w-2/3" />` (taller, narrower than full body).
+- **Multi-line paragraph** — stack several `<Skeleton className="h-4 …" />` divs in a flex column; vary widths (`w-full`, `w-11/12`, `w-3/4`) for realism.
+- **Last-line shorter** — hard-code `w-3/4` or `w-2/3` on the final skeleton in a paragraph stack.
+- **Composed loading row** — pair with a `<Skeleton className="size-4" />` icon in a flex row.
+- **Screen-reader announcement** — wrap the loading group in `<div role="status" aria-busy="true" aria-label="Loading">`.
+
+## When not to use
+
+- **Square icon placeholders** — use `SkeletonIcon` (same generic primitive sized as a square).
+- **Per-component skeletons** ("input skeleton", "card skeleton") — assemble from `<Skeleton>` rectangles to match the rendered shape.
+- **Spinner-style indeterminate progress** — use `Loading` / `Spinner`.
+
+## Composition
+
+- The wrapper re-exports the canonical `Skeleton` from `skeleton/`. There is no `paragraph`, `lineCount`, or `heading` prop — render the layout yourself.
+- Default animation is `animate-pulse` (opacity), not Carbon's shimmer.
+- Default radius is `rounded-md`; for square corners (matching Carbon) add `className="rounded-none"`.

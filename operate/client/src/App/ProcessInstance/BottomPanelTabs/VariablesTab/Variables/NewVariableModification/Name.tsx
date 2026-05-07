@@ -17,7 +17,7 @@ import {
 import {TextInputField} from 'modules/components/TextInputField';
 import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
-import {Layer} from '@carbon/react';
+import {Layer} from '@camunda/design-system';
 import {useEffect, useRef} from 'react';
 import {useSelectedElementName} from 'modules/hooks/elementSelection';
 import {useVariables} from 'modules/queries/variables/useVariables';

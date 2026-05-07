@@ -1,0 +1,36 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as StructuredListStories from './structured-list.stories';
+
+<Meta of={StructuredListStories} name="Docs" />
+
+# StructuredList
+
+A read-only tabular layout for key/value pairs and simple data display. Use in profile panels, detail views, and metadata sections — anywhere a lightweight `<Table>` shape suits the content better than a full data table.
+
+## When to use
+
+- **Key/value display** — `<Table>` + `<TableBody>` with two-cell `<TableRow>`s. Style the label cell with `font-medium whitespace-nowrap`.
+- **Simple data list** — `<Table>` + `<TableHeader>` + `<TableBody>` for header + rows.
+- **No-wrap label cells** — `<TableCell className="whitespace-nowrap">`.
+- **Selected row highlight** — set `data-state="selected"` on `<TableRow>` to get the built-in `bg-muted` styling.
+- **Single-select per row (Carbon's `StructuredListInput`)** — wrap `<TableBody>` in a `<RadioGroup>` and place a `<RadioGroupItem>` in the first cell of each row.
+
+## When not to use
+
+- **Sortable, filterable, paginated data** — use the full `Table` family with sort/filter wiring.
+- **An ordered or unordered list of single items** — use `<ul>` / `<ol>` or `UnorderedList`.
+- **Form fields with labels** — use the `Field` primitive, not table rows.
+
+## Composition
+
+- The wrapper re-exports the canonical `Table` family from `table/`. There is no dedicated `StructuredList*` component — same primitive, same naming conventions.
+- For the typical key/value pattern: omit `<TableHeader>` entirely and just render `<TableBody>` with two-cell rows.
+- For Carbon's `<StructuredListSkeleton>`: build a small `<Table>` of `<TableRow>`s containing `<TableCell><Skeleton className="h-4 w-full" /></TableCell>`.

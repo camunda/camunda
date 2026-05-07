@@ -11,7 +11,7 @@ import {
   Tab as BaseTab,
   TabPanel as BaseTabPanel,
   TabList as BaseTabList,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 const Container = styled.div`
   width: 100%;

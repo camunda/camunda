@@ -8,7 +8,7 @@
 
 import {forwardRef} from 'react';
 import {NodeName, Container} from '../Bar/styled';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 import {ModificationIcons} from './ModificationIcons';
 
 type Props = {

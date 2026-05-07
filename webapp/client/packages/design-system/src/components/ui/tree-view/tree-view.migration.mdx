@@ -1,0 +1,62 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/TreeView/Migration" />
+
+# TreeView — Carbon → shadcn migration guide
+
+shadcn doesn't ship a tree primitive. This wrapper rebuilds Carbon's TreeView in plain HTML + Tailwind, preserving the export names and the most commonly used props (controlled `active`/`selected`, `onSelect`, `defaultIsExpanded`, `disabled`, `renderIcon`, `multiselect`, `size`).
+
+## Mapping
+
+| Carbon prop (View) | shadcn prop | Notes |
+|---|---|---|
+| `label` | `label` | Required for `aria-labelledby`. |
+| `hideLabel` | `hideLabel` | `sr-only` the heading. |
+| `size` | `size` | `'xs'` / `'sm'`. |
+| `active` | `active` | Controlled active node id. |
+| `selected` | `selected` | Controlled selection array. |
+| `multiselect` | `multiselect` | Switch to multi-select. |
+| `onActivate` | `onActivate` | Emits the new active id. |
+| `onSelect` | `onSelect` | Emits the new selection array. |
+| Carbon prop (Node) | shadcn prop | Notes |
+| `id` | `id` | Required, unique. |
+| `label` | `label` | Rendered text. |
+| `value` | `value` | Forwarded to `onSelect` payload. |
+| `isExpanded` | `isExpanded` | Controlled expansion. |
+| `defaultIsExpanded` | `defaultIsExpanded` | Default state. |
+| `disabled` | `disabled` | Non-interactive + visually muted. |
+| `href` | `href` | Renders the row as an `<a>`. |
+| `renderIcon` | `renderIcon` | Component reference. |
+| `onSelect` | `onSelect` | Per-node selection callback. |
+| `onToggle` | `onToggle` | Expand/collapse callback. |
+
+## Carbon features missing in shadcn
+
+- **`onSelect` uncontrolled signature** with `activeNodeId` extra payload — shadcn ships a single signature: `(event, {id, label, value})`.
+- **Per-node `align` / `autoAlign`** — Carbon's tooltip-on-truncated-label feature. shadcn currently truncates with `truncate` and exposes the full label only on hover via `title` (omitted here for parity simplicity — extend if needed).
+- **Drag-to-reorder, async loading, virtualization** — Carbon doesn't ship these either, but be aware shadcn matches that gap.
+
+## shadcn features missing in Carbon
+
+- **`data-tree-id` and `data-active`** attributes for CSS hooks and tests.
+
+## Behavioural differences
+
+- **Keyboard navigation** — implemented via DOM-querying `data-tree-id`. Same effective behaviour as Carbon (Up/Down/Left/Right/Enter/Space).
+- **Focus model** — first node is initially tab-focusable; on activation, focus follows the active node. Match.
+- **Selection rendering** — `aria-selected` set on the `<li>`. Active node also gets `data-active=true` for styling.
+
+## Migration checklist
+
+1. Swap imports.
+2. If you used Carbon's two-arg `onSelect(event, {activeNodeId, ...})` signature, simplify to `onSelect(event, {id, label, value})`.
+3. If you depended on the truncation-tooltip, wrap the `label` with your own `Tooltip`.
+4. Drop `@use '@carbon/styles/scss/components/tree-view'` imports.

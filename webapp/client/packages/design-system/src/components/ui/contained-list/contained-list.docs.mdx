@@ -1,0 +1,33 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as ContainedListStories from './contained-list.stories';
+
+<Meta of={ContainedListStories} name="Docs" />
+
+# ContainedList
+
+A vertical, divider-separated list with an optional header (label + action) and rich item slots (icon, content, action). Two visual modes: `on-page` (full-bleed, dividers only) and `disclosed` (boxed, looks like a card).
+
+## When to use
+
+- **Sidebars** — recent files, saved filters, navigation lists.
+- **Settings rows** — each item is a setting label + control (use `action` slot).
+- **Read-only lists with mixed content** — icon + label + secondary action.
+
+## When not to use
+
+- **Tabular data with multiple columns** — use `Table`.
+- **Selectable lists** — use `StructuredList` radio variant or `Combobox` for picking.
+
+## Composition
+
+- `<ContainedList>` accepts `label`, `action` (header right-side slot), `kind` (`on-page` or `disclosed`), `size` (`sm`/`md`/`lg`/`xl`), and `isInset` (margin-inset dividers).
+- `<ContainedListItem>` accepts `renderIcon` (a Lucide-style component), `action` (right-side slot), `disabled`, and `onClick` (makes the row keyboard-interactive).
+- Interactive items render as `<button>` for proper keyboard semantics; non-interactive items render as `<div>` inside the `<li>`.

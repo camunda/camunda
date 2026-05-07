@@ -15,7 +15,7 @@ import {useForm} from 'react-final-form';
 import type {ViewFullVariableButtonShowProps} from '../types';
 import {InlineLoading} from '../../Operations/styled';
 import {MaximizeButton} from '../MaximizeButton';
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 
 const ViewFullVariableButtonShow: React.FC<ViewFullVariableButtonShowProps> = ({
   variableName,

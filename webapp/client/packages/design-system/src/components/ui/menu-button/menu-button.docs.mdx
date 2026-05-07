@@ -1,0 +1,38 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as MenuButtonStories from './menu-button.stories';
+
+<Meta of={MenuButtonStories} name="Docs" />
+
+# MenuButton
+
+A labelled button trigger that opens an action menu of clickable items. Use for grouping related actions behind a single labelled affordance — "Actions", "More", "Account" — when each item fires a callback.
+
+## When to use
+
+- **Action menu with a labelled trigger** — group 3+ related actions behind a labelled `<Button>`. Compose `DropdownMenu` + `DropdownMenuTrigger asChild` + `DropdownMenuContent` + `DropdownMenuItem`.
+- **Destructive items in a menu** — use `<DropdownMenuItem variant="destructive">` for "Delete", "Remove", "Discard".
+- **Section headers and groups** — use `<DropdownMenuLabel>` for headers and `<DropdownMenuSeparator>` between groups.
+- **Single-select inside a menu** — wrap items in `<DropdownMenuRadioGroup value onValueChange>` + `<DropdownMenuRadioItem>`.
+- **Multi-select inside a menu** — use `<DropdownMenuCheckboxItem checked onCheckedChange>`.
+- **Nested submenus** — compose `<DropdownMenuSub>` + `<DropdownMenuSubTrigger>` + `<DropdownMenuSubContent>`.
+
+## When not to use
+
+- **Picking one option from a list** — use `Select` (single-select listbox), not an action menu.
+- **An icon-only trigger (`⋮`)** — use `OverflowMenu` (same primitive, ghost icon button trigger).
+- **A single primary action** — render a plain `Button` instead of opening a menu of one.
+- **Navigation links** — prefer a real anchor or router `Link`.
+
+## Composition
+
+- The trigger is an explicit `<Button>` inside `<DropdownMenuTrigger asChild>`. Render the chevron yourself (e.g., `<ChevronDown className="ml-2 h-4 w-4" />` from `lucide-react`).
+- Variants live on the inner `<Button>` (`variant`, `size`), not on the wrapper — there is no `kind` or `size` prop on the menu itself.
+- Place the menu via `<DropdownMenuContent side align>` rather than a single `menuAlignment` token.

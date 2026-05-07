@@ -11,7 +11,7 @@ import {styles} from '@carbon/elements';
 import {
   ActionableNotification as BaseActionableNotification,
   InlineNotification as BaseInlineNotification,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 const Text = styled.p`
   margin: 0;

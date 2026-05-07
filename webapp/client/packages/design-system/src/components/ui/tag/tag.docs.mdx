@@ -1,0 +1,38 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as TagStories from './tag.stories';
+
+<Meta of={TagStories} name="Docs" />
+
+# Tag
+
+A small pill-shaped label. Use to categorise, label status, attribute metadata, or summarise a property of a parent element. The wrapper re-exports `Badge` from `badge/`.
+
+## When to use
+
+- **Brand-coloured status label** — `<Badge variant="default">`. Same pill shape as Carbon's `Tag`.
+- **Quiet category label** — `<Badge variant="secondary">` for neutral/grey backgrounds.
+- **Error / danger marker** — `<Badge variant="destructive">`.
+- **Outlined label** — `<Badge variant="outline">` for low-emphasis tags inside dense layouts.
+- **Linked tag** — `<Badge asChild><a href="…">{label}</a></Badge>` keeps anchor semantics with badge styling.
+- **With icon** — render the icon as a child; `[&>svg]:size-3` is wired automatically.
+
+## When not to use
+
+- **Action triggers** — use `Button`, not a clickable badge.
+- **Form-control toggles** — use `Toggle` or `Checkbox`.
+- **Long-form descriptive text** — keep tags short; use a `<p>` for prose.
+- **Dismissible filter chip** — there is no built-in close button; render an inline `<button>` with `<X />` yourself (see migration guide).
+
+## Composition
+
+- Carbon's 12 colour `type`s collapse to 6 shadcn `variant`s. For the missing semantic colours (red/blue/green/etc.) extend `badgeVariants` once, or apply Tailwind classes inline.
+- For sizes: there is no `size` prop; restyle with `className` (`text-[10px] px-1.5 py-0` for sm, `text-sm px-3 py-1` for lg).
+- For `disabled`: add `className="opacity-50 pointer-events-none"` or `aria-disabled`.

@@ -9,7 +9,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import {Container, AddIcon, CancelIcon, WarningIcon} from './styled';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 import {useModificationsByElement} from 'modules/hooks/modifications';
 import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
 

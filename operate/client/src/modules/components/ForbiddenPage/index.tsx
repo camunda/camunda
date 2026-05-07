@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Link, Stack} from '@carbon/react';
+import {Link, Stack} from '@camunda/design-system';
 import {Launch} from '@carbon/react/icons';
 import {AppHeader} from 'App/Layout/AppHeader';
 import {Description, Title, Grid, Content, ForbiddenIcon} from './styled';

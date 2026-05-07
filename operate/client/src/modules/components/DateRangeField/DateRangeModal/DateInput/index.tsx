@@ -8,7 +8,7 @@
 
 import {forwardRef} from 'react';
 import {Field} from 'react-final-form';
-import {DatePickerInput} from '@carbon/react';
+import {DatePickerInput} from '@camunda/design-system';
 
 type Props = {
   type: 'from' | 'to';

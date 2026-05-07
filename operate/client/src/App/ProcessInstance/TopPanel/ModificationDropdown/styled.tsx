@@ -11,7 +11,7 @@ import {styles} from '@carbon/elements';
 import {
   Button as BaseButton,
   InlineLoading as BaseInlineLoading,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 const Button: typeof BaseButton = styled(BaseButton)`
   width: 100%;

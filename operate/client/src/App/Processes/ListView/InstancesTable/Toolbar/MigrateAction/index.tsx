@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {TableBatchAction} from '@carbon/react';
+import {TableBatchAction} from '@camunda/design-system';
 import {MigrateAlt} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';

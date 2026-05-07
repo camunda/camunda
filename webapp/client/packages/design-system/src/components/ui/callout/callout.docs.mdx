@@ -1,0 +1,35 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as CalloutStories from './callout.stories';
+
+<Meta of={CalloutStories} name="Docs" />
+
+# Callout
+
+A permanent, non-dismissible inline notification for contextual information that stays on the page. Use for static advisories inside a panel, form, or page section — not for transient feedback.
+
+## When to use
+
+- **Contextual info** ("Heads up — this affects 12 records") — use default `<Alert>` + `<Info />` icon and an `<AlertTitle>` / `<AlertDescription>`.
+- **Static warning** ("Some changes cannot be undone") — `<Alert className="border-yellow-500/50 text-yellow-700 [&>svg]:text-yellow-600">` + `<AlertTriangle />`.
+- **Quiet upsell or hint with a CTA** — compose `Alert` + a low-emphasis `<Button variant="outline" size="sm">` placed inside.
+- **Subtle/low-contrast notice** — set `className="border-transparent bg-muted"` on the `Alert` to mute the visual weight.
+
+## When not to use
+
+- **Dismissible advisory or transient feedback** — use a `Sonner` toast.
+- **Action-required banner with a primary CTA and dismiss button** — use the `ActionableNotification` migration pattern (`Alert` + `Button` + your own dismiss state).
+- **Field-level error message** — use the form field's inline error, not an Alert.
+- **Blocking confirmation** — use `AlertDialog`.
+
+## Composition
+
+- Carbon's `Callout` is monolithic; the shadcn `Alert` is decomposed. Render the icon, `AlertTitle`, `AlertDescription`, and (optionally) a `Button` as children — the layout is yours.
+- Status colours beyond `default` and `destructive` (info, warning, success) are not built in. Apply Tailwind classes per usage, or extend `alertVariants` with named variants if you reuse the same status across the app.

@@ -8,7 +8,7 @@
 
 import {observer} from 'mobx-react';
 import {useLocation} from 'react-router-dom';
-import {TableBatchAction, Stack} from '@carbon/react';
+import {TableBatchAction, Stack} from '@camunda/design-system';
 import {Move} from '@carbon/react/icons';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';

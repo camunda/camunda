@@ -1,0 +1,35 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as ColumnStories from './column.stories';
+
+<Meta of={ColumnStories} name="Docs" />
+
+# Column
+
+A child of `Grid`. Sets `grid-column` for itself based on either a constant `span`, or breakpoint-specific spans (`sm` / `md` / `lg` / `xl` / `max`). Supports `offset`, `start`, and `end` for fine-grained placement.
+
+## When to use
+
+- Inside `<Grid>`, when you need a layout cell that spans some number of columns.
+
+## When not to use
+
+- Outside a `<Grid>`. The component reads column count from grid context.
+
+## Composition
+
+- `span` accepts a number (1–`columns`), a boolean (`true` = full width, `false` = auto), or an object `{ span, offset, start, end }`.
+- `sm` / `md` / `lg` / `xl` / `max` accept the same shape and apply at-or-above the breakpoint min-width:
+  - `sm` ≥ 0px
+  - `md` ≥ 672px
+  - `lg` ≥ 1056px
+  - `xl` ≥ 1312px
+  - `max` ≥ 1584px
+- A constant `span` is applied as an inline `style.gridColumn`. Breakpoint props inject a small scoped `<style>` element with media queries — this is necessary because Tailwind cannot generate arbitrary breakpoint utilities at runtime.

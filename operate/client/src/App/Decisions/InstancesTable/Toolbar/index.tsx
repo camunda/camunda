@@ -11,7 +11,7 @@ import {
   Modal,
   TableBatchAction,
   TableBatchActions,
-} from '@carbon/react';
+} from '@camunda/design-system';
 import {TrashCan} from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {useState} from 'react';

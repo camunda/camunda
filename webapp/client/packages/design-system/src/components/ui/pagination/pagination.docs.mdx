@@ -1,0 +1,36 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as PaginationStories from './pagination.stories';
+
+<Meta of={PaginationStories} name="Docs" />
+
+# Pagination
+
+A presentational `<nav>` of page links — anchor-based, server-friendly, and unstyled by data semantics. Use to navigate between pre-computed pages where you own the page-number list and active-page state.
+
+## When to use
+
+- **Page navigation** — compose `Pagination` + `PaginationContent` + `<PaginationItem>` per page with `<PaginationLink href isActive>`.
+- **Previous / Next chevrons** — render `<PaginationPrevious href>` and `<PaginationNext href>` at the ends.
+- **Skipped page ranges** — drop `<PaginationEllipsis />` between non-contiguous numbers.
+- **Active page marker** — `isActive` on a `<PaginationLink>` sets `aria-current="page"` and switches to the `outline` button variant.
+- **Router integration** — `<PaginationLink>` is a real `<a>`; pass router-aware props or wrap with your router's `<Link>` component.
+
+## When not to use
+
+- **Carbon-style "1–10 of 103 / items per page" footer** — no shadcn primitive ships these. Compose a sibling `<Select>` for page-size and a `<span>` for the range yourself.
+- **Cursor-based / infinite-scroll lists** — render a "Load more" `Button` instead.
+- **Two pages or fewer** — render plain prev/next `Button`s without a numbered list.
+
+## Composition
+
+- This is a **presentational** primitive — there is no `totalItems`, `pageSize`, or `onChange`. Compute the page-number list (which numbers to show, where to insert ellipses) in your own component.
+- Disable the boundaries: at page 1 omit `<PaginationPrevious>` (or set `aria-disabled="true" tabIndex={-1}`); at last page do the same for `<PaginationNext>`.
+- Default layout is centered (`mx-auto flex w-full justify-center`); restyle with `className` for left/right alignment.

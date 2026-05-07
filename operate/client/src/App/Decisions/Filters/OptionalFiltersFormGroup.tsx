@@ -27,7 +27,7 @@ import {tracking} from 'modules/tracking';
 import {OptionalFiltersMenu} from 'modules/components/OptionalFilters';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {Field, useForm} from 'react-final-form';
-import {IconButton, Stack} from '@carbon/react';
+import {IconButton, Stack} from '@camunda/design-system';
 import {TextInputField} from 'modules/components/TextInputField';
 import {TextAreaField} from 'modules/components/TextAreaField';
 import {

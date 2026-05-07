@@ -1,0 +1,39 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as InlineNotificationStories from './inline-notification.stories';
+
+<Meta of={InlineNotificationStories} name="Docs" />
+
+# InlineNotification
+
+A dismissible inline status banner with an X close button. Compose `Alert` + status icon + an `<AlertTitle>` / `<AlertDescription>` + a ghost `Button` for the close action.
+
+## When to use
+
+- **Dismissible error** ("Could not save — try again") — `<Alert variant="destructive">` + `<XCircle />` + your own dismiss button.
+- **Dismissible info** (new version available, system notice the user can close) — default `<Alert>` + `<Info />`.
+- **Dismissible success** — `<Alert>` with green Tailwind classes + `<CheckCircle2 />`. No built-in success variant.
+- **Dismissible warning** — `<Alert>` with amber classes + `<AlertTriangle />`. No built-in warning variant.
+- **Auto-dismiss after a delay** — wrap state with `useEffect` + `setTimeout` (Carbon's `timeout` is not built in).
+- **Non-dismissible status** — render `<Alert>` without the close button (no separate prop needed).
+
+## When not to use
+
+- **Permanent contextual notice with no dismiss button** — use the `Callout` migration pattern (same `Alert` primitive, no close button).
+- **Status with a primary CTA inside** — use the `ActionableNotification` migration pattern (`Alert` + `Button` + custom dismiss).
+- **Transient toast feedback** — use `Sonner`.
+- **Blocking confirmation** — use `AlertDialog`.
+
+## Composition
+
+- Three Carbon notifications (`Callout`, `InlineNotification`, `ActionableNotification`) all map to **the same shadcn primitive — `Alert`**. The differences are pure composition: dismiss button presence, CTA presence, status colour mapping.
+- Open/closed state is yours: track with `useState`, return `null` (or animate) when closed.
+- Status icon and colour for non-`destructive` kinds are not built in. Apply Tailwind classes ad-hoc, or extend `alertVariants` with `success`/`warning`/`info` entries if reused across the app.
+- For multiple call-sites, extract a tiny app-local `<DismissibleAlert kind title subtitle />` helper that wraps the `useState` + close-button pattern.

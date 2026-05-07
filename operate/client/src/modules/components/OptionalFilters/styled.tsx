@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {OverflowMenu as BaseOverflowMenu, Stack} from '@carbon/react';
+import {OverflowMenu as BaseOverflowMenu, Stack} from '@camunda/design-system';
 
 const Container = styled.div`
   display: flex;

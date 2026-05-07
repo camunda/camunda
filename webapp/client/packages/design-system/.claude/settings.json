@@ -1,0 +1,19 @@
+{
+	"enabledMcpjsonServers": ["shadcn"],
+	"permissions": {
+		"allow": [
+			"Bash(npm run *)",
+			"Bash(npx shadcn:*)",
+			"Bash(./mvnw *)",
+			"Bash(git status)",
+			"Bash(git diff:*)",
+			"Bash(ls:*)",
+			"Bash(cat:*)",
+			"Glob",
+			"Grep",
+			"Read",
+			"Edit",
+			"Write"
+		]
+	}
+}

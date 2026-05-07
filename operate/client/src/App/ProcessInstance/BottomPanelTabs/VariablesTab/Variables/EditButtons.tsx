@@ -9,7 +9,7 @@
 import {useForm, useFormState} from 'react-final-form';
 import {getError} from './getError';
 import {useFieldError} from 'modules/hooks/useFieldError';
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 import {Checkmark, Close} from '@carbon/react/icons';
 import {Loading, LoadingContainer} from './EditButtons.styled';
 import type {VariableFormValues} from 'modules/types/variables';

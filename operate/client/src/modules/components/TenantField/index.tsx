@@ -9,7 +9,7 @@
 import React from 'react';
 import {Field} from 'react-final-form';
 import {observer} from 'mobx-react';
-import {Dropdown} from '@carbon/react';
+import {Dropdown} from '@camunda/design-system';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 

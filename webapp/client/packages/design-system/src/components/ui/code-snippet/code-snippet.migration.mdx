@@ -1,0 +1,57 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/CodeSnippet/Migration" />
+
+# CodeSnippet — Carbon → shadcn migration guide
+
+Carbon ships a `CodeSnippet` with three modes (inline / single / multi), an integrated copy button, configurable feedback, and an expand/collapse toggle for long content. shadcn ships nothing equivalent — this wrapper recreates the surface in plain HTML + Tailwind on top of the local `Button` primitive.
+
+## Mapping
+
+| Carbon prop | shadcn prop | Notes |
+|---|---|---|
+| `type` | `type` | `'inline'` / `'single'` / `'multi'`. |
+| `copyText` | `copyText` | Overrides the copied string. Defaults to extracted inner text. |
+| `hideCopyButton` | `hideCopyButton` | Disables the button (and inline copy-on-click). |
+| `disabled` | `disabled` | Visually disabled + non-interactive. |
+| `feedback` | `feedback` | Announced via `aria-live="polite"` after copy. |
+| `feedbackTimeout` | `feedbackTimeout` | Milliseconds before the feedback message resets. Default `2000`. |
+| `copyButtonDescription` | `copyButtonDescription` | a11y label for the copy button. |
+| `wrapText` | `wrapText` | Soft-wrap inside the multi-line block. |
+| `maxCollapsedNumberOfRows` | `maxCollapsedNumberOfRows` | Lines visible when collapsed. Default `15`. |
+| `showMoreText` / `showLessText` | `showMoreText` / `showLessText` | Toggle labels. |
+| `onClick` | `onClick` | Fires on copy-button click. |
+
+## Carbon features missing in shadcn
+
+- **`align`, `autoAlign`** — Carbon's tooltip-on-the-button alignment props. shadcn uses an `aria-label` instead of a Tooltip; if you need Tooltip parity, wrap the Button externally.
+- **`light` variant** — deprecated upstream; use `Layer` instead.
+- **`min/maxExpanded/CollapsedNumberOfRows`** — Carbon's full row-count control matrix. shadcn ships only `maxCollapsedNumberOfRows`; expanded view shows everything.
+- **Carbon's exact monospace stack and IBM Plex Mono fonts** — shadcn relies on Tailwind's `font-mono` (system stack).
+- **`feedback` Tooltip** — Carbon shows a tooltip with the feedback string; shadcn uses an icon swap (`Copy` → `Check`) plus an `sr-only aria-live` announcement.
+
+## shadcn features missing in Carbon
+
+- **None of consequence** — shadcn is intentionally a smaller surface.
+
+## Behavioural differences
+
+- **Clipboard fallback** — `navigator.clipboard.writeText` is required. In insecure contexts (HTTP) it throws; the wrapper catches and silently noops. If you need a `document.execCommand('copy')` fallback, add it inside `useClipboard`.
+- **Inline copy target** — Carbon: clicking anywhere on the inline snippet copies. shadcn matches.
+- **Expanded state** — Carbon: animates height on toggle. shadcn: instant.
+
+## Migration checklist
+
+1. Swap the import.
+2. Drop `align`/`autoAlign` if you used them — wrap with a `<Tooltip>` externally if needed.
+3. If you used `min/maxExpandedNumberOfRows`, drop them; expanded view shows everything.
+4. If you have non-string children (icons, syntax highlighting), pass `copyText` explicitly so clipboard text is correct.
+5. Drop `@use '@carbon/styles/scss/components/code-snippet'` imports.

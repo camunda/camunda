@@ -6,29 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {GlobalTheme, usePrefix} from '@carbon/react';
+import {ThemeProvider as DSThemeProvider} from '@camunda/design-system';
 import {observer} from 'mobx-react-lite';
+import type {ReactNode} from 'react';
 import {themeStore} from './theme';
-import {useLayoutEffect} from 'react';
-
-const THEME_TOKENS = {
-	light: 'g10',
-	dark: 'g100',
-} as const;
 
 type Props = {
-	children: React.ReactNode;
+	children: ReactNode;
 };
 
-const ThemeProvider: React.FC<Props> = observer(({children}) => {
-	const {actualTheme} = themeStore;
-	const prefix = usePrefix();
-
-	useLayoutEffect(() => {
-		document.documentElement.dataset['carbonTheme'] = THEME_TOKENS[actualTheme];
-	}, [actualTheme, prefix]);
-
-	return <GlobalTheme>{children}</GlobalTheme>;
-});
+const ThemeProvider: React.FC<Props> = observer(({children}) => (
+	<DSThemeProvider theme={themeStore.actualTheme}>{children}</DSThemeProvider>
+));
 
 export {ThemeProvider};

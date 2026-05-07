@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {Loading as BaseLoading} from '@carbon/react';
+import {Loading as BaseLoading} from '@camunda/design-system';
 
 const Loading = styled(BaseLoading)`
   align-self: center;

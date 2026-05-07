@@ -27,7 +27,7 @@ import {
   Buttons,
 } from './styled';
 import {ElementInstanceLog} from './ElementInstanceLog';
-import {Button, Modal} from '@carbon/react';
+import {Button, Modal} from '@camunda/design-system';
 import {tracking} from 'modules/tracking';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {ModificationSummaryModal} from './ModificationSummaryModal';

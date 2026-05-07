@@ -8,7 +8,7 @@
 
 import {useEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
-import {SelectItem, Stack, Tag, Toggle, Tooltip} from '@carbon/react';
+import {SelectItem, Stack, Tag, Toggle, Tooltip} from '@camunda/design-system';
 
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processInstanceMigrationMappingStore} from 'modules/stores/processInstanceMigrationMapping';

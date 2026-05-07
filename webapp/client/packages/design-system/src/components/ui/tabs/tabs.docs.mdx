@@ -1,0 +1,37 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as TabsStories from './tabs.stories';
+
+<Meta of={TabsStories} name="Docs" />
+
+# Tabs
+
+A Radix-based tab set that pairs each trigger with its panel by `value` string. Use to switch between sibling views inside a single page region — settings sections, detail panes, log filters.
+
+## When to use
+
+- **Sibling views in one region** — compose `Tabs` + `TabsList` + `TabsTrigger value` + `TabsContent value`. Use `defaultValue` (uncontrolled) or `value` + `onValueChange` (controlled).
+- **URL-driven state** — controlled `value` reads/writes a query param so deep links restore the active tab.
+- **Pill-style tab bar** — default `<TabsList>` (muted background, active tab is a card surface).
+- **Underline-style tab bar** — `<TabsList variant="line">` switches to the line indicator with a transparent background.
+- **Vertical tab layout** — `<Tabs orientation="vertical">`; the list flows column-wise and the active indicator moves to the right edge.
+- **Disabled tab** — `<TabsTrigger disabled>` blocks interaction on that trigger only; the panel remains reachable if `value` is set programmatically.
+
+## When not to use
+
+- **Top-level navigation between pages** — use a router and a real nav, not tabs.
+- **Mutually exclusive single-line choice in a form** — use `RadioGroup` or `Select`.
+- **One panel that toggles open/closed** — use `Collapsible` or `Accordion`.
+
+## Composition
+
+- Trigger/panel pairing is by **`value` string**, not child index — panels can be reordered or rendered far from the list.
+- Pass `forceMount` on `<TabsContent>` to keep an inactive panel in the DOM (useful for forms with state to preserve).
+- Use `asChild` on `<TabsTrigger>` to render a router link as the trigger without losing styles.

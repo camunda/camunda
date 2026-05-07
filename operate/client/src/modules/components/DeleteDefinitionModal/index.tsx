@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Modal, Stack, ActionableNotification, Checkbox} from '@carbon/react';
+import {Modal, Stack, ActionableNotification, Checkbox} from '@camunda/design-system';
 import {Description, WarningContainer} from './styled';
 import {useState} from 'react';
 

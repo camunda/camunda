@@ -1,0 +1,40 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as TreeViewStories from './tree-view.stories';
+
+<Meta of={TreeViewStories} name="Docs" />
+
+# TreeView
+
+A hierarchical, keyboard-navigable list. Each node may be expandable (renders a chevron) and selectable. Used for navigating element instance trees, file systems, BPMN element histories, and similar nested data.
+
+## When to use
+
+- **Navigating nested data** — element instance history, BPMN flowscope tree, file/folder browser.
+- **Single-select drill-downs** — clicking a node activates it and emits `onSelect`.
+
+## When not to use
+
+- **Flat lists** — use `ContainedList` or `Stack`.
+- **Tabular data** — use `Table`.
+
+## Composition
+
+- `<TreeView>` is the outer `<ul role="tree">` and owns: the `active` node id (controlled or uncontrolled), the `selected` array, and registry of visible nodes for keyboard navigation.
+- `<TreeNode>` requires `id` (must be unique). Pass `defaultIsExpanded` for default open, or `isExpanded` for controlled. `renderIcon` adds a leading icon.
+- Sizes: `size="xs"` (compact, 28px rows) or `size="sm"` (default, 32px rows).
+- Multiselect: pass `multiselect` on `<TreeView>`. Selection arrays are still emitted via `onSelect(selected)`.
+
+## Keyboard
+
+- **ArrowUp / ArrowDown** — move focus to previous/next visible node.
+- **ArrowRight** — expand a collapsible node (no-op on leaf).
+- **ArrowLeft** — collapse an expanded node.
+- **Enter / Space** — select and toggle expansion.

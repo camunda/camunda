@@ -1,0 +1,50 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/Grid/Migration" />
+
+# Grid — Carbon → shadcn migration guide
+
+Carbon's `Grid` is a 16-column CSS grid sized by IBM's responsive breakpoints. The shadcn version preserves the API (column count, condensed/narrow gutters, polymorphic `as`) but uses inline styles and a small Carbon-breakpoint-matching media-query helper instead of SCSS.
+
+## Mapping
+
+| Carbon prop | shadcn prop | Notes |
+|---|---|---|
+| `condensed` | `condensed` | 1px gutter. |
+| `narrow` | `narrow` | 1rem gutter. |
+| `fullWidth` | `fullWidth` | Removes max-width constraint. |
+| `as` | `as` | Polymorphic. |
+| n/a | `columns` | shadcn lets you change the column count (default 16). Carbon is hard-coded to 16. |
+
+## Carbon features missing in shadcn
+
+- **Carbon's outer container max-width and centered layout** — Carbon's `Grid` ships an outer container with breakpoint-driven `max-width`. shadcn renders a plain CSS grid; wrap in your own `max-w-screen-xl mx-auto px-6` (or similar) if you need a constrained page.
+- **`FlexGrid` / `Row`** — Carbon's flex-based legacy grid. Not provided. Use the CSS grid version.
+- **`ColumnHang`** — Carbon's hanging-column primitive. Not provided. Use negative margin / explicit `start`/`end` on a `Column`.
+
+## shadcn features missing in Carbon
+
+- **`columns` prop** — pass `columns={12}` (or any number) to switch the underlying track count.
+- **Context-aware Column** — `Column` reads column count from the nearest `Grid` so nested grids work cleanly.
+
+## Behavioural differences
+
+- **Breakpoints** — shadcn matches Carbon's: `sm` ≥ 0px, `md` ≥ 672px, `lg` ≥ 1056px, `xl` ≥ 1312px, `max` ≥ 1584px. Carbon's `xlg` is renamed `xl` to match Tailwind ergonomics.
+- **Gutter values** — `default` 2rem, `narrow` 1rem, `condensed` 1px. Same as Carbon.
+- **Edge padding** — Carbon adds breakpoint-driven `padding-left/right` on the outer container. shadcn does not — add yourself if needed.
+
+## Migration checklist
+
+1. Swap `import {Grid, Column} from '@carbon/react'` → `from '@camunda/design-system/shadcn'`.
+2. Rename `xlg` prop → `xl` on every `<Column>` call site.
+3. If you relied on Carbon's outer page padding, wrap the `<Grid>` in `<div className="px-4 md:px-6 lg:px-8">` (or your own scale).
+4. If you used `FlexGrid`/`Row`, refactor to `Grid` + `Column`.
+5. Drop `@use '@carbon/styles/scss/grid'` imports.

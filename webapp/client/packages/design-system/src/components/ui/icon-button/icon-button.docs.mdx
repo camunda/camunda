@@ -1,0 +1,37 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as IconButtonStories from './icon-button.stories';
+
+<Meta of={IconButtonStories} name="Docs" />
+
+# IconButton
+
+A square button that contains only an icon, paired with a tooltip for the accessible label. Use in toolbars, table rows, and dense surfaces where text labels would not fit.
+
+## When to use
+
+- **Toolbar / table-row actions** — edit, delete, copy, expand. Compose `<Button variant="ghost" size="icon">` inside a `<Tooltip>` and set `aria-label` on the button.
+- **Close / dismiss buttons** — modal close, panel collapse. `variant="ghost"`, `size="icon"`, with an `<X />` icon.
+- **Destructive icon-only actions** — `<Button variant="destructive" size="icon">` for trash icons in dense lists.
+- **Toolbar toggles** (bold, italic, pin) — do **not** use a plain icon button; use the `<Toggle>` primitive, which manages `aria-pressed` and selected styling.
+- **As a styled link** — `<Button variant="ghost" size="icon" asChild><RouterLink>…</RouterLink></Button>`.
+
+## When not to use
+
+- **Action with available space for a text label** — use a regular `<Button>`. Icon-only is for density, not preference.
+- **Stateful on/off** — use `Toggle`, not a button with manual `aria-pressed`.
+- **Drop-down trigger to a menu** — use `DropdownMenuTrigger` directly (still icon-styled, but with menu semantics).
+
+## Composition
+
+- shadcn does **not** ship a dedicated icon button. The pattern is `<Button size="icon">` wrapped in `<Tooltip>`, with `aria-label` set manually. Both primitives are re-exported from this folder for ergonomics.
+- Set `aria-label` on the `<Button>` AND put the same string inside `<TooltipContent>`. Consider extracting a small local helper (`<IconButton label icon variant />`) if you have many.
+- Add `<TooltipProvider delayDuration={100}>` once at the app root (Radix's default 700ms delay feels sluggish vs Carbon).
+- For tooltips on **disabled** icon buttons: wrap the `<Button>` in `<span tabIndex={0}>` so the Tooltip can attach to a focusable element.

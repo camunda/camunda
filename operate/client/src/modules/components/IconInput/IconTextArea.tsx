@@ -9,7 +9,7 @@
 import {
   TextArea as BaseTextArea,
   IconButton as BaseIconButton,
-} from '@carbon/react';
+} from '@camunda/design-system';
 import type {CarbonIconType} from '@carbon/react/icons';
 import {Container, IconContainer, TextArea, IconButton} from './styled';
 

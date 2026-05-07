@@ -1,0 +1,37 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as TableStories from './table.stories';
+
+<Meta of={TableStories} name="Docs" />
+
+# Table
+
+A thin presentational wrapper around native HTML table elements. Use for tabular data display where rows have a consistent column structure and no built-in sort/select/expand behaviour is required.
+
+## When to use
+
+- **Static tabular data** — list views, summary tables, key/value reports. Compose `Table` + `TableHeader` + `TableBody` + `TableRow` + `TableHead` + `TableCell`.
+- **Selected rows** — set `data-state="selected"` on `<TableRow>` to apply the muted-bg highlight via the built-in selector.
+- **Footer totals** — use `<TableFooter>` for the muted, `font-medium` `<tfoot>` summary row.
+- **Screen-reader summary** — use `<TableCaption>` for an accessible table description (positioned `mt-4 text-muted-foreground`).
+- **Horizontal overflow** — already handled: the root wraps the `<table>` in `relative w-full overflow-x-auto`.
+- **Interactive features (sort, select, expand, paginate)** — pair with `@tanstack/react-table` and render its model into these primitives.
+
+## When not to use
+
+- **Two-column key/value layouts** — use `StructuredList` or a `<dl>`.
+- **Lists without column structure** — use `ContainedList` or an unordered list.
+- **Card-grid data display** — use `Card` in a grid; tables are for aligned columns.
+
+## Composition
+
+- **`TableHead` and `TableHeader` are flipped versus Carbon.** shadcn `TableHead` = `<th>` cell; shadcn `TableHeader` = `<thead>` section. Migrate by hand or alias on import — naive find-and-replace silently produces broken markup.
+- No built-in sort, selection, expansion, batch actions, sticky header, or skeleton — compose with `Checkbox`/`Button`/`Skeleton` and `@tanstack/react-table` when you need them.
+- Set `scope="col"` / `scope="row"` on `<TableHead>` cells where applicable; the wrapper does not add it for you.

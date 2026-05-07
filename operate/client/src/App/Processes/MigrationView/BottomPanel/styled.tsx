@@ -14,7 +14,7 @@ import {
   WarningFilled as BaseWarningFilled,
 } from '@carbon/react/icons';
 import {DataTable as BaseDataTable} from 'modules/components/DataTable';
-import {Select as BaseSelect} from '@carbon/react';
+import {Select as BaseSelect} from '@camunda/design-system';
 
 const BottomSection = styled.section`
   height: 100%;

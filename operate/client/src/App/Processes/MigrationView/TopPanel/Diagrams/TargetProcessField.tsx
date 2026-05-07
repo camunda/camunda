@@ -9,7 +9,7 @@
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Label} from './styled';
 import {observer} from 'mobx-react';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 import {ComboBox} from 'modules/components/ComboBox';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useMemo} from 'react';

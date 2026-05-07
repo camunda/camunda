@@ -14,7 +14,7 @@ import {
   DataTableSkeleton as BaseDataTableSkeleton,
   TableExpandedRow as BaseTableExpandedRow,
   TableHead as BaseTableHead,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 import {ARROW_ICON_WIDTH} from 'modules/constants';
 

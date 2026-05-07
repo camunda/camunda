@@ -11,7 +11,7 @@ import {
   Modal,
   StructuredListBody,
   StructuredListWrapper,
-} from '@carbon/react';
+} from '@camunda/design-system';
 import {Link} from 'modules/components/Link';
 import {formatDate} from 'modules/utils/date';
 import {

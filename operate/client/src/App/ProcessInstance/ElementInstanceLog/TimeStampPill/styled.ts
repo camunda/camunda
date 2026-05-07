@@ -8,7 +8,7 @@
 
 import styled from 'styled-components';
 
-import {Toggle as BaseToggle} from '@carbon/react';
+import {Toggle as BaseToggle} from '@camunda/design-system';
 
 const Toggle = styled(BaseToggle)`
   padding-left: var(--cds-spacing-08);

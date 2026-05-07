@@ -11,7 +11,7 @@ import {
   TextInput as BaseTextInput,
   TextArea as BaseTextArea,
   IconButton as BaseIconButton,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 const SCROLLBAR_WIDTH = 5;
 const ICON_WIDTH = 32;

@@ -10,7 +10,7 @@ import {
   StructuredListHead,
   StructuredListRow,
   StructuredListWrapper,
-} from '@carbon/react';
+} from '@camunda/design-system';
 import {Container, StructuredListCell} from './styled';
 import React, {useRef} from 'react';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';

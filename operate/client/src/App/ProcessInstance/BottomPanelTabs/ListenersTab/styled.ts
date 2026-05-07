@@ -14,7 +14,7 @@ import {
   Stack as BaseStack,
   Dropdown as BaseDropdown,
   Layer,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 const Content = styled(Layer)`
   position: relative;

@@ -20,7 +20,7 @@ import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable'
 import {getSortParams} from 'modules/utils/filter';
 import {useLocation} from 'react-router-dom';
 import {Information} from '@carbon/react/icons';
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';

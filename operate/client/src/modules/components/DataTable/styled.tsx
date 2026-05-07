@@ -11,7 +11,7 @@ import {
   TableHeader as BaseTableHeader,
   TableCell as BaseTableCell,
   TableRow as BaseTableRow,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 const Container = styled.div`
   overflow-y: auto;

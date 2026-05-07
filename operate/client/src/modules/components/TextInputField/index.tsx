@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import {TextInput} from '@carbon/react';
+import {TextInput} from '@camunda/design-system';
 import {useFieldError} from 'modules/hooks/useFieldError';
 
 type Props = React.ComponentProps<typeof TextInput> & {

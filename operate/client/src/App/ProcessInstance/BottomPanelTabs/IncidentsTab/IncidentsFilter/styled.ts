@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {Stack as BaseStack, Layer as BaseLayer} from '@carbon/react';
+import {Stack as BaseStack, Layer as BaseLayer} from '@camunda/design-system';
 
 const Container = styled.div`
   display: flex;

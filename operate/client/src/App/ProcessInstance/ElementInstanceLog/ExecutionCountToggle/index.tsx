@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {Toggle} from '@carbon/react';
+import {Toggle} from '@camunda/design-system';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 import {useEffect} from 'react';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';

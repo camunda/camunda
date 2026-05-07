@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {OverflowMenu, OverflowMenuItem, Button} from '@carbon/react';
+import {OverflowMenu, OverflowMenuItem, Button} from '@camunda/design-system';
 import {Pause, Play} from '@carbon/react/icons';
 import type {
   BatchOperationState,

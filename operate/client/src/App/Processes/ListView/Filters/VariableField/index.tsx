@@ -23,7 +23,7 @@ import {Title} from 'modules/components/FiltersPanel/styled';
 import {Maximize} from '@carbon/react/icons';
 import {TextInputField} from 'modules/components/TextInputField';
 import {createPortal} from 'react-dom';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 import {IconTextAreaField} from 'modules/components/IconTextAreaField';
 import {IconTextInputField} from 'modules/components/IconTextInputField';
 import {Toggle, VariableValueContainer} from './styled';

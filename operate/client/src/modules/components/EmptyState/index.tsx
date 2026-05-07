@@ -7,7 +7,7 @@
  */
 
 import {Description, Grid, Title} from './styled';
-import {Button, Link, Stack} from '@carbon/react';
+import {Button, Link, Stack} from '@camunda/design-system';
 
 type Props = {
   heading: string;

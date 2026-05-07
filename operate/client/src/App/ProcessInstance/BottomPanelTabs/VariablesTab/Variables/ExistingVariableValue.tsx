@@ -15,7 +15,7 @@ import {Field} from 'react-final-form';
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {Layer, Loading} from '@carbon/react';
+import {Layer, Loading} from '@camunda/design-system';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useExistingVariableEditor} from 'modules/hooks/useExistingVariableEditor';

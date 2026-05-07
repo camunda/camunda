@@ -8,7 +8,7 @@
 
 import styled, {css} from 'styled-components';
 import {styles} from '@carbon/elements';
-import {StructuredListCell as BaseStructuredListCell} from '@carbon/react';
+import {StructuredListCell as BaseStructuredListCell} from '@camunda/design-system';
 
 const Container = styled.div`
   overflow-y: auto;

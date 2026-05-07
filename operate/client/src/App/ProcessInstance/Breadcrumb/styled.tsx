@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {Breadcrumb} from '@carbon/react';
+import {Breadcrumb} from '@camunda/design-system';
 
 const CarbonBreadcrumb = styled(Breadcrumb)`
   display: flex;

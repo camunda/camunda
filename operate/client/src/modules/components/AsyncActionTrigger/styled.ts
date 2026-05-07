@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {InlineLoading} from '@carbon/react';
+import {InlineLoading} from '@camunda/design-system';
 
 const FitContentInlineLoading = styled(InlineLoading)`
   display: inline-flex;

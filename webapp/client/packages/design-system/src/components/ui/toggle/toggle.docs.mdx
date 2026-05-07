@@ -1,0 +1,38 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as ToggleStories from './toggle.stories';
+
+<Meta of={ToggleStories} name="Docs" />
+
+# Toggle
+
+A binary on/off switch (iOS-style sliding pill). The wrapper re-exports `Switch` — **not** the shadcn `Toggle` primitive, which is a pressable button. Use for settings that take effect immediately when flipped.
+
+## When to use
+
+- **An on/off setting that takes effect immediately** — compose `<Switch />` with a sibling `<label>` or `<Label htmlFor>`.
+- **Controlled state** — `checked` + `onCheckedChange(checked: boolean)`; the callback receives just the boolean.
+- **Uncontrolled state** — `defaultChecked`.
+- **Compact form layout** — `<Switch size="sm" />` (3.5/6 thumb/track) for dense rows; default is `1.15rem` × `w-8`.
+- **Disabled** — the native `disabled` prop drops opacity to 50% and applies `cursor-not-allowed`.
+- **Form serialisation** — Radix renders a hidden `<input>` mirror automatically, so the switch participates in `<form>` submissions.
+
+## When not to use
+
+- **Action that requires confirmation** — use `Button` + `AlertDialog`; switches imply instant effect.
+- **Multi-select from a list** — use `Checkbox` per row.
+- **Mutually exclusive choice** — use `RadioGroup`.
+- **Pressable toolbar button** (toggle-state icon) — that's the shadcn `Toggle` primitive (not exposed here); compose with `IconButton` + `aria-pressed` instead.
+
+## Composition
+
+- Ships **just the switch** — no field label, on/off text labels, or skeleton. Render labels as sibling `<span>`s inside a `<label>` wrapper for click-to-toggle behaviour.
+- For Carbon's `labelA` / `labelB` (off/on text labels): render two sibling `<span>`s flanking the `<Switch>`.
+- For `hideLabel`: omit the visible `<label>` and pass `aria-label` directly to `<Switch>`.

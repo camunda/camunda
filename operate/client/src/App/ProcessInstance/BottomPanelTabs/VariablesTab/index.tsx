@@ -11,7 +11,7 @@ import {observer} from 'mobx-react';
 import {Content, EmptyMessageContainer} from './styled';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
-import {Loading} from '@carbon/react';
+import {Loading} from '@camunda/design-system';
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {VariablesFinalForm} from './VariablesFinalForm';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';

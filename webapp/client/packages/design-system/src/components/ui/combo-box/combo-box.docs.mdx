@@ -1,0 +1,39 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as ComboBoxStories from './combo-box.stories';
+
+<Meta of={ComboBoxStories} name="Docs" />
+
+# ComboBox
+
+A searchable, type-to-filter selection input. Use when the user picks one (or several) options from a list large enough that an open `Select` would be unwieldy, or when free-form filtering improves discoverability.
+
+## When to use
+
+- **Single-select with search** — pick one item from a long list (frameworks, projects, users). Compose `Combobox` + `ComboboxInput` + `ComboboxContent` + `ComboboxList` + `ComboboxItem`.
+- **Multi-select with chips** — represent each selection as a removable pill. Use `ComboboxChips` + `ComboboxChip` + `ComboboxChipsInput` (no separate `MultiSelect` component).
+- **Empty results state** — render `ComboboxEmpty` inside `ComboboxContent` to show a "no matches" message.
+- **Clearable selection** — pass `showClear` to `ComboboxInput` to expose a built-in `<ComboboxClear>` X button.
+- **Custom filtering** — pass a `filter={(item, query) => boolean}` prop on `<Combobox>` to override the default text-match behaviour.
+- **Grouped options** — wrap related items in `ComboboxGroup` + `ComboboxLabel`, separated by `ComboboxSeparator`.
+
+## When not to use
+
+- **Short, fixed list** (≤ ~7 items, no search needed) — use a `Select` instead; less DOM, simpler keyboard model.
+- **Free-form text entry with no constrained options** — use `Input` (optionally with autocomplete suggestions).
+- **Single boolean toggle** — use `Switch` or `Checkbox`.
+- **Mutually exclusive small set displayed inline** — use `RadioGroup` or `ToggleGroup`.
+
+## Composition
+
+- Built on **Base UI** (`@base-ui/react`), not Radix. The text input is rendered through the shadcn `InputGroup` primitive, which supplies the focus ring, addons slot, and `aria-invalid` styling.
+- The structure is fully decomposed (15+ sub-components). Wire the `ComboboxValue` around the input, then portal the panel via `ComboboxContent` (which already includes the Positioner + Popup).
+- Selection state is JS-only — for form serialisation, mirror the value in a hidden `<input>` or use a form library (React Hook Form, TanStack Form).
+- Anchor the dropdown to a non-default element using the `anchor` prop on `ComboboxContent` (paired with the `useComboboxAnchor()` ref helper).

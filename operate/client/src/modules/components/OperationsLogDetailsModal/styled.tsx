@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {StructuredListCell, StructuredListRow} from '@carbon/react';
+import {StructuredListCell, StructuredListRow} from '@camunda/design-system';
 
 const IconText = styled.div`
   display: flex;

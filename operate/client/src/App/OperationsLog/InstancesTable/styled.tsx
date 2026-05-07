@@ -8,7 +8,7 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/elements';
-import {CodeSnippet} from '@carbon/react';
+import {CodeSnippet} from '@camunda/design-system';
 
 const Container = styled.section`
   height: 100%;

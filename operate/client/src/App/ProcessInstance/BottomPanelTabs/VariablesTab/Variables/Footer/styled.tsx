@@ -7,7 +7,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Layer as BaseLayer} from '@carbon/react';
+import {Layer as BaseLayer} from '@camunda/design-system';
 
 const FooterContainer = styled.div`
   margin-top: auto;

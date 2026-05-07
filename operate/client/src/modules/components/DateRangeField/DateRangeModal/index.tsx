@@ -8,7 +8,7 @@
 
 import {useEffect, useState} from 'react';
 import {Form} from 'react-final-form';
-import {DatePicker, Layer, Modal, Stack} from '@carbon/react';
+import {DatePicker, Layer, Modal, Stack} from '@camunda/design-system';
 import englishLocale from 'flatpickr/dist/l10n/default';
 import {logger} from 'modules/logger';
 import {formatDate} from '../formatDate';

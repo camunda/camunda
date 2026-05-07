@@ -1,0 +1,36 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as CheckboxStories from './checkbox.stories';
+
+<Meta of={CheckboxStories} name="Docs" />
+
+# Checkbox
+
+A binary or tri-state input for selecting one or more independent options. Use inside forms, list multi-select, or "select all" headers — anywhere the user toggles state independently per row.
+
+## When to use
+
+- **Independent boolean selections** — terms acceptance, feature toggles in a form. Pair with a `<label>` or `<Label htmlFor>`.
+- **Multi-select in a list** — one checkbox per row, choices not mutually exclusive.
+- **Tri-state "select all"** — parent reflects mixed children. Use controlled `checked={'indeterminate'}` + `onCheckedChange`.
+- **Form validation** — invalid state on a required checkbox: set `aria-invalid` and add `border-destructive data-[state=checked]:bg-destructive`.
+- **Disabled options** — use `disabled`. Read-only is not modeled; use `disabled` or build your own non-focusable visual.
+
+## When not to use
+
+- **Mutually exclusive choices** — use `RadioGroup`.
+- **An on/off setting that takes effect immediately** — use a `Switch`.
+- **Selecting from a long list of options** — use `Select` or `ComboBox`.
+
+## Composition
+
+- The shadcn `Checkbox` is **just the box** — it ships no built-in label, helper text, or error message. Wrap in a `<label>` (or use `<Label htmlFor>`) and render messaging as sibling elements yourself.
+- Indeterminate is **controlled-only**: store `boolean | 'indeterminate'` in state and pass the literal `'indeterminate'` to `checked`.
+- The underlying element is a Radix `<button role="checkbox">`, not a native input. For form serialisation, use a form library (React Hook Form, TanStack Form) or render a hidden `<input>` companion.

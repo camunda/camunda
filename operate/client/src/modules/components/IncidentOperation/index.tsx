@@ -10,7 +10,7 @@ import React from 'react';
 import {OperationItems} from 'modules/components/OperationItems';
 import {OperationItem} from 'modules/components/OperationItem';
 import {tracking} from 'modules/tracking';
-import {InlineLoading} from '@carbon/react';
+import {InlineLoading} from '@camunda/design-system';
 import {Container} from './styled';
 import {handleOperationError} from 'modules/utils/notifications';
 import {useResolveIncident} from 'modules/mutations/incidents/useResolveIncident';

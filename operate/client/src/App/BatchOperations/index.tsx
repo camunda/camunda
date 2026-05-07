@@ -8,7 +8,7 @@
 
 import {useMemo, useEffect} from 'react';
 import {useSearchParams, Link} from 'react-router-dom';
-import {Pagination} from '@carbon/react';
+import {Pagination} from '@camunda/design-system';
 import {PAGE_TITLE} from 'modules/constants';
 import {tracking} from 'modules/tracking';
 import {formatDate} from 'modules/utils/date';

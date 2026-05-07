@@ -7,7 +7,7 @@
  */
 
 import {Field} from 'react-final-form';
-import {MultiSelect} from '@carbon/react';
+import {MultiSelect} from '@camunda/design-system';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 
 interface FilterMultiselectProps {

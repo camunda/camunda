@@ -15,6 +15,7 @@ import {tanstackRouter} from '@tanstack/router-plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import sbom from 'rollup-plugin-sbom';
 import {playwright} from '@vitest/browser-playwright';
+import tailwindcss from '@tailwindcss/vite';
 
 const basePlugins: PluginOption[] = [
 	devtools(),
@@ -23,6 +24,7 @@ const basePlugins: PluginOption[] = [
 		autoCodeSplitting: true,
 	}),
 	viteReact(),
+	tailwindcss(),
 ];
 
 const config = defineConfig(({mode}) => ({

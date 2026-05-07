@@ -12,7 +12,7 @@ import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {InstancesBar} from 'modules/components/InstancesBar';
-import {SkeletonText} from '@carbon/react';
+import {SkeletonText} from '@camunda/design-system';
 import {useRunningInstancesCountStatistics} from 'modules/queries/processDefinitionStatistics/useRunningInstancesCountStatistics';
 
 const MetricPanel = observer(() => {

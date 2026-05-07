@@ -1,0 +1,46 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/Layer/Migration" />
+
+# Layer — Carbon → shadcn migration guide
+
+`Layer` is unique to Carbon's Sage theme — there's no shadcn primitive that does exactly the same thing, but the API is small enough to recreate cleanly.
+
+## Mapping
+
+| Carbon prop | shadcn prop | Notes |
+|---|---|---|
+| `level` | `level` | `0`/`1`/`2`. Forces a specific depth. |
+| `withBackground` | `withBackground` | Applies `bg-background` / `bg-card` / `bg-muted` based on the current level. |
+| `as` | `as` | Polymorphic. Defaults to `<div>`. |
+| `className` | `className` | Forwarded. |
+| `useLayer()` | `useLayer()` | Same hook signature: returns `{ level: 0 \| 1 \| 2 }`. |
+
+## Carbon features missing in shadcn
+
+- **`$layer`/`$layer-accent`/`$layer-active`/`$layer-hover`/etc. SCSS tokens** — Carbon ships an entire palette of layer-aware tokens. shadcn maps just the three background tones onto Tailwind's `bg-background` / `bg-card` / `bg-muted`. If your component needs the full palette, define custom CSS variables on `[data-layer-level]` and use them in your styles.
+- **Dark mode parity with IBM tokens** — shadcn's tokens are similar but not pixel-identical.
+
+## shadcn features missing in Carbon
+
+- **`data-layer-level` attribute** — every layer renders this for CSS targeting (e.g. `[data-layer-level='2'] .my-input { background: var(--input-layer-2); }`).
+
+## Behavioural differences
+
+- **Auto-increment cap** — Carbon clamps at `$layer-3`. shadcn clamps at level 2 (since we have three tones: 0, 1, 2). Same effective behaviour.
+- **Default level outside any Layer** — `0` (background). Same as Carbon.
+
+## Migration checklist
+
+1. Swap `import {Layer} from '@carbon/react'` → `from '@camunda/design-system/shadcn'`.
+2. If you read `useLayer()` results — same shape, no changes required.
+3. If you depend on Carbon's broader layer-aware token palette, add CSS variables targeting `[data-layer-level='1']` / `[data-layer-level='2']` in `globals.css`.
+4. Drop `@use '@carbon/styles/scss/components/layer'` imports.

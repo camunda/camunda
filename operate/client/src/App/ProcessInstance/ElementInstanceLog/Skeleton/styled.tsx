@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {SkeletonText as BaseSkeletonText} from '@carbon/react';
+import {SkeletonText as BaseSkeletonText} from '@camunda/design-system';
 import styled from 'styled-components';
 
 const Row = styled.li`

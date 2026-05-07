@@ -9,7 +9,7 @@
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {observer} from 'mobx-react';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
-import {Button, Modal} from '@carbon/react';
+import {Button, Modal} from '@camunda/design-system';
 import {Edit, View} from '@carbon/react/icons';
 import {Toolbar} from './styled';
 import {CopyButton} from '../CopyButton';

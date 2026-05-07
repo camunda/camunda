@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {CodeSnippet, Layer} from '@carbon/react';
+import {CodeSnippet, Layer} from '@camunda/design-system';
 
 type Props = {
   content: string;

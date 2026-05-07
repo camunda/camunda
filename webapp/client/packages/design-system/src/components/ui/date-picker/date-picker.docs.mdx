@@ -1,0 +1,37 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as DatePickerStories from './date-picker.stories';
+
+<Meta of={DatePickerStories} name="Docs" />
+
+# DatePicker
+
+A composition of `Popover` + `Calendar` for selecting one date, a date range, or multiple dates. Use in forms or filters when the user must pick from a calendar grid rather than type a free-form date.
+
+## When to use
+
+- **Single date** — pick one day. Use `<Calendar mode="single" selected onSelect>` inside a `<PopoverContent>`.
+- **Date range** — pick a start and end day. Use `<Calendar mode="range" numberOfMonths={2}>` for a wider two-month view.
+- **Multiple non-contiguous dates** — pick several specific days. Use `<Calendar mode="multiple">` (no Carbon equivalent).
+- **Inline calendar** (always-visible) — render `<Calendar>` standalone, without wrapping in a `Popover`.
+- **Constrained ranges** — limit selectable dates with `disabled={[{before: min}, {after: max}]}` matchers, or pass a function `(date) => boolean`.
+- **Localised UI** — pass a `locale` import from `date-fns/locale` to both `<Calendar locale>` and your `format()` calls.
+
+## When not to use
+
+- **Free-form date typing** — there is no built-in input parser. If the user must type the date, compose `<Input>` + `date-fns/parse` and validate manually, or pick a different primitive.
+- **Time-of-day picking** — neither `Calendar` nor any shipped wrapper handles time. Compose `<Input type="time">` or pull in a third-party time picker.
+- **Native date input on mobile** — both Carbon and shadcn override the platform picker. If you specifically want native UX, use `<input type="date">` directly.
+
+## Composition
+
+- shadcn does **not** ship a `DatePicker` component — it ships only the `Calendar` primitive (built on `react-day-picker v9`). The "date picker" pattern is a manual composition: a `<Popover>` with a `<Button>` trigger that displays the formatted date, and `<Calendar>` inside `<PopoverContent>`.
+- Format and parse with **`date-fns`** (`format(date, 'PPP')`, `parse(input, 'MM/dd/yyyy', new Date())`). The wrapper does not bundle this.
+- For form serialisation: add a hidden `<input type="hidden" name>` synced with the selected date, or use a form library's controller.

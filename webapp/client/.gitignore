@@ -32,3 +32,4 @@ yarn-error.log*
 
 # JUnit style test results 
 jest-test-results.xml
+storybook-static

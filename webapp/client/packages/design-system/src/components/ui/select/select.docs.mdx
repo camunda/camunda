@@ -1,0 +1,41 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as SelectStories from './select.stories';
+
+<Meta of={SelectStories} name="Docs" />
+
+# Select
+
+A custom listbox for choosing one option from a list. Use in forms or filters when the user picks a single value from a finite, mutually exclusive set — and you want a styled dropdown rather than the OS-native picker.
+
+## When to use
+
+- **Single-select form field** — compose `Select` + `SelectTrigger` containing `<SelectValue placeholder>` + `SelectContent` with `<SelectItem value>` per option.
+- **Placeholder text** — `<SelectValue placeholder="Pick a framework" />` shows until a value is chosen.
+- **Pre-selected default** — `<Select defaultValue="next">` (uncontrolled) or `<Select value onValueChange>` (controlled).
+- **Grouped options** — wrap groups in `<SelectGroup>` with a `<SelectLabel>` header; separate groups with `<SelectSeparator />`.
+- **Disabled state** — pass `disabled` on `<Select>` (whole field) or on a single `<SelectItem disabled>`.
+- **Compact density** — `<SelectTrigger size="sm">` (the only size variant; default is `default`).
+- **Validation** — set `aria-invalid` on `<SelectTrigger>`; the trigger restyles via the `aria-invalid` selector.
+
+## When not to use
+
+- **Action menu** (callbacks, not values) — use `MenuButton` or `OverflowMenu`.
+- **Multi-select** — use `MultiSelect` or a `ComboBox` with multi mode.
+- **Free-text + suggestions** — use `ComboBox`.
+- **A handful of mutually exclusive options visible at once** — use `RadioGroup`.
+- **Native form serialisation without JS** — render a hidden `<input type="hidden" name>` companion or use a form library.
+
+## Composition
+
+- The trigger is a `<button>`, not a native `<select>` — there is no `name`/`form` integration. Wire up via `react-hook-form`, TanStack Form, or a hidden input.
+- Field labels, helper text, and error messages are **not** built in. Render an external `<label>` and sibling `<p>` for messaging.
+- The dropdown content always portals to `<body>` (via `<SelectContent>`); ancestor `overflow:hidden` will not clip it.
+- Custom rich content inside `<SelectItem>` (icons, badges) shows in the panel but the trigger still displays only the item text.

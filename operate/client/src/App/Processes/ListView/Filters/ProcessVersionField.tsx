@@ -9,7 +9,7 @@
 import React from 'react';
 import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
-import {Dropdown} from '@carbon/react';
+import {Dropdown} from '@camunda/design-system';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {
   splitDefinitionIdentifier,

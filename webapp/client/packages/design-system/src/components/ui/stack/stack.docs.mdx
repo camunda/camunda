@@ -1,0 +1,34 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as StackStories from './stack.stories';
+
+<Meta of={StackStories} name="Docs" />
+
+# Stack
+
+A layout primitive that lays out its children in a single direction with a consistent gap. Replaces ad-hoc `margin-top`/`margin-bottom` rules with one `gap` value that the parent controls.
+
+## When to use
+
+- **Form fields stacked vertically** — `<Stack gap={5}>` with each field as a child.
+- **Toolbars, button groups, breadcrumb-like rows** — `<Stack orientation="horizontal" gap={3}>`.
+- **Any time you'd reach for `margin-bottom` between siblings** — let the layout primitive own the spacing.
+
+## When not to use
+
+- **Two-dimensional layout** — use a CSS grid (or the `Grid` wrapper).
+- **Items that need their own spacing rules** — drop into raw flex utilities.
+
+## Composition
+
+- `gap` accepts the Carbon spacing scale (1–10, mapped to Tailwind gap classes) **or** any CSS length string (e.g. `"1.5rem"`, `"24px"`) which is forwarded as inline style.
+- `orientation` defaults to `"vertical"`. Set `"horizontal"` for a row.
+- `as` is polymorphic — pass `"ul"`, `"section"`, `"nav"`, etc.
+- The rendered element gets `data-slot="stack"` and `data-orientation` for styling hooks.

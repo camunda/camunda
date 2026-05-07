@@ -8,7 +8,7 @@
 
 import {useLocation, useNavigate} from 'react-router-dom';
 import {getSortParams} from 'modules/utils/filter';
-import {Header, TableHeader} from '@carbon/react';
+import {Header, TableHeader} from '@camunda/design-system';
 
 const INITIAL_SORT_ORDER = 'desc';
 

@@ -1,0 +1,38 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as TooltipStories from './tooltip.stories';
+
+<Meta of={TooltipStories} name="Docs" />
+
+# Tooltip
+
+A short, text-only label that appears on hover or focus of a trigger. Use to clarify icon-only buttons, abbreviate long labels, or surface secondary info that doesn't deserve permanent screen space.
+
+## When to use
+
+- **Label an icon-only button** — `<Tooltip><TooltipTrigger asChild><IconButton aria-label="…" /></TooltipTrigger><TooltipContent>{label}</TooltipContent></Tooltip>`. Always set `aria-label` too — the tooltip is visual only.
+- **Disambiguate truncated text** — wrap the truncated element in a `<TooltipTrigger asChild>` with the full text in `<TooltipContent>`.
+- **Placement around the trigger** — `<TooltipContent side="top|right|bottom|left" align="start|center|end">`.
+- **Pixel-precise spacing** — `<TooltipContent sideOffset={8} alignOffset={4}>`.
+- **Tighten or loosen open delay** — `<TooltipProvider delayDuration={100} skipDelayDuration={300}>` at the app/subtree root; the wrapper defaults to `0`ms.
+- **Non-button trigger** — wrap any element in `<TooltipTrigger asChild>` to keep its native semantics.
+
+## When not to use
+
+- **Click-to-open hover-card** — use `Popover` (or `HoverCard` for hover-anchored cards with rich content).
+- **Rich, multi-element content** — use `Popover`. Tooltips are short text strings.
+- **Critical information the user must see** — tooltips are easy to miss on touch devices and assistive tech; render the info inline.
+- **Form-field validation messages** — render them as siblings under the field.
+
+## Composition
+
+- The wrapper renders a built-in `<Arrow />` inside `<TooltipContent>`; you don't need to add one. Override styling via `className`.
+- Content renders into a portal at `<body>`, so ancestor `overflow:hidden` will not clip it; `z-50` keeps it above most layers.
+- Default background is `bg-foreground` with `text-background` (dark on light theme) to match Carbon's high-contrast tone — override via `className` if needed.

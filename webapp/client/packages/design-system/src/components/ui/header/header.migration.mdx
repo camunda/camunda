@@ -1,0 +1,56 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/Header/Migration" />
+
+# Header — Carbon → shadcn migration guide
+
+Carbon ships an entire UIShell family — `Header`, `HeaderContainer`, `HeaderName`, `HeaderNavigation`, `HeaderMenu`, `HeaderMenuItem`, `HeaderGlobalBar`, `HeaderGlobalAction`, `HeaderPanel`, `SideNav`, etc. shadcn ships none of those. This wrapper covers the surface Camunda actually uses today.
+
+## Subset shipped
+
+| Carbon | shadcn equivalent | Status |
+|---|---|---|
+| `Header` | `Header` | ✓ |
+| `HeaderName` (with `prefix`) | `HeaderName` | ✓ |
+| `HeaderNavigation` | `HeaderNavigation` | ✓ |
+| `HeaderMenuItem` | `HeaderMenuItem` (`isActive` supported) | ✓ |
+| `HeaderGlobalBar` | `HeaderGlobalBar` | ✓ |
+| `HeaderGlobalAction` | `HeaderGlobalAction` | ✓ (`tooltipAlignment` is accepted but currently unused — wrap with `Tooltip` externally if needed) |
+| `HeaderContainer` | not provided | Use plain React state for menu open/close — don't bother with a render-prop container. |
+| `HeaderMenu` (dropdown nav) | not provided | Compose with `DropdownMenu`. |
+| `HeaderPanel`, `SideNav`, etc. | not provided | These are out of scope; build with `Sheet` / `Dialog` if needed. |
+
+## Carbon features missing in shadcn
+
+- **`HeaderContainer`** — Carbon's render-prop component for managing side-nav open/close state. Use `useState` instead.
+- **`HeaderMenu`** — dropdown nav from a top-level item. Compose with the local `DropdownMenu` wrapper.
+- **`HeaderPanel` and side-nav family** — out of scope; use `Sheet` / `Dialog`.
+- **`SkipToContent`** — provide your own (`<a className="sr-only focus:not-sr-only" href="#main">Skip to main content</a>`).
+
+## shadcn features missing in Carbon
+
+- **`asChild` on `HeaderName` and `HeaderMenuItem`** — wrap a `react-router` `<Link>` cleanly.
+- **`data-active` attribute** — easy CSS targeting.
+
+## Behavioural differences
+
+- **No tooltip on `HeaderGlobalAction`** — Carbon ships an integrated tooltip. shadcn relies on `aria-label`; wrap with `<Tooltip>` if you need a visual tip.
+- **Sticky behaviour** — both stick to the top via `position: sticky`. shadcn uses `top-0 z-30`.
+- **Height** — Carbon: 48px. shadcn: 48px (`h-12`). Match.
+
+## Migration checklist
+
+1. Swap imports.
+2. Replace `<HeaderContainer render={...}>` with a plain component holding `useState`.
+3. Replace `<HeaderMenu>` (dropdown nav) with `<DropdownMenu>` from this package.
+4. Add explicit `<Tooltip>` wrappers around `<HeaderGlobalAction>` if you want a visible tip.
+5. If you used `<SkipToContent>`, add a manual skip link.
+6. Drop `@use '@carbon/styles/scss/components/ui-shell'` imports.

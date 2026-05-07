@@ -9,7 +9,7 @@
 import ForbiddenIcon from 'modules/components/Icon/forbidden.svg?react';
 import {styles} from '@carbon/elements';
 import styled from 'styled-components';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 
 const Grid = styled.div`
   display: grid;

@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {Item, ItemGroup} from './styled';
-import {Tooltip} from '@carbon/react';
+import {Tooltip} from '@camunda/design-system';
 import {
   Checkmark,
   CircleDash,

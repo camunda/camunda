@@ -1,0 +1,46 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/Section/Migration" />
+
+# Section — Carbon → shadcn migration guide
+
+Carbon ships `Section` and `Heading` as a paired primitive that uses React context to auto-level headings. The shadcn wrapper preserves the same shape: drop-in identical export names, identical mental model, only the underlying element is plain HTML + Tailwind instead of Carbon SCSS.
+
+## Mapping
+
+| Carbon prop | shadcn prop | Notes |
+|---|---|---|
+| `as` | `as` | Polymorphic element. Defaults to `<section>`. |
+| `level` | `level` | Forces the heading level for descendants (1–6). Auto-clamped if out of range. |
+| `className` | `className` | Forwarded to the rendered element. |
+| children | children | Headings inside descend through the level context. |
+
+## Carbon features missing in shadcn
+
+- **Carbon-styled section padding/spacing tokens** — Carbon's `Section` ships a small amount of layout polish via SCSS. shadcn's `Section` is unstyled; add Tailwind utilities (`py-6`, `space-y-4`, etc.) yourself.
+- **`Heading` typography preset that exactly matches IBM's type scale** — shadcn uses Tailwind's `text-4xl` → `text-base` ramp. Visually similar but not pixel-identical.
+
+## shadcn features missing in Carbon
+
+- None — the shadcn wrapper is intentionally a 1-to-1 functional match.
+
+## Behavioural differences
+
+- **No `<section>` reset CSS** — Carbon's SCSS resets margin/padding for inner headings; shadcn relies on Tailwind's preflight which already resets headings.
+- **`useSectionLevel` hook is exported** — read the current level inside custom components without rendering a `Heading`. Carbon doesn't expose this hook publicly.
+
+## Migration checklist
+
+1. `import {Section} from '@camunda/design-system/shadcn'` (instead of `'@carbon/react'`).
+2. Same for `Heading` (it lives in the `heading` wrapper).
+3. Keep `as`, `level`, and children unchanged.
+4. Audit your typography: shadcn applies `text-4xl/3xl/2xl/xl/lg/base font-semibold tracking-tight` for h1 → h6. Override via `className` if a section needs different scale.
+5. Drop any `@use '@carbon/styles/scss/components/heading'` imports — they're not needed.

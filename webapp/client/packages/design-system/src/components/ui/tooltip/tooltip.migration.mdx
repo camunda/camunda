@@ -1,0 +1,80 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/Tooltip/Migration" />
+
+# Tooltip — Carbon → shadcn migration guide
+
+## Structural differences
+
+Carbon's `Tooltip` is a **wrapper component**: pass the trigger as the child, the tooltip text as a `label` prop. It manages its own open state and positioning.
+
+shadcn's `Tooltip` is a **Radix-based slot composition** with an explicit `TooltipProvider` context: `Tooltip` (Root) → `TooltipTrigger` (typically `asChild`) → `TooltipContent` (Portal'd). All tooltips in a tree share a single `TooltipProvider` to coordinate delays.
+
+| Concept | Carbon | shadcn |
+|---|---|---|
+| Provider | none — implicit per tooltip | `<TooltipProvider>` (one per tree, controls delays) |
+| Wrapper | `<Tooltip label="…">{trigger}</Tooltip>` | `<Tooltip><TooltipTrigger asChild>…</TooltipTrigger><TooltipContent>…</TooltipContent></Tooltip>` |
+| Trigger | implicit child | `<TooltipTrigger asChild>{element}</TooltipTrigger>` |
+| Content | `label` prop (ReactNode) | `<TooltipContent>{children}</TooltipContent>` |
+| Position | `align` (`top` / `top-start` / `top-end` / `right` / `right-start` / …) | `side` (`top` / `right` / `bottom` / `left`) + `align` (`start` / `center` / `end`) |
+| Open state | `defaultOpen`, `onOpenChange` | `defaultOpen`, `open`, `onOpenChange` (controlled or uncontrolled) |
+| Delay | `enterDelayMs` / `leaveDelayMs` (per tooltip) | `delayDuration` / `skipDelayDuration` (on `<TooltipProvider>`) |
+| Caret | always present (CSS-drawn triangle) | not by default — render `<TooltipPrimitive.Arrow>` from Radix |
+| Drop-shadow | `dropShadow` boolean | always on (`shadow-md`); strip via `className="shadow-none"` |
+| High contrast | `highContrast` (dark on light, etc.) | not modeled; override via `className` |
+| Auto-align (collision) | `autoAlign={true}` | always on via Radix Positioner; opt out with `avoidCollisions={false}` |
+
+## Carbon features missing in shadcn
+
+- **`enterDelayMs` / `leaveDelayMs` per tooltip** — Carbon lets you tune delay per instance. shadcn pushes this up to `<TooltipProvider delayDuration skipDelayDuration>`; same delay for all tooltips under that provider. Use multiple providers if you need different delays.
+- **Built-in caret / arrow** — Carbon always draws the triangle pointing at the trigger. shadcn requires explicit `<TooltipPrimitive.Arrow>` inside `<TooltipContent>` (style with `fill-popover`).
+- **`highContrast` / inverted theming** — Carbon's "dark on light" tooltip variant. shadcn has no toggle; override via classes (`bg-foreground text-background`).
+- **`dropShadow={false}`** — Carbon flat (no shadow) variant. shadcn always carries `shadow-md`; strip via `className="shadow-none"`.
+- **Compound `align` tokens** — Carbon's `top-start` / `top-end` / `right-start` etc. are single tokens. shadcn splits into `side` (`top|right|bottom|left`) + `align` (`start|center|end`).
+- **`label` accepts ReactNode directly** — both technically accept rich content (Carbon via `label`, shadcn via children), but Carbon's prop-based shape is more concise for one-liners.
+- **`<DefinitionTooltip>` variant** — Carbon ships a definition-tooltip variant (renders the trigger as `<button>` with a dotted underline, optimised for inline definitions). shadcn has no equivalent — compose manually.
+- **`<TooltipDefinition>`-style hover-only behaviour** — Carbon's tooltip can be configured to never show on focus. shadcn's tooltip respects both hover and focus by default; override via Radix's `disableHoverableContent` or similar.
+- **`<Toggletip>`** — Carbon ships a separate component for click-to-open (vs. hover) tooltips, with a button trigger and dismissible behaviour. shadcn's tooltip is hover-only; click-to-open is `Popover`'s job.
+- **Skeleton state** — Carbon ships a skeleton. shadcn has none.
+
+## shadcn features missing in Carbon
+
+- **`<TooltipProvider>`** — single control point for all tooltip delays in a tree. `delayDuration` (default 700ms) sets the open delay; `skipDelayDuration` sets the "tooltip just closed, open the next one immediately" window. Carbon has no equivalent — each tooltip is independent.
+- **`asChild` on the trigger** — `<TooltipTrigger asChild>{anyElement}</TooltipTrigger>` lets you keep your trigger as any element (button, anchor, router link, custom icon component) without wrapper anchors. Carbon's wrapper expects a single child but doesn't manage refs/handlers via slots.
+- **Explicit Portal rendering** — content always renders into `document.body`. Avoids `overflow:hidden` parent clipping by default. Carbon renders inline.
+- **`onOpenChange` lifecycle** — fine-grained open-state callback. Carbon's API is more limited.
+- **`align` granularity** — independent of `side`. A `side="bottom"` tooltip can be `align="start"` / `"center"` / `"end"` independently.
+- **`sideOffset` / `alignOffset`** — pixel-perfect spacing. Carbon offers no offset prop.
+- **Animation primitives** — entry/exit animations driven by `data-state` attributes; tweak via Tailwind's `data-[state=open]:animate-in`.
+- **`disableHoverableContent`** — Radix prop to make the content non-hoverable (closes when the cursor leaves the trigger, even if it lands on the content). Useful for non-interactive tooltips.
+
+## Behavioural differences
+
+- **Trigger semantics** — Carbon: opens on hover and focus. shadcn: same default; toggle hover-only via `disableHoverableContent`. Both keyboard-accessible.
+- **Mount semantics** — Carbon: tooltip remains in the DOM (visibility-toggled). shadcn: by default content unmounts when closed; pass `forceMount` to keep it mounted (rare for tooltips).
+- **Default delay** — Carbon: ~100ms enter, ~100ms leave. shadcn: 700ms enter (Radix default), 300ms skip. Tighten via `<TooltipProvider delayDuration={100}>` to match Carbon.
+- **Default content width** — Carbon: hugs the content. shadcn: hugs the content (`overflow-hidden rounded-md border bg-popover px-3 py-1.5`).
+- **Background colour** — Carbon: `--cds-tooltip-background` (typically dark on light theme). shadcn: `bg-popover` (typically light on light theme — brighter than Carbon). Override with `className="bg-foreground text-background"` to match Carbon's tone.
+- **Z-index** — Both portal/render at high z-index. shadcn: `z-50`. Carbon: token-driven.
+
+## Migration checklist
+
+1. Wrap your app (or relevant subtree) in `<TooltipProvider>`. Set `delayDuration={100}` if you want Carbon-like instant tooltips.
+2. Replace `<Tooltip label="…">{trigger}</Tooltip>` with `<Tooltip><TooltipTrigger asChild>{trigger}</TooltipTrigger><TooltipContent>…</TooltipContent></Tooltip>`.
+3. If the trigger is not a real button (e.g., an icon `<span>`), keep `asChild` so Radix can attach handlers without wrapping.
+4. Translate `align`: `top` → `side="top" align="center"`, `top-start` → `side="top" align="start"`, `right-end` → `side="right" align="end"`, etc.
+5. Remove `enterDelayMs` / `leaveDelayMs` per tooltip; centralize via `<TooltipProvider delayDuration skipDelayDuration>`.
+6. If you used the built-in caret: import `<TooltipPrimitive.Arrow>` from `@radix-ui/react-tooltip` and place it inside `<TooltipContent>`. Style with `fill-popover` (light theme) or `fill-foreground` (dark/inverted).
+7. If you used `highContrast`: override classes — `className="bg-foreground text-background"`.
+8. If you used `dropShadow={false}`: add `className="shadow-none"`.
+9. If you used `<DefinitionTooltip>`: build with a `<button class="border-b border-dotted">` trigger and a regular tooltip on top.
+10. If you used `<Toggletip>` (click-to-open): switch to shadcn `Popover` — that's the right primitive for click-driven hover-cards.
+11. Test focus accessibility: shadcn's tooltip opens on `focus-visible`, so keyboard users see it. Verify your trigger is focusable (`tabIndex={0}` on non-button elements if needed).

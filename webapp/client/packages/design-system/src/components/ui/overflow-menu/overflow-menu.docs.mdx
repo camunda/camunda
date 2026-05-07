@@ -1,0 +1,37 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as OverflowMenuStories from './overflow-menu.stories';
+
+<Meta of={OverflowMenuStories} name="Docs" />
+
+# OverflowMenu
+
+An icon-only (`⋮`) trigger that opens an action menu. Use for row-level or compact actions where a labelled button would take too much space — table rows, list items, card corners.
+
+## When to use
+
+- **Row actions in a table or list** — compose `DropdownMenu` + `<DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Row actions"><MoreVertical /></Button></DropdownMenuTrigger>` + `<DropdownMenuContent align="end">`.
+- **Destructive item with a separator** — `<DropdownMenuSeparator />` followed by `<DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>`.
+- **Disabled trigger** — pass `disabled` to the inner `<Button>`.
+- **Open upward at the page bottom** — `<DropdownMenuContent side="top" align="end">`.
+- **Tooltip on the trigger** — wrap the icon `<Button>` in a `<Tooltip>` (the `aria-label` is not auto-shown).
+
+## When not to use
+
+- **A labelled trigger** ("Actions", "More") — use `MenuButton` instead (same primitive, different trigger).
+- **Single-select picker** — use `Select` (action menus fire callbacks; pickers report a value).
+- **A single primary action** — render a plain icon `Button` directly, not a menu of one.
+- **Confirmation flows** ("Are you sure?") — chain into `AlertDialog` after the menu item is selected.
+
+## Composition
+
+- `aria-label` is **required** on the inner `<Button>` — there is no visible text.
+- Default `align="center"` on `<DropdownMenuContent>` is wrong for row triggers; use `align="end"` so the menu opens leftwards from the icon.
+- Submenus (`<DropdownMenuSub>`) and shortcuts (`<DropdownMenuShortcut>`) are available — Carbon's `OverflowMenu` has neither.

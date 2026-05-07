@@ -12,7 +12,7 @@ import {
   COLLAPSABLE_PANEL_HEADER_HEIGHT,
 } from 'modules/constants';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
-import {Stack as BaseStack} from '@carbon/react';
+import {Stack as BaseStack} from '@camunda/design-system';
 import {ErrorMessage as BaseErrorMessage} from 'modules/components/ErrorMessage';
 
 const PanelHeader = styled(BasePanelHeader)`

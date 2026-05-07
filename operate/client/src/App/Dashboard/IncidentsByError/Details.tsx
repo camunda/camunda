@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {InlineLoading} from '@carbon/react';
+import {InlineLoading} from '@camunda/design-system';
 import {getAccordionItemTitle} from './utils/getAccordionItemTitle';
 import {getAccordionItemLabel} from './utils/getAccordionItemLabel';
 import {truncateErrorMessage} from './utils/truncateErrorMessage';

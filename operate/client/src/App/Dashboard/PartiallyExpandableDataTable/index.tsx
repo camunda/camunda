@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
   type DataTableRenderProps,
-} from '@carbon/react';
+} from '@camunda/design-system';
 import {
   Table,
   TableExpandRow,

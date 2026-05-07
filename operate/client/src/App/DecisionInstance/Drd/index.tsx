@@ -14,7 +14,7 @@ import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {PanelHeader, Container, Stack, ErrorMessage} from './styled';
 import {tracking} from 'modules/tracking';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
-import {Button, Loading} from '@carbon/react';
+import {Button, Loading} from '@camunda/design-system';
 import {Close, Maximize, Minimize} from '@carbon/react/icons';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {useDecisionDefinitionXml} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';

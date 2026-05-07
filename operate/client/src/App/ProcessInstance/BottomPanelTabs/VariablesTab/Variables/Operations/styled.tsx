@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {InlineLoading as BaseInlineLoading} from '@carbon/react';
+import {InlineLoading as BaseInlineLoading} from '@camunda/design-system';
 
 type ContainerProps = {
   className?: string;

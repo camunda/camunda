@@ -1,0 +1,52 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/Link/Migration" />
+
+# Link — Carbon → shadcn migration guide
+
+Carbon's `Link` is a polymorphic styled `<a>`. shadcn doesn't ship a `Link` primitive — this wrapper recreates the API in plain HTML + Tailwind so call sites can swap imports without changing prop names.
+
+## Mapping
+
+| Carbon prop | shadcn prop | Notes |
+|---|---|---|
+| `href` | `href` | Native anchor attribute. |
+| `target` | `target` | Native. |
+| `size` | `size` | `sm` / `md` (default) / `lg`. Tailwind `text-xs/sm/base`. |
+| `inline` | `inline` | Forces underline-always for in-prose links. |
+| `disabled` | `disabled` | Sets `aria-disabled` + `tabIndex={-1}`. The anchor still renders. |
+| `visited` | `visited` | Opts in to a purple `:visited` style. |
+| `renderIcon` | `renderIcon` | Pass a component (e.g. `ArrowRight` from `lucide-react`). Rendered after the label. |
+| polymorphic `as` | `asChild` | shadcn uses `asChild` (Radix `Slot`) instead of an `as` prop. |
+| `aria-current` | `aria-current` | Native ARIA, forwarded. |
+
+## Carbon features missing in shadcn
+
+- **`as` prop for polymorphism** — shadcn uses `asChild` instead. `<Link asChild><RouterLink to="/x">…</RouterLink></Link>`.
+- **`<Link disabled>` rendering as `<p>`** — Carbon swaps to a `<p>` when disabled. shadcn keeps the `<a>` but adds `aria-disabled` and removes it from tab order.
+
+## shadcn features missing in Carbon
+
+- **`asChild` (`Slot`-based)** — cleaner integration with `react-router-dom`'s `Link` / `NavLink`.
+- **CVA variants** — easy to extend by editing `linkVariants` if you need a `danger` colour, etc.
+
+## Behavioural differences
+
+- **Disabled rendering** — see above. If you rely on Carbon's `<p>` swap (e.g. CSS targets `p[disabled]`), update those rules to target `[data-slot=link][aria-disabled=true]`.
+- **Visited colour** — Carbon: subtle purple. shadcn: `text-purple-600`. Override via `className` if your design tokens disagree.
+- **Default underline** — Carbon: only shown on hover unless `inline`. shadcn matches.
+
+## Migration checklist
+
+1. Swap the import.
+2. If you used `<Link as={RouterLink} to="/x">` — switch to `<Link asChild><RouterLink to="/x">…</RouterLink></Link>`.
+3. If you used `disabled` and depended on `<p>` rendering — update CSS to `[data-slot=link][aria-disabled=true]` (or remove `href` to hide navigation).
+4. If you have custom hover/focus tokens — extend `linkVariants` rather than overriding inline.

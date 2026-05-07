@@ -8,7 +8,7 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/elements';
-import {Stack as BaseStack} from '@carbon/react';
+import {Stack as BaseStack} from '@camunda/design-system';
 
 const Stack = styled(BaseStack)`
   max-width: 360px;

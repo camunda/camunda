@@ -15,7 +15,7 @@ import {
 import {updateFiltersSearchString} from 'modules/utils/filter';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 import {FilterMultiselect} from 'modules/components/FilterMultiSelect';
 import {
   auditLogEntityTypeSchema,

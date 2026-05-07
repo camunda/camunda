@@ -1,8 +1,21 @@
 {
 	"files": [],
 	"references": [
-		{"path": "./tsconfig.browser.json"},
-		{"path": "./tsconfig.vitest.json"},
-		{"path": "./tsconfig.node.json"}
-	]
+		{
+			"path": "./tsconfig.browser.json"
+		},
+		{
+			"path": "./tsconfig.vitest.json"
+		},
+		{
+			"path": "./tsconfig.node.json"
+		}
+	],
+	"compilerOptions": {
+		"paths": {
+			"@/*": [
+				"./src/*"
+			]
+		}
+	}
 }

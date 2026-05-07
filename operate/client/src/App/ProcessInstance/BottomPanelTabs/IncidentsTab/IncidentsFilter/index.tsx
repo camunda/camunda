@@ -9,7 +9,7 @@
 import {Container, Stack, Layer} from './styled';
 import {observer} from 'mobx-react';
 import {tracking} from 'modules/tracking';
-import {Button, MultiSelect} from '@carbon/react';
+import {Button, MultiSelect} from '@camunda/design-system';
 import {
   availableErrorTypes,
   getIncidentErrorName,

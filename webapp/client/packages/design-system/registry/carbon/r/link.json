@@ -1,0 +1,25 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "link",
+  "type": "registry:ui",
+  "title": "Link",
+  "description": "A styled `<a>` element. Comes in three sizes, an inline variant for in-prose links, optional trailing icon, optional visited styles, and `asChild` for routing-library integration.",
+  "dependencies": [
+    "@carbon/react"
+  ],
+  "files": [
+    {
+      "path": "components/ui/link.tsx",
+      "type": "registry:ui",
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {Link} from '@carbon/react';\nexport type {LinkProps} from '@carbon/react';\n"
+    }
+  ],
+  "meta": {
+    "flavor": "carbon",
+    "package": "@camunda/design-system",
+    "packageSubpath": "@camunda/design-system/carbon",
+    "import": "import {Link} from '@camunda/design-system/carbon';",
+    "docs": "# Link\n\nA styled `<a>` element. Comes in three sizes, an inline variant for in-prose links, optional trailing icon, optional visited styles, and `asChild` for routing-library integration.\n\n## When to use\n\n- **External or internal navigation** — anywhere a user clicks to go somewhere else.\n- **In-text references** — use `inline` so the underline is always visible.\n- **As a routed link** — wrap with `asChild` and pass your router's `<NavLink>` or `<RouterLink>` as the only child.\n\n## When not to use\n\n- **Action buttons** — clicks that don't navigate (e.g. \"Submit\", \"Open dialog\") should be a `Button`.\n- **Plain decorative anchors** — if there's no destination, don't use a link.\n\n## Composition\n\n- The default rendered element is `<a>`. With `asChild`, it acts as a `Slot` and forwards props to the child component (e.g. `react-router`'s `NavLink`).\n- `renderIcon` accepts a Lucide-style icon component and renders it after the label.\n- `visited={true}` opts in to a purple visited colour. Carbon enables this opt-in too.\n- `disabled` sets `aria-disabled` and removes the element from the tab order — but the underlying `<a>` still renders (set `href={undefined}` if you want to remove navigation).",
+    "migrationGuide": "# Link — Carbon → shadcn migration guide\n\nCarbon's `Link` is a polymorphic styled `<a>`. shadcn doesn't ship a `Link` primitive — this wrapper recreates the API in plain HTML + Tailwind so call sites can swap imports without changing prop names.\n\n## Mapping\n\n| Carbon prop | shadcn prop | Notes |\n|---|---|---|\n| `href` | `href` | Native anchor attribute. |\n| `target` | `target` | Native. |\n| `size` | `size` | `sm` / `md` (default) / `lg`. Tailwind `text-xs/sm/base`. |\n| `inline` | `inline` | Forces underline-always for in-prose links. |\n| `disabled` | `disabled` | Sets `aria-disabled` + `tabIndex={-1}`. The anchor still renders. |\n| `visited` | `visited` | Opts in to a purple `:visited` style. |\n| `renderIcon` | `renderIcon` | Pass a component (e.g. `ArrowRight` from `lucide-react`). Rendered after the label. |\n| polymorphic `as` | `asChild` | shadcn uses `asChild` (Radix `Slot`) instead of an `as` prop. |\n| `aria-current` | `aria-current` | Native ARIA, forwarded. |\n\n## Carbon features missing in shadcn\n\n- **`as` prop for polymorphism** — shadcn uses `asChild` instead. `<Link asChild><RouterLink to=\"/x\">…</RouterLink></Link>`.\n- **`<Link disabled>` rendering as `<p>`** — Carbon swaps to a `<p>` when disabled. shadcn keeps the `<a>` but adds `aria-disabled` and removes it from tab order.\n\n## shadcn features missing in Carbon\n\n- **`asChild` (`Slot`-based)** — cleaner integration with `react-router-dom`'s `Link` / `NavLink`.\n- **CVA variants** — easy to extend by editing `linkVariants` if you need a `danger` colour, etc.\n\n## Behavioural differences\n\n- **Disabled rendering** — see above. If you rely on Carbon's `<p>` swap (e.g. CSS targets `p[disabled]`), update those rules to target `[data-slot=link][aria-disabled=true]`.\n- **Visited colour** — Carbon: subtle purple. shadcn: `text-purple-600`. Override via `className` if your design tokens disagree.\n- **Default underline** — Carbon: only shown on hover unless `inline`. shadcn matches.\n\n## Migration checklist\n\n1. Swap the import.\n2. If you used `<Link as={RouterLink} to=\"/x\">` — switch to `<Link asChild><RouterLink to=\"/x\">…</RouterLink></Link>`.\n3. If you used `disabled` and depended on `<p>` rendering — update CSS to `[data-slot=link][aria-disabled=true]` (or remove `href` to hide navigation).\n4. If you have custom hover/focus tokens — extend `linkVariants` rather than overriding inline."
+  }
+}

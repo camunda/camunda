@@ -14,7 +14,7 @@ import type {
 import {AuthorTooltip, OperationLogName, TooltipCodeSnippet} from '../styled';
 import {useMemo} from 'react';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
-import {Tooltip} from '@carbon/react';
+import {Tooltip} from '@camunda/design-system';
 import {getActorIcon} from 'modules/utils/operationsLog';
 
 type Props = {

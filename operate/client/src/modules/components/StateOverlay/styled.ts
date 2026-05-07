@@ -7,7 +7,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 
 const staticColors = {
   completed: '#9ea9b7',

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {InlineLoadingProps} from '@carbon/react';
+import type {InlineLoadingProps} from '@camunda/design-system';
 import type {MutationStatus} from '@tanstack/react-query';
 import {FitContentInlineLoading} from './styled';
 import {useEffect} from 'react';

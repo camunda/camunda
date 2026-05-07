@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {Layer} from '@carbon/react';
+import {Layer} from '@camunda/design-system';
 
 const ExpandedContent = styled(Layer)`
   display: flex;

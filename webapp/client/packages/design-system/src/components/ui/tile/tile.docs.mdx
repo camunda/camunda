@@ -1,0 +1,37 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as TileStories from './tile.stories';
+
+<Meta of={TileStories} name="Docs" />
+
+# Tile
+
+A bordered, padded surface for grouping related content. Use for dashboard cards, summary panels, list items in a card grid, or any rectangle of content that needs a consistent visual rhythm. The wrapper re-exports `Card` and its slots.
+
+## When to use
+
+- **Static content container** — compose `<Card>` with `<CardHeader>` / `<CardTitle>` / `<CardDescription>` / `<CardContent>` / `<CardFooter>` slots; padding (`px-6`, `py-6`) is built in.
+- **Action button next to a title** — use `<CardAction>` inside `<CardHeader>`; auto-positioned top-right via grid.
+- **Clickable tile** — `<Card role="button" tabIndex={0} onClick onKeyDown className="cursor-pointer hover:bg-muted/50 transition-colors">` (or `asChild` with a real `<button>`/`<a>` for native semantics).
+- **Selectable tile** — track `selected` state, set `data-state` and a `border-primary` class. Use `role="radiogroup"`/`role="radio"` for accessibility.
+- **Expandable tile** — wrap `<Card>` in shadcn `<Collapsible>`, place a chevron button in `<CardAction>`, body in `<CollapsibleContent>`.
+- **Flat / borderless variant** — `<Card className="rounded-none border-0 shadow-none">` matches Carbon's flatter default.
+
+## When not to use
+
+- **Modal-like overlays** — use `Dialog` or `Modal`.
+- **Inline status messaging** — use `Alert` (`InlineNotification` / `Callout`).
+- **Plain `<div>` containers without visual chrome** — use a `<div>`; `Card` always carries border + shadow.
+
+## Composition
+
+- Carbon's five tile variants (`Tile`, `ClickableTile`, `SelectableTile`, `RadioTile`, `ExpandableTile`) all collapse to one primitive — `Card` — plus composition for click/select/expand behaviour.
+- Use `<CardHeader>` even with no title slot: it provides the `@container/card-header` query and standard padding for any content placed at the top.
+- Don't migrate Carbon `Tile` to a generic `<div>` — `Card` ensures consistent padding/border/shadow tokens with the rest of the design system.

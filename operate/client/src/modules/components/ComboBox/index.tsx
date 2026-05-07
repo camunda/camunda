@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
-import {ComboBox as BaseComboBox} from '@carbon/react';
+import {ComboBox as BaseComboBox} from '@camunda/design-system';
 
 type Item = {id: string; label: string};
 

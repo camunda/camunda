@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
-import {Modal} from '@carbon/react';
+import {Modal} from '@camunda/design-system';
 import {useLocation} from 'react-router-dom';
 import {type StateProps} from 'modules/components/ModalStateManager';
 import {getProcessInstanceFilters} from 'modules/utils/filter';

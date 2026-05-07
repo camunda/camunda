@@ -7,7 +7,7 @@
  */
 
 import {useTransition} from 'react';
-import {IconButton, Loading} from '@carbon/react';
+import {IconButton, Loading} from '@camunda/design-system';
 import {Download} from '@carbon/react/icons';
 import {getUseProcessDefinitionXmlOptions} from 'modules/queries/processDefinitions/useProcessDefinitionXml';
 import {getUseProcessDefinitionOptions} from 'modules/queries/processDefinitions/useProcessDefinition';

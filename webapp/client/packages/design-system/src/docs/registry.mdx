@@ -1,0 +1,149 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="Docs/Registry & MCP" />
+
+# Registry & MCP integration
+
+This package exposes its components as a [shadcn-compatible registry](https://ui.shadcn.com/docs/registry) so that AI assistants — Claude Code, Claude Desktop, anything that speaks the shadcn MCP — can discover and use Camunda components when generating UI code.
+
+## What this enables
+
+A stakeholder (technical or not) prompts Claude with something like:
+
+> Build a settings page using `@camunda-shadcn`
+
+Claude calls the shadcn MCP, which fetches our registry, and writes code that imports from `@camunda/design-system/shadcn`.
+
+There is **no separate MCP server to run**. The shadcn MCP — which Claude Code already ships with — does the work; we just publish a static JSON catalog it can read.
+
+---
+
+## Setup
+
+### 1. Have the shadcn MCP available in your Claude client
+
+- **Claude Code** (CLI / IDE extensions): the shadcn MCP is bundled. Nothing to install.
+- **Claude Desktop**: add the shadcn MCP to your `claude_desktop_config.json`. See the [shadcn MCP docs](https://ui.shadcn.com/docs/mcp).
+
+### 2. Add the registry to your project's `components.json`
+
+Create or edit `components.json` at the root of your consuming app:
+
+```json
+{
+  "registries": {
+    "@camunda-shadcn": "https://cdn.jsdelivr.net/gh/camunda/camunda@shadcn-migration-frontend-unification/webapp/client/packages/design-system/registry/shadcn/r/{name}.json",
+    "@camunda-carbon": "https://cdn.jsdelivr.net/gh/camunda/camunda@shadcn-migration-frontend-unification/webapp/client/packages/design-system/registry/carbon/r/{name}.json"
+  }
+}
+```
+
+> The `@<branch>` segment in the URLs is currently the demo branch. Once this lands on `main` the URLs will switch to `@main` (or a tagged release for stability).
+
+### 3. Use it from prompts
+
+Reference the registry by alias in your prompt:
+
+- *"Build a login form using `@camunda-shadcn`"*
+- *"Show me the `@camunda-shadcn` card component"*
+- *"Replace this Carbon button with `@camunda-shadcn`"*
+
+Without the namespace prefix, Claude has to guess between the two flavors — be explicit, or set a project-level default in your app's `CLAUDE.md`.
+
+---
+
+## Two registries during the migration
+
+| Registry | When to use |
+|---|---|
+| `@camunda-shadcn` | New code. Apps that have adopted Tailwind v4 and the shared `globals.css`. |
+| `@camunda-carbon` | Legacy Carbon wrappers. Apps still on the old CSS pipeline. |
+
+Both can be configured side-by-side. An app mid-migration can use shadcn on a new route while keeping carbon imports on legacy routes — the registries are queried independently and the CSS for each flavor is scoped per-component, so they coexist at runtime.
+
+After all consumer apps complete the migration, `@camunda-carbon` will be retired.
+
+---
+
+## How the registry works
+
+The registry is plain JSON files under `registry/{flavor}/`:
+
+```
+registry/
+├── shadcn/
+│   ├── registry.json       index of available items
+│   └── r/<name>.json       one file per component
+└── carbon/
+    └── ...                 same shape
+```
+
+Each per-component file contains:
+
+| Field | Source | Purpose |
+|---|---|---|
+| `title`, `description` | `<name>.docs.mdx` (first H1, first body paragraph) | Sidebar listing, search results |
+| `files[].content` | `<name>.{flavor}.tsx` | Inlined source for Claude to read |
+| `dependencies` | parsed from `import … from '…'` statements | Lets consumers verify deps are installed |
+| `meta.import` | derived | The exact `import` line consumer code should emit |
+| `meta.docs` | `<name>.docs.mdx` (preamble stripped) | Purpose + when-to-use, for context |
+| `meta.migrationGuide` | `<name>.migration.mdx` (preamble stripped) | Carbon → shadcn diff, for migrations |
+
+The shadcn MCP exposes these via `list_items_in_registries`, `search_items_in_registries`, `view_items_in_registries`, and `get_item_examples_from_registries`.
+
+### Hosting
+
+Files are served by **jsdelivr** directly from this repo on GitHub. No deploy step, no infra. URL pattern:
+
+```
+https://cdn.jsdelivr.net/gh/camunda/camunda@<ref>/webapp/client/packages/design-system/registry/<flavor>/r/<name>.json
+```
+
+`<ref>` can be:
+
+- A **branch** — auto-tracks the latest commit. jsdelivr caches branch content for ~12h.
+- A **tag** — immutable, perfect cache. Recommended for production consumers.
+- A **commit SHA** — immutable, perfect cache. Useful for demos and pinning.
+
+To force a branch refresh: `https://purge.jsdelivr.net/gh/camunda/camunda@<branch>/<path>`.
+
+---
+
+## Regenerating the registry
+
+When components, docs, or migration guides change:
+
+```bash
+cd webapp/client/packages/design-system
+pnpm build-registry             # all components
+pnpm build-registry button      # subset for sample/test runs
+```
+
+Output is written to `registry/`. Commit the changes — jsdelivr serves whatever is on the branch.
+
+CI should run `pnpm build-registry` and fail if the output diverges from what's committed, ensuring the JSON never drifts from the source MDX/TSX files.
+
+---
+
+## Adding a component to the registry
+
+Each component folder under `src/components/ui/` needs:
+
+```
+<name>/
+├── <name>.carbon.tsx        legacy implementation
+├── <name>.shadcn.tsx        new implementation
+├── <name>.stories.tsx       Storybook stories
+├── <name>.docs.mdx          purpose, when-to-use
+└── <name>.migration.mdx     Carbon → shadcn diff
+```
+
+The generator picks up component folders automatically — no list to maintain. Run `pnpm build-registry` and commit the output in `registry/`.

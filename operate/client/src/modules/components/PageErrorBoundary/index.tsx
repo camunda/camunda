@@ -7,7 +7,7 @@
  */
 
 import {isRouteErrorResponse, useRouteError} from 'react-router-dom';
-import {CodeSnippet} from '@carbon/react';
+import {CodeSnippet} from '@camunda/design-system';
 import {ErrorWrapper} from './ErrorWrapper';
 
 const PageErrorBoundary: React.FC = () => {

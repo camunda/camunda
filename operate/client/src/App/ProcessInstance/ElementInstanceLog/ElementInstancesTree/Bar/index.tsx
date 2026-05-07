@@ -9,7 +9,7 @@
 import {forwardRef} from 'react';
 import {TimeStampLabel} from './TimeStampLabel';
 import {NodeName, Container, StateIcon} from './styled';
-import {Layer, Stack, Tag} from '@carbon/react';
+import {Layer, Stack, Tag} from '@camunda/design-system';
 import {formatDate} from 'modules/utils/date';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {ModificationIcons} from './ModificationIcons';

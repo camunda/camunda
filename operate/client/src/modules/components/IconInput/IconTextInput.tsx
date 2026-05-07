@@ -10,7 +10,7 @@ import {type CarbonIconType} from '@carbon/react/icons';
 import {
   TextInput as BaseTextInput,
   IconButton as BaseIconButton,
-} from '@carbon/react';
+} from '@camunda/design-system';
 import {Container, IconContainer, TextInput, IconButton} from './styled';
 
 interface Props extends React.ComponentProps<typeof BaseTextInput> {

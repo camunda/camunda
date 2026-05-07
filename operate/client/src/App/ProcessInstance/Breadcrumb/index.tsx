@@ -9,7 +9,7 @@
 import {tracking} from 'modules/tracking';
 import {CarbonBreadcrumb} from './styled';
 import {Link} from 'modules/components/Link';
-import {OverflowMenu, OverflowMenuItem, BreadcrumbItem} from '@carbon/react';
+import {OverflowMenu, OverflowMenuItem, BreadcrumbItem} from '@camunda/design-system';
 import {useNavigate} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {

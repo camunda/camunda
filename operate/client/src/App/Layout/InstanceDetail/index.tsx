@@ -13,7 +13,7 @@ import {
 import {Container, PanelContainer} from './styled';
 import {observer} from 'mobx-react';
 import {useEffect, useRef, useState} from 'react';
-import {Loading} from '@carbon/react';
+import {Loading} from '@camunda/design-system';
 
 type Props = {
   header: React.ReactNode;

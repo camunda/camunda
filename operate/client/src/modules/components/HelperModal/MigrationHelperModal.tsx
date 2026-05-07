@@ -11,7 +11,7 @@ import {
   ListItem as BaseListItem,
   OrderedList,
   Stack,
-} from '@carbon/react';
+} from '@camunda/design-system';
 import styled from 'styled-components';
 import {HelperModal} from '.';
 

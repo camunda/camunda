@@ -10,7 +10,7 @@ import styled from 'styled-components';
 import {
   InlineNotification as BaseInlineNotification,
   Button as BaseButton,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 const Button: typeof BaseButton = styled(BaseButton)`
   position: absolute;

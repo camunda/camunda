@@ -7,7 +7,7 @@
  */
 
 import {type ReactElement} from 'react';
-import {OverflowMenuItem} from '@carbon/react';
+import {OverflowMenuItem} from '@camunda/design-system';
 import {Filter} from '@carbon/react/icons';
 import {ButtonStack, OverflowMenu, Container} from './styled';
 

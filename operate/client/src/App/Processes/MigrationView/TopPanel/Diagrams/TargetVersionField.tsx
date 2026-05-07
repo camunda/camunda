@@ -10,7 +10,7 @@ import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
 import {FieldContainer, Label} from './styled';
 import {useMemo} from 'react';
 import {observer} from 'mobx-react';
-import {Dropdown} from '@carbon/react';
+import {Dropdown} from '@camunda/design-system';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useAvailableMigrationTargetProcessDefinitionVersions} from 'modules/hooks/migrationTargetProcessDefinitions';
 

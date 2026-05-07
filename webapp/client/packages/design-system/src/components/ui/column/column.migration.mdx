@@ -1,0 +1,52 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/Column/Migration" />
+
+# Column — Carbon → shadcn migration guide
+
+`Column` is the cell primitive that pairs with `Grid`. The shadcn version preserves Carbon's prop shape including the `{ span, offset, start, end }` object form and breakpoint props.
+
+## Mapping
+
+| Carbon prop | shadcn prop | Notes |
+|---|---|---|
+| `span` | `span` | `number`, `boolean`, or object form. |
+| `sm` | `sm` | Breakpoint span. ≥ 0px. |
+| `md` | `md` | ≥ 672px. |
+| `lg` | `lg` | ≥ 1056px. |
+| `xlg` | `xl` | ≥ 1312px. **Renamed.** |
+| `max` | `max` | ≥ 1584px. |
+| `as` | `as` | Polymorphic. Defaults to `<div>`. |
+| `'25%' \| '50%' \| '75%' \| '100%'` | percentage strings | **Not supported.** Convert to numeric span (16-col grid). |
+
+## Carbon features missing in shadcn
+
+- **Percentage spans** (`span="50%"`) — convert to numeric (`span={8}` on 16-col grid).
+- **`ColumnHang`** — hanging-column primitive. Not provided. Use `start`/`end` or a negative-margin override.
+- **Carbon's exact gutter behaviour at the `<Column>` level** — Carbon distributes gutter via SCSS variables; shadcn relies on the parent grid's `gap`.
+
+## shadcn features missing in Carbon
+
+- **`xl`** — clearer name than Carbon's `xlg`.
+
+## Behavioural differences
+
+- **Implementation strategy** — shadcn emits a small `<style>` element next to the column when responsive props are set. Tailwind cannot generate arbitrary `min-[Npx]:[grid-column:...]` classes at runtime, so an inline media query block is the safest solution.
+- **`auto` placement** — pass `span={false}` for content-sized columns. Same as Carbon's `false`.
+- **Offset** — `offset={n}` shifts the column right by `n` tracks. Same as Carbon.
+
+## Migration checklist
+
+1. Swap the import.
+2. Rename every `xlg={…}` to `xl={…}`.
+3. Replace any percentage spans with numeric equivalents (e.g. `'50%'` → `8` on a 16-col grid).
+4. If you used `ColumnHang`, refactor to `start`/`end` or wrap with a negative-margin div.
+5. Drop `@use '@carbon/styles/scss/grid'` imports.

@@ -1,0 +1,47 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+
+<Meta title="UI/Stack/Migration" />
+
+# Stack — Carbon → shadcn migration guide
+
+Carbon's `Stack` is a thin polymorphic wrapper that applies `display: flex` plus a `gap` from IBM's spacing scale. The shadcn version is structurally identical: same prop names, same orientation values, same polymorphic `as`, same dual-form `gap` (number step or CSS string).
+
+## Mapping
+
+| Carbon prop | shadcn prop | Notes |
+|---|---|---|
+| `as` | `as` | Polymorphic. Defaults to `<div>`. |
+| `gap` (number 1–10) | `gap` (number 1–10) | Mapped to Tailwind gap classes. The numeric scale is preserved but the underlying pixel values come from Tailwind, not IBM tokens. |
+| `gap` (string) | `gap` (string) | Forwarded as inline style. |
+| `orientation` | `orientation` | `'vertical'` (default) or `'horizontal'`. |
+| `className` | `className` | Forwarded. |
+
+## Carbon features missing in shadcn
+
+- **IBM spacing-scale token alignment** — Carbon `gap={4}` uses IBM's `$spacing-04` token (1rem). shadcn's `gap={4}` maps to Tailwind's `gap-3` (0.75rem). If exact pixel parity matters, use the string form (`gap="1rem"`).
+- **CarbonStack-specific defaults** — Carbon may apply additional CSS reset to its host element. shadcn does not.
+
+## shadcn features missing in Carbon
+
+- **`data-orientation` attribute** — handy for child-selector styling.
+- **No prop-types runtime check** — TypeScript-only.
+
+## Behavioural differences
+
+- **Numeric gap pixel values differ** — see the table above. Use the string form to lock to a specific length.
+- **`HStack` and `VStack`** — Carbon ships those as separate exports. shadcn doesn't; use `<Stack orientation="horizontal">` / `<Stack orientation="vertical">` (the default).
+
+## Migration checklist
+
+1. Swap `import {Stack} from '@carbon/react'` → `from '@camunda/design-system/shadcn'`.
+2. If you have `<HStack>` or `<VStack>`, replace with `<Stack orientation="horizontal">` / `<Stack>` (vertical is default).
+3. Audit `gap={n}` values where pixel parity matters: shadcn's number scale uses Tailwind's spacing, which is denser than Carbon's. Switch to the string form (`gap="1rem"`) where the exact length is load-bearing.
+4. Remove any `@use '@carbon/styles/scss/components/stack'` imports.

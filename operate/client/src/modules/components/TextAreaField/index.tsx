@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import {TextArea} from '@carbon/react';
+import {TextArea} from '@camunda/design-system';
 import {useFieldError} from 'modules/hooks/useFieldError';
 
 type Props = React.ComponentProps<typeof TextArea> & {

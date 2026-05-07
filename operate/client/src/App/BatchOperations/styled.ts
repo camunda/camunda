@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 import styled from 'styled-components';
 
 const PageContainer = styled(Stack)`

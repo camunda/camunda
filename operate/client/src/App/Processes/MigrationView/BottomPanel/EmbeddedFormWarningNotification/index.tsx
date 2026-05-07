@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Callout, Link, Tile} from '@carbon/react';
+import {Callout, Link, Tile} from '@camunda/design-system';
 
 const EmbeddedFormWarningNotification: React.FC = () => {
   return (

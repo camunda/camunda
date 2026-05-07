@@ -83,3 +83,6 @@ cmd/renovate/renovate*/
 .c8dev
 /output/
 scripts/codeowners-utils/output/
+
+# Claude Code local settings (per-developer, not shared)
+**/.claude/settings.local.json

@@ -1,0 +1,33 @@
+{/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */}
+
+import {Meta} from '@storybook/addon-docs/blocks';
+import * as HeadingStories from './heading.stories';
+
+<Meta of={HeadingStories} name="Docs" />
+
+# Heading
+
+A context-aware heading element. Renders the right `<h1>` … `<h6>` automatically based on how deeply it is nested inside `<Section>` components. Always pair with `Section` — without one, `Heading` defaults to `<h1>`.
+
+## When to use
+
+- **Headings that travel** — the same content block can appear at different depths of the page tree without rewriting the tag.
+- **Multi-author code where outline correctness keeps slipping** — let the framework do the bookkeeping.
+- **Reusable cards/widgets/dialogs** — wrap them in `<Section>` once at the call site and the headings inside snap to the right level.
+
+## When not to use
+
+- **A single static heading at the top of the page** — write `<h1>` directly. Less indirection for trivial cases.
+- **Display-only typography** — if it's not actually a section heading, use a `<p>` with type utilities.
+
+## Composition
+
+- The wrapper consumes the `SectionContext` exposed by `section/section.shadcn.tsx`.
+- Default typography per level: `text-4xl/3xl/2xl/xl/lg/base font-semibold tracking-tight`. Override via `className`.
+- All native `<h1>` props are forwarded.
