@@ -15,7 +15,7 @@ import {
   TableExpandRow as BaseTableExpandRow,
   TableRow as BaseTableHeadRow,
   TableExpandedRow as BaseTableExpandedRow,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 type ContainerProps = {
   $isScrollable: boolean;

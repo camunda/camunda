@@ -8,6 +8,14 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
+  Table as AdapterTable,
+  TableBody as AdapterTableBody,
+  TableCell as AdapterTableCell,
+  TableHead as AdapterTableHead,
+  TableHeader as AdapterTableHeader,
+  TableRow as AdapterTableRow,
+} from './table.adapter';
+import {
   Table as CarbonTable,
   TableBody as CarbonTableBody,
   TableCell as CarbonTableCell,
@@ -91,6 +99,30 @@ export const Default: Story = {
           </TableBody>
         </Table>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        {/* Adapter accepts Carbon prop names: TableHead = <thead>, TableHeader = <th> */}
+        <AdapterTable>
+          <AdapterTableHead>
+            <AdapterTableRow>
+              <AdapterTableHeader>Invoice</AdapterTableHeader>
+              <AdapterTableHeader>Status</AdapterTableHeader>
+              <AdapterTableHeader>Method</AdapterTableHeader>
+              <AdapterTableHeader>Amount</AdapterTableHeader>
+            </AdapterTableRow>
+          </AdapterTableHead>
+          <AdapterTableBody>
+            {ROWS.map((row) => (
+              <AdapterTableRow key={row.invoice}>
+                <AdapterTableCell>{row.invoice}</AdapterTableCell>
+                <AdapterTableCell>{row.status}</AdapterTableCell>
+                <AdapterTableCell>{row.method}</AdapterTableCell>
+                <AdapterTableCell>{row.amount}</AdapterTableCell>
+              </AdapterTableRow>
+            ))}
+          </AdapterTableBody>
+        </AdapterTable>
+      </div>
     </div>
   ),
 };
@@ -145,6 +177,25 @@ export const WithFooterAndCaption: Story = {
             </TableRow>
           </TableFooter>
         </Table>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTable>
+          <AdapterTableHead>
+            <AdapterTableRow>
+              <AdapterTableHeader>Invoice</AdapterTableHeader>
+              <AdapterTableHeader>Amount</AdapterTableHeader>
+            </AdapterTableRow>
+          </AdapterTableHead>
+          <AdapterTableBody>
+            {ROWS.map((row) => (
+              <AdapterTableRow key={row.invoice}>
+                <AdapterTableCell>{row.invoice}</AdapterTableCell>
+                <AdapterTableCell>{row.amount}</AdapterTableCell>
+              </AdapterTableRow>
+            ))}
+          </AdapterTableBody>
+        </AdapterTable>
       </div>
     </div>
   ),

@@ -7,6 +7,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {SkeletonIcon as AdapterSkeletonIcon} from './skeleton-icon.adapter';
 import {SkeletonIcon as CarbonSkeletonIcon} from './skeleton-icon.carbon';
 import {Skeleton} from './skeleton-icon.shadcn';
 
@@ -19,7 +20,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (16px)</div>
         <CarbonSkeletonIcon />
@@ -30,13 +31,17 @@ export const Default: Story = {
         </div>
         <Skeleton className="size-4" />
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterSkeletonIcon />
+      </div>
     </div>
   ),
 };
 
 export const Larger: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (24px)</div>
         <div className="[&_*]:!h-6 [&_*]:!w-6">
@@ -47,13 +52,19 @@ export const Larger: Story = {
         <div className="text-sm font-semibold mb-4">shadcn</div>
         <Skeleton className="size-6" />
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="[&_*]:!h-6 [&_*]:!w-6">
+          <AdapterSkeletonIcon />
+        </div>
+      </div>
     </div>
   ),
 };
 
 export const InContext: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <div className="flex items-center gap-3">
@@ -67,6 +78,15 @@ export const InContext: Story = {
         <div className="text-sm font-semibold mb-4">shadcn</div>
         <div className="flex items-center gap-3">
           <Skeleton className="size-4" />
+          <span className="text-sm text-muted-foreground">
+            Loading icon next to label…
+          </span>
+        </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="flex items-center gap-3">
+          <AdapterSkeletonIcon />
           <span className="text-sm text-muted-foreground">
             Loading icon next to label…
           </span>

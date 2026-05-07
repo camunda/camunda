@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TextArea as BaseTextArea} from '@carbon/react';
+import {TextArea as BaseTextArea} from '@camunda/design-system';
 import styled from 'styled-components';
 
 const TextArea = styled(BaseTextArea)`

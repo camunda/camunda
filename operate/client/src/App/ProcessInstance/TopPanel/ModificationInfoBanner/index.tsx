@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {Container, Text} from './styled';
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 
 type Props = {
   text: string;

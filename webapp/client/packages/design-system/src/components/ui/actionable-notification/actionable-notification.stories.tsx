@@ -9,6 +9,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {AlertTriangle, Info} from 'lucide-react';
 import {Button} from '../button/button.shadcn';
+import {ActionableNotification as AdapterActionableNotification} from './actionable-notification.adapter';
 import {ActionableNotification as CarbonActionableNotification} from './actionable-notification.carbon';
 import {
   Alert,
@@ -62,6 +63,16 @@ export const InlineWithCTA: Story = {
           </Button>
         </Alert>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterActionableNotification
+          kind="warning"
+          title="Unsaved changes"
+          subtitle="You have unsaved changes that will be lost."
+          actionButtonLabel="Save now"
+          inline
+        />
+      </div>
     </div>
   ),
 };
@@ -93,6 +104,16 @@ export const Destructive: Story = {
             Retry
           </Button>
         </Alert>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterActionableNotification
+          kind="error"
+          title="Deletion failed"
+          subtitle="The record could not be deleted. Try again."
+          actionButtonLabel="Retry"
+          inline
+        />
       </div>
     </div>
   ),
@@ -126,13 +147,23 @@ export const Informational: Story = {
           </Button>
         </Alert>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterActionableNotification
+          kind="info"
+          title="New version available"
+          subtitle="A newer version of this app is available."
+          actionButtonLabel="Reload"
+          inline
+        />
+      </div>
     </div>
   ),
 };
 
 export const ModalConfirmation: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">
           Carbon (no modal-actionable variant — use <code>Modal</code> instead)
@@ -167,6 +198,16 @@ export const ModalConfirmation: Story = {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterActionableNotification
+          kind="warning"
+          title="Confirm deletion"
+          subtitle="Are you sure? This action cannot be undone."
+          actionButtonLabel="Delete"
+          inline
+        />
       </div>
     </div>
   ),

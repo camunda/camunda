@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Link} from '@carbon/react';
+import {Link} from '@camunda/design-system';
 import {ActionableNotification, Text} from './styled';
 import {type CallHierarchy} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';

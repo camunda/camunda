@@ -9,6 +9,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {MultiSelect as CarbonMultiSelect} from '@carbon/react';
 import * as React from 'react';
+import {MultiSelect as AdapterMultiSelect} from './multi-select.adapter';
 import {MultiSelect} from './multi-select.shadcn';
 
 const meta: Meta = {
@@ -30,7 +31,7 @@ const items: Item[] = [
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonMultiSelect
@@ -51,6 +52,16 @@ export const Default: Story = {
           titleText="State filter"
         />
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterMultiSelect
+          id="adapter-default"
+          items={items}
+          itemToString={(i) => i?.label ?? ''}
+          label="Select states"
+          titleText="State filter"
+        />
+      </div>
     </div>
   ),
 };
@@ -59,8 +70,9 @@ export const Controlled: Story = {
   render: () => {
     const [carbonSel, setCarbonSel] = React.useState<Item[]>([items[1]!]);
     const [shadcnSel, setShadcnSel] = React.useState<Item[]>([items[1]!]);
+    const [adapterSel, setAdapterSel] = React.useState<Item[]>([items[1]!]);
     return (
-      <div className="grid grid-cols-2 gap-12 pt-8">
+      <div className="grid grid-cols-3 gap-12 pt-8">
         <div>
           <div className="text-sm font-semibold mb-4">Carbon (controlled)</div>
           <CarbonMultiSelect
@@ -93,6 +105,25 @@ export const Controlled: Story = {
             Selected: {shadcnSel.map((i) => i.label).join(', ') || '(none)'}
           </p>
         </div>
+        <div>
+          <div className="text-sm font-semibold mb-4">
+            Adapter (Carbon API, controlled)
+          </div>
+          <AdapterMultiSelect
+            id="adapter-controlled"
+            items={items}
+            itemToString={(i) => i?.label ?? ''}
+            label="States"
+            titleText="State filter"
+            selectedItems={adapterSel}
+            onChange={({selectedItems}) =>
+              setAdapterSel((selectedItems ?? []) as Item[])
+            }
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Selected: {adapterSel.map((i) => i.label).join(', ') || '(none)'}
+          </p>
+        </div>
       </div>
     );
   },
@@ -100,7 +131,7 @@ export const Controlled: Story = {
 
 export const Invalid: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (invalid)</div>
         <CarbonMultiSelect
@@ -125,13 +156,27 @@ export const Invalid: Story = {
           invalidText="At least one state is required"
         />
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, invalid)
+        </div>
+        <AdapterMultiSelect
+          id="adapter-invalid"
+          items={items}
+          itemToString={(i) => i?.label ?? ''}
+          label="States"
+          titleText="State filter"
+          invalid
+          invalidText="At least one state is required"
+        />
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (disabled)</div>
         <CarbonMultiSelect
@@ -149,6 +194,19 @@ export const Disabled: Story = {
           id="shadcn-disabled"
           items={items}
           itemToString={(i) => i.label}
+          label="States"
+          titleText="State filter"
+          disabled
+        />
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, disabled)
+        </div>
+        <AdapterMultiSelect
+          id="adapter-disabled"
+          items={items}
+          itemToString={(i) => i?.label ?? ''}
           label="States"
           titleText="State filter"
           disabled

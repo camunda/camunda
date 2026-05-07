@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Tag} from '@carbon/react';
+import {Tag} from '@camunda/design-system';
 import styled from 'styled-components';
 
 const VersionTag = styled(Tag)`

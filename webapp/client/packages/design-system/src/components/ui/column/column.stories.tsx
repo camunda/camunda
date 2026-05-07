@@ -8,8 +8,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {Grid as CarbonGrid, Column as CarbonColumn} from '@carbon/react';
-import {Column} from './column.shadcn';
+import {Grid as AdapterGrid} from '../grid/grid.adapter';
 import {Grid} from '../grid/grid.shadcn';
+import {Column as AdapterColumn} from './column.adapter';
+import {Column} from './column.shadcn';
 
 const meta: Meta = {
   title: 'UI/Column',
@@ -59,6 +61,23 @@ export const ConstantSpan: Story = {
           </Column>
         </Grid>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterGrid>
+          <AdapterColumn span={4}>
+            <Box>4</Box>
+          </AdapterColumn>
+          <AdapterColumn span={4}>
+            <Box>4</Box>
+          </AdapterColumn>
+          <AdapterColumn span={4}>
+            <Box>4</Box>
+          </AdapterColumn>
+          <AdapterColumn span={4}>
+            <Box>4</Box>
+          </AdapterColumn>
+        </AdapterGrid>
+      </div>
     </div>
   ),
 };
@@ -82,6 +101,16 @@ export const StartEnd: Story = {
           </Column>
         </Grid>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API)
+        </div>
+        <AdapterGrid>
+          <AdapterColumn span={{start: 5, end: 13}}>
+            <Box>start=5 end=13</Box>
+          </AdapterColumn>
+        </AdapterGrid>
+      </div>
     </div>
   ),
 };
@@ -104,6 +133,16 @@ export const Offset: Story = {
             <Box>offset=4 span=8</Box>
           </Column>
         </Grid>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API)
+        </div>
+        <AdapterGrid>
+          <AdapterColumn span={{offset: 4, span: 8}}>
+            <Box>offset=4 span=8</Box>
+          </AdapterColumn>
+        </AdapterGrid>
       </div>
     </div>
   ),

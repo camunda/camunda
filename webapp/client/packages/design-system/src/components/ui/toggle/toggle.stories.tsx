@@ -7,6 +7,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {Toggle as AdapterToggle} from './toggle.adapter';
 import {Toggle as CarbonToggle} from './toggle.carbon';
 import {Switch} from './toggle.shadcn';
 
@@ -19,7 +20,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonToggle id="toggle-carbon-default" labelText="Notifications" />
@@ -31,13 +32,17 @@ export const Default: Story = {
           <span>Notifications</span>
         </label>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterToggle id="toggle-adapter-default" labelText="Notifications" />
+      </div>
     </div>
   ),
 };
 
 export const Checked: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonToggle
@@ -53,13 +58,21 @@ export const Checked: Story = {
           <span>Auto-save</span>
         </label>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterToggle
+          id="toggle-adapter-checked"
+          labelText="Auto-save"
+          defaultToggled
+        />
+      </div>
     </div>
   ),
 };
 
 export const SmallSize: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (`size="sm"`)</div>
         <CarbonToggle
@@ -75,13 +88,23 @@ export const SmallSize: Story = {
           <span>Compact view</span>
         </label>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, size="sm")
+        </div>
+        <AdapterToggle
+          id="toggle-adapter-sm"
+          size="sm"
+          labelText="Compact view"
+        />
+      </div>
     </div>
   ),
 };
 
 export const WithOnOffLabels: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">
           Carbon (built-in `On`/`Off` text labels)
@@ -105,13 +128,23 @@ export const WithOnOffLabels: Story = {
           <span className="ml-3">Beta features</span>
         </label>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterToggle
+          id="toggle-adapter-onoff"
+          labelText="Beta features"
+          labelA="Off"
+          labelB="On"
+          defaultToggled
+        />
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonToggle
@@ -126,6 +159,14 @@ export const Disabled: Story = {
           <Switch id="toggle-shadcn-disabled" disabled />
           <span>Locked option</span>
         </label>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterToggle
+          id="toggle-adapter-disabled"
+          labelText="Locked option"
+          disabled
+        />
       </div>
     </div>
   ),

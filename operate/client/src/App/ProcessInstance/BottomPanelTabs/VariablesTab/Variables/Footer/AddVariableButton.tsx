@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 import {Add} from '@carbon/react/icons';
 
 type Props = {

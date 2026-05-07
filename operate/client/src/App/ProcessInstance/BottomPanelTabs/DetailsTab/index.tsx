@@ -7,7 +7,7 @@
  */
 
 import {useMemo} from 'react';
-import {StructuredListSkeleton} from '@carbon/react';
+import {StructuredListSkeleton} from '@camunda/design-system';
 import isNil from 'lodash/isNil';
 import {Link} from 'modules/components/Link';
 import {Paths, Locations} from 'modules/Routes';

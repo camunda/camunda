@@ -8,6 +8,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
+  Select as AdapterSelect,
+  SelectItem as AdapterSelectItem,
+} from './select.adapter';
+import {
   Select as CarbonSelect,
   SelectItem as CarbonSelectItem,
 } from './select.carbon';
@@ -31,7 +35,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonSelect
@@ -68,13 +72,32 @@ export const Default: Story = {
           </Select>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterSelect
+          id="select-adapter-default"
+          labelText="Framework"
+          defaultValue="placeholder-item"
+        >
+          <AdapterSelectItem
+            disabled
+            hidden
+            value="placeholder-item"
+            text="Select framework"
+          />
+          <AdapterSelectItem value="next" text="Next.js" />
+          <AdapterSelectItem value="remix" text="Remix" />
+          <AdapterSelectItem value="astro" text="Astro" />
+          <AdapterSelectItem value="sveltekit" text="SvelteKit" />
+        </AdapterSelect>
+      </div>
     </div>
   ),
 };
 
 export const Grouped: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonSelect
@@ -120,13 +143,26 @@ export const Grouped: Story = {
           </Select>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterSelect
+          id="select-adapter-grouped"
+          labelText="Timezone"
+          defaultValue="UTC"
+        >
+          <AdapterSelectItem value="UTC" text="UTC" />
+          <AdapterSelectItem value="CET" text="Europe / CET" />
+          <AdapterSelectItem value="EST" text="America / EST" />
+          <AdapterSelectItem value="JST" text="Asia / JST" />
+        </AdapterSelect>
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonSelect
@@ -153,6 +189,18 @@ export const Disabled: Story = {
             </SelectContent>
           </Select>
         </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterSelect
+          id="select-adapter-disabled"
+          labelText="Framework"
+          disabled
+          defaultValue="next"
+        >
+          <AdapterSelectItem value="next" text="Next.js" />
+          <AdapterSelectItem value="remix" text="Remix" />
+        </AdapterSelect>
       </div>
     </div>
   ),

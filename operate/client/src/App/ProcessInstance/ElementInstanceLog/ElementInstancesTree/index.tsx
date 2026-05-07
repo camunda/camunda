@@ -39,7 +39,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {VirtualBar} from './Bar/VirtualBar';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {tracking} from 'modules/tracking';
-import {TreeView} from '@carbon/react';
+import {TreeView} from '@camunda/design-system';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 const TREE_NODE_HEIGHT = 32;

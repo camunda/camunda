@@ -7,6 +7,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {TextArea as AdapterTextArea} from './text-area.adapter';
 import {TextArea as CarbonTextArea} from './text-area.carbon';
 import {Textarea} from './text-area.shadcn';
 
@@ -19,7 +20,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTextArea
@@ -35,13 +36,21 @@ export const Default: Story = {
           <Textarea placeholder="Describe what happened…" />
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTextArea
+          id="ta-adapter-default"
+          labelText="Description"
+          placeholder="Describe what happened…"
+        />
+      </div>
     </div>
   ),
 };
 
 export const WithHelperText: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTextArea
@@ -61,13 +70,22 @@ export const WithHelperText: Story = {
           </p>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTextArea
+          id="ta-adapter-helper"
+          labelText="Bio"
+          helperText="Markdown is supported."
+          placeholder="Tell us about yourself"
+        />
+      </div>
     </div>
   ),
 };
 
 export const Invalid: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTextArea
@@ -90,13 +108,23 @@ export const Invalid: Story = {
           <p className="text-xs text-destructive">A reason is required.</p>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTextArea
+          id="ta-adapter-invalid"
+          labelText="Reason"
+          invalid
+          invalidText="A reason is required."
+          placeholder="Why are you cancelling?"
+        />
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTextArea
@@ -113,13 +141,22 @@ export const Disabled: Story = {
           <Textarea disabled defaultValue="Read-only content" />
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTextArea
+          id="ta-adapter-disabled"
+          labelText="Notes"
+          disabled
+          defaultValue="Read-only content"
+        />
+      </div>
     </div>
   ),
 };
 
 export const FixedRows: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTextArea
@@ -135,6 +172,15 @@ export const FixedRows: Story = {
           <label className="text-sm font-medium">Comment</label>
           <Textarea rows={6} placeholder="Write a comment" />
         </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTextArea
+          id="ta-adapter-rows"
+          labelText="Comment"
+          rows={6}
+          placeholder="Write a comment"
+        />
       </div>
     </div>
   ),

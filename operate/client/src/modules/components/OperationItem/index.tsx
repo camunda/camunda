@@ -12,7 +12,7 @@ import {
   RetryFailed,
   type CarbonIconType,
 } from '@carbon/react/icons';
-import {Button, type ButtonSize} from '@carbon/react';
+import {Button, type ButtonSize} from '@camunda/design-system';
 
 type ItemProps = {
   type:

@@ -7,6 +7,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {ComboBox as AdapterComboBox} from './combo-box.adapter';
 import {ComboBox as CarbonComboBox} from './combo-box.carbon';
 import {
   Combobox,
@@ -71,7 +72,7 @@ const ShadcnComboBox = ({
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonComboBox
@@ -90,13 +91,24 @@ export const Default: Story = {
           <ShadcnComboBox />
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterComboBox
+          id="cb-adapter-default"
+          items={FRAMEWORKS}
+          itemToString={(item) => (item ? item.label : '')}
+          titleText="Framework"
+          placeholder="Select framework"
+          onChange={() => {}}
+        />
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonComboBox
@@ -116,13 +128,25 @@ export const Disabled: Story = {
           <ShadcnComboBox disabled />
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterComboBox
+          id="cb-adapter-disabled"
+          items={FRAMEWORKS}
+          itemToString={(item) => (item ? item.label : '')}
+          titleText="Framework"
+          placeholder="Select framework"
+          disabled
+          onChange={() => {}}
+        />
+      </div>
     </div>
   ),
 };
 
 export const WithClear: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonComboBox
@@ -141,6 +165,18 @@ export const WithClear: Story = {
           <label className="text-sm font-medium">Framework</label>
           <ShadcnComboBox defaultValue={FRAMEWORKS[0]} showClear />
         </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterComboBox
+          id="cb-adapter-clear"
+          items={FRAMEWORKS}
+          itemToString={(item) => (item ? item.label : '')}
+          titleText="Framework"
+          placeholder="Select framework"
+          selectedItem={FRAMEWORKS[0]}
+          onChange={() => {}}
+        />
       </div>
     </div>
   ),

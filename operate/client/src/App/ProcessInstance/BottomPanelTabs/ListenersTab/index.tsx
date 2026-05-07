@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {Layer} from '@carbon/react';
+import {Layer} from '@camunda/design-system';
 
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';

@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {Field, useForm} from 'react-final-form';
-import {Checkbox as CarbonCheckbox, Stack} from '@carbon/react';
+import {Checkbox as CarbonCheckbox, Stack} from '@camunda/design-system';
 import type {CarbonIconType} from '@carbon/react/icons';
 import {Checkbox} from 'modules/components/Checkbox';
 import {Group} from './styled';

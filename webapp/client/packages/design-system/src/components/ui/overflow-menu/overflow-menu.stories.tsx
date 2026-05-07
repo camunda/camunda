@@ -9,6 +9,10 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {MoreVertical} from 'lucide-react';
 import {
+  OverflowMenu as AdapterOverflowMenu,
+  OverflowMenuItem as AdapterOverflowMenuItem,
+} from './overflow-menu.adapter';
+import {
   OverflowMenu as CarbonOverflowMenu,
   OverflowMenuItem as CarbonOverflowMenuItem,
 } from './overflow-menu.carbon';
@@ -30,7 +34,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonOverflowMenu aria-label="Row actions">
@@ -56,13 +60,21 @@ export const Default: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterOverflowMenu aria-label="Row actions">
+          <AdapterOverflowMenuItem itemText="Edit" />
+          <AdapterOverflowMenuItem itemText="Duplicate" />
+          <AdapterOverflowMenuItem itemText="Archive" />
+        </AdapterOverflowMenu>
+      </div>
     </div>
   ),
 };
 
 export const WithDangerItem: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonOverflowMenu aria-label="Row actions">
@@ -87,13 +99,21 @@ export const WithDangerItem: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterOverflowMenu aria-label="Row actions">
+          <AdapterOverflowMenuItem itemText="Edit" />
+          <AdapterOverflowMenuItem itemText="Duplicate" />
+          <AdapterOverflowMenuItem itemText="Delete" isDelete hasDivider />
+        </AdapterOverflowMenu>
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonOverflowMenu aria-label="Row actions" disabled>
@@ -116,13 +136,20 @@ export const Disabled: Story = {
           </DropdownMenuTrigger>
         </DropdownMenu>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterOverflowMenu aria-label="Row actions" disabled>
+          <AdapterOverflowMenuItem itemText="Edit" />
+          <AdapterOverflowMenuItem itemText="Duplicate" />
+        </AdapterOverflowMenu>
+      </div>
     </div>
   ),
 };
 
 export const Flipped: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">
           Carbon (<code>flipped</code> + <code>direction="top"</code>)
@@ -154,6 +181,21 @@ export const Flipped: Story = {
               <DropdownMenuItem>Duplicate</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, flipped + direction=top)
+        </div>
+        <div className="flex justify-end pt-32">
+          <AdapterOverflowMenu
+            aria-label="Row actions"
+            flipped
+            direction="top"
+          >
+            <AdapterOverflowMenuItem itemText="Edit" />
+            <AdapterOverflowMenuItem itemText="Duplicate" />
+          </AdapterOverflowMenu>
         </div>
       </div>
     </div>

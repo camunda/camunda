@@ -9,6 +9,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {AlertTriangle, Info} from 'lucide-react';
 import {Button} from '../button/button.shadcn';
+import {Callout as AdapterCallout} from './callout.adapter';
 import {Callout as CarbonCallout} from './callout.carbon';
 import {Alert, AlertDescription, AlertTitle} from './callout.shadcn';
 
@@ -41,6 +42,14 @@ export const Info_: Story = {
           </AlertDescription>
         </Alert>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterCallout
+          kind="info"
+          title="Heads up"
+          subtitle="This action will affect 12 records."
+        />
+      </div>
     </div>
   ),
 };
@@ -67,6 +76,14 @@ export const Warning: Story = {
             Some changes here cannot be undone.
           </AlertDescription>
         </Alert>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterCallout
+          kind="warning"
+          title="Read carefully"
+          subtitle="Some changes here cannot be undone."
+        />
       </div>
     </div>
   ),
@@ -101,6 +118,15 @@ export const WithActionButton: Story = {
           </Button>
         </Alert>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterCallout
+          kind="info"
+          title="Quota reached"
+          subtitle="You've used 90% of your monthly quota."
+          actionButtonLabel="Upgrade plan"
+        />
+      </div>
     </div>
   ),
 };
@@ -128,6 +154,15 @@ export const LowContrast: Story = {
             Low-contrast variant is more subtle.
           </AlertDescription>
         </Alert>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterCallout
+          kind="info"
+          title="Heads up"
+          subtitle="Low-contrast variant is more subtle."
+          lowContrast
+        />
       </div>
     </div>
   ),

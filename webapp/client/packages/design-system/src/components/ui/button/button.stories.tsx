@@ -7,6 +7,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {Button as AdapterButton} from './button.adapter';
 import {Button as CarbonButton} from './button.carbon';
 import {Button as ShadcnButton} from './button.shadcn';
 
@@ -19,7 +20,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonButton>Click me</CarbonButton>
@@ -28,13 +29,17 @@ export const Default: Story = {
         <div className="text-sm font-semibold mb-4">shadcn</div>
         <ShadcnButton>Click me</ShadcnButton>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterButton>Click me</AdapterButton>
+      </div>
     </div>
   ),
 };
 
 export const Variants: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (kind)</div>
         <div className="flex flex-wrap gap-2">
@@ -58,13 +63,25 @@ export const Variants: Story = {
           <ShadcnButton variant="link">Link</ShadcnButton>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="flex flex-wrap gap-2">
+          <AdapterButton kind="primary">Primary</AdapterButton>
+          <AdapterButton kind="secondary">Secondary</AdapterButton>
+          <AdapterButton kind="tertiary">Tertiary</AdapterButton>
+          <AdapterButton kind="ghost">Ghost</AdapterButton>
+          <AdapterButton kind="danger">Danger</AdapterButton>
+          <AdapterButton kind="danger--tertiary">Danger tertiary</AdapterButton>
+          <AdapterButton kind="danger--ghost">Danger ghost</AdapterButton>
+        </div>
+      </div>
     </div>
   ),
 };
 
 export const Sizes: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (size)</div>
         <div className="flex flex-wrap items-center gap-2">
@@ -86,13 +103,23 @@ export const Sizes: Story = {
           </ShadcnButton>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <AdapterButton size="sm">sm</AdapterButton>
+          <AdapterButton size="md">md</AdapterButton>
+          <AdapterButton size="lg">lg</AdapterButton>
+          <AdapterButton size="xl">xl</AdapterButton>
+          <AdapterButton size="2xl">2xl</AdapterButton>
+        </div>
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonButton disabled>Disabled</CarbonButton>
@@ -100,6 +127,10 @@ export const Disabled: Story = {
       <div>
         <div className="text-sm font-semibold mb-4">shadcn</div>
         <ShadcnButton disabled>Disabled</ShadcnButton>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterButton disabled>Disabled</AdapterButton>
       </div>
     </div>
   ),

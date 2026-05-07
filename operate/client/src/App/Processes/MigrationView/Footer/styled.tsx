@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 
 const Container = styled(Stack)`
   background-color: var(--cds-layer);

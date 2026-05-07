@@ -9,6 +9,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {Link as CarbonLink} from '@carbon/react';
 import {ArrowRight} from 'lucide-react';
+import {Link as AdapterLink} from './link.adapter';
 import {Link} from './link.shadcn';
 
 const meta: Meta = {
@@ -20,7 +21,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonLink href="https://camunda.io">camunda.io</CarbonLink>
@@ -29,13 +30,17 @@ export const Default: Story = {
         <div className="text-sm font-semibold mb-4">shadcn</div>
         <Link href="https://camunda.io">camunda.io</Link>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterLink href="https://camunda.io">camunda.io</AdapterLink>
+      </div>
     </div>
   ),
 };
 
 export const Sizes: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <div className="flex flex-col gap-2">
@@ -52,13 +57,21 @@ export const Sizes: Story = {
           <Link size="lg" href="#">Large</Link>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="flex flex-col gap-2">
+          <AdapterLink size="sm" href="#">Small</AdapterLink>
+          <AdapterLink size="md" href="#">Medium</AdapterLink>
+          <AdapterLink size="lg" href="#">Large</AdapterLink>
+        </div>
+      </div>
     </div>
   ),
 };
 
 export const Inline: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (inline)</div>
         <p className="text-sm">
@@ -71,13 +84,22 @@ export const Inline: Story = {
           Read the <Link inline href="#">full guide</Link> for details.
         </p>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, inline)
+        </div>
+        <p className="text-sm">
+          Read the <AdapterLink inline href="#">full guide</AdapterLink> for
+          details.
+        </p>
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (disabled)</div>
         <CarbonLink disabled href="#">Unavailable</CarbonLink>
@@ -86,13 +108,19 @@ export const Disabled: Story = {
         <div className="text-sm font-semibold mb-4">shadcn (disabled)</div>
         <Link disabled href="#">Unavailable</Link>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, disabled)
+        </div>
+        <AdapterLink disabled href="#">Unavailable</AdapterLink>
+      </div>
     </div>
   ),
 };
 
 export const WithIcon: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (renderIcon)</div>
         <CarbonLink href="#" renderIcon={ArrowRight as never}>
@@ -104,6 +132,14 @@ export const WithIcon: Story = {
         <Link href="#" renderIcon={ArrowRight}>
           Continue
         </Link>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, renderIcon)
+        </div>
+        <AdapterLink href="#" renderIcon={ArrowRight as never}>
+          Continue
+        </AdapterLink>
       </div>
     </div>
   ),

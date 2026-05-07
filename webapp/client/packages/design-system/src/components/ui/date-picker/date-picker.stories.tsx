@@ -14,6 +14,10 @@ import type {DateRange} from 'react-day-picker';
 import {Button} from '../button/button.shadcn';
 import {cn} from '../../../lib/utils';
 import {
+  DatePicker as AdapterDatePicker,
+  DatePickerInput as AdapterDatePickerInput,
+} from './date-picker.adapter';
+import {
   DatePicker as CarbonDatePicker,
   DatePickerInput as CarbonDatePickerInput,
 } from './date-picker.carbon';
@@ -56,7 +60,7 @@ const SingleDatePicker = () => {
 
 export const SingleDate: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonDatePicker datePickerType="single">
@@ -75,6 +79,16 @@ export const SingleDate: Story = {
           <label className="text-sm font-medium">Pick a date</label>
           <SingleDatePicker />
         </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterDatePicker datePickerType="single">
+          <AdapterDatePickerInput
+            id="dp-adapter-single"
+            labelText="Pick a date"
+            placeholder="mm/dd/yyyy"
+          />
+        </AdapterDatePicker>
       </div>
     </div>
   ),
@@ -116,7 +130,7 @@ const RangeDatePicker = () => {
 
 export const Range: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonDatePicker datePickerType="range">
@@ -139,6 +153,21 @@ export const Range: Story = {
           <RangeDatePicker />
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterDatePicker datePickerType="range">
+          <AdapterDatePickerInput
+            id="dp-adapter-range-from"
+            labelText="Start date"
+            placeholder="mm/dd/yyyy"
+          />
+          <AdapterDatePickerInput
+            id="dp-adapter-range-to"
+            labelText="End date"
+            placeholder="mm/dd/yyyy"
+          />
+        </AdapterDatePicker>
+      </div>
     </div>
   ),
 };
@@ -146,7 +175,7 @@ export const Range: Story = {
 export const InlineCalendar: Story = {
   name: 'Inline calendar',
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">
           Carbon (no inline-calendar variant)
@@ -164,6 +193,16 @@ export const InlineCalendar: Story = {
           shadcn (Calendar standalone, no Popover)
         </div>
         <Calendar mode="single" />
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterDatePicker datePickerType="single">
+          <AdapterDatePickerInput
+            id="dp-adapter-inline"
+            labelText="Date"
+            placeholder="mm/dd/yyyy"
+          />
+        </AdapterDatePicker>
       </div>
     </div>
   ),

@@ -19,7 +19,7 @@ import {
 } from './styled';
 import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 import {type StateProps} from 'modules/components/ModalStateManager';
 import {Warning} from './Messages/Warning';
 import {Error} from './Messages/Error';

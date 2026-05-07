@@ -10,7 +10,7 @@ import styled from 'styled-components';
 import {
   ToastNotification as BaseToastNotification,
   ActionableNotification as BaseActionableNotification,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 const ToastNotification = styled(BaseToastNotification)`
   margin-top: var(--cds-spacing-03);

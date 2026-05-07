@@ -10,6 +10,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {AlertTriangle, CheckCircle2, Info, X, XCircle} from 'lucide-react';
 import * as React from 'react';
 import {Button} from '../button/button.shadcn';
+import {InlineNotification as AdapterInlineNotification} from './inline-notification.adapter';
 import {InlineNotification as CarbonInlineNotification} from './inline-notification.carbon';
 import {Alert, AlertDescription, AlertTitle} from './inline-notification.shadcn';
 
@@ -81,6 +82,14 @@ export const ErrorKind: Story = {
           subtitle="The record could not be saved. Try again."
         />
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterInlineNotification
+          kind="error"
+          title="Something went wrong"
+          subtitle="The record could not be saved. Try again."
+        />
+      </div>
     </div>
   ),
 };
@@ -101,6 +110,14 @@ export const InfoKind: Story = {
         <div className="text-sm font-semibold mb-4">shadcn</div>
         <Dismissible
           Icon={Info}
+          title="New version available"
+          subtitle="Reload the page to see the latest content."
+        />
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterInlineNotification
+          kind="info"
           title="New version available"
           subtitle="Reload the page to see the latest content."
         />
@@ -133,6 +150,14 @@ export const SuccessKind: Story = {
           subtitle="Your changes have been saved successfully."
         />
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterInlineNotification
+          kind="success"
+          title="Saved"
+          subtitle="Your changes have been saved successfully."
+        />
+      </div>
     </div>
   ),
 };
@@ -157,6 +182,14 @@ export const WarningKind: Story = {
           Icon={AlertTriangle}
           borderClass="border-yellow-500/50 text-yellow-700 dark:border-yellow-500"
           iconColorClass="text-yellow-600"
+          title="Read carefully"
+          subtitle="Some changes here cannot be undone."
+        />
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterInlineNotification
+          kind="warning"
           title="Read carefully"
           subtitle="Some changes here cannot be undone."
         />
@@ -186,6 +219,15 @@ export const NoCloseButton: Story = {
           <AlertTitle>System notice</AlertTitle>
           <AlertDescription>This message cannot be dismissed.</AlertDescription>
         </Alert>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterInlineNotification
+          kind="info"
+          title="System notice"
+          subtitle="This message cannot be dismissed."
+          hideCloseButton
+        />
       </div>
     </div>
   ),

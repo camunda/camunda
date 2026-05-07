@@ -17,7 +17,7 @@ import {
   IconButton,
   Content,
 } from './styled';
-import {Layer} from '@carbon/react';
+import {Layer} from '@camunda/design-system';
 import React, {forwardRef} from 'react';
 
 type Props = {

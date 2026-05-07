@@ -6,17 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {SkeletonText as BaseSkeletonText} from '@camunda/design-system';
-import styled from 'styled-components';
-
-const Row = styled.li`
-  margin: var(--cds-spacing-05);
-  display: flex;
-  gap: var(--cds-spacing-05);
-`;
-
-const SkeletonText = styled(BaseSkeletonText)`
-  margin: 0;
-`;
-
-export {Row, SkeletonText};
+export {Theme, useTheme} from '@carbon/react';

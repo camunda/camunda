@@ -8,8 +8,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {Section as CarbonSection, Heading as CarbonHeading} from '@carbon/react';
-import {Section} from './section.shadcn';
+import {Heading as AdapterHeading} from '../heading/heading.adapter';
 import {Heading} from '../heading/heading.shadcn';
+import {Section as AdapterSection} from './section.adapter';
+import {Section} from './section.shadcn';
 
 const meta: Meta = {
   title: 'UI/Section',
@@ -20,7 +22,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonSection>
@@ -45,13 +47,25 @@ export const Default: Story = {
           </Section>
         </Section>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterSection>
+          <AdapterHeading>Top-level (h1)</AdapterHeading>
+          <AdapterSection>
+            <AdapterHeading>Nested (h2)</AdapterHeading>
+            <AdapterSection>
+              <AdapterHeading>Deeper (h3)</AdapterHeading>
+            </AdapterSection>
+          </AdapterSection>
+        </AdapterSection>
+      </div>
     </div>
   ),
 };
 
 export const ExplicitLevel: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (level=3)</div>
         <CarbonSection level={3}>
@@ -64,13 +78,21 @@ export const ExplicitLevel: Story = {
           <Heading>Forced h3</Heading>
         </Section>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, level=3)
+        </div>
+        <AdapterSection level={3}>
+          <AdapterHeading>Forced h3</AdapterHeading>
+        </AdapterSection>
+      </div>
     </div>
   ),
 };
 
 export const PolymorphicAs: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (as=&quot;article&quot;)</div>
         <CarbonSection as="article">
@@ -88,6 +110,17 @@ export const PolymorphicAs: Story = {
             Renders an &lt;article&gt; element instead of &lt;section&gt;.
           </p>
         </Section>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, as=&quot;article&quot;)
+        </div>
+        <AdapterSection as="article">
+          <AdapterHeading>Article heading</AdapterHeading>
+          <p className="text-sm text-muted-foreground">
+            Renders an &lt;article&gt; element instead of &lt;section&gt;.
+          </p>
+        </AdapterSection>
       </div>
     </div>
   ),

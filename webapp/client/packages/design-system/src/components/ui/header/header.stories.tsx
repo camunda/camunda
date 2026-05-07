@@ -16,6 +16,7 @@ import {
   HeaderGlobalAction as CarbonHeaderGlobalAction,
 } from '@carbon/react';
 import {Bell, Settings, User} from 'lucide-react';
+import {Header as AdapterHeader} from './header.adapter';
 import {
   Header,
   HeaderName,
@@ -50,6 +51,14 @@ export const Bare: Story = {
             Tasklist
           </HeaderName>
         </Header>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterHeader aria-label="Camunda Tasklist">
+          <HeaderName href="#" prefix="Camunda">
+            Tasklist
+          </HeaderName>
+        </AdapterHeader>
       </div>
     </div>
   ),
@@ -109,6 +118,32 @@ export const FullHeader: Story = {
             </HeaderGlobalAction>
           </HeaderGlobalBar>
         </Header>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterHeader aria-label="Camunda Operate">
+          <HeaderName href="#" prefix="Camunda">
+            Operate
+          </HeaderName>
+          <HeaderNavigation aria-label="Operate sections">
+            <HeaderMenuItem href="#" isActive>
+              Dashboard
+            </HeaderMenuItem>
+            <HeaderMenuItem href="#">Processes</HeaderMenuItem>
+            <HeaderMenuItem href="#">Decisions</HeaderMenuItem>
+          </HeaderNavigation>
+          <HeaderGlobalBar>
+            <HeaderGlobalAction aria-label="Notifications">
+              <Bell />
+            </HeaderGlobalAction>
+            <HeaderGlobalAction aria-label="Settings">
+              <Settings />
+            </HeaderGlobalAction>
+            <HeaderGlobalAction aria-label="Account">
+              <User />
+            </HeaderGlobalAction>
+          </HeaderGlobalBar>
+        </AdapterHeader>
       </div>
     </div>
   ),

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Link} from '@carbon/react';
+import {Link} from '@camunda/design-system';
 import {Container} from './styled';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 

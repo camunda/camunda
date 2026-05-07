@@ -8,6 +8,13 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
+  StructuredListBody as AdapterStructuredListBody,
+  StructuredListCell as AdapterStructuredListCell,
+  StructuredListHead as AdapterStructuredListHead,
+  StructuredListRow as AdapterStructuredListRow,
+  StructuredListWrapper as AdapterStructuredListWrapper,
+} from './structured-list.adapter';
+import {
   StructuredListBody as CarbonStructuredListBody,
   StructuredListCell as CarbonStructuredListCell,
   StructuredListHead as CarbonStructuredListHead,
@@ -103,6 +110,37 @@ export const Default: Story = {
           </TableBody>
         </Table>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterStructuredListWrapper>
+          <AdapterStructuredListHead>
+            <AdapterStructuredListRow head>
+              <AdapterStructuredListCell head>
+                ColumnA
+              </AdapterStructuredListCell>
+              <AdapterStructuredListCell head>
+                ColumnB
+              </AdapterStructuredListCell>
+              <AdapterStructuredListCell head>
+                ColumnC
+              </AdapterStructuredListCell>
+            </AdapterStructuredListRow>
+          </AdapterStructuredListHead>
+          <AdapterStructuredListBody>
+            {ROWS.map((row) => (
+              <AdapterStructuredListRow key={row.name}>
+                <AdapterStructuredListCell>{row.name}</AdapterStructuredListCell>
+                <AdapterStructuredListCell>
+                  {row.description}
+                </AdapterStructuredListCell>
+                <AdapterStructuredListCell>
+                  {row.category}
+                </AdapterStructuredListCell>
+              </AdapterStructuredListRow>
+            ))}
+          </AdapterStructuredListBody>
+        </AdapterStructuredListWrapper>
+      </div>
     </div>
   ),
 };
@@ -163,6 +201,31 @@ export const KeyValue: Story = {
             </TableRow>
           </TableBody>
         </Table>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterStructuredListWrapper>
+          <AdapterStructuredListBody>
+            <AdapterStructuredListRow>
+              <AdapterStructuredListCell noWrap>Email</AdapterStructuredListCell>
+              <AdapterStructuredListCell>
+                user@example.com
+              </AdapterStructuredListCell>
+            </AdapterStructuredListRow>
+            <AdapterStructuredListRow>
+              <AdapterStructuredListCell noWrap>Role</AdapterStructuredListCell>
+              <AdapterStructuredListCell>Admin</AdapterStructuredListCell>
+            </AdapterStructuredListRow>
+            <AdapterStructuredListRow>
+              <AdapterStructuredListCell noWrap>
+                Joined
+              </AdapterStructuredListCell>
+              <AdapterStructuredListCell>
+                Jan 12, 2024
+              </AdapterStructuredListCell>
+            </AdapterStructuredListRow>
+          </AdapterStructuredListBody>
+        </AdapterStructuredListWrapper>
       </div>
     </div>
   ),

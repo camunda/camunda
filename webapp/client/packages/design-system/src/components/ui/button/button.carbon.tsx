@@ -7,4 +7,4 @@
  */
 
 export {Button} from '@carbon/react';
-export type {ButtonProps} from '@carbon/react';
+export type {ButtonProps, ButtonSize} from '@carbon/react';

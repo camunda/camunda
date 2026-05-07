@@ -8,6 +8,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
+  Popover as AdapterPopover,
+  PopoverContent as AdapterPopoverContent,
+} from './popover.adapter';
+import {
   Popover as CarbonPopover,
   PopoverContent as CarbonPopoverContent,
 } from './popover.carbon';
@@ -26,7 +30,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-12">
+    <div className="grid grid-cols-3 gap-12 pt-12">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonPopover open align="bottom-start">
@@ -61,13 +65,30 @@ export const Default: Story = {
           </PopoverContent>
         </Popover>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterPopover open align="bottom-start">
+          <button type="button" className="underline">
+            Trigger
+          </button>
+          <AdapterPopoverContent>
+            <div className="p-4 max-w-xs">
+              <h4 className="font-medium mb-2">Adapter popover</h4>
+              <p className="text-sm">
+                Carbon-shaped <code>open</code> + <code>align</code>; renders
+                shadcn underneath.
+              </p>
+            </div>
+          </AdapterPopoverContent>
+        </AdapterPopover>
+      </div>
     </div>
   ),
 };
 
 export const Sides: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-32">
+    <div className="grid grid-cols-3 gap-12 pt-32">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <div className="flex gap-12">
@@ -148,6 +169,43 @@ export const Sides: Story = {
               left
             </PopoverContent>
           </Popover>
+        </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="flex gap-12">
+          <AdapterPopover open align="top">
+            <button type="button" className="underline">
+              top
+            </button>
+            <AdapterPopoverContent>
+              <div className="p-2 text-xs">top</div>
+            </AdapterPopoverContent>
+          </AdapterPopover>
+          <AdapterPopover open align="right">
+            <button type="button" className="underline">
+              right
+            </button>
+            <AdapterPopoverContent>
+              <div className="p-2 text-xs">right</div>
+            </AdapterPopoverContent>
+          </AdapterPopover>
+          <AdapterPopover open align="bottom">
+            <button type="button" className="underline">
+              bottom
+            </button>
+            <AdapterPopoverContent>
+              <div className="p-2 text-xs">bottom</div>
+            </AdapterPopoverContent>
+          </AdapterPopover>
+          <AdapterPopover open align="left">
+            <button type="button" className="underline">
+              left
+            </button>
+            <AdapterPopoverContent>
+              <div className="p-2 text-xs">left</div>
+            </AdapterPopoverContent>
+          </AdapterPopover>
         </div>
       </div>
     </div>

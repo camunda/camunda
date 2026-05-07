@@ -7,7 +7,7 @@
  */
 
 import {OperationItems} from 'modules/components/OperationItems';
-import {InlineLoading} from '@carbon/react';
+import {InlineLoading} from '@camunda/design-system';
 import {OperationsContainer} from './styled';
 import {OperationRenderer} from './OperationRenderer';
 import type {OperationConfig} from './types';

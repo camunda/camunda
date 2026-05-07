@@ -9,7 +9,7 @@
 import {INSTANCE_HISTORY_LEFT_PADDING} from 'modules/constants';
 import styled, {css} from 'styled-components';
 import {ElementInstanceIcon as BaseElementInstanceIcon} from 'modules/components/ElementInstanceIcon';
-import {TreeNode as BaseTreeNode} from '@carbon/react';
+import {TreeNode as BaseTreeNode} from '@camunda/design-system';
 
 const ElementInstanceIcon = styled(BaseElementInstanceIcon)<{
   $hasLeftMargin: boolean;

@@ -9,6 +9,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {X} from 'lucide-react';
 import * as React from 'react';
+import {Tag as AdapterTag} from './tag.adapter';
 import {Tag as CarbonTag} from './tag.carbon';
 import {Badge} from './tag.shadcn';
 
@@ -21,7 +22,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTag>Default</CarbonTag>
@@ -30,13 +31,17 @@ export const Default: Story = {
         <div className="text-sm font-semibold mb-4">shadcn</div>
         <Badge>Default</Badge>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTag>Default</AdapterTag>
+      </div>
     </div>
   ),
 };
 
 export const Variants: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (type)</div>
         <div className="flex flex-wrap gap-2">
@@ -63,6 +68,23 @@ export const Variants: Story = {
           <Badge variant="outline">Outline</Badge>
           <Badge variant="ghost">Ghost</Badge>
           <Badge variant="link">Link</Badge>
+        </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="flex flex-wrap gap-2">
+          <AdapterTag type="red">Red</AdapterTag>
+          <AdapterTag type="magenta">Magenta</AdapterTag>
+          <AdapterTag type="purple">Purple</AdapterTag>
+          <AdapterTag type="blue">Blue</AdapterTag>
+          <AdapterTag type="cyan">Cyan</AdapterTag>
+          <AdapterTag type="teal">Teal</AdapterTag>
+          <AdapterTag type="green">Green</AdapterTag>
+          <AdapterTag type="gray">Gray</AdapterTag>
+          <AdapterTag type="cool-gray">Cool gray</AdapterTag>
+          <AdapterTag type="warm-gray">Warm gray</AdapterTag>
+          <AdapterTag type="high-contrast">High contrast</AdapterTag>
+          <AdapterTag type="outline">Outline</AdapterTag>
         </div>
       </div>
     </div>
@@ -102,8 +124,22 @@ export const Filter: Story = {
         </Badge>
       );
     };
+    const Adapter = () => {
+      const [shown, setShown] = React.useState(true);
+      if (!shown) return <span className="text-xs italic">(removed)</span>;
+      return (
+        <AdapterTag
+          filter
+          type="blue"
+          onClose={() => setShown(false)}
+          title="Remove"
+        >
+          Frontend
+        </AdapterTag>
+      );
+    };
     return (
-      <div className="grid grid-cols-2 gap-12 pt-8">
+      <div className="grid grid-cols-3 gap-12 pt-8">
         <div>
           <div className="text-sm font-semibold mb-4">
             Carbon (<code>filter</code> + <code>onClose</code>)
@@ -116,6 +152,12 @@ export const Filter: Story = {
           </div>
           <Shadcn />
         </div>
+        <div>
+          <div className="text-sm font-semibold mb-4">
+            Adapter (Carbon API)
+          </div>
+          <Adapter />
+        </div>
       </div>
     );
   },
@@ -123,7 +165,7 @@ export const Filter: Story = {
 
 export const WithIcon: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (renderIcon)</div>
         <CarbonTag type="green">Active</CarbonTag>
@@ -140,13 +182,17 @@ export const WithIcon: Story = {
           Active
         </Badge>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTag type="green">Active</AdapterTag>
+      </div>
     </div>
   ),
 };
 
 export const Sizes: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <div className="flex flex-wrap items-center gap-2">
@@ -163,6 +209,14 @@ export const Sizes: Story = {
           <Badge className="text-[10px] px-1.5 py-0">sm</Badge>
           <Badge>md (default)</Badge>
           <Badge className="text-sm px-3 py-1">lg</Badge>
+        </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <AdapterTag size="sm">sm</AdapterTag>
+          <AdapterTag size="md">md</AdapterTag>
+          <AdapterTag size="lg">lg</AdapterTag>
         </div>
       </div>
     </div>

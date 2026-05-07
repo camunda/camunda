@@ -6,5 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {UnorderedList, ListItem} from '@carbon/react';
-export type {UnorderedListProps, ListItemProps} from '@carbon/react';
+export {UnorderedList, OrderedList, ListItem} from '@carbon/react';
+export type {
+  UnorderedListProps,
+  OrderedListProps,
+  ListItemProps,
+} from '@carbon/react';

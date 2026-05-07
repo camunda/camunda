@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Loading, type LoadingProps} from '@carbon/react';
+import {Loading, type LoadingProps} from '@camunda/design-system';
 
 const LoadingSpinner: React.FC<LoadingProps> = (props) => {
   return <Loading data-testid="spinner" withOverlay={false} {...props} />;

@@ -10,7 +10,7 @@ import {observer} from 'mobx-react';
 import {Container, PanelHeader, ErrorMessage} from './styled';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 import {Skeleton} from './Skeleton';
 import {ExecutionCountToggle} from './ExecutionCountToggle';
 import {ElementInstancesTree} from './ElementInstancesTree';

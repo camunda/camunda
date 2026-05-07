@@ -7,6 +7,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {Dropdown as AdapterDropdown} from './dropdown.adapter';
 import {Dropdown as CarbonDropdown} from './dropdown.carbon';
 import {
   Select,
@@ -34,7 +35,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonDropdown
@@ -63,13 +64,23 @@ export const Default: Story = {
           </Select>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterDropdown
+          id="dd-adapter-default"
+          titleText="Framework"
+          label="Select framework"
+          items={FRAMEWORKS}
+          itemToString={(item) => (item ? item.label : '')}
+        />
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonDropdown
@@ -100,13 +111,25 @@ export const Disabled: Story = {
           </Select>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterDropdown
+          id="dd-adapter-disabled"
+          titleText="Framework"
+          label="Select framework"
+          items={FRAMEWORKS}
+          itemToString={(item) => (item ? item.label : '')}
+          initialSelectedItem={FRAMEWORKS[0]}
+          disabled
+        />
+      </div>
     </div>
   ),
 };
 
 export const Invalid: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonDropdown
@@ -142,6 +165,18 @@ export const Invalid: Story = {
             Pick a framework to continue
           </p>
         </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterDropdown
+          id="dd-adapter-invalid"
+          titleText="Framework"
+          label="Select framework"
+          items={FRAMEWORKS}
+          itemToString={(item) => (item ? item.label : '')}
+          invalid
+          invalidText="Pick a framework to continue"
+        />
       </div>
     </div>
   ),

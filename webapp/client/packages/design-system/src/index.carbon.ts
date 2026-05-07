@@ -20,6 +20,7 @@ export * from './components/ui/date-picker/date-picker.carbon';
 export * from './components/ui/dropdown/dropdown.carbon';
 export * from './components/ui/grid/grid.carbon';
 export * from './components/ui/header/header.carbon';
+export * from './components/ui/header/theme.carbon';
 export * from './components/ui/heading/heading.carbon';
 export * from './components/ui/icon-button/icon-button.carbon';
 export * from './components/ui/inline-loading/inline-loading.carbon';

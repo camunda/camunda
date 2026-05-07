@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Toggle as BaseToggle} from '@carbon/react';
+import {Toggle as BaseToggle} from '@camunda/design-system';
 import {styled} from 'styled-components';
 
 const VariableValueContainer = styled.div`

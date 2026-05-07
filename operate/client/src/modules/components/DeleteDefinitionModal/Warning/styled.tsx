@@ -8,7 +8,7 @@
 
 import styled from 'styled-components';
 import {bodyShort01} from '@carbon/elements';
-import {UnorderedList as BaseUnorderedList} from '@carbon/react';
+import {UnorderedList as BaseUnorderedList} from '@camunda/design-system';
 
 const UnorderedList = styled(BaseUnorderedList)`
   ${bodyShort01};

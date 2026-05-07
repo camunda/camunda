@@ -9,7 +9,7 @@
 import {useEffect, useState} from 'react';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {CollapsablePanel} from 'modules/components/CollapsablePanel';
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 import {Footer} from './styled';
 
 type Props = {

@@ -12,7 +12,7 @@ import {MigrationView} from './MigrationView';
 import {ListView} from './ListView';
 import {useEffect} from 'react';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
-import {Modal} from '@carbon/react';
+import {Modal} from '@camunda/design-system';
 
 const Processes: React.FC = observer(() => {
   useEffect(() => {

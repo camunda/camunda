@@ -8,6 +8,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
+import {Checkbox as AdapterCheckbox} from './checkbox.adapter';
 import {Checkbox as CarbonCheckbox} from './checkbox.carbon';
 import {Checkbox as ShadcnCheckbox} from './checkbox.shadcn';
 
@@ -20,7 +21,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonCheckbox id="cb-default-carbon" labelText="Accept terms" />
@@ -32,13 +33,17 @@ export const Default: Story = {
           <span>Accept terms</span>
         </label>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterCheckbox id="cb-default-adapter" labelText="Accept terms" />
+      </div>
     </div>
   ),
 };
 
 export const Checked: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonCheckbox
@@ -53,6 +58,14 @@ export const Checked: Story = {
           <ShadcnCheckbox id="cb-checked-shadcn" defaultChecked />
           <span>Notifications</span>
         </label>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterCheckbox
+          id="cb-checked-adapter"
+          labelText="Notifications"
+          defaultChecked
+        />
       </div>
     </div>
   ),
@@ -83,7 +96,7 @@ export const Indeterminate: Story = {
       );
     };
     return (
-      <div className="grid grid-cols-2 gap-12 pt-8">
+      <div className="grid grid-cols-3 gap-12 pt-8">
         <div>
           <div className="text-sm font-semibold mb-4">Carbon</div>
           <Carbon />
@@ -92,6 +105,14 @@ export const Indeterminate: Story = {
           <div className="text-sm font-semibold mb-4">shadcn</div>
           <Shadcn />
         </div>
+        <div>
+          <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+          <AdapterCheckbox
+            id="cb-indeterminate-adapter"
+            labelText="Select all"
+            indeterminate
+          />
+        </div>
       </div>
     );
   },
@@ -99,7 +120,7 @@ export const Indeterminate: Story = {
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonCheckbox id="cb-disabled-carbon" labelText="Disabled" disabled />
@@ -111,13 +132,21 @@ export const Disabled: Story = {
           <span>Disabled</span>
         </label>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterCheckbox
+          id="cb-disabled-adapter"
+          labelText="Disabled"
+          disabled
+        />
+      </div>
     </div>
   ),
 };
 
 export const Invalid: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonCheckbox
@@ -142,6 +171,15 @@ export const Invalid: Story = {
             This field is required
           </span>
         </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterCheckbox
+          id="cb-invalid-adapter"
+          labelText="Required"
+          invalid
+          invalidText="This field is required"
+        />
       </div>
     </div>
   ),

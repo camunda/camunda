@@ -12,7 +12,7 @@ import {
   type BatchOperationType,
   type ProcessInstance,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {Button, MenuButton, MenuItem} from '@carbon/react';
+import {Button, MenuButton, MenuItem} from '@camunda/design-system';
 import {
   Error,
   Tools,

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Modal} from '@carbon/react';
+import {Modal} from '@camunda/design-system';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {observer} from 'mobx-react';

@@ -7,7 +7,7 @@
  */
 
 import {Field} from 'react-final-form';
-import {TextInput} from '@carbon/react';
+import {TextInput} from '@camunda/design-system';
 import {
   validateTimeCharacters,
   validateTimeComplete,

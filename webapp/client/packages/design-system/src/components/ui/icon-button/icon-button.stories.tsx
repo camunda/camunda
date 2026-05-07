@@ -8,6 +8,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {Plus, Settings, Trash2} from 'lucide-react';
+import {IconButton as AdapterIconButton} from './icon-button.adapter';
 import {IconButton as CarbonIconButton} from './icon-button.carbon';
 import {
   Button,
@@ -56,7 +57,7 @@ const ShadcnIconButton = ({
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-12">
+    <div className="grid grid-cols-3 gap-12 pt-12">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonIconButton label="Add item" align="bottom">
@@ -69,13 +70,19 @@ export const Default: Story = {
         </div>
         <ShadcnIconButton label="Add item" icon={Plus} />
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterIconButton label="Add item" align="bottom">
+          <Plus />
+        </AdapterIconButton>
+      </div>
     </div>
   ),
 };
 
 export const Variants: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-12">
+    <div className="grid grid-cols-3 gap-12 pt-12">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (kind)</div>
         <div className="flex gap-2">
@@ -102,13 +109,30 @@ export const Variants: Story = {
           <ShadcnIconButton label="Destructive" icon={Trash2} destructive />
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="flex gap-2">
+          <AdapterIconButton label="Primary" kind="primary">
+            <Plus />
+          </AdapterIconButton>
+          <AdapterIconButton label="Secondary" kind="secondary">
+            <Plus />
+          </AdapterIconButton>
+          <AdapterIconButton label="Tertiary" kind="tertiary">
+            <Plus />
+          </AdapterIconButton>
+          <AdapterIconButton label="Ghost" kind="ghost">
+            <Plus />
+          </AdapterIconButton>
+        </div>
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-12">
+    <div className="grid grid-cols-3 gap-12 pt-12">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonIconButton label="Settings" disabled>
@@ -118,6 +142,12 @@ export const Disabled: Story = {
       <div>
         <div className="text-sm font-semibold mb-4">shadcn</div>
         <ShadcnIconButton label="Settings" icon={Settings} disabled />
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterIconButton label="Settings" disabled>
+          <Settings />
+        </AdapterIconButton>
       </div>
     </div>
   ),

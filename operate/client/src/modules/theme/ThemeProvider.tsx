@@ -9,7 +9,7 @@
 import {observer} from 'mobx-react';
 
 import {currentTheme} from 'modules/stores/currentTheme';
-import {Theme} from '@carbon/react';
+import {Theme} from '@camunda/design-system';
 
 type Props = {
   children?: React.ReactNode;

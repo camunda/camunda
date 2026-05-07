@@ -10,7 +10,7 @@ import styled from 'styled-components';
 
 import {styles, rem} from '@carbon/elements';
 import BaseLogo from 'modules/components/Icon/logo.svg?react';
-import {Button as BaseButton} from '@carbon/react';
+import {Button as BaseButton} from '@camunda/design-system';
 
 const Button: typeof BaseButton = styled(BaseButton)`
   min-width: 100%;

@@ -7,6 +7,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {Loading as AdapterLoading} from './loading.adapter';
 import {Loading as CarbonLoading} from './loading.carbon';
 import {Spinner} from './loading.shadcn';
 
@@ -19,7 +20,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (large)</div>
         <div className="relative h-32">
@@ -34,13 +35,19 @@ export const Default: Story = {
           <Spinner className="size-12" />
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="relative h-32">
+          <AdapterLoading withOverlay={false} />
+        </div>
+      </div>
     </div>
   ),
 };
 
 export const Small: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (small)</div>
         <div className="relative h-12">
@@ -53,13 +60,21 @@ export const Small: Story = {
           <Spinner />
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, small)
+        </div>
+        <div className="relative h-12">
+          <AdapterLoading withOverlay={false} small />
+        </div>
+      </div>
     </div>
   ),
 };
 
 export const WithOverlay: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">
           Carbon (<code>withOverlay</code>)
@@ -78,13 +93,21 @@ export const WithOverlay: Story = {
           </div>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, withOverlay)
+        </div>
+        <div className="relative h-48 bg-muted">
+          <AdapterLoading withOverlay />
+        </div>
+      </div>
     </div>
   ),
 };
 
 export const Centered: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <div className="relative h-48 border">
@@ -100,6 +123,12 @@ export const Centered: Story = {
             <Spinner className="size-8" />
             <span className="text-sm text-muted-foreground">Loading…</span>
           </div>
+        </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="relative h-48 border">
+          <AdapterLoading withOverlay={false} />
         </div>
       </div>
     </div>

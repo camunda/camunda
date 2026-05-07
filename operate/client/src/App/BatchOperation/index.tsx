@@ -8,7 +8,7 @@
 
 import {useEffect} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {IconButton, InlineNotification, SkeletonText} from '@carbon/react';
+import {IconButton, InlineNotification, SkeletonText} from '@camunda/design-system';
 import {ArrowLeft} from '@carbon/react/icons';
 import {formatDate} from 'modules/utils/date';
 import {PAGE_TITLE} from 'modules/constants';

@@ -21,7 +21,7 @@ import {Link} from 'modules/components/Link';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
-import {Button, Stack} from '@carbon/react';
+import {Button, Stack} from '@camunda/design-system';
 import {SortableTable} from 'modules/components/SortableTable';
 import {useState, useMemo} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';

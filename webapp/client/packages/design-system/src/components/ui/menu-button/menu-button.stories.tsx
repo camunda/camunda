@@ -9,6 +9,10 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {ChevronDown} from 'lucide-react';
 import {
+  MenuButton as AdapterMenuButton,
+  MenuItem as AdapterMenuItem,
+} from './menu-button.adapter';
+import {
   MenuButton as CarbonMenuButton,
   MenuItem as CarbonMenuItem,
 } from './menu-button.carbon';
@@ -31,7 +35,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonMenuButton label="Actions">
@@ -58,13 +62,21 @@ export const Default: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterMenuButton label="Actions">
+          <AdapterMenuItem label="Edit" />
+          <AdapterMenuItem label="Duplicate" />
+          <AdapterMenuItem label="Archive" />
+        </AdapterMenuButton>
+      </div>
     </div>
   ),
 };
 
 export const WithDestructive: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonMenuButton label="More">
@@ -90,13 +102,21 @@ export const WithDestructive: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterMenuButton label="More">
+          <AdapterMenuItem label="Edit" />
+          <AdapterMenuItem label="Duplicate" />
+          <AdapterMenuItem label="Delete" kind="danger" />
+        </AdapterMenuButton>
+      </div>
     </div>
   ),
 };
 
 export const WithLabelAndGroups: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">
           Carbon (no built-in label/group structure)
@@ -128,13 +148,21 @@ export const WithLabelAndGroups: Story = {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterMenuButton label="Account">
+          <AdapterMenuItem label="Profile" />
+          <AdapterMenuItem label="Settings" />
+          <AdapterMenuItem label="Sign out" />
+        </AdapterMenuButton>
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonMenuButton label="Actions" disabled>
@@ -152,6 +180,13 @@ export const Disabled: Story = {
             </Button>
           </DropdownMenuTrigger>
         </DropdownMenu>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterMenuButton label="Actions" disabled>
+          <AdapterMenuItem label="Edit" />
+          <AdapterMenuItem label="Duplicate" />
+        </AdapterMenuButton>
       </div>
     </div>
   ),

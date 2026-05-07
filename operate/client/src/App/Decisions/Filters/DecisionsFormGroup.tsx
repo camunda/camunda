@@ -10,7 +10,7 @@ import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 import {Title} from 'modules/components/FiltersPanel/styled';
 import {ComboBox} from 'modules/components/ComboBox';
-import {Dropdown, Stack} from '@carbon/react';
+import {Dropdown, Stack} from '@camunda/design-system';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {
   getDefinitionIdFromIdentifier,

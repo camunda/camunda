@@ -8,6 +8,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {Layer as CarbonLayer} from '@carbon/react';
+import {Layer as AdapterLayer} from './layer.adapter';
 import {Layer} from './layer.shadcn';
 
 const meta: Meta = {
@@ -23,7 +24,7 @@ const Box = ({children}: {children: React.ReactNode}) => (
 
 export const Nested: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonLayer>
@@ -56,13 +57,29 @@ export const Nested: Story = {
           </Box>
         </Layer>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterLayer>
+          <Box>
+            Layer 1
+            <AdapterLayer>
+              <Box>
+                Layer 2
+                <AdapterLayer>
+                  <Box>Layer 2 (clamped)</Box>
+                </AdapterLayer>
+              </Box>
+            </AdapterLayer>
+          </Box>
+        </AdapterLayer>
+      </div>
     </div>
   ),
 };
 
 export const WithBackground: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (withBackground)</div>
         <CarbonLayer withBackground>
@@ -81,13 +98,24 @@ export const WithBackground: Story = {
           </Layer>
         </Layer>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, withBackground)
+        </div>
+        <AdapterLayer withBackground>
+          <div className="p-4 text-sm">Layer 1 with background</div>
+          <AdapterLayer withBackground>
+            <div className="p-4 text-sm">Layer 2 with background</div>
+          </AdapterLayer>
+        </AdapterLayer>
+      </div>
     </div>
   ),
 };
 
 export const ExplicitLevel: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (level=2)</div>
         <CarbonLayer level={2} withBackground>
@@ -99,6 +127,14 @@ export const ExplicitLevel: Story = {
         <Layer level={2} withBackground>
           <div className="p-4 text-sm">Forced level 2</div>
         </Layer>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, level=2)
+        </div>
+        <AdapterLayer level={2} withBackground>
+          <div className="p-4 text-sm">Forced level 2</div>
+        </AdapterLayer>
       </div>
     </div>
   ),

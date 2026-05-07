@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Stack as BaseStack} from '@carbon/react';
+import {Stack as BaseStack} from '@camunda/design-system';
 import styled from 'styled-components';
 
 const Stack = styled(BaseStack)`

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {IconButton} from '@carbon/react';
+import {IconButton} from '@camunda/design-system';
 import styled, {css} from 'styled-components';
 import {DownloadBPMNDefinitionXML as BaseDownloadBPMNDefinitionXML} from 'modules/components/DownloadBPMNDefinitionXML';
 

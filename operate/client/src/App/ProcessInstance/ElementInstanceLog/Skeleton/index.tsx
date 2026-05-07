@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {SkeletonIcon} from '@carbon/react';
+import {SkeletonIcon} from '@camunda/design-system';
 import {Row, SkeletonText} from './styled';
 
 const TreeNode: React.FC = () => {

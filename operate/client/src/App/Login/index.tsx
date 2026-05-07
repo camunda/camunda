@@ -31,7 +31,7 @@ import {
   PasswordInput,
   Stack,
   TextInput,
-} from '@carbon/react';
+} from '@camunda/design-system';
 import {Paths} from 'modules/Routes';
 import {LoadingSpinner} from './LoadingSpinner';
 

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Callout as BaseCallout} from '@carbon/react';
+import {Callout as BaseCallout} from '@camunda/design-system';
 import styled from 'styled-components';
 
 const EmptyMessageContainer = styled.div`

@@ -11,7 +11,7 @@ import {
   Modal,
   TableBatchAction,
   TableBatchActions,
-} from '@carbon/react';
+} from '@camunda/design-system';
 import {pluralSuffix} from 'modules/utils/pluralSuffix';
 import {useState} from 'react';
 import {RetryFailed, Error, TrashCan} from '@carbon/react/icons';

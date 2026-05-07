@@ -28,7 +28,7 @@ import {
   TableSelectAll,
   TableSelectRow,
   TableExpandHeader,
-} from '@carbon/react';
+} from '@camunda/design-system';
 import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {EmptyMessage} from '../EmptyMessage';

@@ -7,6 +7,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {Pagination as AdapterPagination} from './pagination.adapter';
 import {Pagination as CarbonPagination} from './pagination.carbon';
 import {
   Pagination,
@@ -70,6 +71,18 @@ export const Default: Story = {
           </PaginationContent>
         </Pagination>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterPagination
+          totalItems={103}
+          pageSize={10}
+          pageSizes={[10, 20, 50]}
+          page={1}
+          backwardText="Previous page"
+          forwardText="Next page"
+          itemsPerPageText="Items per page:"
+        />
+      </div>
     </div>
   ),
 };
@@ -124,6 +137,18 @@ export const MiddlePage: Story = {
             </PaginationItem>
           </PaginationContent>
         </Pagination>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterPagination
+          totalItems={103}
+          pageSize={10}
+          pageSizes={[10, 20, 50]}
+          page={5}
+          backwardText="Previous page"
+          forwardText="Next page"
+          itemsPerPageText="Items per page:"
+        />
       </div>
     </div>
   ),

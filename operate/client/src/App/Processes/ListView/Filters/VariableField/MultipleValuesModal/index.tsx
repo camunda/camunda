@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Modal} from '@carbon/react';
+import {Modal} from '@camunda/design-system';
 import {ERRORS} from 'modules/validators';
 import {validateMultipleVariableValues} from 'modules/validators/validateMultipleVariableValues';
 import {useEffect, useState} from 'react';

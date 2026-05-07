@@ -8,6 +8,13 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
+  Tab as AdapterTab,
+  TabList as AdapterTabList,
+  TabPanel as AdapterTabPanel,
+  TabPanels as AdapterTabPanels,
+  Tabs as AdapterTabs,
+} from './tabs.adapter';
+import {
   Tab as CarbonTab,
   TabList as CarbonTabList,
   TabPanel as CarbonTabPanel,
@@ -25,7 +32,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTabs>
@@ -66,13 +73,34 @@ export const Default: Story = {
           </TabsContent>
         </Tabs>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTabs>
+          <AdapterTabList aria-label="Adapter tabs">
+            <AdapterTab>Account</AdapterTab>
+            <AdapterTab>Password</AdapterTab>
+            <AdapterTab>Notifications</AdapterTab>
+          </AdapterTabList>
+          <AdapterTabPanels>
+            <AdapterTabPanel>
+              <p className="text-sm">Update your profile and account info.</p>
+            </AdapterTabPanel>
+            <AdapterTabPanel>
+              <p className="text-sm">Change your password here.</p>
+            </AdapterTabPanel>
+            <AdapterTabPanel>
+              <p className="text-sm">Manage notification preferences.</p>
+            </AdapterTabPanel>
+          </AdapterTabPanels>
+        </AdapterTabs>
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTabs>
@@ -115,13 +143,34 @@ export const Disabled: Story = {
           </TabsContent>
         </Tabs>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTabs>
+          <AdapterTabList aria-label="Adapter tabs disabled">
+            <AdapterTab>Available</AdapterTab>
+            <AdapterTab disabled>Disabled</AdapterTab>
+            <AdapterTab>Other</AdapterTab>
+          </AdapterTabList>
+          <AdapterTabPanels>
+            <AdapterTabPanel>
+              <p className="text-sm">First panel.</p>
+            </AdapterTabPanel>
+            <AdapterTabPanel>
+              <p className="text-sm">This panel cannot be reached.</p>
+            </AdapterTabPanel>
+            <AdapterTabPanel>
+              <p className="text-sm">Third panel.</p>
+            </AdapterTabPanel>
+          </AdapterTabPanels>
+        </AdapterTabs>
+      </div>
     </div>
   ),
 };
 
 export const ContainedVariant: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">
           Carbon (<code>contained</code>)
@@ -165,6 +214,29 @@ export const ContainedVariant: Story = {
             <p className="text-sm">Member list.</p>
           </TabsContent>
         </Tabs>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, contained)
+        </div>
+        <AdapterTabs>
+          <AdapterTabList aria-label="Adapter contained tabs" contained>
+            <AdapterTab>Overview</AdapterTab>
+            <AdapterTab>Activity</AdapterTab>
+            <AdapterTab>Members</AdapterTab>
+          </AdapterTabList>
+          <AdapterTabPanels>
+            <AdapterTabPanel>
+              <p className="text-sm">Overview content.</p>
+            </AdapterTabPanel>
+            <AdapterTabPanel>
+              <p className="text-sm">Activity feed.</p>
+            </AdapterTabPanel>
+            <AdapterTabPanel>
+              <p className="text-sm">Member list.</p>
+            </AdapterTabPanel>
+          </AdapterTabPanels>
+        </AdapterTabs>
       </div>
     </div>
   ),

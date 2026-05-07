@@ -10,6 +10,13 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as React from 'react';
 import {Button} from '../button/button.shadcn';
 import {
+  ComposedModal as AdapterComposedModal,
+  Modal as AdapterModal,
+  ModalBody as AdapterModalBody,
+  ModalFooter as AdapterModalFooter,
+  ModalHeader as AdapterModalHeader,
+} from './modal.adapter';
+import {
   ComposedModal as CarbonComposedModal,
   Modal as CarbonModal,
   ModalBody as CarbonModalBody,
@@ -59,9 +66,34 @@ const CarbonControlled = ({
   );
 };
 
+const AdapterControlled = ({
+  triggerLabel,
+  ...modalProps
+}: {
+  triggerLabel: string;
+} & React.ComponentProps<typeof AdapterModal>) => {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        className="underline"
+        onClick={() => setOpen(true)}
+      >
+        {triggerLabel}
+      </button>
+      <AdapterModal
+        {...modalProps}
+        open={open}
+        onRequestClose={() => setOpen(false)}
+      />
+    </>
+  );
+};
+
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonControlled
@@ -100,6 +132,20 @@ export const Default: Story = {
           </DialogContent>
         </Dialog>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterControlled
+          triggerLabel="Open Adapter modal"
+          modalHeading="Save changes?"
+          modalLabel="Profile"
+          primaryButtonText="Save"
+          secondaryButtonText="Cancel"
+        >
+          <p className="text-sm">
+            Your changes will be applied to your profile.
+          </p>
+        </AdapterControlled>
+      </div>
     </div>
   ),
 };
@@ -137,8 +183,39 @@ export const ComposedAPI: Story = {
         </>
       );
     };
+    const Adapter = () => {
+      const [open, setOpen] = React.useState(false);
+      return (
+        <>
+          <button
+            type="button"
+            className="underline"
+            onClick={() => setOpen(true)}
+          >
+            Open Adapter ComposedModal
+          </button>
+          <AdapterComposedModal
+            open={open}
+            onClose={() => setOpen(false)}
+            preventCloseOnClickOutside
+          >
+            <AdapterModalHeader title="Edit profile" label="Account settings" />
+            <AdapterModalBody>
+              <p className="text-sm">Make changes and save when done.</p>
+            </AdapterModalBody>
+            <AdapterModalFooter
+              primaryButtonText="Save"
+              secondaryButtonText="Cancel"
+              onRequestClose={() => setOpen(false)}
+            >
+              {null}
+            </AdapterModalFooter>
+          </AdapterComposedModal>
+        </>
+      );
+    };
     return (
-      <div className="grid grid-cols-2 gap-12 pt-8">
+      <div className="grid grid-cols-3 gap-12 pt-8">
         <div>
           <div className="text-sm font-semibold mb-4">
             Carbon (<code>ComposedModal</code> family)
@@ -171,6 +248,12 @@ export const ComposedAPI: Story = {
             </DialogContent>
           </Dialog>
         </div>
+        <div>
+          <div className="text-sm font-semibold mb-4">
+            Adapter (Carbon API)
+          </div>
+          <Adapter />
+        </div>
       </div>
     );
   },
@@ -178,7 +261,7 @@ export const ComposedAPI: Story = {
 
 export const Destructive: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">
           Carbon (<code>danger</code> kind)
@@ -221,6 +304,21 @@ export const Destructive: Story = {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterControlled
+          triggerLabel="Delete record"
+          danger
+          modalHeading="Delete record"
+          modalLabel="Permanent action"
+          primaryButtonText="Delete"
+          secondaryButtonText="Cancel"
+        >
+          <p className="text-sm">
+            This cannot be undone. The record will be removed permanently.
+          </p>
+        </AdapterControlled>
       </div>
     </div>
   ),

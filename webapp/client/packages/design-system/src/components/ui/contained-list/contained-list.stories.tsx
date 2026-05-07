@@ -13,6 +13,10 @@ import {
 } from '@carbon/react';
 import {Star, Trash2} from 'lucide-react';
 import {Button} from '../button/button.shadcn';
+import {
+  ContainedList as AdapterContainedList,
+  ContainedListItem as AdapterContainedListItem,
+} from './contained-list.adapter';
 import {ContainedList, ContainedListItem} from './contained-list.shadcn';
 
 const meta: Meta = {
@@ -24,7 +28,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonContainedList label="Recent searches">
@@ -41,13 +45,21 @@ export const Default: Story = {
           <ContainedListItem>Tacos</ContainedListItem>
         </ContainedList>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterContainedList label="Recent searches">
+          <AdapterContainedListItem>Pizza</AdapterContainedListItem>
+          <AdapterContainedListItem>Coffee</AdapterContainedListItem>
+          <AdapterContainedListItem>Tacos</AdapterContainedListItem>
+        </AdapterContainedList>
+      </div>
     </div>
   ),
 };
 
 export const Disclosed: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (kind=disclosed)</div>
         <CarbonContainedList kind="disclosed" label="Saved filters">
@@ -64,13 +76,23 @@ export const Disclosed: Story = {
           <ContainedListItem>Failed</ContainedListItem>
         </ContainedList>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, kind=disclosed)
+        </div>
+        <AdapterContainedList kind="disclosed" label="Saved filters">
+          <AdapterContainedListItem>All instances</AdapterContainedListItem>
+          <AdapterContainedListItem>Active</AdapterContainedListItem>
+          <AdapterContainedListItem>Failed</AdapterContainedListItem>
+        </AdapterContainedList>
+      </div>
     </div>
   ),
 };
 
 export const WithActionAndIcons: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonContainedList
@@ -107,13 +129,30 @@ export const WithActionAndIcons: Story = {
           <ContainedListItem renderIcon={Star}>Item two</ContainedListItem>
         </ContainedList>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterContainedList
+          label="Favorites"
+          action={<button type="button">Edit</button>}
+        >
+          <AdapterContainedListItem
+            renderIcon={Star as never}
+            action={<button type="button">Remove</button>}
+          >
+            Item one
+          </AdapterContainedListItem>
+          <AdapterContainedListItem renderIcon={Star as never}>
+            Item two
+          </AdapterContainedListItem>
+        </AdapterContainedList>
+      </div>
     </div>
   ),
 };
 
 export const Interactive: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (onClick)</div>
         <CarbonContainedList label="Pages">
@@ -138,13 +177,29 @@ export const Interactive: Story = {
           <ContainedListItem disabled>Page three (disabled)</ContainedListItem>
         </ContainedList>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, onClick)
+        </div>
+        <AdapterContainedList label="Pages">
+          <AdapterContainedListItem onClick={() => alert('one')}>
+            Page one
+          </AdapterContainedListItem>
+          <AdapterContainedListItem onClick={() => alert('two')}>
+            Page two
+          </AdapterContainedListItem>
+          <AdapterContainedListItem disabled>
+            Page three (disabled)
+          </AdapterContainedListItem>
+        </AdapterContainedList>
+      </div>
     </div>
   ),
 };
 
 export const Sizes: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <div className="flex flex-col gap-4">
@@ -162,6 +217,16 @@ export const Sizes: Story = {
             <ContainedList key={size} label={size} size={size}>
               <ContainedListItem>{size} item</ContainedListItem>
             </ContainedList>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <div className="flex flex-col gap-4">
+          {(['sm', 'md', 'lg', 'xl'] as const).map((size) => (
+            <AdapterContainedList key={size} label={size} size={size}>
+              <AdapterContainedListItem>{size} item</AdapterContainedListItem>
+            </AdapterContainedList>
           ))}
         </div>
       </div>

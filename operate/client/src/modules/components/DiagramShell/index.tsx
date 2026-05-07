@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Loading} from '@carbon/react';
+import {Loading} from '@camunda/design-system';
 import {Container, EmptyMessage, ErrorMessage} from './styled';
 import {EmptyMessage as BaseEmptyMessage} from '../EmptyMessage';
 import React from 'react';

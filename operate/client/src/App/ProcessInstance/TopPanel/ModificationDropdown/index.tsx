@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 import {flip, offset} from '@floating-ui/react-dom';
 import {Add, ArrowRight, Error} from '@carbon/react/icons';
 import isNil from 'lodash/isNil';

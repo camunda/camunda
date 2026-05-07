@@ -8,7 +8,7 @@
 
 import ErrorRobot from 'modules/components/Icon/error-robot.svg?react';
 import {Section, Stack} from './styled';
-import {Link} from '@carbon/react';
+import {Link} from '@camunda/design-system';
 
 const ErrorWrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
   <Section>

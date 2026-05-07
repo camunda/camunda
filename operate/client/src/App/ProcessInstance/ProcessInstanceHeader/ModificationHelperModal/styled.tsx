@@ -11,7 +11,7 @@ import HelpDiagram_Dark from 'modules/components/Icon/HelpDiagram_Dark_Carbon.sv
 import HelpDiagram_Light from 'modules/components/Icon/HelpDiagram_Light_Carbon.svg?react';
 import {styles} from '@carbon/elements';
 import {Add, Error, ArrowRight} from '@carbon/react/icons';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 
 const Container = styled.div`
   display: flex;

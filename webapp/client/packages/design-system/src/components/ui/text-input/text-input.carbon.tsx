@@ -6,5 +6,5 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {TextInput} from '@carbon/react';
-export type {TextInputProps} from '@carbon/react';
+export {TextInput, PasswordInput} from '@carbon/react';
+export type {TextInputProps, PasswordInputProps} from '@carbon/react';

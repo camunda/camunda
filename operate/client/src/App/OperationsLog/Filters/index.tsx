@@ -7,7 +7,7 @@
  */
 
 import {useLocation, useNavigate} from 'react-router-dom';
-import {Dropdown, Stack} from '@carbon/react';
+import {Dropdown, Stack} from '@camunda/design-system';
 import {updateFiltersSearchString} from 'modules/utils/filter';
 import {Container} from './styled';
 import {Field, Form} from 'react-final-form';

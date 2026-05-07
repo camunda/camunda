@@ -7,6 +7,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {TextInput as AdapterTextInput} from './text-input.adapter';
 import {TextInput as CarbonTextInput} from './text-input.carbon';
 import {Input} from './text-input.shadcn';
 
@@ -19,7 +20,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTextInput
@@ -35,13 +36,21 @@ export const Default: Story = {
           <Input type="email" placeholder="you@example.com" />
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTextInput
+          id="ti-adapter-default"
+          labelText="Email"
+          placeholder="you@example.com"
+        />
+      </div>
     </div>
   ),
 };
 
 export const WithHelperText: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTextInput
@@ -61,13 +70,22 @@ export const WithHelperText: Story = {
           </p>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTextInput
+          id="ti-adapter-helper"
+          labelText="Username"
+          helperText="Letters, numbers, hyphens. 3-20 chars."
+          placeholder="alice42"
+        />
+      </div>
     </div>
   ),
 };
 
 export const Invalid: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTextInput
@@ -94,13 +112,24 @@ export const Invalid: Story = {
           </p>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTextInput
+          id="ti-adapter-invalid"
+          labelText="Email"
+          invalid
+          invalidText="Enter a valid email address"
+          placeholder="you@example.com"
+          defaultValue="not-an-email"
+        />
+      </div>
     </div>
   ),
 };
 
 export const Password: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">
           Carbon (<code>PasswordInput</code> — separate component)
@@ -121,13 +150,24 @@ export const Password: Story = {
           <Input type="password" placeholder="••••••••" />
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, type="password")
+        </div>
+        <AdapterTextInput
+          id="ti-adapter-password"
+          labelText="Password"
+          type="password"
+          placeholder="••••••••"
+        />
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTextInput
@@ -144,13 +184,22 @@ export const Disabled: Story = {
           <Input disabled defaultValue="user-12345" />
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTextInput
+          id="ti-adapter-disabled"
+          labelText="ID"
+          disabled
+          defaultValue="user-12345"
+        />
+      </div>
     </div>
   ),
 };
 
 export const ReadOnly: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTextInput
@@ -166,6 +215,15 @@ export const ReadOnly: Story = {
           <label className="text-sm font-medium">Generated key</label>
           <Input readOnly defaultValue="abc-def-ghi-jkl" />
         </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTextInput
+          id="ti-adapter-readonly"
+          labelText="Generated key"
+          readOnly
+          defaultValue="abc-def-ghi-jkl"
+        />
       </div>
     </div>
   ),

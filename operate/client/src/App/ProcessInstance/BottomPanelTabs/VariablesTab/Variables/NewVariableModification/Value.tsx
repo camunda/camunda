@@ -18,7 +18,7 @@ import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {useSelectedElementName} from 'modules/hooks/elementSelection';
 import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
-import {Layer} from '@carbon/react';
+import {Layer} from '@camunda/design-system';
 
 type Props = {
   variableName: string;

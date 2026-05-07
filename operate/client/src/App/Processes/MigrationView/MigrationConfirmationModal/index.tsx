@@ -7,7 +7,7 @@
  */
 
 import React, {useState} from 'react';
-import {Modal, TextInput} from '@carbon/react';
+import {Modal, TextInput} from '@camunda/design-system';
 import {type StateProps} from 'modules/components/ModalStateManager';
 import {MigrationDetails} from '../MigrationDetails';
 

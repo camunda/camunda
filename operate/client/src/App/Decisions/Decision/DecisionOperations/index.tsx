@@ -10,7 +10,7 @@ import {useState} from 'react';
 import {DangerButton} from 'modules/components/OperationItem/DangerButton';
 import {OperationItems} from 'modules/components/OperationItems';
 import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled';
-import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
+import {InlineLoading, Link, ListItem, Stack} from '@camunda/design-system';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
 import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';

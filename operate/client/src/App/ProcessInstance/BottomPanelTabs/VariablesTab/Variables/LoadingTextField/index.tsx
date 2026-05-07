@@ -7,7 +7,7 @@
  */
 
 import {LoadingStateContainer} from './styled';
-import {Loading} from '@carbon/react';
+import {Loading} from '@camunda/design-system';
 import {TextInputField} from 'modules/components/TextInputField';
 
 type Props = React.ComponentProps<typeof TextInputField> & {

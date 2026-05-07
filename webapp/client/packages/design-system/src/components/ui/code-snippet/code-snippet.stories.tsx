@@ -8,6 +8,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {CodeSnippet as CarbonCodeSnippet} from '@carbon/react';
+import {CodeSnippet as AdapterCodeSnippet} from './code-snippet.adapter';
 import {CodeSnippet} from './code-snippet.shadcn';
 
 const meta: Meta = {
@@ -18,7 +19,7 @@ export default meta;
 type Story = StoryObj;
 
 const single = `npm install @camunda/design-system`;
-const multi = `import {Button} from '@camunda/design-system/shadcn';
+const multi = `import {Button} from '@camunda/design-system';
 
 function Example() {
   return <Button>Click me</Button>;
@@ -31,7 +32,7 @@ function Example() {
 
 export const Inline: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <p className="text-sm">
@@ -44,13 +45,20 @@ export const Inline: Story = {
           Run <CodeSnippet type="inline">npm install</CodeSnippet> first.
         </p>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <p className="text-sm">
+          Run <AdapterCodeSnippet type="inline">npm install</AdapterCodeSnippet>{' '}
+          first.
+        </p>
+      </div>
     </div>
   ),
 };
 
 export const Single: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonCodeSnippet type="single">{single}</CarbonCodeSnippet>
@@ -59,13 +67,17 @@ export const Single: Story = {
         <div className="text-sm font-semibold mb-4">shadcn</div>
         <CodeSnippet type="single">{single}</CodeSnippet>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterCodeSnippet type="single">{single}</AdapterCodeSnippet>
+      </div>
     </div>
   ),
 };
 
 export const Multi: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonCodeSnippet type="multi">{multi}</CarbonCodeSnippet>
@@ -74,13 +86,17 @@ export const Multi: Story = {
         <div className="text-sm font-semibold mb-4">shadcn</div>
         <CodeSnippet type="multi">{multi}</CodeSnippet>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterCodeSnippet type="multi">{multi}</AdapterCodeSnippet>
+      </div>
     </div>
   ),
 };
 
 export const HideCopyButton: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (hideCopyButton)</div>
         <CarbonCodeSnippet type="single" hideCopyButton>
@@ -93,13 +109,21 @@ export const HideCopyButton: Story = {
           {single}
         </CodeSnippet>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API)
+        </div>
+        <AdapterCodeSnippet type="single" hideCopyButton>
+          {single}
+        </AdapterCodeSnippet>
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (disabled)</div>
         <CarbonCodeSnippet type="single" disabled>
@@ -111,6 +135,12 @@ export const Disabled: Story = {
         <CodeSnippet type="single" disabled>
           {single}
         </CodeSnippet>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterCodeSnippet type="single" disabled>
+          {single}
+        </AdapterCodeSnippet>
       </div>
     </div>
   ),

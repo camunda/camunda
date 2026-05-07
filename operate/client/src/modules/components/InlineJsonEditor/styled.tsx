@@ -16,7 +16,7 @@ import {
   EDITOR_PADDING_BOTTOM,
   EDITOR_PADDING_TOP,
 } from './constants';
-import {InlineLoading} from '@carbon/react';
+import {InlineLoading} from '@camunda/design-system';
 
 const ring = (color: string) => css`
   content: '';

@@ -8,6 +8,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {Stack as CarbonStack} from '@carbon/react';
+import {Stack as AdapterStack} from './stack.adapter';
 import {Stack} from './stack.shadcn';
 
 const meta: Meta = {
@@ -23,7 +24,7 @@ const Box = ({children}: {children: React.ReactNode}) => (
 
 export const Vertical: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (gap=4)</div>
         <CarbonStack gap={4}>
@@ -40,13 +41,23 @@ export const Vertical: Story = {
           <Box>Three</Box>
         </Stack>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, gap=4)
+        </div>
+        <AdapterStack gap={4}>
+          <Box>One</Box>
+          <Box>Two</Box>
+          <Box>Three</Box>
+        </AdapterStack>
+      </div>
     </div>
   ),
 };
 
 export const Horizontal: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (orientation=horizontal)</div>
         <CarbonStack orientation="horizontal" gap={4}>
@@ -63,13 +74,23 @@ export const Horizontal: Story = {
           <Box>Three</Box>
         </Stack>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, orientation=horizontal)
+        </div>
+        <AdapterStack orientation="horizontal" gap={4}>
+          <Box>One</Box>
+          <Box>Two</Box>
+          <Box>Three</Box>
+        </AdapterStack>
+      </div>
     </div>
   ),
 };
 
 export const CustomGap: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (gap=&quot;1.5rem&quot;)</div>
         <CarbonStack gap="1.5rem">
@@ -86,13 +107,23 @@ export const CustomGap: Story = {
           <Box>Three</Box>
         </Stack>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, gap=&quot;1.5rem&quot;)
+        </div>
+        <AdapterStack gap="1.5rem">
+          <Box>One</Box>
+          <Box>Two</Box>
+          <Box>Three</Box>
+        </AdapterStack>
+      </div>
     </div>
   ),
 };
 
 export const PolymorphicAs: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (as=&quot;ul&quot;)</div>
         <CarbonStack as="ul" gap={3}>
@@ -114,6 +145,19 @@ export const PolymorphicAs: Story = {
             <Box>Two</Box>
           </li>
         </Stack>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, as=&quot;ul&quot;)
+        </div>
+        <AdapterStack as="ul" gap={3}>
+          <li>
+            <Box>One</Box>
+          </li>
+          <li>
+            <Box>Two</Box>
+          </li>
+        </AdapterStack>
       </div>
     </div>
   ),

@@ -8,8 +8,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {Grid as CarbonGrid, Column as CarbonColumn} from '@carbon/react';
-import {Grid} from './grid.shadcn';
+import {Column as AdapterColumn} from '../column/column.adapter';
 import {Column} from '../column/column.shadcn';
+import {Grid as AdapterGrid} from './grid.adapter';
+import {Grid} from './grid.shadcn';
 
 const meta: Meta = {
   title: 'UI/Grid',
@@ -53,6 +55,20 @@ export const Default: Story = {
           </Column>
         </Grid>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterGrid>
+          <AdapterColumn span={4}>
+            <Box>span=4</Box>
+          </AdapterColumn>
+          <AdapterColumn span={8}>
+            <Box>span=8</Box>
+          </AdapterColumn>
+          <AdapterColumn span={4}>
+            <Box>span=4</Box>
+          </AdapterColumn>
+        </AdapterGrid>
+      </div>
     </div>
   ),
 };
@@ -82,6 +98,17 @@ export const Responsive: Story = {
           </Column>
         </Grid>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterGrid>
+          <AdapterColumn sm={4} md={4} lg={8}>
+            <Box>sm=4 md=4 lg=8</Box>
+          </AdapterColumn>
+          <AdapterColumn sm={4} md={4} lg={8}>
+            <Box>sm=4 md=4 lg=8</Box>
+          </AdapterColumn>
+        </AdapterGrid>
+      </div>
     </div>
   ),
 };
@@ -110,6 +137,19 @@ export const Condensed: Story = {
             <Box>Two</Box>
           </Column>
         </Grid>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, condensed)
+        </div>
+        <AdapterGrid condensed>
+          <AdapterColumn span={8}>
+            <Box>One</Box>
+          </AdapterColumn>
+          <AdapterColumn span={8}>
+            <Box>Two</Box>
+          </AdapterColumn>
+        </AdapterGrid>
       </div>
     </div>
   ),

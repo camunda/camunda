@@ -7,7 +7,7 @@
  */
 
 import {useLocation, useNavigate, type Path} from 'react-router-dom';
-import {Tag} from '@carbon/react';
+import {Tag} from '@camunda/design-system';
 import {cn} from './cn';
 import {Nav, Button} from './styled';
 

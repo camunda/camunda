@@ -18,7 +18,7 @@ import {
   TableExpandHeader,
   TableExpandedRow,
   type DataTableRow,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 type Props = {
   size?: React.ComponentProps<typeof CarbonDataTable>['size'];

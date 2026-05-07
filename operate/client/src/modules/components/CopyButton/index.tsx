@@ -8,7 +8,7 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {Checkmark, Copy} from '@carbon/react/icons';
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 
 type Props = {
   value: string;

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 import {Container, ModificationDetail} from './styled';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';

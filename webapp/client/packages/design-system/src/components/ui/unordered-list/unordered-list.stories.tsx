@@ -11,6 +11,10 @@ import {
   UnorderedList as CarbonUnorderedList,
   ListItem as CarbonListItem,
 } from '@carbon/react';
+import {
+  ListItem as AdapterListItem,
+  UnorderedList as AdapterUnorderedList,
+} from './unordered-list.adapter';
 import {UnorderedList, ListItem} from './unordered-list.shadcn';
 
 const meta: Meta = {
@@ -22,7 +26,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonUnorderedList>
@@ -39,13 +43,21 @@ export const Default: Story = {
           <ListItem>Bananas</ListItem>
         </UnorderedList>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterUnorderedList>
+          <AdapterListItem>Apples</AdapterListItem>
+          <AdapterListItem>Oranges</AdapterListItem>
+          <AdapterListItem>Bananas</AdapterListItem>
+        </AdapterUnorderedList>
+      </div>
     </div>
   ),
 };
 
 export const Nested: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonUnorderedList>
@@ -72,13 +84,26 @@ export const Nested: Story = {
           <ListItem>Vegetables</ListItem>
         </UnorderedList>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterUnorderedList>
+          <AdapterListItem>
+            Fruits
+            <AdapterUnorderedList nested>
+              <AdapterListItem>Apples</AdapterListItem>
+              <AdapterListItem>Oranges</AdapterListItem>
+            </AdapterUnorderedList>
+          </AdapterListItem>
+          <AdapterListItem>Vegetables</AdapterListItem>
+        </AdapterUnorderedList>
+      </div>
     </div>
   ),
 };
 
 export const Expressive: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (isExpressive)</div>
         <CarbonUnorderedList isExpressive>
@@ -92,6 +117,15 @@ export const Expressive: Story = {
           <ListItem>Larger type</ListItem>
           <ListItem>More breathing room</ListItem>
         </UnorderedList>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, isExpressive)
+        </div>
+        <AdapterUnorderedList isExpressive>
+          <AdapterListItem>Larger type</AdapterListItem>
+          <AdapterListItem>More breathing room</AdapterListItem>
+        </AdapterUnorderedList>
       </div>
     </div>
   ),

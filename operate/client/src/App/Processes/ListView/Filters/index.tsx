@@ -8,7 +8,7 @@
 
 import {useState} from 'react';
 import {observer} from 'mobx-react';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 import {Error} from '@carbon/react/icons';
 import {Form} from 'react-final-form';
 import isEqual from 'lodash/isEqual';

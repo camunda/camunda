@@ -7,7 +7,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Tile as BaseTitle} from '@carbon/react';
+import {Tile as BaseTitle} from '@camunda/design-system';
 import {styles} from '@carbon/elements';
 import {Link} from 'modules/components/Link';
 import {ErrorMessage as BaseErrorMessage} from 'modules/components/ErrorMessage';

@@ -22,7 +22,7 @@ import {observer} from 'mobx-react';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {DecisionsFormGroup} from './DecisionsFormGroup';
 import {InstancesStatesFormGroup} from './InstancesStatesFormGroup';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 import {
   type OptionalFilter,
   OptionalFiltersFormGroup,

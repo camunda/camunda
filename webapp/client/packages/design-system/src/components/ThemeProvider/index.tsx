@@ -9,15 +9,15 @@
 import {GlobalTheme} from '@carbon/react';
 import {useLayoutEffect, type ReactNode} from 'react';
 
-export type Theme = 'light' | 'dark';
+export type ThemeMode = 'light' | 'dark';
 
-const CARBON_THEME: Record<Theme, string> = {
+const CARBON_THEME: Record<ThemeMode, string> = {
   light: 'g10',
   dark: 'g100',
 };
 
 interface ThemeProviderProps {
-  theme: Theme;
+  theme: ThemeMode;
   children: ReactNode;
 }
 

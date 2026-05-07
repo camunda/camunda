@@ -8,7 +8,7 @@
 
 import {useRef} from 'react';
 import {useForm, useFormState} from 'react-final-form';
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 import {Edit} from '@carbon/react/icons';
 import {StructuredList, VariableName} from './styled';
 import {StructuredRows} from 'modules/components/StructuredList';

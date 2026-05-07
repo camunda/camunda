@@ -32,7 +32,7 @@ import {InstanceOperations} from './InstanceOperations';
 import {getProcessDefinitionName} from 'modules/utils/instance';
 import {useOperationItemsForInstances} from 'modules/queries/batch-operations/useOperationItemsForInstances';
 import {useActiveOperationItemsForInstances} from 'modules/queries/batch-operations/useActiveOperationItemsForInstances';
-import {InlineLoading} from '@carbon/react';
+import {InlineLoading} from '@camunda/design-system';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 
 type InstancesTableProps = {

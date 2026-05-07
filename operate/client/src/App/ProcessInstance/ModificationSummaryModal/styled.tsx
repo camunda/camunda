@@ -8,7 +8,7 @@
 
 import styled, {css} from 'styled-components';
 import {styles} from '@carbon/elements';
-import {Modal as BaseModal} from '@carbon/react';
+import {Modal as BaseModal} from '@camunda/design-system';
 import {DataTable as BaseDataTable} from 'modules/components/DataTable';
 
 const Title = styled.h4`

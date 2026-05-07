@@ -8,7 +8,7 @@
 
 import {observer} from 'mobx-react';
 import {Container, Label} from './styled';
-import {Stack} from '@carbon/react';
+import {Stack} from '@camunda/design-system';
 
 type Props =
   | {

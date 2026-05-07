@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Checkbox, Modal, Stack} from '@carbon/react';
+import {Checkbox, Modal, Stack} from '@camunda/design-system';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import React from 'react';
 

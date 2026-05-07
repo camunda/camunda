@@ -8,6 +8,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {CheckCircle2, XCircle} from 'lucide-react';
+import {InlineLoading as AdapterInlineLoading} from './inline-loading.adapter';
 import {InlineLoading as CarbonInlineLoading} from './inline-loading.carbon';
 import {Spinner} from './inline-loading.shadcn';
 
@@ -20,7 +21,7 @@ type Story = StoryObj;
 
 export const Active: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonInlineLoading
@@ -37,13 +38,20 @@ export const Active: Story = {
           <span>Saving changes…</span>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterInlineLoading
+          status="active"
+          description="Saving changes…"
+        />
+      </div>
     </div>
   ),
 };
 
 export const Finished: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonInlineLoading
@@ -60,6 +68,10 @@ export const Finished: Story = {
           <span>Saved</span>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterInlineLoading status="finished" description="Saved" />
+      </div>
     </div>
   ),
 };
@@ -67,7 +79,7 @@ export const Finished: Story = {
 export const Error_: Story = {
   name: 'Error',
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonInlineLoading
@@ -84,13 +96,17 @@ export const Error_: Story = {
           <span>Could not save</span>
         </div>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterInlineLoading status="error" description="Could not save" />
+      </div>
     </div>
   ),
 };
 
 export const Sizes: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonInlineLoading
@@ -116,6 +132,10 @@ export const Sizes: Story = {
             <span className="text-base">Large</span>
           </div>
         </div>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterInlineLoading status="active" description="Loading…" />
       </div>
     </div>
   ),

@@ -10,7 +10,7 @@ import styled from 'styled-components';
 import {
   InlineNotification as BaseInlineNotification,
   Stack,
-} from '@carbon/react';
+} from '@camunda/design-system';
 import {styles} from '@carbon/elements';
 
 const InlineNotification = styled(BaseInlineNotification)`

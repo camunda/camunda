@@ -8,8 +8,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {Section as CarbonSection, Heading as CarbonHeading} from '@carbon/react';
-import {Heading} from './heading.shadcn';
+import {Section as AdapterSection} from '../section/section.adapter';
 import {Section} from '../section/section.shadcn';
+import {Heading as AdapterHeading} from './heading.adapter';
+import {Heading} from './heading.shadcn';
 
 const meta: Meta = {
   title: 'UI/Heading',
@@ -20,7 +22,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (no Section, defaults to h1)</div>
         <CarbonHeading>Standalone heading</CarbonHeading>
@@ -29,13 +31,17 @@ export const Default: Story = {
         <div className="text-sm font-semibold mb-4">shadcn (no Section, defaults to h1)</div>
         <Heading>Standalone heading</Heading>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterHeading>Standalone heading</AdapterHeading>
+      </div>
     </div>
   ),
 };
 
 export const NestedHierarchy: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonSection>
@@ -66,13 +72,28 @@ export const NestedHierarchy: Story = {
           </Section>
         </Section>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterSection>
+          <AdapterHeading>h1</AdapterHeading>
+          <AdapterSection>
+            <AdapterHeading>h2</AdapterHeading>
+            <AdapterSection>
+              <AdapterHeading>h3</AdapterHeading>
+              <AdapterSection>
+                <AdapterHeading>h4</AdapterHeading>
+              </AdapterSection>
+            </AdapterSection>
+          </AdapterSection>
+        </AdapterSection>
+      </div>
     </div>
   ),
 };
 
 export const CustomClassName: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonHeading className="!text-primary">Tinted heading</CarbonHeading>
@@ -80,6 +101,10 @@ export const CustomClassName: Story = {
       <div>
         <div className="text-sm font-semibold mb-4">shadcn</div>
         <Heading className="text-primary">Tinted heading</Heading>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterHeading className="text-primary">Tinted heading</AdapterHeading>
       </div>
     </div>
   ),

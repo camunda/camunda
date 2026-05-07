@@ -10,7 +10,7 @@ import {useField} from 'react-final-form';
 import {createNewVariableFieldName} from '../createVariableFieldName';
 
 import {modificationsStore} from 'modules/stores/modifications';
-import {Button} from '@carbon/react';
+import {Button} from '@camunda/design-system';
 import {TrashCan} from '@carbon/react/icons';
 import {useNewScopeKeyForElement} from 'modules/hooks/modifications';
 import {useVariableScopeKey} from 'modules/hooks/variables';

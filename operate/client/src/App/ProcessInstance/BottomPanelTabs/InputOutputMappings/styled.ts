@@ -7,7 +7,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Callout as BaseCallout} from '@carbon/react';
+import {Callout as BaseCallout} from '@camunda/design-system';
 import {EmptyMessage as BaseEmptyMessage} from 'modules/components/EmptyMessage';
 
 type ContentProps = {

@@ -9,7 +9,7 @@
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container, Tab, Content, TabPanel, TabList} from './styled';
 import {tracking} from 'modules/tracking';
-import {Tabs, TabPanels, Stack} from '@carbon/react';
+import {Tabs, TabPanels, Stack} from '@camunda/design-system';
 
 type TabType<TabId extends string = string> = {
   id: TabId;

@@ -20,7 +20,7 @@ import {EmptyState} from 'modules/components/EmptyState';
 import EmptyStateProcessIncidents from 'modules/components/Icon/empty-state-process-incidents.svg?react';
 import type {IncidentProcessInstanceStatisticsByError} from '@camunda/camunda-api-zod-schemas/8.10';
 import {Details} from './Details';
-import {InlineLoading} from '@carbon/react';
+import {InlineLoading} from '@camunda/design-system';
 
 type Props = {
   status: 'pending' | 'error' | 'success';

@@ -9,6 +9,10 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {TreeView as CarbonTreeView, TreeNode as CarbonTreeNode} from '@carbon/react';
 import {Folder, FileText} from 'lucide-react';
+import {
+  TreeNode as AdapterTreeNode,
+  TreeView as AdapterTreeView,
+} from './tree-view.adapter';
 import {TreeView, TreeNode} from './tree-view.shadcn';
 
 const meta: Meta = {
@@ -20,7 +24,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTreeView label="File system">
@@ -52,13 +56,30 @@ export const Default: Story = {
           <TreeNode id="package" label="package.json" renderIcon={FileText} />
         </TreeView>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTreeView label="File system">
+          <AdapterTreeNode id="src" label="src" defaultIsExpanded>
+            <AdapterTreeNode
+              id="components"
+              label="components"
+              defaultIsExpanded
+            >
+              <AdapterTreeNode id="Button" label="Button.tsx" />
+              <AdapterTreeNode id="Card" label="Card.tsx" />
+            </AdapterTreeNode>
+            <AdapterTreeNode id="utils" label="utils" />
+          </AdapterTreeNode>
+          <AdapterTreeNode id="package" label="package.json" />
+        </AdapterTreeView>
+      </div>
     </div>
   ),
 };
 
 export const SizeXS: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (size=xs)</div>
         <CarbonTreeView label="Hierarchy" size="xs">
@@ -79,13 +100,25 @@ export const SizeXS: Story = {
           <TreeNode id="b" label="Item B" />
         </TreeView>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, size=xs)
+        </div>
+        <AdapterTreeView label="Hierarchy" size="xs">
+          <AdapterTreeNode id="a" label="Item A" defaultIsExpanded>
+            <AdapterTreeNode id="a1" label="Item A.1" />
+            <AdapterTreeNode id="a2" label="Item A.2" />
+          </AdapterTreeNode>
+          <AdapterTreeNode id="b" label="Item B" />
+        </AdapterTreeView>
+      </div>
     </div>
   ),
 };
 
 export const Disabled: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonTreeView label="Tasks">
@@ -100,13 +133,20 @@ export const Disabled: Story = {
           <TreeNode id="t2" label="Locked task" disabled />
         </TreeView>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterTreeView label="Tasks">
+          <AdapterTreeNode id="t1" label="Open task" />
+          <AdapterTreeNode id="t2" label="Locked task" disabled />
+        </AdapterTreeView>
+      </div>
     </div>
   ),
 };
 
 export const HiddenLabel: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon (hideLabel)</div>
         <CarbonTreeView label="navigation" hideLabel>
@@ -120,6 +160,15 @@ export const HiddenLabel: Story = {
           <TreeNode id="x" label="One" />
           <TreeNode id="y" label="Two" />
         </TreeView>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">
+          Adapter (Carbon API, hideLabel)
+        </div>
+        <AdapterTreeView label="navigation" hideLabel>
+          <AdapterTreeNode id="x" label="One" />
+          <AdapterTreeNode id="y" label="Two" />
+        </AdapterTreeView>
       </div>
     </div>
   ),

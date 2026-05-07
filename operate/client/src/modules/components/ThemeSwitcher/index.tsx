@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useTheme} from '@carbon/react';
+import {useTheme} from '@camunda/design-system';
 import {useEffect} from 'react';
 
 const ThemeSwitcher: React.FC = () => {

@@ -8,6 +8,10 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {
+  Breadcrumb as AdapterBreadcrumb,
+  BreadcrumbItem as AdapterBreadcrumbItem,
+} from './breadcrumb.adapter';
+import {
   Breadcrumb as CarbonBreadcrumb,
   BreadcrumbItem as CarbonBreadcrumbItem,
 } from './breadcrumb.carbon';
@@ -30,7 +34,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonBreadcrumb>
@@ -57,13 +61,21 @@ export const Default: Story = {
           </BreadcrumbList>
         </ShadcnBreadcrumb>
       </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterBreadcrumb>
+          <AdapterBreadcrumbItem href="#">Home</AdapterBreadcrumbItem>
+          <AdapterBreadcrumbItem href="#">Components</AdapterBreadcrumbItem>
+          <AdapterBreadcrumbItem isCurrentPage>Breadcrumb</AdapterBreadcrumbItem>
+        </AdapterBreadcrumb>
+      </div>
     </div>
   ),
 };
 
 export const WithEllipsis: Story = {
   render: () => (
-    <div className="grid grid-cols-2 gap-12 pt-8">
+    <div className="grid grid-cols-3 gap-12 pt-8">
       <div>
         <div className="text-sm font-semibold mb-4">Carbon</div>
         <CarbonBreadcrumb>
@@ -94,6 +106,15 @@ export const WithEllipsis: Story = {
             </ShadcnBreadcrumbItem>
           </BreadcrumbList>
         </ShadcnBreadcrumb>
+      </div>
+      <div>
+        <div className="text-sm font-semibold mb-4">Adapter (Carbon API)</div>
+        <AdapterBreadcrumb>
+          <AdapterBreadcrumbItem href="#">Home</AdapterBreadcrumbItem>
+          <AdapterBreadcrumbItem href="#">…</AdapterBreadcrumbItem>
+          <AdapterBreadcrumbItem href="#">Components</AdapterBreadcrumbItem>
+          <AdapterBreadcrumbItem isCurrentPage>Breadcrumb</AdapterBreadcrumbItem>
+        </AdapterBreadcrumb>
       </div>
     </div>
   ),

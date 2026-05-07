@@ -11,7 +11,7 @@ import {styles} from '@carbon/elements';
 import {
   SkeletonText as BaseSkeletonText,
   SkeletonIcon as BaseSkeletonIcon,
-} from '@carbon/react';
+} from '@camunda/design-system';
 
 const Table = styled.table`
   table-layout: fixed;
