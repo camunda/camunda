@@ -17,15 +17,15 @@ package io.atomix.raft.snapshot;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.SnapshotManifest;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
-import io.camunda.zeebe.snapshots.impl.SfvChecksumImpl;
+import io.camunda.zeebe.snapshots.impl.SfvManifestImpl;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.ByteBuffer;
@@ -49,7 +49,7 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
   private final Checksum checksumCalculator = new CRC32C();
   private final Set<SnapshotReservation> reservations = new CopyOnWriteArraySet<>();
 
-  private ImmutableChecksumsSFV checksum;
+  private SnapshotManifest checksum;
 
   InMemorySnapshot(final TestSnapshotStore testSnapshotStore, final String snapshotId) {
     this.testSnapshotStore = testSnapshotStore;
@@ -172,7 +172,7 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
   }
 
   @Override
-  public ImmutableChecksumsSFV getChecksums() {
+  public SnapshotManifest getChecksums() {
     return checksum;
   }
 
@@ -220,7 +220,7 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
   @Override
   public ActorFuture<PersistedSnapshot> persist() {
     testSnapshotStore.newSnapshot(this);
-    checksum = new SfvChecksumImpl();
+    checksum = new SfvManifestImpl();
     return CompletableActorFuture.completed(this);
   }
 

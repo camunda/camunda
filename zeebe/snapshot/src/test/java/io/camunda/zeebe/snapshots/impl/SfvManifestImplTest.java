@@ -19,15 +19,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class SfvChecksumTest {
+public class SfvManifestImplTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private SfvChecksumImpl sfvChecksum;
+  private SfvManifestImpl sfvChecksum;
 
   @Before
   public void setUp() throws Exception {
-    sfvChecksum = new SfvChecksumImpl();
+    sfvChecksum = new SfvManifestImpl();
   }
 
   @Test

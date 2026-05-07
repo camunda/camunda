@@ -14,8 +14,6 @@ import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
-import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
@@ -23,7 +21,9 @@ import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotCopyForBootstrapException;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.SnapshotManifest;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
 import io.camunda.zeebe.util.Either;
@@ -63,7 +63,7 @@ public final class FileBasedSnapshotStoreImpl {
   // keeps track of all snapshot modification listeners
   private final Set<PersistedSnapshotListener> listeners = new CopyOnWriteArraySet<>();
   private final SnapshotMetrics metrics;
-  private final CRC32CChecksumProvider checksumProvider;
+  private final SnapshotFileInfoProvider checksumProvider;
   private final ConcurrencyControl actor;
 
   // Use AtomicReference so that getting latest snapshot doesn't have to go through the actor
@@ -76,7 +76,7 @@ public final class FileBasedSnapshotStoreImpl {
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
       final Path root,
-      final CRC32CChecksumProvider checksumProvider,
+      final SnapshotFileInfoProvider checksumProvider,
       final ConcurrencyControl actor,
       final SnapshotMetrics metrics) {
     this.brokerId = brokerId;
@@ -177,9 +177,9 @@ public final class FileBasedSnapshotStoreImpl {
     }
 
     try {
-      final var expectedChecksum = SnapshotChecksum.read(checksumPath);
+      final var expectedChecksum = SnapshotManifests.read(checksumPath);
       final var actualChecksum =
-          SnapshotChecksum.calculateWithProvidedChecksums(path, checksumProvider);
+          SnapshotManifests.calculateWithProvidedChecksums(path, checksumProvider);
       if (!actualChecksum.sameChecksums(expectedChecksum)) {
         LOGGER.warn(
             "Expected snapshot {} to have checksums {}, but the actual checksums are {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
@@ -210,7 +210,7 @@ public final class FileBasedSnapshotStoreImpl {
       return metadata;
     }
     final var computed =
-        FileUtil.directorySize(snapshotDirectory, SnapshotChecksum::isNotMetadataFile);
+        FileUtil.directorySize(snapshotDirectory, SnapshotManifests::isNotMetadataFile);
     return new FileBasedSnapshotMetadata(
         metadata.version(),
         metadata.processedPosition(),
@@ -460,7 +460,7 @@ public final class FileBasedSnapshotStoreImpl {
   FileBasedSnapshot persistNewSnapshot(
       final Path destination,
       final FileBasedSnapshotId snapshotId,
-      final ImmutableChecksumsSFV immutableChecksumsSFV,
+      final SnapshotManifest immutableChecksumsSFV,
       final FileBasedSnapshotMetadata metadata) {
     final var isBootstrap = metadata.isBootstrap();
     final var currentPersistedSnapshot = currentSnapshot.get();
@@ -532,13 +532,13 @@ public final class FileBasedSnapshotStoreImpl {
   private Path computeChecksum(
       final Path source,
       final FileBasedSnapshotId snapshotId,
-      final ImmutableChecksumsSFV immutableChecksumsSFV,
+      final SnapshotManifest immutableChecksumsSFV,
       final Path destination) {
     final var checksumPath = buildSnapshotsChecksumPath(source, snapshotId);
     final var tmpChecksumPath =
         checksumPath.resolveSibling(checksumPath.getFileName().toString() + ".tmp");
     try {
-      SnapshotChecksum.persist(tmpChecksumPath, immutableChecksumsSFV);
+      SnapshotManifests.persist(tmpChecksumPath, immutableChecksumsSFV);
       FileUtil.moveDurably(tmpChecksumPath, checksumPath);
       return checksumPath;
     } catch (final IOException e) {

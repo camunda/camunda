@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
-import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
-import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
+import io.camunda.zeebe.snapshots.MutableSnapshotManifest;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
+import io.camunda.zeebe.snapshots.SnapshotManifest;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
@@ -20,15 +20,15 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
-final class SnapshotChecksum {
+final class SnapshotManifests {
 
-  private SnapshotChecksum() {
+  private SnapshotManifests() {
     throw new IllegalStateException("Utility class");
   }
 
-  public static ImmutableChecksumsSFV read(final Path checksumPath) throws IOException {
+  public static SnapshotManifest read(final Path checksumPath) throws IOException {
     try (final RandomAccessFile checksumFile = new RandomAccessFile(checksumPath.toFile(), "r")) {
-      final SfvChecksumImpl sfvChecksum = new SfvChecksumImpl();
+      final SfvManifestImpl sfvChecksum = new SfvManifestImpl();
       String line;
       while ((line = checksumFile.readLine()) != null) {
         sfvChecksum.updateFromSfvFile(line);
@@ -37,21 +37,21 @@ final class SnapshotChecksum {
     }
   }
 
-  public static MutableChecksumsSFV calculate(final Path snapshotDirectory) throws IOException {
+  public static MutableSnapshotManifest calculate(final Path snapshotDirectory) throws IOException {
     return createChecksumForSnapshot(snapshotDirectory, snapshotPath -> Map.of());
   }
 
-  public static MutableChecksumsSFV calculateWithProvidedChecksums(
-      final Path snapshotDirectory, final CRC32CChecksumProvider provider) throws IOException {
+  public static MutableSnapshotManifest calculateWithProvidedChecksums(
+      final Path snapshotDirectory, final SnapshotFileInfoProvider provider) throws IOException {
     return createChecksumForSnapshot(snapshotDirectory, provider);
   }
 
-  private static MutableChecksumsSFV createChecksumForSnapshot(
-      final Path snapshotDirectory, final CRC32CChecksumProvider provider) throws IOException {
+  private static MutableSnapshotManifest createChecksumForSnapshot(
+      final Path snapshotDirectory, final SnapshotFileInfoProvider provider) throws IOException {
 
     try (final var fileStream =
-        Files.list(snapshotDirectory).filter(SnapshotChecksum::isNotMetadataFile).sorted()) {
-      final SfvChecksumImpl sfvChecksum = new SfvChecksumImpl();
+        Files.list(snapshotDirectory).filter(SnapshotManifests::isNotMetadataFile).sorted()) {
+      final SfvManifestImpl sfvChecksum = new SfvManifestImpl();
       final Map<String, Long> fullFileChecksums = provider.getSnapshotChecksums(snapshotDirectory);
       fileStream.forEachOrdered(path -> updateChecksum(sfvChecksum, fullFileChecksums, path));
 
@@ -78,7 +78,7 @@ final class SnapshotChecksum {
     return !file.getFileName().toString().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
   }
 
-  public static void persist(final Path checksumPath, final ImmutableChecksumsSFV checksum)
+  public static void persist(final Path checksumPath, final SnapshotManifest checksum)
       throws IOException {
     // FileOutputStream#flush does nothing, so use a file channel to enforce it
     try (final var channel =
@@ -94,7 +94,7 @@ final class SnapshotChecksum {
   }
 
   private static void updateChecksum(
-      final MutableChecksumsSFV checksum,
+      final MutableSnapshotManifest checksum,
       final Map<String, Long> fullFileChecksums,
       final Path file) {
     final String fileName = file.getFileName().toString();

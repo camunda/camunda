@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
@@ -17,7 +17,7 @@ import org.rocksdb.LiveFileMetaData;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 
-public class ChecksumProviderRocksDBImpl implements CRC32CChecksumProvider {
+public class RocksDbSnapshotFileInfoProvider implements SnapshotFileInfoProvider {
 
   @Override
   public Map<String, Long> getSnapshotChecksums(final Path snapshotPath) {

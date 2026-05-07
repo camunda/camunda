@@ -12,10 +12,15 @@ import java.io.OutputStream;
 import java.util.SortedMap;
 
 /**
- * Immutable checksum collection in simple file verification (SFV) file format, which only allows to
- * read serialized file checksums or a combined checksum.
+ * An immutable description of all files in a snapshot, including their per-file checksums and a
+ * combined integrity checksum used for snapshot verification.
+ *
+ * <p>The on-disk representation uses the Simple File Verification (SFV) format, which records only
+ * checksums. The "manifest" naming was chosen over "checksum" because the scope of this type is
+ * expanding to also carry file-size metadata for replication-lag accounting — the SFV file on disk
+ * remains purely a checksum artifact.
  */
-public interface ImmutableChecksumsSFV {
+public interface SnapshotManifest {
 
   /**
    * Write the checksum collection in SFV format to the given output stream.
@@ -35,7 +40,7 @@ public interface ImmutableChecksumsSFV {
    * @param o The other checksum
    * @return boolean denoting match
    */
-  boolean sameChecksums(ImmutableChecksumsSFV o);
+  boolean sameChecksums(SnapshotManifest o);
 
   /**
    * Returns some combined checksum over all the file checksums. If any of the individual checksums

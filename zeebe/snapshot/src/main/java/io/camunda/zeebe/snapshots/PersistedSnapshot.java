@@ -82,7 +82,7 @@ public interface PersistedSnapshot {
    *
    * @return the checksum of the snapshot files
    */
-  ImmutableChecksumsSFV getChecksums();
+  SnapshotManifest getChecksums();
 
   /**
    * SnapshotMetadata includes information related to a snapshot.

@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
-import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
+import io.camunda.zeebe.snapshots.MutableSnapshotManifest;
+import io.camunda.zeebe.snapshots.SnapshotManifest;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -32,7 +32,7 @@ import org.agrona.IoUtil;
  * compatibility with 'combinedChecksum' field.
  * https://en.wikipedia.org/wiki/Simple_file_verification
  */
-public final class SfvChecksumImpl implements MutableChecksumsSFV {
+public final class SfvManifestImpl implements MutableSnapshotManifest {
 
   private static final String SFV_HEADER =
 """
@@ -48,7 +48,7 @@ public final class SfvChecksumImpl implements MutableChecksumsSFV {
   private final SortedMap<String, Long> checksums = new TreeMap<>();
   private String snapshotDirectoryComment;
 
-  public SfvChecksumImpl() {}
+  public SfvManifestImpl() {}
 
   @Override
   public void write(final OutputStream stream) throws IOException {
@@ -73,7 +73,7 @@ public final class SfvChecksumImpl implements MutableChecksumsSFV {
   }
 
   @Override
-  public boolean sameChecksums(final ImmutableChecksumsSFV o) {
+  public boolean sameChecksums(final SnapshotManifest o) {
     if (this == o) {
       return true;
     }
@@ -98,7 +98,7 @@ public final class SfvChecksumImpl implements MutableChecksumsSFV {
 
   @Override
   public String toString() {
-    return "SfvChecksumImpl{" + ", checksums=" + checksums + '}';
+    return "SfvManifestImpl{" + ", checksums=" + checksums + '}';
   }
 
   public void setSnapshotDirectoryComment(final String headerComment) {

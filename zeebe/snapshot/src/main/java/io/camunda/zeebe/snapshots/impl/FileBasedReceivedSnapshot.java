@@ -42,7 +42,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private ByteBuffer metadataBuffer;
   private long writtenMetadataBytes;
   private long receivedDataBytes;
-  private SfvChecksumImpl checksumCollection;
+  private SfvManifestImpl checksumCollection;
 
   FileBasedReceivedSnapshot(
       final FileBasedSnapshotId snapshotId,
@@ -104,7 +104,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
 
     if (checksumCollection == null) {
-      checksumCollection = new SfvChecksumImpl();
+      checksumCollection = new SfvManifestImpl();
     }
     checksumCollection.updateFromBytes(
         snapshotFile.getFileName().toString(), snapshotChunk.getContent());

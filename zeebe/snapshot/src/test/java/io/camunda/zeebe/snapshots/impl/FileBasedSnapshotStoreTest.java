@@ -14,7 +14,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
-import io.camunda.zeebe.snapshots.TestChecksumProvider;
+import io.camunda.zeebe.snapshots.TestSnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
@@ -150,9 +150,9 @@ public class FileBasedSnapshotStoreTest {
           "bootstrap": false
         }""";
     Files.writeString(metadataFile, legacyMetadataJson, StandardOpenOption.TRUNCATE_EXISTING);
-    SnapshotChecksum.persist(
+    SnapshotManifests.persist(
         persistedSnapshot.getChecksumPath(),
-        SnapshotChecksum.calculate(persistedSnapshot.getPath()));
+        SnapshotManifests.calculate(persistedSnapshot.getPath()));
 
     // when reopening the store
     snapshotStore.close();
@@ -197,7 +197,7 @@ public class FileBasedSnapshotStoreTest {
   public void shouldNotLoadCorruptedSnapshot() throws Exception {
     // given
     final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
-    SnapshotChecksum.persist(persistedSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotManifests.persist(persistedSnapshot.getChecksumPath(), new SfvManifestImpl());
 
     // when
     snapshotStore.close();
@@ -228,7 +228,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
     final var corruptOlderSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptOlderSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotManifests.persist(corruptOlderSnapshot.getChecksumPath(), new SfvManifestImpl());
 
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, snapshotStore).persist().join();
@@ -276,7 +276,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
 
     // when - corrupting old snapshot and adding new valid snapshot
-    SnapshotChecksum.persist(olderSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotManifests.persist(olderSnapshot.getChecksumPath(), new SfvManifestImpl());
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, otherStore).persist().join();
 
@@ -294,7 +294,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
     final var corruptSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotManifests.persist(corruptSnapshot.getChecksumPath(), new SfvManifestImpl());
 
     // when
     snapshotStore.close();
@@ -311,7 +311,7 @@ public class FileBasedSnapshotStoreTest {
     // given
     final Map<String, Long> badChecksums = new HashMap<>();
     badChecksums.put(SNAPSHOT_CONTENT_FILE_NAME, 123L);
-    final var testChecksumProvider = new TestChecksumProvider(badChecksums);
+    final var testChecksumProvider = new TestSnapshotFileInfoProvider(badChecksums);
 
     // when
     final var store =
@@ -321,7 +321,7 @@ public class FileBasedSnapshotStoreTest {
     final var takenSnapshot = (FileBasedSnapshot) takeTransientSnapshot(1, store).persist().join();
 
     // then
-    final var persistedChecksums = SnapshotChecksum.read(takenSnapshot.getChecksumPath());
+    final var persistedChecksums = SnapshotManifests.read(takenSnapshot.getChecksumPath());
     assertThat(persistedChecksums.getChecksums().get(SNAPSHOT_CONTENT_FILE_NAME)).isEqualTo(123L);
   }
 
@@ -430,7 +430,7 @@ public class FileBasedSnapshotStoreTest {
             0,
             PARTITION_ID,
             receiverStorePath,
-            new TestChecksumProvider(fileChecksums),
+            new TestSnapshotFileInfoProvider(fileChecksums),
             new SimpleMeterRegistry());
     scheduler.submitActor(store);
 
@@ -454,7 +454,7 @@ public class FileBasedSnapshotStoreTest {
             0,
             PARTITION_ID,
             receiverStorePath,
-            new TestChecksumProvider(fileChecksums),
+            new TestSnapshotFileInfoProvider(fileChecksums),
             new SimpleMeterRegistry());
     scheduler.submitActor(restartedStore).join();
 
