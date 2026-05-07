@@ -103,12 +103,7 @@ jobs:
       - name: Generate dynamic CodeQL config
         id: generate
         run: |
-          PATHS_JSON=$(node .github/scripts/code-quality-ai/hotspots.js \
-            --jar "$CODE_MAAT_JAR" \
-            --since "90 days ago" \
-            --path-prefix "^zeebe/engine/" \
-            --top 50 \
-            --format json)
+          PATHS_JSON=$(tail -n +2 hotspots.tsv | awk -F'\t' '{print $4}' | jq -R . | jq -s .)
 
           if [ -z "$PATHS_JSON" ] || [ "$PATHS_JSON" = "[]" ]; then
             echo "No hotspots produced; falling back to module path." >&2
