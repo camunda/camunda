@@ -52,6 +52,13 @@ public class DbVariableState implements MutableVariableState {
   private final DbLong scopeKey;
   private final DbString variableName;
 
+  // (scope key) => (complete set of local variable names in that scope)
+  // New scopes are tracked from creation time, so removeAllVariables() can avoid a RocksDB
+  // prefix iterator and delete variables via point lookups only. Older data may still miss this
+  // entry, in which case we fall back to the original prefix-iteration path for correctness.
+  private final VariableNames variableNames = new VariableNames();
+  private final ColumnFamily<DbLong, VariableNames> variableNamesByScopeKeyColumnFamily;
+
   // (scope key) => (variable document state)
   // we need two separate wrapper to not interfere with get and put
   // see https://github.com/zeebe-io/zeebe/issues/1914
@@ -86,6 +93,13 @@ public class DbVariableState implements MutableVariableState {
             transactionContext,
             scopeKeyVariableNameKey,
             new VariableInstance());
+
+    variableNamesByScopeKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.VARIABLE_NAMES_BY_SCOPE_KEY,
+            transactionContext,
+            scopeKey,
+            variableNames);
 
     variableDocumentStateByScopeKeyColumnFamily =
         zeebeDb.createColumnFamily(
@@ -127,6 +141,14 @@ public class DbVariableState implements MutableVariableState {
     variableName.wrapBuffer(variableNameView);
 
     variablesColumnFamily.upsert(scopeKeyVariableNameKey, newVariable);
+    variableNamesByScopeKeyColumnFamily.update(
+        this.scopeKey,
+        () -> {
+          final var names = new VariableNames();
+          names.markIncomplete();
+          return names;
+        },
+        names -> names.addVariableName(variableNameView));
   }
 
   @Override
@@ -135,6 +157,9 @@ public class DbVariableState implements MutableVariableState {
     this.parentKey.set(parentKey);
 
     childParentColumnFamily.insert(this.childKey, this.parentKey);
+
+    scopeKey.wrapLong(childKey);
+    variableNamesByScopeKeyColumnFamily.insert(scopeKey, new VariableNames());
   }
 
   @Override
@@ -142,6 +167,7 @@ public class DbVariableState implements MutableVariableState {
     this.scopeKey.wrapLong(scopeKey);
 
     removeAllVariables(scopeKey);
+    variableNamesByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
 
     childKey.wrapLong(scopeKey);
     // TODO: Could be deleteExisting except for tests
@@ -150,11 +176,41 @@ public class DbVariableState implements MutableVariableState {
 
   @Override
   public void removeAllVariables(final long scopeKey) {
+    this.scopeKey.wrapLong(scopeKey);
+
+    final var variableNamesForScope =
+        variableNamesByScopeKeyColumnFamily.get(this.scopeKey, VariableNames::new);
+    if (variableNamesForScope != null && variableNamesForScope.isComplete()) {
+      for (final DirectBuffer variableNameBuffer : variableNamesForScope.getVariableNames()) {
+        variableName.wrapBuffer(variableNameBuffer);
+        variablesColumnFamily.deleteIfExists(scopeKeyVariableNameKey);
+      }
+
+      variableNamesByScopeKeyColumnFamily.update(
+          this.scopeKey,
+          names -> {
+            names.clear();
+            names.markComplete();
+          });
+      return;
+    }
+
     visitVariablesLocal(
         scopeKey,
         dbString -> true,
         (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
         () -> false);
+
+    if (variableNamesForScope != null) {
+      // The scope entry existed but was incomplete (e.g. data from before this index existed).
+      // After the fallback path removed everything, mark it complete and empty for future calls.
+      variableNamesByScopeKeyColumnFamily.update(
+          this.scopeKey,
+          names -> {
+            names.clear();
+            names.markComplete();
+          });
+    }
   }
 
   @Override
@@ -292,7 +348,9 @@ public class DbVariableState implements MutableVariableState {
 
   @Override
   public boolean isEmpty() {
-    return variablesColumnFamily.isEmpty() && childParentColumnFamily.isEmpty();
+    return variablesColumnFamily.isEmpty()
+        && childParentColumnFamily.isEmpty()
+        && variableNamesByScopeKeyColumnFamily.isEmpty();
   }
 
   @Override

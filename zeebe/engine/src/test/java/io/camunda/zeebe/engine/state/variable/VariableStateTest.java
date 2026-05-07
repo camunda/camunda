@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -292,6 +293,22 @@ public final class VariableStateTest {
   }
 
   @Test
+  public void shouldRemoveAllVariablesForScopeAfterUpdatingSameVariableMultipleTimes() {
+    // given
+    declareScope(parent);
+
+    setVariableLocal(parent, wrapString("var1"), asMsgPack("1"));
+    setVariableLocal(parent, wrapString("var1"), asMsgPack("2"));
+    setVariableLocal(parent, wrapString("var2"), asMsgPack("3"));
+
+    // when
+    variableState.removeAllVariables(parent);
+
+    // then
+    assertEquality(variableState.getVariablesLocalAsDocument(parent), "{}");
+  }
+
+  @Test
   public void shouldRemoveScope() {
     // given
     declareScope(parent);
@@ -308,6 +325,23 @@ public final class VariableStateTest {
     final DirectBuffer document = variableState.getVariablesAsDocument(child);
 
     assertEquality(document, "{}");
+  }
+
+  @Test
+  public void shouldRemoveVariableNamesIndexWhenRemovingScope() {
+    // given
+    declareScope(parent);
+    setVariableLocal(parent, wrapString("parentVar1"), asMsgPack("1"));
+
+    // when
+    variableState.removeScope(parent);
+
+    // then
+    assertThat(
+            ZEEBE_STATE_RULE
+                .getProcessingState()
+                .isEmpty(ZbColumnFamilies.VARIABLE_NAMES_BY_SCOPE_KEY))
+        .isTrue();
   }
 
   @Test

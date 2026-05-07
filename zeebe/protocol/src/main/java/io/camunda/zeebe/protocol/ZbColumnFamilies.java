@@ -276,7 +276,10 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   BACKUP_RANGES(141, PARTITION_LOCAL),
 
   // root process instance counter
-  ACTIVE_PROCESS_INSTANCE_COUNT(142, PARTITION_LOCAL);
+  ACTIVE_PROCESS_INSTANCE_COUNT(142, PARTITION_LOCAL),
+
+  // (scope key) => (local variable names in that scope)
+  VARIABLE_NAMES_BY_SCOPE_KEY(143, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
