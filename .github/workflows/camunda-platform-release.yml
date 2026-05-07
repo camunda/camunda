@@ -263,7 +263,7 @@ jobs:
             -P-autoFormat \
             ${PROFILE_FLAGS} \
             -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -DwaitMaxTime=${CENTRAL_WAIT_MAX_TIME} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\"" \
-            2>&1 | awk -v out="${DEPLOYMENT_ID_FILE}" '{print} /deploymentId:/{for(i=1;i<=NF;i++) if($i ~ /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/) {gsub(/[^0-9a-f-]/,"",$i); id=$i}} END{if(id) print id > out}'
+            2>&1 | awk -v out="${DEPLOYMENT_ID_FILE}" '{print; fflush()} /deploymentId:/{for(i=1;i<=NF;i++) if($i ~ /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/) {gsub(/[^0-9a-f-]/,"",$i); id=$i}} END{if(id) print id > out}'
 
           # Log the extracted deployment ID (the trap above handles writing to GITHUB_OUTPUT)
           if [[ -f "${DEPLOYMENT_ID_FILE}" ]]; then
