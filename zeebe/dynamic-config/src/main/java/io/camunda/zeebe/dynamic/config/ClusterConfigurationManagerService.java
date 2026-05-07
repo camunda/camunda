@@ -300,6 +300,7 @@ public final class ClusterConfigurationManagerService
     requestsHandler.setCamundaClient(camundaClient);
 
     if (isCoordinator) {
+      new BpmnAutoDeployer(camundaClient).deployAll();
       initClusterVariable();
     }
   }

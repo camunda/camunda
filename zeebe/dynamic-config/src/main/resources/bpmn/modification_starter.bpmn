@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1tu7rkp" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.44.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="cluster_modification_executor" name="Cluster Modification Executor" isExecutable="true">
+    <bpmn:sequenceFlow id="Flow_0it81hm" sourceRef="StartEvent_1" targetRef="Activity_0nqm2bx" />
+    <bpmn:callActivity id="Activity_0nqm2bx" name="Invoke Processor">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="=processor_id" propagateAllChildVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=camunda.vars.cluster.clusterConfiguration" target="currentClusterConfiguration" />
+          <zeebe:input source="=membersToAdd" target="membersToAdd" />
+          <zeebe:input source="=membersToRemove" target="membersToRemove" />
+          <zeebe:input source="=direction" target="direction" />
+          <zeebe:input source="=request_id" target="request_id" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0it81hm</bpmn:incoming>
+      <bpmn:outgoing>Flow_1diieq1</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="Event_13r8rej">
+      <bpmn:incoming>Flow_1diieq1</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1diieq1" sourceRef="Activity_0nqm2bx" targetRef="Event_13r8rej" />
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <zeebe:subscription correlationKey="=request_id" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_0it81hm</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1" messageRef="Message_0sf7vgm" />
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_0sf7vgm" name="cluster_modification" />
+  <bpmn:message id="Message_1n3l7f6" name="Message_1n3l7f6" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_0y187as">
+      <bpmndi:BPMNShape id="Event_13r8rej_di" bpmnElement="Event_13r8rej">
+        <dc:Bounds x="512" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_13nk7y8_di" bpmnElement="Activity_0nqm2bx">
+        <dc:Bounds x="290" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0mkwa3r_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="172" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0it81hm_di" bpmnElement="Flow_0it81hm">
+        <di:waypoint x="208" y="120" />
+        <di:waypoint x="290" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1diieq1_di" bpmnElement="Flow_1diieq1">
+        <di:waypoint x="390" y="120" />
+        <di:waypoint x="512" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

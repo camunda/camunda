@@ -116,6 +116,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-client-java</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
     </dependency>

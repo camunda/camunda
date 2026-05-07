@@ -27,6 +27,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -123,11 +124,31 @@ public class BackupRetention extends Actor {
   protected void onActorStarted() {
     LOG.debug("Retention scheduler started");
     metrics.register();
-    final var next =
-        retentionSchedule.nextExecution(Instant.ofEpochMilli(ActorClock.currentTimeMillis()));
-    LOG.debug("Scheduling next retention task in {} ", next);
-    metrics.recordNextExecution(next.get());
-    actor.runAt(next.get().toEpochMilli(), this::reschedulingTask);
+    // Self-scheduling is disabled — retention is now driven by the BPMN
+    // retention_cleanup_scheduler process. See RetentionTriggerJobWorker.
+  }
+
+  /**
+   * Triggers a single retention pass on the actor thread. Returns the list of unique checkpoint IDs
+   * whose {@code DELETE_BACKUP} commands were submitted on this pass — exposed so the BPMN-driven
+   * {@code retention-trigger} job worker can include them in the PI's variables.
+   */
+  public java.util.concurrent.CompletionStage<List<Long>> triggerRetention() {
+    final var future = new java.util.concurrent.CompletableFuture<List<Long>>();
+    actor.run(
+        () ->
+            performRetention()
+                .onComplete(
+                    (deletedIds, err) -> {
+                      metrics.recordLastExecution(
+                          Instant.ofEpochMilli(ActorClock.currentTimeMillis()));
+                      if (err != null) {
+                        future.completeExceptionally(err);
+                      } else {
+                        future.complete(deletedIds);
+                      }
+                    }));
+    return future;
   }
 
   @Override
@@ -155,8 +176,8 @@ public class BackupRetention extends Actor {
             });
   }
 
-  private ActorFuture<Void> performRetention() {
-    final ActorFuture<Void> retentionFuture = createFuture();
+  private ActorFuture<List<Long>> performRetention() {
+    final ActorFuture<List<Long>> retentionFuture = createFuture();
     final var partitionFutures =
         topologyManager.getTopology().getPartitions().stream()
             .parallel()
@@ -165,7 +186,7 @@ public class BackupRetention extends Actor {
                 future ->
                     future
                         .thenApply(this::logContext, this)
-                        .thenApply(this::writeDeleteCommands, this))
+                        .andThen(this::writeDeleteCommands, this))
             .collect(new ActorFutureCollector<>(this));
 
     partitionFutures.onComplete(
@@ -173,7 +194,11 @@ public class BackupRetention extends Actor {
           if (error != null) {
             retentionFuture.completeExceptionally(error);
           } else {
-            retentionFuture.complete(null);
+            final var aggregated = new ArrayList<Long>();
+            for (final var perPartition : futures) {
+              aggregated.addAll(perPartition);
+            }
+            retentionFuture.complete(aggregated);
           }
         });
     return retentionFuture;
@@ -284,10 +309,10 @@ public class BackupRetention extends Actor {
    * by a single {@code DELETE_BACKUP} command — the stream processor's post-commit task deletes all
    * copies via a wildcard query.
    */
-  private CompletableActorFuture<Void> writeDeleteCommands(final RetentionContext context) {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+  private CompletableActorFuture<List<Long>> writeDeleteCommands(final RetentionContext context) {
+    final CompletableActorFuture<List<Long>> future = new CompletableActorFuture<>();
     if (context.deletableBackups.isEmpty()) {
-      future.complete(null);
+      future.complete(List.of());
       return future;
     }
 
@@ -297,6 +322,7 @@ public class BackupRetention extends Actor {
             .mapToLong(BackupIdentifier::checkpointId)
             .distinct()
             .toArray();
+    final List<Long> deletedIds = Arrays.stream(uniqueCheckpointIds).boxed().toList();
 
     LOG.debug(
         "Sending {} DELETE_BACKUP commands for partition {}",
@@ -331,10 +357,12 @@ public class BackupRetention extends Actor {
                     "Failed to send DELETE_BACKUP commands for partition {}",
                     context.partitionId,
                     error);
+                future.completeExceptionally(error);
+              } else {
+                future.complete(deletedIds);
               }
             },
-            actor)
-        .whenCompleteAsync(future, actor);
+            actor);
     return future;
   }
 
