@@ -107,13 +107,15 @@ function extractText(response) {
 }
 
 function parseClassification(rawText) {
-  const cleaned = rawText
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```\s*$/i, "")
-    .trim();
+  // Claude sometimes wraps the JSON in prose or markdown; extract the first
+  // {...} object anywhere in the response.
+  const match = rawText.match(/{[\s\S]*}/);
+  if (!match) {
+    throw new Error(`Claude returned non-JSON classification: ${rawText}`);
+  }
   let parsed;
   try {
-    parsed = JSON.parse(cleaned);
+    parsed = JSON.parse(match[0]);
   } catch {
     throw new Error(`Claude returned non-JSON classification: ${rawText}`);
   }
