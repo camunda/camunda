@@ -22,28 +22,28 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Layered ZeebeDb with an active in-memory cache in front of the persistent RocksDB-backed state.
  *
- * <p>Thread-safety is provided by a {@link ReadWriteLock}:
+ * <p>Thread-safety between the engine thread and the snapshot-director thread is provided by a
+ * {@link ReadWriteLock} that guards only the snapshot/close coordination path:
  *
  * <ul>
- *   <li><b>Read lock</b> — held by tombstone lookups, snapshot captures, and column-family
- *       registration reads. Multiple readers may run concurrently.
- *   <li><b>Write lock</b> — held by transaction commits and tombstone mutations. Exclusive with
- *       respect to both readers and other writers.
+ *   <li><b>Write lock</b> — held by {@link #commitActiveAndTombstones} and {@link #close()}.
+ *   <li><b>Read lock</b> — held by {@link #createSnapshot} for the entire flush + checkpoint.
  * </ul>
  *
- * This means the snapshot-flush thread (read lock for capture) and the engine thread (write lock
- * for commit) can never observe a half-committed state.
+ * <p>Hot-path operations ({@link #isCommittedTombstoned}, column-family get/put) do <b>not</b>
+ * acquire any lock. Tombstone reads are safe because {@code committedTombstones} is a {@link
+ * java.util.concurrent.ConcurrentSkipListMap}.
  */
 public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
     implements ZeebeDb<ColumnFamilyType> {
@@ -51,9 +51,10 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
   private final ZeebeDb<ColumnFamilyType> activeDb;
   private final ZeebeDb<ColumnFamilyType> persistentDb;
   private final ConsistencyChecksSettings consistencyChecksSettings;
-  private final NavigableSet<byte[]> committedTombstones = new TreeSet<>(Arrays::compareUnsigned);
+  private final NavigableSet<byte[]> committedTombstones =
+      new java.util.concurrent.ConcurrentSkipListSet<>(Arrays::compareUnsigned);
   private final Map<RegisteredColumnFamilyKey, RegisteredColumnFamily> registeredColumnFamilies =
-      new HashMap<>();
+      new ConcurrentHashMap<>();
 
   /**
    * Guards committed entries (via InMemoryZeebeDb) and committed tombstones. The lock ordering is
@@ -79,21 +80,11 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
   }
 
   boolean isCommittedTombstoned(final byte[] rawKey) {
-    stateLock.readLock().lock();
-    try {
-      return committedTombstones.contains(rawKey);
-    } finally {
-      stateLock.readLock().unlock();
-    }
+    return committedTombstones.contains(rawKey);
   }
 
   NavigableSet<byte[]> snapshotCommittedTombstones() {
-    stateLock.readLock().lock();
-    try {
-      return snapshotCommittedTombstonesUnlocked();
-    } finally {
-      stateLock.readLock().unlock();
-    }
+    return snapshotCommittedTombstonesUnlocked();
   }
 
   /**
@@ -132,9 +123,6 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
       stateLock.readLock().unlock();
     }
   }
-
-  record FlushSnapshot(
-      ArrayList<Map.Entry<byte[], DbValue>> entries, NavigableSet<byte[]> tombstones) {}
 
   @Override
   public <KeyType extends DbKey, ValueType extends DbValue>
@@ -237,22 +225,13 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
     }
   }
 
-  Iterable<RegisteredColumnFamily> registeredColumnFamilies() {
-    stateLock.readLock().lock();
-    try {
-      return registeredColumnFamilies.values().stream().toList();
-    } finally {
-      stateLock.readLock().unlock();
-    }
-  }
-
-  // ---- Internal helpers ----
-
   private NavigableSet<byte[]> snapshotCommittedTombstonesUnlocked() {
     final NavigableSet<byte[]> snapshot = new TreeSet<>(Arrays::compareUnsigned);
     committedTombstones.forEach(key -> snapshot.add(Arrays.copyOf(key, key.length)));
     return snapshot;
   }
+
+  // ---- Internal helpers ----
 
   private void applyCommittedTombstoneChangesUnlocked(
       final NavigableSet<byte[]> additions, final NavigableSet<byte[]> removals) {
@@ -270,8 +249,7 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
       final KeyType keyInstance,
       final ValueType valueInstance,
       final ColumnFamily<KeyType, ValueType> columnFamilyInstance) {
-    stateLock.writeLock().lock();
-    try {
+    synchronized (registeredColumnFamilies) {
       registeredColumnFamilies.putIfAbsent(
           new RegisteredColumnFamilyKey(
               columnFamily.getDeclaringClass(),
@@ -283,10 +261,11 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
               keyInstance.getClass(),
               valueInstance.getClass(),
               (LayeredColumnFamily<?, ?>) columnFamilyInstance));
-    } finally {
-      stateLock.writeLock().unlock();
     }
   }
+
+  record FlushSnapshot(
+      ArrayList<Map.Entry<byte[], DbValue>> entries, NavigableSet<byte[]> tombstones) {}
 
   record RegisteredColumnFamilyKey(
       Class<?> columnFamilyEnumType,
