@@ -18,6 +18,8 @@ import fs from "node:fs";
 
 import {
   addLabels,
+  findExistingByToken,
+  findingIdToken,
   lookupCodeowners,
   openIssue,
 } from "./github_helpers.js";
@@ -37,11 +39,11 @@ function severityLabel(finding) {
   return "ai-triage:auto-detected";
 }
 
-function buildIssueTitle(finding) {
+function buildIssueTitle(finding, token) {
   const file = finding.file ?? "(unknown file)";
   const summary = (finding.message || finding.rule || "").split("\n")[0];
   const trimmed = summary.length > 80 ? summary.slice(0, 77) + "..." : summary;
-  return `[ai-triage] ${finding.rule}: ${trimmed} — ${file}`;
+  return `[ai-triage] ${finding.rule}: ${trimmed} — ${file} [${token}]`;
 }
 
 function buildIssueBody(finding) {
@@ -90,9 +92,11 @@ function ownersToAssignees(owners) {
 }
 
 function buildIssuePayload(finding, repoRoot) {
+  const token = findingIdToken(finding.finding_id);
   return {
     finding_id: finding.finding_id,
-    title: buildIssueTitle(finding),
+    token,
+    title: buildIssueTitle(finding, token),
     body: buildIssueBody(finding),
     labels: [severityLabel(finding)],
     assignees: ownersToAssignees(lookupCodeowners(finding.file, repoRoot)),
@@ -104,6 +108,17 @@ async function processFinding(repo, finding, repoRoot, dryRun) {
 
   if (dryRun) {
     return { status: "dry_run", preview: payload };
+  }
+
+  // Skip if an issue/PR with this finding's token already exists in any
+  // state (open or closed) — someone has already addressed it or chose
+  // not to.
+  const existing = await findExistingByToken(repo, payload.token);
+  if (existing) {
+    return {
+      status: "skipped",
+      reason: `existing #${existing.number} (${existing.state}): ${existing.html_url}`,
+    };
   }
 
   const issueNumber = await openIssue(repo, {

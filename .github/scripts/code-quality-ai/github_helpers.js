@@ -5,6 +5,7 @@
  * Authentication uses the GITHUB_TOKEN environment variable, which is
  * provided automatically when running inside a GitHub Actions workflow.
  */
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -24,6 +25,40 @@ function splitRepo(repo) {
     throw new Error(`Invalid repo "${repo}", expected "owner/name".`);
   }
   return { owner, repo: name };
+}
+
+/**
+ * Stable, search-friendly token derived from a finding_id. Embedded in
+ * issue/PR titles so we can detect duplicates without needing to store
+ * state across runs. The same finding_id always yields the same token.
+ *
+ * @param {string} findingId
+ * @returns {string} Token of the form `ai-fid-<12 hex chars>`.
+ */
+export function findingIdToken(findingId) {
+  const hash = crypto.createHash("sha256").update(findingId).digest("hex");
+  return `ai-fid-${hash.slice(0, 12)}`;
+}
+
+/**
+ * Search the repo for an existing issue or PR whose title contains the
+ * given finding-id token. Returns the first match (any state — open or
+ * closed) or null. PRs are issues at the API level, so a single search
+ * covers both tracks.
+ *
+ * @param {string} repo "owner/name"
+ * @param {string} token Token from `findingIdToken`.
+ * @returns {Promise<{number: number, state: string, html_url: string, pull_request?: object} | null>}
+ */
+export async function findExistingByToken(repo, token) {
+  const { owner, repo: name } = splitRepo(repo);
+  const q = `repo:${owner}/${name} in:title "${token}"`;
+  const resp = await octokit().search.issuesAndPullRequests({
+    q,
+    per_page: 5,
+  });
+  const items = resp.data.items ?? [];
+  return items.length > 0 ? items[0] : null;
 }
 
 /**

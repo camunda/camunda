@@ -27,6 +27,8 @@ import { AnthropicBedrock } from "@anthropic-ai/bedrock-sdk";
 
 import {
   addLabels,
+  findExistingByToken,
+  findingIdToken,
   lookupCodeowners,
   openPr,
   requestReviewers,
@@ -259,6 +261,22 @@ async function processFinding(finding, opts) {
     return { status: "skipped", reason: "file does not exist" };
   }
 
+  const token = findingIdToken(finding.finding_id);
+
+  // Dedupe: in real-run mode, skip if an issue/PR with this finding's
+  // token already exists in any state. Done before the Bedrock call so
+  // duplicates don't burn AI tokens. Dry-run skips this check (no
+  // GITHUB_TOKEN required) and always shows the proposed content.
+  if (!dryRun) {
+    const existing = await findExistingByToken(repo, token);
+    if (existing) {
+      return {
+        status: "skipped",
+        reason: `existing #${existing.number} (${existing.state}): ${existing.html_url}`,
+      };
+    }
+  }
+
   let fix;
   try {
     fix = await generateFix(finding, repoRoot);
@@ -271,6 +289,8 @@ async function processFinding(finding, opts) {
   if (typeof fix.old_string !== "string" || typeof fix.new_string !== "string") {
     return { status: "skipped", reason: "AI response missing old_string/new_string" };
   }
+
+  const prTitle = `${fix.summary} [${token}]`;
 
   // Dry-run: validate the apply step (old_string unique) but don't touch
   // the working tree, run Maven, push, or hit GitHub. Print everything
@@ -290,7 +310,8 @@ async function processFinding(finding, opts) {
       status: "dry_run",
       preview: {
         finding_id: finding.finding_id,
-        title: fix.summary,
+        token,
+        title: prTitle,
         branch,
         labels: ["ai-fix:auto-pr"],
         reviewers: { users: userReviewers, teams: teamReviewers },
@@ -336,7 +357,7 @@ async function processFinding(finding, opts) {
   );
 
   const prNumber = await openPr(repo, {
-    title: fix.summary,
+    title: prTitle,
     body: buildPrBody(finding, fix),
     head: branch,
     base: "main",
