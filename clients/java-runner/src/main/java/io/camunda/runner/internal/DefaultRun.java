@@ -1,0 +1,179 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.runner.internal;
+
+import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.runner.Cluster;
+import io.camunda.runner.Run;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/** Default {@link Run} implementation. */
+public final class DefaultRun implements Run {
+
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultRun.class);
+  private static final Duration POLL_INTERVAL = Duration.ofMillis(500);
+
+  private final String runId;
+  private final String processId;
+  private final long processDefinitionKey;
+  private final Instant startedAt;
+  private final List<Long> instances;
+  private final Cluster cluster;
+  private final WorkerRegistration workers;
+  private final AtomicBoolean closed = new AtomicBoolean();
+  private final Thread shutdownHook;
+
+  public DefaultRun(
+      final String runId,
+      final String processId,
+      final long processDefinitionKey,
+      final Instant startedAt,
+      final List<Long> instances,
+      final Cluster cluster,
+      final WorkerRegistration workers) {
+    this.runId = runId;
+    this.processId = processId;
+    this.processDefinitionKey = processDefinitionKey;
+    this.startedAt = startedAt;
+    this.instances = List.copyOf(instances);
+    this.cluster = cluster;
+    this.workers = workers;
+    this.shutdownHook = new Thread(this::closeQuietly, "livebpmn-shutdown-" + runId);
+    Runtime.getRuntime().addShutdownHook(shutdownHook);
+  }
+
+  @Override
+  public String runId() {
+    return runId;
+  }
+
+  @Override
+  public String processId() {
+    return processId;
+  }
+
+  @Override
+  public long processDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  @Override
+  public Instant startedAt() {
+    return startedAt;
+  }
+
+  @Override
+  public List<Long> instances() {
+    return instances;
+  }
+
+  @Override
+  public Map<String, Long> workersHandled() {
+    return workers.handledSnapshot();
+  }
+
+  @Override
+  public void await(final Duration timeout) {
+    final long deadline = System.nanoTime() + timeout.toNanos();
+    final Set<Long> remaining = new HashSet<>(instances);
+    while (!remaining.isEmpty()) {
+      pollOnce(remaining);
+      if (remaining.isEmpty()) {
+        return;
+      }
+      if (System.nanoTime() >= deadline) {
+        LOG.warn(
+            "await timed out: {} instance(s) still active for runId={}", remaining.size(), runId);
+        return;
+      }
+      LockSupport.parkNanos(POLL_INTERVAL.toNanos());
+    }
+  }
+
+  private void pollOnce(final Set<Long> remaining) {
+    try {
+      final SearchResponse<ProcessInstance> response =
+          cluster
+              .client()
+              .newProcessInstanceSearchRequest()
+              .filter(f -> f.processInstanceKey(p -> p.in(List.copyOf(remaining))))
+              .send()
+              .join();
+      for (final ProcessInstance pi : response.items()) {
+        if (isTerminal(pi)) {
+          remaining.remove(pi.getProcessInstanceKey());
+        }
+      }
+    } catch (final Exception e) {
+      // secondary store may be eventually consistent; tolerate transient errors.
+      LOG.debug("process-instance poll failed: {}", e.getMessage());
+    }
+  }
+
+  private static boolean isTerminal(final ProcessInstance pi) {
+    final ProcessInstanceState state = pi.getState();
+    if (state == ProcessInstanceState.COMPLETED || state == ProcessInstanceState.TERMINATED) {
+      return true;
+    }
+    return Boolean.TRUE.equals(pi.getHasIncident());
+  }
+
+  @Override
+  public void close() {
+    if (!closed.compareAndSet(false, true)) {
+      return;
+    }
+    LOG.info("shutdown hook closing workers for runId={}", runId);
+    workers.close();
+    if (cluster.ownsClient()) {
+      try {
+        cluster.close();
+      } catch (final Exception e) {
+        LOG.warn("error closing cluster", e);
+      }
+    }
+    try {
+      Runtime.getRuntime().removeShutdownHook(shutdownHook);
+    } catch (final IllegalStateException ignored) {
+      // JVM already shutting down
+    }
+  }
+
+  private void closeQuietly() {
+    try {
+      close();
+    } catch (final Exception ignored) {
+      // shutdown path
+    }
+  }
+
+  /** Used when the model has no bindings — empty handled map should still surface. */
+  public static Map<String, Long> emptyHandled() {
+    return Collections.emptyMap();
+  }
+}

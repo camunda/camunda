@@ -16,6 +16,8 @@
 package io.camunda.runner;
 
 import io.camunda.runner.internal.BoundHandler;
+import io.camunda.runner.internal.LocalContainerCluster;
+import io.camunda.runner.internal.RunnerPipeline;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowElementBuilder;
@@ -73,6 +75,27 @@ public final class LiveBpmn {
 
   public static LiveBpmn of(final BpmnModelInstance existingModel) {
     return new LiveBpmn(existingModel);
+  }
+
+  /** Returns a fresh {@link ClusterFactory} for building {@link Cluster} specs. */
+  public static ClusterFactory cluster() {
+    return new ClusterFactory();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Run triggers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Runs {@code n} instances against a freshly-booted Testcontainer (smart default for Phase 2).
+   */
+  public Run run(final int n) {
+    return run(n, new LocalContainerCluster());
+  }
+
+  /** Runs {@code n} instances against the supplied {@link Cluster}. */
+  public Run run(final int n, final Cluster cluster) {
+    return RunnerPipeline.execute(done(), bindings, n, cluster);
   }
 
   // ---------------------------------------------------------------------------
