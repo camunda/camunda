@@ -6,9 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {createFileRoute, Outlet, redirect} from '@tanstack/react-router';
+import {queries} from '#/modules/queries';
 
 export const Route = createFileRoute('/_auth')({
+	beforeLoad: async ({context, location}) => {
+		try {
+			await context.queryClient.ensureQueryData(queries.currentUser);
+		} catch {
+			throw redirect({to: '/login', search: {redirect: location.href}});
+		}
+	},
 	component: RouteComponent,
 });
 

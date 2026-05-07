@@ -6,9 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {createFileRoute, isRedirect, redirect} from '@tanstack/react-router';
+import {z} from 'zod';
+import {queries} from '#/modules/queries';
 import {Login} from '../pages/login';
 
+const searchSchema = z.object({
+	redirect: z.string().optional(),
+});
+
 export const Route = createFileRoute('/login')({
+	validateSearch: searchSchema.parse,
+	beforeLoad: async ({context, search}) => {
+		try {
+			await context.queryClient.ensureQueryData(queries.currentUser);
+			throw redirect({to: (search.redirect ?? '/') as never});
+		} catch (e) {
+			if (isRedirect(e)) throw e;
+		}
+	},
 	component: Login,
 });
