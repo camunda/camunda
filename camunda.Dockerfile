@@ -79,7 +79,7 @@ RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends unzip zip && \
     rm -rf /var/lib/apt/lists/*
 
-ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
+ARG DISTBALL="dist/build/distributions/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} camunda.tar.gz
 
 RUN mkdir camunda-zeebe && \
