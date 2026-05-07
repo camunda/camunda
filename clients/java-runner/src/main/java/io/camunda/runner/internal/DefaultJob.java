@@ -77,6 +77,11 @@ public final class DefaultJob implements Job {
   }
 
   @Override
+  public ActivatedJob raw() {
+    return activatedJob;
+  }
+
+  @Override
   public void complete() {
     markResolved();
     client.newCompleteCommand(activatedJob).send().join();

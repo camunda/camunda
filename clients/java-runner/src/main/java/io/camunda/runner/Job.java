@@ -56,6 +56,13 @@ public interface Job {
 
   void fail(String reason, int retries);
 
+  /**
+   * Escape hatch onto the underlying SDK record. Use when you need fields LiveBpmn doesn't wrap —
+   * e.g. user-task metadata via {@code job.raw().getUserTask().getUserTaskKey()}, or the raw
+   * variables payload, or the deadline. Never null.
+   */
+  ActivatedJob raw();
+
   /** Default factory used by the runner adapter and by tests. */
   static Job of(final JobClient client, final ActivatedJob activatedJob) {
     return new DefaultJob(client, activatedJob);
