@@ -10,6 +10,9 @@ name: Code Quality AI Pipeline
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feat/ai-code-quality-pipeline
   # Nightly schedule disabled while the pipeline is under team review.
   # Re-enable by uncommenting the block below once the scaffold is approved.
   # schedule:
