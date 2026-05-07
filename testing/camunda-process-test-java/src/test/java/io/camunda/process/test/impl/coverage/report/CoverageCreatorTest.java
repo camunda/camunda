@@ -116,8 +116,6 @@ public class CoverageCreatorTest {
           .setProcessDefinitionId(PROCESS_DEFINITION_ID)
           .build();
 
-  @Mock private CamundaDataSource dataSource;
-
   // ── Decision constants ────────────────────────────────────────────────────
 
   private static final String DECISION_DEFINITION_ID = "test-decision";
@@ -155,6 +153,8 @@ public class CoverageCreatorTest {
           + "    </decisionTable>"
           + "  </decision>"
           + "</definitions>";
+
+  @Mock private CamundaDataSource dataSource;
 
   private DecisionModel createDecisionModel() {
     final DecisionDefinition decisionDefinition = mock(DecisionDefinition.class);
