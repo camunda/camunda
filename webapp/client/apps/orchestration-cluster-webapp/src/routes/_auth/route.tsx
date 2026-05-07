@@ -8,6 +8,7 @@
 
 import {createFileRoute, Outlet, redirect} from '@tanstack/react-router';
 import {queries} from '#/modules/queries';
+import {SessionWatcher} from '../../modules/auth/components/SessionWatcher';
 
 export const Route = createFileRoute('/_auth')({
 	beforeLoad: async ({context, location}) => {
@@ -21,5 +22,10 @@ export const Route = createFileRoute('/_auth')({
 });
 
 function RouteComponent() {
-	return <Outlet />;
+	return (
+		<>
+			<SessionWatcher />
+			<Outlet />
+		</>
+	);
 }
