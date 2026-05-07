@@ -79,31 +79,28 @@ public final class DefaultRun implements Run {
   }
 
   /**
-   * Opens the {@link #operateUrl()} in the default browser if a desktop is available. Disable by
-   * setting the system property {@code livebpmn.openOperate=false}. Falls back to a clear log line
-   * if no browser can be opened (headless server, Linux without xdg-open, etc.).
+   * Always logs the {@link #operateUrl()}. Optionally also opens it in the default browser when the
+   * system property {@code livebpmn.openOperate=true} is set (default: log only). Headless
+   * environments and platforms without a {@link Desktop.Action#BROWSE} action fall back to logging.
    *
-   * <p>Only the SDK client is created/used here — the cluster itself is not affected. Calling this
-   * does not deploy, redeploy, or modify the broker in any way.
+   * <p>Only the SDK client is touched here — the cluster itself is not affected.
    */
   private void maybeOpenBrowser() {
-    if (!Boolean.parseBoolean(System.getProperty("livebpmn.openOperate", "true"))) {
+    final String url = operateUrl();
+    LOG.info("Operate: {}", url);
+    if (!Boolean.parseBoolean(System.getProperty("livebpmn.openOperate", "false"))) {
       return;
     }
-    final String url = operateUrl();
     try {
       if (!GraphicsEnvironment.isHeadless()
           && Desktop.isDesktopSupported()
           && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
         Desktop.getDesktop().browse(URI.create(url));
-        LOG.info("opened Operate in browser: {}", url);
-        return;
       }
     } catch (final Exception e) {
       LOG.debug(
           "could not auto-open browser ({}): {}", e.getClass().getSimpleName(), e.getMessage());
     }
-    LOG.info("Operate (paste in browser): {}", url);
   }
 
   @Override
