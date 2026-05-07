@@ -62,6 +62,9 @@ const Paths = {
   batchOperation(batchOperationKey: string | null = ':batchOperationKey') {
     return `/batch-operations/${batchOperationKey}`;
   },
+  notebook(id: string = ':id') {
+    return `/notebooks/${id}`;
+  },
 } as const;
 
 function getRelativeProcessInstancePathHandler(path: string) {

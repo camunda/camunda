@@ -1,0 +1,12 @@
+- [Notebook LLM transport](orchestrator/project_notebook_llm_transport.md) — browser-direct to Anthropic, key in gitignored .env.local, no backend proxy
+- [Notebook LLM model defaults](orchestrator/project_notebook_llm_model.md) — Sonnet 4.5 + single-shot + tool-use + curated endpoint cheat-sheet, all in one swappable config
+- [Notebook endpoint policy](orchestrator/project_notebook_endpoint_policy.md) — no allowlist, no confirm modals, hackday risk accepted; queries run on render, actions on click
+- [Notebook config validation](orchestrator/project_notebook_validation.md) — Zod-validate columns/endpoint, one-shot LLM retry with error feedback, then surface user error
+- [Notebook widget architecture](orchestrator/project_notebook_widget_arch.md) — registry/dispatch in WidgetRenderer; types: table/bpmn/metric/action-panel; existing Diagram is reusable
+- [Notebook charts](orchestrator/project_notebook_charts.md) — Carbon Charts (bar/line/donut), isolated to ChartWidget.tsx for future shadcn migration; needs dep approval
+- [Notebook detail widget](orchestrator/project_notebook_detail_widget.md) — single-entity card via StructuredList; introduces query.pathParams for GET-by-id
+- [Notebook polling](orchestrator/project_notebook_polling.md) — LLM-controlled refreshMs via TanStack Query refetchInterval, plus manual refresh button; clamp [2s,5min]
+- [Notebook persistence](orchestrator/project_notebook_persistence.md) — localStorage single-notebook at /notebooks (no :id), versioned key, debounced writes
+- [Notebook polish bar](orchestrator/project_notebook_polish_bar.md) — "mindblowing super pretty" is a first-class demo requirement; never cut appear animation, prompt input polish, or empty state
+- [Notebook demo script & multi-widget](orchestrator/project_notebook_demo_script.md) — Script A' Monday-morning-view, LLM returns array of 1+ configs, staggered cascade animation
+- [Notebook MVP scope](orchestrator/project_notebook_mvp_scope.md) — overrides earlier phase plan; ship route+prompt+LLM+metric+table+localStorage in ~3.5h, iterate from there
