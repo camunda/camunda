@@ -11,7 +11,7 @@ import static java.time.temporal.ChronoUnit.MILLIS;
 
 import io.camunda.security.api.context.CamundaAuthenticationHolder;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.time.Duration;

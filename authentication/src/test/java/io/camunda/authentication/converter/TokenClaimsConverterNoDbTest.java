@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.authentication.service.NoDBMembershipService;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import java.util.Map;

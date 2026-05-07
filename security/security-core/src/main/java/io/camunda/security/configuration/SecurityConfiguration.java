@@ -7,6 +7,7 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import java.util.regex.Pattern;
 
@@ -71,7 +72,7 @@ public class SecurityConfiguration {
   }
 
   public boolean isApiProtected() {
-    return !authentication.getUnprotectedApi();
+    return !authentication.isUnprotectedApi();
   }
 
   public SaasConfiguration getSaas() {
