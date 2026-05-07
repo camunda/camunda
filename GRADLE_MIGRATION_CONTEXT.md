@@ -29,6 +29,7 @@ Run Gradle in parallel with Maven for faster builds on the Camunda monorepo (~12
 ## Accomplished
 
 ### Completed (prior sessions)
+
 1. Removed init script (`gradle/init.d/fix-jakarta-json.gradle`) — eliminated `eachDependency` callback
 2. Centralized repositories in `settings.gradle.kts` with content filters
 3. Made `mavenLocal()` conditional (`-PuseMavenLocal`)
@@ -38,6 +39,7 @@ Run Gradle in parallel with Maven for faster builds on the Camunda monorepo (~12
 7. Replaced all Spring/Spring Boot `.x1` references in 32 build files with non-x1 equivalents
 
 ### Completed (recent sessions)
+
 8. **Removed all Spring/Spring Boot x1 entries** from `gradle/libs.versions.toml` (10 version entries + 10 library entries)
 9. **Ran sync script** — updated 10 versions: spring-boot core `3.5.10→4.0.2`, spring-framework `6.2.15→7.0.3`, spring-boot-test `4.0.0→4.0.2`
 10. **Added new Spring Boot 4.x modules to TOML**: `spring-boot-health`, `spring-boot-security`, `spring-boot-freemarker`, `spring-boot-webmvc`, `spring-boot-jackson2`, `spring-boot-hibernate`, `spring-boot-jdbc`, `spring-boot-webmvc-test`, `spring-boot-webtestclient` (versions + libraries all at 4.0.2)
@@ -67,9 +69,11 @@ Run Gradle in parallel with Maven for faster builds on the Camunda monorepo (~12
 25. **Created `zeebe-test-classpath-deps.md`** to track test-jar dependencies from Maven for review and to keep Gradle aligned
 
 ### In Progress — Where We Left Off
+
 - **`:camunda-zeebe:compileJava` was building** when the session was interrupted. The 3 OpenAPI generation tasks were added to `dist/build.gradle.kts` but the build was not yet verified. Need to run `./gradlew :camunda-zeebe:compileJava` (or full `./gradlew build -x test`) to confirm it passes and find the next errors.
 
 ### Not Yet Done
+
 - Verify `dist` OpenAPI generation compiles correctly
 - Fix any remaining compilation errors that surface from `./gradlew build -x test`
 - Other `-x1` duplicates still exist in TOML: `jakarta-servlet-x1`, `junit-jupiter-*-x1`, `junit-platform-commons-x1`, `junit-vintage-x1`, `testcontainers-junit-jupiter-x1`
@@ -78,6 +82,7 @@ Run Gradle in parallel with Maven for faster builds on the Camunda monorepo (~12
 ## Relevant files / directories
 
 ### Modified in recent sessions
+
 - `/home/carlosana/workspace/camunda/camunda/gradle/libs.versions.toml` — Removed Spring x1 entries, added spring-boot-health/security/freemarker/webmvc/jackson2/hibernate/jdbc/webmvc-test/webtestclient, versions synced to 4.0.2/7.0.3
 - `/home/carlosana/workspace/camunda/camunda/buildSrc/src/main/kotlin/buildlogic.openapi-spring-conventions.gradle.kts` — Added `"models" to ""` to globalProperties, `"useSpringBoot3" to "true"` to configOptions, `importMappings` for ElementInstanceKey, `"ElementInstanceKey" to "String"` type mapping
 - `/home/carlosana/workspace/camunda/camunda/gateways/gateway-model/build.gradle.kts` — Added `simple` OpenAPI generation task with full type mappings from Maven, `"useSpringBoot3" to "true"`, `importMappings`, `"ElementInstanceKey" to "String"` type mapping, spring-web dep
@@ -92,6 +97,7 @@ Run Gradle in parallel with Maven for faster builds on the Camunda monorepo (~12
 - `/home/carlosana/workspace/camunda/camunda/configuration/build.gradle.kts` — Added dynamic-node-id-provider project dep
 
 ### Key reference files (Maven POMs to consult for dep mismatches)
+
 - `/home/carlosana/workspace/camunda/camunda/parent/pom.xml` — Maven parent POM (Spring 7.0.3, Spring Boot 4.0.2, has `<useSpringBoot3>true</useSpringBoot3>` and `<sourceFolder>src/main</sourceFolder>` in openapi-generator config)
 - `/home/carlosana/workspace/camunda/camunda/bom/pom.xml` — Maven BOM POM
 - `/home/carlosana/workspace/camunda/camunda/optimize/pom.xml` — Has `<project.previousVersion>8.8.0</project.previousVersion>`
@@ -100,11 +106,13 @@ Run Gradle in parallel with Maven for faster builds on the Camunda monorepo (~12
 - `/home/carlosana/workspace/camunda/camunda/dist/pom.xml` — 3 OpenAPI generator executions (backups, cluster, exporter), git-commit-id plugin, log4j annotation processor
 
 ### Convention plugins
+
 - `/home/carlosana/workspace/camunda/camunda/buildSrc/src/main/kotlin/buildlogic.openapi-spring-conventions.gradle.kts` — OpenAPI spring model generation (modified)
 - `/home/carlosana/workspace/camunda/camunda/buildSrc/src/main/kotlin/buildlogic.openapi-java-client-conventions.gradle.kts` — Working reference for OpenAPI client generation
 - `/home/carlosana/workspace/camunda/camunda/buildSrc/src/main/kotlin/buildlogic.java-conventions.gradle.kts` — Base Java conventions
 
 ### Other relevant files
+
 - `/home/carlosana/workspace/camunda/camunda/settings.gradle.kts` — Centralized repos + content filters
 - `/home/carlosana/workspace/camunda/camunda/sync-maven-to-gradle-versions.py` — Version sync script
 - `/home/carlosana/workspace/camunda/camunda/gradle.properties` — Has `org.gradle.configuration-cache=true`
@@ -124,6 +132,7 @@ Run Gradle in parallel with Maven for faster builds on the Camunda monorepo (~12
 ## Key patterns
 
 ### Adding a new Spring Boot 4.x module to TOML
+
 ```toml
 # In [versions] section (alphabetical order):
 org-springframework-boot-spring-boot-MODULENAME = "4.0.2"
@@ -133,12 +142,14 @@ org-springframework-boot-spring-boot-MODULENAME = { module = "org.springframewor
 ```
 
 ### Referencing in build.gradle.kts
+
 ```kotlin
 api(libs.org.springframework.boot.spring.boot.MODULENAME)
 // dots in TOML key become dots in accessor
 ```
 
 ### Adding OpenAPI generation (multiple executions)
+
 ```kotlin
 val openApiGenerateXxx by tasks.registering(org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
     generatorName.set("spring")
@@ -154,6 +165,7 @@ tasks.named("compileJava") { dependsOn(openApiGenerateXxx) }
 ```
 
 ### Template generation (replacing Maven templating-maven-plugin)
+
 ```kotlin
 val generateVersionJava by tasks.registering(Sync::class) {
     from("src/main/java-templates")
@@ -163,3 +175,4 @@ val generateVersionJava by tasks.registering(Sync::class) {
 sourceSets { main { java { srcDir("${project.layout.buildDirectory.get()}/generated/java-templates") } } }
 tasks.named("compileJava") { dependsOn(generateVersionJava) }
 ```
+
