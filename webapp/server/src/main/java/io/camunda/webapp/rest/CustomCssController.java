@@ -43,7 +43,7 @@ public class CustomCssController {
     try {
       customCssContent = resource.getContentAsString(StandardCharsets.UTF_8);
     } catch (final IOException e) {
-      LOG.error("Failed to read custom css file {}", CLASSPATH_LOCATION, e);
+      LOG.warn("Failed to read custom css file {}, custom styles disabled", CLASSPATH_LOCATION, e);
       customCssContent = "";
     }
   }
