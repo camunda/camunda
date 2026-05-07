@@ -112,6 +112,24 @@ final class OpensearchExporterTest {
   }
 
   @Test
+  void shouldCancelScheduledFlushTaskOnClose() {
+    // given
+    final var exporter = new OpensearchExporter();
+    exporter.configure(context);
+    exporter.open(controller);
+
+    final var tasks = controller.getScheduledTasks();
+    final var flushTask = tasks.getLast();
+    assertThat(flushTask.isCanceled()).isEqualTo(false);
+
+    // when
+    exporter.close();
+
+    // then
+    assertThat(flushTask.isCanceled()).isEqualTo(true);
+  }
+
+  @Test
   void shouldCreateIndexStateManagementPolicy() {
     // given
     config.retention.setEnabled(true);
