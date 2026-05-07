@@ -114,7 +114,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
     withProperty(
         AuthenticationProperties.API_UNPROTECTED,
-        securityConfig.getAuthentication().getUnprotectedApi());
+        securityConfig.getAuthentication().isUnprotectedApi());
     withProperty(
         "camunda.security.authorizations.enabled", securityConfig.getAuthorizations().isEnabled());
     // by default, we don't want to create the schema as ES/OS containers may not be used in the

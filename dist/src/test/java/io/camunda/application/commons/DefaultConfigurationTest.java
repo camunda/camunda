@@ -29,7 +29,7 @@ class DefaultConfigurationTest {
   void verifySecurityConfigurations() {
     final var authenticationConfig = camundaSecurityProperties.getAuthentication();
     assertThat(authenticationConfig.getMethod()).isEqualTo(AuthenticationMethod.BASIC);
-    assertThat(authenticationConfig.getUnprotectedApi()).isFalse();
+    assertThat(authenticationConfig.isUnprotectedApi()).isFalse();
 
     final var authorizationsConfig = camundaSecurityProperties.getAuthorizations();
     assertThat(authorizationsConfig.isEnabled()).isTrue();
