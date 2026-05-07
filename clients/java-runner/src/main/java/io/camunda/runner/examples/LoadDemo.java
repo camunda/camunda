@@ -22,11 +22,11 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * Same {@link OrderProcess#model() order process} and {@link OrderProcess#VALIDATE handlers} as
- * {@link OrderDemo} / {@link OrderDemoBindings}, just at scale: 50 instances paced 100 ms apart so
- * they trickle into Operate visibly instead of all completing in milliseconds.
+ * Same {@link OrderDemos#model() order process} and handlers as {@link OrderDemos}, just at scale:
+ * 50 instances paced 100 ms apart so they trickle into Operate visibly instead of all completing in
+ * milliseconds.
  *
- * <p>This is also a stress check that the variable generator, worker pool, and the broker handle
+ * <p>Doubles as a stress check that the variable generator, worker pool, and the broker handle
  * concurrent in-flight instances without dropping anything. The {@code workersHandled} summary at
  * the end should always read {@code 50} per task.
  */
@@ -46,12 +46,12 @@ public final class LoadDemo {
           "[LoadDemo] cluster ready, firing " + INSTANCES + " instances at " + PACING + " each…");
 
       final Run run =
-          LiveBpmn.of(OrderProcess.model())
-              .bind("validate", OrderProcess.VALIDATE)
-              .bind("charge", OrderProcess.CHARGE)
-              .bind("ship", OrderProcess.SHIP)
+          LiveBpmn.of(OrderDemos.model())
+              .bind("validate", OrderDemos::validate)
+              .bind("charge", OrderDemos::charge)
+              .bind("ship", OrderDemos::ship)
               .run(
-                  RunOptions.of(INSTANCES).pacing(PACING).variables(OrderProcess.INITIAL_VARIABLES),
+                  RunOptions.of(INSTANCES).pacing(PACING).variables(OrderDemos.INITIAL_VARIABLES),
                   cluster);
 
       System.out.println("Operate: " + run.operateUrl());

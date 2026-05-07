@@ -148,21 +148,20 @@ Find your run in Operate by filtering on the process id (e.g. `stephan-r7f3a-ord
 
 Each lives under `src/main/java/io/camunda/runner/examples/` and has a `main()`:
 
-All three demos share the **same process** and the **same handler logic** — defined once in
-`OrderProcess` (BPMN model + the `validate` / `charge` / `ship` lambdas + a per-instance variable
-generator). What differs between the demos is *how* the lambdas are attached and *how many*
-instances run.
-
 | Example | What it shows |
 |---------|---------------|
-| `OrderDemo` | **Inline-lambda API** — fluent chain with lambdas right next to each `serviceTask`. 3 instances. |
-| `OrderDemoBindings` | **Binding API** — same process, same handlers; lambdas attached via `LiveBpmn.of(model).bind(elementId, lambda)`. The migration story for code that already builds `BpmnModelInstance` with vanilla `Bpmn.createExecutableProcess(...)`. |
-| `LoadDemo` | Same process at scale: 50 instances paced 100 ms apart so they trickle into Operate visibly. Doubles as a stress check (`workersHandled` should always read 50 per task). |
+| `MinimalDemo` | Smallest demo: one task, inline lambda, showing `job.variable(...)`, `job.complete(map)`, `job.fail(reason)`. The "look at how this reads" example. |
+| `OrderDemos.Inline` | Real multi-task order flow with **inline lambdas** in the fluent chain (`validate -> charge -> ship`). |
+| `OrderDemos.Bindings` | Same process and handlers as `Inline`, but lambdas attached via `LiveBpmn.of(model).bind(...)`. The migration story for existing `Bpmn.createExecutableProcess(...)` code. |
+| `LoadDemo` | Same process at scale: 50 instances paced 100 ms apart so they trickle into Operate visibly. Stress check too — `workersHandled` should always read 50 per task. |
 
-Realistic handler details (in `OrderProcess`): handlers simulate I/O latency (~20–150 ms each),
-read multiple input variables, branch on amount (e.g. credit-card vs wallet, express vs standard
-post), and emit several output variables (paymentId, paymentMethod, chargedAt, trackingId,
-carrier).
+`OrderDemos.Inline` and `OrderDemos.Bindings` live in the **same file** (`OrderDemos.java`) and
+share their handlers (`validate`, `charge`, `ship`) so the only difference between them is the
+wiring. Run either by right-clicking the inner class in your IDE.
+
+Realistic handler details: handlers simulate I/O latency (~20–150 ms each), read multiple input
+variables, branch on amount (e.g. credit-card vs wallet, express vs standard post), and emit
+several output variables (`paymentId`, `paymentMethod`, `chargedAt`, `trackingId`, `carrier`).
 
 After instance creation the runner logs a clickable URL (`Operate: http://...:port/operate/processes?process=<prefixedId>`) — paste it into your browser to watch the run flow.
 
