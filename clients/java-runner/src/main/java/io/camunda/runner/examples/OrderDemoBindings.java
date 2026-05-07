@@ -15,7 +15,6 @@
  */
 package io.camunda.runner.examples;
 
-import io.camunda.runner.Job;
 import io.camunda.runner.LiveBpmn;
 import io.camunda.runner.Run;
 import io.camunda.runner.RunOptions;
@@ -23,31 +22,36 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * Inline-lambda form of the order flow: the BPMN definition and the lambdas are written together in
- * one fluent chain, end-to-end in a single statement.
+ * Binding-API counterpart to {@link OrderDemo}: same {@link OrderProcess#model() BPMN process},
+ * same {@link OrderProcess#VALIDATE validate} / {@link OrderProcess#CHARGE charge} / {@link
+ * OrderProcess#SHIP ship} handler logic, same {@link OrderProcess#INITIAL_VARIABLES initial
+ * variables}.
  *
- * <p>The lambda bodies delegate to {@link OrderProcess} so that {@link OrderDemoBindings} (the
- * binding-API counterpart) can run identical handler logic — only the wiring differs between the
- * two demos.
+ * <p>The only difference is the wiring: the BPMN definition is built up-front (e.g. lifted from
+ * existing production code that uses vanilla {@code Bpmn.createExecutableProcess(...)}), then
+ * lambdas are attached by element id via {@code .bind(...)}.
+ *
+ * <p>Pick this form when the BPMN definition already lives somewhere else in your codebase, or when
+ * separating the topology from the worker logic reads better at scale.
  */
-public final class OrderDemo {
+public final class OrderDemoBindings {
 
-  private OrderDemo() {}
+  private OrderDemoBindings() {}
 
   public static void main(final String[] args) throws Exception {
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
 
-    System.out.println("[OrderDemo] booting cluster (first run pulls the image, ~1-2 min)…");
+    System.out.println(
+        "[OrderDemoBindings] booting cluster (first run pulls the image, ~1-2 min)…");
     try (var cluster = LiveBpmn.cluster().testcontainer()) {
-      System.out.println("[OrderDemo] cluster ready, deploying & creating instances…");
+      System.out.println(
+          "[OrderDemoBindings] cluster ready, binding workers & creating instances…");
 
       final Run run =
-          LiveBpmn.createExecutableProcess(OrderProcess.PROCESS_ID)
-              .startEvent("received")
-              .serviceTask("validate", (Job job) -> OrderProcess.VALIDATE.apply(job))
-              .serviceTask("charge", (Job job) -> OrderProcess.CHARGE.apply(job))
-              .serviceTask("ship", (Job job) -> OrderProcess.SHIP.apply(job))
-              .endEvent("delivered")
+          LiveBpmn.of(OrderProcess.model())
+              .bind("validate", OrderProcess.VALIDATE)
+              .bind("charge", OrderProcess.CHARGE)
+              .bind("ship", OrderProcess.SHIP)
               .run(RunOptions.of(3).variables(OrderProcess.INITIAL_VARIABLES), cluster);
 
       System.out.println("Operate: " + run.operateUrl());
