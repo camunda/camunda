@@ -61,7 +61,11 @@ public class EventTriggerBehavior {
 
     variableBehavior =
         new VariableBehavior(
-            processingState.getVariableState(), writers.state(), conditionalBehavior, keyGenerator);
+            processingState.getVariableState(),
+            writers.state(),
+            writers.command(),
+            conditionalBehavior,
+            keyGenerator);
     this.stateBehavior = stateBehavior;
   }
 

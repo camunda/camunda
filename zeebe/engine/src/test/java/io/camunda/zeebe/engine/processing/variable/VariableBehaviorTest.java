@@ -77,7 +77,7 @@ final class VariableBehaviorTest {
     state = processingState.getVariableState();
     behavior =
         new VariableBehavior(
-            state, stateWriter, conditionalBehavior, processingState.getKeyGenerator());
+            state, stateWriter, null, conditionalBehavior, processingState.getKeyGenerator());
   }
 
   @Test

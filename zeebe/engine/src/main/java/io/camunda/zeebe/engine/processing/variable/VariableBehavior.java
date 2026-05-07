@@ -10,14 +10,19 @@ package io.camunda.zeebe.engine.processing.variable;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior.VariableEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.variable.DocumentEntry;
 import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
+import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -33,22 +38,33 @@ import org.agrona.DirectBuffer;
  */
 public final class VariableBehavior {
 
+  /**
+   * Variables in an output mapping (or any variable document merge) whose name starts with this
+   * prefix are routed to the cluster variable state instead of the local process variable scope.
+   * The remainder of the name (after the prefix) is used as the cluster variable name.
+   */
+  public static final String CLUSTER_VARIABLE_NAME_PREFIX = "camunda.vars.cluster.";
+
   private final VariableState variableState;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final BpmnConditionalBehavior conditionalBehavior;
   private final KeyGenerator keyGenerator;
 
   private final IndexedDocument indexedDocument = new IndexedDocument();
   private final VariableRecord variableRecord = new VariableRecord();
+  private final ClusterVariableRecord clusterVariableRecord = new ClusterVariableRecord();
   private final VariableSourceRecord variableSourceRecord;
 
   public VariableBehavior(
       final VariableState variableState,
       final StateWriter stateWriter,
+      final TypedCommandWriter commandWriter,
       final BpmnConditionalBehavior conditionalBehavior,
       final KeyGenerator keyGenerator) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
+    this.commandWriter = commandWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
     variableSourceRecord = VariableSourceRecord.none();
@@ -57,11 +73,13 @@ public final class VariableBehavior {
   public VariableBehavior(
       final VariableState variableState,
       final StateWriter stateWriter,
+      final TypedCommandWriter commandWriter,
       final BpmnConditionalBehavior conditionalBehavior,
       final KeyGenerator keyGenerator,
       final VariableSourceRecord variableSourceRecord) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
+    this.commandWriter = commandWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
     this.variableSourceRecord = variableSourceRecord;
@@ -69,7 +87,7 @@ public final class VariableBehavior {
 
   public VariableBehavior withVariableSource(final VariableSourceRecord source) {
     return new VariableBehavior(
-        variableState, stateWriter, conditionalBehavior, keyGenerator, source);
+        variableState, stateWriter, commandWriter, conditionalBehavior, keyGenerator, source);
   }
 
   /**
@@ -95,6 +113,11 @@ public final class VariableBehavior {
       final String tenantId,
       final DirectBuffer document) {
     indexedDocument.index(document);
+    if (indexedDocument.isEmpty()) {
+      return;
+    }
+
+    extractAndEmitClusterVariableUpdates(tenantId);
     if (indexedDocument.isEmpty()) {
       return;
     }
@@ -148,6 +171,11 @@ public final class VariableBehavior {
       final String tenantId,
       final DirectBuffer document) {
     indexedDocument.index(document);
+    if (indexedDocument.isEmpty()) {
+      return;
+    }
+
+    extractAndEmitClusterVariableUpdates(tenantId);
     if (indexedDocument.isEmpty()) {
       return;
     }
@@ -264,6 +292,47 @@ public final class VariableBehavior {
 
   private void applyEntryToRecord(final DocumentEntry entry) {
     variableRecord.setName(entry.getName()).setValue(entry.getValue());
+  }
+
+  /**
+   * Removes any document entries whose name starts with {@link #CLUSTER_VARIABLE_NAME_PREFIX} and
+   * emits a {@link ClusterVariableIntent#UPDATE} command for each. Internal commands bypass
+   * authorization checks in {@link
+   * io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableUpdateProcessor}.
+   *
+   * <p>For PoC simplicity: when a tenant id is present and non-blank we emit a TENANT-scoped
+   * update; otherwise we emit a GLOBAL-scoped update. The processor will reject the update if the
+   * cluster variable does not exist in the chosen scope.
+   */
+  private void extractAndEmitClusterVariableUpdates(final String tenantId) {
+    if (commandWriter == null) {
+      return;
+    }
+    final Iterator<DocumentEntry> iterator = indexedDocument.iterator();
+    while (iterator.hasNext()) {
+      final DocumentEntry entry = iterator.next();
+      final String fullName = BufferUtil.bufferAsString(entry.getName());
+      if (!fullName.startsWith(CLUSTER_VARIABLE_NAME_PREFIX)) {
+        continue;
+      }
+      final String clusterVariableName = fullName.substring(CLUSTER_VARIABLE_NAME_PREFIX.length());
+      if (clusterVariableName.isEmpty()) {
+        continue;
+      }
+      clusterVariableRecord.reset();
+      clusterVariableRecord
+          .setName(clusterVariableName)
+          .setValue(BufferUtil.cloneBuffer(entry.getValue()));
+      if (tenantId != null
+          && !tenantId.isBlank()
+          && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
+        clusterVariableRecord.setTenantId(tenantId).setTenantScope();
+      } else {
+        clusterVariableRecord.setGlobalScope();
+      }
+      commandWriter.appendNewCommand(ClusterVariableIntent.UPDATE, clusterVariableRecord);
+      iterator.remove();
+    }
   }
 
   private VariableRecord getVariableRecordCopy(final VariableRecord variableRecord) {

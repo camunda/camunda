@@ -36,6 +36,8 @@
             <zeebe:input source="=op.partitionId" target="partitionId" />
             <zeebe:input source="=exporterId" target="exporterId" />
             <zeebe:input source="=initializeFrom" target="initializeFrom" />
+            <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=configuration" target="camunda.vars.cluster.clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_SubStartToTask</bpmn:incoming>

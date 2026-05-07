@@ -138,6 +138,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new VariableBehavior(
             processingState.getVariableState(),
             writers.state(),
+            writers.command(),
             conditionalBehavior,
             processingState.getKeyGenerator());
 

@@ -15,6 +15,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="member-join" target="operationType" />
           <zeebe:output source="=configuration" target="configuration" />
+          <zeebe:output source="=configuration" target="camunda.vars.cluster.clusterConfiguration" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_ScaleUp</bpmn:incoming>
@@ -30,6 +31,8 @@
         <zeebe:taskDefinition type="=&#34;config-change-&#34;+string(brokerId)" />
         <zeebe:ioMapping>
           <zeebe:input source="member-leave" target="operationType" />
+          <zeebe:output source="=configuration" target="configuration" />
+          <zeebe:output source="=configuration" target="camunda.vars.cluster.clusterConfiguration" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0rg2qak</bpmn:incoming>
@@ -86,6 +89,7 @@
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="=joinOperation.priority" target="priority" />
             <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=configuration" target="camunda.vars.cluster.clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_025dcc9</bpmn:incoming>
@@ -104,6 +108,7 @@
             <zeebe:input source="partition-leave" target="operationType" />
             <zeebe:input source="=1" target="minimumAllowedReplicas" />
             <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=configuration" target="camunda.vars.cluster.clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_1vbgjbt</bpmn:incoming>
@@ -122,6 +127,7 @@
             <zeebe:input source="partition-reconfigure-priority" target="operationType" />
             <zeebe:input source="=reconfigureOperation.priority" target="priority" />
             <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=configuration" target="camunda.vars.cluster.clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_12v18sw</bpmn:incoming>
@@ -135,13 +141,6 @@
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_0u4g912" sourceRef="Task_MemberJoin" targetRef="Activity_1jiekgu" />
     <bpmn:sequenceFlow id="Flow_119ruxa" sourceRef="Activity_1jiekgu" targetRef="Gateway_Merge" />
-    <bpmn:serviceTask id="Task_PostScaling" name="Update Cluster Variable">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="update-cluster-variable" />
-      </bpmn:extensionElements>
-      <bpmn:incoming>Flow_1p4kr9b</bpmn:incoming>
-      <bpmn:outgoing>Flow_06mm4kl</bpmn:outgoing>
-    </bpmn:serviceTask>
     <bpmn:subProcess id="Activity_10y55xc">
       <bpmn:incoming>Flow_05chzo7</bpmn:incoming>
       <bpmn:outgoing>Flow_0rg2qak</bpmn:outgoing>
@@ -169,6 +168,7 @@
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="=joinOperation.priority" target="priority" />
             <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=configuration" target="camunda.vars.cluster.clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_1s0rssj</bpmn:incoming>
@@ -187,6 +187,7 @@
             <zeebe:input source="partition-leave" target="operationType" />
             <zeebe:input source="=1" target="minimumAllowedReplicas" />
             <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=configuration" target="camunda.vars.cluster.clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_03edrm4</bpmn:incoming>
@@ -205,6 +206,7 @@
             <zeebe:input source="partition-reconfigure-priority" target="operationType" />
             <zeebe:input source="=reconfigureOperation.priority" target="priority" />
             <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=configuration" target="camunda.vars.cluster.clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_0t8jpz4</bpmn:incoming>
@@ -247,9 +249,22 @@
       <bpmn:incoming>Flow_StartToPre</bpmn:incoming>
       <bpmn:outgoing>Flow_0mgfh4m</bpmn:outgoing>
     </bpmn:serviceTask>
+    <bpmn:scriptTask id="Task_PostScaling" name="Update Cluster Variable">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=&#34;&#34;" resultVariable="empty" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1p4kr9b</bpmn:incoming>
+      <bpmn:outgoing>Flow_06mm4kl</bpmn:outgoing>
+    </bpmn:scriptTask>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="scale_operation_executor">
+      <bpmndi:BPMNShape id="Event_Start_di" bpmnElement="Event_Start">
+        <dc:Bounds x="172" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="154" y="345" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_Direction_di" bpmnElement="Gateway_Direction" isMarkerVisible="true">
         <dc:Bounds x="685" y="295" width="50" height="50" />
         <bpmndi:BPMNLabel>
@@ -259,19 +274,6 @@
       <bpmndi:BPMNShape id="Task_MemberJoin_di" bpmnElement="Task_MemberJoin">
         <dc:Bounds x="770" y="130" width="120" height="80" />
         <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_Start_di" bpmnElement="Event_Start">
-        <dc:Bounds x="172" y="302" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="154" y="345" width="72" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1j4tus6_di" bpmnElement="Activity_012gcds">
-        <dc:Bounds x="320" y="280" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_10891c5_di" bpmnElement="Task_PreScaling">
-        <dc:Bounds x="530" y="280" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_MemberLeave_di" bpmnElement="Task_MemberLeave">
         <dc:Bounds x="1500" y="400" width="120" height="80" />
@@ -287,7 +289,7 @@
           <dc:Bounds x="2011" y="352" width="78" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_14os1g9_di" bpmnElement="Task_PostScaling">
+      <bpmndi:BPMNShape id="Activity_0e9up2j_di" bpmnElement="Task_PostScaling">
         <dc:Bounds x="1850" y="280" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1jiekgu_di" bpmnElement="Activity_1jiekgu" isExpanded="true">
@@ -314,10 +316,6 @@
         <di:waypoint x="1046" y="170" />
         <di:waypoint x="1090" y="170" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0szdp1z_di" bpmnElement="Flow_0szdp1z">
-        <di:waypoint x="1460" y="170" />
-        <di:waypoint x="1512" y="170" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1vbgjbt_di" bpmnElement="Flow_1vbgjbt">
         <di:waypoint x="1190" y="170" />
         <di:waypoint x="1230" y="170" />
@@ -325,6 +323,10 @@
       <bpmndi:BPMNEdge id="Flow_12v18sw_di" bpmnElement="Flow_12v18sw">
         <di:waypoint x="1330" y="170" />
         <di:waypoint x="1360" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0szdp1z_di" bpmnElement="Flow_0szdp1z">
+        <di:waypoint x="1460" y="170" />
+        <di:waypoint x="1512" y="170" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="BPMNShape_195x1fc" bpmnElement="Activity_10y55xc" isExpanded="true">
         <dc:Bounds x="760" y="370" width="630" height="200" />
@@ -362,6 +364,17 @@
         <di:waypoint x="1120" y="470" />
         <di:waypoint x="1150" y="470" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_10891c5_di" bpmnElement="Task_PreScaling">
+        <dc:Bounds x="530" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1j4tus6_di" bpmnElement="Activity_012gcds">
+        <dc:Bounds x="320" y="280" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_StartToPre_di" bpmnElement="Flow_StartToPre">
+        <di:waypoint x="208" y="320" />
+        <di:waypoint x="320" y="320" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_PreToDirection_di" bpmnElement="Flow_PreToDirection">
         <di:waypoint x="630" y="320" />
         <di:waypoint x="685" y="320" />
@@ -374,44 +387,40 @@
           <dc:Bounds x="673" y="228" width="13" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_05chzo7_di" bpmnElement="Flow_05chzo7">
-        <di:waypoint x="710" y="345" />
-        <di:waypoint x="710" y="470" />
-        <di:waypoint x="760" y="470" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0u4g912_di" bpmnElement="Flow_0u4g912">
-        <di:waypoint x="890" y="170" />
-        <di:waypoint x="970" y="170" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_StartToPre_di" bpmnElement="Flow_StartToPre">
-        <di:waypoint x="208" y="320" />
-        <di:waypoint x="320" y="320" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0mgfh4m_di" bpmnElement="Flow_0mgfh4m">
-        <di:waypoint x="420" y="320" />
-        <di:waypoint x="530" y="320" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0rg2qak_di" bpmnElement="Flow_0rg2qak">
-        <di:waypoint x="1390" y="440" />
-        <di:waypoint x="1500" y="440" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_MemberLeaveToMerge_di" bpmnElement="Flow_MemberLeaveToMerge">
         <di:waypoint x="1620" y="440" />
         <di:waypoint x="1760" y="440" />
         <di:waypoint x="1760" y="345" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06mm4kl_di" bpmnElement="Flow_06mm4kl">
+        <di:waypoint x="1950" y="320" />
+        <di:waypoint x="2032" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0u4g912_di" bpmnElement="Flow_0u4g912">
+        <di:waypoint x="890" y="170" />
+        <di:waypoint x="970" y="170" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_119ruxa_di" bpmnElement="Flow_119ruxa">
         <di:waypoint x="1600" y="150" />
         <di:waypoint x="1760" y="150" />
         <di:waypoint x="1760" y="295" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_05chzo7_di" bpmnElement="Flow_05chzo7">
+        <di:waypoint x="710" y="345" />
+        <di:waypoint x="710" y="470" />
+        <di:waypoint x="760" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0rg2qak_di" bpmnElement="Flow_0rg2qak">
+        <di:waypoint x="1390" y="440" />
+        <di:waypoint x="1500" y="440" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1p4kr9b_di" bpmnElement="Flow_1p4kr9b">
         <di:waypoint x="1785" y="320" />
         <di:waypoint x="1850" y="320" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_06mm4kl_di" bpmnElement="Flow_06mm4kl">
-        <di:waypoint x="1950" y="320" />
-        <di:waypoint x="2032" y="320" />
+      <bpmndi:BPMNEdge id="Flow_0mgfh4m_di" bpmnElement="Flow_0mgfh4m">
+        <di:waypoint x="420" y="320" />
+        <di:waypoint x="530" y="320" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
