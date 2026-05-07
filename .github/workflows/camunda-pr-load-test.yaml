@@ -169,6 +169,9 @@ jobs:
     if: >
       (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark') ||
       (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:
