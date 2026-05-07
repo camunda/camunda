@@ -19,6 +19,7 @@ import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.db.impl.RawEntryIteratorProvider;
 import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
@@ -32,6 +33,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 
@@ -52,7 +54,7 @@ class TransactionalColumnFamily<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily,
         KeyType extends DbKey,
         ValueType extends DbValue>
-    implements ColumnFamily<KeyType, ValueType> {
+    implements ColumnFamily<KeyType, ValueType>, RawEntryIteratorProvider {
 
   private final ZeebeTransactionDb<ColumnFamilyNames> transactionDb;
   private final ConsistencyChecksSettings consistencyChecksSettings;
@@ -440,6 +442,30 @@ class TransactionalColumnFamily<
     return currentTransaction.newIterator(options, transactionDb.getDefaultHandle());
   }
 
+  @Override
+  public RawEntryIterator newRawIterator(
+      final @Nullable DbKey startAt, final DbKey prefix, final boolean reverse) {
+    final var seekTarget = Objects.requireNonNullElse(startAt, prefix);
+    final var prefixKeyHolder = new MutableReference<byte[]>();
+    final int[] prefixLengthHolder = new int[1];
+
+    columnFamilyContext.withPrefixKey(
+        Objects.requireNonNull(prefix),
+        (prefixKey, prefixLength) -> {
+          prefixKeyHolder.set(java.util.Arrays.copyOf(prefixKey, prefixLength));
+          prefixLengthHolder[0] = prefixLength;
+        });
+
+    final var iterator = newIterator(context, transactionDb.getPrefixReadOptions());
+    if (reverse) {
+      iterator.seekForPrev(columnFamilyContext.keyWithColumnFamily(seekTarget));
+    } else {
+      iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+    }
+
+    return new RocksRawEntryIterator(iterator, prefixKeyHolder.get(), prefixLengthHolder[0], reverse);
+  }
+
   /**
    * This is the preferred method to implement methods that iterate over a column family.
    *
@@ -710,6 +736,74 @@ class TransactionalColumnFamily<
     valueInstance.wrap(valueViewBuffer, 0, valueViewBuffer.capacity());
 
     return iteratorConsumer.visit(keyInstance, valueInstance);
+  }
+
+  private static final class RocksRawEntryIterator implements RawEntryIterator {
+    private final RocksIterator iterator;
+    private final byte[] prefixKey;
+    private final int prefixLength;
+    private final boolean reverse;
+    private @Nullable byte[] currentKey;
+
+    private RocksRawEntryIterator(
+        final RocksIterator iterator,
+        final byte[] prefixKey,
+        final int prefixLength,
+        final boolean reverse) {
+      this.iterator = iterator;
+      this.prefixKey = prefixKey;
+      this.prefixLength = prefixLength;
+      this.reverse = reverse;
+      currentKey = currentMatchingKey();
+    }
+
+    @Override
+    public boolean isValid() {
+      return currentKey != null;
+    }
+
+    @Override
+    public byte[] key() {
+      return Objects.requireNonNull(currentKey);
+    }
+
+    @Override
+    public void writeValueInto(final DbValue target) {
+      final byte[] valueBytes = iterator.value();
+      target.wrap(new UnsafeBuffer(valueBytes), 0, valueBytes.length);
+    }
+
+    @Override
+    public void next() {
+      if (currentKey == null) {
+        return;
+      }
+
+      if (reverse) {
+        iterator.prev();
+      } else {
+        iterator.next();
+      }
+      currentKey = currentMatchingKey();
+    }
+
+    @Override
+    public void close() {
+      iterator.close();
+    }
+
+    private @Nullable byte[] currentMatchingKey() {
+      if (!iterator.isValid()) {
+        return null;
+      }
+
+      final byte[] keyBytes = iterator.key();
+      if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+        return null;
+      }
+
+      return keyBytes;
+    }
   }
 
   @Override

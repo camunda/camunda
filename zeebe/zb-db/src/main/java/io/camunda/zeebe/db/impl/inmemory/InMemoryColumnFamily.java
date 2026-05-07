@@ -19,6 +19,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.UntypedDbValueTarget;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.RawEntryIteratorProvider;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import io.camunda.zeebe.db.impl.inmemory.InMemoryTransactionContext.InMemoryTransaction;
 import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
@@ -27,11 +28,9 @@ import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.util.Copyable;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -59,7 +58,7 @@ class InMemoryColumnFamily<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily,
         KeyType extends DbKey,
         ValueType extends DbValue>
-    implements ColumnFamily<KeyType, ValueType> {
+    implements ColumnFamily<KeyType, ValueType>, RawEntryIteratorProvider {
 
   private final InMemoryZeebeDb<ColumnFamilyNames> db;
   private final ConsistencyChecksSettings consistencyChecksSettings;
@@ -475,6 +474,16 @@ class InMemoryColumnFamily<
 
   // ---- Internal: iteration core ----
 
+  @Override
+  public RawEntryIterator newRawIterator(
+      final @Nullable DbKey startAt, final DbKey prefix, final boolean reverse) {
+    final var transaction = (InMemoryTransaction) context.getCurrentTransaction();
+    final byte[] prefixBytes = computePrefix(prefix);
+    final byte[] startBytes = serializeKey(startAt == null ? prefix : startAt);
+    final Optional<byte[]> upperBound = computePrefixUpperBound(prefixBytes);
+    return createMergeIterator(transaction, startBytes, prefixBytes, upperBound, reverse);
+  }
+
   private void forEachInPrefix(
       final DbKey prefix, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     forEachInPrefix(prefix, prefix, visitor);
@@ -490,13 +499,14 @@ class InMemoryColumnFamily<
             final byte[] prefixBytes = computePrefix(prefix);
             final byte[] startBytes = serializeKey(startAt == null ? prefix : startAt);
             final Optional<byte[]> upperBound = computePrefixUpperBound(prefixBytes);
-            final var it =
-                createMergeIterator(transaction, startBytes, prefixBytes, upperBound, false);
-            while (it.hasNext()) {
-              final var entry = it.next();
-              readValueInto(entry.getValue());
-              if (!visitKeyValue(entry.getKey(), visitor)) {
-                break;
+            try (final var it =
+                createMergeIterator(transaction, startBytes, prefixBytes, upperBound, false)) {
+              while (it.isValid()) {
+                it.writeValueInto(valueInstance);
+                if (!visitKeyValue(it.key(), visitor)) {
+                  break;
+                }
+                it.next();
               }
             }
           });
@@ -513,13 +523,14 @@ class InMemoryColumnFamily<
             final byte[] prefixBytes = computePrefix(prefix);
             final byte[] startBytes = serializeKey(startAt == null ? prefix : startAt);
             final Optional<byte[]> upperBound = computePrefixUpperBound(prefixBytes);
-            final var it =
-                createMergeIterator(transaction, startBytes, prefixBytes, upperBound, true);
-            while (it.hasNext()) {
-              final var entry = it.next();
-              readValueInto(entry.getValue());
-              if (!visitKeyValue(entry.getKey(), visitor)) {
-                break;
+            try (final var it =
+                createMergeIterator(transaction, startBytes, prefixBytes, upperBound, true)) {
+              while (it.isValid()) {
+                it.writeValueInto(valueInstance);
+                if (!visitKeyValue(it.key(), visitor)) {
+                  break;
+                }
+                it.next();
               }
             }
           });
@@ -538,12 +549,13 @@ class InMemoryColumnFamily<
             final byte[] prefixBytes = computePrefix(prefix);
             final byte[] startBytes = serializeKey(startAt == null ? prefix : startAt);
             final Optional<byte[]> upperBound = computePrefixUpperBound(prefixBytes);
-            final var it =
-                createMergeIterator(transaction, startBytes, prefixBytes, upperBound, false);
-            while (it.hasNext()) {
-              final var entry = it.next();
-              if (!visitKeyOnly(entry.getKey(), visitor)) {
-                break;
+            try (final var it =
+                createMergeIterator(transaction, startBytes, prefixBytes, upperBound, false)) {
+              while (it.isValid()) {
+                if (!visitKeyOnly(it.key(), visitor)) {
+                  break;
+                }
+                it.next();
               }
             }
           });
@@ -558,12 +570,13 @@ class InMemoryColumnFamily<
             final byte[] prefixBytes = computePrefix(prefix);
             final byte[] startBytes = serializeKey(startAt == null ? prefix : startAt);
             final Optional<byte[]> upperBound = computePrefixUpperBound(prefixBytes);
-            final var it =
-                createMergeIterator(transaction, startBytes, prefixBytes, upperBound, true);
-            while (it.hasNext()) {
-              final var entry = it.next();
-              if (!visitKeyOnly(entry.getKey(), visitor)) {
-                break;
+            try (final var it =
+                createMergeIterator(transaction, startBytes, prefixBytes, upperBound, true)) {
+              while (it.isValid()) {
+                if (!visitKeyOnly(it.key(), visitor)) {
+                  break;
+                }
+                it.next();
               }
             }
           });
@@ -572,7 +585,7 @@ class InMemoryColumnFamily<
 
   // ---- Internal: merge iterator ----
 
-  private Iterator<Map.Entry<byte[], DbValue>> createMergeIterator(
+  private MergeIterator createMergeIterator(
       final InMemoryTransaction transaction,
       final byte[] startBytes,
       final byte[] prefixBytes,
@@ -583,19 +596,13 @@ class InMemoryColumnFamily<
     if (reverse) {
       committedRange =
           upperBound.isPresent()
-              ? new java.util.TreeMap<>(
-                  db.committedData.subMap(prefixBytes, true, startBytes, true).descendingMap())
-              : new java.util.TreeMap<>(
-                  db.committedData
-                      .tailMap(prefixBytes, true)
-                      .headMap(startBytes, true)
-                      .descendingMap());
+              ? db.committedData.subMap(prefixBytes, true, startBytes, true).descendingMap()
+              : db.committedData.tailMap(prefixBytes, true).headMap(startBytes, true).descendingMap();
     } else {
       committedRange =
           upperBound.isPresent()
-              ? new java.util.TreeMap<>(
-                  db.committedData.subMap(startBytes, true, upperBound.orElseThrow(), false))
-              : new java.util.TreeMap<>(db.committedData.tailMap(startBytes, true));
+              ? db.committedData.subMap(startBytes, true, upperBound.orElseThrow(), false)
+              : db.committedData.tailMap(startBytes, true);
     }
 
     final NavigableMap<byte[], DbValue> allPending = transaction.getPendingWrites();
@@ -603,16 +610,13 @@ class InMemoryColumnFamily<
     if (reverse) {
       pendingRange =
           upperBound.isPresent()
-              ? new java.util.TreeMap<>(
-                  allPending.subMap(prefixBytes, true, startBytes, true).descendingMap())
-              : new java.util.TreeMap<>(
-                  allPending.tailMap(prefixBytes, true).headMap(startBytes, true).descendingMap());
+              ? allPending.subMap(prefixBytes, true, startBytes, true).descendingMap()
+              : allPending.tailMap(prefixBytes, true).headMap(startBytes, true).descendingMap();
     } else {
       pendingRange =
           upperBound.isPresent()
-              ? new java.util.TreeMap<>(
-                  allPending.subMap(startBytes, true, upperBound.orElseThrow(), false))
-              : new java.util.TreeMap<>(allPending.tailMap(startBytes, true));
+              ? allPending.subMap(startBytes, true, upperBound.orElseThrow(), false)
+              : allPending.tailMap(startBytes, true);
     }
 
     return new MergeIterator(
@@ -736,9 +740,9 @@ class InMemoryColumnFamily<
     return true;
   }
 
-  private static final class MergeIterator implements Iterator<Map.Entry<byte[], DbValue>> {
-    private final Iterator<Map.Entry<byte[], DbValue>> committedIt;
-    private final Iterator<Map.Entry<byte[], DbValue>> pendingIt;
+  private final class MergeIterator implements RawEntryIterator {
+    private final java.util.Iterator<Map.Entry<byte[], DbValue>> committedIt;
+    private final java.util.Iterator<Map.Entry<byte[], DbValue>> pendingIt;
     private final java.util.Set<byte[]> pendingDeletes;
     private final byte[] prefixBytes;
     private final boolean reverse;
@@ -747,8 +751,8 @@ class InMemoryColumnFamily<
     private @Nullable Entry<byte[], DbValue> nextResult;
 
     MergeIterator(
-        final Iterator<Map.Entry<byte[], DbValue>> committedIt,
-        final Iterator<Map.Entry<byte[], DbValue>> pendingIt,
+        final java.util.Iterator<Map.Entry<byte[], DbValue>> committedIt,
+        final java.util.Iterator<Map.Entry<byte[], DbValue>> pendingIt,
         final java.util.Set<byte[]> pendingDeletes,
         final byte[] prefixBytes,
         final boolean reverse) {
@@ -763,18 +767,25 @@ class InMemoryColumnFamily<
     }
 
     @Override
-    public boolean hasNext() {
+    public boolean isValid() {
       return nextResult != null;
     }
 
     @Override
-    public Map.Entry<byte[], DbValue> next() {
-      final var result = nextResult;
-      if (result == null) {
-        throw new NoSuchElementException();
+    public byte[] key() {
+      return java.util.Objects.requireNonNull(nextResult).getKey();
+    }
+
+    @Override
+    public void writeValueInto(final DbValue target) {
+      readValueInto(java.util.Objects.requireNonNull(nextResult).getValue(), target);
+    }
+
+    @Override
+    public void next() {
+      if (nextResult != null) {
+        nextResult = computeNext();
       }
-      nextResult = computeNext();
-      return result;
     }
 
     private @Nullable Entry<byte[], DbValue> computeNext() {
@@ -810,25 +821,19 @@ class InMemoryColumnFamily<
         if (!startsWith(chosen.getKey(), prefixBytes)) {
           if (reverse) {
             continue;
-          } else {
-            return null;
           }
+          return null;
         }
         return chosen;
       }
     }
 
     private boolean isDeleted(final byte[] key) {
-      for (final byte[] d : pendingDeletes) {
-        if (Arrays.equals(d, key)) {
-          return true;
-        }
-      }
-      return false;
+      return pendingDeletes.contains(key);
     }
 
     private static @Nullable Entry<byte[], DbValue> advance(
-        final Iterator<Map.Entry<byte[], DbValue>> it) {
+        final java.util.Iterator<Map.Entry<byte[], DbValue>> it) {
       return it.hasNext() ? it.next() : null;
     }
 

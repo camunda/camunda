@@ -65,15 +65,18 @@ final class LayeredZeebeDbReadThroughTest {
   }
 
   @Test
-  void shouldServeSubsequentPlainGetsFromActiveLayerAfterReadThrough(final @TempDir File path)
+  void shouldNotCachePlainGetsFromPersistentLayerInActiveLayer(final @TempDir File path)
       throws Exception {
     // given
     writePersistentLongValue(path, 1L, 100L);
 
     try (final var layeredDb = openLayeredDb(path)) {
       final var columnFamily = longColumnFamily(layeredDb);
+      final var activeColumnFamily = longColumnFamily(layeredDb.activeDb());
       final var key = new DbLong();
       key.wrapLong(1L);
+
+      assertThat(activeColumnFamily.count()).isZero();
 
       // when
       final var firstResult = columnFamily.get(key);
@@ -83,21 +86,24 @@ final class LayeredZeebeDbReadThroughTest {
       // then
       assertThat(firstResult).isNotNull();
       assertThat(firstResult.getValue()).isEqualTo(100L);
-      assertThat(secondResult).isNotNull();
-      assertThat(secondResult.getValue()).isEqualTo(100L);
+      assertThat(secondResult).isNull();
+      assertThat(activeColumnFamily.count()).isZero();
     }
   }
 
   @Test
-  void shouldServeSubsequentSupplierGetsFromActiveLayerAfterReadThrough(final @TempDir File path)
+  void shouldNotCacheSupplierGetsFromPersistentLayerInActiveLayer(final @TempDir File path)
       throws Exception {
     // given
     writePersistentLongValue(path, 1L, 100L);
 
     try (final var layeredDb = openLayeredDb(path)) {
       final var columnFamily = longColumnFamily(layeredDb);
+      final var activeColumnFamily = longColumnFamily(layeredDb.activeDb());
       final var key = new DbLong();
       key.wrapLong(1L);
+
+      assertThat(activeColumnFamily.count()).isZero();
 
       // when
       final var firstResult = columnFamily.get(key, DbLong::new);
@@ -107,8 +113,8 @@ final class LayeredZeebeDbReadThroughTest {
       // then
       assertThat(firstResult).isNotNull();
       assertThat(firstResult.getValue()).isEqualTo(100L);
-      assertThat(secondResult).isNotNull();
-      assertThat(secondResult.getValue()).isEqualTo(100L);
+      assertThat(secondResult).isNull();
+      assertThat(activeColumnFamily.count()).isZero();
     }
   }
 

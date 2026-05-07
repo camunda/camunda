@@ -13,20 +13,15 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.KeyVisitor;
-import io.camunda.zeebe.db.UntypedDbValueTarget;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.db.impl.RawEntryIteratorProvider;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
-import java.util.Arrays;
-import java.util.NavigableMap;
 import java.util.NavigableSet;
-import java.util.Optional;
-import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
@@ -40,6 +35,8 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   private final long columnFamilyPrefix;
   private final ColumnFamily<KeyType, ValueType> activeColumnFamily;
   private final ColumnFamily<KeyType, ValueType> persistentColumnFamily;
+  private final RawEntryIteratorProvider activeIteratorProvider;
+  private final RawEntryIteratorProvider persistentIteratorProvider;
   private final KeyType keyInstance;
   private final ValueType valueInstance;
   private final ConsistencyChecksSettings consistencyChecksSettings;
@@ -59,6 +56,8 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
     columnFamilyPrefix = ((EnumValue) columnFamily).getValue();
     this.activeColumnFamily = activeColumnFamily;
     this.persistentColumnFamily = persistentColumnFamily;
+    activeIteratorProvider = asRawIteratorProvider(activeColumnFamily);
+    persistentIteratorProvider = asRawIteratorProvider(persistentColumnFamily);
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
     this.consistencyChecksSettings = consistencyChecksSettings;
@@ -152,14 +151,14 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
           if (context.isTombstoned(serializeKey(key))) {
             return;
           }
-          result.value = activeColumnFamily.get(key);
-          if (result.value == null) {
-            final var persistentValue = persistentColumnFamily.get(key, this::newValueInstance);
-            if (persistentValue != null) {
-              activeColumnFamily.upsert(key, persistentValue);
-              result.value = activeColumnFamily.get(key);
-            }
+
+          final var activeValue = activeColumnFamily.get(key);
+          if (activeValue != null) {
+            result.value = activeValue;
+            return;
           }
+
+          result.value = persistentColumnFamily.get(key, this::newValueInstance);
         });
     return result.value;
   }
@@ -171,7 +170,6 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
         () -> {
           final var rawKey = serializeKey(key);
           if (context.isTombstoned(rawKey)) {
-            result.value = null;
             return;
           }
 
@@ -181,26 +179,18 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
             return;
           }
 
-          final var persistentValue = persistentColumnFamily.get(key, valueSupplier);
-          if (persistentValue != null) {
-            activeColumnFamily.upsert(key, persistentValue);
-            result.value = activeColumnFamily.get(key, () -> persistentValue);
-          }
+          result.value = persistentColumnFamily.get(key, valueSupplier);
         });
     return result.value;
   }
 
   @Override
   public void forEach(final Consumer<ValueType> consumer) {
-    context.runInTransaction(
-        () ->
-            mergedEntriesInOrder(
-                    new PrefixRange(serializeKey(new io.camunda.zeebe.db.impl.rocksdb.DbNullKey())))
-                .forEach(
-                    (ignored, value) -> {
-                      readValueInto(value, valueInstance);
-                      consumer.accept(valueInstance);
-                    }));
+    whileTrue(
+        (key, value) -> {
+          consumer.accept(value);
+          return true;
+        });
   }
 
   @Override
@@ -215,20 +205,12 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   @Override
   public void whileTrue(
       final KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    final var prefixRange =
-        new PrefixRange(serializeKey(new io.camunda.zeebe.db.impl.rocksdb.DbNullKey()));
-    if (startAtKey == null) {
-      visitEntries(mergedEntriesInOrder(prefixRange), visitor);
-    } else {
-      visitEntries(mergedEntriesInOrder(serializeKey(startAtKey), prefixRange), visitor);
-    }
+    visitEntries(startAtKey, new io.camunda.zeebe.db.impl.rocksdb.DbNullKey(), false, visitor);
   }
 
   @Override
   public void whileTrue(final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    final var prefixRange =
-        new PrefixRange(serializeKey(new io.camunda.zeebe.db.impl.rocksdb.DbNullKey()));
-    visitEntries(mergedEntriesInOrder(prefixRange), visitor);
+    visitEntries(null, new io.camunda.zeebe.db.impl.rocksdb.DbNullKey(), false, visitor);
   }
 
   @Override
@@ -245,7 +227,7 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   @Override
   public void whileEqualPrefix(
       final DbKey keyPrefix, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    visitEntries(mergedEntriesInOrder(new PrefixRange(serializeKey(keyPrefix))), visitor);
+    visitEntries(null, keyPrefix, false, visitor);
   }
 
   @Override
@@ -253,25 +235,13 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
       final DbKey keyPrefix,
       final KeyType startAtKey,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    final var prefixRange = new PrefixRange(serializeKey(keyPrefix));
-    if (startAtKey == null) {
-      visitEntries(mergedEntriesInOrder(prefixRange), visitor);
-    } else {
-      visitEntries(mergedEntriesInOrder(serializeKey(startAtKey), prefixRange), visitor);
-    }
+    visitEntries(startAtKey, keyPrefix, false, visitor);
   }
 
   @Override
   public void whileTrueReverse(
       final KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    final var prefixRange =
-        new PrefixRange(serializeKey(new io.camunda.zeebe.db.impl.rocksdb.DbNullKey()));
-    if (startAtKey == null) {
-      visitEntriesReverse(mergedEntriesInOrder(prefixRange), prefixRange, visitor);
-    } else {
-      visitEntriesReverse(
-          mergedEntriesInOrder(prefixRange), serializeKey(startAtKey), prefixRange, visitor);
-    }
+    visitEntries(startAtKey, new io.camunda.zeebe.db.impl.rocksdb.DbNullKey(), true, visitor);
   }
 
   @Override
@@ -285,20 +255,12 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
 
   @Override
   public void whileTrue(final KeyVisitor<KeyType> visitor) {
-    final var prefixRange =
-        new PrefixRange(serializeKey(new io.camunda.zeebe.db.impl.rocksdb.DbNullKey()));
-    visitKeys(mergedEntriesInOrder(prefixRange), visitor);
+    visitKeys(null, new io.camunda.zeebe.db.impl.rocksdb.DbNullKey(), false, visitor);
   }
 
   @Override
   public void whileTrue(final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
-    final var prefixRange =
-        new PrefixRange(serializeKey(new io.camunda.zeebe.db.impl.rocksdb.DbNullKey()));
-    if (startAtKey == null) {
-      visitKeys(mergedEntriesInOrder(prefixRange), visitor);
-    } else {
-      visitKeys(mergedEntriesInOrder(serializeKey(startAtKey), prefixRange), visitor);
-    }
+    visitKeys(startAtKey, new io.camunda.zeebe.db.impl.rocksdb.DbNullKey(), false, visitor);
   }
 
   @Override
@@ -313,30 +275,18 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
 
   @Override
   public void whileEqualPrefix(final DbKey keyPrefix, final KeyVisitor<KeyType> visitor) {
-    visitKeys(mergedEntriesInOrder(new PrefixRange(serializeKey(keyPrefix))), visitor);
+    visitKeys(null, keyPrefix, false, visitor);
   }
 
   @Override
   public void whileEqualPrefix(
       final DbKey keyPrefix, final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
-    final var prefixRange = new PrefixRange(serializeKey(keyPrefix));
-    if (startAtKey == null) {
-      visitKeys(mergedEntriesInOrder(prefixRange), visitor);
-    } else {
-      visitKeys(mergedEntriesInOrder(serializeKey(startAtKey), prefixRange), visitor);
-    }
+    visitKeys(startAtKey, keyPrefix, false, visitor);
   }
 
   @Override
   public void whileTrueReverse(final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
-    final var prefixRange =
-        new PrefixRange(serializeKey(new io.camunda.zeebe.db.impl.rocksdb.DbNullKey()));
-    if (startAtKey == null) {
-      visitKeysReverse(mergedEntriesInOrder(prefixRange), prefixRange, visitor);
-    } else {
-      visitKeysReverse(
-          mergedEntriesInOrder(prefixRange), serializeKey(startAtKey), prefixRange, visitor);
-    }
+    visitKeys(startAtKey, new io.camunda.zeebe.db.impl.rocksdb.DbNullKey(), true, visitor);
   }
 
   @Override
@@ -385,28 +335,25 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
 
   @Override
   public boolean isEmpty() {
-    return count() == 0;
+    final boolean[] empty = {true};
+    context.runInTransaction(
+        () -> {
+          try (final var iterator =
+              newMergedIterator(null, new io.camunda.zeebe.db.impl.rocksdb.DbNullKey(), false)) {
+            empty[0] = !iterator.isValid();
+          }
+        });
+    return empty[0];
   }
 
   @Override
   public long count() {
-    final long[] count = {0};
-    context.runInTransaction(
-        () ->
-            count[0] =
-                mergedEntriesInOrder(
-                        new PrefixRange(
-                            serializeKey(new io.camunda.zeebe.db.impl.rocksdb.DbNullKey())))
-                    .size());
-    return count[0];
+    return countEntries(new io.camunda.zeebe.db.impl.rocksdb.DbNullKey());
   }
 
   @Override
   public long countEqualPrefix(final DbKey prefix) {
-    final long[] count = {0};
-    context.runInTransaction(
-        () -> count[0] = mergedEntriesInOrder(new PrefixRange(serializeKey(prefix))).size());
-    return count[0];
+    return countEntries(prefix);
   }
 
   @Override
@@ -459,144 +406,70 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
     return activeColumnFamily.exists(key) || persistentColumnFamily.exists(key);
   }
 
-  private NavigableMap<byte[], DbValue> mergedEntriesInOrder(final PrefixRange prefixRange) {
-    return materializeMergedEntries(prefixRange);
-  }
-
-  private NavigableMap<byte[], DbValue> mergedEntriesInOrder(
-      final byte[] startAt, final PrefixRange prefixRange) {
-    return materializeMergedEntries(prefixRange).tailMap(startAt, true);
-  }
-
-  private NavigableMap<byte[], DbValue> materializeMergedEntries(final PrefixRange prefixRange) {
-    final NavigableMap<byte[], DbValue> merged = new TreeMap<>(Arrays::compareUnsigned);
-
-    // Use the prefix key to scope iteration to only matching entries.
-    final var prefixDbKey = new PrefixDbKey(prefixRange.lowerBound());
-
-    // Iterate only the matching range in the persistent layer.
-    // Check tombstones inline instead of building a full tombstone snapshot upfront —
-    // avoids O(total-tombstones) allocation+copy on every single iteration call.
-    persistentColumnFamily.whileEqualPrefix(
-        prefixDbKey,
-        (key, value) -> {
-          final byte[] rawKey = serializeKey(key);
-          if (!context.isTombstoned(rawKey)) {
-            merged.putIfAbsent(rawKey, cloneValue(value));
-          }
-          return true;
-        });
-
-    // Iterate only the matching range in the active layer (overwrites persistent)
-    activeColumnFamily.whileEqualPrefix(
-        prefixDbKey,
-        (key, value) -> {
-          final byte[] rawKey = serializeKey(key);
-          if (!context.isTombstoned(rawKey)) {
-            merged.put(rawKey, cloneValue(value));
-          }
-          return true;
-        });
-
-    return merged;
-  }
-
   private void visitEntries(
-      final NavigableMap<byte[], DbValue> entries,
+      final @Nullable DbKey startAt,
+      final DbKey prefix,
+      final boolean reverse,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    for (final var entry : entries.entrySet()) {
-      wrapKey(entry.getKey());
-      readValueInto(entry.getValue(), valueInstance);
-      if (!visitor.visit(keyInstance, valueInstance)) {
-        break;
-      }
-    }
-  }
-
-  private void visitEntriesReverse(
-      final NavigableMap<byte[], DbValue> entries,
-      final PrefixRange prefixRange,
-      final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    final NavigableMap<byte[], DbValue> ranged =
-        prefixRange
-            .upperBound()
-            .map(upperBound -> entries.subMap(prefixRange.lowerBound(), true, upperBound, false))
-            .orElse(entries.tailMap(prefixRange.lowerBound(), true));
-
-    for (final var entry : ranged.descendingMap().entrySet()) {
-      wrapKey(entry.getKey());
-      readValueInto(entry.getValue(), valueInstance);
-      if (!visitor.visit(keyInstance, valueInstance)) {
-        break;
-      }
-    }
-  }
-
-  private void visitEntriesReverse(
-      final NavigableMap<byte[], DbValue> entries,
-      final byte[] startAt,
-      final PrefixRange prefixRange,
-      final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    final NavigableMap<byte[], DbValue> ranged =
-        prefixRange
-            .upperBound()
-            .map(upperBound -> entries.subMap(prefixRange.lowerBound(), true, upperBound, false))
-            .orElse(entries.tailMap(prefixRange.lowerBound(), true));
-
-    for (final var entry : ranged.headMap(startAt, true).descendingMap().entrySet()) {
-      wrapKey(entry.getKey());
-      readValueInto(entry.getValue(), valueInstance);
-      if (!visitor.visit(keyInstance, valueInstance)) {
-        break;
-      }
-    }
+    context.runInTransaction(
+        () -> {
+          try (final var iterator = newMergedIterator(startAt, prefix, reverse)) {
+            while (iterator.isValid()) {
+              wrapKey(iterator.key());
+              iterator.writeValueInto(valueInstance);
+              if (!visitor.visit(keyInstance, valueInstance)) {
+                break;
+              }
+              iterator.next();
+            }
+          }
+        });
   }
 
   private void visitKeys(
-      final NavigableMap<byte[], DbValue> entries, final KeyVisitor<KeyType> visitor) {
-    for (final byte[] rawKey : entries.keySet()) {
-      wrapKey(rawKey);
-      if (!visitor.visit(keyInstance)) {
-        break;
-      }
-    }
+      final @Nullable DbKey startAt,
+      final DbKey prefix,
+      final boolean reverse,
+      final KeyVisitor<KeyType> visitor) {
+    context.runInTransaction(
+        () -> {
+          try (final var iterator = newMergedIterator(startAt, prefix, reverse)) {
+            while (iterator.isValid()) {
+              wrapKey(iterator.key());
+              if (!visitor.visit(keyInstance)) {
+                break;
+              }
+              iterator.next();
+            }
+          }
+        });
   }
 
-  private void visitKeysReverse(
-      final NavigableMap<byte[], DbValue> entries,
-      final PrefixRange prefixRange,
-      final KeyVisitor<KeyType> visitor) {
-    final NavigableMap<byte[], DbValue> ranged =
-        prefixRange
-            .upperBound()
-            .map(upperBound -> entries.subMap(prefixRange.lowerBound(), true, upperBound, false))
-            .orElse(entries.tailMap(prefixRange.lowerBound(), true));
-
-    for (final byte[] rawKey : ranged.descendingKeySet()) {
-      wrapKey(rawKey);
-      if (!visitor.visit(keyInstance)) {
-        break;
-      }
-    }
+  private long countEntries(final DbKey prefix) {
+    final long[] count = {0};
+    context.runInTransaction(
+        () -> {
+          try (final var iterator = newMergedIterator(null, prefix, false)) {
+            while (iterator.isValid()) {
+              count[0]++;
+              iterator.next();
+            }
+          }
+        });
+    return count[0];
   }
 
-  private void visitKeysReverse(
-      final NavigableMap<byte[], DbValue> entries,
-      final byte[] startAt,
-      final PrefixRange prefixRange,
-      final KeyVisitor<KeyType> visitor) {
-    final NavigableMap<byte[], DbValue> ranged =
-        prefixRange
-            .upperBound()
-            .map(upperBound -> entries.subMap(prefixRange.lowerBound(), true, upperBound, false))
-            .orElse(entries.tailMap(prefixRange.lowerBound(), true));
+  private MergedRawEntryIterator newMergedIterator(
+      final @Nullable DbKey startAt, final DbKey prefix, final boolean reverse) {
+    return new MergedRawEntryIterator(
+        activeIteratorProvider.newRawIterator(startAt, prefix, reverse),
+        persistentIteratorProvider.newRawIterator(startAt, prefix, reverse),
+        reverse);
+  }
 
-    for (final byte[] rawKey : ranged.headMap(startAt, true).descendingKeySet()) {
-      wrapKey(rawKey);
-      if (!visitor.visit(keyInstance)) {
-        break;
-      }
-    }
+  @SuppressWarnings("unchecked")
+  private ValueType newValueInstance() {
+    return (ValueType) valueInstance.newInstance();
   }
 
   private void wrapKey(final byte[] rawKey) {
@@ -612,92 +485,161 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
     return result;
   }
 
-  private void readValueInto(final DbValue stored, final DbValue target) {
-    if (target instanceof UntypedDbValueTarget) {
-      final int length = stored.getLength();
-      final byte[] bytes = new byte[length];
-      final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
-      stored.write(buffer, 0);
-      target.wrap(buffer, 0, length);
-      return;
+  private RawEntryIteratorProvider asRawIteratorProvider(
+      final ColumnFamily<KeyType, ValueType> columnFamily) {
+    if (columnFamily instanceof final RawEntryIteratorProvider provider) {
+      return provider;
     }
 
-    stored.copyTo(target);
-  }
-
-  private DbValue cloneValue(final ValueType value) {
-    final DbValue clone = value.newInstance();
-    value.copyTo(clone);
-    return clone;
-  }
-
-  @SuppressWarnings("unchecked")
-  private ValueType newValueInstance() {
-    return (ValueType) valueInstance.newInstance();
+    throw new IllegalStateException(
+        "ColumnFamily " + columnFamily.getClass().getName() + " does not support raw iteration");
   }
 
   private static final class Holder<T> {
     private @Nullable T value;
   }
 
-  /**
-   * A DbKey that wraps raw serialized prefix bytes (including the CF prefix). When passed to {@code
-   * whileEqualPrefix} on a child column family, the CF prefix portion is stripped because each
-   * child column family prepends its own CF prefix during serialization. This key writes only the
-   * user-key portion so the child layer's serialization produces the correct lookup.
-   */
-  private static final class PrefixDbKey implements DbKey {
-    private final byte[] userKeyBytes;
-    private final int userKeyLength;
+  private final class MergedRawEntryIterator implements AutoCloseable {
+    private static final int NONE = 0;
+    private static final int ACTIVE = 1;
+    private static final int PERSISTENT = 2;
+    private static final byte[] NO_KEY = new byte[0];
 
-    PrefixDbKey(final byte[] fullPrefixBytes) {
-      // fullPrefixBytes = [8-byte CF prefix] + [user key bytes]
-      userKeyLength = fullPrefixBytes.length - Long.BYTES;
-      if (userKeyLength > 0) {
-        userKeyBytes = new byte[userKeyLength];
-        System.arraycopy(fullPrefixBytes, Long.BYTES, userKeyBytes, 0, userKeyLength);
-      } else {
-        userKeyBytes = new byte[0];
+    private final RawEntryIteratorProvider.RawEntryIterator activeIterator;
+    private final RawEntryIteratorProvider.RawEntryIterator persistentIterator;
+    private final boolean reverse;
+    private int currentSource = NONE;
+    private byte[] currentKey = NO_KEY;
+
+    private MergedRawEntryIterator(
+        final RawEntryIteratorProvider.RawEntryIterator activeIterator,
+        final RawEntryIteratorProvider.RawEntryIterator persistentIterator,
+        final boolean reverse) {
+      this.activeIterator = activeIterator;
+      this.persistentIterator = persistentIterator;
+      this.reverse = reverse;
+      moveToNext();
+    }
+
+    private boolean isValid() {
+      return currentSource != NONE;
+    }
+
+    private byte[] key() {
+      return currentKey;
+    }
+
+    private void writeValueInto(final DbValue target) {
+      switch (currentSource) {
+        case ACTIVE -> activeIterator.writeValueInto(target);
+        case PERSISTENT -> persistentIterator.writeValueInto(target);
+        case NONE -> throw new IllegalStateException("Iterator is exhausted");
       }
     }
 
-    @Override
-    public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-      // not used — this is a write-only key for prefix queries
-    }
-
-    @Override
-    public int getLength() {
-      return userKeyLength;
-    }
-
-    @Override
-    public int write(final MutableDirectBuffer buffer, final int offset) {
-      if (userKeyLength > 0) {
-        buffer.putBytes(offset, userKeyBytes, 0, userKeyLength);
-      }
-      return userKeyLength;
-    }
-  }
-
-  private record PrefixRange(byte[] lowerBound) {
-    Optional<byte[]> upperBound() {
-      final byte[] upper = Arrays.copyOf(lowerBound, lowerBound.length);
-      for (int i = upper.length - 1; i >= 0; i--) {
-        if ((upper[i] & 0xFF) < 0xFF) {
-          upper[i]++;
-          return Optional.of(Arrays.copyOf(upper, i + 1));
+    private void next() {
+      switch (currentSource) {
+        case ACTIVE -> activeIterator.next();
+        case PERSISTENT -> persistentIterator.next();
+        case NONE -> {
+          return;
         }
       }
-      return Optional.empty();
+      moveToNext();
     }
 
-    boolean contains(final byte[] rawKey) {
-      if (Arrays.compareUnsigned(rawKey, lowerBound) < 0) {
-        return false;
+    @Override
+    public void close() throws Exception {
+      Exception failure = null;
+      try {
+        activeIterator.close();
+      } catch (final Exception e) {
+        failure = e;
       }
 
-      return upperBound().map(upper -> Arrays.compareUnsigned(rawKey, upper) < 0).orElse(true);
+      try {
+        persistentIterator.close();
+      } catch (final Exception e) {
+        if (failure == null) {
+          failure = e;
+        } else {
+          failure.addSuppressed(e);
+        }
+      }
+
+      if (failure != null) {
+        throw failure;
+      }
+    }
+
+    private void moveToNext() {
+      currentSource = NONE;
+      currentKey = NO_KEY;
+
+      while (true) {
+        final boolean activeValid = activeIterator.isValid();
+        final boolean persistentValid = persistentIterator.isValid();
+
+        if (!activeValid && !persistentValid) {
+          return;
+        }
+
+        if (!activeValid) {
+          final byte[] persistentKey = persistentIterator.key();
+          if (context.isTombstoned(persistentKey)) {
+            persistentIterator.next();
+            continue;
+          }
+          currentSource = PERSISTENT;
+          currentKey = persistentKey;
+          return;
+        }
+
+        if (!persistentValid) {
+          final byte[] activeKey = activeIterator.key();
+          if (context.isTombstoned(activeKey)) {
+            activeIterator.next();
+            continue;
+          }
+          currentSource = ACTIVE;
+          currentKey = activeKey;
+          return;
+        }
+
+        final byte[] activeKey = activeIterator.key();
+        final byte[] persistentKey = persistentIterator.key();
+        final int cmp = java.util.Arrays.compareUnsigned(activeKey, persistentKey);
+        final int effectiveCmp = reverse ? -cmp : cmp;
+
+        if (effectiveCmp < 0) {
+          if (context.isTombstoned(activeKey)) {
+            activeIterator.next();
+            continue;
+          }
+          currentSource = ACTIVE;
+          currentKey = activeKey;
+          return;
+        }
+
+        if (effectiveCmp > 0) {
+          if (context.isTombstoned(persistentKey)) {
+            persistentIterator.next();
+            continue;
+          }
+          currentSource = PERSISTENT;
+          currentKey = persistentKey;
+          return;
+        }
+
+        persistentIterator.next();
+        if (context.isTombstoned(activeKey)) {
+          activeIterator.next();
+          continue;
+        }
+        currentSource = ACTIVE;
+        currentKey = activeKey;
+        return;
+      }
     }
   }
 }

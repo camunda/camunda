@@ -25,7 +25,8 @@ import java.util.function.Supplier;
 /**
  * Factory for the layered ZeebeDb experiment.
  *
- * <p>Reads populate a hot in-memory layer while RocksDB remains the persistent source of truth.
+ * <p>The in-memory layer stores only overlay writes that have not yet been flushed. Plain reads go
+ * directly to RocksDB when needed and do not populate the in-memory layer.
  */
 public final class LayeredZeebeDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>

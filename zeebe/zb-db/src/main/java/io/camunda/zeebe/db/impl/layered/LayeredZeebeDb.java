@@ -31,7 +31,11 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Layered ZeebeDb with an active in-memory cache in front of the persistent RocksDB-backed state.
+ * Layered ZeebeDb with an active in-memory overlay in front of the persistent RocksDB-backed
+ * state.
+ *
+ * <p>The in-memory layer stores unflushed writes and tombstones only; plain reads do not cache
+ * RocksDB entries into heap.
  *
  * <p>Thread-safety between the engine thread and the snapshot-director thread is provided by a
  * {@link ReadWriteLock} that guards only the snapshot/close coordination path:

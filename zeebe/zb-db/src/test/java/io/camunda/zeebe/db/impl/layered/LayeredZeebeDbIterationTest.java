@@ -66,6 +66,26 @@ final class LayeredZeebeDbIterationTest {
     }
   }
 
+  @Test
+  void shouldNotCachePersistentEntriesDuringIteration(final @TempDir File path) throws Exception {
+    // given
+    writePersistentLongValue(path, 1L, 10L);
+    writePersistentLongValue(path, 2L, 20L);
+
+    try (final var layeredDb = openLayeredDb(path)) {
+      final var columnFamily = longColumnFamily(layeredDb);
+      final var activeColumnFamily = longColumnFamily(layeredDb.activeDb());
+      final List<Long> keys = new ArrayList<>();
+
+      // when
+      columnFamily.forEach((key, value) -> keys.add(key.getValue()));
+
+      // then
+      assertThat(keys).containsExactly(1L, 2L);
+      assertThat(activeColumnFamily.count()).isZero();
+    }
+  }
+
   @SuppressWarnings("unchecked")
   private LayeredZeebeDb<DefaultColumnFamily> openLayeredDb(final File path) {
     return (LayeredZeebeDb<DefaultColumnFamily>)
