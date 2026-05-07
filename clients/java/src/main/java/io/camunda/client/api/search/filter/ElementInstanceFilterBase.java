@@ -26,66 +26,152 @@ import java.util.function.Consumer;
 
 public interface ElementInstanceFilterBase extends SearchRequestFilter {
 
-  /** Filter element instances by the specified key. */
+  /**
+   * Filters element instances by the specified key.
+   *
+   * @param value the key of element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase elementInstanceKey(final long value);
 
-  /** Filter element instances by process definition key. */
+  /**
+   * Filters element instances by process definition key.
+   *
+   * @param value the process definition key of element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase processDefinitionKey(final long value);
 
-  /** Filter element instances by bpmn process id. */
+  /**
+   * Filters element instances by bpmn process id.
+   *
+   * @param value the bpmn process id of element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase processDefinitionId(final String value);
 
-  /** Filter element instances by process instance key. */
+  /**
+   * Filters element instances by process instance key.
+   *
+   * @param value the process instance key of element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase processInstanceKey(final long value);
 
-  /** Filter element instances by element id (exact match). */
+  /**
+   * Filters element instances by element id (exact match).
+   *
+   * @param value the element id of element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase elementId(final String value);
 
-  /** Filter element instances by element id using {@link StringProperty} consumer. */
+  /**
+   * Filters element instances by element id using advanced {@link StringProperty} operations.
+   *
+   * @param fn the element id filter configuration
+   * @return the updated filter
+   */
   ElementInstanceFilterBase elementId(final Consumer<StringProperty> fn);
 
   /**
-   * Filter element instances by element name (exact match). Only works for data created with 8.8 or
-   * later.
+   * Filters element instances by element name (exact match). This only works for data created with
+   * 8.8 and onwards. Instances from prior versions don't contain this data.
+   *
+   * @param value the element name of element instance
+   * @return the updated filter
    */
   ElementInstanceFilterBase elementName(final String value);
 
   /**
-   * Filter element instances by element name using {@link StringProperty} consumer. Only works for
-   * data created with 8.8 or later.
+   * Filters element instances by element name using advanced {@link StringProperty} operations.
+   * This only works for data created with 8.8 and onwards.
+   *
+   * @param fn the element name filter configuration
+   * @return the updated filter
    */
   ElementInstanceFilterBase elementName(final Consumer<StringProperty> fn);
 
-  /** Filter element instances by state. */
+  /**
+   * Filters element instances by state.
+   *
+   * @param value the state of element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase state(final ElementInstanceState value);
 
-  /** Filter by state using {@link ElementInstanceStateProperty} consumer. */
+  /** Filter by state using {@link ElementInstanceStateProperty} consumer */
   ElementInstanceFilterBase state(final Consumer<ElementInstanceStateProperty> fn);
 
-  /** Filter element instances by type. */
+  /**
+   * Filters element instances by type.
+   *
+   * @param value the type of element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase type(final ElementInstanceType value);
 
-  /** Filter element instances by incident (has an incident). */
+  /**
+   * Filters element instances by incident (has an incident)
+   *
+   * @param value has the element instance an incident
+   * @return the updated filter
+   */
   ElementInstanceFilterBase hasIncident(final boolean value);
 
-  /** Filter element instances by incident key. */
+  /**
+   * Filters element instances by incident key.
+   *
+   * @param value the incident key for element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase incidentKey(final long value);
 
-  /** Filter element instances by tenant id. */
+  /**
+   * Filters element instances by tenant id.
+   *
+   * @param value the tenant id for element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase tenantId(final String value);
 
-  /** Filter element instances by start date. */
+  /**
+   * Filters element instances by start date.
+   *
+   * @param value the start date of the element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase startDate(final OffsetDateTime value);
 
-  /** Filter element instances by start date using {@link DateTimeProperty} consumer. */
+  /**
+   * Filters element instances by the specified {@link DateTimeProperty} start date.
+   *
+   * @param startDate the start date of the element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase startDate(final Consumer<DateTimeProperty> startDate);
 
-  /** Filter element instances by end date. */
+  /**
+   * Filters element instances by end date.
+   *
+   * @param value the end date of the element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase endDate(final OffsetDateTime value);
 
-  /** Filter element instances by end date using {@link DateTimeProperty} consumer. */
+  /**
+   * Filters element instances by the specified {@link DateTimeProperty} end date.
+   *
+   * @param endDate the end date of the element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase endDate(final Consumer<DateTimeProperty> endDate);
 
-  /** Filter element instances by the specified scope key. */
+  /**
+   * Filters element instances by the specified scope key.
+   *
+   * @param value the scope key of the element instance
+   * @return the updated filter
+   */
   ElementInstanceFilterBase elementInstanceScopeKey(final long value);
 }
