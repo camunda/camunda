@@ -56,6 +56,12 @@ public class BatchOperationCreatedExportHandler
             BatchOperationType.valueOf(record.getValue().getBatchOperationType().name())));
   }
 
+  @Override
+  public boolean shouldFlushAfterRecordProcessed() {
+    // to minimize the risk of PK violations during MERGE INTO we want to flush fast here
+    return true;
+  }
+
   private BatchOperationDbModel map(final Record<BatchOperationCreationRecordValue> record) {
     final var value = record.getValue();
     final var actorInfo = actorInfoExtractor.extract(record);

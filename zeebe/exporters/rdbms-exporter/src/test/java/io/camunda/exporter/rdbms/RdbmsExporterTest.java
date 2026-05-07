@@ -168,6 +168,22 @@ class RdbmsExporterTest {
   }
 
   @Test
+  void shouldCheckForFlushOnFlushAfterHandlerTrue() {
+    // given
+    final var jobHandler = mockHandler(ValueType.JOB);
+    when(jobHandler.shouldFlushAfterRecordProcessed()).thenReturn(true);
+    final var record = mockRecord(ValueType.JOB, 1);
+
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler));
+
+    // when
+    exporter.export(record);
+
+    // then
+    verify(rdbmsWriters).flush(true);
+  }
+
+  @Test
   void shouldRegisterFlushListeners() {
     // given
     createExporter(b -> b);

@@ -225,6 +225,7 @@ public final class RdbmsExporter {
         record.getIntent());
 
     boolean exported = false;
+    boolean shouldFlushAfterRecordProcessed = false;
     if (registeredHandlers.containsKey(record.getValueType())) {
       for (final var handler : registeredHandlers.get(record.getValueType())) {
         if (handler.canExport(record)) {
@@ -235,6 +236,7 @@ public final class RdbmsExporter {
               handler.getClass());
           handler.export(record);
           exported = true;
+          shouldFlushAfterRecordProcessed |= handler.shouldFlushAfterRecordProcessed();
         } else {
           LOG.trace(
               "[RDBMS Exporter P{}] Handler {} can not export record {}",
@@ -263,7 +265,8 @@ public final class RdbmsExporter {
       // causes a flush check after each processed record. Depending on the queue size and
       // configuration, the writers ExecutionQueue may or may not flush here.
       try {
-        final boolean flushed = rdbmsWriters.flush(flushAfterEachRecord());
+        final boolean shouldFlush = flushAfterEachRecord() || shouldFlushAfterRecordProcessed;
+        final boolean flushed = rdbmsWriters.flush(shouldFlush);
         if (flushed) {
           resetIntervalFlush();
         }
