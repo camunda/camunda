@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.coverage.core.CoverageCollector;
@@ -171,12 +172,15 @@ public class ProcessEngineCoverageIT {
         .send()
         .join();
 
-    client
-        .newEvaluateDecisionCommand()
-        .decisionId("test-coverage-decision")
-        .variable("category", "A")
-        .send()
-        .join();
+    final EvaluateDecisionResponse decisionResponse =
+        client
+            .newEvaluateDecisionCommand()
+            .decisionId("test-coverage-decision")
+            .variable("category", "A")
+            .send()
+            .join();
+
+    CamundaAssert.assertThatDecision(decisionResponse).isEvaluated();
 
     coverageCollector.collectTestRunCoverage("decision-run");
 
@@ -213,12 +217,15 @@ public class ProcessEngineCoverageIT {
         .send()
         .join();
 
-    client
-        .newEvaluateDecisionCommand()
-        .decisionId("test-coverage-decision")
-        .variable("category", "A")
-        .send()
-        .join();
+    final EvaluateDecisionResponse decisionResponse =
+        client
+            .newEvaluateDecisionCommand()
+            .decisionId("test-coverage-decision")
+            .variable("category", "A")
+            .send()
+            .join();
+
+    CamundaAssert.assertThatDecision(decisionResponse).isEvaluated();
 
     coverageCollector.collectTestRunCoverage("decision-run");
 
