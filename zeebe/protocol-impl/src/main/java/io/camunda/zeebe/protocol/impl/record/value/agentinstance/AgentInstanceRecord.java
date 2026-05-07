@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
@@ -29,9 +31,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final EnumProperty<AgentInstanceStatus> statusProp =
+      new EnumProperty<>("status", AgentInstanceStatus.class, AgentInstanceStatus.INITIALIZING);
 
   public AgentInstanceRecord() {
-    super(8);
+    super(9);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementIdProp)
@@ -39,7 +43,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processDefinitionVersionProp)
         .declareProperty(versionTagProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(statusProp);
   }
 
   @Override
@@ -119,6 +124,16 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public AgentInstanceStatus getStatus() {
+    return statusProp.getValue();
+  }
+
+  public AgentInstanceRecord setStatus(final AgentInstanceStatus status) {
+    statusProp.setValue(status);
     return this;
   }
 }

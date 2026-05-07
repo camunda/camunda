@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -59,5 +60,25 @@ final class AgentInstanceRecordTest {
         .isEqualTo(original.getProcessDefinitionVersion());
     assertThat(copy.getVersionTag()).isEqualTo(original.getVersionTag());
     assertThat(copy.getTenantId()).isEqualTo(original.getTenantId());
+  }
+
+  @Test
+  void shouldDefaultStatusToInitializing() {
+    final AgentInstanceRecord record = new AgentInstanceRecord();
+    assertThat(record.getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
+  }
+
+  @Test
+  void shouldRoundTripStatusViaMsgPack() {
+    // given
+    final AgentInstanceRecord original =
+        new AgentInstanceRecord().setStatus(AgentInstanceStatus.THINKING);
+
+    // when
+    final AgentInstanceRecord copy = new AgentInstanceRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
   }
 }

@@ -61,4 +61,9 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    */
   @Override
   String getTenantId();
+
+  /**
+   * @return the current status of the agent instance
+   */
+  AgentInstanceStatus getStatus();
 }
