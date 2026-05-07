@@ -46,7 +46,7 @@ on:
         default: ""
         required: false
       load-test-load:
-        description: '── Configuration ─────────────────── Helm args for workload components (e.g. --set starter.rate=100). Ignored when scenario is not "custom".'
+        description: '── Configuration ─────────────────── Helm args for workload components (e.g. --set starter.rate=100).'
         required: false
       platform-helm-values:
         description: 'Additional Helm values for the Camunda platform chart (e.g. --set orchestration.resources.limits.memory=2Gi)'
