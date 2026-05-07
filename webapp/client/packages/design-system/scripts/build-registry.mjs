@@ -16,7 +16,6 @@ const COMPONENTS_DIR = join(ROOT, 'src/components/ui');
 const OUTPUT_DIR = join(ROOT, 'registry');
 
 const PACKAGE_NAME = '@camunda/design-system';
-const FLAVORS = ['carbon', 'shadcn'];
 const HOMEPAGE = 'https://design.camunda.io';
 
 const onlyArgs = process.argv.slice(2);
@@ -108,9 +107,9 @@ function extractDependencies(source) {
   return [...deps].sort();
 }
 
-async function buildItem(component, flavor) {
+async function buildItem(component) {
   const dir = join(COMPONENTS_DIR, component);
-  const sourcePath = join(dir, `${component}.${flavor}.tsx`);
+  const sourcePath = join(dir, `${component}.shadcn.tsx`);
   const source = await readOptional(sourcePath);
   if (source === null) return null;
   const docsMdx = await readOptional(join(dir, `${component}.docs.mdx`));
@@ -122,7 +121,6 @@ async function buildItem(component, flavor) {
   const migrationGuide = migrationMdx ? stripMdxPreamble(migrationMdx) : null;
 
   const exportName = pascalCase(component);
-  const subpath = `${PACKAGE_NAME}/${flavor}`;
 
   return {
     $schema: 'https://ui.shadcn.com/schema/registry-item.json',
@@ -139,33 +137,30 @@ async function buildItem(component, flavor) {
       },
     ],
     meta: {
-      flavor,
       package: PACKAGE_NAME,
-      packageSubpath: subpath,
-      import: `import {${exportName}} from '${subpath}';`,
+      import: `import {${exportName}} from '${PACKAGE_NAME}';`,
       ...(docs ? {docs} : {}),
       ...(migrationGuide ? {migrationGuide} : {}),
     },
   };
 }
 
-async function buildRegistry(flavor, components) {
+async function buildRegistry(components) {
   const items = (
-    await Promise.all(components.map((c) => buildItem(c, flavor)))
+    await Promise.all(components.map(buildItem))
   ).filter(Boolean);
-  const flavorOut = join(OUTPUT_DIR, flavor);
-  await mkdir(join(flavorOut, 'r'), {recursive: true});
+  await mkdir(join(OUTPUT_DIR, 'r'), {recursive: true});
   await Promise.all(
     items.map((item) =>
       writeFile(
-        join(flavorOut, 'r', `${item.name}.json`),
+        join(OUTPUT_DIR, 'r', `${item.name}.json`),
         JSON.stringify(item, null, 2) + '\n',
       ),
     ),
   );
   const index = {
     $schema: 'https://ui.shadcn.com/schema/registry.json',
-    name: `@camunda-${flavor}`,
+    name: '@camunda',
     homepage: HOMEPAGE,
     items: items.map((item) => ({
       name: item.name,
@@ -175,7 +170,7 @@ async function buildRegistry(flavor, components) {
     })),
   };
   await writeFile(
-    join(flavorOut, 'registry.json'),
+    join(OUTPUT_DIR, 'registry.json'),
     JSON.stringify(index, null, 2) + '\n',
   );
   return items.length;
@@ -188,12 +183,8 @@ async function main() {
     process.exit(1);
   }
   await rm(OUTPUT_DIR, {recursive: true, force: true});
-  for (const flavor of FLAVORS) {
-    const count = await buildRegistry(flavor, components);
-    console.log(
-      `Built ${flavor} registry: ${count} item${count === 1 ? '' : 's'}.`,
-    );
-  }
+  const count = await buildRegistry(components);
+  console.log(`Built registry: ${count} item${count === 1 ? '' : 's'}.`);
 }
 
 main().catch((err) => {

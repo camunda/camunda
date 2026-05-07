@@ -18,9 +18,9 @@ This package exposes its components as a [shadcn-compatible registry](https://ui
 
 A stakeholder (technical or not) prompts Claude with something like:
 
-> Build a settings page using `@camunda-shadcn`
+> Build a settings page using `@camunda`
 
-Claude calls the shadcn MCP, which fetches our registry, and writes code that imports from `@camunda/design-system/shadcn`.
+Claude calls the shadcn MCP, which fetches our registry, and writes code that imports from `@camunda/design-system`.
 
 There is **no separate MCP server to run**. The shadcn MCP — which Claude Code already ships with — does the work; we just publish a static JSON catalog it can read.
 
@@ -40,50 +40,31 @@ Create or edit `components.json` at the root of your consuming app:
 ```json
 {
   "registries": {
-    "@camunda-shadcn": "https://cdn.jsdelivr.net/gh/camunda/camunda@shadcn-migration-frontend-unification/webapp/client/packages/design-system/registry/shadcn/r/{name}.json",
-    "@camunda-carbon": "https://cdn.jsdelivr.net/gh/camunda/camunda@shadcn-migration-frontend-unification/webapp/client/packages/design-system/registry/carbon/r/{name}.json"
+    "@camunda": "https://cdn.jsdelivr.net/gh/camunda/camunda@main/webapp/client/packages/design-system/registry/r/{name}.json"
   }
 }
 ```
 
-> The `@<branch>` segment in the URLs is currently the demo branch. Once this lands on `main` the URLs will switch to `@main` (or a tagged release for stability).
+> The `@main` segment auto-tracks the latest commit. Use a tagged release (`@v1.2.3`) or a commit SHA for an immutable pin.
 
 ### 3. Use it from prompts
 
 Reference the registry by alias in your prompt:
 
-- *"Build a login form using `@camunda-shadcn`"*
-- *"Show me the `@camunda-shadcn` card component"*
-- *"Replace this Carbon button with `@camunda-shadcn`"*
-
-Without the namespace prefix, Claude has to guess between the two flavors — be explicit, or set a project-level default in your app's `CLAUDE.md`.
-
----
-
-## Two registries during the migration
-
-| Registry | When to use |
-|---|---|
-| `@camunda-shadcn` | New code. Apps that have adopted Tailwind v4 and the shared `globals.css`. |
-| `@camunda-carbon` | Legacy Carbon wrappers. Apps still on the old CSS pipeline. |
-
-Both can be configured side-by-side. An app mid-migration can use shadcn on a new route while keeping carbon imports on legacy routes — the registries are queried independently and the CSS for each flavor is scoped per-component, so they coexist at runtime.
-
-After all consumer apps complete the migration, `@camunda-carbon` will be retired.
+- *"Build a login form using `@camunda`"*
+- *"Show me the `@camunda` card component"*
+- *"Replace this Carbon button with the `@camunda` equivalent"*
 
 ---
 
 ## How the registry works
 
-The registry is plain JSON files under `registry/{flavor}/`:
+The registry is plain JSON files under `registry/`:
 
 ```
 registry/
-├── shadcn/
-│   ├── registry.json       index of available items
-│   └── r/<name>.json       one file per component
-└── carbon/
-    └── ...                 same shape
+├── registry.json       index of available items
+└── r/<name>.json       one file per component
 ```
 
 Each per-component file contains:
@@ -91,7 +72,7 @@ Each per-component file contains:
 | Field | Source | Purpose |
 |---|---|---|
 | `title`, `description` | `<name>.docs.mdx` (first H1, first body paragraph) | Sidebar listing, search results |
-| `files[].content` | `<name>.{flavor}.tsx` | Inlined source for Claude to read |
+| `files[].content` | `<name>.shadcn.tsx` | Inlined source for Claude to read |
 | `dependencies` | parsed from `import … from '…'` statements | Lets consumers verify deps are installed |
 | `meta.import` | derived | The exact `import` line consumer code should emit |
 | `meta.docs` | `<name>.docs.mdx` (preamble stripped) | Purpose + when-to-use, for context |
@@ -104,7 +85,7 @@ The shadcn MCP exposes these via `list_items_in_registries`, `search_items_in_re
 Files are served by **jsdelivr** directly from this repo on GitHub. No deploy step, no infra. URL pattern:
 
 ```
-https://cdn.jsdelivr.net/gh/camunda/camunda@<ref>/webapp/client/packages/design-system/registry/<flavor>/r/<name>.json
+https://cdn.jsdelivr.net/gh/camunda/camunda@<ref>/webapp/client/packages/design-system/registry/r/<name>.json
 ```
 
 `<ref>` can be:
@@ -139,8 +120,7 @@ Each component folder under `src/components/ui/` needs:
 
 ```
 <name>/
-├── <name>.carbon.tsx        legacy implementation
-├── <name>.shadcn.tsx        new implementation
+├── <name>.shadcn.tsx        implementation
 ├── <name>.stories.tsx       Storybook stories
 ├── <name>.docs.mdx          purpose, when-to-use
 └── <name>.migration.mdx     Carbon → shadcn diff
