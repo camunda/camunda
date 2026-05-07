@@ -18,14 +18,23 @@ package io.camunda.runner.examples;
 import io.camunda.runner.Job;
 import io.camunda.runner.LiveBpmn;
 import io.camunda.runner.Run;
+import io.camunda.runner.RunOptions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.Map;
 
 /**
- * Adopt an existing {@link BpmnModelInstance} (e.g. one built with vanilla {@code Bpmn}) and bind
- * lambda workers to it via {@link LiveBpmn#of(BpmnModelInstance)} + {@code bind(...)}.
+ * Same order flow as {@link OrderDemo} — but the workers are attached via the <em>binding</em> API
+ * instead of inline lambdas.
+ *
+ * <p>This is the migration story for existing code: you already have a {@link BpmnModelInstance}
+ * built with vanilla {@code Bpmn.createExecutableProcess(...)}; LiveBpmn adopts it without any
+ * builder rewrite, and {@code .bind(elementId, lambda)} hooks lambdas onto each service task by id.
+ *
+ * <p>Compare with {@link OrderDemo} (inline lambdas) and pick the form that fits your codebase:
+ * binding keeps the BPMN definition in one place (often a constant or a separate factory) and keeps
+ * the worker code in another, which scales better for large processes.
  */
 public final class AdoptDemo {
 
@@ -34,26 +43,53 @@ public final class AdoptDemo {
   public static void main(final String[] args) throws Exception {
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
 
-    final BpmnModelInstance existing =
-        Bpmn.createExecutableProcess("adopt-me")
+    // ---- Step 1: existing BPMN model (e.g. one you already have in production code) ----
+    final BpmnModelInstance orderModel =
+        Bpmn.createExecutableProcess("order")
             .startEvent()
-            .serviceTask("greet", t -> t.zeebeJobType("greet"))
+            .serviceTask("validate", t -> t.zeebeJobType("validate"))
+            .serviceTask("charge", t -> t.zeebeJobType("charge"))
+            .serviceTask("ship", t -> t.zeebeJobType("ship"))
             .endEvent()
             .done();
 
-    System.out.println("[AdoptDemo] booting cluster…");
+    System.out.println("[AdoptDemo] booting cluster (first run pulls the image, ~1-2 min)…");
     try (var cluster = LiveBpmn.cluster().testcontainer()) {
+      System.out.println("[AdoptDemo] cluster ready, binding workers & creating instances…");
+
+      // ---- Step 2: bind worker lambdas to elements by id, then run ----
       final Run run =
-          LiveBpmn.of(existing)
+          LiveBpmn.of(orderModel)
               .bind(
-                  "greet",
+                  "validate",
                   (Job job) -> {
-                    System.out.println("hello from elementId=" + job.getElementId());
-                    return Map.of();
+                    final String orderId = job.variable("orderId", String.class);
+                    final double amount = job.variable("amount", Number.class).doubleValue();
+                    System.out.println("[validate] order=" + orderId + " amount=" + amount);
+                    return Map.of("valid", amount > 0);
                   })
-              .run(2, cluster);
+              .bind(
+                  "charge",
+                  (Job job) -> {
+                    final String orderId = job.variable("orderId", String.class);
+                    System.out.println("[charge]   charging " + orderId);
+                    return Map.of("paymentId", "P-" + orderId);
+                  })
+              .bind(
+                  "ship",
+                  (Job job) -> {
+                    final String paymentId = job.variable("paymentId", String.class);
+                    System.out.println("[ship]     payment=" + paymentId);
+                    return Map.of("trackingId", "T-" + job.getProcessInstanceKey());
+                  })
+              .run(
+                  RunOptions.of(3)
+                      .variables(
+                          i -> Map.of("orderId", "ORDER-" + (1000 + i), "amount", 19.99 + i)),
+                  cluster);
+
       System.out.println("Operate: " + run.operateUrl());
-      run.await(Duration.ofMinutes(1));
+      run.await(Duration.ofMinutes(2));
       System.out.println("done; handled = " + run.workersHandled());
     }
   }

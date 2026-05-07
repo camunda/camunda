@@ -153,7 +153,7 @@ Each lives under `src/main/java/io/camunda/runner/examples/` and has a `main()`:
 | `OrderDemo` | Happy path with variables threaded through `validate -> charge -> ship` via `job.variable(name, Class)` and `Map.of(...)` returns. |
 | `ApprovalDemo` | Exclusive gateway with two FEEL-conditioned branches (`=approved = true` / `=approved = false`). |
 | `LoadDemo` | Paced creation of 50 instances 100 ms apart so they trickle into Operate visibly. |
-| `AdoptDemo` | Adopt an existing `BpmnModelInstance` and bind workers via `LiveBpmn.of(model).bind(elementId, lambda)`. |
+| `AdoptDemo` | Same order flow as `OrderDemo`, but workers attached via the **binding API**: `LiveBpmn.of(existingModel).bind("validate", …).bind("charge", …).bind("ship", …)`. The migration story for existing `Bpmn.createExecutableProcess(...)` code. |
 
 After instance creation the runner logs a clickable URL (`Operate: http://...:port/operate/processes?process=<prefixedId>`) — paste it into your browser to watch the run flow.
 
