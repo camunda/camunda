@@ -122,6 +122,9 @@
     ON DUPLICATE KEY UPDATE BATCH_OPERATION_KEY = BATCH_OPERATION_KEY
   </insert>
 
+  <!-- The batch operation insert can happen concurrently on multiple partitions.
+  The more common MERGE INTO of MSSQL is not safe here and still can cause a PK violation.
+  This is what we want to avoid. This try-catch will explicitly ignore the PK violation. -->
   <insert id="createIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
     databaseId="mssql">
@@ -153,6 +156,9 @@
     END CATCH
   </insert>
 
+  <!-- The batch operation insert can happen concurrently on multiple partitions.
+  The more common MERGE INTO of MSSQL is not safe here and still can cause a PK violation.
+  This is what we want to avoid. This IGNORE_ROW_ON_DUPKEY_INDEX hint will explicitly ignore the PK violation. -->
   <insert id="createIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel"
     databaseId="oracle">
