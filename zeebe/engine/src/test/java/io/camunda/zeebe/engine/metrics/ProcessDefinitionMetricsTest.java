@@ -38,11 +38,10 @@ public class ProcessDefinitionMetricsTest {
 
     // then
     assertThat(definitionsCountGauge()).describedAs("unique process definitions count").isOne();
-    assertThat(versionsCountGauge()).describedAs("total deployed versions count").isOne();
   }
 
   @Test
-  public void shouldIncrementVersionCountButNotDefinitionCountOnRedeployment() {
+  public void shouldNotIncrementDefinitionCountOnRedeployment() {
     // given
     engine
         .deployment()
@@ -60,13 +59,10 @@ public class ProcessDefinitionMetricsTest {
                 .done())
         .deploy();
 
-    // then - same BPMN process ID, so unique definitions stays at 1, but total versions is 2
+    // then - same BPMN process ID, so unique definitions stays at 1
     assertThat(definitionsCountGauge())
         .describedAs("unique process definitions count after redeployment")
         .isOne();
-    assertThat(versionsCountGauge())
-        .describedAs("total deployed versions count after redeployment")
-        .isEqualTo(2);
   }
 
   @Test
@@ -82,9 +78,6 @@ public class ProcessDefinitionMetricsTest {
     assertThat(definitionsCountGauge())
         .describedAs("unique process definitions count for two distinct processes")
         .isEqualTo(2);
-    assertThat(versionsCountGauge())
-        .describedAs("total deployed versions count for two distinct processes")
-        .isEqualTo(2);
   }
 
   @Test
@@ -96,8 +89,8 @@ public class ProcessDefinitionMetricsTest {
         .deploy();
 
     // then - size gauge is registered and reports a positive byte count
-    assertThat(resourceSizeGauge(1))
-        .describedAs("resource size gauge for %s v1", PROCESS_ID_A)
+    assertThat(resourceSizeGauge(PROCESS_ID_A))
+        .describedAs("resource size gauge for %s", PROCESS_ID_A)
         .isPositive();
   }
 
@@ -119,13 +112,39 @@ public class ProcessDefinitionMetricsTest {
         .deploy();
 
     // then - size gauge reports more bytes than the injected payload
-    assertThat(resourceSizeGauge(1))
+    assertThat(resourceSizeGauge(PROCESS_ID_A))
         .describedAs("resource size gauge should reflect the deployed BPMN bytes")
         .isGreaterThan(paddingBytes);
   }
 
   @Test
-  public void shouldDecrementCountsAndRemoveSizeGaugeOnDeletion() {
+  public void shouldSumSizeAcrossVersionsOfSameProcess() {
+    // given - a first version
+    engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID_A).startEvent().endEvent().done())
+        .deploy();
+    final double sizeAfterV1 = resourceSizeGauge(PROCESS_ID_A);
+
+    // when - deploy a second version of the same process
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID_A)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("work"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // then - the gauge reports the sum of both versions' sizes
+    assertThat(resourceSizeGauge(PROCESS_ID_A))
+        .describedAs("size gauge should aggregate bytes across all versions of the same process")
+        .isGreaterThan(sizeAfterV1);
+  }
+
+  @Test
+  public void shouldDecrementCountAndRemoveSizeGaugeOnDeletion() {
     // given
     final long processDefinitionKey = deploySimpleProcess(PROCESS_ID_A);
     assertThat(definitionsCountGauge()).isOne();
@@ -141,18 +160,16 @@ public class ProcessDefinitionMetricsTest {
     assertThat(definitionsCountGauge())
         .describedAs("unique process definitions count after deletion")
         .isZero();
-    assertThat(versionsCountGauge())
-        .describedAs("total deployed versions count after deletion")
-        .isZero();
-    assertThatCode(() -> resourceSizeGauge(1))
-        .describedAs("size gauge for deleted process version should be removed from registry")
+    assertThatCode(() -> resourceSizeGauge(PROCESS_ID_A))
+        .describedAs("size gauge for deleted process should be removed from registry")
         .isInstanceOf(MeterNotFoundException.class);
   }
 
   @Test
-  public void shouldDecrementVersionCountButNotDefinitionCountWhenOneVersionRemains() {
+  public void shouldSubtractDeletedVersionFromTotalSizeWhenOneVersionRemains() {
     // given - deploy two versions of the same process
     deploySimpleProcess(PROCESS_ID_A);
+    final double sizeAfterV1 = resourceSizeGauge(PROCESS_ID_A);
     final long v2Key =
         engine
             .deployment()
@@ -168,7 +185,9 @@ public class ProcessDefinitionMetricsTest {
             .get(0)
             .getProcessDefinitionKey();
 
-    assertThat(versionsCountGauge()).isEqualTo(2);
+    assertThat(resourceSizeGauge(PROCESS_ID_A))
+        .describedAs("size after both versions deployed")
+        .isGreaterThan(sizeAfterV1);
 
     // when - delete only v2
     engine.resourceDeletion().withResourceKey(v2Key).delete();
@@ -178,49 +197,39 @@ public class ProcessDefinitionMetricsTest {
         .withVersion(2)
         .await();
 
-    // then - definition still tracked because v1 remains; only version count decremented
+    // then - definition still tracked because v1 remains; size gauge falls back to v1's size
     assertThat(definitionsCountGauge())
         .describedAs("unique process definitions count should remain 1 since v1 still exists")
         .isOne();
-    assertThat(versionsCountGauge())
-        .describedAs("total deployed versions count after deleting v2")
-        .isOne();
-    assertThatCode(() -> resourceSizeGauge(2))
-        .describedAs("size gauge for deleted v2 should be removed")
-        .isInstanceOf(MeterNotFoundException.class);
-    assertThat(resourceSizeGauge(1))
-        .describedAs("size gauge for remaining v1 should still exist")
-        .isPositive();
+    assertThat(resourceSizeGauge(PROCESS_ID_A))
+        .describedAs("size gauge should be reduced to v1's size only after v2 is deleted")
+        .isEqualTo(sizeAfterV1);
   }
 
   @Test
-  public void shouldRecoverCountMetricsAfterBrokerRestart() {
+  public void shouldRecoverDefinitionCountAfterBrokerRestart() {
     // given - deploy two distinct processes before restart
     deploySimpleProcess(PROCESS_ID_A);
     deploySimpleProcess(PROCESS_ID_B);
 
     assertThat(definitionsCountGauge()).isEqualTo(2);
-    assertThat(versionsCountGauge()).isEqualTo(2);
 
     // when - snapshot and restart the engine
     engine.snapshot();
     engine.stop();
     engine.start();
 
-    // then - counts are recovered from state without requiring any new deployments
+    // then - count is recovered from state without requiring any new deployments
     assertThat(definitionsCountGauge())
         .describedAs("unique process definitions count should be recovered after restart")
-        .isEqualTo(2);
-    assertThat(versionsCountGauge())
-        .describedAs("total deployed versions count should be recovered after restart")
         .isEqualTo(2);
   }
 
   @Test
-  public void shouldRecoverPerVersionSizeGaugeAfterBrokerRestart() {
+  public void shouldRecoverPerProcessSizeGaugeAfterBrokerRestart() {
     // given
     deploySimpleProcess(PROCESS_ID_A);
-    final double sizeBeforeRestart = resourceSizeGauge(1);
+    final double sizeBeforeRestart = resourceSizeGauge(PROCESS_ID_A);
     assertThat(sizeBeforeRestart).isPositive();
 
     // when
@@ -229,7 +238,7 @@ public class ProcessDefinitionMetricsTest {
     engine.start();
 
     // then - size gauge is re-registered from state with the same byte count
-    assertThat(resourceSizeGauge(1))
+    assertThat(resourceSizeGauge(PROCESS_ID_A))
         .describedAs("resource size gauge should be re-registered after restart with same value")
         .isEqualTo(sizeBeforeRestart);
   }
@@ -249,16 +258,11 @@ public class ProcessDefinitionMetricsTest {
     return engine.getMeterRegistry().get("zeebe.process.definitions.count").gauge().value();
   }
 
-  private double versionsCountGauge() {
-    return engine.getMeterRegistry().get("zeebe.process.definition.versions.count").gauge().value();
-  }
-
-  private double resourceSizeGauge(final int version) {
+  private double resourceSizeGauge(final String bpmnProcessId) {
     return engine
         .getMeterRegistry()
         .get("zeebe.process.definition.resource.size.bytes")
-        .tag("bpmnProcessId", ProcessDefinitionMetricsTest.PROCESS_ID_A)
-        .tag("version", String.valueOf(version))
+        .tag("bpmnProcessId", bpmnProcessId)
         .gauge()
         .value();
   }
