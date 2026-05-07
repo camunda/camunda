@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":camunda-gateway-mapping-http"))
     implementation(project(":camunda-search-domain"))
     implementation(project(":camunda-security-core"))
+    implementation(libs.io.camunda.security.library.api)
     implementation(project(":camunda-service"))
     implementation(project(":zeebe-protocol-impl"))
     implementation(project(":zeebe-util"))

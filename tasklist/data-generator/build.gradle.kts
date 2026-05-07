@@ -12,6 +12,7 @@ dependencies {
     implementation(project(":camunda-spring-utils"))
     implementation(project(":camunda-service"))
     implementation(project(":camunda-security-core"))
+    implementation(libs.io.camunda.security.library.api)
     implementation(project(":camunda-client-java"))
     implementation(project(":zeebe-protocol"))
     implementation(project(":zeebe-protocol-impl"))

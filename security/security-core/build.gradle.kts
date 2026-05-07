@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":camunda-security-protocol"))
     implementation(project(":zeebe-util"))
     implementation(project(":zeebe-auth"))
+    api(libs.io.camunda.security.library.api)
     api(libs.org.springframework.spring.core)
     api(libs.org.springframework.spring.context)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)

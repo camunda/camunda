@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":camunda-security-core"))
     implementation(project(":camunda-security-protocol"))
     implementation(project(":camunda-security-services"))
+    implementation(libs.io.camunda.security.library.api)
     implementation(project(":webapps-schema"))
     implementation(project(":zeebe-protocol"))
     implementation(project(":zeebe-util"))

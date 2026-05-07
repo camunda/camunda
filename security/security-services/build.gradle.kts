@@ -11,6 +11,8 @@ dependencies {
     implementation(project(":camunda-security-protocol"))
     implementation(project(":camunda-search-domain"))
     implementation(project(":camunda-search-client-reader"))
+    api(libs.io.camunda.security.library.api)
+    implementation(libs.org.slf4j.slf4j.api)
     testImplementation(project(":zeebe-auth"))
     testImplementation(project(":zeebe-protocol"))
     testImplementation(libs.org.assertj.assertj.core)
