@@ -56,6 +56,7 @@ graph TD
         ECS["camunda-ecs-weekly-load-test.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
     end
 
     subgraph "Deployment Layer"
@@ -81,7 +82,10 @@ graph TD
     CORE -- "newLoadTest.sh + make install" --> MAKEFILE
     MAKEFILE -- "Helm install" --> GKE
     PROFILE -- "async-profiler" --> GKE
-    VERIFY -- "kubectl wait + delete" --> GKE
+    VERIFY -- "kubectl wait" --> GKE
+    VERIFY -- "delegate cleanup" --> DELETE
+    PR -- "delegate cleanup on label removal / PR close" --> DELETE
+    DELETE -- "kubectl delete ns" --> GKE
     CLEANUP -- "kubectl delete expired ns" --> GKE
 ```
 
