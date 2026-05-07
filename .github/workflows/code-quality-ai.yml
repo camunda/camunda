@@ -105,6 +105,14 @@ jobs:
             echo 'name: "Code Quality AI Pipeline — dynamic CodeQL config"'
             echo "queries:"
             echo "  - uses: security-and-quality"
+            echo "query-filters:"
+            echo "  - exclude:"
+            echo "      problem.severity:"
+            echo "        - recommendation"
+            echo "        - note"
+            echo "  - exclude:"
+            echo "      problem.precision:"
+            echo "        - low"
             echo "paths-ignore:"
             echo '  - "**/target/**"'
             echo '  - "**/generated-sources/**"'
