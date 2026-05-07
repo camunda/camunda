@@ -49,11 +49,11 @@ All builds use the Maven wrapper (`./mvnw`). Use `-T1C` (one thread per CPU core
 builds. Use `-T2` (two threads total) when running builds alongside other resource-intensive
 processes (e.g., an IDE, Docker containers, or other concurrent builds).
 
-Pass `-q` (quiet) by default when invoking Maven from an AI agent — only errors are shown, which
-keeps build progress noise out of the agent's context window. Verbose output bloats context and
-measurably degrades model performance ("context rot"); failures still surface with `-q` because
-errors are not suppressed. Drop `-q` only when actively debugging a build that succeeds but
-misbehaves.
+Pass `-q` (quiet) by default when invoking Maven from an AI agent — it suppresses most
+progress/info logs, which keeps build noise out of the agent's context window. Verbose output
+bloats context and measurably degrades model performance ("context rot"). Note that `-q` can also
+hide warnings, and some plugins may still print non-error output directly to stdout/stderr. Drop
+`-q` when diagnosing unexpected build behavior or when warnings and additional context may matter.
 
 ### Module-scoped builds (preferred)
 
