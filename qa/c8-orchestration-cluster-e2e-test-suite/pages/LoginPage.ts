@@ -57,10 +57,9 @@ export class LoginPage {
     // if the page leaves /login skip login rather than spending the full
     // form-visibility retry budget waiting for an input that will never appear.
     try {
-      await this.page.waitForURL(
-        (url) => !url.pathname.includes('/login'),
-        {timeout: 5000},
-      );
+      await this.page.waitForURL((url) => !url.pathname.includes('/login'), {
+        timeout: 5000,
+      });
       return;
     } catch {
       // Still at /login — fall through to the normal login flow.
