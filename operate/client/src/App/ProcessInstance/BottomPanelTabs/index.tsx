@@ -91,6 +91,14 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       visible: true,
     },
     {
+      label: 'Documents',
+      to: {pathname: Paths.processInstanceDocuments({processInstanceId})},
+      key: 'documents',
+      selected: currentPage === 'process-details-documents',
+      title: 'Documents',
+      visible: true,
+    },
+    {
       label: 'Input Mappings',
       to: {pathname: Paths.processInstanceInputMappings({processInstanceId})},
       key: 'input-mappings',

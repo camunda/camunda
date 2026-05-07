@@ -37,7 +37,7 @@ import {
 	createDecisionInstancesDeletionBatchOperation,
 } from './decision-instance';
 import {queryDecisionRequirements, getDecisionRequirements, getDecisionRequirementsXml} from './decision-requirements';
-import {createDocument, createDocuments, getDocument, deleteDocument, createDocumentLink} from './document';
+import {createDocument, createDocuments, getDocument, deleteDocument, createDocumentLink, searchDocumentReferences} from './document';
 import {
 	queryElementInstances,
 	getElementInstance,
@@ -217,6 +217,7 @@ const endpoints = {
 	getDocument,
 	deleteDocument,
 	createDocumentLink,
+	searchDocumentReferences,
 	queryElementInstances,
 	queryElementInstanceIncidents,
 	getElementInstance,
@@ -538,6 +539,9 @@ export {
 	documentLinkRequestBodySchema,
 	documentLinkSchema,
 	getDocumentResponseBodySchema,
+	documentReferenceSearchResultSchema,
+	searchDocumentReferencesRequestBodySchema,
+	searchDocumentReferencesResponseBodySchema,
 	type DocumentMetadata,
 	type DocumentReference,
 	type DocumentCreationFailureDetail,
@@ -545,6 +549,9 @@ export {
 	type DocumentLinkRequestBody,
 	type DocumentLink,
 	type GetDocumentResponseBody,
+	type DocumentReferenceSearchResult,
+	type SearchDocumentReferencesRequestBody,
+	type SearchDocumentReferencesResponseBody,
 } from './document';
 export {
 	queryElementInstancesRequestBodySchema,

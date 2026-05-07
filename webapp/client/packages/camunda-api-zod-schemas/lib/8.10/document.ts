@@ -7,7 +7,13 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from './common';
+import {
+	API_VERSION,
+	basicStringFilterSchema,
+	getQueryRequestBodySchema,
+	getQueryResponseBodySchema,
+	type Endpoint,
+} from './common';
 
 const documentMetadataSchema = z.object({
 	contentType: z.string(),
@@ -56,6 +62,50 @@ type DocumentLink = z.infer<typeof documentLinkSchema>;
 
 const getDocumentResponseBodySchema = z.string();
 type GetDocumentResponseBody = z.infer<typeof getDocumentResponseBodySchema>;
+
+const documentReferenceSearchResultSchema = z.object({
+	variableKey: z.string(),
+	variableName: z.string(),
+	processInstanceKey: z.string(),
+	scopeKey: z.string().nullable(),
+	processDefinitionKey: z.string().nullable(),
+	processDefinitionId: z.string().nullable(),
+	tenantId: z.string(),
+	documentId: z.string(),
+	storeId: z.string().nullable(),
+	fileName: z.string().nullable(),
+	contentType: z.string().nullable(),
+	size: z.number().nullable(),
+	expiresAt: z.string().nullable(),
+	contentHash: z.string().nullable(),
+});
+type DocumentReferenceSearchResult = z.infer<typeof documentReferenceSearchResultSchema>;
+
+const searchDocumentReferencesRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: ['variableKey', 'variableName', 'processInstanceKey', 'scopeKey', 'documentId', 'tenantId'] as const,
+	filter: z
+		.object({
+			processInstanceKey: basicStringFilterSchema,
+			scopeKey: basicStringFilterSchema,
+			variableKey: basicStringFilterSchema,
+			documentId: basicStringFilterSchema,
+			tenantId: z.string(),
+		})
+		.partial(),
+});
+type SearchDocumentReferencesRequestBody = z.infer<typeof searchDocumentReferencesRequestBodySchema>;
+
+const searchDocumentReferencesResponseBodySchema = getQueryResponseBodySchema(
+	documentReferenceSearchResultSchema,
+);
+type SearchDocumentReferencesResponseBody = z.infer<
+	typeof searchDocumentReferencesResponseBodySchema
+>;
+
+const searchDocumentReferences: Endpoint = {
+	method: 'POST',
+	getUrl: () => `/${API_VERSION}/document-references/search`,
+};
 
 const createDocument: Endpoint<{
 	storeId?: string;
@@ -150,11 +200,15 @@ export {
 	documentLinkRequestBodySchema,
 	documentLinkSchema,
 	getDocumentResponseBodySchema,
+	documentReferenceSearchResultSchema,
+	searchDocumentReferencesRequestBodySchema,
+	searchDocumentReferencesResponseBodySchema,
 	createDocument,
 	createDocuments,
 	getDocument,
 	deleteDocument,
 	createDocumentLink,
+	searchDocumentReferences,
 };
 export type {
 	DocumentMetadata,
@@ -164,4 +218,7 @@ export type {
 	DocumentLinkRequestBody,
 	DocumentLink,
 	GetDocumentResponseBody,
+	DocumentReferenceSearchResult,
+	SearchDocumentReferencesRequestBody,
+	SearchDocumentReferencesResponseBody,
 };

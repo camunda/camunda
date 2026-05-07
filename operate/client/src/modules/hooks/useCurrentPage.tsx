@@ -20,6 +20,7 @@ const useCurrentPage = () => {
     | 'operations-log'
     | 'process-details'
     | 'process-details-variables'
+    | 'process-details-documents'
     | 'process-details-details'
     | 'process-details-incidents'
     | 'process-details-input-mappings'
@@ -57,6 +58,12 @@ const useCurrentPage = () => {
       matchPath(Paths.processInstanceVariables(), location.pathname) !== null
     ) {
       return 'process-details-variables';
+    }
+
+    if (
+      matchPath(Paths.processInstanceDocuments(), location.pathname) !== null
+    ) {
+      return 'process-details-documents';
     }
 
     if (matchPath(Paths.processInstance(), location.pathname) !== null) {

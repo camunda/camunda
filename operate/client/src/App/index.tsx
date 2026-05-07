@@ -142,6 +142,14 @@ const routes = createRoutesFromElements(
           }}
         />
         <Route
+          path={Paths.processInstanceDocuments({isRelative: true})}
+          lazy={async () => {
+            const {DocumentsTab} =
+              await import('./ProcessInstance/BottomPanelTabs/DocumentsTab/index');
+            return {Component: DocumentsTab};
+          }}
+        />
+        <Route
           path={Paths.processInstanceListeners({isRelative: true})}
           lazy={async () => {
             const {ListenersTab} =
