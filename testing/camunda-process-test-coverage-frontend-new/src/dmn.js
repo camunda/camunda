@@ -1,5 +1,5 @@
 /**
- * DMN decision table rendering with camunda-dmn-js.
+ * DMN decision table rendering with dmn-js.
  *
  * Coverage highlighting:
  *   - Matched rules → CSS class 'coverage-matched-rule' (blue highlight)
@@ -12,6 +12,7 @@
 'use strict';
 
 import NavigatedViewer from 'dmn-js/lib/NavigatedViewer';
+import { escapeHtml } from './utils.js';
 
 // Import decision table and DRD styles
 import 'dmn-js/dist/assets/diagram-js.css';
@@ -82,7 +83,8 @@ export async function renderDmnDecision(xml, decisionId, matchedRuleIds = []) {
     }
   } catch (err) {
     console.error('Could not import DMN diagram', err);
-    container.innerHTML = `<p class="text-danger p-3">Failed to render DMN diagram: ${String(err)}</p>`;
+    const errMsg = escapeHtml(String(err));
+    container.innerHTML = `<p class="text-danger p-3">Failed to render DMN diagram: ${errMsg}</p>`;
     dmnViewer = null;
   }
 }

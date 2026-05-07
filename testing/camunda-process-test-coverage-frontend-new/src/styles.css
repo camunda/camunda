@@ -484,3 +484,8 @@ tr.coverage-matched-rule td {
 #dmn-canvas .dmn-decision-table-container {
   min-height: 200px;
 }
+
+/* Hide the "View DRD" button – we only render the decision table view */
+#dmn-canvas .view-drd {
+  display: none !important;
+}

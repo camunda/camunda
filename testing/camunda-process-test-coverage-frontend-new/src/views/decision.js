@@ -12,7 +12,7 @@
 'use strict';
 
 import { escapeHtml, toPercent, progressBarHtml, badgeHtml, coverageClass, statCard } from '../utils.js';
-import { renderDmnDecision, destroyDmnViewer } from '../dmn.js';
+import { renderDmnDecision } from '../dmn.js';
 
 /**
  * Renders the decision details view into #content.
