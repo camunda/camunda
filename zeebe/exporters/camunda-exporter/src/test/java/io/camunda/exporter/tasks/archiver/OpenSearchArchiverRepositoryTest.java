@@ -7,8 +7,11 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
@@ -17,6 +20,7 @@ import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -24,6 +28,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
+import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
@@ -91,6 +99,51 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         Runnable::run,
         metrics,
         LOGGER);
+  }
+
+  @Test
+  public void shouldNotDeleteWhenMovingIfReindexingFails() throws IOException {
+    // given
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Error reindexing")));
+
+    // when
+    final var future =
+        repository.moveDocuments(
+            "from-index", "to-index", "key", List.of("1", "2", "3"), Runnable::run);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withMessageContaining("Error reindexing");
+
+    verify(client).reindex(any(ReindexRequest.class));
+    verify(client)._transport();
+    verify(client)._transportOptions();
+    verifyNoMoreInteractions(client);
+  }
+
+  @Test
+  public void shouldReindexThenDeleteWhenMovingDocuments() throws IOException {
+    // given
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(ReindexResponse.of(b -> b.total(10L))));
+    when(client.deleteByQuery(any(DeleteByQueryRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(DeleteByQueryResponse.of(b -> b.total(10L))));
+
+    // when
+    final var future =
+        repository.moveDocuments(
+            "from-index", "to-index", "key", List.of("1", "2", "3"), Runnable::run);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+
+    final var inOrder = Mockito.inOrder(client);
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).deleteByQuery(any(DeleteByQueryRequest.class));
+    inOrder.verifyNoMoreInteractions();
   }
 
   @Test
