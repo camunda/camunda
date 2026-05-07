@@ -349,14 +349,15 @@ public final class LiveBpmn {
     return attachExecutionListener(eventType.name(), new BoundHandler.OfConsumer(handler));
   }
 
-  public LiveBpmn onTaskListener(
+  /** Attaches a task listener to the most-recently-declared user task. */
+  public LiveBpmn onTask(
       final ZeebeTaskListenerEventType eventType,
       final Function<Job, Map<String, Object>> handler) {
     return attachTaskListener(eventType, new BoundHandler.OfFunction(handler));
   }
 
-  public LiveBpmn onTaskListener(
-      final ZeebeTaskListenerEventType eventType, final JobConsumer handler) {
+  /** See {@link #onTask(ZeebeTaskListenerEventType, Function)}. */
+  public LiveBpmn onTask(final ZeebeTaskListenerEventType eventType, final JobConsumer handler) {
     return attachTaskListener(eventType, new BoundHandler.OfConsumer(handler));
   }
 
@@ -404,14 +405,19 @@ public final class LiveBpmn {
     return bindExecutionListener(elementId, eventType.name(), new BoundHandler.OfConsumer(handler));
   }
 
-  public LiveBpmn bindTaskListener(
+  /**
+   * Binds a task listener to an existing user task by id, for adopted models. Mirrors the inline
+   * {@link #onTask(ZeebeTaskListenerEventType, Function)} form.
+   */
+  public LiveBpmn onTask(
       final String elementId,
       final ZeebeTaskListenerEventType eventType,
       final Function<Job, Map<String, Object>> handler) {
     return bindTaskListener0(elementId, eventType, new BoundHandler.OfFunction(handler));
   }
 
-  public LiveBpmn bindTaskListener(
+  /** See {@link #onTask(String, ZeebeTaskListenerEventType, Function)}. */
+  public LiveBpmn onTask(
       final String elementId,
       final ZeebeTaskListenerEventType eventType,
       final JobConsumer handler) {

@@ -33,7 +33,7 @@ import java.util.Map;
  *
  * <pre>
  * .userTask("review")
- *     .onTaskListener(ZeebeTaskListenerEventType.assigning, job -&gt; ... )
+ *     .onTask(ZeebeTaskListenerEventType.assigning, job -&gt; ... )
  * </pre>
  *
  * (Not run here because user-task <em>bodies</em> aren't dispatched yet — but task listeners are.)

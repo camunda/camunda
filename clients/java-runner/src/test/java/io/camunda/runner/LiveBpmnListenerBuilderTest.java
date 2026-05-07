@@ -84,7 +84,7 @@ class LiveBpmnListenerBuilderTest {
         LiveBpmn.createExecutableProcess("p")
             .startEvent()
             .userTask("review")
-            .onTaskListener(ZeebeTaskListenerEventType.assigning, (Job j) -> {});
+            .onTask(ZeebeTaskListenerEventType.assigning, (Job j) -> {});
 
     // then
     final BindingKey key = BindingKey.taskListener("review", ZeebeTaskListenerEventType.assigning);
@@ -101,7 +101,7 @@ class LiveBpmnListenerBuilderTest {
                 LiveBpmn.createExecutableProcess("p")
                     .startEvent()
                     .serviceTask("validate", (Job j) -> null)
-                    .onTaskListener(ZeebeTaskListenerEventType.assigning, (Job j) -> {}))
+                    .onTask(ZeebeTaskListenerEventType.assigning, (Job j) -> {}))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("userTask");
   }

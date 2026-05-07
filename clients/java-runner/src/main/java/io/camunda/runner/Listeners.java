@@ -57,16 +57,15 @@ public final class Listeners {
     return this;
   }
 
-  public Listeners onTaskListener(
+  public Listeners onTask(
       final ZeebeTaskListenerEventType eventType,
       final Function<Job, Map<String, Object>> handler) {
-    parent.onTaskListener(eventType, handler);
+    parent.onTask(eventType, handler);
     return this;
   }
 
-  public Listeners onTaskListener(
-      final ZeebeTaskListenerEventType eventType, final JobConsumer handler) {
-    parent.onTaskListener(eventType, handler);
+  public Listeners onTask(final ZeebeTaskListenerEventType eventType, final JobConsumer handler) {
+    parent.onTask(eventType, handler);
     return this;
   }
 }
