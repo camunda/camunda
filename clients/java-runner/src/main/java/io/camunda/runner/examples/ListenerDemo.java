@@ -64,7 +64,10 @@ public final class ListenerDemo {
               // user task with task listeners — completes via Tasklist.
               // Pre-assign to "demo" (c8run's default user) so it shows up on the default
               // "Assigned to me" filter without the user having to switch tabs.
-              .userTask("review", t -> t.zeebeAssignee("demo"))
+              .userTask(
+                  "review",
+                  (io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder t) ->
+                      t.zeebeAssignee("demo"))
               .listeners(
                   l ->
                       l.on(
