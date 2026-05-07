@@ -118,7 +118,6 @@ function ComboBox<ItemType>(props: ComboBoxProps<ItemType>) {
     warnText,
     light,
     size,
-    titleText,
     readOnly,
     direction,
     autoAlign,
@@ -148,36 +147,43 @@ function ComboBox<ItemType>(props: ComboBoxProps<ItemType>) {
   };
 
   return (
-    <Combobox
-      items={stringItems}
-      itemToStringLabel={(item: string) => item}
-      defaultValue={
-        initialSelectedItem != null ? toString(initialSelectedItem) : undefined
-      }
-      value={selectedItem != null ? toString(selectedItem) : undefined}
-      onValueChange={handleValueChange}
-      disabled={disabled}
-    >
-      <ComboboxInput
-        id={id}
-        placeholder={placeholder}
+    <div className="flex flex-col gap-1">
+      {titleText !== undefined ? (
+        <label htmlFor={id} className="text-sm font-medium">
+          {titleText}
+        </label>
+      ) : null}
+      <Combobox
+        items={stringItems}
+        itemToStringLabel={(item: string) => item}
+        defaultValue={
+          initialSelectedItem != null ? toString(initialSelectedItem) : undefined
+        }
+        value={selectedItem != null ? toString(selectedItem) : undefined}
+        onValueChange={handleValueChange}
         disabled={disabled}
-        aria-label={ariaLabelHyphen ?? ariaLabel}
-        className={className}
-      />
-      <ComboboxContent>
-        <ComboboxList>
-          {items.map((item, index) => {
-            const label = toString(item);
-            return (
-              <ComboboxItem key={`${label}-${index}`} value={label}>
-                {label}
-              </ComboboxItem>
-            );
-          })}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+      >
+        <ComboboxInput
+          id={id}
+          placeholder={placeholder}
+          disabled={disabled}
+          aria-label={ariaLabelHyphen ?? ariaLabel}
+          className={className}
+        />
+        <ComboboxContent>
+          <ComboboxList>
+            {items.map((item, index) => {
+              const label = toString(item);
+              return (
+                <ComboboxItem key={`${label}-${index}`} value={label}>
+                  {label}
+                </ComboboxItem>
+              );
+            })}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+    </div>
   );
 }
 

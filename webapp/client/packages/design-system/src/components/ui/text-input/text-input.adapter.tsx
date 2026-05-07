@@ -53,8 +53,6 @@ function TextInput(props: TextInputProps) {
     decorator,
     enableCounter,
     inline,
-    invalid,
-    invalidText,
     light,
     maxCount,
     size,
@@ -89,7 +87,10 @@ function TextInput(props: TextInputProps) {
         aria-invalid={invalid || undefined}
         {...(rest as React.ComponentProps<typeof Input>)}
       />
-      {helperText !== undefined ? (
+      {invalid && invalidText !== undefined ? (
+        <span className="text-xs text-destructive">{invalidText}</span>
+      ) : null}
+      {!invalid && helperText !== undefined ? (
         <span className="text-xs text-muted-foreground">{helperText}</span>
       ) : null}
     </div>

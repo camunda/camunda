@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from './select.shadcn';
 
-import {warnDroppedProps} from '../../../lib/utils';
+import {cn, warnDroppedProps} from '../../../lib/utils';
 
 import type {
   SelectItemProps as CarbonSelectItemProps,
@@ -99,22 +99,32 @@ function Select(props: SelectProps) {
   const triggerSize: 'sm' | 'default' = size === 'sm' ? 'sm' : 'default';
 
   return (
-    <ShadcnSelect
-      value={value}
-      defaultValue={defaultValue}
-      onValueChange={handleValueChange}
-      disabled={disabled}
-    >
-      <SelectTrigger
-        id={id}
-        size={triggerSize}
-        className={className}
-        aria-label={ariaLabel ?? (typeof labelText === 'string' ? labelText : undefined)}
+    <div className="flex flex-col gap-1">
+      {labelText !== undefined && !noLabel ? (
+        <label
+          htmlFor={id}
+          className={cn('text-sm font-medium', hideLabel && 'sr-only')}
+        >
+          {labelText}
+        </label>
+      ) : null}
+      <ShadcnSelect
+        value={value}
+        defaultValue={defaultValue}
+        onValueChange={handleValueChange}
+        disabled={disabled}
       >
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>{children}</SelectContent>
-    </ShadcnSelect>
+        <SelectTrigger
+          id={id}
+          size={triggerSize}
+          className={className}
+          aria-label={ariaLabel ?? (typeof labelText === 'string' ? labelText : undefined)}
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>{children}</SelectContent>
+      </ShadcnSelect>
+    </div>
   );
 }
 

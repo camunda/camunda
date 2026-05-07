@@ -15,7 +15,7 @@ import * as React from 'react';
 
 import {Card} from '../card/card.shadcn';
 
-import {warnDroppedProps} from '../../../lib/utils';
+import {cn, warnDroppedProps} from '../../../lib/utils';
 
 import type {TileProps as CarbonTileProps} from '@carbon/react';
 
@@ -41,7 +41,7 @@ function Tile(props: TileProps) {
 
   return (
     <Card
-      className={className}
+      className={cn('px-6', className)}
       {...(rest as React.ComponentProps<typeof Card>)}
     >
       {children}
