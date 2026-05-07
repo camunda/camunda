@@ -2,6 +2,10 @@ paths:
   /forms/{formKey}:
     get:
       x-eventually-consistent: true
+      x-semantic-requires:
+        kind: Form
+        bind:
+          formKey: { from: path, name: formKey }
       tags:
         - Form
       operationId: getFormByKey

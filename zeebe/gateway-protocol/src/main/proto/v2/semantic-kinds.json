@@ -200,6 +200,12 @@
       "shape": "external-entity",
       "identifiers": ["ClientId"],
       "description": "An OAuth client. Minted outside the Camunda REST API: by Console in SaaS, by the configured external IdP (EntraID, Keycloak, Okta, …) in Self-Managed with OIDC. Not modelled at all under Self-Managed Basic auth, where m2m apps are users instead. Referenced by the client-membership edges only — never established or fetched via this API."
+    },
+    {
+      "name": "Form",
+      "shape": "entity",
+      "identifiers": ["FormKey"],
+      "description": "A deployed form entity, identified by its system-generated formKey."
     }
   ]
 
