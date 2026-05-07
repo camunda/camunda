@@ -12,6 +12,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
@@ -305,6 +307,15 @@ public final class RecordingExporter implements Exporter {
   public static DeploymentDistributionRecordStream deploymentDistributionRecords() {
     return new DeploymentDistributionRecordStream(
         records(ValueType.DEPLOYMENT_DISTRIBUTION, DeploymentDistributionRecordValue.class));
+  }
+
+  public static AgentInstanceRecordStream agentInstanceRecords() {
+    return new AgentInstanceRecordStream(
+        records(ValueType.AGENT_INSTANCE, AgentInstanceRecordValue.class));
+  }
+
+  public static AgentInstanceRecordStream agentInstanceRecords(final AgentInstanceIntent intent) {
+    return agentInstanceRecords().withIntent(intent);
   }
 
   public static JobRecordStream jobRecords() {
