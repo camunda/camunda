@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
+import org.camunda.bpm.model.dmn.instance.DecisionTable;
 import org.camunda.bpm.model.dmn.instance.Rule;
 
 /**
@@ -70,27 +71,21 @@ public class DecisionModelCreator {
   /**
    * Counts the number of rules in the decision table for the specified decision.
    *
+   * <p>Navigates from the decision element (by ID) to its decision table child and counts the rule
+   * elements directly.
+   *
    * @param modelInstance The parsed DMN model instance
    * @param decisionDefinitionId The ID of the decision to count rules for
    * @return The number of rules in the decision table, or 0 if the decision has no table
    */
   static int countRulesForDecision(
       final DmnModelInstance modelInstance, final String decisionDefinitionId) {
-    return modelInstance.getModelElementsByType(Rule.class).stream()
-        .filter(rule -> isRuleInDecision(rule, decisionDefinitionId))
-        .mapToInt(r -> 1)
-        .sum();
-  }
-
-  private static boolean isRuleInDecision(final Rule rule, final String decisionDefinitionId) {
-    // Walk up the model element hierarchy to find the owning Decision
-    org.camunda.bpm.model.xml.instance.ModelElementInstance parent = rule.getParentElement();
-    while (parent != null) {
-      if (parent instanceof Decision) {
-        return decisionDefinitionId.equals(((Decision) parent).getId());
-      }
-      parent = parent.getParentElement();
+    final Decision decision = modelInstance.getModelElementById(decisionDefinitionId);
+    if (decision == null) {
+      return 0;
     }
-    return false;
+    return decision.getChildElementsByType(DecisionTable.class).stream()
+        .mapToInt(dt -> dt.getChildElementsByType(Rule.class).size())
+        .sum();
   }
 }

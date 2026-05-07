@@ -409,11 +409,13 @@ public class ExecutionListenerTest {
     // given
     final String reportDirectory = "custom/report";
     final List<String> excludedProcesses = List.of("process1", "process2");
+    final List<String> excludedDecisions = List.of("decision1", "decision2");
 
     final CamundaProcessTestRuntimeConfiguration configuration =
         new CamundaProcessTestRuntimeConfiguration();
     configuration.getCoverage().setReportDirectory(reportDirectory);
     configuration.getCoverage().setExcludedProcesses(excludedProcesses);
+    configuration.getCoverage().setExcludedDecisions(excludedDecisions);
 
     when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(configuration);
@@ -429,6 +431,7 @@ public class ExecutionListenerTest {
     // then
     verify(processCoverageBuilder).reportDirectory(reportDirectory);
     verify(processCoverageBuilder).excludeProcessDefinitionIds(excludedProcesses);
+    verify(processCoverageBuilder).excludeDecisionDefinitionIds(excludedDecisions);
   }
 
   @Test

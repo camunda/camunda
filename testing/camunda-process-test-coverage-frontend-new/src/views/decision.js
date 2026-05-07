@@ -4,19 +4,23 @@
  * Supports two modes:
  *   - Overall coverage  (no context): shows aggregate coverage from data.decisionCoverages
  *   - Run-scoped coverage (context):  shows the coverage of a specific test run
+ *
+ * Runs are identified by their zero-based index in suite.runs[] to support
+ * parameterized tests where multiple runs can share the same display name.
  */
 
 'use strict';
 
 import { escapeHtml, toPercent, progressBarHtml, badgeHtml, coverageClass, statCard } from '../utils.js';
+import { renderDmnDecision, destroyDmnViewer } from '../dmn.js';
 
 /**
  * Renders the decision details view into #content.
  * @param {string} decisionId
  * @param {object} data window.COVERAGE_DATA
- * @param {{ suiteId: string, runName?: string } | null} [context] Optional context for scoped coverage.
+ * @param {{ suiteId: string, runIndex?: number } | null} [context] Optional context for scoped coverage.
  */
-export function renderDecision(decisionId, data, context = null) {
+export async function renderDecision(decisionId, data, context = null) {
   const suites = data.suites || [];
   const decisionDefinitions = data.decisionDefinitions || {};
 
@@ -28,18 +32,17 @@ export function renderDecision(decisionId, data, context = null) {
     const suite = suites.find((s) => s.id === context.suiteId);
     const sid = encodeURIComponent(context.suiteId);
 
-    if (context.runName) {
-      // Run-scoped: coverage from a specific test run
-      const run = suite?.runs?.find((r) => r.name === context.runName);
+    if (context.runIndex !== undefined) {
+      // Run-scoped: coverage from a specific test run (identified by index)
+      const run = suite?.runs?.[context.runIndex];
       cov = run?.decisionCoverages?.find((c) => c.decisionDefinitionId === decisionId) ?? null;
 
       // Breadcrumb: Suite > Run > Decision
-      const rn = encodeURIComponent(context.runName);
       breadcrumbHtml = `
         <nav aria-label="breadcrumb" class="mb-3">
           <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="#/suite/${sid}">${escapeHtml(suite?.name ?? context.suiteId)}</a></li>
-            <li class="breadcrumb-item"><a href="#/suite/${sid}/run/${rn}">${escapeHtml(context.runName)}</a></li>
+            <li class="breadcrumb-item"><a href="#/suite/${sid}/run/${context.runIndex}">${escapeHtml(run?.name ?? String(context.runIndex))}</a></li>
             <li class="breadcrumb-item active" aria-current="page">${escapeHtml(decisionId)}</li>
           </ol>
         </nav>`;
@@ -77,13 +80,11 @@ export function renderDecision(decisionId, data, context = null) {
       </div>`;
   }
 
-  html += `<h3 class="section-title">Decision Table</h3>`;
-
-  if (xml) {
-    html += renderDecisionTable(xml, decisionId, cov);
-  } else {
-    html += '<p class="text-muted">No DMN definition available for this decision.</p>';
-  }
+  html += `
+    <h3 class="section-title">Decision Table</h3>
+    <div class="bpmn-canvas-wrapper">
+      <div id="dmn-canvas" class="bpmn-canvas"></div>
+    </div>`;
 
   // Show test suite coverage table only in global mode
   if (!context) {
@@ -122,112 +123,16 @@ export function renderDecision(decisionId, data, context = null) {
   }
 
   document.getElementById('content').innerHTML = html;
-}
 
-/**
- * Parses DMN XML and renders the decision table for the given decision ID.
- * Highlights matched rules.
- * @param {string} xml DMN XML string
- * @param {string} decisionId The decision definition ID to render
- * @param {{ matchedRuleIds?: string[] } | null} cov Coverage data
- * @returns {string} HTML string for the decision table
- */
-function renderDecisionTable(xml, decisionId, cov) {
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xml, 'application/xml');
-
-    // Find the decision element matching the ID
-    const decisions = doc.querySelectorAll('decision');
-    let targetDecision = null;
-    for (const d of decisions) {
-      if (d.getAttribute('id') === decisionId) {
-        targetDecision = d;
-        break;
-      }
+  // Render DMN diagram (async, after HTML is in DOM)
+  const matchedRuleIds = cov?.matchedRuleIds || [];
+  if (xml) {
+    await renderDmnDecision(xml, decisionId, matchedRuleIds);
+  } else {
+    const canvas = document.getElementById('dmn-canvas');
+    if (canvas) {
+      canvas.innerHTML =
+        '<p class="text-muted p-3">No DMN definition available for this decision.</p>';
     }
-
-    if (!targetDecision) {
-      return `<p class="text-muted">Decision '${escapeHtml(decisionId)}' not found in DMN definition.</p>`;
-    }
-
-    const decisionTable = targetDecision.querySelector('decisionTable');
-    if (!decisionTable) {
-      return `<p class="text-muted">Decision '${escapeHtml(decisionId)}' is not a decision table.</p>`;
-    }
-
-    const inputs = Array.from(decisionTable.querySelectorAll(':scope > input'));
-    const outputs = Array.from(decisionTable.querySelectorAll(':scope > output'));
-    const rules = Array.from(decisionTable.querySelectorAll(':scope > rule'));
-
-    const matchedRuleIds = new Set(cov?.matchedRuleIds || []);
-
-    // Build table header from inputs and outputs
-    let tableHtml = `
-      <div class="table-responsive">
-        <table class="table table-bordered table-sm align-middle dmn-table">
-          <thead class="table-dark">
-            <tr>
-              <th style="width:40px">#</th>`;
-
-    for (const input of inputs) {
-      const label = input.getAttribute('label') || getTextContent(input, 'inputExpression text') || 'Input';
-      tableHtml += `<th class="dmn-input-col">${escapeHtml(label)}</th>`;
-    }
-    for (const output of outputs) {
-      const label = output.getAttribute('label') || output.getAttribute('name') || 'Output';
-      tableHtml += `<th class="dmn-output-col">${escapeHtml(label)}</th>`;
-    }
-    tableHtml += `
-            </tr>
-          </thead>
-          <tbody>`;
-
-    rules.forEach((rule, index) => {
-      const ruleId = rule.getAttribute('id') || '';
-      const isCovered = matchedRuleIds.has(ruleId);
-      const rowClass = isCovered ? 'dmn-rule-covered' : 'dmn-rule-uncovered';
-      const annotation = rule.querySelector('description')?.textContent || '';
-
-      tableHtml += `<tr class="${rowClass}" title="${escapeHtml(annotation)}">`;
-      tableHtml += `<td class="text-muted text-center">${index + 1}${isCovered ? ' <i class="bi bi-check-circle-fill text-success" aria-hidden="true"></i>' : ''}</td>`;
-
-      const inputEntries = rule.querySelectorAll('inputEntry');
-      for (const entry of inputEntries) {
-        const text = getTextContent(entry, 'text') || '-';
-        tableHtml += `<td class="dmn-input-cell">${escapeHtml(text)}</td>`;
-      }
-
-      const outputEntries = rule.querySelectorAll('outputEntry');
-      for (const entry of outputEntries) {
-        const text = getTextContent(entry, 'text') || '-';
-        tableHtml += `<td class="dmn-output-cell">${escapeHtml(text)}</td>`;
-      }
-
-      tableHtml += '</tr>';
-    });
-
-    tableHtml += `
-          </tbody>
-        </table>
-      </div>`;
-
-    if (rules.length === 0) {
-      tableHtml += '<p class="text-muted">No rules defined in this decision table.</p>';
-    }
-
-    return tableHtml;
-  } catch (e) {
-    return `<p class="text-danger">Failed to render decision table: ${escapeHtml(String(e))}</p>`;
   }
-}
-
-/**
- * Gets the text content of the first matching child element.
- * @param {Element} parent
- * @param {string} selector
- * @returns {string}
- */
-function getTextContent(parent, selector) {
-  return parent.querySelector(selector)?.textContent?.trim() || '';
 }

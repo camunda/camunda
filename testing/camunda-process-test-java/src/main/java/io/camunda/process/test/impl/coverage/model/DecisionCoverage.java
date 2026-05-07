@@ -20,12 +20,17 @@ import java.util.List;
 public class DecisionCoverage {
   private final String decisionDefinitionId;
   private final List<String> matchedRuleIds;
+  private final List<Integer> matchedRuleIndices;
   private final double coverage;
 
   public DecisionCoverage(
-      final String decisionDefinitionId, final List<String> matchedRuleIds, final double coverage) {
+      final String decisionDefinitionId,
+      final List<String> matchedRuleIds,
+      final List<Integer> matchedRuleIndices,
+      final double coverage) {
     this.decisionDefinitionId = decisionDefinitionId;
     this.matchedRuleIds = matchedRuleIds;
+    this.matchedRuleIndices = matchedRuleIndices;
     this.coverage = coverage;
   }
 
@@ -35,6 +40,10 @@ public class DecisionCoverage {
 
   public List<String> getMatchedRuleIds() {
     return matchedRuleIds;
+  }
+
+  public List<Integer> getMatchedRuleIndices() {
+    return matchedRuleIndices;
   }
 
   public double getCoverage() {

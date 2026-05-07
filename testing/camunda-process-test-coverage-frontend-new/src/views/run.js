@@ -1,9 +1,8 @@
 /**
  * Run (test-case) view – processes and decisions covered by a single test method.
  *
- * Clicking a process row navigates to the run-scoped process view
- * (#/suite/<sid>/run/<rn>/process/<pid>), which shows only the coverage
- * from this test run rather than the global aggregate.
+ * Runs are identified by their zero-based index in suite.runs[] to support
+ * parameterized tests where multiple runs can share the same display name.
  */
 
 'use strict';
@@ -20,10 +19,10 @@ import {
 /**
  * Renders the test-case (run) details view into #content.
  * @param {string} suiteId
- * @param {string} runName
+ * @param {number} runIndex  Zero-based index of the run in suite.runs
  * @param {object} data window.COVERAGE_DATA
  */
-export function renderRun(suiteId, runName, data) {
+export function renderRun(suiteId, runIndex, data) {
   const suite = (data.suites || []).find((s) => s.id === suiteId);
   if (!suite) {
     document.getElementById('content').innerHTML = `
@@ -31,22 +30,22 @@ export function renderRun(suiteId, runName, data) {
     return;
   }
 
-  const run = (suite.runs || []).find((r) => r.name === runName);
+  const run = (suite.runs || [])[runIndex];
   if (!run) {
     document.getElementById('content').innerHTML = `
-      <div class="alert alert-warning">Test case not found: ${escapeHtml(runName)}</div>`;
+      <div class="alert alert-warning">Test case not found at index ${runIndex}</div>`;
     return;
   }
 
   const runCoverages = run.coverages || [];
   const runDecisionCoverages = run.decisionCoverages || [];
+  const allCoverages = [...runCoverages, ...runDecisionCoverages];
   const avgCoverage =
-    runCoverages.length > 0
-      ? runCoverages.reduce((s, c) => s + c.coverage, 0) / runCoverages.length
+    allCoverages.length > 0
+      ? allCoverages.reduce((s, c) => s + c.coverage, 0) / allCoverages.length
       : 0;
 
   const sid = encodeURIComponent(suite.id);
-  const rn = encodeURIComponent(run.name);
 
   let html = `
     <nav aria-label="breadcrumb" class="mb-3">
@@ -69,63 +68,50 @@ export function renderRun(suiteId, runName, data) {
       ${statCard(toPercent(avgCoverage), 'Avg. Coverage', 'bi-bar-chart-fill', coverageClass(avgCoverage))}
     </div>
 
-    <h3 class="section-title">Processes Covered</h3>`;
+    <h3 class="section-title">Coverage</h3>`;
 
-  if (runCoverages.length === 0) {
-    html += '<p class="text-muted">No process coverage data recorded for this test case.</p>';
+  if (runCoverages.length === 0 && runDecisionCoverages.length === 0) {
+    html += '<p class="text-muted">No coverage data recorded for this test case.</p>';
   } else {
-    const sorted = [...runCoverages].sort((a, b) => b.coverage - a.coverage);
+    const sortedProcesses = [...runCoverages].sort((a, b) => b.coverage - a.coverage);
+    const sortedDecisions = [...runDecisionCoverages].sort((a, b) => b.coverage - a.coverage);
+
     html += `
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead><tr>
-            <th>Process</th>
+            <th>Name</th>
+            <th style="width:80px">Type</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
           </tr></thead>
           <tbody>`;
 
-    for (const cov of sorted) {
+    for (const cov of sortedProcesses) {
       const pid = encodeURIComponent(cov.processDefinitionId);
-      // Navigate to run-scoped process view so the diagram shows only THIS test's coverage
       html += `
             <tr class="clickable-row"
-                onclick="navigate('/suite/${sid}/run/${rn}/process/${pid}')">
+                onclick="navigate('/suite/${sid}/run/${runIndex}/process/${pid}')">
               <td>
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
                 ${escapeHtml(cov.processDefinitionId)}
               </td>
+              <td><span class="badge bg-primary-subtle text-primary">Process</span></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;
     }
-    html += '</tbody></table></div>';
-  }
-
-  html += '<h3 class="section-title mt-4">Decisions Covered</h3>';
-  if (runDecisionCoverages.length === 0) {
-    html += '<p class="text-muted">No decision coverage data recorded for this test case.</p>';
-  } else {
-    const sortedDecisions = [...runDecisionCoverages].sort((a, b) => b.coverage - a.coverage);
-    html += `
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead><tr>
-            <th>Decision</th>
-            <th style="width:200px">Coverage</th>
-            <th style="width:100px">Ratio</th>
-          </tr></thead>
-          <tbody>`;
 
     for (const cov of sortedDecisions) {
       const did = encodeURIComponent(cov.decisionDefinitionId);
       html += `
             <tr class="clickable-row"
-                onclick="navigate('/suite/${sid}/run/${rn}/decision/${did}')">
+                onclick="navigate('/suite/${sid}/run/${runIndex}/decision/${did}')">
               <td>
                 <i class="bi bi-table me-2 text-success" aria-hidden="true"></i>
                 ${escapeHtml(cov.decisionDefinitionId)}
               </td>
+              <td><span class="badge bg-success-subtle text-success">Decision</span></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;

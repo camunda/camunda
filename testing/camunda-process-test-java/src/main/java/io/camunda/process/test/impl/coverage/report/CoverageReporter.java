@@ -156,7 +156,7 @@ public class CoverageReporter {
     }
     if (!decisionCoverageList.isEmpty()) {
       if (coverageText.length() > 0) {
-        coverageText.append("\n");
+        coverageText.append("\n\n");
       }
       coverageText.append("Decision coverage:\n").append(decisionCoverageList);
     }

@@ -26,6 +26,7 @@ import './styles.css';
 import { parseRoute, navigate } from './router.js';
 import { renderSidebar, updateSidebarActive } from './sidebar.js';
 import { destroyViewer } from './bpmn.js';
+import { destroyDmnViewer } from './dmn.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderProcess } from './views/process.js';
 import { renderDecision } from './views/decision.js';
@@ -61,6 +62,7 @@ if (!data) {
 
 async function render() {
   destroyViewer();
+  destroyDmnViewer();
 
   const route = parseRoute();
   updateSidebarActive(route);
@@ -73,31 +75,31 @@ async function render() {
       await renderProcess(route.processId, data);
       break;
     case 'decision':
-      renderDecision(route.decisionId, data);
+      await renderDecision(route.decisionId, data);
       break;
     case 'suite':
       renderSuite(route.suiteId, data);
       break;
     case 'run':
-      renderRun(route.suiteId, route.runName, data);
+      renderRun(route.suiteId, route.runIndex, data);
       break;
     case 'runProcess':
       await renderProcess(route.processId, data, {
         suiteId: route.suiteId,
-        runName: route.runName,
+        runIndex: route.runIndex,
       });
       break;
     case 'runDecision':
-      renderDecision(route.decisionId, data, {
+      await renderDecision(route.decisionId, data, {
         suiteId: route.suiteId,
-        runName: route.runName,
+        runIndex: route.runIndex,
       });
       break;
     case 'suiteProcess':
       await renderProcess(route.processId, data, { suiteId: route.suiteId });
       break;
     case 'suiteDecision':
-      renderDecision(route.decisionId, data, { suiteId: route.suiteId });
+      await renderDecision(route.decisionId, data, { suiteId: route.suiteId });
       break;
     default:
       renderDashboard(data);

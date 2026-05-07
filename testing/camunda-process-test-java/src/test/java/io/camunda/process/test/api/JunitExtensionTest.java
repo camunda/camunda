@@ -274,7 +274,8 @@ public class JunitExtensionTest {
             .withCamundaExposedPort(100)
             .withCamundaExposedPort(200)
             .withCoverageReportDirectory("custom/reports")
-            .withCoverageExcludedProcesses("process-1", "process-2");
+            .withCoverageExcludedProcesses("process-1", "process-2")
+            .withCoverageExcludedDecisions("decision-1", "decision-2");
 
     // when
     extension.beforeAll(extensionContext);
@@ -295,6 +296,8 @@ public class JunitExtensionTest {
     verify(camundaRuntimeBuilder).withCoverageReportDirectory("custom/reports");
     verify(camundaRuntimeBuilder)
         .withCoverageExcludedProcesses(Arrays.asList("process-1", "process-2"));
+    verify(camundaRuntimeBuilder)
+        .withCoverageExcludedDecisions(Arrays.asList("decision-1", "decision-2"));
   }
 
   @Test

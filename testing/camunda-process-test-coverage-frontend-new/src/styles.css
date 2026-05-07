@@ -464,38 +464,25 @@ body {
   }
 }
 
-/* ── DMN Decision Table ─────────────────────────────────────────────────────── */
+/* ── DMN Decision Table (camunda-dmn-js) ────────────────────────────────────── */
 
-.dmn-table {
-  font-size: 0.88rem;
+/*
+ * Coverage highlighting for decision table rows.
+ * Applied via canvas.addMarker(ruleId, 'coverage-matched-rule') in dmn.js.
+ *
+ * In dmn-js decision table view, addMarker adds the class directly to the
+ * rule's <tr> element, so we style tr.coverage-matched-rule to highlight
+ * matched rows in blue (matching the BPMN coverage-completed colour).
+ */
+tr.coverage-matched-rule {
+  background-color: #d0e8f9 !important;
 }
 
-.dmn-table th.dmn-input-col {
-  background-color: #e8f4fd;
-  color: #0072ce;
+tr.coverage-matched-rule td {
+  background-color: #d0e8f9 !important;
 }
 
-.dmn-table th.dmn-output-col {
-  background-color: #eaf7ee;
-  color: #0f6b38;
-}
-
-.dmn-table td.dmn-input-cell {
-  background-color: #f8fbff;
-}
-
-.dmn-table td.dmn-output-cell {
-  background-color: #f5fbf6;
-}
-
-.dmn-rule-covered {
-  background-color: #d4f4e2 !important;
-}
-
-.dmn-rule-covered td {
-  background-color: #d4f4e2 !important;
-}
-
-.dmn-rule-uncovered {
-  opacity: 0.75;
+/* Increase the height of the DMN canvas to show the full decision table */
+#dmn-canvas .djs-container {
+  min-height: 200px;
 }

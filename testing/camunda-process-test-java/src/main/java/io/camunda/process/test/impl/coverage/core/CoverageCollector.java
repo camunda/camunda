@@ -90,22 +90,6 @@ public final class CoverageCollector {
   }
 
   /**
-   * Creates a new coverage collector for a specific test class (without decision exclusions).
-   *
-   * @param testClass The class for which coverage is being collected
-   * @param excludedProcessDefinitionIds List of process definition ids to exclude from coverage
-   *     analysis
-   * @param dataSourceSupplier Supplier for the Camunda data source used to access process data
-   */
-  public static CoverageCollector createCollector(
-      final Class<?> testClass,
-      final List<String> excludedProcessDefinitionIds,
-      final Supplier<CamundaDataSource> dataSourceSupplier) {
-    return createCollector(
-        testClass, excludedProcessDefinitionIds, Collections.emptyList(), dataSourceSupplier);
-  }
-
-  /**
    * Returns all active coverage collectors.
    *
    * <p>This method provides access to all coverage collectors that have been created during the

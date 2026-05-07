@@ -60,9 +60,18 @@ public class DecisionCoverageCreator {
                 .distinct()
                 .collect(Collectors.toList());
 
+    final List<Integer> matchedRuleIndices =
+        detailedInstance.getMatchedRules() == null
+            ? new ArrayList<>()
+            : detailedInstance.getMatchedRules().stream()
+                .map(rule -> rule.getRuleIndex())
+                .distinct()
+                .collect(Collectors.toList());
+
     return new DecisionCoverage(
         decisionInstance.getDecisionDefinitionId(),
         matchedRuleIds,
+        matchedRuleIndices,
         calculateCoverage(matchedRuleIds, model));
   }
 
@@ -91,6 +100,11 @@ public class DecisionCoverageCreator {
                   .flatMap(c -> c.getMatchedRuleIds().stream())
                   .distinct()
                   .collect(Collectors.toList());
+          final List<Integer> matchedRuleIndices =
+              coveragesForDecision.stream()
+                  .flatMap(c -> c.getMatchedRuleIndices().stream())
+                  .distinct()
+                  .collect(Collectors.toList());
           final DecisionModel model =
               models.stream()
                   .filter(m -> m.getDecisionDefinitionId().equals(decisionDefinitionId))
@@ -102,7 +116,10 @@ public class DecisionCoverageCreator {
                                   + decisionDefinitionId));
           aggregatedCoverages.add(
               new DecisionCoverage(
-                  decisionDefinitionId, matchedRuleIds, calculateCoverage(matchedRuleIds, model)));
+                  decisionDefinitionId,
+                  matchedRuleIds,
+                  matchedRuleIndices,
+                  calculateCoverage(matchedRuleIds, model)));
         });
     return aggregatedCoverages;
   }

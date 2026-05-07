@@ -703,6 +703,18 @@ public class CamundaProcessTestExtension
   }
 
   /**
+   * Configures the coverage report to exclude the given decisions.
+   *
+   * @param decisionDefinitionIds the IDs of the decision definitions to exclude
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCoverageExcludedDecisions(
+      final String... decisionDefinitionIds) {
+    runtimeBuilder.withCoverageExcludedDecisions(Arrays.asList(decisionDefinitionIds));
+    return this;
+  }
+
+  /**
    * Configures the output directory for the coverage reports. By default, the directory is {@code
    * target/coverage-report/}.
    *

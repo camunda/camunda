@@ -57,11 +57,10 @@ export function updateSidebarActive(route) {
       .forEach((el) => el.classList.add('active'));
     expandSuiteInSidebar(route.suiteId);
   } else if (route.view === 'run' || route.view === 'runProcess' || route.view === 'runDecision') {
-    // Match on BOTH suiteId AND runName so two suites with identically-named
-    // test runs don't both get highlighted simultaneously.
+    // Match on BOTH suiteId AND runIndex so two suites can't cross-highlight.
     document
       .querySelectorAll(
-        `[data-suite-id="${CSS.escape(route.suiteId)}"][data-run-name="${CSS.escape(route.runName)}"]`
+        `[data-suite-id="${CSS.escape(route.suiteId)}"][data-run-index="${route.runIndex}"]`
       )
       .forEach((el) => el.classList.add('active'));
     expandSuiteInSidebar(route.suiteId);
@@ -192,9 +191,9 @@ function buildSuiteHtml(suite) {
       <div class="collapse ms-3" id="${collapseId}">
         <ul class="nav-list" role="list">`;
 
-  for (const run of suite.runs || []) {
-    html += buildRunHtml(suite, run);
-  }
+  (suite.runs || []).forEach((run, runIndex) => {
+    html += buildRunHtml(suite, run, runIndex);
+  });
 
   html += `
         </ul>
@@ -203,17 +202,16 @@ function buildSuiteHtml(suite) {
   return html;
 }
 
-function buildRunHtml(suite, run) {
+function buildRunHtml(suite, run, runIndex) {
   const sid = encodeURIComponent(suite.id);
-  const rn = encodeURIComponent(run.name);
 
   return `
           <li>
             <a class="nav-item nav-item-run"
-               href="#/suite/${sid}/run/${rn}"
+               href="#/suite/${sid}/run/${runIndex}"
                data-route="run"
                data-suite-id="${escapeHtml(suite.id)}"
-               data-run-name="${escapeHtml(run.name)}"
+               data-run-index="${runIndex}"
                title="${escapeHtml(run.name)}">
               <i class="bi bi-file-earmark-code-fill me-2" aria-hidden="true"></i>
               <span class="nav-item-label">${escapeHtml(run.name)}</span>

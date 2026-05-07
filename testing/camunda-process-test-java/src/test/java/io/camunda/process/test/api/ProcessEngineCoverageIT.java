@@ -43,7 +43,7 @@ public class ProcessEngineCoverageIT {
     // given
     final CoverageCollector coverageCollector =
         CoverageCollector.createCollector(
-            getClass(), new ArrayList<>(), () -> new CamundaDataSource(client));
+            getClass(), new ArrayList<>(), new ArrayList<>(), () -> new CamundaDataSource(client));
 
     // when
     final ProcessInstanceEvent processInstance =
@@ -79,7 +79,7 @@ public class ProcessEngineCoverageIT {
     // given
     final CoverageCollector coverageCollector =
         CoverageCollector.createCollector(
-            getClass(), new ArrayList<>(), () -> new CamundaDataSource(client));
+            getClass(), new ArrayList<>(), new ArrayList<>(), () -> new CamundaDataSource(client));
     final Map<String, Object> variables = new HashMap<>();
 
     // when
@@ -128,6 +128,7 @@ public class ProcessEngineCoverageIT {
         CoverageCollector.createCollector(
             getClass(),
             Collections.singletonList("test-with-event-based-gateway"),
+            new ArrayList<>(),
             () -> new CamundaDataSource(client));
 
     // when
@@ -154,6 +155,77 @@ public class ProcessEngineCoverageIT {
                   .extracting(Coverage::getProcessDefinitionId)
                   .isEqualTo("test-with-simple-gateway");
             });
+  }
+
+  @Test
+  void shouldCoverDecision() {
+    // given
+    final CoverageCollector coverageCollector =
+        CoverageCollector.createCollector(
+            getClass(), new ArrayList<>(), new ArrayList<>(), () -> new CamundaDataSource(client));
+
+    // when
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("coverage/test-with-decision-table.dmn")
+        .send()
+        .join();
+
+    client
+        .newEvaluateDecisionCommand()
+        .decisionId("test-coverage-decision")
+        .variable("category", "A")
+        .send()
+        .join();
+
+    coverageCollector.collectTestRunCoverage("decision-run");
+
+    // then
+    final Collection<Run> runs = coverageCollector.getSuite().getRuns();
+    assertThat(runs).hasSize(1);
+    final Run run = runs.stream().findFirst().get();
+    assertThat(run.getDecisionCoverages()).hasSize(1);
+    assertThat(run.getDecisionCoverages())
+        .first()
+        .satisfies(
+            dc -> {
+              assertThat(dc.getDecisionDefinitionId()).isEqualTo("test-coverage-decision");
+              assertThat(dc.getMatchedRuleIds()).containsExactly("DecisionRule_1");
+              assertThat(dc.getMatchedRuleIndices()).containsExactly(1);
+              assertThat(dc.getCoverage()).isEqualTo(0.5);
+            });
+  }
+
+  @Test
+  void shouldExcludeDecision() {
+    // given
+    final CoverageCollector coverageCollector =
+        CoverageCollector.createCollector(
+            getClass(),
+            new ArrayList<>(),
+            Collections.singletonList("test-coverage-decision"),
+            () -> new CamundaDataSource(client));
+
+    // when
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("coverage/test-with-decision-table.dmn")
+        .send()
+        .join();
+
+    client
+        .newEvaluateDecisionCommand()
+        .decisionId("test-coverage-decision")
+        .variable("category", "A")
+        .send()
+        .join();
+
+    coverageCollector.collectTestRunCoverage("decision-run");
+
+    // then
+    final Collection<Run> runs = coverageCollector.getSuite().getRuns();
+    assertThat(runs).hasSize(1);
+    assertThat(runs.stream().findFirst().get().getDecisionCoverages()).isEmpty();
   }
 
   private ProcessInstanceEvent deployAndCreateProcess(

@@ -1,5 +1,5 @@
 /**
- * Suite view – per-suite process and decision coverage and test case list.
+ * Suite view – per-suite coverage and test case list.
  */
 
 'use strict';
@@ -30,9 +30,11 @@ export function renderSuite(suiteId, data) {
   const suiteDecisionCoverages = suite.decisionCoverages || [];
   const runs = suite.runs || [];
   const sid = encodeURIComponent(suite.id);
+
+  const allCoverages = [...suiteCoverages, ...suiteDecisionCoverages];
   const avgCoverage =
-    suiteCoverages.length > 0
-      ? suiteCoverages.reduce((s, c) => s + c.coverage, 0) / suiteCoverages.length
+    allCoverages.length > 0
+      ? allCoverages.reduce((s, c) => s + c.coverage, 0) / allCoverages.length
       : 0;
 
   let html = `
@@ -47,23 +49,26 @@ export function renderSuite(suiteId, data) {
       ${statCard(toPercent(avgCoverage), 'Avg. Coverage', 'bi-bar-chart-fill', coverageClass(avgCoverage))}
     </div>
 
-    <h3 class="section-title">Process Coverage</h3>`;
+    <h3 class="section-title">Coverage</h3>`;
 
-  if (suiteCoverages.length === 0) {
-    html += '<p class="text-muted">No process coverage data available for this suite.</p>';
+  if (suiteCoverages.length === 0 && suiteDecisionCoverages.length === 0) {
+    html += '<p class="text-muted">No coverage data available for this suite.</p>';
   } else {
-    const sorted = [...suiteCoverages].sort((a, b) => b.coverage - a.coverage);
+    const sortedProcesses = [...suiteCoverages].sort((a, b) => b.coverage - a.coverage);
+    const sortedDecisions = [...suiteDecisionCoverages].sort((a, b) => b.coverage - a.coverage);
+
     html += `
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead><tr>
-            <th>Process</th>
+            <th>Name</th>
+            <th style="width:80px">Type</th>
             <th style="width:200px">Coverage</th>
             <th style="width:100px">Ratio</th>
           </tr></thead>
           <tbody>`;
 
-    for (const cov of sorted) {
+    for (const cov of sortedProcesses) {
       const pid = encodeURIComponent(cov.processDefinitionId);
       html += `
             <tr class="clickable-row" onclick="navigate('/suite/${sid}/process/${pid}')">
@@ -71,27 +76,11 @@ export function renderSuite(suiteId, data) {
                 <i class="bi bi-diagram-3-fill me-2 text-primary" aria-hidden="true"></i>
                 ${escapeHtml(cov.processDefinitionId)}
               </td>
+              <td><span class="badge bg-primary-subtle text-primary">Process</span></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;
     }
-    html += '</tbody></table></div>';
-  }
-
-  html += '<h3 class="section-title mt-4">Decision Coverage</h3>';
-  if (suiteDecisionCoverages.length === 0) {
-    html += '<p class="text-muted">No decision coverage data available for this suite.</p>';
-  } else {
-    const sortedDecisions = [...suiteDecisionCoverages].sort((a, b) => b.coverage - a.coverage);
-    html += `
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead><tr>
-            <th>Decision</th>
-            <th style="width:200px">Coverage</th>
-            <th style="width:100px">Ratio</th>
-          </tr></thead>
-          <tbody>`;
 
     for (const cov of sortedDecisions) {
       const did = encodeURIComponent(cov.decisionDefinitionId);
@@ -101,6 +90,7 @@ export function renderSuite(suiteId, data) {
                 <i class="bi bi-table me-2 text-success" aria-hidden="true"></i>
                 ${escapeHtml(cov.decisionDefinitionId)}
               </td>
+              <td><span class="badge bg-success-subtle text-success">Decision</span></td>
               <td>${progressBarHtml(cov.coverage)}</td>
               <td>${badgeHtml(cov.coverage)}</td>
             </tr>`;
@@ -122,15 +112,14 @@ export function renderSuite(suiteId, data) {
           </tr></thead>
           <tbody>`;
 
-    for (const run of runs) {
-      const rn = encodeURIComponent(run.name);
-      const runCoverages = run.coverages || [];
+    runs.forEach((run, runIndex) => {
+      const runCoverages = [...(run.coverages || []), ...(run.decisionCoverages || [])];
       const runAvg =
         runCoverages.length > 0
           ? runCoverages.reduce((s, c) => s + c.coverage, 0) / runCoverages.length
           : 0;
       html += `
-            <tr class="clickable-row" onclick="navigate('/suite/${sid}/run/${rn}')">
+            <tr class="clickable-row" onclick="navigate('/suite/${sid}/run/${runIndex}')">
               <td>
                 <i class="bi bi-file-earmark-code-fill me-2 text-info" aria-hidden="true"></i>
                 <strong>${escapeHtml(run.name)}</strong>
@@ -138,7 +127,7 @@ export function renderSuite(suiteId, data) {
               <td>${progressBarHtml(runAvg)}</td>
               <td>${badgeHtml(runAvg)}</td>
             </tr>`;
-    }
+    });
     html += '</tbody></table></div>';
   }
 

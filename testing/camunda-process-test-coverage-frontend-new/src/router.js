@@ -2,22 +2,26 @@
  * Hash-based router.
  *
  * Supported hash patterns:
- *   #/                                                    → { view: 'dashboard' }
- *   #/process/<processId>                                 → { view: 'process', processId }
- *   #/decision/<decisionId>                               → { view: 'decision', decisionId }
- *   #/suite/<suiteId>                                     → { view: 'suite', suiteId }
- *   #/suite/<suiteId>/run/<runName>                       → { view: 'run', suiteId, runName }
- *   #/suite/<suiteId>/process/<processId>                 → { view: 'suiteProcess', suiteId, processId }
- *   #/suite/<suiteId>/decision/<decisionId>               → { view: 'suiteDecision', suiteId, decisionId }
- *   #/suite/<suiteId>/run/<runName>/process/<processId>   → { view: 'runProcess', suiteId, runName, processId }
- *   #/suite/<suiteId>/run/<runName>/decision/<decisionId> → { view: 'runDecision', suiteId, runName, decisionId }
+ *   #/                                                     → { view: 'dashboard' }
+ *   #/process/<processId>                                  → { view: 'process', processId }
+ *   #/decision/<decisionId>                                → { view: 'decision', decisionId }
+ *   #/suite/<suiteId>                                      → { view: 'suite', suiteId }
+ *   #/suite/<suiteId>/run/<runIndex>                       → { view: 'run', suiteId, runIndex }
+ *   #/suite/<suiteId>/process/<processId>                  → { view: 'suiteProcess', suiteId, processId }
+ *   #/suite/<suiteId>/decision/<decisionId>                → { view: 'suiteDecision', suiteId, decisionId }
+ *   #/suite/<suiteId>/run/<runIndex>/process/<processId>   → { view: 'runProcess', suiteId, runIndex, processId }
+ *   #/suite/<suiteId>/run/<runIndex>/decision/<decisionId> → { view: 'runDecision', suiteId, runIndex, decisionId }
+ *
+ * Note: runIndex is a zero-based integer identifying a run by its position in suite.runs[].
+ * Using the index (rather than the run name) allows parameterized tests whose multiple
+ * invocations share the same display name to be individually navigable.
  */
 
 'use strict';
 
 /**
  * Parses the current URL hash into a route object.
- * @returns {{ view: string, [key: string]: string }}
+ * @returns {{ view: string, [key: string]: string|number }}
  */
 export function parseRoute() {
   const hash = window.location.hash.replace(/^#/, '') || '/';
@@ -35,12 +39,12 @@ export function parseRoute() {
     case 'suite': {
       const suiteId = decodeURIComponent(parts[1] || '');
       if (parts[2] === 'run') {
-        const runName = decodeURIComponent(parts[3] || '');
+        const runIndex = parseInt(parts[3] || '0', 10);
         if (parts[4] === 'process') {
           return {
             view: 'runProcess',
             suiteId,
-            runName,
+            runIndex,
             processId: decodeURIComponent(parts[5] || ''),
           };
         }
@@ -48,11 +52,11 @@ export function parseRoute() {
           return {
             view: 'runDecision',
             suiteId,
-            runName,
+            runIndex,
             decisionId: decodeURIComponent(parts[5] || ''),
           };
         }
-        return { view: 'run', suiteId, runName };
+        return { view: 'run', suiteId, runIndex };
       }
       if (parts[2] === 'process') {
         return {
