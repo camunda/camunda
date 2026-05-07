@@ -26,9 +26,15 @@ import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -75,6 +81,43 @@ public final class LiveBpmn {
 
   public static LiveBpmn of(final BpmnModelInstance existingModel) {
     return new LiveBpmn(existingModel);
+  }
+
+  /**
+   * Loads a {@code .bpmn} file from disk (e.g. one exported from Camunda Modeler) and adopts it as
+   * the model. Bindings can then be attached via {@link #bind} by element id.
+   *
+   * @throws IllegalArgumentException if the file does not exist
+   * @throws UncheckedIOException if reading the file fails
+   */
+  public static LiveBpmn fromFile(final Path bpmnFile) {
+    Objects.requireNonNull(bpmnFile, "bpmnFile");
+    if (!Files.exists(bpmnFile)) {
+      throw new IllegalArgumentException("BPMN file does not exist: " + bpmnFile);
+    }
+    return of(Bpmn.readModelFromFile(bpmnFile.toFile()));
+  }
+
+  /**
+   * Loads a {@code .bpmn} resource from the classpath (e.g. {@code processes/order.bpmn} packaged
+   * under {@code src/main/resources}) and adopts it as the model.
+   *
+   * @throws IllegalArgumentException if the resource cannot be found
+   */
+  public static LiveBpmn fromClasspath(final String resource) {
+    Objects.requireNonNull(resource, "resource");
+    final ClassLoader cl =
+        Thread.currentThread().getContextClassLoader() != null
+            ? Thread.currentThread().getContextClassLoader()
+            : LiveBpmn.class.getClassLoader();
+    try (InputStream in = cl.getResourceAsStream(resource)) {
+      if (in == null) {
+        throw new IllegalArgumentException("classpath resource not found: " + resource);
+      }
+      return of(Bpmn.readModelFromStream(in));
+    } catch (final IOException e) {
+      throw new UncheckedIOException("failed to read classpath resource: " + resource, e);
+    }
   }
 
   /** Returns a fresh {@link ClusterFactory} for building {@link Cluster} specs. */

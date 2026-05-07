@@ -23,7 +23,9 @@ import io.camunda.runner.Cluster;
 import io.camunda.runner.Run;
 import io.camunda.runner.RunOptions;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -63,6 +65,8 @@ public final class RunnerPipeline {
         && bindingsContainUserTasks(model, bindings)) {
       throw new UnsupportedOperationException("user-task lambda dispatch is not yet supported");
     }
+
+    warnAboutUnboundServiceTasks(model, bindings.keySet());
 
     final String runId = RunIdGenerator.generate();
     final String user = System.getProperty("user.name", "user");
@@ -152,6 +156,43 @@ public final class RunnerPipeline {
       }
     }
     return false;
+  }
+
+  /**
+   * Logs a warning for every service task in the model that has no LiveBpmn binding. Two cases:
+   *
+   * <ul>
+   *   <li>Task with {@code zeebeJobType} set but no binding → warn (assuming the user wants
+   *       LiveBpmn to handle it but forgot to {@code .bind(elementId, lambda)}; or assumes an
+   *       external worker — both are plausible, hence a warning rather than a hard error).
+   *   <li>Task with no {@code zeebeJobType} at all → louder warning (the broker will reject this;
+   *       the process can never make progress).
+   * </ul>
+   */
+  private static void warnAboutUnboundServiceTasks(
+      final BpmnModelInstance model, final java.util.Set<String> boundIds) {
+    for (final ServiceTask task : model.getModelElementsByType(ServiceTask.class)) {
+      final String elementId = task.getId();
+      if (boundIds.contains(elementId)) {
+        continue;
+      }
+      final ZeebeTaskDefinition def = task.getSingleExtensionElement(ZeebeTaskDefinition.class);
+      final String jobType = def == null ? null : def.getType();
+      if (jobType == null || jobType.isBlank()) {
+        LOG.warn(
+            "service task '{}' has no zeebeJobType and no binding — this process will get stuck."
+                + " Did you forget to call .bind(\"{}\", lambda)?",
+            elementId,
+            elementId);
+      } else {
+        LOG.warn(
+            "service task '{}' (jobType '{}') has no LiveBpmn binding — assuming an external"
+                + " worker will handle it. Call .bind(\"{}\", lambda) to handle it here.",
+            elementId,
+            jobType,
+            elementId);
+      }
+    }
   }
 
   private static String callerSimpleName() {
