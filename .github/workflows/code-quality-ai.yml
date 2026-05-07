@@ -215,10 +215,10 @@ jobs:
         working-directory: .github/scripts/code-quality-ai
         env:
           ENABLE_AI_TRIAGE: "true"
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          BEDROCK_INFERENCE_PROFILE_ARN: ${{ secrets.BEDROCK_INFERENCE_PROFILE_ARN }}
+          AWS_REGION: eu-north-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_SECRET }}
+          BEDROCK_INFERENCE_PROFILE_ARN: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_ARN }}
         run: node triage.js --input "${{ steps.locate.outputs.sarif }}" --output triaged.json
 
       - name: Upload triage output
@@ -271,10 +271,10 @@ jobs:
       - name: Run PR-track runner
         working-directory: .github/scripts/code-quality-ai
         env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          BEDROCK_INFERENCE_PROFILE_ARN: ${{ secrets.BEDROCK_INFERENCE_PROFILE_ARN }}
+          AWS_REGION: eu-north-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_SECRET }}
+          BEDROCK_INFERENCE_PROFILE_ARN: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_ARN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
