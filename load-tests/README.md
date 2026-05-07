@@ -309,13 +309,15 @@ This method allows no specific configuration or adjustment. If this is needed, t
 
 The [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is the **easiest** way to run a load test for a specific branch or main (default) with more customization. We support setting up load tests for different Camunda/Zeebe versions by selecting the specific workflow revision as part of the workflow dispatch form (UI).
 
-It allows high customization:
+In practice, most ad-hoc runs only need a test `name`, a Git `ref`, a built-in `scenario`, and optional Helm overrides. The workflow supports:
 
 * Specification of the Camunda/Zeebe version to test against (by selecting the workflow revision) — will make sure to use the right Camunda Platform Helm Chart version and values file.
 * Specification of the branch to test against (default: main) — will build a Docker image based on the specified branch and be used for the cluster under test and load test applications.
+* Specification of a workload scenario (`max`, `realistic`, `typical`, `latency`, or `archiver`) — making it easy to start from a known workload profile before applying targeted overrides.
 * Specification of the time to live (TTL) for the load test — making sure that the load test is automatically cleaned up after the specified time.
 * Specification of an existing Docker image to use — making it possible to reuse existing images.
-* Specification of arbitrary Helm arguments — making it possible to customize the load test set up.
+* Specification of platform chart overrides via `platform-helm-values` — for example orchestration sizing, env vars, and image-related settings.
+* Specification of load test chart overrides via `load-test-load` — for example starter rate, worker replicas, and BPMN/payload paths.
 
 ![load-test-gha](docs/assets/load-test-gha.png)
 
