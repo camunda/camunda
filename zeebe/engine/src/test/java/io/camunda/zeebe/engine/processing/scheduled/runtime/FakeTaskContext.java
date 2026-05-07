@@ -66,12 +66,16 @@ public final class FakeTaskContext<C> implements TaskContext<C> {
   }
 
   /**
-   * The {@link Result} produced by the most recent terminal call on this context's builder, or
-   * {@code null} if the task did not call a terminal. Tests use this to assert on appended
-   * commands, inter-partition sends, and the scheduling {@link Decision}.
+   * The {@link Result} reflecting the most recent terminal call on this context's builder plus all
+   * commands and sends recorded so far. Returns {@code null} if the task has not yet called a
+   * terminal. Tests use this to assert on appended commands, inter-partition sends, and the
+   * scheduling {@link Decision}; commands appended via captured visitors after the task returns are
+   * visible here.
    */
   public Result lastResult() {
-    return builder.lastResult;
+    return builder.lastDecision == null
+        ? null
+        : new Result(builder.appendedCommands, builder.interPartitionSends, builder.lastDecision);
   }
 
   @Override
@@ -104,7 +108,7 @@ public final class FakeTaskContext<C> implements TaskContext<C> {
 
     private final List<AppendedCommand> appendedCommands = new ArrayList<>();
     private final List<InterPartitionSend> interPartitionSends = new ArrayList<>();
-    private Result lastResult;
+    private Decision lastDecision;
 
     @Override
     public boolean append(final Intent intent, final UnifiedRecordValue value) {
@@ -149,8 +153,8 @@ public final class FakeTaskContext<C> implements TaskContext<C> {
     }
 
     private Result capture(final Decision decision) {
-      lastResult = new Result(appendedCommands, interPartitionSends, decision);
-      return lastResult;
+      lastDecision = decision;
+      return new Result(appendedCommands, interPartitionSends, decision);
     }
   }
 }
