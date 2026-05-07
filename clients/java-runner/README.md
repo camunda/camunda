@@ -39,19 +39,30 @@ See [DESIGN.md](DESIGN.md) for the full API and architecture.
 no Docker required. **Best for tight inner-loop work**: start it once, leave it running, re-run
 your `main()` against it as many times as you like in milliseconds.
 
-### Install & start
+### macOS — one-command from this repo
+
+The `c8run/` source is part of this monorepo. With Go ≥ 1.25 installed (`brew install go` if you
+don't have it):
 
 ```bash
-# from a release tarball — pick the latest from
-# https://github.com/camunda/camunda/releases (look for `camunda8-run-...` artifacts)
-tar xzf camunda8-run-*.tar.gz
-cd camunda8-run-*
-./c8run start
+cd c8run && go build -o c8run ./cmd/c8run/ && ./c8run start
 ```
 
-Verify it's up:
+That builds the launcher and starts the full stack. Stop with `cd c8run && ./c8run stop`.
+
+If your `c8run/.env` requires LDAP credentials for the Java artifact pull, see
+[`c8run/README.md`](../../c8run/README.md) — add `JAVA_ARTIFACTS_USER` / `JAVA_ARTIFACTS_PASSWORD`
+once and you're set.
+
+### macOS — without Go
+
+If you don't want Go on your machine, use the Docker Compose option below instead. It's the same
+setup minus the c8run launcher.
+
+### Verify it's up
+
 ```bash
-curl http://localhost:8080/actuator/health/status   # → 200 OK once ready
+curl http://localhost:8080/v2/topology   # → 200 OK with broker info once ready
 ```
 
 Operate is then at <http://localhost:8080/operate>.

@@ -49,7 +49,7 @@ public final class LocalContainerCluster implements Cluster {
    * io.camunda.process.test.camundaDockerImageVersion} or the constructor when a specific version
    * is wanted.
    */
-  private static final String DEFAULT_IMAGE_VERSION = "8.8.0";
+  private static final String DEFAULT_IMAGE_VERSION = "8.9.4";
 
   public LocalContainerCluster() {
     this(
