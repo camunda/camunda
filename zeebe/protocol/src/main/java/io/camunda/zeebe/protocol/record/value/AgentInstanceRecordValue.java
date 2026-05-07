@@ -72,6 +72,11 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    */
   Definition getDefinition();
 
+  /**
+   * @return the limits configured for the agent instance
+   */
+  Limits getLimits();
+
   interface Definition {
     /**
      * @return the model used by the agent
@@ -87,5 +92,23 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
      * @return the system prompt used to configure the agent
      */
     String getSystemPrompt();
+  }
+
+  /** Represents the operational limits configured for an agent instance. */
+  interface Limits {
+    /**
+     * @return the maximum number of tokens allowed for the agent instance
+     */
+    long getMaxTokens();
+
+    /**
+     * @return the maximum number of model calls allowed
+     */
+    int getMaxModelCalls();
+
+    /**
+     * @return the maximum number of tool calls allowed
+     */
+    int getMaxToolCalls();
   }
 }

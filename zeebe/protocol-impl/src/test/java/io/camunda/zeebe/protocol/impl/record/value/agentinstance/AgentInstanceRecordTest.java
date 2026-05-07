@@ -109,4 +109,28 @@ final class AgentInstanceRecordTest {
     assertThat(copy.getDefinition().getProvider()).isEqualTo("openai");
     assertThat(copy.getDefinition().getSystemPrompt()).isEqualTo("Extract vendor, amount, date.");
   }
+
+  @Test
+  void shouldDefaultLimitsToMinusOne() {
+    final AgentInstanceRecord record = new AgentInstanceRecord();
+    assertThat(record.getLimits().getMaxTokens()).isEqualTo(-1L);
+    assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(-1);
+    assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldRoundTripLimitsViaMsgPack() {
+    // given
+    final AgentInstanceRecord original = new AgentInstanceRecord();
+    original.getLimits().setMaxTokens(8000L).setMaxModelCalls(10).setMaxToolCalls(20);
+
+    // when
+    final AgentInstanceRecord copy = new AgentInstanceRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getLimits().getMaxTokens()).isEqualTo(8000L);
+    assertThat(copy.getLimits().getMaxModelCalls()).isEqualTo(10);
+    assertThat(copy.getLimits().getMaxToolCalls()).isEqualTo(20);
+  }
 }
