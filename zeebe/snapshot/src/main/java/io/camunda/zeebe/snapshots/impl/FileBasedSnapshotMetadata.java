@@ -49,10 +49,6 @@ public record FileBasedSnapshotMetadata(
         totalSizeBytes == null ? 0L : totalSizeBytes);
   }
 
-  public static FileBasedSnapshotMetadata forBootstrap(final int version) {
-    return forBootstrap(version, 0L);
-  }
-
   public static FileBasedSnapshotMetadata forBootstrap(
       final int version, final long totalSizeBytes) {
     return new FileBasedSnapshotMetadata(version, 0L, 0L, 0L, 0L, true, totalSizeBytes);
