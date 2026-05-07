@@ -24,13 +24,10 @@ import {
   openIssue,
 } from "./github_helpers.js";
 
-const RULE_DOC_BASE = "https://codeql.github.com/codeql-query-help/java";
+const RULE_DOC_BASE = "https://codeql.github.com/codeql-query-help/java/";
 
 function ruleDocUrl(rule) {
-  // CodeQL rules look like "java/deprecated-call". The published docs use
-  // the part after the slash, dasherized as-is.
-  if (!rule || !rule.startsWith("java/")) return null;
-  return `${RULE_DOC_BASE}/${rule.replace(/^java\//, "")}/`;
+  return `${RULE_DOC_BASE}/${rule}/`;
 }
 
 function severityLabel(finding) {
