@@ -81,4 +81,32 @@ final class AgentInstanceRecordTest {
     // then
     assertThat(copy.getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
   }
+
+  @Test
+  void shouldDefaultDefinitionFieldsToEmpty() {
+    final AgentInstanceRecord record = new AgentInstanceRecord();
+    assertThat(record.getDefinition().getModel()).isEmpty();
+    assertThat(record.getDefinition().getProvider()).isEmpty();
+    assertThat(record.getDefinition().getSystemPrompt()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripDefinitionViaMsgPack() {
+    // given
+    final AgentInstanceRecord original = new AgentInstanceRecord();
+    original
+        .getDefinition()
+        .setModel("gpt-4o")
+        .setProvider("openai")
+        .setSystemPrompt("Extract vendor, amount, date.");
+
+    // when
+    final AgentInstanceRecord copy = new AgentInstanceRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getDefinition().getModel()).isEqualTo("gpt-4o");
+    assertThat(copy.getDefinition().getProvider()).isEqualTo("openai");
+    assertThat(copy.getDefinition().getSystemPrompt()).isEqualTo("Extract vendor, amount, date.");
+  }
 }

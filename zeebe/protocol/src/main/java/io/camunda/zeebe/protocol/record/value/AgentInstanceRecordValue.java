@@ -66,4 +66,26 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    * @return the current status of the agent instance
    */
   AgentInstanceStatus getStatus();
+
+  /**
+   * @return the definition details of the agent
+   */
+  Definition getDefinition();
+
+  interface Definition {
+    /**
+     * @return the model used by the agent
+     */
+    String getModel();
+
+    /**
+     * @return the provider of the agent model
+     */
+    String getProvider();
+
+    /**
+     * @return the system prompt used to configure the agent
+     */
+    String getSystemPrompt();
+  }
 }

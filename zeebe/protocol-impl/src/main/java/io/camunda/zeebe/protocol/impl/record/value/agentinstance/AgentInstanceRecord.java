@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
@@ -33,9 +34,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final EnumProperty<AgentInstanceStatus> statusProp =
       new EnumProperty<>("status", AgentInstanceStatus.class, AgentInstanceStatus.INITIALIZING);
+  private final ObjectProperty<AgentInstanceDefinition> definitionProp =
+      new ObjectProperty<>("definition", new AgentInstanceDefinition());
 
   public AgentInstanceRecord() {
-    super(9);
+    super(10);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementIdProp)
@@ -44,7 +47,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(processDefinitionVersionProp)
         .declareProperty(versionTagProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(statusProp);
+        .declareProperty(statusProp)
+        .declareProperty(definitionProp);
   }
 
   @Override
@@ -135,5 +139,10 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   public AgentInstanceRecord setStatus(final AgentInstanceStatus status) {
     statusProp.setValue(status);
     return this;
+  }
+
+  @Override
+  public AgentInstanceDefinition getDefinition() {
+    return definitionProp.getValue();
   }
 }
