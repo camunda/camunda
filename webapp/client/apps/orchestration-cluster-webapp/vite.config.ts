@@ -16,8 +16,6 @@ import viteReact from '@vitejs/plugin-react';
 import sbom from 'rollup-plugin-sbom';
 import {playwright} from '@vitest/browser-playwright';
 
-// Inject custom.css as the last stylesheet in <head> so operator overrides win over
-// the bundled Carbon theme.
 const injectCustomCss: PluginOption = {
 	name: 'inject-custom-css',
 	apply: 'build',
