@@ -9,10 +9,10 @@ package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.*;
 
-import io.camunda.security.configuration.AssertionConfiguration.KidCase;
-import io.camunda.security.configuration.AssertionConfiguration.KidDigestAlgorithm;
-import io.camunda.security.configuration.AssertionConfiguration.KidEncoding;
-import io.camunda.security.configuration.AssertionConfiguration.KidSource;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidCase;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidDigestAlgorithm;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidEncoding;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidSource;
 import io.camunda.security.configuration.SecurityConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

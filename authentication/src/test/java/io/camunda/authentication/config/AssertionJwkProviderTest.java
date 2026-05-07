@@ -9,12 +9,12 @@ package io.camunda.authentication.config;
 
 import static org.junit.jupiter.params.provider.Arguments.*;
 
-import io.camunda.security.configuration.AssertionConfiguration;
-import io.camunda.security.configuration.AssertionConfiguration.KidCase;
-import io.camunda.security.configuration.AssertionConfiguration.KidDigestAlgorithm;
-import io.camunda.security.configuration.AssertionConfiguration.KidEncoding;
-import io.camunda.security.configuration.AssertionConfiguration.KidSource;
-import io.camunda.security.configuration.KeystoreConfiguration;
+import io.camunda.security.api.model.config.AssertionConfiguration;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidCase;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidDigestAlgorithm;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidEncoding;
+import io.camunda.security.api.model.config.AssertionConfiguration.KidSource;
+import io.camunda.security.api.model.config.KeystoreConfiguration;
 import java.lang.reflect.Method;
 import java.security.cert.Certificate;
 import java.util.stream.Stream;
