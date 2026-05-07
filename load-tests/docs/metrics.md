@@ -5,7 +5,7 @@ includes the Prometheus query expression, unit, and any defined thresholds.
 
 These metrics are queried against the [Prometheus instance](https://monitor.benchmark.camunda.cloud).
 All metrics defined here are exposed and visualised in the
-[Camunda Performance dashboard](https://dashboard.benchmark.camunda.cloud/d/camunda-benchmarks/camunda-performance?orgId=1).
+[Camunda Performance dashboard](https://dashboard.benchmark.camunda.cloud/d/camunda-performance/camunda-performance?orgId=1).
 
 ## Where to start
 
@@ -36,7 +36,7 @@ directly:
 
 |      Variable      |                                            Replacement                                            |
 |--------------------|---------------------------------------------------------------------------------------------------|
-| `$namespace`       | Exact namespace, e.g. `c8-my-test` (use `=` not `=~`)                                             |
+| `$namespace`       | Exact namespace, e.g. `c8-my-test` (leaving `=~` in the query is fine for an exact namespace)     |
 | `$__rate_interval` | A duration ≥ 4× your scrape interval (Grafana computes this automatically from the scrape config) |
 
 ---
@@ -266,13 +266,12 @@ sum by (pod, container) (rate(container_cpu_usage_seconds_total{namespace=~"$nam
 Percentage of time the application is throttled by the system. Values above ~0% indicate the CPU
 limit is too tight for the current load.
 
-- **Unit:** percentage (0–100%)
-- **Threshold:** ~0% for sustainable operation
+- **Unit:** ratio (0–1.0)
+- **Threshold:** ~0 for sustainable operation
 
 ```promql
-sum(rate(container_cpu_cfs_throttled_periods_total{namespace=~"$namespace"}[$__rate_interval])) by (pod)
-/ sum(rate(container_cpu_cfs_periods_total{namespace=~"$namespace"}[$__rate_interval])) by (pod)
-* 100
+sum(rate(container_cpu_cfs_throttled_periods_total{namespace=~"$namespace", container!=""}[$__rate_interval])) by (pod)
+/ sum(rate(container_cpu_cfs_periods_total{namespace=~"$namespace", container!=""}[$__rate_interval])) by (pod)
 ```
 
 ---
@@ -298,7 +297,7 @@ Container RSS memory usage.
 - **Measurement:** gauge
 
 ```promql
-container_memory_rss{namespace=~"$namespace"}
+container_memory_rss{namespace=~"$namespace", container!=""}
 ```
 
 ---
@@ -320,7 +319,7 @@ sum(jvm_memory_bytes_used{namespace=~"$namespace", area="heap"}) by (pod)
 
 Disk usage as a ratio of used to total capacity across Elasticsearch persistent volumes.
 
-- **Unit:** percentage (0–1.0)
+- **Unit:** ratio (0–1.0)
 
 ```promql
 kubelet_volume_stats_used_bytes{namespace=~"$namespace", persistentvolumeclaim=~".*elastic.*"}
@@ -336,14 +335,12 @@ kubelet_volume_stats_used_bytes{namespace=~"$namespace", persistentvolumeclaim=~
 Percentage of requests dropped due to backpressure. Values above ~0% indicate the system is at
 or near capacity.
 
-- **Unit:** percentage (0–100%)
-- **Threshold:** ~0% for sustainable operation
+- **Unit:** ratio (0–1.0)
+- **Threshold:** ~0 for sustainable operation
 
 ```promql
-(
-  sum(rate(zeebe_dropped_request_count_total{namespace=~"$namespace"}[$__rate_interval])) by (partition)
-  / sum(rate(zeebe_received_request_count_total{namespace=~"$namespace"}[$__rate_interval])) by (partition)
-) * 100
+sum(rate(zeebe_dropped_request_count_total{namespace=~"$namespace"}[$__rate_interval])) by (partition)
+/ sum(rate(zeebe_received_request_count_total{namespace=~"$namespace"}[$__rate_interval])) by (partition)
 ```
 
 ---
