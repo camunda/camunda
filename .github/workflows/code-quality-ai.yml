@@ -15,6 +15,10 @@ on:
         description: "Max issues / PRs to open (per run)"
         type: number
         default: 1
+      max_triage:
+        description: "Max findings to send through AI triage (per run)"
+        type: number
+        default: 20
       dry_run:
         description: "Dry run — don't actually open PRs / issues, just print what would be created"
         type: boolean
@@ -43,6 +47,7 @@ concurrency:
 env:
   CODE_MAAT_VERSION: "1.0.4"
   MAX_TICKETS: ${{ inputs.max_tickets || 1 }}
+  MAX_TRIAGE: ${{ inputs.max_triage || 20 }}
   DRY_RUN: false
 
 jobs:
@@ -273,7 +278,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_SECRET }}
           BEDROCK_INFERENCE_PROFILE_ARN: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_ARN }}
-        run: node triage.js --input "${{ steps.locate.outputs.sarif }}" --output triaged.json --max-tickets ${{ env.MAX_TICKETS }} --repo-root "$GITHUB_WORKSPACE"
+        run: node triage.js --input "${{ steps.locate.outputs.sarif }}" --output triaged.json --max-triage ${{ env.MAX_TRIAGE }} --repo-root "$GITHUB_WORKSPACE"
 
       - name: Upload triage output
         if: always()

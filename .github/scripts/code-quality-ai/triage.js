@@ -255,17 +255,17 @@ function toFinding(result) {
 
 /**
  * Triage a parsed SARIF object into pr_eligible / issue_only / false_positives.
- * At most `maxTickets` results are processed to keep runtime bounded.
+ * At most `maxTriage` results are processed to keep runtime bounded.
  * @param {object} sarif
- * @param {number} [maxTickets=5]
+ * @param {number} maxTriage
  * @param {string} [repoRoot=process.cwd()]
  */
-export async function triage(sarif, maxTickets = 5, repoRoot = process.cwd()) {
+export async function triage(sarif, maxTriage, repoRoot = process.cwd()) {
   const findings = (sarif.runs ?? [])
     .flatMap((run) => run.results ?? [])
     .map(toFinding)
     .filter(Boolean)
-    .slice(0, maxTickets);
+    .slice(0, maxTriage);
 
   const classified = [];
   for (const finding of findings) {
@@ -313,7 +313,7 @@ function writeJson(outputPath, payload) {
 }
 
 function parseArgs(argv) {
-  const args = { input: "-", output: "-", maxTickets: 5, repoRoot: process.cwd() };
+  const args = { input: "-", output: "-", maxTriage: 20, repoRoot: process.cwd() };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -323,8 +323,8 @@ function parseArgs(argv) {
       case "--output":
         args.output = argv[++i];
         break;
-      case "--max-tickets":
-        args.maxTickets = Number.parseInt(argv[++i]);
+      case "--max-triage":
+        args.maxTriage = Number.parseInt(argv[++i]);
         break;
       case "--repo-root":
         args.repoRoot = argv[++i];
@@ -336,7 +336,7 @@ function parseArgs(argv) {
             "Usage: triage.js [options]",
             "  --input PATH       SARIF file (default: stdin)",
             "  --output PATH      classified JSON (default: stdout)",
-            "  --max-tickets N    max findings to triage (default: 5)",
+            "  --max-triage N     max findings to triage (default: 20)",
             "  --repo-root PATH   repository root for reading source files (default: cwd)",
             "",
             "Env (Claude/Bedrock dispatch — set ENABLE_AI_TRIAGE=true):",
@@ -360,7 +360,7 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const sarif = readSarif(args.input);
-  const out = await triage(sarif, args.maxTickets, args.repoRoot);
+  const out = await triage(sarif, args.maxTriage, args.repoRoot);
   writeJson(args.output, out);
 }
 

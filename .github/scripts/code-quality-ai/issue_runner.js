@@ -181,7 +181,7 @@ function parseArgs(argv) {
         args.output = argv[++i];
         break;
       case "--max-issues":
-        args.maxIssues = parseInt(argv[++i], 10);
+        args.maxIssues = Number.parseInt(argv[++i]);
         break;
       case "--dry-run":
         args.dryRun = argv[++i] !== "false";
