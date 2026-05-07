@@ -11,6 +11,7 @@
           <zeebe:input source="=configuration" target="configuration" />
           <zeebe:input source="=exporterId" target="exporterId" />
           <zeebe:input source="=direction" target="direction" />
+          <zeebe:output source="=operations" target="operations" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_StartToCalc</bpmn:incoming>
@@ -21,7 +22,7 @@
       <bpmn:outgoing>Flow_LoopToEnd</bpmn:outgoing>
       <bpmn:multiInstanceLoopCharacteristics isSequential="true">
         <bpmn:extensionElements>
-          <zeebe:loopCharacteristics inputCollection="=workPayload.operations" inputElement="op" />
+          <zeebe:loopCharacteristics inputCollection="=operations" inputElement="op" />
         </bpmn:extensionElements>
       </bpmn:multiInstanceLoopCharacteristics>
       <bpmn:startEvent id="Event_SubStart">
@@ -56,54 +57,54 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="exporter_operation_executor">
       <bpmndi:BPMNShape id="Event_Start_di" bpmnElement="Event_Start">
-        <dc:Bounds x="172" y="302" width="36" height="36" />
+        <dc:Bounds x="172" y="162" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="149" y="345" width="82" height="27" />
+          <dc:Bounds x="147" y="205" width="86" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_Calculation_di" bpmnElement="Activity_Calculation">
-        <dc:Bounds x="280" y="280" width="120" height="80" />
+        <dc:Bounds x="280" y="140" width="120" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_End_di" bpmnElement="Event_End">
+        <dc:Bounds x="1072" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1066" y="205" width="49" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_ApplyOperations_di" bpmnElement="Activity_ApplyOperations" isExpanded="true">
-        <dc:Bounds x="480" y="220" width="510" height="200" />
+        <dc:Bounds x="480" y="80" width="510" height="200" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_SubStart_di" bpmnElement="Event_SubStart">
-        <dc:Bounds x="520" y="302" width="36" height="36" />
+        <dc:Bounds x="520" y="162" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_ConfigChange_di" bpmnElement="Activity_ConfigChange">
-        <dc:Bounds x="620" y="280" width="120" height="80" />
+        <dc:Bounds x="620" y="140" width="120" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_SubEnd_di" bpmnElement="Event_SubEnd">
-        <dc:Bounds x="822" y="302" width="36" height="36" />
+        <dc:Bounds x="822" y="162" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_End_di" bpmnElement="Event_End">
-        <dc:Bounds x="1072" y="302" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1046" y="345" width="88" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_StartToCalc_di" bpmnElement="Flow_StartToCalc">
-        <di:waypoint x="208" y="320" />
-        <di:waypoint x="280" y="320" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_CalcToLoop_di" bpmnElement="Flow_CalcToLoop">
-        <di:waypoint x="400" y="320" />
-        <di:waypoint x="480" y="320" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_SubStartToTask_di" bpmnElement="Flow_SubStartToTask">
-        <di:waypoint x="556" y="320" />
-        <di:waypoint x="620" y="320" />
+        <di:waypoint x="556" y="180" />
+        <di:waypoint x="620" y="180" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_TaskToSubEnd_di" bpmnElement="Flow_TaskToSubEnd">
-        <di:waypoint x="740" y="320" />
-        <di:waypoint x="822" y="320" />
+        <di:waypoint x="740" y="180" />
+        <di:waypoint x="822" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StartToCalc_di" bpmnElement="Flow_StartToCalc">
+        <di:waypoint x="208" y="180" />
+        <di:waypoint x="280" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CalcToLoop_di" bpmnElement="Flow_CalcToLoop">
+        <di:waypoint x="400" y="180" />
+        <di:waypoint x="480" y="180" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_LoopToEnd_di" bpmnElement="Flow_LoopToEnd">
-        <di:waypoint x="990" y="320" />
-        <di:waypoint x="1072" y="320" />
+        <di:waypoint x="990" y="180" />
+        <di:waypoint x="1072" y="180" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

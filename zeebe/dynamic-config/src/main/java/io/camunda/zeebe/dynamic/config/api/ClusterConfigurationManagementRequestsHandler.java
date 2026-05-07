@@ -34,6 +34,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,6 +54,7 @@ public final class ClusterConfigurationManagementRequestsHandler
       LoggerFactory.getLogger(ClusterConfigurationManagementRequestsHandler.class);
   private static final String SCALE_MESSAGE_NAME = "cluster_modification";
   private static final String SCALE_PROCESS_ID = "scale_operation_executor";
+  private static final String EXPORTER_OPERATION_PROCESS_ID = "exporter_operation_executor";
 
   private final ConfigurationChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
@@ -70,7 +72,7 @@ public final class ClusterConfigurationManagementRequestsHandler
 
   /** Enables BPMN-orchestrated scale operations. Must be called after the process engine starts. */
   public void setCamundaClient(final CamundaClient client) {
-    this.camundaClient = client;
+    camundaClient = client;
   }
 
   @Override
@@ -214,9 +216,13 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> disableExporter(
       final ExporterDisableRequest exporterDisableRequest) {
-    return handleRequest(
-        exporterDisableRequest.dryRun(),
-        new ExporterDisableRequestTransformer(exporterDisableRequest.exporterId()));
+    final var transformer =
+        new ExporterDisableRequestTransformer(exporterDisableRequest.exporterId());
+    if (!exporterDisableRequest.dryRun() && camundaClient != null) {
+      return handleBpmnExporterOperation(
+          transformer, exporterDisableRequest.exporterId(), "disable", Optional.empty());
+    }
+    return handleRequest(exporterDisableRequest.dryRun(), transformer);
   }
 
   @Override
@@ -230,10 +236,14 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> enableExporter(
       final ExporterEnableRequest enableRequest) {
-    return handleRequest(
-        enableRequest.dryRun(),
+    final var transformer =
         new ExporterEnableRequestTransformer(
-            enableRequest.exporterId(), enableRequest.initializeFrom()));
+            enableRequest.exporterId(), enableRequest.initializeFrom());
+    if (!enableRequest.dryRun() && camundaClient != null) {
+      return handleBpmnExporterOperation(
+          transformer, enableRequest.exporterId(), "enable", enableRequest.initializeFrom());
+    }
+    return handleRequest(enableRequest.dryRun(), transformer);
   }
 
   @Override
@@ -301,6 +311,56 @@ public final class ClusterConfigurationManagementRequestsHandler
                     requestId,
                     toAdd,
                     toRemove);
+              }
+
+              return new ClusterConfigurationChangeResponse(
+                  result.changeId(),
+                  result.currentConfiguration().members(),
+                  result.finalConfiguration().members(),
+                  result.operations());
+            },
+            executor);
+  }
+
+  private ActorFuture<ClusterConfigurationChangeResponse> handleBpmnExporterOperation(
+      final ConfigurationChangeRequest request,
+      final String exporterId,
+      final String direction,
+      final Optional<String> initializeFrom) {
+    return coordinator
+        .simulateOperations(request)
+        .thenApply(
+            result -> {
+              final String requestId = UUID.randomUUID().toString();
+
+              final var client = camundaClient;
+              if (client != null) {
+                final var vars = new HashMap<String, Object>();
+                vars.put("request_id", requestId);
+                vars.put("processor_id", EXPORTER_OPERATION_PROCESS_ID);
+                vars.put("exporterId", exporterId);
+                vars.put("direction", direction);
+                initializeFrom.ifPresent(v -> vars.put("initializeFrom", v));
+
+                client
+                    .newPublishMessageCommand()
+                    .messageName(SCALE_MESSAGE_NAME)
+                    .correlationKey(requestId)
+                    .variables(vars)
+                    .send()
+                    .exceptionally(
+                        e -> {
+                          LOG.warn(
+                              "Failed to publish exporter BPMN message for request {}",
+                              requestId,
+                              e);
+                          return null;
+                        });
+                LOG.info(
+                    "Exporter {} - {} request {} dispatched to BPMN",
+                    exporterId,
+                    direction,
+                    requestId);
               }
 
               return new ClusterConfigurationChangeResponse(

@@ -97,8 +97,7 @@ public final class BpmnClusterConfigurationMapper {
             if (map.containsKey("basePartitionCount")) {
               final int base = ((Number) map.get("basePartitionCount")).intValue();
               final Set<Integer> additional =
-                  toIntSet(
-                      (List<?>) map.getOrDefault("additionalActivePartitions", List.of()));
+                  toIntSet((List<?>) map.getOrDefault("additionalActivePartitions", List.of()));
               final Set<Integer> inactive =
                   toIntSet((List<?>) map.getOrDefault("inactivePartitions", List.of()));
               return new RoutingState.RequestHandling.ActivePartitions(base, additional, inactive);

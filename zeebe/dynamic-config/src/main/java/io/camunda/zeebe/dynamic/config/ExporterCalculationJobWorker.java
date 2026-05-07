@@ -57,11 +57,9 @@ public final class ExporterCalculationJobWorker implements AutoCloseable {
         }
       }
 
-      jobClient
-          .newCompleteCommand(job.getKey())
-          .variable("workPayload", Map.of("operations", operations))
-          .variable("configuration", configMap)
-          .send();
+      final Map<String, Object> result = new java.util.HashMap<>();
+      result.put("operations", operations);
+      jobClient.newCompleteCommand(job.getKey()).variables(result).send();
 
     } catch (final Exception e) {
       jobClient
