@@ -342,51 +342,6 @@ If you need custom tuning, start with the closest `scenario` and then add target
 > - `orchestration.env[0].value=false` can fail with `got boolean, want string` when passed as a boolean-looking value.
 > - `orchestration.cpuThreadCount` is currently defined as a string in our default values (`"3"` in [`camunda-platform-values.yaml`](camunda-platform-values.yaml)), so `--set orchestration.cpuThreadCount=4` may fail while `--set-string 'orchestration.cpuThreadCount=4'` keeps the expected type.
 
-##### Copy-paste-ready examples
-
-Use the following values directly in the workflow form:
-
-1. **Disable persistent sessions via a platform environment variable**
-   - `scenario`: `realistic` (or any other scenario)
-   - `platform-helm-values`:
-
-     ```text
-     --set 'orchestration.env[0].name=CAMUNDA_PERSISTENT_SESSIONS_ENABLED' --set-string 'orchestration.env[0].value=false'
-     ```
-2. **Increase broker thread counts where the chart expects strings**
-   - `scenario`: `max`
-   - `platform-helm-values`:
-
-     ```text
-     --set-string 'orchestration.cpuThreadCount=4' --set-string 'orchestration.ioThreadCount=4'
-     ```
-3. **Tune the workload chart while keeping numeric values numeric**
-   - `scenario`: `typical`
-   - `load-test-load`:
-
-     ```text
-     --set starter.rate=75 --set workers.worker.replicas=8
-     ```
-4. **Combine platform and workload overrides safely**
-   - `scenario`: `max`
-   - `platform-helm-values`:
-
-     ```text
-     --set-string 'orchestration.cpuThreadCount=4' --set-string 'orchestration.resources.requests.memory=4Gi' --set-string 'orchestration.resources.limits.memory=4Gi'
-     ```
-   - `load-test-load`:
-
-     ```text
-     --set starter.rate=350 --set workers.worker.replicas=10
-     ```
-5. **Override a string path in the load test chart**
-   - `scenario`: `typical`
-   - `load-test-load`:
-
-     ```text
-     --set-string 'starter.bpmnXmlPath=bpmn/typical_process.bpmn' --set starter.rate=50
-     ```
-
 ##### Supported workload scenarios
 
 Select the `scenario` input in the workflow dispatch form:
@@ -398,6 +353,46 @@ Select the `scenario` input in the workflow dispatch form:
 - `archiver` — multi-instance archiver-focused scenario with no workers; use it when validating archiver or secondary-storage-related behavior. Its current wiring is defined in [`load-tests/setup/default/Makefile`](setup/default/Makefile).
 
 For manual runs and deeper scenario details, see [`load-tests/setup/README.md`](setup/README.md#running-specific-scenarios).
+
+##### Copy-paste-ready examples
+
+Use the following values directly in the workflow form:
+
+1. **Disable persistent sessions via a platform environment variable**
+   - `platform-helm-values`:
+
+     ```text
+     --set 'orchestration.env[0].name=CAMUNDA_PERSISTENT_SESSIONS_ENABLED' --set-string 'orchestration.env[0].value=false'
+     ```
+2. **Increase broker thread counts where the chart expects strings**
+   - `platform-helm-values`:
+
+     ```text
+     --set-string 'orchestration.cpuThreadCount=4' --set-string 'orchestration.ioThreadCount=4'
+     ```
+3. **Tune the workload chart while keeping numeric values numeric**
+   - `load-test-load`:
+
+     ```text
+     --set starter.rate=75 --set workers.worker.replicas=8
+     ```
+4. **Combine platform and workload overrides safely**
+   - `platform-helm-values`:
+
+     ```text
+     --set-string 'orchestration.cpuThreadCount=4' --set-string 'orchestration.resources.requests.memory=4Gi' --set-string 'orchestration.resources.limits.memory=4Gi'
+     ```
+   - `load-test-load`:
+
+     ```text
+     --set starter.rate=350 --set workers.worker.replicas=10
+     ```
+5. **Override a string path in the load test chart**
+   - `load-test-load`:
+
+     ```text
+     --set-string 'starter.bpmnXmlPath=bpmn/typical_process.bpmn' --set starter.rate=50
+     ```
 
 ##### Creating load test for old versions
 
