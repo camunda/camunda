@@ -7,7 +7,6 @@
  */
 package io.camunda.application.commons.rest;
 
-import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
 import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
 import io.camunda.authentication.converter.UnprotectedCamundaAuthenticationConverter;
@@ -32,7 +31,7 @@ import org.springframework.security.core.Authentication;
 public class RestApiConfiguration {
 
   @Bean
-  @ConditionalOnUnprotectedApi
+  //  @ConditionalOnUnprotectedApi
   public CamundaAuthenticationConverter<Authentication> unprotectedAuthenticationConverter() {
     return new UnprotectedCamundaAuthenticationConverter();
   }
