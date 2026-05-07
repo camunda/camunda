@@ -133,7 +133,11 @@ public abstract class BaseWebConfigurer {
                             webSecurityConfig.getHttpStrictTransportSecurityMaxAgeInSeconds())
                         .includeSubDomains(
                             webSecurityConfig.getHttpStrictTransportSecurityIncludeSubDomains());
-                  });
+                  })
+              // Disabled so Tasklist's same-origin iframe document previews work when
+              // Operate and Tasklist share a JVM (C8Run). CSP frame-ancestors 'self'
+              // above still blocks cross-origin framing on modern browsers.
+              .frameOptions(fo -> fo.disable());
         });
   }
 
