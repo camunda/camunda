@@ -22,12 +22,12 @@ Camunda, Connectors, and Docker Compose in one place. Wait for it to be merged b
 Open the Renovate PR described above. The table at the top of the PR body lists every version
 change. Record:
 
-| `.env` variable      | Where to read it from                                |
-|----------------------|------------------------------------------------------|
-| `CAMUNDA_VERSION`    | `camunda/camunda` row in the Renovate PR             |
-| `CAMUNDA_DOCKER_VERSION` | Same as `CAMUNDA_VERSION`                        |
-| `CONNECTORS_VERSION` | `camunda/connectors-bundle` row in the Renovate PR   |
-| `ELASTICSEARCH_VERSION` | Only changes when Elasticsearch itself is bumped  |
+|     `.env` variable      |               Where to read it from                |
+|--------------------------|----------------------------------------------------|
+| `CAMUNDA_VERSION`        | `camunda/camunda` row in the Renovate PR           |
+| `CAMUNDA_DOCKER_VERSION` | Same as `CAMUNDA_VERSION`                          |
+| `CONNECTORS_VERSION`     | `camunda/connectors-bundle` row in the Renovate PR |
+| `ELASTICSEARCH_VERSION`  | Only changes when Elasticsearch itself is bumped   |
 
 You can also cross-check that no c8run artifacts have been published yet for the target release:
 
