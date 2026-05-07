@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.variable.DocumentEntry;
 import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
@@ -30,6 +31,8 @@ import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A behavior which allows processors to mutate the variable state. Use this anywhere where you
@@ -51,7 +54,8 @@ public final class VariableBehavior {
    * such nested structures (see {@link #CLUSTER_VARIABLE_NAMESPACE_ROOT}).
    */
   public static final String CLUSTER_VARIABLE_NAME_PREFIX = "camunda.vars.cluster.";
-
+  private static final Logger CLUSTER_VAR_LOG =
+      LoggerFactory.getLogger("io.camunda.zeebe.engine.clustervariable");
   private static final String CLUSTER_VARIABLE_NAMESPACE_ROOT = "camunda";
   private static final String CLUSTER_VARIABLE_NAMESPACE_VARS = "vars";
   private static final String CLUSTER_VARIABLE_NAMESPACE_CLUSTER = "cluster";
@@ -346,15 +350,29 @@ public final class VariableBehavior {
         if (clusterVariableName.isEmpty()) {
           continue;
         }
+        CLUSTER_VAR_LOG.info(
+            "[clustervar] direct-prefix match: name='{}' tenantId='{}' valueBytes={}",
+            clusterVariableName,
+            tenantId,
+            entry.getValue().capacity());
         emitClusterVariableUpdate(
             clusterVariableName, BufferUtil.cloneBuffer(entry.getValue()), tenantId);
         iterator.remove();
         continue;
       }
 
-      if (CLUSTER_VARIABLE_NAMESPACE_ROOT.equals(fullName)
-          && extractAndEmitFromNestedClusterMap(entry.getValue(), tenantId)) {
-        iterator.remove();
+      if (CLUSTER_VARIABLE_NAMESPACE_ROOT.equals(fullName)) {
+        CLUSTER_VAR_LOG.info(
+            "[clustervar] nested-map candidate: top-level entry 'camunda' detected, tenantId='{}', valueBytes={}",
+            tenantId,
+            entry.getValue().capacity());
+        if (extractAndEmitFromNestedClusterMap(entry.getValue(), tenantId)) {
+          iterator.remove();
+        } else {
+          CLUSTER_VAR_LOG.info(
+              "[clustervar] nested-map candidate did NOT match camunda.vars.cluster.* shape; "
+                  + "leaving 'camunda' entry untouched");
+        }
       }
     }
   }
@@ -370,13 +388,17 @@ public final class VariableBehavior {
       clusterVariableMsgPackReader.wrap(value, 0, value.capacity());
       final int topLevelMapSize = clusterVariableMsgPackReader.readMapHeader();
       if (!seekToKeyInMap(topLevelMapSize, CLUSTER_VARIABLE_NAMESPACE_VARS)) {
+        CLUSTER_VAR_LOG.info("[clustervar] no 'vars' key under 'camunda' — skipping");
         return false;
       }
       final int varsMapSize = clusterVariableMsgPackReader.readMapHeader();
       if (!seekToKeyInMap(varsMapSize, CLUSTER_VARIABLE_NAMESPACE_CLUSTER)) {
+        CLUSTER_VAR_LOG.info("[clustervar] no 'cluster' key under 'camunda.vars' — skipping");
         return false;
       }
       final int clusterMapSize = clusterVariableMsgPackReader.readMapHeader();
+      CLUSTER_VAR_LOG.info(
+          "[clustervar] navigated to camunda.vars.cluster, found {} entries", clusterMapSize);
       boolean emittedAny = false;
       for (int i = 0; i < clusterMapSize; i++) {
         final int nameLength = clusterVariableMsgPackReader.readStringLength();
@@ -393,12 +415,21 @@ public final class VariableBehavior {
 
         clusterVariableValueView.wrap(
             clusterVariableMsgPackReader.getBuffer(), valueOffset, valueLength);
+        CLUSTER_VAR_LOG.info(
+            "[clustervar] nested-map extracted: name='{}' valueBytes={} "
+                + "(reader pos before={} after={})",
+            varName,
+            valueLength,
+            valueOffset,
+            valueOffset + valueLength);
         emitClusterVariableUpdate(
             varName, BufferUtil.cloneBuffer(clusterVariableValueView), tenantId);
         emittedAny = true;
       }
       return emittedAny;
-    } catch (final RuntimeException ignored) {
+    } catch (final RuntimeException e) {
+      CLUSTER_VAR_LOG.warn(
+          "[clustervar] failed to navigate nested map under 'camunda' — leaving entry as-is", e);
       return false;
     }
   }
@@ -435,6 +466,27 @@ public final class VariableBehavior {
       clusterVariableRecord.setTenantId(tenantId).setTenantScope();
     } else {
       clusterVariableRecord.setGlobalScope();
+    }
+    if (CLUSTER_VAR_LOG.isInfoEnabled()) {
+      String valueAsJson;
+      try {
+        valueAsJson = MsgPackConverter.convertToJson(value);
+      } catch (final Exception e) {
+        valueAsJson = "<unable to convert value to JSON: " + e.getMessage() + ">";
+      }
+      // Truncate the JSON for log readability — full bytes are still in the command
+      final String preview =
+          valueAsJson.length() > 1024
+              ? valueAsJson.substring(0, 1024) + "...(truncated)"
+              : valueAsJson;
+      CLUSTER_VAR_LOG.info(
+          "[clustervar] EMIT ClusterVariableIntent.UPDATE name='{}' scope={} tenantId='{}' "
+              + "valueBytes={} valueJson={}",
+          name,
+          clusterVariableRecord.getScope(),
+          clusterVariableRecord.getTenantId(),
+          value.capacity(),
+          valueAsJson);
     }
     commandWriter.appendNewCommand(ClusterVariableIntent.UPDATE, clusterVariableRecord);
   }
