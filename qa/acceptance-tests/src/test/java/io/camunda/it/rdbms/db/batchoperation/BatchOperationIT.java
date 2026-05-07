@@ -63,7 +63,14 @@ public class BatchOperationIT {
     final var batchOperation = BatchOperationFixtures.createRandomized(b -> b);
 
     rdbmsWriters.getBatchOperationWriter().create(batchOperation);
+    rdbmsWriters.flush();
+
     rdbmsWriters.getBatchOperationWriter().create(batchOperation);
+    rdbmsWriters.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+    assertThat(updatedBatchOperation).isNotNull();
   }
 
   @TestTemplate
