@@ -1,4 +1,16 @@
 #LICENSE_HEADER#
+@REM -----------------------------------------------------------------------------
+@REM This is a verbatim copy of the windowsBinTemplate from
+@REM appassembler-maven-plugin 2.1.0 (org/codehaus/mojo/appassembler/daemon/
+@REM script/windowsBinTemplate inside the plugin jar). The plugin has not been
+@REM updated since 2015 and is effectively frozen, so this copy should not
+@REM require maintenance.
+@REM
+@REM The only change we made is the "CAMUNDA ADDITION" block below, which loads
+@REM an optional config\jvm.options @argfile before the exec call so that
+@REM runtime-specific JVM flags (e.g. flags only available on JDK 23+) can be
+@REM applied in Docker images without breaking the general distribution.
+@REM -----------------------------------------------------------------------------
 @echo off
 
 set ERROR_CODE=0
@@ -61,9 +73,14 @@ if NOT "%ENDORSED_DIR%" == "" set CLASSPATH="%BASEDIR%"\%ENDORSED_DIR%\*;%CLASSP
 
 if NOT "%CLASSPATH_PREFIX%" == "" set CLASSPATH=%CLASSPATH_PREFIX%;%CLASSPATH%
 
-@REM Load optional JVM options file (e.g. for runtime-specific flags not suited for the general distribution)
+@REM --- CAMUNDA ADDITION --------------------------------------------------------
+@REM Load an optional JVM options file as a @argfile. This allows runtime-specific
+@REM flags (e.g. --sun-misc-unsafe-memory-access=allow, only available on JDK 23+)
+@REM to be supplied by Docker images without baking them into the general
+@REM distribution tarball, where they would break older JDK versions.
 set EXTRA_JVM_OPTS=
 if exist "%BASEDIR%\config\jvm.options" set EXTRA_JVM_OPTS=@%BASEDIR%\config\jvm.options
+@REM --- END CAMUNDA ADDITION ---------------------------------------------------
 
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit

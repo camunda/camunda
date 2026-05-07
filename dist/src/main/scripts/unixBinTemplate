@@ -1,6 +1,18 @@
 #!/usr/bin/env sh
 @LICENSE_HEADER@
 
+# -----------------------------------------------------------------------------
+# This is a verbatim copy of the unixBinTemplate from appassembler-maven-plugin
+# 2.1.0 (org/codehaus/mojo/appassembler/daemon/script/unixBinTemplate inside the
+# plugin jar). The plugin has not been updated since 2015 and is effectively
+# frozen, so this copy should not require maintenance.
+#
+# The only change we made is the "CAMUNDA ADDITION" block below, which loads an
+# optional config/jvm.options @argfile before the exec call so that
+# runtime-specific JVM flags (e.g. flags only available on JDK 23+) can be
+# applied in Docker images without breaking the general distribution.
+# -----------------------------------------------------------------------------
+
 # resolve links - $0 may be a softlink
 PRG="$0"
 
@@ -99,11 +111,16 @@ if $cygwin; then
   [ -n "$REPO" ] && REPO=`cygpath --path --windows "$REPO"`
 fi
 
-# Load optional JVM options file (e.g. for runtime-specific flags not suited for the general distribution)
+# --- CAMUNDA ADDITION ---------------------------------------------------------
+# Load an optional JVM options file as a @argfile. This allows runtime-specific
+# flags (e.g. --sun-misc-unsafe-memory-access=allow, only available on JDK 23+)
+# to be supplied by Docker images without baking them into the general
+# distribution tarball, where they would break older JDK versions.
 EXTRA_JVM_OPTS=
 if [ -r "${BASEDIR}/config/jvm.options" ]; then
   EXTRA_JVM_OPTS="@${BASEDIR}/config/jvm.options"
 fi
+# --- END CAMUNDA ADDITION -----------------------------------------------------
 
 exec "$JAVACMD" $JAVA_OPTS @EXTRA_JVM_ARGUMENTS@ $EXTRA_JVM_OPTS \
   -classpath "$CLASSPATH" \
