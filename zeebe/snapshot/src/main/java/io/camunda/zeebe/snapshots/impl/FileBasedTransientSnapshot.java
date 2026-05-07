@@ -20,6 +20,7 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileSystemException;
@@ -171,6 +172,10 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     }
 
     try {
+      // Total size is captured before the metadata file is written, so it covers exactly the data
+      // files produced by the snapshot callback. Used by replication-lag accounting on the leader
+      // to know an in-flight snapshot install's total size without filesystem I/O on the hot path.
+      final var totalSizeBytes = calculateTotalSizeBytes(directory);
       final var metadata =
           isBootstrap
               ? FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION)
@@ -180,7 +185,8 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                   snapshotId.getExportedPosition(),
                   maxExportedPosition,
                   lastFollowupEventPosition,
-                  false);
+                  false,
+                  totalSizeBytes);
 
       writeMetadataAndUpdateChecksum(metadata);
       // snapshot id and director were first provided without the checksum because we could only
@@ -227,6 +233,20 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     }
 
     snapshotStore.removePendingSnapshot(this);
+  }
+
+  private static long calculateTotalSizeBytes(final Path directory) throws IOException {
+    try (final var files = Files.list(directory)) {
+      return files.mapToLong(FileBasedTransientSnapshot::sizeOf).sum();
+    }
+  }
+
+  private static long sizeOf(final Path file) {
+    try {
+      return Files.size(file);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private void writeMetadataAndUpdateChecksum(final FileBasedSnapshotMetadata metadata)

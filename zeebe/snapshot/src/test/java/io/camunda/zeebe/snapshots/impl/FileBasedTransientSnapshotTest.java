@@ -301,6 +301,28 @@ public class FileBasedTransientSnapshotTest {
   }
 
   @Test
+  public void shouldRecordTotalSizeBytesInMetadata() {
+    // given
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4, false).get();
+    transientSnapshot.take(this::writeSnapshot).join();
+
+    // when
+    final var persistedSnapshot = transientSnapshot.persist().join();
+
+    // then
+    final long expectedSize =
+        SNAPSHOT_FILE_CONTENTS.values().stream()
+            .mapToLong(content -> content.getBytes(StandardCharsets.UTF_8).length)
+            .sum();
+    assertThat(persistedSnapshot.getTotalSizeInBytes())
+        .as("persisted snapshot exposes the sum of bytes of the data files written by the callback")
+        .isEqualTo(expectedSize);
+    assertThat(persistedSnapshot.getMetadata().totalSizeBytes())
+        .as("metadata carries the same value")
+        .isEqualTo(expectedSize);
+  }
+
+  @Test
   public void shouldPersistMetadata() {
     // given
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4, false).get();

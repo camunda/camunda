@@ -205,14 +205,16 @@ public final class FileBasedSnapshotStoreImpl {
       final var encodedMetadata = Files.readAllBytes(metadataPath);
       return FileBasedSnapshotMetadata.decode(encodedMetadata);
     } else {
-      // backward compatibility mode
+      // backward compatibility mode — totalSizeBytes left as 0; production must fall back to a
+      // one-time Files.size walk for legacy snapshots (see replication lag tracking plan).
       return new FileBasedSnapshotMetadata(
           VERSION,
           snapshotId.getProcessedPosition(),
           snapshotId.getExportedPosition(),
           Long.MAX_VALUE,
           Long.MAX_VALUE,
-          false);
+          false,
+          0L);
     }
   }
 

@@ -266,7 +266,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     try {
       if (metadata == null) {
-        // backward compatibility
+        // backward compatibility — totalSizeBytes left as 0; production must fall back to a
+        // one-time Files.size walk for legacy snapshots (see replication lag tracking plan).
         metadata =
             new FileBasedSnapshotMetadata(
                 FileBasedSnapshotStoreImpl.VERSION,
@@ -274,7 +275,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 snapshotId.getExportedPosition(),
                 Long.MAX_VALUE,
                 Long.MAX_VALUE,
-                false);
+                false,
+                0L);
       }
       final PersistedSnapshot value =
           snapshotStore.persistNewSnapshot(directory, snapshotId, checksumCollection, metadata);

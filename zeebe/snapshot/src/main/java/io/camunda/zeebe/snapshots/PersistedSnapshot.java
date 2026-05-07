@@ -109,6 +109,19 @@ public interface PersistedSnapshot {
     return getMetadata() != null && getMetadata().isBootstrap();
   }
 
+  /**
+   * Returns the total bytes of the data files that make up this snapshot, captured at persist time.
+   * Used by replication-lag accounting on the leader to size an in-flight snapshot install without
+   * filesystem I/O on the hot path.
+   *
+   * <p>Returns {@code 0} for snapshots persisted before this field was introduced. Production
+   * consumers must fall back to a one-time {@link Files#size} walk in that case (see deferred-but-
+   * required item in the replication lag tracking plan).
+   */
+  default long getTotalSizeInBytes() {
+    return getMetadata() == null ? 0L : getMetadata().totalSizeBytes();
+  }
+
   @VisibleForTesting
   boolean isReserved();
 
