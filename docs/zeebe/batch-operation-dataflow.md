@@ -4,6 +4,8 @@ This diagram covers the full data flow for batch operations: initialization (que
 storage, creating chunks), execution (processing items from RocksDB), and how results are
 aggregated across partitions.
 
+> **Overview** → [`batch-operation-dataflow-overview.md`](batch-operation-dataflow-overview.md)
+
 ```mermaid
 flowchart TB
     USER(["User / REST API"])
@@ -15,7 +17,6 @@ flowchart TB
     EXPORTER["CamundaExporter"]
 
     USER -->|"BatchOperationIntent.CREATE\n(filter, type, plan)"| LEADER_PART
-    LEADER_PART -->|"BatchOperationIntent.CREATED\nevent"| LEADER_PART
     LEADER_PART -->|"distribute CreationRecord\nto all partitions"| FOLLOWER_PART
     LEADER_PART -->|store batch-op state + filter| ROCKSDB_L
     FOLLOWER_PART -->|store batch-op state + filter| ROCKSDB_F
@@ -27,15 +28,13 @@ flowchart TB
         CHUNK_SPLIT_L["Chunk Splitter\n(split page into ≤4 MB chunks)"]
 
         SCHED_L -->|"BatchOperationIntent.INITIALIZE"| PAGE_PROC_L
-        PAGE_PROC_L -->|"BatchOperationIntent.INITIALIZING event\n(stores cursor in RocksDB)"| PAGE_PROC_L
+        PAGE_PROC_L -.->|"INITIALIZING event\n(cursor stored)"| ROCKSDB_L
         PAGE_PROC_L -->|query page of items| SECONDARY
         SECONDARY -->|page result + search cursor| PAGE_PROC_L
         PAGE_PROC_L --> CHUNK_SPLIT_L
         CHUNK_SPLIT_L -->|"BatchOperationChunkIntent.CREATE\n(chunk of itemKeys)"| ROCKSDB_L
         CHUNK_SPLIT_L -->|"more pages? → next\nBatchOperationIntent.INITIALIZE\n(with cursor)"| SCHED_L
-        CHUNK_SPLIT_L -->|"last page →\nBatchOperationIntent.FINISH_INITIALIZATION"| SCHED_L
-        SCHED_L -->|"BatchOperationIntent.INITIALIZED event"| SCHED_L
-        SCHED_L -->|"BatchOperationExecutionIntent.EXECUTE"| SCHED_L
+        CHUNK_SPLIT_L -->|"last page →\nFINISH_INITIALIZATION\n→ INITIALIZED event\n→ EXECUTE command"| SCHED_L
     end
 
     subgraph INIT_FOLLOWER ["Initialization (each Follower Partition) — same flow"]
@@ -75,10 +74,11 @@ flowchart TB
         direction TB
         EXEC_PROC_F["BatchOperationExecutionProcessor"]
         EXECUTOR_F["BatchOperationExecutor"]
+        ZEEBE_CMD_F["Regular Zeebe Command"]
         EXEC_PROC_F -->|read itemKeys| ROCKSDB_F
         ROCKSDB_F -->|itemKeys| EXEC_PROC_F
         EXEC_PROC_F --> EXECUTOR_F
-        EXECUTOR_F -->|"fire-and-forget Zeebe command"| EXEC_PROC_F
+        EXECUTOR_F -->|"fire-and-forget\nappend command"| ZEEBE_CMD_F
         EXEC_PROC_F -->|"EXECUTING → EXECUTED\n(itemKeys removed)"| ROCKSDB_F
         EXEC_PROC_F -->|"all done →\nCOMPLETE_PARTITION\n(inter-partition → leader)"| LEADER_PART
     end
@@ -88,7 +88,7 @@ flowchart TB
 
     subgraph AGGREGATION ["Result Aggregation (Leader Partition)"]
         direction TB
-        AGG["Leader collects\nPARTITION_COMPLETED / PARTITION_FAILED\nfrom all partitions"]
+        AGG["Leader collects\nCOMPLETE_PARTITION / FAIL_PARTITION\nfrom all partitions"]
         FINAL["Append BatchOperationIntent.COMPLETED\n(or FAILED if all partitions failed)"]
         AGG --> FINAL
     end
@@ -100,7 +100,7 @@ flowchart TB
     EXEC_LEADER --> EXPORTER
     EXEC_FOLLOWER --> EXPORTER
 
-    subgraph ERROR_HANDLING ["Scheduler Error Handling"]
+    subgraph ERROR_HANDLING ["Scheduler Error Handling (initialization only)"]
         direction LR
         RETRY["Retryable errors\n(QUERY_FAILED, UNKNOWN)\n→ exponential backoff retry"]
         FAIL_NOW["Non-retryable errors\n(RESULT_BUFFER_SIZE_EXCEEDED,\nNOT_FOUND, FORBIDDEN, …)\n→ immediate FAIL_PARTITION"]
@@ -113,20 +113,16 @@ flowchart TB
 
 ## Key Data Structures
 
-| Record | Purpose |
-|---|---|
-| `BatchOperationCreationRecord` | Carries filter, type and plan; distributed to all partitions |
-| `BatchOperationInitializationRecord` | Carries `searchResultCursor` for paged queries |
-| `BatchOperationChunkRecord` | One chunk of `itemKeys` (≤ 4 MB); stored in RocksDB column family `BATCH_OPERATION_CHUNKS` |
-| `BatchOperationExecutionRecord` | Tracks items being executed or already executed |
-| `BatchOperationLifecycleManagementRecord` | Lifecycle commands/events (SUSPEND, RESUME, CANCEL, COMPLETED, FAILED) |
-| `BatchOperationPartitionLifecycleRecord` | Inter-partition message carrying `sourcePartitionId` (COMPLETE_PARTITION / FAIL_PARTITION) |
+- **`BatchOperationCreationRecord`** — carries filter, type and plan; distributed to all partitions.
+- **`BatchOperationInitializationRecord`** — carries `searchResultCursor` for paged queries.
+- **`BatchOperationChunkRecord`** — one chunk of `itemKeys` (≤ 4 MB); stored in RocksDB column family `BATCH_OPERATION_CHUNKS`.
+- **`BatchOperationExecutionRecord`** — tracks items being executed or already executed.
+- **`BatchOperationLifecycleManagementRecord`** — lifecycle commands/events (SUSPEND, RESUME, CANCEL, COMPLETED, FAILED).
+- **`BatchOperationPartitionLifecycleRecord`** — inter-partition message carrying `sourcePartitionId` (COMPLETE_PARTITION / FAIL_PARTITION).
 
 ## RocksDB Column Families
 
-| Column Family | Content |
-|---|---|
-| `BATCH_OPERATION` | Batch operation state, filter, type, execution plan (no itemKeys) |
-| `BATCH_OPERATION_CHUNKS` | Chunks of itemKeys per batch operation per partition |
-| `PENDING_BATCH_OPERATIONS` | Newly created batch operations not yet picked up by the scheduler |
+- **`BATCH_OPERATION`** — batch operation state, filter, type, execution plan (no itemKeys).
+- **`BATCH_OPERATION_CHUNKS`** — chunks of itemKeys per batch operation per partition.
+- **`PENDING_BATCH_OPERATIONS`** — newly created batch operations not yet picked up by the scheduler.
 
