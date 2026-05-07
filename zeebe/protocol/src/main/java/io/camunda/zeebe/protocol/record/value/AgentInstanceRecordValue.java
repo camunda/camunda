@@ -82,6 +82,30 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    */
   Metrics getMetrics();
 
+  /**
+   * @return the list of tools available to the agent
+   */
+  java.util.List<Tool> getTools();
+
+  /** Represents a tool available to an agent. */
+  interface Tool {
+    /**
+     * @return the name of the tool
+     */
+    String getName();
+
+    /**
+     * @return the description of what the tool does
+     */
+    String getDescription();
+
+    /**
+     * @return the ID of the element that provides this tool
+     */
+    String getElementId();
+  }
+
+  /** Represents the definition details of an agent. */
   interface Definition {
     /**
      * @return the model used by the agent

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 
 public final class AgentInstanceRecord extends UnifiedRecordValue
     implements AgentInstanceRecordValue {
@@ -40,9 +42,10 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ObjectProperty<>("limits", new AgentInstanceLimits());
   private final ObjectProperty<AgentInstanceMetrics> metricsProp =
       new ObjectProperty<>("metrics", new AgentInstanceMetrics());
+  private final ArrayProperty<AgentTool> toolsProp = new ArrayProperty<>("tools", AgentTool::new);
 
   public AgentInstanceRecord() {
-    super(12);
+    super(13);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementIdProp)
@@ -54,7 +57,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(statusProp)
         .declareProperty(definitionProp)
         .declareProperty(limitsProp)
-        .declareProperty(metricsProp);
+        .declareProperty(metricsProp)
+        .declareProperty(toolsProp);
   }
 
   @Override
@@ -160,5 +164,25 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   @Override
   public AgentInstanceMetrics getMetrics() {
     return metricsProp.getValue();
+  }
+
+  @Override
+  public List<Tool> getTools() {
+    return toolsProp.stream()
+        .map(
+            element -> {
+              final var copy = new AgentTool();
+              copy.copy(element);
+              return (Tool) copy;
+            })
+        .toList();
+  }
+
+  public AgentInstanceRecord setTools(final List<? extends Tool> tools) {
+    toolsProp.reset();
+    for (final var tool : tools) {
+      toolsProp.add().copy(tool);
+    }
+    return this;
   }
 }
