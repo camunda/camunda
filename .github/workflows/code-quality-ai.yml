@@ -231,8 +231,7 @@ jobs:
           retention-days: 30
 
   pr-track:
-    name: Open auto-fix PRs
-    if: false
+    name: Open auto-fix PRs (dry-run)
     needs: ai-triage
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -280,7 +279,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
-        run: node pr_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-prs ${{ env.MAX_TICKETS }} --output pr-summary.json
+        run: node pr_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-prs ${{ env.MAX_TICKETS }} --dry-run --output pr-summary.json
 
       - name: Upload PR-track summary
         if: always()
@@ -291,8 +290,7 @@ jobs:
           retention-days: 30
 
   issue-track:
-    name: Open auto-triage issues
-    if: false
+    name: Open auto-triage issues (dry-run)
     needs: ai-triage
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -322,7 +320,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: node issue_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-issues ${{ env.MAX_TICKETS }} --output issue-summary.json
+        run: node issue_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-issues ${{ env.MAX_TICKETS }} --dry-run --output issue-summary.json
 
       - name: Upload issue-track summary
         if: always()
