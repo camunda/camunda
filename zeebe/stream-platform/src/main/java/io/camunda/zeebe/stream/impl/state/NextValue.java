@@ -19,6 +19,11 @@ public class NextValue extends UnpackedObject implements DbValue {
     declareProperty(nextValueProp);
   }
 
+  public NextValue(final long value) {
+    super(1);
+    nextValueProp.setValue(value);
+  }
+
   public void set(final long value) {
     if (value < 0) {
       throw new IllegalArgumentException(
@@ -29,6 +34,13 @@ public class NextValue extends UnpackedObject implements DbValue {
 
   public long get() {
     return nextValueProp.getValue();
+  }
+
+  public long increment() {
+    var value = nextValueProp.getValue();
+    value++;
+    nextValueProp.setValue(value);
+    return value;
   }
 
   @Override

@@ -10,6 +10,7 @@ package io.camunda.zeebe.db;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
@@ -36,6 +37,45 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
    * @throws IllegalStateException if key does not exist
    */
   void update(KeyType key, ValueType value);
+
+  /**
+   * Reads the value for the given key, applies the mutator in-place, and writes it back.
+   * Implementations backed by in-memory storage can avoid copies entirely by mutating the stored
+   * object directly.
+   *
+   * <p><b>Important:</b> the value reference passed to the mutator is the live mutable state and
+   * must NOT be captured or stored beyond the lambda scope.
+   *
+   * @throws IllegalStateException if the key does not exist
+   */
+  default <A> A updateAndGet(final KeyType key, final Function<ValueType, A> mutator) {
+    final var value = get(key);
+    if (value == null) {
+      throw new io.camunda.zeebe.db.ZeebeDbInconsistentException("Key " + key + " does not exist");
+    }
+    final var result = mutator.apply(value);
+    update(key, value);
+    return result;
+  }
+
+  /**
+   * Reads the value for the given key, applies the mutator in-place, and writes it back.
+   * Implementations backed by in-memory storage can avoid copies entirely by mutating the stored
+   * object directly.
+   *
+   * <p><b>Important:</b> the value reference passed to the mutator is the live mutable state and
+   * must NOT be captured or stored beyond the lambda scope.
+   *
+   * @throws IllegalStateException if the key does not exist
+   */
+  default void update(final KeyType key, final java.util.function.Consumer<ValueType> mutator) {
+    updateAndGet(
+        key,
+        value -> {
+          mutator.accept(value);
+          return null;
+        });
+  }
 
   /** Inserts or updates a key value pair in the column family. */
   void upsert(KeyType key, ValueType value);

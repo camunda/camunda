@@ -37,8 +37,7 @@ class JobCompletedV1Applier implements TypedEventApplier<JobIntent, JobRecord> {
       final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 
       if (scopeInstance != null && scopeInstance.isActive()) {
-        elementInstance.setJobKey(-1);
-        elementInstanceState.updateInstance(elementInstance);
+        elementInstanceState.updateInstance(elementInstanceKey, instance -> instance.setJobKey(-1));
       }
     }
   }

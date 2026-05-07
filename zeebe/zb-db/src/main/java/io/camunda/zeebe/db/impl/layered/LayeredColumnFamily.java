@@ -96,6 +96,25 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
         });
   }
 
+  /**
+   * In-place mutation for the layered DB. If the entry is already in the active (in-memory) layer,
+   * it is mutated directly without any copies. If it is only in the persistent layer, it is
+   * read-through into the active layer first, then mutated in-place.
+   */
+  @Override
+  public void update(final KeyType key, final java.util.function.Consumer<ValueType> mutator) {
+    context.runInTransaction(
+        () -> {
+          // Ensure the entry is in the active layer (read-through if needed).
+          if (get(key) == null) {
+            throw new ZeebeDbInconsistentException(
+                "Key " + key + " in ColumnFamily " + columnFamily + " does not exist");
+          }
+          // Now mutate in-place on the active layer's stored object.
+          activeColumnFamily.update(key, mutator);
+        });
+  }
+
   @Override
   public void upsert(final KeyType key, final ValueType value) {
     context.runInTransaction(

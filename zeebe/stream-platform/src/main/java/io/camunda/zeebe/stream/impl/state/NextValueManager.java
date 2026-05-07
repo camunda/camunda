@@ -36,12 +36,15 @@ public final class NextValueManager {
   }
 
   public long getNextValue() {
-    final long previousKey = getCurrentValue();
-    final long nextKey = previousKey + 1;
-    nextValue.set(nextKey);
-    nextValueColumnFamily.upsert(nextValueKey, nextValue);
-
-    return nextKey;
+    return nextValueColumnFamily.updateAndGet(
+        nextValueKey,
+        r -> {
+          var value = r;
+          if (r == null) {
+            value = new NextValue(initialValue);
+          }
+          return value.increment();
+        });
   }
 
   public void setValue(final String key, final long value) {

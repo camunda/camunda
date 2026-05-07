@@ -16,6 +16,7 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -129,6 +130,16 @@ final class InMemoryTransactionContext implements TransactionContext {
         return pending;
       }
       return db.committedData.get(key);
+    }
+
+    <A> @Nullable A update(final byte[] key, final Function<DbValue, A> mutator) {
+      final var inMap = get(key);
+      if (inMap == null) {
+        return null;
+      }
+      final var result = mutator.apply(inMap);
+      pendingWrites.put(key, inMap);
+      return result;
     }
 
     void delete(final byte[] key) {

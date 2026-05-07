@@ -37,15 +37,18 @@ final class JobCreatedV1Applier implements TypedEventApplier<JobIntent, JobRecor
       final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
       if (elementInstance != null) {
-        if (value.getJobKind() == JobKind.EXECUTION_LISTENER) {
-          elementInstance.incrementExecutionListenerIndex();
-        }
-        if (value.getJobKind() == JobKind.TASK_LISTENER) {
-          final var eventType = toTaskListenerEventType(value.getJobListenerEventType());
-          elementInstance.incrementTaskListenerIndex(eventType);
-        }
-        elementInstance.setJobKey(key);
-        elementInstanceState.updateInstance(elementInstance);
+        elementInstanceState.updateInstance(
+            elementInstanceKey,
+            instance -> {
+              if (value.getJobKind() == JobKind.EXECUTION_LISTENER) {
+                instance.incrementExecutionListenerIndex();
+              }
+              if (value.getJobKind() == JobKind.TASK_LISTENER) {
+                final var eventType = toTaskListenerEventType(value.getJobListenerEventType());
+                instance.incrementTaskListenerIndex(eventType);
+              }
+              instance.setJobKey(key);
+            });
       }
     }
   }

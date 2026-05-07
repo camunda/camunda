@@ -271,9 +271,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   @Override
   public void updateInstance(final long key, final Consumer<ElementInstance> modifier) {
     elementInstanceKey.wrapLong(key);
-    final var scopeInstance = elementInstanceColumnFamily.get(elementInstanceKey);
-    modifier.accept(scopeInstance);
-    updateInstance(scopeInstance);
+    elementInstanceColumnFamily.update(elementInstanceKey, modifier);
   }
 
   @Override
@@ -409,23 +407,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   private void incrementActiveProcessInstanceCount() {
-    final var currentValue =
-        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
-
-    final long newValue = currentValue.getValue() + 1;
-
-    activeProcessInstanceCounterValue.wrapLong(newValue);
     activeProcessInstanceCounterColumnFamily.update(
-        activeProcessInstanceCounterKey, activeProcessInstanceCounterValue);
+        activeProcessInstanceCounterKey, counter -> counter.wrapLong(counter.getValue() + 1));
   }
 
   private void decrementActiveProcessInstanceCount() {
-    final var currentValue =
-        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
-
-    activeProcessInstanceCounterValue.wrapLong(currentValue.getValue() - 1);
     activeProcessInstanceCounterColumnFamily.update(
-        activeProcessInstanceCounterKey, activeProcessInstanceCounterValue);
+        activeProcessInstanceCounterKey, counter -> counter.wrapLong(counter.getValue() - 1));
   }
 
   /** Initializes the root process instance counter if it hasn't been initialized yet. */

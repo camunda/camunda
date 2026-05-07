@@ -48,12 +48,12 @@ final class ProcessInstanceSequenceFlowTakenApplier
             ExecutableSequenceFlow.class);
     final var target = sequenceFlow.getTarget();
 
-    final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
-    flowScopeInstance.incrementActiveSequenceFlows();
-    // Stores the pending sequence flow that helps to determine
-    // if an inclusive gateway can be activated or not.
-    flowScopeInstance.addActiveSequenceFlowId(sequenceFlow.getId());
-    elementInstanceState.updateInstance(flowScopeInstance);
+    elementInstanceState.updateInstance(
+        value.getFlowScopeKey(),
+        flowScopeInstance -> {
+          flowScopeInstance.incrementActiveSequenceFlows();
+          flowScopeInstance.addActiveSequenceFlowId(sequenceFlow.getId());
+        });
 
     if (target.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
       // stores which sequence flows of the parallel gateway are taken

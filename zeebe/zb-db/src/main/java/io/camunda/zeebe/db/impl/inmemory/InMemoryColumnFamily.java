@@ -35,10 +35,12 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -120,6 +122,27 @@ class InMemoryColumnFamily<
             transaction.put(rawKey, value);
           });
     }
+  }
+
+  /**
+   * In-place mutation: reads the stored value, applies the mutator directly on it, and writes it
+   * back. For in-memory storage this avoids the newInstance()+copyTo() overhead entirely — the
+   * mutator operates on the actual stored object.
+   */
+  @Override
+  public <A> @Nullable A updateAndGet(final KeyType key, final Function<ValueType, A> mutator) {
+    final var mutableObject = new MutableObject<A>();
+    try (final var timer = metrics.measurePutLatency()) {
+      ensureInOpenTransaction(
+          transaction -> {
+            final var result =
+                transaction.update(serializeKey(key), value -> mutator.apply((ValueType) value));
+            if (result != null) {
+              mutableObject.setValue(result);
+            }
+          });
+    }
+    return mutableObject.get();
   }
 
   @Override
@@ -324,17 +347,6 @@ class InMemoryColumnFamily<
     }
   }
 
-  /** Returns the key set of the [prefix, upperBound) sub-range — a view, no copy. */
-  private java.util.NavigableSet<byte[]> subMapKeys(
-      final NavigableMap<byte[], ?> map,
-      final byte[] prefix,
-      final Optional<byte[]> upperBound) {
-    return (upperBound.isPresent()
-            ? map.subMap(prefix, true, upperBound.get(), false)
-            : map.tailMap(prefix, true))
-        .navigableKeySet();
-  }
-
   @Override
   public boolean exists(final KeyType key) {
     try (final var timer = metrics.measureGetLatency()) {
@@ -379,6 +391,15 @@ class InMemoryColumnFamily<
           return true;
         });
     return c[0];
+  }
+
+  /** Returns the key set of the [prefix, upperBound) sub-range — a view, no copy. */
+  private java.util.NavigableSet<byte[]> subMapKeys(
+      final NavigableMap<byte[], ?> map, final byte[] prefix, final Optional<byte[]> upperBound) {
+    return (upperBound.isPresent()
+            ? map.subMap(prefix, true, upperBound.get(), false)
+            : map.tailMap(prefix, true))
+        .navigableKeySet();
   }
 
   @Override

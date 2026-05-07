@@ -41,8 +41,8 @@ public class JobErrorThrownV1Applier implements TypedEventApplier<JobIntent, Job
   private void removeJobReference(
       final long jobKey, final JobRecord job, final ElementInstance serviceTaskInstance) {
     // remove job reference to not cancel it while terminating the task
-    serviceTaskInstance.setJobKey(-1L);
-    elementInstanceState.updateInstance(serviceTaskInstance);
+    elementInstanceState.updateInstance(
+        serviceTaskInstance.getKey(), instance -> instance.setJobKey(-1L));
 
     jobState.delete(jobKey, job);
   }
