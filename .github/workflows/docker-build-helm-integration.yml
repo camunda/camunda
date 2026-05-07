@@ -365,7 +365,7 @@ jobs:
             echo "| Namespace cleanup error | Previous run left dangling resources — usually safe to re-run |"
             echo ""
             echo "### Full debugging guide"
-            echo "[CI Debugging Cookbook — Helm section](${COOKBOOK_URL}#helm-integration-test-failures)"
+            echo "[CI Debugging Cookbook — Helm Chart Setup/Integration failures](${COOKBOOK_URL}#failure-type-3--helm-chart-setup--integration-tests) · [Helm Chart E2E failures](${COOKBOOK_URL}#failure-type-4--helm-chart-e2e-tests)"
             echo ""
             echo "### Need help?"
             echo "- Slack: [#ask-alwaysgreen](https://camunda.slack.com/archives/C0AQ378VBEV) / [#alwaysgreen-reliability](https://camunda.slack.com/archives/C0AK0AVKRL0)"
@@ -567,7 +567,7 @@ jobs:
             echo "   \`\`\`"
             echo "   Or upload to https://trace.playwright.dev"
             echo ""
-            echo "**Full guide:** [CI Debugging Cookbook]($COOKBOOK_URL)"
+            echo "**Full guide:** [CI Debugging Cookbook — SaaS E2E section](${COOKBOOK_URL}#failure-type-5--saas-e2e-tests)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Observe build status
