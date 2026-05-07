@@ -70,12 +70,32 @@ public final class LocalContainerCluster implements Cluster {
     }
     if (container == null) {
       LOG.info("starting Camunda Testcontainer image={}:{}", imageName, imageVersion);
+      // In-memory H2 secondary storage so the container is self-contained — no Elasticsearch
+      // dependency. (Default secondary storage is Elasticsearch, which would hang waiting for an
+      // ES instance that isn't there.)
+      final String dbUrl =
+          "jdbc:h2:mem:livebpmn-"
+              + java.util.UUID.randomUUID()
+              + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
       container =
           new GenericContainer<>(DockerImageName.parse(imageName + ":" + imageVersion))
               .withExposedPorts(GRPC_PORT, REST_PORT)
               .withEnv("SPRING_PROFILES_ACTIVE", "broker,consolidated-auth,security")
               .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "true")
               .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
+              // RDBMS / H2 secondary storage
+              .withEnv("CAMUNDA_DATABASE_TYPE", "rdbms")
+              .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "rdbms")
+              .withEnv("CAMUNDA_DATABASE_URL", dbUrl)
+              .withEnv("CAMUNDA_DATABASE_USERNAME", "sa")
+              .withEnv("CAMUNDA_DATABASE_PASSWORD", "")
+              .withEnv(
+                  "ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME",
+                  "io.camunda.exporter.rdbms.RdbmsExporter")
+              .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL", "PT0S")
+              .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL", "PT2S")
+              .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL", "PT2S")
+              .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL", "PT5S")
               // Stream Camunda's stdout/stderr into our SLF4J output so the user can see what's
               // happening inside the container (especially during slow startup).
               .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("camunda-container")))
