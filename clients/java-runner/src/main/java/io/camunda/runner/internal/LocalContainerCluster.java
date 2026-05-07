@@ -100,7 +100,10 @@ public final class LocalContainerCluster implements Cluster {
               // happening inside the container (especially during slow startup).
               .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("camunda-container")))
               .waitingFor(
-                  Wait.forHttp("/actuator/health/status")
+                  // Standard Spring Boot actuator endpoint. Some 8.x builds expose
+                  // /actuator/health/status, others only /actuator/health — the latter is
+                  // universal. Accept 200 (UP) only.
+                  Wait.forHttp("/actuator/health")
                       .forPort(REST_PORT)
                       .forStatusCode(200)
                       .withStartupTimeout(Duration.ofMinutes(5)));
