@@ -222,8 +222,10 @@ final class LayeredTransactionContext implements TransactionContext {
 
       try {
         persistent.commit();
-        active.commit();
-        db.applyCommittedTombstoneChanges(pendingTombstones, pendingTombstoneRemovals);
+        // Commit active entries and tombstone changes atomically under the LayeredZeebeDb
+        // monitor. This prevents the snapshot flush from observing a state where entries
+        // have been committed but tombstones have not yet been updated (or vice versa).
+        db.commitActiveAndTombstones(active, pendingTombstones, pendingTombstoneRemovals);
       } finally {
         inTransaction = false;
         clearTransactions();

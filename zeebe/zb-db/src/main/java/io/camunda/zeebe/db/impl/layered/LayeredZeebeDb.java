@@ -13,11 +13,14 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.db.impl.inmemory.InMemoryZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,9 +74,44 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
     additions.forEach(key -> committedTombstones.add(Arrays.copyOf(key, key.length)));
   }
 
-  synchronized void clearCommittedTombstones() {
-    committedTombstones.clear();
+  /**
+   * Atomically commits the active (in-memory) transaction and applies tombstone changes under the
+   * same monitor. This ensures that the flush cannot observe a state where entries have been
+   * committed but tombstones have not yet been updated (or vice versa).
+   */
+  synchronized void commitActiveAndTombstones(
+      final ZeebeDbTransaction activeTransaction,
+      final NavigableSet<byte[]> pendingTombstones,
+      final NavigableSet<byte[]> pendingTombstoneRemovals)
+      throws Exception {
+    activeTransaction.commit();
+    applyCommittedTombstoneChanges(pendingTombstones, pendingTombstoneRemovals);
   }
+
+  /**
+   * Atomically captures both committed entries and committed tombstones under the same monitor used
+   * by {@link #commitActiveAndTombstones}. This guarantees the flush sees a consistent pair of
+   * entries and tombstones — it can never observe entries that should have had their tombstones
+   * cleared, or tombstones for entries that have already been re-created.
+   */
+  synchronized FlushSnapshot captureFlushSnapshot() {
+    final var inMemoryDb = (InMemoryZeebeDb<?>) activeDb;
+    final var entries = inMemoryDb.snapshotCommittedEntries();
+    final var tombstones = snapshotCommittedTombstones();
+    return new FlushSnapshot(entries, tombstones);
+  }
+
+  /**
+   * Removes only the given tombstones from the committed set. Unlike the previous
+   * clearCommittedTombstones(), this does not discard tombstones that the engine added between the
+   * capture and the clear.
+   */
+  synchronized void removeCommittedTombstones(final NavigableSet<byte[]> toRemove) {
+    toRemove.forEach(committedTombstones::remove);
+  }
+
+  record FlushSnapshot(
+      ArrayList<Map.Entry<byte[], DbValue>> entries, NavigableSet<byte[]> tombstones) {}
 
   @Override
   public <KeyType extends DbKey, ValueType extends DbValue>

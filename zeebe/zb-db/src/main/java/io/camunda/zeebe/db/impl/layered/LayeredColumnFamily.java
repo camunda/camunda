@@ -67,7 +67,11 @@ final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue
   public void insert(final KeyType key, final ValueType value) {
     context.runInTransaction(
         () -> {
-          if (consistencyChecksSettings.enablePreconditions() && existsInternal(key)) {
+          // Only check the active (in-memory) layer for the precondition. After a snapshot
+          // recovery the in-memory layer is empty while RocksDB still holds flushed entries.
+          // During replay the engine legitimately re-inserts keys that are already in
+          // RocksDB, so checking the persistent layer would cause a false-positive.
+          if (consistencyChecksSettings.enablePreconditions() && activeColumnFamily.exists(key)) {
             throw new ZeebeDbInconsistentException(
                 "Key " + key + " in ColumnFamily " + columnFamily + " already exists");
           }

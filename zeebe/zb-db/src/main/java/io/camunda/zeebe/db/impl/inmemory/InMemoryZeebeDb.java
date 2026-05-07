@@ -159,4 +159,16 @@ public class InMemoryZeebeDb<
       consumer.accept(entry.getKey(), entry.getValue());
     }
   }
+
+  /**
+   * Returns a snapshot of all committed entries, taken under the same monitor used by {@link
+   * io.camunda.zeebe.db.impl.inmemory.InMemoryTransactionContext.InMemoryTransaction#commitInternal()}.
+   * The caller is responsible for holding any outer lock required for cross-component atomicity
+   * (e.g. the {@link LayeredZeebeDb} monitor) before calling this method.
+   */
+  public ArrayList<Map.Entry<byte[], DbValue>> snapshotCommittedEntries() {
+    synchronized (this) {
+      return new ArrayList<>(committedData.entrySet());
+    }
+  }
 }
