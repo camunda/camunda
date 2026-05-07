@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.distribution;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
 import io.camunda.zeebe.engine.processing.scheduled.api.ScheduledTask;
 import io.camunda.zeebe.engine.processing.scheduled.api.TaskContext;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -25,16 +25,19 @@ import org.slf4j.LoggerFactory;
  * Retries sending {@link CommandDistributionRecord}s to other partitions, using exponential backoff
  * per distribution.
  *
- * <p>Periodic, fixed cadence: returns {@link Outcome.IDLE} on every run; the runtime fires us again
- * at the configured fallback interval. Inter-partition sends go through {@link
- * io.camunda.zeebe.engine.processing.scheduled.api.Sink#sendInterPartition}, which delegates to the
- * registered {@link io.camunda.zeebe.stream.api.InterPartitionCommandSender} and counts the send in
- * scheduled-task metrics.
+ * <p>Periodic, fixed cadence: returns {@link Result.Builder#idle()} on every run; the runtime fires
+ * us again at the configured fallback interval. Inter-partition sends go through the (legacy)
+ * {@link io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior}, which
+ * retains its own {@link io.camunda.zeebe.stream.api.InterPartitionCommandSender} reference for
+ * historical reasons.
+ *
+ * <p>{@code retryCyclesPerDistribution} is accumulated state across runs, not a resume cursor — it
+ * survives between runs as an instance field rather than via {@code TaskContext.resumeCursor()}.
  *
  * <p>Whether to skip running entirely (operator pause) is enforced at wiring time: when {@code
  * config.isCommandDistributionPaused()} is set, the runtime is simply not registered.
  */
-public final class CommandRedistributionScheduler implements ScheduledTask {
+public final class CommandRedistributionScheduler implements ScheduledTask<Void> {
 
   private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributionScheduler.class);
 
@@ -59,7 +62,8 @@ public final class CommandRedistributionScheduler implements ScheduledTask {
   }
 
   @Override
-  public Outcome run(final TaskContext ctx) {
+  public Result run(final TaskContext<Void> ctx) {
+    final Result.Builder<Void> result = ctx.result();
     final HashSet<RetriableDistribution> visited = new HashSet<>();
     distributionBehavior.foreachRetriableDistribution(
         (distributionKey, record) -> {
@@ -93,7 +97,7 @@ public final class CommandRedistributionScheduler implements ScheduledTask {
     // Drop tracking for distributions that have been completed since the last run.
     retryCyclesPerDistribution.keySet().removeIf(Predicate.not(visited::contains));
 
-    return Outcome.IDLE;
+    return result.idle();
   }
 
   private long updateRetryCycle(final RetriableDistribution retriable) {

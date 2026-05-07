@@ -19,7 +19,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result.Decision;
 import io.camunda.zeebe.engine.processing.scheduled.runtime.FakeTaskContext;
 import io.camunda.zeebe.engine.state.immutable.DistributionState.PendingDistributionVisitor;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -43,10 +44,10 @@ final class CommandRedistributionSchedulerTest {
     final var scheduler = newScheduler(distributionBehavior, /* scaling */ false);
 
     // when
-    final Outcome outcome = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
+    final Result result = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
 
     // then
-    assertThat(outcome).isEqualTo(Outcome.IDLE);
+    assertThat(result.decision()).isEqualTo(Decision.IDLE);
     verify(distributionBehavior, never()).onScheduledRetry(eq(DISTRIBUTION_KEY), any());
   }
 
