@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
 import io.camunda.zeebe.engine.processing.scheduled.api.ScheduledTask;
 import io.camunda.zeebe.engine.processing.scheduled.api.TaskContext;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -19,21 +19,16 @@ import org.agrona.collections.MutableInteger;
  * Times out activated jobs whose deadline has passed by writing a {@link JobIntent#TIME_OUT}
  * command for each.
  *
- * <p>Periodic with continuation: returns {@link Outcome.YieldNow} when the configured batch limit
- * is hit, retaining a cursor in {@link #startAtIndex} so the next run resumes where this one left
- * off. When the queue drains the cursor is cleared and the runtime falls back to its periodic
- * interval.
+ * <p>Periodic with continuation: returns {@link Result.Builder#yieldNow(Object) yieldNow(cursor)}
+ * when the configured batch limit is hit; the runtime stores the {@link JobTimeoutCursor} and hands
+ * it back via {@link TaskContext#resumeCursor()} on the next run, so iteration resumes where this
+ * run left off and is evaluated against the same execution timestamp. When the queue drains, the
+ * run terminates with {@link Result.Builder#idle()} and the runtime clears the cursor.
  */
-public final class JobTimeoutCheckScheduler implements ScheduledTask {
+public final class JobTimeoutCheckScheduler implements ScheduledTask<JobTimeoutCursor> {
 
   private final JobState state;
   private final int batchLimit;
-
-  /** Stable timestamp across continuation iterations; cleared when the queue drains. */
-  private long executionTimestamp = -1;
-
-  /** Cursor for the next continuation; null between drains. */
-  private DeadlineIndex startAtIndex = null;
 
   public JobTimeoutCheckScheduler(final JobState state, final int batchLimit) {
     this.state = state;
@@ -46,33 +41,32 @@ public final class JobTimeoutCheckScheduler implements ScheduledTask {
   }
 
   @Override
-  public Outcome run(final TaskContext ctx) {
-    if (executionTimestamp == -1) {
-      executionTimestamp = ctx.clock().millis();
-    }
+  public Result run(final TaskContext<JobTimeoutCursor> ctx) {
+    final Result.Builder<JobTimeoutCursor> result = ctx.result();
+    final JobTimeoutCursor saved = ctx.resumeCursor();
+    final long executionTimestamp =
+        saved != null ? saved.executionTimestamp() : ctx.clock().millis();
+    final DeadlineIndex startAt = saved != null ? saved.resumeFrom() : null;
 
     final MutableInteger counter = new MutableInteger(0);
 
     final DeadlineIndex lastVisited =
         state.forEachTimedOutEntry(
             executionTimestamp,
-            startAtIndex,
+            startAt,
             (key, record) -> {
               if (counter.getAndIncrement() >= batchLimit || ctx.shouldYield()) {
                 return false;
               }
-              return ctx.sink().append(key, JobIntent.TIME_OUT, record);
+              return result.append(key, JobIntent.TIME_OUT, record);
             });
 
     if (lastVisited != null) {
-      // Stopped early — keep the cursor and ask the runtime to reschedule immediately.
-      startAtIndex = lastVisited;
-      return Outcome.YIELD_NOW;
+      // Stopped early — keep the cursor so the runtime can resume on the next run.
+      return result.yieldNow(new JobTimeoutCursor(executionTimestamp, lastVisited));
     }
 
     // Queue drained for this round.
-    executionTimestamp = -1;
-    startAtIndex = null;
-    return Outcome.IDLE;
+    return result.idle();
   }
 }

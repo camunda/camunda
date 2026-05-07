@@ -10,10 +10,12 @@ package io.camunda.zeebe.engine.processing.job;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result.Decision;
 import io.camunda.zeebe.engine.processing.scheduled.runtime.FakeTaskContext;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
@@ -33,32 +35,45 @@ final class JobTimeoutCheckSchedulerTest {
     final var scheduler = new JobTimeoutCheckScheduler(state, 100);
 
     // when
-    final Outcome outcome = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
+    final Result result =
+        scheduler.run(FakeTaskContext.createFor(JobTimeoutCursor.class).withClockMillis(1_000L));
 
     // then
-    assertThat(outcome).isEqualTo(Outcome.IDLE);
+    assertThat(result.decision()).isEqualTo(Decision.IDLE);
   }
 
   @Test
   void shouldYieldAndKeepCursorWhenStoppedEarly() {
     // given
     final JobState state = mock(JobState.class);
-    final DeadlineIndex cursor = new DeadlineIndex(2_000L, 99L);
-    when(state.forEachTimedOutEntry(anyLong(), any(), any())).thenReturn(cursor);
+    final DeadlineIndex resumeFrom = new DeadlineIndex(2_000L, 99L);
+    when(state.forEachTimedOutEntry(anyLong(), any(), any())).thenReturn(resumeFrom);
     final var scheduler = new JobTimeoutCheckScheduler(state, 100);
 
-    // when
-    final Outcome firstOutcome = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
+    // when — first run yields and produces a cursor
+    final Result first =
+        scheduler.run(FakeTaskContext.createFor(JobTimeoutCursor.class).withClockMillis(1_000L));
 
-    // then — first run yielded, runtime should reschedule immediately
-    assertThat(firstOutcome).isEqualTo(Outcome.YIELD_NOW);
+    // then
+    assertThat(first.decision()).isInstanceOf(Decision.YieldNow.class);
+    final JobTimeoutCursor cursor =
+        (JobTimeoutCursor) ((Decision.YieldNow) first.decision()).cursor();
+    assertThat(cursor.resumeFrom()).isEqualTo(resumeFrom);
+    assertThat(cursor.executionTimestamp()).isEqualTo(1_000L);
 
-    // and a follow-up run picks up where it left off
+    // and a follow-up run started with that cursor resumes at the saved index, preserving the
+    // original executionTimestamp even when the wall-clock has advanced
+    final ArgumentCaptor<Long> tsCaptor = ArgumentCaptor.forClass(Long.class);
     final ArgumentCaptor<DeadlineIndex> startAt = ArgumentCaptor.forClass(DeadlineIndex.class);
-    when(state.forEachTimedOutEntry(anyLong(), startAt.capture(), any())).thenReturn(null);
+    when(state.forEachTimedOutEntry(tsCaptor.capture(), startAt.capture(), any())).thenReturn(null);
 
-    scheduler.run(FakeTaskContext.create().withClockMillis(5_000L));
-    assertThat(startAt.getValue()).isEqualTo(cursor);
+    scheduler.run(
+        FakeTaskContext.createFor(JobTimeoutCursor.class)
+            .withClockMillis(5_000L)
+            .withResumeCursor(cursor));
+
+    assertThat(startAt.getValue()).isEqualTo(resumeFrom);
+    assertThat(tsCaptor.getValue()).isEqualTo(1_000L);
   }
 
   @Test
@@ -68,7 +83,7 @@ final class JobTimeoutCheckSchedulerTest {
     final ArgumentCaptor<BiPredicate<Long, JobRecord>> visitor = visitorCaptor();
     when(state.forEachTimedOutEntry(anyLong(), any(), visitor.capture())).thenReturn(null);
     final var scheduler = new JobTimeoutCheckScheduler(state, 2);
-    final var ctx = FakeTaskContext.create().withClockMillis(1_000L);
+    final var ctx = FakeTaskContext.createFor(JobTimeoutCursor.class).withClockMillis(1_000L);
 
     // when
     scheduler.run(ctx);
@@ -81,8 +96,23 @@ final class JobTimeoutCheckSchedulerTest {
     assertThat(firstAccepted).isTrue();
     assertThat(secondAccepted).isTrue();
     assertThat(thirdAccepted).isFalse();
-    assertThat(ctx.appended()).hasSize(2);
-    assertThat(ctx.appended()).allMatch(c -> c.intent() == JobIntent.TIME_OUT);
+    assertThat(ctx.lastResult().appendedCommands()).hasSize(2);
+    assertThat(ctx.lastResult().appendedCommands()).allMatch(c -> c.intent() == JobIntent.TIME_OUT);
+  }
+
+  @Test
+  void shouldUseClockNowAsExecutionTimestampOnFirstRun() {
+    // given — no resume cursor on the context
+    final JobState state = mock(JobState.class);
+    final ArgumentCaptor<Long> tsCaptor = ArgumentCaptor.forClass(Long.class);
+    when(state.forEachTimedOutEntry(tsCaptor.capture(), eq(null), any())).thenReturn(null);
+    final var scheduler = new JobTimeoutCheckScheduler(state, 10);
+
+    // when
+    scheduler.run(FakeTaskContext.createFor(JobTimeoutCursor.class).withClockMillis(7_500L));
+
+    // then
+    assertThat(tsCaptor.getValue()).isEqualTo(7_500L);
   }
 
   @SuppressWarnings("unchecked")
