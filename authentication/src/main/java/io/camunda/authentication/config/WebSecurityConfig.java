@@ -959,43 +959,68 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager)
         throws Exception {
+      //      final var filterChainBuilder =
+      //          httpSecurity
+      //              .securityMatcher(API_PATHS.toArray(new String[0]))
+      //              .authorizeHttpRequests(
+      //                  (authorizeHttpRequests) ->
+      //                      authorizeHttpRequests
+      //                          .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
+      //                          .permitAll()
+      //                          .anyRequest()
+      //                          .authenticated())
+      //              .headers(
+      //                  headers ->
+      //                      setupSecureHeaders(
+      //                          headers,
+      //                          securityConfiguration.getHttpHeaders(),
+      //                          securityConfiguration.getSaas().isConfigured()))
+      //              // do not create a session on api authentication, that's to be done on webapp
+      // login
+      //              // only
+      //              .sessionManagement(
+      //                  (sessionManagement) ->
+      //                      sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+      //              .requestCache((cache) -> cache.requestCache(new NullRequestCache()))
+      //              .exceptionHandling(
+      //                  (exceptionHandling) ->
+      // exceptionHandling.accessDeniedHandler(authFailureHandler))
+      //              .sessionManagement(
+      //                  configurer ->
+      // configurer.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+      //              .cors(AbstractHttpConfigurer::disable)
+      //              .formLogin(AbstractHttpConfigurer::disable)
+      //              .anonymous(AbstractHttpConfigurer::disable)
+      //              .oauth2ResourceServer(
+      //                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+      //              .oauth2Login(AbstractHttpConfigurer::disable)
+      //              .oidcLogout(AbstractHttpConfigurer::disable)
+      //              .logout(AbstractHttpConfigurer::disable);
+      //
+      //      applyOauth2RefreshTokenFilter(
+      //          httpSecurity, authorizedClientRepository, authorizedClientManager);
+      //      applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+      //      return filterChainBuilder.build();
+
       final var filterChainBuilder =
           httpSecurity
-              .securityMatcher(API_PATHS.toArray(new String[0]))
+              .securityMatcher(API_PATHS.toArray(String[]::new))
               .authorizeHttpRequests(
-                  (authorizeHttpRequests) ->
-                      authorizeHttpRequests
-                          .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
-                          .permitAll()
-                          .anyRequest()
-                          .authenticated())
+                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
               .headers(
                   headers ->
                       setupSecureHeaders(
                           headers,
                           securityConfiguration.getHttpHeaders(),
                           securityConfiguration.getSaas().isConfigured()))
-              // do not create a session on api authentication, that's to be done on webapp login
-              // only
-              .sessionManagement(
-                  (sessionManagement) ->
-                      sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER))
-              .requestCache((cache) -> cache.requestCache(new NullRequestCache()))
-              .exceptionHandling(
-                  (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
-              .sessionManagement(
-                  configurer -> configurer.sessionCreationPolicy(SessionCreationPolicy.NEVER))
               .cors(AbstractHttpConfigurer::disable)
+              .exceptionHandling(
+                  // this prevents the usage of the default BasicAuthenticationEntryPoint returning
+                  // a WWW-Authenticate header that causes browsers to prompt for basic login
+                  exceptionHandling -> exceptionHandling.accessDeniedHandler(authFailureHandler))
               .formLogin(AbstractHttpConfigurer::disable)
-              .anonymous(AbstractHttpConfigurer::disable)
-              .oauth2ResourceServer(
-                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
-              .oauth2Login(AbstractHttpConfigurer::disable)
-              .oidcLogout(AbstractHttpConfigurer::disable)
-              .logout(AbstractHttpConfigurer::disable);
+              .anonymous(AbstractHttpConfigurer::disable);
 
-      applyOauth2RefreshTokenFilter(
-          httpSecurity, authorizedClientRepository, authorizedClientManager);
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
