@@ -636,6 +636,7 @@ public class ModifyProcessInstanceTerminationTest {
                 BpmnElementType.SUB_PROCESS,
                 "subprocess",
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED))
         .describedAs("Expect the flow scope not to be completed")
@@ -805,6 +806,7 @@ public class ModifyProcessInstanceTerminationTest {
                 BpmnElementType.EVENT_SUB_PROCESS,
                 "event-subprocess",
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
@@ -899,6 +901,7 @@ public class ModifyProcessInstanceTerminationTest {
                 BpmnElementType.SUB_PROCESS,
                 "subprocess",
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
@@ -969,6 +972,7 @@ public class ModifyProcessInstanceTerminationTest {
                 BpmnElementType.CALL_ACTIVITY,
                 "callActivity",
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
