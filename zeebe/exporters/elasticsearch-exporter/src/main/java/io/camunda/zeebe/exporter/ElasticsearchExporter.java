@@ -14,6 +14,7 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -58,6 +59,7 @@ public class ElasticsearchExporter implements Exporter {
   private ElasticsearchExporterSchemaManager schemaManager;
 
   private long lastPosition = -1;
+  private ScheduledTask scheduledFlushTask;
 
   @Override
   public void configure(final Context context) {
@@ -106,6 +108,11 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void close() {
+    if (scheduledFlushTask != null) {
+      scheduledFlushTask.cancel();
+      scheduledFlushTask = null;
+    }
+
     // the client is only created in some lifecycles, so during others (e.g. validation) it may not
     // exist, in which case there's no point flushing or doing anything
     if (client != null) {
@@ -231,8 +238,9 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void scheduleDelayedFlush() {
-    controller.scheduleCancellableTask(
-        Duration.ofSeconds(configuration.bulk.delay), this::flushAndReschedule);
+    scheduledFlushTask =
+        controller.scheduleCancellableTask(
+            Duration.ofSeconds(configuration.bulk.delay), this::flushAndReschedule);
   }
 
   private void flush() {
