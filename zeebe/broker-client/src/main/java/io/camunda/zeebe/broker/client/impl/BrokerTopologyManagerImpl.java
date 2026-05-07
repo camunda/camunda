@@ -90,7 +90,15 @@ public final class BrokerTopologyManagerImpl extends Actor
         });
   }
 
-  private void checkForMissingEvents() {
+  /**
+   * Seeds the topology with all brokers currently visible in the membership service. Safe to call
+   * from any thread; mutations are routed through the actor. Idempotent.
+   *
+   * <p>Callers wiring this up against a {@code ClusterMembershipService} must invoke this AFTER
+   * registering this instance as a listener, to close the race where a {@code MEMBER_ADDED} event
+   * fires between the actor starting and the listener being attached.
+   */
+  public void checkForMissingEvents() {
     final Set<Member> members = membersSupplier.get();
     if (members == null || members.isEmpty()) {
       return;
@@ -140,7 +148,9 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   @Override
   protected void onActorStarted() {
-    // Get the initial member state before the listener is registered
+    // Get the initial member state before the listener is registered.
+    // Also called AFTER registering this as a membership listener, to cover the window
+    // between the snapshot here and listener attachment.
     checkForMissingEvents();
   }
 
