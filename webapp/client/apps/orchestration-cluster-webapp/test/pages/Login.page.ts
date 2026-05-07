@@ -6,13 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '#/pw-modules/test-extend';
-import {LoginPage} from '../pages/Login.page';
+import {type Page} from '@playwright/test';
 
-test('should match the login page snapshot', async ({page}) => {
-	const loginPage = new LoginPage(page);
-	await loginPage.goto();
-	await expect(loginPage.submitButton).toBeVisible();
+class LoginPage {
+	private page: Page;
 
-	await expect(page).toHaveScreenshot();
-});
+	constructor(page: Page) {
+		this.page = page;
+	}
+
+	async goto() {
+		await this.page.goto('/login');
+	}
+
+	get submitButton() {
+		return this.page.getByRole('button', {name: /login/i});
+	}
+}
+
+export {LoginPage};
