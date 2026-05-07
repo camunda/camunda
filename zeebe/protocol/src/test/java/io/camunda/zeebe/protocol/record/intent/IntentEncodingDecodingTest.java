@@ -21,8 +21,11 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -36,6 +39,17 @@ final class IntentEncodingDecodingTest {
     final Intent decoded = parameterSet.decoder.apply(value);
 
     assertThat(decoded).isSameAs(parameterSet.intent);
+  }
+
+  @Test
+  void shouldCoverAllIntentsInThisTest() {
+    // when
+    final Stream<ParameterSet> parameters = parameters();
+
+    // then
+    final Set<Class<? extends Intent>> actualIntentClasses =
+        parameters.map(parameterSet -> parameterSet.intent.getClass()).collect(Collectors.toSet());
+    assertThat(actualIntentClasses).containsAll(new ArrayList<>(Intent.INTENT_CLASSES));
   }
 
   private static Stream<ParameterSet> parameters() {
