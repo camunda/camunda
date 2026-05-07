@@ -1,0 +1,18 @@
+# DO NOT MERGE — smoke-test fixture for PR #52554
+#
+# Originally introduced an unpinned `foo/bar@v1` to exercise the gate's
+# violation comment. Now SHA-pinned (with a placeholder SHA that satisfies
+# the 40-char hex format the policy requires) to exercise the gate's
+# "resolved" transition — the bot comment on this PR should update from
+# "❌ Unpinned 3rd-party GitHub Action(s) detected" to "✅ Pinning issue
+# resolved". This branch will be deleted once the parent PR (#52554) merges.
+name: zzz-smoke-test-pin-gate
+on: workflow_dispatch
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
+        with:
+          name: smoke-test-fixture-not-real
