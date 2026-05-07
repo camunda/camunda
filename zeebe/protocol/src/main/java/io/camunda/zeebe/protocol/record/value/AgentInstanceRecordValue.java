@@ -77,6 +77,11 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
    */
   Limits getLimits();
 
+  /**
+   * @return the metrics collected during the agent instance execution
+   */
+  Metrics getMetrics();
+
   interface Definition {
     /**
      * @return the model used by the agent
@@ -110,5 +115,28 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
      * @return the maximum number of tool calls allowed
      */
     int getMaxToolCalls();
+  }
+
+  /** Represents metrics collected during agent instance execution. */
+  interface Metrics {
+    /**
+     * @return the number of input tokens used
+     */
+    long getInputTokens();
+
+    /**
+     * @return the number of output tokens generated
+     */
+    long getOutputTokens();
+
+    /**
+     * @return the number of model calls made by the agent
+     */
+    int getModelCalls();
+
+    /**
+     * @return the number of tool calls made by the agent
+     */
+    int getToolCalls();
   }
 }

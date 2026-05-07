@@ -133,4 +133,35 @@ final class AgentInstanceRecordTest {
     assertThat(copy.getLimits().getMaxModelCalls()).isEqualTo(10);
     assertThat(copy.getLimits().getMaxToolCalls()).isEqualTo(20);
   }
+
+  @Test
+  void shouldDefaultMetricsToZero() {
+    final AgentInstanceRecord record = new AgentInstanceRecord();
+    assertThat(record.getMetrics().getInputTokens()).isZero();
+    assertThat(record.getMetrics().getOutputTokens()).isZero();
+    assertThat(record.getMetrics().getModelCalls()).isZero();
+    assertThat(record.getMetrics().getToolCalls()).isZero();
+  }
+
+  @Test
+  void shouldRoundTripMetricsViaMsgPack() {
+    // given
+    final AgentInstanceRecord original = new AgentInstanceRecord();
+    original
+        .getMetrics()
+        .setInputTokens(1340L)
+        .setOutputTokens(490L)
+        .setModelCalls(3)
+        .setToolCalls(2);
+
+    // when
+    final AgentInstanceRecord copy = new AgentInstanceRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getMetrics().getInputTokens()).isEqualTo(1340L);
+    assertThat(copy.getMetrics().getOutputTokens()).isEqualTo(490L);
+    assertThat(copy.getMetrics().getModelCalls()).isEqualTo(3);
+    assertThat(copy.getMetrics().getToolCalls()).isEqualTo(2);
+  }
 }

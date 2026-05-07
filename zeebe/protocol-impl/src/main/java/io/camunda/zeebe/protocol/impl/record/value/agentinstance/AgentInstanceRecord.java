@@ -38,9 +38,11 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ObjectProperty<>("definition", new AgentInstanceDefinition());
   private final ObjectProperty<AgentInstanceLimits> limitsProp =
       new ObjectProperty<>("limits", new AgentInstanceLimits());
+  private final ObjectProperty<AgentInstanceMetrics> metricsProp =
+      new ObjectProperty<>("metrics", new AgentInstanceMetrics());
 
   public AgentInstanceRecord() {
-    super(11);
+    super(12);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementIdProp)
@@ -51,7 +53,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProp)
         .declareProperty(statusProp)
         .declareProperty(definitionProp)
-        .declareProperty(limitsProp);
+        .declareProperty(limitsProp)
+        .declareProperty(metricsProp);
   }
 
   @Override
@@ -152,5 +155,10 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   @Override
   public AgentInstanceLimits getLimits() {
     return limitsProp.getValue();
+  }
+
+  @Override
+  public AgentInstanceMetrics getMetrics() {
+    return metricsProp.getValue();
   }
 }
