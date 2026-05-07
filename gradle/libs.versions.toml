@@ -68,6 +68,7 @@ commons-validator-commons-validator = "1.10.1"
 eu-rekawek-toxiproxy-toxiproxy-java = "2.1.11"
 info-picocli-picocli = "4.7.7"
 io-camunda-identity-sdk = "8.9.0"
+io-camunda-security-library-api = "0.1.0-alpha2"
 io-camunda-identity-spring-boot-autoconfigure = "8.9.0"
 io-camunda-identity-spring-boot-starter = "8.9.0"
 io-github-acm19-aws-request-signing-apache-interceptor = "4.0.0"
@@ -216,7 +217,7 @@ org-objenesis-objenesis = "3.5"
 org-openapitools-jackson-databind-nullable = "0.2.10"
 org-openjdk-jmh-jmh-core = "1.37"
 org-openjdk-jmh-jmh-generator-annprocess = "1.37"
-org-opensearch-client-opensearch-java = "3.4.0"
+org-opensearch-client-opensearch-java = "3.5.0"
 org-opensearch-client-opensearch-rest-client = "2.17.0"
 org-opensearch-opensearch-testcontainers = "4.1.0"
 org-postgresql-postgresql = "42.7.11"
@@ -381,6 +382,7 @@ commons-validator-commons-validator = { module = "commons-validator:commons-vali
 eu-rekawek-toxiproxy-toxiproxy-java = { module = "eu.rekawek.toxiproxy:toxiproxy-java", version.ref = "eu-rekawek-toxiproxy-toxiproxy-java" }
 info-picocli-picocli = { module = "info.picocli:picocli", version.ref = "info-picocli-picocli" }
 io-camunda-identity-sdk = { module = "io.camunda:identity-sdk", version.ref = "io-camunda-identity-sdk" }
+io-camunda-security-library-api = { module = "io.camunda:camunda-security-library-api", version.ref = "io-camunda-security-library-api" }
 io-camunda-identity-spring-boot-autoconfigure = { module = "io.camunda:identity-spring-boot-autoconfigure", version.ref = "io-camunda-identity-spring-boot-autoconfigure" }
 io-camunda-identity-spring-boot-starter = { module = "io.camunda:identity-spring-boot-starter", version.ref = "io-camunda-identity-spring-boot-starter" }
 io-github-acm19-aws-request-signing-apache-interceptor = { module = "io.github.acm19:aws-request-signing-apache-interceptor", version.ref = "io-github-acm19-aws-request-signing-apache-interceptor" }

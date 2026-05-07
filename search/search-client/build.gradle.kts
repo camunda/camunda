@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":camunda-search-domain"))
     implementation(project(":camunda-search-client-reader"))
     implementation(project(":camunda-security-core"))
+    implementation(libs.io.camunda.security.library.api)
     implementation(libs.org.slf4j.slf4j.api)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)

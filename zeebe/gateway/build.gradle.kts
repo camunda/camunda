@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":zeebe-protocol-impl"))
     implementation(project(":camunda-security-core"))
     implementation(project(":camunda-security-protocol"))
+    implementation(libs.io.camunda.security.library.api)
     implementation(project(":zeebe-msgpack-value"))
     implementation(project(":zeebe-broker-client"))
     implementation(project(":zeebe-cluster-config"))

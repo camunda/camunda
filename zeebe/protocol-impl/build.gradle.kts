@@ -13,6 +13,7 @@ dependencies {
     api(project(":zeebe-bpmn-model"))
     api(project(":zeebe-util"))
     api(project(":camunda-security-protocol"))
+    implementation(libs.io.camunda.security.library.api)
     api(libs.org.agrona.agrona)
     implementation(libs.org.slf4j.slf4j.api)
     api(libs.com.fasterxml.jackson.core.jackson.databind)

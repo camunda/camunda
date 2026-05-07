@@ -12,6 +12,7 @@ dependencies {
     api(project(":camunda-search-client-reader"))
     implementation(project(":camunda-security-protocol"))
     implementation(project(":camunda-security-core"))
+    implementation(libs.io.camunda.security.library.api)
     implementation(project(":zeebe-util"))
     api(libs.org.mybatis.mybatis)
     api(libs.org.liquibase.liquibase.core)

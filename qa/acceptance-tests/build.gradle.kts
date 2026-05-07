@@ -65,6 +65,7 @@ dependencies {
     testImplementation(project(":camunda-spring-utils"))
     testImplementation(project(":camunda-security-core"))
     testImplementation(project(":camunda-security-protocol"))
+    testImplementation(libs.io.camunda.security.library.api)
     testImplementation(project(":zeebe-exporter-test"))
     testImplementation(project(":zeebe-exporter-api"))
     testImplementation(project(":zeebe-exporter-filter"))
