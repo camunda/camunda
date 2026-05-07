@@ -138,6 +138,23 @@ class LiveBpmnListenerBuilderTest {
   }
 
   @Test
+  void shouldRecordListenersViaListenersBlock() {
+    // given / when — bracketed sub-builder form
+    final LiveBpmn builder =
+        LiveBpmn.createExecutableProcess("p")
+            .startEvent()
+            .serviceTask("validate", (Job j) -> null)
+            .listeners(
+                l ->
+                    l.on(ZeebeExecutionListenerEventType.start, (Job j) -> {})
+                        .on(ZeebeExecutionListenerEventType.end, (Job j) -> {}));
+
+    // then — both bindings recorded under the validate elementId
+    assertThat(builder.bindings()).containsKey(BindingKey.executionListener("validate", "start"));
+    assertThat(builder.bindings()).containsKey(BindingKey.executionListener("validate", "end"));
+  }
+
+  @Test
   void shouldFailBindOnStartWhenListenerMissing() {
     // given — adopted model with NO start listener on validate
     final BpmnModelInstance model =

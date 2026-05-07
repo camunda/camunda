@@ -48,8 +48,10 @@ public final class ListenerDemo {
           .startEvent()
           .serviceTask(
               "greet", (Job job) -> Map.of("greeting", "hi " + job.variable("name", String.class)))
-          .on(start, (Job job) -> System.out.println("[el-start] greet activating"))
-          .on(end, (Job job) -> System.out.println("[el-end]   greet completed"))
+          .listeners(
+              l ->
+                  l.on(start, (Job job) -> System.out.println("[el-start] greet activating"))
+                      .on(end, (Job job) -> System.out.println("[el-end]   greet completed")))
           .serviceTask(
               "print", (Job job) -> System.out.println(job.variable("greeting", String.class)))
           .endEvent()

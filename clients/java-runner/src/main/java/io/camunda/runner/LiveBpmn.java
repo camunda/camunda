@@ -360,6 +360,15 @@ public final class LiveBpmn {
     return attachTaskListener(eventType, new BoundHandler.OfConsumer(handler));
   }
 
+  /**
+   * Brackets-grouped form of listener attachment. See {@link Listeners}. Equivalent to writing the
+   * {@code .on(...)} / {@code .onTaskListener(...)} calls flat — purely a readability sugar.
+   */
+  public LiveBpmn listeners(final Consumer<Listeners> configure) {
+    configure.accept(new Listeners(this));
+    return this;
+  }
+
   // ---------------------------------------------------------------------------
   // Bindings for adopted models
   // ---------------------------------------------------------------------------
