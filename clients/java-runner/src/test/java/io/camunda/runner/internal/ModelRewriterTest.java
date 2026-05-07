@@ -172,7 +172,7 @@ final class ModelRewriterTest {
             .startEvent()
             .serviceTask(
                 "validate",
-                t -> t.zeebeJobType("validate").zeebeStartExecutionListener("validate:el:start"))
+                t -> t.zeebeJobType("validate").zeebeStartExecutionListener("validate-el-start"))
             .endEvent()
             .done();
 
@@ -189,9 +189,9 @@ final class ModelRewriterTest {
             io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners.class);
     assertThat(listeners).isNotNull();
     final var first = listeners.getExecutionListeners().iterator().next();
-    assertThat(first.getType()).isEqualTo("u-x-validate:el:start");
+    assertThat(first.getType()).isEqualTo("u-x-validate-el-start");
     assertThat(result.jobTypesByBinding())
-        .containsEntry(BindingKey.executionListener("validate", "start"), "u-x-validate:el:start");
+        .containsEntry(BindingKey.executionListener("validate", "start"), "u-x-validate-el-start");
   }
 
   @Test
@@ -208,7 +208,7 @@ final class ModelRewriterTest {
                             b.eventType(
                                     io.camunda.zeebe.model.bpmn.instance.zeebe
                                         .ZeebeTaskListenerEventType.assigning)
-                                .type("review:tl:assigning")))
+                                .type("review-tl-assigning")))
             .endEvent()
             .done();
 
@@ -233,6 +233,6 @@ final class ModelRewriterTest {
             io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners.class);
     assertThat(listeners).isNotNull();
     final var first = listeners.getTaskListeners().iterator().next();
-    assertThat(first.getType()).isEqualTo("u-x-review:tl:assigning");
+    assertThat(first.getType()).isEqualTo("u-x-review-tl-assigning");
   }
 }

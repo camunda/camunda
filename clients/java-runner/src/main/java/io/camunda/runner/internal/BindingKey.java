@@ -90,8 +90,11 @@ public record BindingKey(String elementId, BindingKind kind, String eventType) {
   public String placeholderType() {
     return switch (kind) {
       case SERVICE_TASK -> elementId;
-      case EXECUTION_LISTENER -> elementId + ":el:" + eventType;
-      case TASK_LISTENER -> elementId + ":tl:" + eventType;
+      // Hyphen separators: colons are accepted by the broker for service-task job types but
+      // observed to cause task-listener jobs not to be delivered to subscribed workers on
+      // Camunda 8.9. Hyphens are universally safe.
+      case EXECUTION_LISTENER -> elementId + "-el-" + eventType;
+      case TASK_LISTENER -> elementId + "-tl-" + eventType;
     };
   }
 }
