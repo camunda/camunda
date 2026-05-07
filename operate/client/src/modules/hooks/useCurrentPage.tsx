@@ -34,6 +34,10 @@ const useCurrentPage = () => {
       return 'dashboard';
     }
 
+    if (matchPath(Paths.processesVariables(), location.pathname) !== null) {
+      return 'processes';
+    }
+
     if (matchPath(Paths.processes(), location.pathname) !== null) {
       return 'processes';
     }
