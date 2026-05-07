@@ -5,22 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  *
- * Carbon's StructuredList family maps to shadcn's Table primitive — both
- * are tabular layouts. The selection variant (radio-row) is not modelled
- * here; consumers must compose with `radio-group` when migrating that case.
+ * Carbon's StructuredList is div-based and uses CSS display:table-* to
+ * achieve table layout. The adapter mirrors this approach with divs + ARIA
+ * roles + Tailwind display utilities rather than mapping to a native <table>,
+ * which would make <div class="cds--structured-list-tbody"> children invalid
+ * HTML and cause browsers to foster-parent them outside the table element.
+ *
+ * Consumers that use Carbon class names directly (e.g. cds--structured-list-tbody)
+ * also need `display: table-row-group` — that rule lives in globals.css.
  */
 
 import * as React from 'react';
 
 import {Skeleton} from '../skeleton/skeleton.shadcn';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../table/table.shadcn';
 
 import {cn, warnDroppedProps} from '../../../lib/utils';
 
@@ -62,25 +59,27 @@ function StructuredListWrapper(props: StructuredListWrapperProps) {
   });
 
   return (
-    <Table
+    <div
+      role="table"
       aria-label={ariaLabel}
-      className={cn(className)}
-      {...(rest as React.ComponentProps<typeof Table>)}
+      className={cn('table w-full border-collapse overflow-x-auto', className)}
+      {...(rest as React.HTMLAttributes<HTMLDivElement>)}
     >
       {children}
-    </Table>
+    </div>
   );
 }
 
 function StructuredListHead(props: StructuredListHeadProps) {
   const {children, className, ...rest} = props;
   return (
-    <TableHeader
-      className={cn(className)}
-      {...(rest as React.ComponentProps<typeof TableHeader>)}
+    <div
+      role="rowgroup"
+      className={cn('table-header-group', className)}
+      {...(rest as React.HTMLAttributes<HTMLDivElement>)}
     >
       {children}
-    </TableHeader>
+    </div>
   );
 }
 
@@ -90,13 +89,14 @@ function StructuredListBody(props: StructuredListBodyProps) {
   warnDroppedProps('StructuredListBody', {head});
 
   return (
-    <TableBody
-      className={cn(className)}
+    <div
+      role="rowgroup"
+      className={cn('table-row-group', className)}
       onKeyDown={onKeyDown}
-      {...(rest as React.ComponentProps<typeof TableBody>)}
+      {...(rest as React.HTMLAttributes<HTMLDivElement>)}
     >
       {children}
-    </TableBody>
+    </div>
   );
 }
 
@@ -112,18 +112,23 @@ function StructuredListRow(props: StructuredListRowProps) {
     ...rest
   } = props;
 
-  warnDroppedProps('StructuredListRow', {head, selection});
+  warnDroppedProps('StructuredListRow', {selection});
 
   return (
-    <TableRow
+    <div
       id={id}
-      className={cn(className)}
+      role="row"
+      className={cn(
+        'table-row transition-colors',
+        head ? 'border-none' : 'border-t border-border',
+        className,
+      )}
       onClick={onClick}
       onKeyDown={onKeyDown}
-      {...(rest as React.ComponentProps<typeof TableRow>)}
+      {...(rest as React.HTMLAttributes<HTMLDivElement>)}
     >
       {children}
-    </TableRow>
+    </div>
   );
 }
 
@@ -139,24 +144,18 @@ function StructuredListCell(
 
   warnDroppedProps('StructuredListCell', {noWrap});
 
-  if (head) {
-    return (
-      <TableHead
-        className={cn(className)}
-        {...(rest as React.ComponentProps<typeof TableHead>)}
-      >
-        {children}
-      </TableHead>
-    );
-  }
-
   return (
-    <TableCell
-      className={cn(className)}
-      {...(rest as React.ComponentProps<typeof TableCell>)}
+    <div
+      role={head ? 'columnheader' : 'cell'}
+      className={cn(
+        'table-cell px-2 py-3 text-sm',
+        head ? 'align-middle font-semibold' : 'align-top',
+        className,
+      )}
+      {...(rest as React.HTMLAttributes<HTMLDivElement>)}
     >
       {children}
-    </TableCell>
+    </div>
   );
 }
 

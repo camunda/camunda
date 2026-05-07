@@ -7,6 +7,19 @@
  */
 
 /* ---------------------------------------------------------------------------
+ * Tailwind bootstrapping — theme + preflight + utilities.
+ * This file is imported by index.shadcn.ts as a side effect, so Tailwind CSS
+ * only loads when the shadcn version is active. Carbon mode (index.carbon.ts)
+ * does not import this file, so none of this reaches Carbon pages.
+ * Remove once the design-system ships a pre-built CSS artifact (see README TODO).
+ * --------------------------------------------------------------------------- */
+@import 'tailwindcss';
+
+/* Tailwind v4 doesn't scan node_modules by default. Scan our own source so
+   utilities referenced in *.shadcn.tsx / *.adapter.tsx get generated. */
+@source './src/**/*.{ts,tsx}';
+
+/* ---------------------------------------------------------------------------
  * shadcn default theme (neutral base, Tailwind v4) — for comparison only.
  * Pulled verbatim from `npx shadcn@latest init -d`. Uses oklch() colour space
  * and includes chart/sidebar/font tokens that vanilla shadcn relies on.
@@ -124,7 +137,7 @@
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-accent-foreground: oklch(0.269 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
@@ -138,6 +151,19 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Preflight sets svg to display:block + vertical-align:middle. Revert to
+     inline so SVGs inside text-align:center containers are correctly centered. */
+  svg {
+    display: inline;
+    vertical-align: baseline;
+  }
+  /* Carbon consumers that use cds--structured-list-tbody directly (e.g. operate's
+     StructuredList wrapper) need display:table-row-group in shadcn mode since Carbon
+     CSS is not loaded. The adapter itself uses Tailwind table-row-group, but any
+     div with the raw Carbon class name also needs this rule. */
+  .cds--structured-list-tbody {
+    display: table-row-group;
   }
 }
 

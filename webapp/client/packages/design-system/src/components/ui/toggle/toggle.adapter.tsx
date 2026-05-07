@@ -7,9 +7,10 @@
  *
  * Carbon's `Toggle` is a binary switch with built-in label slots
  * (labelA/labelB/labelText) — labelling is part of the component. shadcn's
- * `Switch` is headless: labels are app composition (e.g. via a sibling
- * `<label>`). Carbon `toggled`/`onToggle` map to shadcn
- * `checked`/`onCheckedChange`. NOT shadcn `Toggle` — that's a pressable
+ * `Switch` is headless: the adapter composes a `<label>` alongside it to
+ * replicate `labelText`/`hideLabel`/`labelA`/`labelB`/`onClick`. Carbon
+ * `toggled`/`onToggle` map to shadcn `checked`/`onCheckedChange`. NOT
+ * shadcn `Toggle` — that's a pressable
  * button, semantically closer to Carbon's `IconButton isSelected`.
  */
 
@@ -17,7 +18,7 @@ import * as React from 'react';
 
 import {Switch} from '../switch/switch.shadcn';
 
-import {warnDroppedProps} from '../../../lib/utils';
+import {cn, warnDroppedProps} from '../../../lib/utils';
 
 import type {ToggleProps as CarbonToggleProps} from '@carbon/react';
 
@@ -50,29 +51,45 @@ function Toggle(props: ToggleProps) {
     ...rest
   } = props;
 
-  warnDroppedProps('Toggle', {
-    hideLabel,
-    labelA,
-    labelB,
-    labelText,
-    onClick,
-    readOnly,
-  });
+  warnDroppedProps('Toggle', {readOnly});
 
   const switchSize: SwitchSize = size ? SIZE_MAP[size] : 'default';
 
-  return (
+  // labelText takes priority; fall back to state-dependent labelA/labelB.
+  const labelContent = labelText ?? (toggled ? labelB : labelA);
+
+  const switchEl = (
     <Switch
       id={id}
       aria-labelledby={ariaLabelledby}
-      className={className}
       disabled={disabled}
       size={switchSize}
       checked={toggled}
       defaultChecked={defaultToggled}
+      onClick={onClick as React.MouseEventHandler<HTMLButtonElement>}
       onCheckedChange={(checked) => onToggle?.(checked)}
       {...(rest as React.ComponentProps<typeof Switch>)}
     />
+  );
+
+  if (!labelContent) {
+    return React.cloneElement(switchEl, {className});
+  }
+
+  return (
+    <div className={cn('flex items-center gap-2', className)}>
+      {switchEl}
+      <label
+        htmlFor={id}
+        className={cn(
+          'text-sm font-medium leading-none',
+          hideLabel && 'sr-only',
+          disabled && 'cursor-not-allowed opacity-70',
+        )}
+      >
+        {labelContent}
+      </label>
+    </div>
   );
 }
 

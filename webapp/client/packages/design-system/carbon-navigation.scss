@@ -28,6 +28,10 @@
 @use '@carbon/react/scss/components/stack';
 @use '@carbon/react/scss/components/tag';
 
+// TabListNav uses Carbon tabs class names (cds--tabs, cds--tab--list, etc.)
+// directly without going through @carbon/react, so the CSS must be loaded here.
+@use '@carbon/react/scss/components/tabs';
+
 // Tooltip family — DefinitionTooltip + Toggletip + their popover backing
 @use '@carbon/react/scss/components/popover';
 @use '@carbon/react/scss/components/tooltip';

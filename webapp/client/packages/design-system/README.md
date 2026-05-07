@@ -53,3 +53,22 @@ it sweeps every wrapper in `src/components/ui/MAPPING.md` that's missing an
   would let internals use the alias freely and decouple consumers from the
   internal layout. The `@/*` alias mapping is still defined in
   `tsconfig.json` so Storybook keeps working, but no runtime code uses it.
+- [ ] **Pre-build CSS so consumers don't need Tailwind.** Because the package
+  ships source, each consumer (e.g. `operate/client`) must run Tailwind
+  itself — pointing `@source` at the design-system's `.tsx` files and hosting
+  `globals.css` inside a `tailwindcss` import context so that `@theme inline`
+  and `@custom-variant` directives are processed. A build step that
+  pre-generates the utility CSS (and resolves the theme tokens) would let
+  consumers drop their Tailwind dependency entirely and simply
+  `@import '@camunda/design-system/dist/styles.css'`. This also eliminates
+  Tailwind's preflight leaking into Carbon-based pages.
+- [ ] **Remove `.cds--structured-list-tbody` shim from `globals.css`.** A
+  `display: table-row-group` rule is currently patched onto the raw Carbon
+  class name in `globals.css` so that `operate/client`'s
+  `modules/components/StructuredList/index.tsx` (which emits
+  `<div className="cds--structured-list-tbody">` directly) works in shadcn
+  mode without Carbon's CSS. The proper fix is to update that wrapper to use
+  the `StructuredListBody` adapter — then this global shim can be deleted.
+  Tracked here because the shim is a fragile workaround: any other raw Carbon
+  class name used directly outside the adapter will need a similar patch until
+  all consumers go through the adapters.

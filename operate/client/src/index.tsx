@@ -7,7 +7,6 @@
  */
 
 import {App} from './App';
-import './tailwind.css';
 import './index.scss';
 import 'dmn-js/dist/assets/dmn-js-decision-table.css';
 import 'dmn-js/dist/assets/dmn-js-shared.css';
