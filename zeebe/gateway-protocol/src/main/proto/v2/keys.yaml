@@ -156,6 +156,15 @@ components:
       format: int64
       minimum: 1
 
+    AgentInstanceKey:
+      description: System-generated key for an agent instance.
+      format: AgentInstanceKey
+      x-semantic-type: AgentInstanceKey
+      example: "4503599627370496"
+      type: string
+      allOf:
+        - $ref: '#/components/schemas/LongKey'
+
     AuditLogKey:
       allOf:
         - $ref: '#/components/schemas/LongKey'
@@ -465,6 +474,43 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DecisionEvaluationInstanceKey"
+
+    AgentInstanceKeyFilterProperty:
+      description: AgentInstanceKey property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/AgentInstanceKey"
+        - $ref: '#/components/schemas/AdvancedAgentInstanceKeyFilter'
+
+    AdvancedAgentInstanceKeyFilter:
+      title: Advanced filter
+      description: Advanced AgentInstanceKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AgentInstanceKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/AgentInstanceKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentInstanceKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentInstanceKey"
 
     AuditLogKeyFilterProperty:
       description: AuditLogKey property with full advanced search capabilities.

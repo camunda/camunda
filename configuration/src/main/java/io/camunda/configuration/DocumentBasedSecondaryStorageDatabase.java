@@ -102,7 +102,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @Override
   public String getUrl() {
     validateUrlConfiguration();
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".url",
         super.getUrl(),
         String.class,
@@ -118,7 +118,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   @Override
   public String getUsername() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".username",
         super.getUsername(),
         String.class,
@@ -128,7 +128,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   @Override
   public String getPassword() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateSensitiveLegacyConfiguration(
         prefix() + ".password",
         super.getPassword(),
         String.class,
@@ -167,7 +167,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   public boolean isCreateSchema() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".create-schema",
         createSchema,
         Boolean.class,
@@ -244,7 +244,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   public String getClusterName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".cluster-name",
         clusterName,
         String.class,
@@ -257,7 +257,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   public String getIndexPrefix() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".index-prefix",
         indexPrefix,
         String.class,
@@ -270,7 +270,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   public int getNumberOfShards() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".number-of-shards",
         numberOfShards,
         Integer.class,
@@ -299,7 +299,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   public String getDateFormat() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".date-format",
         dateFormat,
         String.class,
@@ -313,7 +313,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public Duration getSocketTimeout() {
     final var socketTimeout =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix() + ".socket-timeout",
             this.socketTimeout != null ? Math.toIntExact(this.socketTimeout.toMillis()) : null,
             Integer.class,
@@ -328,7 +328,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public Duration getConnectionTimeout() {
     final var connectionTimeoutInt =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             prefix() + ".connection-timeout",
             connectionTimeout != null ? Math.toIntExact(connectionTimeout.toMillis()) : null,
             Integer.class,
@@ -342,7 +342,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   public int getNumberOfReplicas() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".number-of-replicas",
         numberOfReplicas,
         Integer.class,
@@ -363,7 +363,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   public int getVariableSizeThreshold() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".variable-size-threshold",
         variableSizeThreshold,
         Integer.class,
@@ -376,7 +376,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   public Map<String, Integer> getNumberOfReplicasPerIndex() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".number-of-replicas-per-index",
         numberOfReplicasPerIndex,
         ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
@@ -389,7 +389,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   public Map<String, Integer> getNumberOfShardsPerIndex() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".number-of-shards-per-index",
         numberOfShardsPerIndex,
         ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
@@ -410,7 +410,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   }
 
   public Integer getTemplatePriority() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         prefix() + ".template-priority",
         templatePriority,
         Integer.class,

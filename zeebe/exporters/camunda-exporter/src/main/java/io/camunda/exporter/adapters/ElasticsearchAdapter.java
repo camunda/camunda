@@ -8,7 +8,6 @@
 package io.camunda.exporter.adapters;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
@@ -55,8 +54,7 @@ class ElasticsearchAdapter implements ClientAdapter {
 
   @Override
   public BatchRequest createBatchRequest() {
-    return new ElasticsearchBatchRequest(
-        client, new BulkRequest.Builder(), new ElasticsearchScriptBuilder());
+    return new ElasticsearchBatchRequest(client, new ElasticsearchScriptBuilder());
   }
 
   @Override

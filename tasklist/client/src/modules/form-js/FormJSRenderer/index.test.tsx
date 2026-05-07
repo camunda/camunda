@@ -32,9 +32,6 @@ describe('<FormJSRenderer />', () => {
       ),
     );
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
 
   it('should merge variables on submit', async () => {
     vi.useFakeTimers({

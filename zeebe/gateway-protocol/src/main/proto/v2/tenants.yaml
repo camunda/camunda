@@ -9,6 +9,10 @@ paths:
       operationId: createTenant
       summary: Create tenant
       description: Creates a new tenant.
+      x-semantic-establishes:
+        kind: Tenant
+        identifiedBy:
+          - { in: body, name: tenantId, semanticType: TenantId }
       requestBody:
         content:
           application/json:
@@ -85,6 +89,10 @@ paths:
       operationId: getTenant
       summary: Get tenant
       description: Retrieves a single tenant by tenant ID.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -122,6 +130,10 @@ paths:
       operationId: updateTenant
       summary: Update tenant
       description: Updates an existing tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -165,6 +177,10 @@ paths:
       operationId: deleteTenant
       summary: Delete tenant
       description: Deletes an existing tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -199,6 +215,12 @@ paths:
       operationId: assignUserToTenant
       summary: Assign a user to a tenant
       description: Assign a single user to a specified tenant. The user can then access tenant data and perform authorized actions.
+      x-semantic-establishes:
+        kind: TenantUserMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: tenantId, semanticType: TenantId }
+          - { in: path, name: username, semanticType: Username }
       parameters:
         - name: tenantId
           in: path
@@ -240,6 +262,11 @@ paths:
       description: |
         Unassigns the user from the specified tenant.
         The user can no longer access tenant data.
+      x-semantic-requires:
+        kind: TenantUserMembership
+        bind:
+          tenantId: { from: path, name: tenantId }
+          username: { from: path, name: username }
       parameters:
         - name: tenantId
           in: path
@@ -280,6 +307,10 @@ paths:
       operationId: searchUsersForTenant
       summary: Search users for tenant
       description: Retrieves a filtered and sorted list of users for a specified tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -312,6 +343,12 @@ paths:
       description: |
         Assign the client to the specified tenant.
         The client can then access tenant data and perform authorized actions.
+      x-semantic-establishes:
+        kind: TenantClientMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: tenantId, semanticType: TenantId }
+          - { in: path, name: clientId, semanticType: ClientId }
       parameters:
         - name: tenantId
           in: path
@@ -324,7 +361,7 @@ paths:
           required: true
           description: The unique identifier of the application.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The client was successfully assigned to the tenant.
@@ -353,6 +390,11 @@ paths:
       description: |
         Unassigns the client from the specified tenant.
         The client can no longer access tenant data.
+      x-semantic-requires:
+        kind: TenantClientMembership
+        bind:
+          tenantId: { from: path, name: tenantId }
+          clientId: { from: path, name: clientId }
       parameters:
         - name: tenantId
           in: path
@@ -365,7 +407,7 @@ paths:
           required: true
           description: The unique identifier of the application.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/ClientId'
       responses:
         "204":
           description: The client was successfully unassigned from the tenant.
@@ -393,6 +435,10 @@ paths:
       operationId: searchClientsForTenant
       summary: Search clients for tenant
       description: Retrieves a filtered and sorted list of clients for a specified tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -425,6 +471,18 @@ paths:
       description: |
         Assigns a group to a specified tenant.
         Group members (users, clients) can then access tenant data and perform authorized actions.
+      x-semantic-establishes:
+        kind: TenantGroupMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: tenantId, semanticType: TenantId }
+          # acceptsExternal: true — under BYOG/OIDC (`groupsClaim` set), the
+          # runtime accepts externally-minted IdP group IDs here even though
+          # group CRUD itself is always local. Skips the producer-existence
+          # cross-reference for this tuple; the planner is free to chain a
+          # local createGroup producer when one is reachable. See
+          # camunda/api-test-generator#134.
+          - { in: path, name: groupId,  semanticType: GroupId, acceptsExternal: true }
       parameters:
         - name: tenantId
           in: path
@@ -437,7 +495,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       responses:
         "204":
           description: The group was successfully assigned to the tenant.
@@ -466,6 +524,11 @@ paths:
       description: |
         Unassigns a group from a specified tenant.
         Members of the group (users, clients) will no longer have access to the tenant's data - except they are assigned directly to the tenant.
+      x-semantic-requires:
+        kind: TenantGroupMembership
+        bind:
+          tenantId: { from: path, name: tenantId }
+          groupId:  { from: path, name: groupId }
       parameters:
         - name: tenantId
           in: path
@@ -478,7 +541,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/GroupId'
       responses:
         "204":
           description: The group was successfully unassigned from the tenant.
@@ -506,6 +569,10 @@ paths:
       operationId: searchGroupIdsForTenant
       summary: Search groups for tenant
       description: Retrieves a filtered and sorted list of groups for a specified tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -536,6 +603,10 @@ paths:
       operationId: searchRolesForTenant
       summary: Search roles for tenant
       description: Retrieves a filtered and sorted list of roles for a specified tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -568,6 +639,12 @@ paths:
       description: |
         Assigns a role to a specified tenant.
         Users, Clients or Groups, that have the role assigned, will get access to the tenant's data and can perform actions according to their authorizations.
+      x-semantic-establishes:
+        kind: TenantRoleMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: tenantId, semanticType: TenantId }
+          - { in: path, name: roleId,   semanticType: RoleId }
       parameters:
         - name: tenantId
           in: path
@@ -580,7 +657,7 @@ paths:
           required: true
           description: The unique identifier of the role.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       responses:
         "204":
           description: The role was successfully assigned to the tenant.
@@ -610,6 +687,11 @@ paths:
         Unassigns a role from a specified tenant.
         Users, Clients or Groups, that have the role assigned, will no longer have access to the
         tenant's data - unless they are assigned directly to the tenant.
+      x-semantic-requires:
+        kind: TenantRoleMembership
+        bind:
+          tenantId: { from: path, name: tenantId }
+          roleId:   { from: path, name: roleId }
       parameters:
         - name: tenantId
           in: path
@@ -622,7 +704,7 @@ paths:
           required: true
           description: The unique identifier of the role.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/RoleId'
       responses:
         "204":
           description: The role was successfully unassigned from the tenant.
@@ -650,6 +732,12 @@ paths:
       operationId: assignMappingRuleToTenant
       summary: Assign a mapping rule to a tenant
       description: Assign a single mapping rule to a specified tenant.
+      x-semantic-establishes:
+        kind: TenantMappingRuleMembership
+        shape: edge
+        identifiedBy:
+          - { in: path, name: tenantId,      semanticType: TenantId }
+          - { in: path, name: mappingRuleId, semanticType: MappingRuleId }
       parameters:
         - name: tenantId
           in: path
@@ -662,7 +750,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The mapping rule was successfully assigned to the tenant.
@@ -689,6 +777,11 @@ paths:
       operationId: unassignMappingRuleFromTenant
       summary: Unassign a mapping rule from a tenant
       description: Unassigns a single mapping rule from a specified tenant without deleting the rule.
+      x-semantic-requires:
+        kind: TenantMappingRuleMembership
+        bind:
+          tenantId:      { from: path, name: tenantId }
+          mappingRuleId: { from: path, name: mappingRuleId }
       parameters:
         - name: tenantId
           in: path
@@ -701,7 +794,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: string
+            $ref: 'identifiers.yaml#/components/schemas/MappingRuleId'
       responses:
         "204":
           description: The mapping rule was successfully unassigned from the tenant.
@@ -729,6 +822,10 @@ paths:
       operationId: searchMappingRulesForTenant
       summary: Search mapping rules for tenant
       description: Retrieves a filtered and sorted list of MappingRules for a specified tenant.
+      x-semantic-requires:
+        kind: Tenant
+        bind:
+          tenantId: { from: path, name: tenantId }
       parameters:
         - name: tenantId
           in: path
@@ -760,11 +857,12 @@ components:
       additionalProperties: false
       properties:
         tenantId:
-          type: string
-          description: The unique ID for the tenant. Must be 255 characters or less. Can contain letters, numbers, [`_`, `-`, `+`, `.`, `@`].
-          minLength: 1
-          maxLength: 256
-          pattern: ^[A-Za-z0-9_@.+-]+$
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: |
+            The unique ID for the tenant. Must be 31 characters or less and match
+            `^[\w.-]{1,31}$` (word characters, `.`, `-`). The literal
+            `<default>` is also accepted as the default-tenant alias.
         name:
           type: string
           description: The name of the tenant.
@@ -781,7 +879,9 @@ components:
         - tenantId
       properties:
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The unique identifier of the created tenant.
         name:
           type: string
           description: The name of the tenant.
@@ -813,7 +913,9 @@ components:
       type: object
       properties:
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The unique identifier of the updated tenant.
         name:
           type: string
           description: The name of the tenant.
@@ -835,7 +937,9 @@ components:
           description: The tenant name.
           example: Customer Service department
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The unique identifier of the tenant.
         description:
           type: string
           description: The tenant description.
@@ -883,7 +987,9 @@ components:
       type: object
       properties:
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The unique identifier of the tenant.
         name:
           type: string
           description: The name of the tenant.
@@ -954,7 +1060,8 @@ components:
       properties:
         clientId:
           description: The ID of the client.
-          type: string
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ClientId'
       required:
         - clientId
 
@@ -1000,8 +1107,9 @@ components:
       type: object
       properties:
         groupId:
-          description: The groupId of the group.
-          type: string
+          description: The group ID.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/GroupId'
       required:
         - groupId
 

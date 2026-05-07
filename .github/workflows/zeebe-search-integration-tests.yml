@@ -1,4 +1,4 @@
-# description: Runs Integration tests on min/max supported versions of Elasticsearch and OpenSearch
+# description: Runs Integration tests on min and max versions of each supported major series of Elasticsearch and OpenSearch
 # test location: /qa/acceptance-tests
 # type: CI
 # owner: @camunda/core-features, @camunda/data-layer
@@ -8,6 +8,8 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - ".ci/db-versions.yml"
+      - ".github/actions/read-db-versions/**"
       - ".github/workflows/zeebe-search-integration-tests.yml"
   schedule:
     - cron: "0 5 * * Mon-Fri"
@@ -22,59 +24,40 @@ defaults:
     shell: bash
 
 jobs:
+  # Reads search DB versions from .ci/db-versions.yml and generates a min/max matrix.
+  # Add or remove versions there — this workflow updates automatically.
+  generate-matrix:
+    name: "Generate search DB matrix"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.read-versions.outputs.es-os-matrix }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read DB versions
+        id: read-versions
+        uses: ./.github/actions/read-db-versions
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   search-integration-tests:
     name: "Search ${{ matrix.database-name }}"
+    needs: [ generate-matrix ]
     permissions:
       actions: write
       contents: read
     strategy:
       fail-fast: false
-      matrix: &database-matrix
-        include:
-          # Elasticsearch 8 - Supported versions: 8.19.0 (min) to 8.19.11 (max)
-          - database-name: "Elasticsearch 8.19.0"
-            database-type: "elasticsearch8_19_0"
-            database-container: "elasticsearch"
-            database-image-version: "8.19.0"
-            it-database-type: "es"
-          - database-name: "Elasticsearch 8.19.11"
-            database-type: "elasticsearch8_19_11"
-            database-container: "elasticsearch"
-            database-image-version: "8.19.11"
-            it-database-type: "es"
-          # Elasticsearch 9 - Supported versions: 9.2.0 (min) to 9.3.0 (max)
-          - database-name: "Elasticsearch 9.2.0"
-            database-type: "elasticsearch9_2_0"
-            database-container: "elasticsearch"
-            database-image-version: "9.2.0"
-            it-database-type: "es"
-          - database-name: "Elasticsearch 9.3.0"
-            database-type: "elasticsearch9_3_0"
-            database-container: "elasticsearch"
-            database-image-version: "9.3.0"
-            it-database-type: "es"
-          # OpenSearch 2 - Supported versions: 2.19.0 (min) to 2.19.4 (max)
-          - database-name: "OpenSearch 2.19.0"
-            database-type: "opensearch2_19_0"
-            database-container: "opensearch"
-            database-image-version: "2.19.0"
-            it-database-type: "os"
-          - database-name: "OpenSearch 2.19.4"
-            database-type: "opensearch2_19"
-            database-container: "opensearch"
-            database-image-version: "2.19.4"
-            it-database-type: "os"
-          # OpenSearch 3 - Supported versions: 3.4.0 (min) to 3.5.0 (max)
-          - database-name: "OpenSearch 3.4.0"
-            database-type: "opensearch3_4_0"
-            database-container: "opensearch"
-            database-image-version: "3.4.0"
-            it-database-type: "os"
-          - database-name: "OpenSearch 3.5.0"
-            database-type: "opensearch3_5_0"
-            database-container: "opensearch"
-            database-image-version: "3.5.0"
-            it-database-type: "os"
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -87,12 +70,13 @@ jobs:
 
   search-history-tests:
     name: "Search History Tests / ${{ matrix.database-name }}"
+    needs: [ generate-matrix ]
     permissions:
       actions: write
       contents: read
     strategy:
       fail-fast: false
-      matrix: *database-matrix
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -109,12 +93,13 @@ jobs:
 
   search-identity-tests:
     name: "Search Identity Tests / ${{ matrix.database-name }}"
+    needs: [ generate-matrix ]
     permissions:
       actions: write
       contents: read
     strategy:
       fail-fast: false
-      matrix: *database-matrix
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:

@@ -92,6 +92,32 @@ public class MetricsTest {
   @Nested
   @TestPropertySource(
       properties = {
+        // kebab-case forms: what Spring derives when translating env vars such as
+        // ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED and
+        // ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLE_ACTOR_METRICS
+        "zeebe.broker.execution-metrics-exporter-enabled="
+            + EXPECTED_ENABLE_EXPORTER_EXECUTION_METRICS,
+        "zeebe.broker.experimental.features.enable-actor-metrics=" + EXPECTED_ACTOR,
+      })
+  class WithKebabCaseLegacySet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithKebabCaseLegacySet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetMetricsFromKebabCaseLegacyProperty() {
+      assertThat(brokerCfg.getExperimental().getFeatures().isEnableActorMetrics())
+          .isEqualTo(EXPECTED_ACTOR);
+      assertThat(brokerCfg.isExecutionMetricsExporterEnabled())
+          .isEqualTo(EXPECTED_ENABLE_EXPORTER_EXECUTION_METRICS);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
         // new
         "camunda.monitoring.metrics.actor=" + EXPECTED_ACTOR,
         "camunda.monitoring.metrics.enable-exporter-execution-metrics="

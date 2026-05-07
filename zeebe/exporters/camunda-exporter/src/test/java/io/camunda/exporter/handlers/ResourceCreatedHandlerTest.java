@@ -58,12 +58,28 @@ public class ResourceCreatedHandlerTest {
     assertThat(underTest.handlesRecord(record)).isTrue();
   }
 
+  @Test
+  void shouldHandleReexportedRecord() {
+    // given
+    final Resource value =
+        ImmutableResource.builder()
+            .from(factory.generateObject(Resource.class))
+            .withResourceName("my-script.rpa")
+            .build();
+    final Record<Resource> record =
+        factory.generateRecord(
+            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.REEXPORTED).withValue(value));
+
+    // when - then
+    assertThat(underTest.handlesRecord(record)).isTrue();
+  }
+
   @ParameterizedTest
   @EnumSource(
       value = ResourceIntent.class,
-      names = {"CREATED"},
+      names = {"CREATED", "REEXPORTED"},
       mode = Mode.EXCLUDE)
-  void shouldNotHandleRecordForNonCreatedIntent(final ResourceIntent intent) {
+  void shouldNotHandleRecordForUnsupportedIntent(final ResourceIntent intent) {
     // given
     final Resource value =
         ImmutableResource.builder()

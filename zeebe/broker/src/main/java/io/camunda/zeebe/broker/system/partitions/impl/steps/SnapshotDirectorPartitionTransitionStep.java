@@ -69,31 +69,34 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
               flushLog,
               new DbPositionSupplier(zeebeDb, continuousBackup));
 
-      final var future =
-          context.getActorSchedulingService().submitActor(director, SchedulingHints.cpuBound());
-      future.onComplete(
-          (ok, error) -> {
-            if (error == null) {
-              context.setSnapshotDirector(director);
-              context.getComponentHealthMonitor().registerComponent(director);
-              if (targetRole == Role.LEADER) {
-                server.addCommittedEntryListener(director);
+      // The returned future must not complete until the director has been published on the
+      // context. Otherwise the next transition step (SnapshotAfterMigrationTransitionStep) can
+      // race the submitActor callback and construct a MigrationSnapshotDirector with a null
+      // snapshot director, which then NPEs on its first scheduled forceSnapshot.
+      return context
+          .getActorSchedulingService()
+          .submitActor(director, SchedulingHints.cpuBound())
+          .thenApply(
+              ignored -> {
+                context.setSnapshotDirector(director);
+                context.getComponentHealthMonitor().registerComponent(director);
+                if (targetRole == Role.LEADER) {
+                  server.addCommittedEntryListener(director);
 
-                // Raft server will only notify if there is a new entry commited. If the node has
-                // just restarted or transitioned to leader, but there are no new processing records
-                // written or committed, the listener is not triggered. As a result the
-                // commitPosition in the snapshotDirector remain 0, thus preventing snapshots even
-                // if the state has changed after replaying previously committed events. Hence, set
-                // the commit position from the last record in the log stream.
-                try (final LogStreamReader logStreamReader =
-                    context.getLogStream().newLogStreamReader()) {
-                  final var commitPosition = logStreamReader.seekToEnd();
-                  director.onCommit(commitPosition);
+                  // Raft server will only notify if there is a new entry commited. If the node has
+                  // just restarted or transitioned to leader, but there are no new processing
+                  // records written or committed, the listener is not triggered. As a result the
+                  // commitPosition in the snapshotDirector remain 0, thus preventing snapshots
+                  // even if the state has changed after replaying previously committed events.
+                  // Hence, set the commit position from the last record in the log stream.
+                  try (final LogStreamReader logStreamReader =
+                      context.getLogStream().newLogStreamReader()) {
+                    final var commitPosition = logStreamReader.seekToEnd();
+                    director.onCommit(commitPosition);
+                  }
                 }
-              }
-            }
-          });
-      return future;
+                return null;
+              });
 
     } else {
       return CompletableActorFuture.completed(null);

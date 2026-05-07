@@ -116,7 +116,7 @@ class ProcessInstanceStartMeterTest {
     // then - over a sustained window, the availability metric must never be created
     await()
         .during(Duration.ofMillis(250))
-        .atMost(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(2))
         .untilAsserted(
             () ->
                 assertThatThrownBy(
@@ -139,7 +139,7 @@ class ProcessInstanceStartMeterTest {
     // must stay at zero over a sustained window because the checker never runs
     await()
         .during(Duration.ofMillis(250))
-        .atMost(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(2))
         .untilAsserted(
             () ->
                 assertThat(

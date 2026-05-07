@@ -174,6 +174,7 @@ describe('New Variable Modifications', () => {
     parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
+    businessId: null,
   };
 
   beforeEach(async () => {

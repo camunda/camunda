@@ -41,11 +41,24 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
+  read-versions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
   test:
+    needs: [read-versions]
     runs-on: gcp-core-4-default
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.19.13
+        image: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.read-versions.outputs.elasticsearch-8 }}
         env:
           discovery.type: single-node
           cluster.name: docker-cluster

@@ -1,17 +1,31 @@
 # description: Creates a load test when a PR is labeled with 'benchmark'. Deploys with
 #              scenario 'max', waits 15 minutes, then profiles via async-profiler and
 #              posts flamegraph results as a PR comment. Cleans up on label removal or PR close.
+# called by: pr-load-test-dispatch.yml
 # calls: camunda-load-test.yml (scenario: max), profile-load-test.yml
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda Pull Request Benchmark
 on:
-  pull_request:
-    types:
-      - labeled
-      - unlabeled
-      - synchronize
-      - closed
+  workflow_call:
+    inputs:
+      label:
+        description: 'PR label that triggered this benchmark (e.g., benchmark, benchmark-postgresql)'
+        required: true
+        type: string
+      ref:
+        description: 'Branch ref to sanitize, deploy, and profile'
+        required: true
+        type: string
+      secondary-storage-type:
+        description: 'Storage backend (elasticsearch, opensearch, postgresql, mysql, mariadb, mssql, oracle, none)'
+        required: true
+        type: string
+      reuse-tag:
+        description: 'Pre-built image tag from the internal registry. When set, skips the image build step.'
+        required: false
+        type: string
+        default: ''
 
 defaults:
   run:
@@ -31,18 +45,30 @@ jobs:
     permissions: {}
     outputs:
       sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
+      storage-type: ${{ inputs.secondary-storage-type }}
     steps:
       - id: sanitize-author
+        name: Sanitize author name
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
           branch: ${{ github.event.pull_request.user.login }}
           max_length: 10
+
+      - id: sanitize-db-type
+        name: Sanitize db type
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ inputs.secondary-storage-type }}
+          max_length: 15
+
       - id: compute-namespace
-        name: Compute safe namespace from PR author and number
+        name: Compute safe namespace from PR author, number and the database type
         run: |
-          # Compose namespace: c8-{author}-pr-{number}
-          # e.g. c8-entangled9-pr-49745 (max ~25 chars, well under K8s 63-char service name limit)
-          echo "namespace=c8-${{ steps.sanitize-author.outputs.branch_name }}-pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          author="${{ steps.sanitize-author.outputs.branch_name }}"
+          db_type="${{ steps.sanitize-db-type.outputs.branch_name }}"
+          pr_number="${{ github.event.pull_request.number }}"
+          echo "namespace=c8-${author}-pr-${pr_number}-${db_type}" >> "$GITHUB_OUTPUT"
+
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -57,21 +83,20 @@ jobs:
     name: Benchmark
     needs: sanitize-branch-name
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+      (github.event.action == 'labeled' && github.event.label.name == inputs.label) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, inputs.label))
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
-      ref: ${{ github.event.pull_request.head.ref }}
+      ref: ${{ inputs.ref }}
       scenario: 'max'
+      secondary-storage-type: ${{ needs.sanitize-branch-name.outputs.storage-type }}
+      reuse-tag: ${{ inputs.reuse-tag }}
 
   await-benchmark:
     name: Await Benchmark
-    needs: [sanitize-branch-name, create-benchmark]
-    if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    needs: create-benchmark
     runs-on: ubuntu-latest
     permissions: {}
     steps:
@@ -92,21 +117,16 @@ jobs:
   run-profiling:
     name: Run Profiling
     needs: [sanitize-branch-name, await-benchmark]
-    if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
     uses: ./.github/workflows/profile-load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       pod: ''
+      database: ${{ needs.sanitize-branch-name.outputs.storage-type }}
 
   comment-pr:
     name: Comment on PR with profiling results
-    needs: [sanitize-branch-name, run-profiling]
-    if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    needs: [run-profiling, sanitize-branch-name]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -136,13 +156,15 @@ jobs:
               run_id: context.runId,
             });
 
-            let comment = '## Profiling Results\n\n';
+            let comment = '## Profiling Results - ${{ needs.sanitize-branch-name.outputs.storage-type }}\n\n';
             comment += 'The benchmark has been profiled with the following events:\n\n';
             comment += '| Event | Pod | Artifact |\n';
             comment += '|-------|-----|----------|\n';
 
+            const artifactPrefix = 'flamegraph-${{ needs.sanitize-branch-name.outputs.storage-type }}';
+            const regex = new RegExp(artifactPrefix + '-(\\w+)-(\\w+-\\d+)');
             artifacts.forEach(artifact => {
-              const match = artifact.match(/flamegraph-(\w+)-(\w+-\d+)/);
+              const match = artifact.match(regex);
               if (match) {
                 const event = match[1];
                 const pod = match[2];
@@ -180,8 +202,8 @@ jobs:
     name: Benchmark Cleanup
     needs: sanitize-branch-name
     if: >
-      (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+      (github.event.action == 'unlabeled' && github.event.label.name == inputs.label) ||
+      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, inputs.label))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -205,7 +227,7 @@ jobs:
 
       - name: Delete benchmarks
         run: |
-          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}"
+          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}" --ignore-not-found
       - name: Observe build status
         if: always()
         continue-on-error: true

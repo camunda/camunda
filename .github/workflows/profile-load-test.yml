@@ -1,8 +1,8 @@
 # description: Profiles a running load test cluster using async-profiler.
 #              When no pod is specified, profiles all 3 pods in parallel (cpu, wall, alloc events).
 #              When a specific pod is given, profiles that pod with cpu event only.
-#              Uploads flamegraph artifacts named flamegraph-{event}-{pod}.
-# called-by: camunda-pr-load-test.yaml
+#              Uploads flamegraph artifacts named flamegraph-{database}-{event}-{pod}.
+# called-by: camunda-pr-load-test.yml
 # type: CI
 # owner: @camunda/zeebe-distributed-platform
 name: Profile running load test
@@ -20,6 +20,10 @@ on:
         description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
         default: ''
         required: false
+      database:
+        description: 'Database variant'
+        required: true
+        type: string
   workflow_call:
     inputs:
       name:
@@ -35,6 +39,10 @@ on:
         description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
         default: ''
         required: false
+        type: string
+      database:
+        description: 'Database variant'
+        required: true
         type: string
 
 defaults:
@@ -86,10 +94,10 @@ jobs:
           kubectl config set-context --current --namespace=${{ inputs.name }}
       - name: Execute profiling
         run: >
-          ./load-tests/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }} "${{ inputs.profiler_options }}"
+          ./load-tests/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }} "${{ inputs.database }}" "${{ inputs.profiler_options }}"
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: flamegraph-${{ matrix.event }}-${{ matrix.pod }}
+          name: flamegraph-${{ inputs.database }}-${{ matrix.event }}-${{ matrix.pod }}
           path: ${{ matrix.pod }}*
       - name: Summarize profiling
         if: success()
@@ -136,10 +144,10 @@ jobs:
           kubectl config set-context --current --namespace=${{ inputs.name }}
       - name: Execute profiling
         run: >
-          ./load-tests/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu "${{ inputs.profiler_options }}"
+          ./load-tests/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu "${{ inputs.database }}" "${{ inputs.profiler_options }}"
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: flamegraph-cpu-${{ inputs.pod }}
+          name: flamegraph-${{ inputs.database }}-cpu-${{ inputs.pod }}
           path: ${{ inputs.pod }}*
       - name: Summarize profiling
         if: success()

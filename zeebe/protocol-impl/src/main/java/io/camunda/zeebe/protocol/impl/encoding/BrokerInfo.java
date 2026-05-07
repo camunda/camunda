@@ -47,6 +47,7 @@ import java.util.function.ObjLongConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class BrokerInfo implements BufferReader, BufferWriter {
@@ -120,6 +121,16 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   public BrokerInfo setNodeId(final int nodeId) {
     this.nodeId = nodeId;
     return this;
+  }
+
+  public @Nullable String zone() {
+    // TODO: to be fixed in #52070
+    return null;
+  }
+
+  public String getMemberId() {
+    // TODO: to be fixed in #52070
+    return String.valueOf(nodeId);
   }
 
   public int getPartitionsCount() {

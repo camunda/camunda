@@ -94,7 +94,7 @@ public class MessageSubscriptionExportHandler
         .processDefinitionName(
             cached.map(CachedProcessEntity::name).filter(s -> !s.isBlank()).orElse(null))
         .processDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null))
-        .extensionProperties(ext)
+        .extensionProperties(Map.of())
         .toolName(ProcessCacheUtil.getToolName(ext))
         .inboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext))
         .build();

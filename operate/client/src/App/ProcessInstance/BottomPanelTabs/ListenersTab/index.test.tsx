@@ -82,6 +82,7 @@ const mockProcessInstance = {
   tags: [],
   processDefinitionVersionTag: null,
   endDate: null,
+  businessId: null,
 } satisfies ProcessInstance;
 
 const mockElementInstance = {

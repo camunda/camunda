@@ -78,6 +78,11 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
                   return new CamundaSearchException(message);
                 });
 
+    LOG.trace(
+        "Search query filters - authorization: [{}], tenant: [{}]",
+        authorizationSearchQuery,
+        tenantSearchQuery);
+
     return rewriteSearchQueries(
         List.of(filterSearchQuery, authorizationSearchQuery, tenantSearchQuery));
   }

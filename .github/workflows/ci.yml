@@ -836,41 +836,29 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  generate-db-versions:
+    name: "Generate DB versions"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [ detect-changes ]
+    permissions:
+      contents: read
+    outputs:
+      ci-database-matrix: ${{ steps.db-versions.outputs.ci-database-matrix }}
+      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
   database-integration-tests:
     name: "Database Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
+    needs: [ detect-changes, generate-db-versions ]
     strategy:
       fail-fast: false
-      matrix: &database-matrix
-        include:
-          - name: "Elasticsearch 8"
-            database-type: "elasticsearch"
-            database-image-version: "8.19.11"
-            database-name: "Elasticsearch 8"
-            it-database-type: "es"
-          - name: "Elasticsearch 9"
-            database-type: "elasticsearch9"
-            database-container: "elasticsearch"
-            database-image-version: "9.2.5"
-            database-name: "Elasticsearch 9"
-            it-database-type: "es"
-          - name: "Opensearch 2"
-            database-type: "opensearch2"
-            database-container: "opensearch"
-            database-image-version: "2.19.4"
-            database-name: "OpenSearch 2"
-            it-database-type: "os"
-          - name: "Opensearch 3"
-            database-type: "opensearch3"
-            database-container: "opensearch"
-            database-image-version: "3.4.0"
-            database-name: "OpenSearch 3"
-            it-database-type: "os"
-          - name: "RDBMS H2"
-            database-type: "h2"
-            database-name: "H2"
-            it-database-type: "rdbms_h2"
+      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -883,10 +871,10 @@ jobs:
   history-tests:
     name: "History Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
+    needs: [ detect-changes, generate-db-versions ]
     strategy:
       fail-fast: false
-      matrix: *database-matrix
+      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -903,10 +891,10 @@ jobs:
   identity-tests:
     name: "Identity Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
+    needs: [ detect-changes, generate-db-versions ]
     strategy:
       fail-fast: false
-      matrix: *database-matrix
+      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -1198,7 +1186,7 @@ jobs:
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
     name: "Docker / Tool / Checks"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, generate-db-versions ]
     runs-on: ubuntu-latest
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -1213,7 +1201,7 @@ jobs:
           - 5000:5000
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
-      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
+      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.generate-db-versions.outputs.elasticsearch-8 }}
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -1824,6 +1812,7 @@ jobs:
       - detect-new-flaky-tests
       - docker-checks
       - general-unit-tests
+      - generate-db-versions
       - history-tests
       - identity-frontend-sbom-snyk
       - identity-frontend-tests

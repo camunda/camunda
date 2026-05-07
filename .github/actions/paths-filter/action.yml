@@ -266,6 +266,7 @@ runs:
           - 'parent/**'
           - '**/pom.xml'
           - '.mvn/**'
+          - '.ci/db-versions.yml'
 
         validate-pom-metadata-extra-change:
           - 'mvnw'

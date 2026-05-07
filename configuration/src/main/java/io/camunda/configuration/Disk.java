@@ -42,7 +42,7 @@ public class Disk {
   }
 
   public boolean isMonitoringEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".monitoring-enabled",
         monitoringEnabled,
         Boolean.class,
@@ -55,7 +55,7 @@ public class Disk {
   }
 
   public Duration getMonitoringInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".monitoring-interval",
         monitoringInterval,
         Duration.class,

@@ -7,7 +7,7 @@
  */
 
 import isEqual from 'lodash/isEqual';
-import {makeAutoObservable, type IReactionDisposer} from 'mobx';
+import {makeAutoObservable, runInAction} from 'mobx';
 import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 
 type Variable = {
@@ -15,24 +15,66 @@ type Variable = {
   values: string;
 };
 
+type VariableFilterOperator =
+  | 'equals'
+  | 'notEqual'
+  | 'contains'
+  | 'oneOf'
+  | 'exists'
+  | 'doesNotExist';
+
+type VariableConditionWithValue = {
+  name: string;
+  operator: 'equals' | 'notEqual' | 'contains' | 'oneOf';
+  value: string;
+};
+
+type VariableConditionWithoutValue = {
+  name: string;
+  operator: 'exists' | 'doesNotExist';
+  value: '';
+};
+
+type VariableCondition =
+  | VariableConditionWithValue
+  | VariableConditionWithoutValue;
+
 type State = {
   variables: Variable[];
+  isInMultipleMode: boolean;
+  conditions: VariableCondition[];
 };
 
 const DEFAULT_STATE: State = {
   variables: [],
+  isInMultipleMode: false,
+  conditions: [],
 };
+
+const SESSION_STORAGE_KEY = 'operate.variableFilter.conditions';
 
 class VariableFilter {
   state: State = {...DEFAULT_STATE};
-  disposer: IReactionDisposer | null = null;
 
   constructor() {
     makeAutoObservable(this);
+
+    const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
+
+    if (stored) {
+      try {
+        runInAction(() => {
+          this.state.conditions = JSON.parse(stored) as VariableCondition[];
+        });
+      } catch {
+        // TODO check if this can be removed after a while, added just to be safe in case of invalid data in session storage
+      }
+    }
   }
 
   reset = () => {
     this.state = {...DEFAULT_STATE};
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
   };
 
   setVariables = (variables: Variable[]) => {
@@ -45,6 +87,21 @@ class VariableFilter {
     this.setVariables(variable ? [variable] : []);
   };
 
+  setConditions = (conditions: VariableCondition[]) => {
+    if (!isEqual(this.state.conditions, conditions)) {
+      this.state.conditions = conditions;
+
+      if (conditions.length === 0) {
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      } else {
+        sessionStorage.setItem(
+          SESSION_STORAGE_KEY,
+          JSON.stringify(conditions),
+        );
+      }
+    }
+  };
+
   get variables() {
     return this.state.variables;
   }
@@ -54,8 +111,17 @@ class VariableFilter {
     return this.state.variables[0];
   }
 
+  get conditions() {
+    return this.state.conditions;
+  }
+
+  get hasActiveFilters() {
+    return this.state.conditions.length > 0;
+  }
+
   get variableWithValidatedValues() {
     const first = this.state.variables[0];
+
     if (!first) {
       return undefined;
     }
@@ -72,5 +138,7 @@ class VariableFilter {
   }
 }
 
-export const variableFilterStore = new VariableFilter();
-export type {Variable};
+const variableFilterStore = new VariableFilter();
+
+export {variableFilterStore};
+export type {Variable, VariableFilterOperator, VariableCondition};

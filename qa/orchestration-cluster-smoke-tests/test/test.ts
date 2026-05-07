@@ -6,8 +6,65 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test as base, expect} from '@playwright/test';
+/* eslint-disable no-empty-pattern */
 
-const test = base.extend({});
+import {
+  createCamundaClient,
+  type CamundaClient,
+} from '@camunda8/orchestration-cluster-api';
+import {test as base, expect, type Cookie} from '@playwright/test';
+
+interface TestFixture {
+  camunda: CamundaClient;
+  /**
+   * {@linkcode AsyncDisposableStack} that should be used to defer cleanup in tests.
+   * Using the `await using` keyword fails to run to completing before Playwright terminates.
+   */
+  cleanup: AsyncDisposableStack;
+}
+
+interface WorkerFixture {
+  loginUser: {username: string; password: string};
+  loginState: {cookies: Cookie[]; csrfToken: string};
+}
+
+const test = base.extend<TestFixture, WorkerFixture>({
+  baseURL: 'http://localhost:8080',
+  loginUser: [{username: 'demo', password: 'demo'}, {scope: 'worker'}],
+  camunda: createCamundaClient({
+    config: {
+      CAMUNDA_AUTH_STRATEGY: 'BASIC',
+      CAMUNDA_BASIC_AUTH_USERNAME: 'demo',
+      CAMUNDA_BASIC_AUTH_PASSWORD: 'demo',
+    },
+  }),
+  cleanup: async ({}, use) => {
+    const stack = new AsyncDisposableStack();
+    await use(stack);
+    await stack.disposeAsync();
+  },
+  page: async ({page, context, loginState}, use) => {
+    await context.setStorageState({cookies: loginState.cookies, origins: []});
+    await page.addInitScript((csrfToken) => {
+      sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
+    }, loginState.csrfToken);
+    await use(page);
+  },
+  loginState: [
+    async ({browser, loginUser}, use) => {
+      const context = await browser.newContext();
+      const response = await context.request.post(
+        'http://localhost:8080/login',
+        {form: loginUser},
+      );
+      const csrfToken = response.headers()['x-csrf-token'] ?? '';
+      const cookies = await context.cookies();
+
+      await context.close();
+      await use({cookies, csrfToken});
+    },
+    {scope: 'worker'},
+  ],
+});
 
 export {expect, test};

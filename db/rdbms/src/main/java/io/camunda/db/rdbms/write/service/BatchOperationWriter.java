@@ -58,10 +58,6 @@ public class BatchOperationWriter implements RdbmsWriter {
   }
 
   public void create(final BatchOperationDbModel batchOperation) {
-    // flush before to make the following insert flush as small as possible to prevent an
-    // ORA-00001 merge into conflict
-    executionQueue.flush();
-
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.BATCH_OPERATION,
@@ -69,10 +65,6 @@ public class BatchOperationWriter implements RdbmsWriter {
             batchOperation.batchOperationKey(),
             "io.camunda.db.rdbms.sql.BatchOperationMapper.createIfNotExists",
             batchOperation));
-
-    // to have this for available for following batch operation item inserts, we directly flush here
-    LOGGER.trace("Force flush to directly create batch operation: {}", batchOperation);
-    executionQueue.flush();
   }
 
   public void activate(final String batchOperationKey, final OffsetDateTime startDate) {

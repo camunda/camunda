@@ -6,11 +6,11 @@ For background on goals and test variants, see the [reliability testing document
 
 ## Directory Layout
 
-|   Directory    |                                              Description                                              |
-|----------------|-------------------------------------------------------------------------------------------------------|
-| `setup/`       | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md))        |
-| `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md))                  |
-| `docs/`        | Additional documentation: [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md) |
+|   Directory    |                                                            Description                                                            |
+|----------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `setup/`       | Makefiles, shell scripts, and Helm values for deploying load tests ([README](setup/README.md))                                    |
+| `load-tester/` | Java load test applications (starters and workers) ([README](load-tester/README.md))                                              |
+| `docs/`        | Additional documentation: [metrics](docs/metrics.md), [scripts](docs/scripts/README.md), [past failures](docs/failures/README.md) |
 
 ## Quick Start
 
@@ -144,6 +144,8 @@ The metrics exported by our applications are stored in a [Prometheus instance](h
 A general Grafana dashboard covering all sorts of metrics is the [Zeebe Dashboard](https://github.com/camunda/camunda/blob/main/monitor/grafana/zeebe.json). There are more tailored dashboards in the corresponding monitoring folder.
 
 More details about observability can be read [here](../docs/observability.md).
+
+For a full list of Prometheus metrics, SLO targets, and PromQL queries used to evaluate load tests, see [docs/metrics.md](docs/metrics.md).
 
 ## Test Scenarios
 
@@ -289,7 +291,7 @@ On top of the previous scenarios, we support running ad-hoc load tests. They can
 
 **Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
 
-**Validation:** The more general [Zeebe Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?orgId=1) should be used to observe and validate the performance of the different load tests. If performance is the motivator of such a test, it might be helpful to use the [Camunda Performance](https://dashboard.benchmark.camunda.cloud/d/camunda-benchmarks/camunda-performance?orgId=1) Dashboard.
+**Validation:** The more general [Zeebe Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?orgId=1) should be used to observe and validate the performance of the different load tests. If performance is the motivator of such a test, it might be helpful to use the [Camunda Performance](https://dashboard.benchmark.camunda.cloud/d/camunda-performance/camunda-performance?orgId=1) Dashboard.
 
 **Requirement:** Please make sure that load test namespaces are always prefixed with your initials, to allow us to identify who created the tests and reach out if necessary. Note that the `c8-` namespace prefix is added implicitly by the tooling (due to cluster access policies). For example, a name like `pp-stable-vms-october` will result in the Kubernetes namespace `c8-pp-stable-vms-october`.
 

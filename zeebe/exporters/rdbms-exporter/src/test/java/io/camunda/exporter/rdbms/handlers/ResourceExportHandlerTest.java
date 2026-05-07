@@ -49,7 +49,7 @@ class ResourceExportHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ResourceIntent.class,
-      names = {"CREATED", "DELETED"},
+      names = {"CREATED", "DELETED", "REEXPORTED"},
       mode = Mode.INCLUDE)
   void shouldExportSupportedIntents(final ResourceIntent intent) {
     // given
@@ -68,7 +68,7 @@ class ResourceExportHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ResourceIntent.class,
-      names = {"CREATED", "DELETED"},
+      names = {"CREATED", "DELETED", "REEXPORTED"},
       mode = Mode.EXCLUDE)
   void shouldNotExportUnsupportedIntents(final ResourceIntent intent) {
     // given
@@ -102,6 +102,44 @@ class ResourceExportHandlerTest {
     final Record<Resource> record =
         factory.generateRecord(
             ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.CREATED).withValue(value));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(dbModelCaptor.capture());
+    final DeployedResourceDbModel model = dbModelCaptor.getValue();
+    assertThat(model.resourceKey()).isEqualTo(42L);
+    assertThat(model.resourceId()).isEqualTo("res-id");
+    assertThat(model.resourceName()).isEqualTo("my-script.rpa");
+    assertThat(model.resourceType()).isEqualTo("rpa");
+    assertThat(model.version()).isEqualTo(3);
+    assertThat(model.versionTag()).isEqualTo("v3");
+    assertThat(model.deploymentKey()).isEqualTo(100L);
+    assertThat(model.tenantId()).isEqualTo("tenant-1");
+    assertThat(model.resourceContent()).isEqualTo("rpa-content");
+
+    verifyNoMoreInteractions(writer);
+  }
+
+  @Test
+  void shouldHandleReexportedRecord() {
+    // given
+    final Resource value =
+        ImmutableResource.builder()
+            .from(factory.generateObject(Resource.class))
+            .withResourceKey(42L)
+            .withResourceId("res-id")
+            .withResourceName("my-script.rpa")
+            .withVersion(3)
+            .withVersionTag("v3")
+            .withDeploymentKey(100L)
+            .withTenantId("tenant-1")
+            .withResourceProp("rpa-content")
+            .build();
+    final Record<Resource> record =
+        factory.generateRecord(
+            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.REEXPORTED).withValue(value));
 
     // when
     handler.export(record);

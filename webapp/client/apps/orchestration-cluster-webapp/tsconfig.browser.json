@@ -10,7 +10,8 @@
 		"moduleDetection": "force",
 		"types": ["vite/client"],
 		"paths": {
-			"#/modules/*": ["./src/modules/*"]
+			"#/modules/*": ["./src/modules/*"],
+			"#/assets/*": ["./src/assets/*"]
 		}
 	}
 }

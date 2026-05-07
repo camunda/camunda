@@ -10,14 +10,14 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.operate.OperatePropertiesOverride;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
+import io.camunda.tasklist.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;

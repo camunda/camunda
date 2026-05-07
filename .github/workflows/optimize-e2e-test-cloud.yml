@@ -62,13 +62,16 @@ jobs:
         uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
         with:
           work-dir: ./optimize
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
       - name: Start Elastic search
         uses: ./.github/actions/compose
         with:
           compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
           project_name: elasticsearch
         env:
-          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
       - name: Build frontend

@@ -1122,6 +1122,7 @@ public class WebSecurityConfig {
                               "/tasklist/custom.css",
                               "/tasklist/favicon.ico",
                               "/webapp/assets/**",
+                              "/webapp/custom.css",
                               "/webapp/favicon.ico")
                           .permitAll()
                           .anyRequest()

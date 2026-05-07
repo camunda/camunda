@@ -189,7 +189,7 @@ public class Raft {
   private PreAllocationStrategy segmentPreallocationStrategy = PreAllocationStrategy.POSIX_OR_FILL;
 
   public Duration getHeartbeatInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".heartbeat-interval",
         heartbeatInterval,
         Duration.class,
@@ -202,7 +202,7 @@ public class Raft {
   }
 
   public Duration getElectionTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".election-timeout",
         electionTimeout,
         Duration.class,
@@ -215,7 +215,7 @@ public class Raft {
   }
 
   public boolean isPriorityElectionEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".priority-election-enabled",
         priorityElectionEnabled,
         Boolean.class,
@@ -228,7 +228,7 @@ public class Raft {
   }
 
   public boolean isFlushEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".flush-enabled",
         flushEnabled,
         Boolean.class,
@@ -241,7 +241,7 @@ public class Raft {
   }
 
   public Duration getFlushDelay() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".flush-delay",
         flushDelay,
         Duration.class,
@@ -254,7 +254,7 @@ public class Raft {
   }
 
   public int getMaxAppendsPerFollower() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-appends-per-follower",
         maxAppendsPerFollower,
         Integer.class,
@@ -267,7 +267,7 @@ public class Raft {
   }
 
   public DataSize getMaxAppendBatchSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-append-batch-size",
         maxAppendBatchSize,
         DataSize.class,
@@ -280,7 +280,7 @@ public class Raft {
   }
 
   public Duration getRequestTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".request-timeout",
         requestTimeout,
         Duration.class,
@@ -293,7 +293,7 @@ public class Raft {
   }
 
   public Duration getSnapshotRequestTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".snapshot-request-timeout",
         snapshotRequestTimeout,
         Duration.class,
@@ -306,7 +306,7 @@ public class Raft {
   }
 
   public DataSize getSnapshotChunkSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".snapshot-chunk-size",
         snapshotChunkSize,
         DataSize.class,
@@ -319,7 +319,7 @@ public class Raft {
   }
 
   public Duration getConfigurationChangeTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".configuration-change-timeout",
         configurationChangeTimeout,
         Duration.class,
@@ -332,7 +332,7 @@ public class Raft {
   }
 
   public Duration getMaxQuorumResponseTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".max-quorum-response-timeout",
         maxQuorumResponseTimeout,
         Duration.class,
@@ -345,7 +345,7 @@ public class Raft {
   }
 
   public int getMinStepDownFailureCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".min-step-down-failure-count",
         minStepDownFailureCount,
         Integer.class,
@@ -358,7 +358,7 @@ public class Raft {
   }
 
   public int getPreferSnapshotReplicationThreshold() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".prefer-snapshot-replication-threshold",
         preferSnapshotReplicationThreshold,
         Integer.class,
@@ -371,7 +371,7 @@ public class Raft {
   }
 
   public boolean isPreallocateSegmentFiles() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".preallocate-segment-files",
         preallocateSegmentFiles,
         Boolean.class,
@@ -387,7 +387,7 @@ public class Raft {
     if (!isPreallocateSegmentFiles()) {
       return PreAllocationStrategy.NOOP;
     }
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".segment-preallocation-strategy",
         segmentPreallocationStrategy,
         PreAllocationStrategy.class,

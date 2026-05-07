@@ -282,8 +282,8 @@ public class RestoreManager implements CloseableSilently {
             base.members(),
             base.lastChange(),
             Optional.of(
-                ClusterChangePlan.init(
-                    1L, List.of(new UpdateRoutingState(coordinatorId, Optional.empty())))),
+                ClusterChangePlan.initForRestore(
+                    List.of(new UpdateRoutingState(coordinatorId, Optional.empty())))),
             base.routingState(),
             base.clusterId(),
             base.incarnationNumber());
@@ -328,8 +328,8 @@ public class RestoreManager implements CloseableSilently {
   }
 
   private Set<InstrumentedRaftPartition> collectPartitions() {
-    final var localBrokerId = configuration.getCluster().getNodeId();
-    final var localMember = MemberId.from(String.valueOf(localBrokerId));
+    final var cluster = configuration.getCluster();
+    final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
     final var clusterTopology =
         new PartitionDistribution(
             StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)

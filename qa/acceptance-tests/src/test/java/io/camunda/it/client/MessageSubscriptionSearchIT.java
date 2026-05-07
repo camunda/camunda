@@ -24,6 +24,7 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.Comparator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -224,6 +225,7 @@ public class MessageSubscriptionSearchIT {
   }
 
   @Test
+  @Disabled("Will be re-eavaluated once we start exporting extensionProperties again")
   void shouldReturnExtensionPropertiesForStartEventSubscription() {
     // when
     final var result =

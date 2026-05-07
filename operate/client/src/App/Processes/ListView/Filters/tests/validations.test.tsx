@@ -307,7 +307,7 @@ describe('Validations', () => {
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
-    await user.click(screen.getByText('Operation Id'));
+    await user.click(screen.getByText('Operation ID'));
 
     await user.type(screen.getByLabelText(/^operation id$/i), 'g');
 

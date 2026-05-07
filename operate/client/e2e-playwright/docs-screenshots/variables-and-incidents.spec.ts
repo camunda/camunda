@@ -63,6 +63,7 @@ test.describe('variables and incidents', () => {
               processDefinitionVersionTag: null,
               rootProcessInstanceKey: null,
               tags: [],
+              businessId: null,
               parentProcessInstanceKey: null,
               parentElementInstanceKey: null,
             },

@@ -9,7 +9,7 @@ package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.operate.OperatePropertiesOverride;
 import io.camunda.operate.property.OperateProperties;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

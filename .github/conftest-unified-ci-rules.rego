@@ -168,6 +168,7 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "utils-flaky-tests-summary"
         job_id != "fe-unit-tests-merge"
         job_id != "operate-fe-visual-regression-merge"
+        job_id != "generate-db-versions"
         # temporary for docker-build-helm-integration.yml workflow from alwaysgreen
         job_id != "format-identifier"
         job_id != "should-run"

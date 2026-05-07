@@ -38,6 +38,15 @@ components:
       type: string
       format: GlobalListenerId
       x-semantic-type: GlobalListenerId
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      # `GlobalListenerRequestValidator` routes `id` through
+      # `IdentifierValidator.validateId` on create/get/update/delete.
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
+      pattern: ^[a-zA-Z0-9_~@.+\-]+$
       example: GlobalListener_1
 
     TenantId:
@@ -46,19 +55,116 @@ components:
       format: TenantId
       type: string
       x-semantic-type: TenantId
+      x-semantic-client-minted: true
       minLength: 1
-      maxLength: 256
-      pattern: ^(<default>|[A-Za-z0-9_@.+-]+)$
+      maxLength: 31
+      # Mirrors IdentifierValidator.TENANT_ID_MASK in security-validation
+      # (^[\w\.-]{1,31}$), with the literal `<default>` admitted as the
+      # default-tenant alias the runtime accepts.
+      pattern: ^(<default>|[\w\.\-]{1,31})$
 
     Username:
       example: swillis
       format: Username
       description: The unique name of a user.
       x-semantic-type: Username
+      x-semantic-client-minted: true
       type: string
       minLength: 1
       maxLength: 256
-      pattern: ^(<default>|[A-Za-z0-9_@.+-]+)$
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      # Operator-configurable via `camunda.security.idValidationPattern`
+      # (`SecurityConfiguration#getCompiledIdValidationPattern()`); this
+      # schema describes the default-shipped contract. Operators that
+      # override the pattern accept the wire/runtime divergence — same
+      # trade-off documented for the other DEFAULT_ID_REGEX-derived
+      # identifiers in this file.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
+
+    RoleId:
+      example: admin
+      description: The unique identifier of a role.
+      format: RoleId
+      type: string
+      x-semantic-type: RoleId
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core
+      # (applied by IdentifierValidator at request time).
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
+
+    GroupId:
+      example: engineering
+      description: The unique identifier of a group.
+      format: GroupId
+      type: string
+      x-semantic-type: GroupId
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # No `pattern` constraint: groupId validation is deployment-scoped.
+      # `SecurityConfiguration.getCompiledGroupIdValidationPattern()` returns
+      # `DEFAULT_EXTERNAL_ID_REGEX` (`.*`) when OIDC `groupsClaim` is
+      # configured ("bring your own groups"), and `DEFAULT_ID_REGEX`
+      # (`^[a-zA-Z0-9_~@.+-]+$`) otherwise. Advertising the strict regex
+      # here would falsely reject valid IdP-supplied group IDs in BYOG
+      # deployments. The runtime separately enforces the strict regex on
+      # group CRUD inputs via `IdentifierValidator.validateId` regardless
+      # of deployment, but that constraint is not expressed at the schema
+      # level so the wire contract remains accurate for every deployment
+      # and operation cell.
+
+    MappingRuleId:
+      example: my-mapping-rule
+      description: The unique identifier of a mapping rule.
+      format: MappingRuleId
+      type: string
+      x-semantic-type: MappingRuleId
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core.
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
+
+    ClientId:
+      example: my-application
+      description: |
+        The unique identifier of an OAuth client.
+        Minted outside the Camunda REST API: in SaaS by Console, in Self-Managed
+        with OIDC by the external identity provider (e.g. EntraID, Keycloak,
+        Okta). In Self-Managed with Basic authentication, machine-to-machine
+        applications are modelled as users instead — see the user identifier.
+      format: ClientId
+      type: string
+      x-semantic-type: ClientId
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core,
+      # which is the regex applied to clientId values when they are passed
+      # back into the Camunda API (e.g. assigning a client to a role).
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
+
+    ClusterVariableName:
+      example: feature-flag-checkout
+      description: The name of a cluster variable. Unique within its scope (global or tenant-specific).
+      format: ClusterVariableName
+      type: string
+      x-semantic-type: ClusterVariableName
+      x-semantic-client-minted: true
+      minLength: 1
+      maxLength: 256
+      # Mirrors SecurityConfiguration.DEFAULT_ID_REGEX in security-core
+      # (ClusterVariableValidator routes through IdentifierValidator.validateId).
+      # Operator-configurable via `camunda.security.idValidationPattern`;
+      # this schema describes the default-shipped contract.
+      pattern: ^[a-zA-Z0-9_~@.+-]+$
 
     Tag:
       description: A tag. Needs to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.

@@ -1,0 +1,29 @@
+{
+  "name": "camunda-coverage-frontend-new",
+  "version": "1.0.0",
+  "description": "A lightweight web application for visualizing Camunda process test coverage.",
+  "scripts": {
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --watch"
+  },
+  "keywords": [
+    "camunda",
+    "coverage",
+    "bpmn"
+  ],
+  "dependencies": {
+    "camunda-bpmn-js": "^5.27.0",
+    "bootstrap": "^5.3.7",
+    "bootstrap-icons": "^1.13.1"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^14.0.0",
+    "css-loader": "^7.1.4",
+    "mini-css-extract-plugin": "^2.10.2",
+    "webpack": "^5.106.2",
+    "webpack-cli": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
