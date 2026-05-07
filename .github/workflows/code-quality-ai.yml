@@ -137,7 +137,7 @@ jobs:
              ORDER BY failure_count DESC
              LIMIT 10')
 
-          MODULE_PATHS=()
+          SOURCE_FILES=()
           while IFS= read -r row; do
             FQCN=$(echo "$row" | jq -r '.test_class_name')
             REL_PATH="${FQCN//./\/}.java"
@@ -146,19 +146,17 @@ jobs:
               SOURCE_FILE=$(git ls-files "**/src/*Test/java/${REL_PATH}" 2>/dev/null | head -n 1)
             fi
             if [[ -n "$SOURCE_FILE" ]]; then
-              # Strip everything from /src/ onward to get the Maven module path
-              MODULE_PATH=$(echo "$SOURCE_FILE" | sed 's|/src/.*||')
-              MODULE_PATHS+=("$MODULE_PATH")
+              SOURCE_FILES+=("$SOURCE_FILE")
             fi
           done < <(echo "$TOP10_FAILING" | jq -c '.[]')
 
-          if [[ ${#MODULE_PATHS[@]} -gt 0 ]]; then
-            printf '%s\n' "${MODULE_PATHS[@]}" | sort -u | jq -R . | jq -s . > failing-test-paths.json
+          if [[ ${#SOURCE_FILES[@]} -gt 0 ]]; then
+            printf '%s\n' "${SOURCE_FILES[@]}" | sort -u | jq -R . | jq -s . > failing-test-paths.json
           else
             echo '[]' > failing-test-paths.json
           fi
 
-          echo "Failing-test module paths:"
+          echo "Failing-test source files:"
           cat failing-test-paths.json
 
       - name: Generate dynamic CodeQL config
