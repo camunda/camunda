@@ -27,6 +27,7 @@ dependencies {
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
+    testImplementation(libs.org.awaitility.awaitility)
 }
 
 description = "RDBMS Exporter"
