@@ -557,7 +557,8 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.getNewVariableNameFieldSelector(variableIndex).type(name);
     await this.page.keyboard.press('Tab');
 
-    await this.expectEditorToBeLoaded();
+    // await this.expectEditorToBeLoaded();
+    await this.getNewVariableValueFieldSelector(variableIndex).click();
     await this.page.keyboard.insertText(value);
     await this.page.keyboard.press('Tab');
   }
@@ -617,7 +618,6 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.editableExistingVariableByName(
       variableName,
     ).readModeValue.click();
-    await this.clearMonacoEditor();
 
     await this.editableExistingVariableByName(
       variableName,
@@ -627,6 +627,7 @@ export class OperateProcessInstanceViewModificationModePage {
     await expect(jsonEditorModal.header).toBeVisible();
     await expect(jsonEditorModal.inputField).toBeVisible();
     await expect(jsonEditorModal.inputField).toBeEnabled();
+    await this.clearMonacoEditor();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
     await this.editableExistingVariableByName(
