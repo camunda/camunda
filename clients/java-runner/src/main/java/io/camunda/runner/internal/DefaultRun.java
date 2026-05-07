@@ -20,6 +20,8 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.runner.Cluster;
 import io.camunda.runner.Run;
+import java.awt.Desktop;
+import java.awt.GraphicsEnvironment;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -73,6 +75,35 @@ public final class DefaultRun implements Run {
     this.jobTypeToElementId = Map.copyOf(jobTypeToElementId);
     this.shutdownHook = new Thread(this::closeQuietly, "livebpmn-shutdown-" + runId);
     Runtime.getRuntime().addShutdownHook(shutdownHook);
+    maybeOpenBrowser();
+  }
+
+  /**
+   * Opens the {@link #operateUrl()} in the default browser if a desktop is available. Disable by
+   * setting the system property {@code livebpmn.openOperate=false}. Falls back to a clear log line
+   * if no browser can be opened (headless server, Linux without xdg-open, etc.).
+   *
+   * <p>Only the SDK client is created/used here — the cluster itself is not affected. Calling this
+   * does not deploy, redeploy, or modify the broker in any way.
+   */
+  private void maybeOpenBrowser() {
+    if (!Boolean.parseBoolean(System.getProperty("livebpmn.openOperate", "true"))) {
+      return;
+    }
+    final String url = operateUrl();
+    try {
+      if (!GraphicsEnvironment.isHeadless()
+          && Desktop.isDesktopSupported()
+          && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+        Desktop.getDesktop().browse(URI.create(url));
+        LOG.info("opened Operate in browser: {}", url);
+        return;
+      }
+    } catch (final Exception e) {
+      LOG.debug(
+          "could not auto-open browser ({}): {}", e.getClass().getSimpleName(), e.getMessage());
+    }
+    LOG.info("Operate (paste in browser): {}", url);
   }
 
   @Override

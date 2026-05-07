@@ -41,8 +41,7 @@
 > Operate URL printed. No `mvn deploy`, no docker-compose, no separate worker app.
 
 ### Slide 4 — *what's next*
-> AI-generated Java that the runner verifies by execution. Property-based tests for processes.
-  > Markdown onboarding that runs. The IDE becomes the BPM platform. **(See VISION.md.)**
+> AI-generated Java that the runner verifies by execution. Property-based tests for processes. **(See VISION.md.)**
 
 ## Demo prep checklist (do this 5 minutes before)
 

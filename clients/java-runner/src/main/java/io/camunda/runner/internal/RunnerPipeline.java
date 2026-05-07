@@ -144,7 +144,7 @@ public final class RunnerPipeline {
             workers,
             cluster.restAddress(),
             jobTypeToElementId);
-    LOG.info("Operate: {}", run.operateUrl());
+    // DefaultRun has already logged the Operate URL (and may have auto-opened the browser).
     return run;
   }
 
