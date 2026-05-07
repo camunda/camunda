@@ -58,10 +58,11 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
  *
  * <p>Lambda placeholder convention: the {@link #serviceTask(String, Function)} / {@link
  * #serviceTask(String, Consumer)} overloads (and the {@code userTask} equivalents) set {@code
- * zeebeJobType} on the BPMN element to <em>the elementId itself</em>. The {@code onStart} / {@code
- * onEnd} / {@code onTaskListener} overloads set the listener {@code type} attribute to a structured
- * placeholder ({@code <elementId>:el:start} etc.). Phase 2's runner rewrites all placeholders to
- * the prefixed form ({@code <runId>-<placeholder>}) before deployment.
+ * zeebeJobType} on the BPMN element to <em>the elementId itself</em>. The {@code .on(eventType,
+ * lambda)} overloads (execution + task listeners) set the listener {@code type} attribute to a
+ * structured placeholder ({@code <elementId>:el:start}, {@code <elementId>:tl:assigning}, etc.).
+ * The runner rewrites all placeholders to the prefixed form ({@code <runId>-<placeholder>}) before
+ * deployment.
  */
 public final class LiveBpmn {
 
@@ -350,20 +351,20 @@ public final class LiveBpmn {
   }
 
   /** Attaches a task listener to the most-recently-declared user task. */
-  public LiveBpmn onTask(
+  public LiveBpmn on(
       final ZeebeTaskListenerEventType eventType,
       final Function<Job, Map<String, Object>> handler) {
     return attachTaskListener(eventType, new BoundHandler.OfFunction(handler));
   }
 
-  /** See {@link #onTask(ZeebeTaskListenerEventType, Function)}. */
-  public LiveBpmn onTask(final ZeebeTaskListenerEventType eventType, final JobConsumer handler) {
+  /** See {@link #on(ZeebeTaskListenerEventType, Function)}. */
+  public LiveBpmn on(final ZeebeTaskListenerEventType eventType, final JobConsumer handler) {
     return attachTaskListener(eventType, new BoundHandler.OfConsumer(handler));
   }
 
   /**
    * Brackets-grouped form of listener attachment. See {@link Listeners}. Equivalent to writing the
-   * {@code .on(...)} / {@code .onTaskListener(...)} calls flat — purely a readability sugar.
+   * {@code .on(...)} / {@code .on(...)} calls flat — purely a readability sugar.
    */
   public LiveBpmn listeners(final Consumer<Listeners> configure) {
     configure.accept(new Listeners(this));
@@ -407,17 +408,17 @@ public final class LiveBpmn {
 
   /**
    * Binds a task listener to an existing user task by id, for adopted models. Mirrors the inline
-   * {@link #onTask(ZeebeTaskListenerEventType, Function)} form.
+   * {@link #on(ZeebeTaskListenerEventType, Function)} form.
    */
-  public LiveBpmn onTask(
+  public LiveBpmn on(
       final String elementId,
       final ZeebeTaskListenerEventType eventType,
       final Function<Job, Map<String, Object>> handler) {
     return bindTaskListener0(elementId, eventType, new BoundHandler.OfFunction(handler));
   }
 
-  /** See {@link #onTask(String, ZeebeTaskListenerEventType, Function)}. */
-  public LiveBpmn onTask(
+  /** See {@link #on(String, ZeebeTaskListenerEventType, Function)}. */
+  public LiveBpmn on(
       final String elementId,
       final ZeebeTaskListenerEventType eventType,
       final JobConsumer handler) {
@@ -488,17 +489,17 @@ public final class LiveBpmn {
       final ZeebeTaskListenerEventType eventType, final BoundHandler handler) {
     Objects.requireNonNull(eventType, "eventType");
     if (lastAttachableId == null) {
-      throw new IllegalStateException("onTaskListener() requires a preceding userTask(...) call");
+      throw new IllegalStateException("on(...) requires a preceding userTask(...) call");
     }
     if (!lastAttachableIsUserTask) {
       throw new IllegalStateException(
-          "onTaskListener() can only attach to a userTask; last attachable element '"
+          "on(...) can only attach to a userTask; last attachable element '"
               + lastAttachableId
               + "' is not a UserTask");
     }
     if (!(currentBuilder instanceof UserTaskBuilder userTaskBuilder)) {
       throw new IllegalStateException(
-          "onTaskListener() requires the current builder to be a UserTaskBuilder; got "
+          "on(...) requires the current builder to be a UserTaskBuilder; got "
               + currentBuilder.getClass().getName());
     }
     final BindingKey key = BindingKey.taskListener(lastAttachableId, eventType);

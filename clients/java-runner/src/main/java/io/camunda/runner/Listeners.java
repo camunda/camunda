@@ -22,9 +22,9 @@ import java.util.function.Function;
 
 /**
  * Scoped fluent helper for attaching listeners to the most-recently-declared flow node. Returned by
- * {@link LiveBpmn#listeners(java.util.function.Consumer)}; offers the same {@code .on(...)} and
- * {@code .onTaskListener(...)} API as {@link LiveBpmn} but as a brackets-grouped block so a
- * multi-listener attachment reads as one visual unit.
+ * {@link LiveBpmn#listeners(java.util.function.Consumer)}; offers the same {@code .on(...)} API as
+ * {@link LiveBpmn} (overloaded by enum type for both execution and task listeners) but as a
+ * brackets-grouped block so a multi-listener attachment reads as one visual unit.
  *
  * <pre>
  * .serviceTask("greet", lambda)
@@ -57,15 +57,15 @@ public final class Listeners {
     return this;
   }
 
-  public Listeners onTask(
+  public Listeners on(
       final ZeebeTaskListenerEventType eventType,
       final Function<Job, Map<String, Object>> handler) {
-    parent.onTask(eventType, handler);
+    parent.on(eventType, handler);
     return this;
   }
 
-  public Listeners onTask(final ZeebeTaskListenerEventType eventType, final JobConsumer handler) {
-    parent.onTask(eventType, handler);
+  public Listeners on(final ZeebeTaskListenerEventType eventType, final JobConsumer handler) {
+    parent.on(eventType, handler);
     return this;
   }
 }
