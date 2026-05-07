@@ -15,8 +15,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
-import io.camunda.security.configuration.OidcUserInfoAugmentationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcUserInfoAugmentationConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.URI;
 import java.time.Duration;
@@ -32,13 +32,13 @@ import org.junit.jupiter.api.Test;
 
 class CachingOidcClaimsProviderTest {
 
-  private OidcAuthenticationConfiguration oidcConfig;
+  private OidcConfiguration oidcConfig;
   private OidcUserInfoClient userInfoClient;
   private SimpleMeterRegistry meterRegistry;
 
   @BeforeEach
   void setUp() {
-    oidcConfig = new OidcAuthenticationConfiguration();
+    oidcConfig = new OidcConfiguration();
     oidcConfig.setIssuerUri("https://idp.example");
     final var aug = new OidcUserInfoAugmentationConfiguration();
     aug.setEnabled(true);

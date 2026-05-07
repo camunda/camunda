@@ -10,10 +10,10 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.auth.OidcPrincipalLoader.OidcPrincipals;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.util.Either;
@@ -56,14 +56,14 @@ public sealed interface AuthenticationHandler {
     private static final Logger LOG = LoggerFactory.getLogger(Oidc.class);
     private final JwtDecoder jwtDecoder;
     private final OidcClaimsProvider claimsProvider;
-    private final OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
+    private final OidcConfiguration oidcAuthenticationConfiguration;
     private final OidcPrincipalLoader oidcPrincipalLoader;
     private final OidcGroupsLoader oidcGroupsLoader;
 
     public Oidc(
         final JwtDecoder jwtDecoder,
         final OidcClaimsProvider claimsProvider,
-        final OidcAuthenticationConfiguration oidcAuthenticationConfiguration) {
+        final OidcConfiguration oidcAuthenticationConfiguration) {
       this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
       this.claimsProvider = Objects.requireNonNull(claimsProvider);
       this.oidcAuthenticationConfiguration =
