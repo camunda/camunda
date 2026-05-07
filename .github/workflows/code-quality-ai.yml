@@ -95,43 +95,27 @@ jobs:
       - name: Generate dynamic CodeQL config
         id: generate
         run: |
-          PATHS=$(node .github/scripts/code-quality-ai/hotspots.js \
+          PATHS_JSON=$(node .github/scripts/code-quality-ai/hotspots.js \
             --jar "$CODE_MAAT_JAR" \
             --since "90 days ago" \
             --path-prefix "^zeebe/engine/" \
             --top 50 \
-            --format lines)
+            --format json)
 
-          if [ -z "$PATHS" ]; then
+          if [ -z "$PATHS_JSON" ] || [ "$PATHS_JSON" = "[]" ]; then
             echo "No hotspots produced; falling back to module path." >&2
-            PATHS="zeebe/engine"
+            PATHS_JSON='["zeebe/engine"]'
           fi
 
-          {
-            echo 'name: "Code Quality AI Pipeline — dynamic CodeQL config"'
-            echo "queries:"
-            echo "  - uses: security-and-quality"
-            echo "query-filters:"
-            echo "  - exclude:"
-            echo "      problem.severity:"
-            echo "        - recommendation"
-            echo "        - note"
-            echo "  - exclude:"
-            echo "      problem.precision:"
-            echo "        - low"
-            echo "paths-ignore:"
-            echo '  - "**/target/**"'
-            echo '  - "**/generated-sources/**"'
-            echo "paths:"
-            while IFS= read -r path; do
-              [ -z "$path" ] && continue
-              echo "  - \"$path\""
-            done <<< "$PATHS"
-          } > codeql-config-dynamic.yml
+          # Splice the hotspot paths into the static codeql-config.yml.
+          # Everything else (queries, query-filters, paths-ignore) is
+          # owned by that file — edit it there, not here.
+          yq ".paths = $PATHS_JSON" .github/codeql/codeql-config.yml \
+            > codeql-config-dynamic.yml
 
           echo "Generated config:"
           cat codeql-config-dynamic.yml
-          echo "paths_count=$(wc -l < <(echo "$PATHS"))" >> "$GITHUB_OUTPUT"
+          echo "paths_count=$(echo "$PATHS_JSON" | yq 'length')" >> "$GITHUB_OUTPUT"
 
       - name: Upload hotspot artifacts
         if: always()
