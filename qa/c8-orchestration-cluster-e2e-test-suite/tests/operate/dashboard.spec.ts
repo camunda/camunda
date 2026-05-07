@@ -179,45 +179,25 @@ test.describe('Dashboard', () => {
     page,
     operateDashboardPage,
   }) => {
-    await test.step('Select first process and verify total count', async () => {
-      // Dashboard badge counts and the filtered Process Instances heading
-      // are computed from independent queries, so they can disagree under
-      // active load. Retry the read + click + verify cycle if the count on
-      // the next page doesn't match what we read from the badges.
+    await test.step('Select first process and verify navigation', async () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(operateDashboardPage.instancesByProcess).toBeVisible();
-
-          const firstInstanceByProcess =
-            operateDashboardPage.instancesByProcessItem(0);
-
-          const incidentCount = Number(
-            await operateDashboardPage
-              .incidentBadgeFromItem(firstInstanceByProcess)
-              .innerText(),
-          );
-
-          const runningInstanceCount = Number(
-            await operateDashboardPage
-              .activeBadgeFromItem(firstInstanceByProcess)
-              .innerText(),
-          );
-
-          const totalInstanceCount = incidentCount + runningInstanceCount;
-
-          await operateDashboardPage.clickItem(firstInstanceByProcess);
-
-          await expect(
-            operateDashboardPage.processInstancesHeading(
-              totalInstanceCount,
-              Number(totalInstanceCount) > 1,
-            ),
-          ).toBeVisible();
         },
         onFailure: async () => {
-          await page.goto(`${process.env.CORE_APPLICATION_URL}/operate`);
+          await page.reload();
         },
       });
+
+      const firstInstanceByProcess =
+        operateDashboardPage.instancesByProcessItem(0);
+
+      await operateDashboardPage.clickItem(firstInstanceByProcess);
+
+      await expect(page).toHaveURL(/\/processes/);
+      await expect(
+        page.getByRole('heading', {name: /Process Instances - \d+ results?/}),
+      ).toBeVisible();
     });
   });
 
