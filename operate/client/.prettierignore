@@ -1,12 +1,16 @@
 node_modules/
 build/
+dist/
 target/
 coverage/
+playwright-report/
+test-results/
 **/*.bpmn
 **/*.snap
 **/*.svg
 **/*.xml
 yarn.lock
+package-lock.json
 .eslintignore
 public/
 .prettierignore

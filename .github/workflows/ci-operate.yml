@@ -244,8 +244,8 @@ jobs:
           node-version: 24
       - run: npm ci
         name: Install dependencies
-      - run: npm run eslint
-        name: ESLint
+      - run: npm run lint
+        name: Lint
       - name: Observe build status
         if: always()
         continue-on-error: true

@@ -15,9 +15,9 @@
 	],
 	"scripts": {
 		"dev:oc": "npm run dev -w @camunda/orchestration-cluster-webapp",
-		"lint": "eslint .",
+		"lint": "eslint . && prettier -c .",
 		"typecheck": "npm run typecheck --workspaces --if-present",
-		"format": "npm run format --workspaces --if-present",
+		"format": "prettier --write .",
 		"build": "npm run build --workspaces --if-present",
 		"prepublishOnly": "node scripts/prepublishOnly.js",
 		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas"

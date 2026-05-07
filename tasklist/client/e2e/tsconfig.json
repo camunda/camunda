@@ -7,7 +7,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    },
+    }
   },
   "include": ["./**/*"],
   "exclude": ["node_modules"]

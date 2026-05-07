@@ -8,7 +8,7 @@ Shared ESLint and Prettier configuration package for Camunda frontend projects (
 lint-config/
 ├── eslint/
 │   ├── index.js           # barrel re-export of all named configs
-│   ├── base.js            # JS recommended + Prettier integration + universal rules
+│   ├── base.js            # JS recommended + universal rules
 │   ├── typescript.js      # @typescript-eslint parser and rules (factory function)
 │   ├── react.js           # React Hooks + react-refresh (factory function)
 │   ├── testing.js         # Vitest + Testing Library (factory function)
@@ -52,16 +52,17 @@ This package declares all ESLint plugins as `peerDependencies`. This means:
 - Plugin instances are shared between the consumer and the shared config, avoiding duplicate registrations that would break ESLint flat config (e.g. `"Definition for rule X was not found"`).
 - Optional plugins (e.g. `@tanstack/eslint-plugin-query`, `@vitest/eslint-plugin`) only need to be installed if the consumer uses the corresponding config factory.
 
-The required peer dependencies across all consumers are `eslint` and `prettier`:
+The required peer dependency across all consumers is `eslint`:
 
 ```json
 {
 	"devDependencies": {
-		"eslint": "9.x",
-		"prettier": "3.x"
+		"eslint": "9.x"
 	}
 }
 ```
+
+Consumers that want to format with Prettier should install and invoke it directly (the shared config no longer wires Prettier through ESLint).
 
 All other plugins are optional and should be installed only if the corresponding factory is used in the project's `eslint.config.js`. See the [available factories](#available-factories) section below for the full mapping.
 
@@ -133,7 +134,7 @@ Each factory is a function that returns an array of ESLint flat config objects. 
 
 | Import                | Required peer dependency                                                   | Options                                                                                           |
 | --------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `baseConfig`          | `eslint-config-prettier`, `eslint-plugin-prettier`, `prettier`             | —                                                                                                 |
+| `baseConfig`          | —                                                                          | —                                                                                                 |
 | `typescriptConfig`    | `@typescript-eslint/eslint-plugin`, `@typescript-eslint/parser`, `globals` | `browserFiles`, `testFiles`, `nodeFiles`, `tsconfigRootDir`, `tsProjects`, `eslint-plugin-import` |
 | `reactConfig`         | `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`                 | `browserFiles`, `testFiles`                                                                       |
 | `testingConfig`       | `@vitest/eslint-plugin`, `eslint-plugin-testing-library`                   | `testFiles`                                                                                       |
@@ -187,7 +188,7 @@ Rules defined after the shared factories take precedence, following standard ESL
 
 ### `baseConfig`
 
-Applied globally (no `files` filter). Includes JS recommended rules, Prettier integration, and a set of universal rules shared across all projects. Refer to [`eslint/base.js`](./eslint/base.js) for the full rule set.
+Applied globally (no `files` filter). Includes JS recommended rules and a set of universal rules shared across all projects. Refer to [`eslint/base.js`](./eslint/base.js) for the full rule set.
 
 ### Prettier config
 

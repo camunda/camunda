@@ -440,7 +440,9 @@ test.describe('process instance page', () => {
     await processInstancePage.newVariableNameField.fill('newPayload');
 
     await expect(
-      page.getByTestId('json-editor-wrapper').getByTestId('json-editor-readonly'),
+      page
+        .getByTestId('json-editor-wrapper')
+        .getByTestId('json-editor-readonly'),
     ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
