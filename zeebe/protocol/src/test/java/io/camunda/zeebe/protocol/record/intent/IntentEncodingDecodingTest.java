@@ -40,6 +40,7 @@ final class IntentEncodingDecodingTest {
 
   private static Stream<ParameterSet> parameters() {
     final List<ParameterSet> result = new ArrayList<>();
+    result.addAll(buildParameterSets(AgentInstanceIntent.class, AgentInstanceIntent::from));
     result.addAll(
         buildParameterSets(DecisionEvaluationIntent.class, DecisionEvaluationIntent::from));
     result.addAll(buildParameterSets(DecisionIntent.class, DecisionIntent::from));

@@ -16,7 +16,12 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum AgentInstanceIntent implements Intent {
-  ;
+  CREATE((short) 0, false),
+  CREATED((short) 1, true),
+  UPDATE((short) 2, false),
+  UPDATED((short) 3, true),
+  COMPLETE((short) 4, false),
+  COMPLETED((short) 5, true);
 
   private final short value;
   private final boolean isEvent;
@@ -37,6 +42,21 @@ public enum AgentInstanceIntent implements Intent {
   }
 
   public static Intent from(final short value) {
-    return Intent.UNKNOWN;
+    switch (value) {
+      case 0:
+        return CREATE;
+      case 1:
+        return CREATED;
+      case 2:
+        return UPDATE;
+      case 3:
+        return UPDATED;
+      case 4:
+        return COMPLETE;
+      case 5:
+        return COMPLETED;
+      default:
+        return Intent.UNKNOWN;
+    }
   }
 }
