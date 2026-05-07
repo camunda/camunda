@@ -7,14 +7,13 @@
  */
 
 import {useEffect, useState} from 'react';
-import {VariablesContent, EmptyMessageWrapper} from './styled';
+import {VariablesContent} from './styled';
 import {observer} from 'mobx-react';
 import {reaction} from 'mobx';
 import {useForm, useFormState} from 'react-final-form';
 import {modificationsStore} from 'modules/stores/modifications';
 import {useFieldArray} from 'react-final-form-arrays';
 import {type VariableFormValues} from 'modules/types/variables';
-import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {VariablesTable} from './VariablesTable';
 import {Footer} from './Footer';
 import {Skeleton} from './Skeleton';
@@ -23,6 +22,10 @@ import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIs
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useVariableScopeKey} from 'modules/hooks/variables';
+import {
+  VariablesToolbar,
+  type VariableTypeFilter,
+} from './documents/VariablesToolbar';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -39,6 +42,8 @@ const Variables: React.FC<Props> = observer(
     const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState<VariableTypeFilter>('all');
 
     const scopeKey = useVariableScopeKey(newScopeKeyForElement);
 
@@ -101,19 +106,29 @@ const Variables: React.FC<Props> = observer(
       return null;
     }
 
+    // Prototype: mock document variables are always injected client-side, so the
+    // table renders rows even when the backend returns nothing. The skeleton
+    // path still wins so we don't flash content during the initial fetch.
+    const showTable = !isViewMode || displayStatus !== 'skeleton';
+
     return (
       <VariablesContent>
-        {isViewMode && displayStatus === 'skeleton' && <Skeleton />}
-        {isViewMode && displayStatus === 'no-variables' && (
-          <EmptyMessageWrapper>
-            <EmptyMessage message="The element has no variables" />
-          </EmptyMessageWrapper>
+        {!isModificationModeEnabled && showTable && (
+          <VariablesToolbar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            typeFilter={typeFilter}
+            onTypeFilterChange={setTypeFilter}
+          />
         )}
-        {(!isViewMode || displayStatus === 'variables') && (
+        {isViewMode && displayStatus === 'skeleton' && <Skeleton />}
+        {showTable && (
           <VariablesTable
             scopeId={scopeKey}
             isModificationModeEnabled={isModificationModeEnabled}
             isVariableModificationAllowed={isVariableModificationAllowed}
+            searchTerm={searchTerm}
+            typeFilter={typeFilter}
           />
         )}
 

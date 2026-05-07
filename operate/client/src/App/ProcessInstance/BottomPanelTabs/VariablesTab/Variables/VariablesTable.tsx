@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useRef} from 'react';
+import {useMemo, useRef} from 'react';
 import {useForm, useFormState} from 'react-final-form';
 import {Button} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
@@ -25,17 +25,36 @@ import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {VariableValueCell} from './VariableValueCell';
+import {recognizeDocumentValue} from './documents/recognize';
+import {MOCK_DOCUMENT_VARIABLES} from './documents/mockDocumentVariables';
+import {DocumentActions} from './documents/DocumentActions';
+import {
+  EmbeddedOps,
+  EmbeddedOpsBottomRow,
+  EmbeddedOpsTopRow,
+} from './documents/styled';
+import type {VariableTypeFilter} from './documents/VariablesToolbar';
+import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type Props = {
   scopeId: string | null;
   isModificationModeEnabled?: boolean;
   isVariableModificationAllowed?: boolean;
+  searchTerm?: string;
+  typeFilter?: VariableTypeFilter;
 };
+
+type DisplayedVariable = Pick<
+  Variable,
+  'name' | 'value' | 'variableKey' | 'isTruncated'
+>;
 
 const VariablesTable: React.FC<Props> = ({
   scopeId,
   isModificationModeEnabled,
   isVariableModificationAllowed,
+  searchTerm = '',
+  typeFilter = 'all',
 }) => {
   const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
   const {initialValues} = useFormState<VariableFormValues>();
@@ -53,9 +72,57 @@ const VariablesTable: React.FC<Props> = ({
     (initialValues?.name === variableName && isProcessInstanceRunning) ||
     isVariableModificationAllowed;
 
-  const rows =
-    variablesData?.pages?.flatMap((page) =>
-      page.items.map(({name, value, variableKey, isTruncated}) => ({
+  // Merge real backend variables with prototype document mocks. Mocks come
+  // first so reviewers always see the document cases, even before any real
+  // variables paginate in.
+  const mergedVariables: DisplayedVariable[] = useMemo(() => {
+    const realVariables: DisplayedVariable[] =
+      variablesData?.pages?.flatMap((page) =>
+        page.items.map(({name, value, variableKey, isTruncated}) => ({
+          name,
+          value,
+          variableKey,
+          isTruncated,
+        })),
+      ) ?? [];
+
+    const realNames = new Set(realVariables.map(({name}) => name));
+    const mockedVariables = MOCK_DOCUMENT_VARIABLES.filter(
+      ({name}) => !realNames.has(name),
+    ).map(({name, value, variableKey, isTruncated}) => ({
+      name,
+      value,
+      variableKey,
+      isTruncated,
+    }));
+
+    return [...mockedVariables, ...realVariables];
+  }, [variablesData]);
+
+  const filteredVariables = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
+    return mergedVariables.filter(({name, value, isTruncated}) => {
+      if (search !== '' && !name.toLowerCase().includes(search)) {
+        return false;
+      }
+      if (typeFilter === 'documents') {
+        if (isTruncated) {
+          return false;
+        }
+        return recognizeDocumentValue(value).kind !== 'none';
+      }
+      return true;
+    });
+  }, [mergedVariables, searchTerm, typeFilter]);
+
+  const rows = filteredVariables.map(
+    ({name, value, variableKey, isTruncated}) => {
+      const recognition = isTruncated
+        ? {kind: 'none' as const}
+        : recognizeDocumentValue(value);
+      const isDocument = recognition.kind !== 'none';
+
+      return {
         key: name,
         dataTestId: `variable-${name}`,
         columns: [
@@ -89,52 +156,91 @@ const VariablesTable: React.FC<Props> = ({
             width: 'auto',
           },
           {
-            cellContent: (
-              <Operations>
-                <ViewFullVariableButton
-                  variableName={name}
-                  variableKey={variableKey}
-                  variableValue={value}
-                  mode={isEditMode(name) ? 'edit' : 'show'}
-                  canEdit={
-                    !isModificationModeEnabled && !!isProcessInstanceRunning
-                  }
-                />
-                {(() => {
-                  if (isModificationModeEnabled || !isProcessInstanceRunning) {
-                    return null;
-                  }
+            cellContent: (() => {
+              const variableOps = (
+                <>
+                  <ViewFullVariableButton
+                    variableName={name}
+                    variableKey={variableKey}
+                    variableValue={value}
+                    mode={isEditMode(name) ? 'edit' : 'show'}
+                    canEdit={
+                      !isModificationModeEnabled && !!isProcessInstanceRunning
+                    }
+                  />
+                  {(() => {
+                    if (
+                      isModificationModeEnabled ||
+                      !isProcessInstanceRunning
+                    ) {
+                      return null;
+                    }
 
-                  if (initialValues?.name === name) {
-                    return <EditButtons />;
-                  }
+                    if (initialValues?.name === name) {
+                      return <EditButtons />;
+                    }
 
-                  return (
-                    <Button
-                      kind="ghost"
-                      size="sm"
-                      tooltipPosition="top"
-                      iconDescription="Edit"
-                      aria-label={`Edit variable ${name}`}
-                      disabled={
-                        isFetchingNextPage || form.getState().submitting
-                      }
-                      onClick={async () => {
-                        form.reset({name, value, variableKey});
-                        form.change('value', value);
-                      }}
-                      hasIconOnly
-                      renderIcon={Edit}
+                    return (
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        tooltipPosition="top"
+                        iconDescription="Edit"
+                        aria-label={`Edit variable ${name}`}
+                        disabled={
+                          isFetchingNextPage || form.getState().submitting
+                        }
+                        onClick={async () => {
+                          form.reset({name, value, variableKey});
+                          form.change('value', value);
+                        }}
+                        hasIconOnly
+                        renderIcon={Edit}
+                      />
+                    );
+                  })()}
+                </>
+              );
+
+              // Embedded variables (Case B) split the operations cell into
+              // two stacked rows so doc-related buttons line up with the
+              // "Contains N documents" summary and variable-related buttons
+              // line up with the JSON viewer below it.
+              if (recognition.kind === 'embedded') {
+                return (
+                  <EmbeddedOps>
+                    <EmbeddedOpsTopRow>
+                      <DocumentActions
+                        variableName={name}
+                        variableValue={value}
+                        recognition={recognition}
+                      />
+                    </EmbeddedOpsTopRow>
+                    <EmbeddedOpsBottomRow>{variableOps}</EmbeddedOpsBottomRow>
+                  </EmbeddedOps>
+                );
+              }
+
+              return (
+                <Operations>
+                  {isDocument ? (
+                    <DocumentActions
+                      variableName={name}
+                      variableValue={value}
+                      recognition={recognition}
                     />
-                  );
-                })()}
-              </Operations>
-            ),
+                  ) : (
+                    variableOps
+                  )}
+                </Operations>
+              );
+            })(),
             width: '120px',
           },
         ],
-      })),
-    ) ?? [];
+      };
+    },
+  );
 
   return (
     <StructuredList

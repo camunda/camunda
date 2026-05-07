@@ -9,6 +9,8 @@
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 import {useVariable} from 'modules/queries/variables/useVariable';
+import {recognizeDocumentValue} from './documents/recognize';
+import {DocumentValueCell} from './documents/DocumentValueCell';
 
 type Props = {
   variableKey: string;
@@ -28,6 +30,22 @@ const VariableValueCell: React.FC<Props> = ({
   isProcessInstanceRunning,
 }) => {
   const {refetch} = useVariable(variableKey, {enabled: false});
+
+  // Per-variable document detection via the camunda.document.type discriminator.
+  // Truncated values are skipped — recognition needs the full payload.
+  const recognition = isTruncated
+    ? {kind: 'none' as const}
+    : recognizeDocumentValue(value);
+
+  if (recognition.kind !== 'none') {
+    return (
+      <DocumentValueCell
+        variableName={variableName}
+        variableValue={value}
+        recognition={recognition}
+      />
+    );
+  }
 
   return (
     <InlineJsonEditor
