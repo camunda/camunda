@@ -42,10 +42,18 @@ public final class LocalContainerCluster implements Cluster {
   private volatile GenericContainer<?> container;
   private volatile CamundaClient client;
 
+  /**
+   * Default image tag — a stable Docker Hub-published tag so first-time users don't need to build
+   * Camunda locally. Override via {@code -Dio.camunda.process.test.camundaDockerImageVersion=...}
+   * (e.g. {@code latest}, {@code 8.7.0}) or via the constructor.
+   */
+  private static final String DEFAULT_IMAGE_VERSION = "latest";
+
   public LocalContainerCluster() {
     this(
         System.getProperty("io.camunda.process.test.camundaDockerImageName", "camunda/camunda"),
-        System.getProperty("io.camunda.process.test.camundaDockerImageVersion", "8.10.0-SNAPSHOT"));
+        System.getProperty(
+            "io.camunda.process.test.camundaDockerImageVersion", DEFAULT_IMAGE_VERSION));
   }
 
   public LocalContainerCluster(final String imageName, final String imageVersion) {
