@@ -22,6 +22,7 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
@@ -43,11 +44,12 @@ public final class LocalContainerCluster implements Cluster {
   private volatile CamundaClient client;
 
   /**
-   * Default image tag — a stable Docker Hub-published tag so first-time users don't need to build
-   * Camunda locally. Override via {@code -Dio.camunda.process.test.camundaDockerImageVersion=...}
-   * (e.g. {@code latest}, {@code 8.7.0}) or via the constructor.
+   * Default image tag — a known-stable published tag. We avoid {@code latest} because its boot
+   * profile may diverge unexpectedly. Override via system property {@code
+   * io.camunda.process.test.camundaDockerImageVersion} or the constructor when a specific version
+   * is wanted.
    */
-  private static final String DEFAULT_IMAGE_VERSION = "latest";
+  private static final String DEFAULT_IMAGE_VERSION = "8.8.0";
 
   public LocalContainerCluster() {
     this(
@@ -72,14 +74,16 @@ public final class LocalContainerCluster implements Cluster {
           new GenericContainer<>(DockerImageName.parse(imageName + ":" + imageVersion))
               .withExposedPorts(GRPC_PORT, REST_PORT)
               .withEnv("SPRING_PROFILES_ACTIVE", "broker,consolidated-auth,security")
-              .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
               .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "true")
               .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
+              // Stream Camunda's stdout/stderr into our SLF4J output so the user can see what's
+              // happening inside the container (especially during slow startup).
+              .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("camunda-container")))
               .waitingFor(
                   Wait.forHttp("/actuator/health/status")
                       .forPort(REST_PORT)
                       .forStatusCode(200)
-                      .withStartupTimeout(Duration.ofMinutes(2)));
+                      .withStartupTimeout(Duration.ofMinutes(5)));
       container.start();
       LOG.info(
           "Testcontainer ready: grpc={} rest={}",
