@@ -378,5 +378,22 @@ final class CamundaExporterTest {
         assertThat(tasks.getLast().getDelay()).isEqualTo(Duration.ofMillis(1000));
       }
     }
+
+    @Test
+    void shouldCancelScheduledFlushTaskOnClose() {
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      final var tasks = testController.getScheduledTasks();
+      final var flushTask = tasks.getLast();
+      assertThat(flushTask.isCanceled()).isEqualTo(false);
+
+      exporter.close();
+
+      assertThat(flushTask.isCanceled()).isEqualTo(true);
+    }
   }
 }
