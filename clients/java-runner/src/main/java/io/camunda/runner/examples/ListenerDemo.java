@@ -15,6 +15,9 @@
  */
 package io.camunda.runner.examples;
 
+import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType.end;
+import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType.start;
+
 import io.camunda.runner.Job;
 import io.camunda.runner.LiveBpmn;
 import io.camunda.runner.RunOptions;
@@ -22,19 +25,18 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * Smallest LiveBpmn execution-listener demo. {@code greet} carries inline {@code onStart} / {@code
- * onEnd} listeners that just println the lifecycle of the activity; the body lambda computes a
- * greeting that {@code print} consumes downstream.
+ * Smallest LiveBpmn execution-listener demo. {@code greet} carries inline {@code .on(start, …)} /
+ * {@code .on(end, …)} listeners that just println the lifecycle of the activity; the body lambda
+ * computes a greeting that {@code print} consumes downstream.
  *
- * <p>Task listeners attach to a user task with the same shape:
+ * <p>Task listeners attach to a user task with a similar shape:
  *
  * <pre>
  * .userTask("review")
  *     .onTaskListener(ZeebeTaskListenerEventType.assigning, job -&gt; ... )
  * </pre>
  *
- * (commented out here because user-task <em>bodies</em> aren't dispatched yet — but task listeners
- * are.)
+ * (Not run here because user-task <em>bodies</em> aren't dispatched yet — but task listeners are.)
  */
 public final class ListenerDemo {
 
@@ -46,8 +48,8 @@ public final class ListenerDemo {
           .startEvent()
           .serviceTask(
               "greet", (Job job) -> Map.of("greeting", "hi " + job.variable("name", String.class)))
-          .onStart((Job job) -> System.out.println("[el-start] greet activating"))
-          .onEnd((Job job) -> System.out.println("[el-end]   greet completed"))
+          .on(start, (Job job) -> System.out.println("[el-start] greet activating"))
+          .on(end, (Job job) -> System.out.println("[el-end]   greet completed"))
           .serviceTask(
               "print", (Job job) -> System.out.println(job.variable("greeting", String.class)))
           .endEvent()

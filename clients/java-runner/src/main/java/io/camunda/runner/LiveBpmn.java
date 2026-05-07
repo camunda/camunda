@@ -333,20 +333,20 @@ public final class LiveBpmn {
   // Listener attachment (inline form)
   // ---------------------------------------------------------------------------
 
-  public LiveBpmn onStart(final Function<Job, Map<String, Object>> handler) {
-    return attachExecutionListener("start", new BoundHandler.OfFunction(handler));
+  /**
+   * Attaches an execution listener (start or end) to the most-recently-declared flow node. With a
+   * static import of {@link ZeebeExecutionListenerEventType}, the call site reads {@code .on(start,
+   * lambda)} or {@code .on(end, lambda)}.
+   */
+  public LiveBpmn on(
+      final ZeebeExecutionListenerEventType eventType,
+      final Function<Job, Map<String, Object>> handler) {
+    return attachExecutionListener(eventType.name(), new BoundHandler.OfFunction(handler));
   }
 
-  public LiveBpmn onStart(final JobConsumer handler) {
-    return attachExecutionListener("start", new BoundHandler.OfConsumer(handler));
-  }
-
-  public LiveBpmn onEnd(final Function<Job, Map<String, Object>> handler) {
-    return attachExecutionListener("end", new BoundHandler.OfFunction(handler));
-  }
-
-  public LiveBpmn onEnd(final JobConsumer handler) {
-    return attachExecutionListener("end", new BoundHandler.OfConsumer(handler));
+  /** See {@link #on(ZeebeExecutionListenerEventType, Function)}. */
+  public LiveBpmn on(final ZeebeExecutionListenerEventType eventType, final JobConsumer handler) {
+    return attachExecutionListener(eventType.name(), new BoundHandler.OfConsumer(handler));
   }
 
   public LiveBpmn onTaskListener(
@@ -376,22 +376,23 @@ public final class LiveBpmn {
     return this;
   }
 
-  public LiveBpmn bindOnStart(
-      final String elementId, final Function<Job, Map<String, Object>> handler) {
-    return bindExecutionListener(elementId, "start", new BoundHandler.OfFunction(handler));
+  /**
+   * Binds an execution listener (start or end) to an existing element by id, for adopted models.
+   * Mirrors the inline {@link #on(ZeebeExecutionListenerEventType, Function)} form.
+   */
+  public LiveBpmn on(
+      final String elementId,
+      final ZeebeExecutionListenerEventType eventType,
+      final Function<Job, Map<String, Object>> handler) {
+    return bindExecutionListener(elementId, eventType.name(), new BoundHandler.OfFunction(handler));
   }
 
-  public LiveBpmn bindOnStart(final String elementId, final JobConsumer handler) {
-    return bindExecutionListener(elementId, "start", new BoundHandler.OfConsumer(handler));
-  }
-
-  public LiveBpmn bindOnEnd(
-      final String elementId, final Function<Job, Map<String, Object>> handler) {
-    return bindExecutionListener(elementId, "end", new BoundHandler.OfFunction(handler));
-  }
-
-  public LiveBpmn bindOnEnd(final String elementId, final JobConsumer handler) {
-    return bindExecutionListener(elementId, "end", new BoundHandler.OfConsumer(handler));
+  /** See {@link #on(String, ZeebeExecutionListenerEventType, Function)}. */
+  public LiveBpmn on(
+      final String elementId,
+      final ZeebeExecutionListenerEventType eventType,
+      final JobConsumer handler) {
+    return bindExecutionListener(elementId, eventType.name(), new BoundHandler.OfConsumer(handler));
   }
 
   public LiveBpmn bindTaskListener(

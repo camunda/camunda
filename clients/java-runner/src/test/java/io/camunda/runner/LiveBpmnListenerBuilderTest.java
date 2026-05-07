@@ -38,7 +38,7 @@ class LiveBpmnListenerBuilderTest {
         LiveBpmn.createExecutableProcess("p")
             .startEvent()
             .serviceTask("validate", (Job j) -> null)
-            .onStart((Job j) -> {});
+            .on(ZeebeExecutionListenerEventType.start, (Job j) -> {});
 
     // then
     final BindingKey key = BindingKey.executionListener("validate", "start");
@@ -63,7 +63,7 @@ class LiveBpmnListenerBuilderTest {
         LiveBpmn.createExecutableProcess("p")
             .startEvent()
             .serviceTask("validate", (Job j) -> null)
-            .onEnd((Job j) -> {});
+            .on(ZeebeExecutionListenerEventType.end, (Job j) -> {});
 
     // then
     final BindingKey key = BindingKey.executionListener("validate", "end");
@@ -108,9 +108,12 @@ class LiveBpmnListenerBuilderTest {
 
   @Test
   void shouldFailOnStartWithoutAnAttachable() {
-    // expect — calling .onStart on a fresh process (only startEvent without id) should fail
+    // expect — calling .on(start, ...) on a fresh process (only startEvent without id) should fail
     assertThatThrownBy(
-            () -> LiveBpmn.createExecutableProcess("p").startEvent().onStart((Job j) -> {}))
+            () ->
+                LiveBpmn.createExecutableProcess("p")
+                    .startEvent()
+                    .on(ZeebeExecutionListenerEventType.start, (Job j) -> {}))
         .isInstanceOf(IllegalStateException.class);
   }
 
@@ -127,7 +130,8 @@ class LiveBpmnListenerBuilderTest {
             .done();
 
     // when
-    final LiveBpmn builder = LiveBpmn.of(model).bindOnStart("validate", (Job j) -> {});
+    final LiveBpmn builder =
+        LiveBpmn.of(model).on("validate", ZeebeExecutionListenerEventType.start, (Job j) -> {});
 
     // then
     assertThat(builder.bindings()).containsKey(BindingKey.executionListener("validate", "start"));
@@ -144,7 +148,10 @@ class LiveBpmnListenerBuilderTest {
             .done();
 
     // expect
-    assertThatThrownBy(() -> LiveBpmn.of(model).bindOnStart("validate", (Job j) -> {}))
+    assertThatThrownBy(
+            () ->
+                LiveBpmn.of(model)
+                    .on("validate", ZeebeExecutionListenerEventType.start, (Job j) -> {}))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("validate");
   }
