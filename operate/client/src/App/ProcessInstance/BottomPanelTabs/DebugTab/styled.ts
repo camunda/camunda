@@ -7,7 +7,6 @@
  */
 
 import styled from 'styled-components';
-import {TextInput} from '@carbon/react';
 import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
 import {supportWarning, supportSuccess, supportError} from '@carbon/elements';
 
@@ -20,9 +19,24 @@ const Content = styled.div`
   overflow: hidden;
 `;
 
-const FullWidthTextInput = styled(TextInput)`
-  width: 100%;
+const ExpressionLabel = styled.label`
   flex: 0 0 auto;
+  font-size: var(--cds-label-01-font-size);
+  font-weight: var(--cds-label-01-font-weight);
+  line-height: var(--cds-label-01-line-height);
+  letter-spacing: var(--cds-label-01-letter-spacing);
+  color: var(--cds-text-secondary);
+`;
+
+const ExpressionEditor = styled.div`
+  flex: 0 0 auto;
+
+  .cm-editor {
+    background-color: transparent;
+    color: var(--cds-text-primary);
+  }
+
+
 `;
 
 const ContextHint = styled.div`
@@ -124,7 +138,8 @@ const WarningItem = styled.div`
 
 export {
   Content,
-  FullWidthTextInput,
+  ExpressionLabel,
+  ExpressionEditor,
   ContextHint,
   WarningFilled,
   ResultContainer,

@@ -6,6 +6,7 @@
   "dependencies": {
     "@axe-core/playwright": "4.11.1",
     "@bpmn-io/element-template-icon-renderer": "1.0.0",
+    "@bpmn-io/lang-feel": "^3.0.0",
     "@camunda/camunda-api-zod-schemas": "^0.0.58",
     "@camunda/camunda-composite-components": "0.22.6",
     "@carbon/elements": "11.87.0",
@@ -17,6 +18,7 @@
     "@tanstack/react-query": "5.90.21",
     "@tanstack/react-query-devtools": "5.91.3",
     "@tanstack/react-virtual": "3.13.23",
+    "@uiw/react-codemirror": "^4.25.9",
     "bpmn-js": "18.14.0",
     "bpmn-moddle": "10.0.0",
     "date-fns": "4.1.0",
@@ -62,8 +64,8 @@
     "knip": "knip --tsConfig tsconfig.app.json"
   },
   "devDependencies": {
-    "@camunda/lint-config": "file:../../webapp/client/packages/lint-config",
     "@camunda/c8-mocks": "file:../../webapp/client/packages/c8-mocks",
+    "@camunda/lint-config": "file:../../webapp/client/packages/lint-config",
     "@eslint/js": "9.39.4",
     "@playwright/test": "1.58.2",
     "@testing-library/dom": "10.4.1",

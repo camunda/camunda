@@ -6,8 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState, type KeyboardEvent} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useMutation} from '@tanstack/react-query';
+import CodeMirror, {
+  EditorView,
+  Prec,
+  keymap,
+} from '@uiw/react-codemirror';
+import {feel, feelLanguage} from '@bpmn-io/lang-feel';
 import {evaluateExpression} from 'modules/api/v2/expression/evaluateExpression';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
@@ -15,9 +21,13 @@ import {ResultView} from './ResultView';
 import {
   Content,
   ContextHint,
-  FullWidthTextInput,
+  ExpressionEditor,
+  ExpressionLabel,
   WarningFilled,
 } from './styled';
+import {LanguageDescription} from '@codemirror/language';
+
+const EXPRESSION_INPUT_ID = 'debug-expression-input';
 
 const DebugTab: React.FC = () => {
   const [expression, setExpression] = useState('');
@@ -43,13 +53,6 @@ const DebugTab: React.FC = () => {
     },
   });
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && expression.trim() !== '') {
-      event.preventDefault();
-      mutate(expression);
-    }
-  };
-
   const handleChange = (value: string) => {
     setExpression(value);
     if (value.trim() === '') {
@@ -63,16 +66,77 @@ const DebugTab: React.FC = () => {
     reset();
   }, [selectedElementInstanceKey, reset]);
 
+  const extensions = useMemo(
+    () => [
+      feel({dialect: 'expression', completions: []}).extension,
+      EditorView.lineWrapping,
+      EditorView.theme(
+        {
+          '&': {
+            backgroundColor: '#034',
+          },
+          '.cm-content': {
+            caretColor: '#0e9',
+          },
+          '&.cm-focused .cm-cursor': {
+            borderLeftColor: '#0e9',
+          },
+          '&.cm-focused .cm-selectionBackground, ::selection': {
+            backgroundColor: '#074',
+          },
+          '.cm-gutters': {
+            backgroundColor: '#045',
+            border: 'none',
+          },
+        },
+        {dark: true},
+      ),
+      EditorView.contentAttributes.of({'aria-label': 'FEEL expression'}),
+      Prec.highest(
+        keymap.of([
+          {
+            key: 'Enter',
+            run: (view) => {
+              const value = view.state.doc.toString();
+              if (value.trim() !== '') {
+                mutate(value);
+              }
+              return true;
+            },
+          },
+        ]),
+      ),
+    ],
+    [mutate],
+  );
+
+  const basicSetup = useMemo(
+    () => ({
+      lineNumbers: false,
+      foldGutter: false,
+      highlightActiveLine: false,
+      highlightActiveLineGutter: true,
+      indentOnInput: false,
+      bracketMatching: false,
+      autocompletion: true,
+      searchKeymap: false,
+    }),
+    [],
+  );
+
   return (
     <Content>
-      <FullWidthTextInput
-        id="debug-expression-input"
-        labelText="Expression"
-        placeholder="Enter a FEEL expression and press Enter"
-        value={expression}
-        onChange={({target}) => handleChange(target.value)}
-        onKeyDown={handleKeyDown}
-      />
+      <ExpressionLabel htmlFor={EXPRESSION_INPUT_ID}>Expression</ExpressionLabel>
+      <ExpressionEditor>
+        <CodeMirror
+          id={EXPRESSION_INPUT_ID}
+          value={expression}
+          placeholder="Enter a FEEL expression and press Enter"
+          basicSetup={basicSetup}
+          extensions={extensions}
+          onChange={handleChange}
+        />
+      </ExpressionEditor>
       <ContextHint>
         {showInactiveElementWarning && (
           <WarningFilled
