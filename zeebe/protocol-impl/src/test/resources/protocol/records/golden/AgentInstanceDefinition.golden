@@ -15,7 +15,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @JsonIgnoreProperties({"encodedLength", "empty"})
 public final class AgentInstanceDefinition extends ObjectValue
-    implements AgentInstanceRecordValue.Definition {
+    implements AgentInstanceRecordValue.AgentInstanceDefinitionValue {
 
   private final StringProperty modelProp = new StringProperty("model", "");
   private final StringProperty providerProp = new StringProperty("provider", "");
@@ -54,17 +54,5 @@ public final class AgentInstanceDefinition extends ObjectValue
   public AgentInstanceDefinition setSystemPrompt(final String systemPrompt) {
     systemPromptProp.setValue(systemPrompt);
     return this;
-  }
-
-  /** hashCode relies on implementation provided by {@link ObjectValue#hashCode()} */
-  @Override
-  public int hashCode() {
-    return super.hashCode();
-  }
-
-  /** equals relies on implementation provided by {@link ObjectValue#equals(Object)} */
-  @Override
-  public boolean equals(final Object o) {
-    return super.equals(o);
   }
 }

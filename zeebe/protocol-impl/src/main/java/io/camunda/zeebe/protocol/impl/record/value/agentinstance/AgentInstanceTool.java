@@ -10,17 +10,17 @@ package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
-import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @JsonIgnoreProperties({"encodedLength", "empty"})
-public final class AgentTool extends ObjectValue implements AgentInstanceRecordValue.AgentTool {
+public final class AgentInstanceTool extends ObjectValue implements AgentInstanceToolValue {
 
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty descriptionProp = new StringProperty("description", "");
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
 
-  public AgentTool() {
+  public AgentInstanceTool() {
     super(3);
     declareProperty(nameProp).declareProperty(descriptionProp).declareProperty(elementIdProp);
   }
@@ -30,7 +30,7 @@ public final class AgentTool extends ObjectValue implements AgentInstanceRecordV
     return BufferUtil.bufferAsString(nameProp.getValue());
   }
 
-  public AgentTool setName(final String name) {
+  public AgentInstanceTool setName(final String name) {
     nameProp.setValue(name);
     return this;
   }
@@ -40,7 +40,7 @@ public final class AgentTool extends ObjectValue implements AgentInstanceRecordV
     return BufferUtil.bufferAsString(descriptionProp.getValue());
   }
 
-  public AgentTool setDescription(final String description) {
+  public AgentInstanceTool setDescription(final String description) {
     descriptionProp.setValue(description);
     return this;
   }
@@ -50,24 +50,14 @@ public final class AgentTool extends ObjectValue implements AgentInstanceRecordV
     return BufferUtil.bufferAsString(elementIdProp.getValue());
   }
 
-  public AgentTool setElementId(final String elementId) {
+  public AgentInstanceTool setElementId(final String elementId) {
     elementIdProp.setValue(elementId);
     return this;
   }
 
-  public void copy(final AgentInstanceRecordValue.AgentTool other) {
+  public void copy(final AgentInstanceToolValue other) {
     setName(other.getName());
     setDescription(other.getDescription());
     setElementId(other.getElementId());
-  }
-
-  @Override
-  public int hashCode() {
-    return super.hashCode();
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    return super.equals(o);
   }
 }

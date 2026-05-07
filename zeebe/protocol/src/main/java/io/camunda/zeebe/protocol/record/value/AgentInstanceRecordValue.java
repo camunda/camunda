@@ -15,8 +15,13 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.List;
+import org.immutables.value.Value;
 
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableAgentInstanceRecordValue.Builder.class)
 public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRelated, TenantOwned {
 
   /**
@@ -70,25 +75,27 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   /**
    * @return the definition details of the agent
    */
-  Definition getDefinition();
+  AgentInstanceDefinitionValue getDefinition();
 
   /**
    * @return the limits configured for the agent instance
    */
-  Limits getLimits();
+  AgentInstanceLimitsValue getLimits();
 
   /**
    * @return the metrics collected during the agent instance execution
    */
-  Metrics getMetrics();
+  AgentInstanceMetricsValue getMetrics();
 
   /**
    * @return the list of tools available to the agent
    */
-  java.util.List<Tool> getTools();
+  List<AgentInstanceToolValue> getTools();
 
   /** Represents a tool available to an agent. */
-  interface Tool {
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableAgentInstanceToolValue.Builder.class)
+  interface AgentInstanceToolValue {
     /**
      * @return the name of the tool
      */
@@ -106,7 +113,9 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   }
 
   /** Represents the definition details of an agent. */
-  interface Definition {
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableAgentInstanceDefinitionValue.Builder.class)
+  interface AgentInstanceDefinitionValue {
     /**
      * @return the model used by the agent
      */
@@ -124,7 +133,9 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   }
 
   /** Represents the operational limits configured for an agent instance. */
-  interface Limits {
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableAgentInstanceLimitsValue.Builder.class)
+  interface AgentInstanceLimitsValue {
     /**
      * @return the maximum number of tokens allowed for the agent instance
      */
@@ -142,7 +153,9 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   }
 
   /** Represents metrics collected during agent instance execution. */
-  interface Metrics {
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableAgentInstanceMetricsValue.Builder.class)
+  interface AgentInstanceMetricsValue {
     /**
      * @return the number of input tokens used
      */

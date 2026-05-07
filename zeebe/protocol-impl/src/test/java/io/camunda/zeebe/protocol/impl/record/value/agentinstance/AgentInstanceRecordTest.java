@@ -10,7 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.Tool;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
@@ -176,10 +176,12 @@ final class AgentInstanceRecordTest {
   @Test
   void shouldRoundTripToolsViaMsgPack() {
     // given
-    final AgentTool first =
-        new AgentTool().setName("extract_line_items").setElementId("extract-line-items-task");
-    final AgentTool second =
-        new AgentTool()
+    final AgentInstanceTool first =
+        new AgentInstanceTool()
+            .setName("extract_line_items")
+            .setElementId("extract-line-items-task");
+    final AgentInstanceTool second =
+        new AgentInstanceTool()
             .setName("MCP_ocr___scan_document")
             .setDescription("OCR a PDF")
             .setElementId("MCP_ocr");
@@ -191,7 +193,10 @@ final class AgentInstanceRecordTest {
 
     // then
     assertThat(copy.getTools())
-        .extracting(Tool::getName, Tool::getDescription, Tool::getElementId)
+        .extracting(
+            AgentInstanceToolValue::getName,
+            AgentInstanceToolValue::getDescription,
+            AgentInstanceToolValue::getElementId)
         .containsExactly(
             tuple("extract_line_items", "", "extract-line-items-task"),
             tuple("MCP_ocr___scan_document", "OCR a PDF", "MCP_ocr"));
@@ -201,12 +206,14 @@ final class AgentInstanceRecordTest {
   void shouldReplaceExistingToolsOnSet() {
     // given
     final AgentInstanceRecord record =
-        new AgentInstanceRecord().setTools(List.of(new AgentTool().setName("first")));
+        new AgentInstanceRecord().setTools(List.of(new AgentInstanceTool().setName("first")));
 
     // when
-    record.setTools(List.of(new AgentTool().setName("second")));
+    record.setTools(List.of(new AgentInstanceTool().setName("second")));
 
     // then
-    assertThat(record.getTools()).extracting(Tool::getName).containsExactly("second");
+    assertThat(record.getTools())
+        .extracting(AgentInstanceToolValue::getName)
+        .containsExactly("second");
   }
 }

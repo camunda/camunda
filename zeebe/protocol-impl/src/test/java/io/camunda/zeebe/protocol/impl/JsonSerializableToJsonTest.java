@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
-import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentTool;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
@@ -4677,10 +4677,10 @@ final class JsonSerializableToJsonTest {
                       .setStatus(AgentInstanceStatus.TOOL_CALLING)
                       .setTools(
                           List.of(
-                              new AgentTool()
+                              new AgentInstanceTool()
                                   .setName("extract_line_items")
                                   .setElementId("extract-line-items-task"),
-                              new AgentTool()
+                              new AgentInstanceTool()
                                   .setName("MCP_ocr___scan_document")
                                   .setElementId("MCP_ocr")));
               record

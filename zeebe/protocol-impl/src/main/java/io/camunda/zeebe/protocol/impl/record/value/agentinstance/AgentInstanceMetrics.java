@@ -15,7 +15,7 @@ import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 
 @JsonIgnoreProperties({"encodedLength", "empty"})
 public final class AgentInstanceMetrics extends ObjectValue
-    implements AgentInstanceRecordValue.Metrics {
+    implements AgentInstanceRecordValue.AgentInstanceMetricsValue {
 
   private final LongProperty inputTokensProp = new LongProperty("inputTokens", 0L);
   private final LongProperty outputTokensProp = new LongProperty("outputTokens", 0L);

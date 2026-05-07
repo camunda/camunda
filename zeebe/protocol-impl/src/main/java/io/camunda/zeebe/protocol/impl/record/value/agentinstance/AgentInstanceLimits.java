@@ -15,7 +15,7 @@ import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 
 @JsonIgnoreProperties({"encodedLength", "empty"})
 public final class AgentInstanceLimits extends ObjectValue
-    implements AgentInstanceRecordValue.Limits {
+    implements AgentInstanceRecordValue.AgentInstanceLimitsValue {
 
   private final LongProperty maxTokensProp = new LongProperty("maxTokens", -1L);
   private final IntegerProperty maxModelCallsProp = new IntegerProperty("maxModelCalls", -1);

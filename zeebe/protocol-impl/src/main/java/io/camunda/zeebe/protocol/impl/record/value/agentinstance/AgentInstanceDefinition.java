@@ -15,7 +15,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @JsonIgnoreProperties({"encodedLength", "empty"})
 public final class AgentInstanceDefinition extends ObjectValue
-    implements AgentInstanceRecordValue.Definition {
+    implements AgentInstanceRecordValue.AgentInstanceDefinitionValue {
 
   private final StringProperty modelProp = new StringProperty("model", "");
   private final StringProperty providerProp = new StringProperty("provider", "");

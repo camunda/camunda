@@ -42,7 +42,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ObjectProperty<>("limits", new AgentInstanceLimits());
   private final ObjectProperty<AgentInstanceMetrics> metricsProp =
       new ObjectProperty<>("metrics", new AgentInstanceMetrics());
-  private final ArrayProperty<AgentTool> toolsProp = new ArrayProperty<>("tools", AgentTool::new);
+  private final ArrayProperty<AgentInstanceTool> toolsProp =
+      new ArrayProperty<>("tools", AgentInstanceTool::new);
 
   public AgentInstanceRecord() {
     super(13);
@@ -167,18 +168,18 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public List<Tool> getTools() {
+  public List<AgentInstanceToolValue> getTools() {
     return toolsProp.stream()
         .map(
             element -> {
-              final var copy = new AgentTool();
+              final var copy = new AgentInstanceTool();
               copy.copy(element);
-              return (Tool) copy;
+              return (AgentInstanceToolValue) copy;
             })
         .toList();
   }
 
-  public AgentInstanceRecord setTools(final List<? extends Tool> tools) {
+  public AgentInstanceRecord setTools(final List<? extends AgentInstanceToolValue> tools) {
     toolsProp.reset();
     for (final var tool : tools) {
       toolsProp.add().copy(tool);
