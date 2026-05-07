@@ -16,6 +16,21 @@ import viteReact from '@vitejs/plugin-react';
 import sbom from 'rollup-plugin-sbom';
 import {playwright} from '@vitest/browser-playwright';
 
+const injectCustomCss: PluginOption = {
+	name: 'inject-custom-css',
+	apply: 'build',
+	transformIndexHtml: {
+		order: 'post',
+		handler: () => [
+			{
+				tag: 'link',
+				attrs: {rel: 'stylesheet', href: './custom.css'},
+				injectTo: 'head',
+			},
+		],
+	},
+};
+
 const basePlugins: PluginOption[] = [
 	devtools(),
 	tanstackRouter({
@@ -23,6 +38,7 @@ const basePlugins: PluginOption[] = [
 		autoCodeSplitting: true,
 	}),
 	viteReact(),
+	injectCustomCss,
 ];
 
 const config = defineConfig(({mode}) => ({
