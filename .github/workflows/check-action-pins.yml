@@ -1,54 +1,14 @@
-# =============================================================================
-# check-action-pins.yml
+# Enforce SHA-pinning of 3rd-party GitHub Actions on PR-touched workflow files.
+# Policy in .github/zizmor.yml: actions/*, github/*, camunda/* may use tags;
+# everything else must be SHA-pinned. Closes #25934.
 #
-# Purpose:
-#   Enforce GitHub Issue #25934 — every external 3rd-party GitHub Action MUST
-#   be pinned to a 40-char commit SHA. Tag/branch refs are mutable and expose
-#   us to supply-chain attacks: the upstream owner — or anyone who compromises
-#   them — can rewrite the tag to point at malicious code, and our CI will
-#   silently start running it.
-#
-#   The actual enforced policy is more nuanced than "everything must be
-#   SHA-pinned" — `actions/*`, `github/*`, and `camunda/*` are allowed to use
-#   tag/branch refs because they're either GitHub-owned or our own
-#   infrastructure. Only external 3rd-party actions are required to use SHAs.
-#   See .github/zizmor.yml for the exact per-owner policy.
-#
-# Scope:
-#   This job intentionally only fails on action files that the *current PR*
-#   adds or modifies. It does NOT scan the whole repo. The reason is that
-#   `main` and the stable branches still carry pre-existing unpinned legacy
-#   files (e.g. older `actions/checkout@v4` references) that we don't want
-#   to block unrelated PRs on. By running zizmor only on changed files, we:
-#     - block any *new* violation that a PR is trying to introduce
-#     - force a touched legacy file to be cleaned up before merge
-#     - leave untouched legacy files alone (so the rule lands incrementally)
-#
-# Tool:
-#   We use `zizmor` (https://github.com/zizmorcore/zizmor), a security auditor
-#   for GitHub Actions. Its `unpinned-uses` rule supports per-org policies,
-#   which lets us require hash-pinning for external actions while still
-#   allowing tag/branch refs for our own org (camunda/*) and for GitHub-owned
-#   actions (actions/*, github/*) — see .github/zizmor.yml for the policy.
-# =============================================================================
+# Behavior:
+#   - unpinned-uses violations  → ::error + bot PR comment + job fails
+#   - other zizmor audits       → ::warning only (visibility, never gates)
+#   - same violations re-pushed → no comment churn (state stored in comment body)
 
 name: check-action-pins
 
-# -----------------------------------------------------------------------------
-# Triggers
-# -----------------------------------------------------------------------------
-# We run on `pull_request` so the check is gated *before* merge — running it
-# on `push` to main wouldn't help, since by then the violation is already in.
-#
-# `paths:` filters the PR-level trigger so this workflow is skipped entirely
-# for PRs that don't touch action files. The patterns mirror exactly what
-# the diff step (Step 2) inspects, so we don't spawn no-op runs for PRs that
-# only touch e.g. shell scripts, JSON config, or README files inside
-# `.github/workflows/` or `.github/actions/`.
-#
-# Note: `paths:` filters which *workflow runs* are created — it does NOT
-# filter which files the job inspects within a triggered run. The per-file
-# filtering further down in Step 2 is what actually scopes zizmor's input.
 on:
   pull_request:
     paths:
@@ -57,225 +17,91 @@ on:
       - '.github/actions/**/action.yml'
       - '.github/actions/**/action.yaml'
 
-# -----------------------------------------------------------------------------
-# Permissions
-# -----------------------------------------------------------------------------
-# Principle of least privilege:
-#   - contents: read         — checking out the PR head
-#   - pull-requests: write   — needed by the comment-management step (Step 5)
-#                              so the bot can create/update the markdown
-#                              summary comment with violation details.
-#
-# Note on fork PRs: GitHub's `pull_request` trigger only grants a read-only
-# token when the PR is from a fork (security policy). The comment step will
-# silently fail in that case — annotations still appear, the gate still
-# fires, but no comment is created. Camunda's contributor flow is mostly
-# branches in the same repo, so this affects very few PRs in practice.
+# pull-requests: write needed for the bot comment.
+# Fork PRs get a read-only token from GitHub — comment step silently skips.
 permissions:
   contents: read
   pull-requests: write
 
 jobs:
   pin-check:
-    # Standard GitHub-hosted runner — this job only reads files and runs a
-    # small static-analysis tool, no need for self-hosted.
     runs-on: ubuntu-latest
-
     steps:
-      # -----------------------------------------------------------------------
-      # Step 1 — Check out the PR head, with full history.
-      # -----------------------------------------------------------------------
-      # We need `fetch-depth: 0` because Step 2 calls `git diff` between
-      # the PR base SHA and the PR head SHA. The default shallow clone
-      # (fetch-depth: 1) doesn't include the base commit, so `git diff`
-      # would fail with "fatal: bad object". Full history is the simplest
-      # fix; if performance matters here later, we could fetch only the
-      # specific base SHA via `git fetch origin $base_sha --depth=1`.
-      #
-      # The action below is itself pinned to a SHA — both because this
-      # workflow has to follow the rule it enforces, and because pinning
-      # the enforcer to a SHA matters more than pinning anything else.
+      # fetch-depth: 0 so the diff step has both base and head commits available.
       - name: Check out PR head
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
-      # -----------------------------------------------------------------------
-      # Step 2 — Compute the list of action files this PR adds or modifies.
-      # -----------------------------------------------------------------------
-      # `github.event.pull_request.base.sha` is the SHA of the base branch's
-      # tip at the moment the PR was opened/synchronized. `head.sha` is the
-      # tip of the PR branch. Diffing these gives us the set of files this
-      # PR is contributing.
-      #
-      # `--diff-filter=AM` keeps only **A**dded and **M**odified files:
-      #   - We don't want to flag deletions (a PR that removes an unpinned
-      #     file shouldn't be blocked by this check).
-      #   - Pure renames aren't included either; if you want to also lint
-      #     content-edited renames, add `R` here.
-      #
-      # The path globs restrict the diff to action definition files only —
-      # workflow YAMLs and composite-action YAMLs. Files outside those dirs
-      # (e.g. application code) are never inspected.
-      #
-      # We write the list to `changed.txt` instead of using a step output
-      # because step outputs have a 1MB limit and shell-quoting newline-
-      # delimited file lists across steps is fiddly. A file is simpler.
-      #
-      # `count` is exposed as a step output so later steps can short-circuit
-      # via `if: steps.changed.outputs.count != '0'`. Without that guard,
-      # running zizmor with zero files passed to it would error out and
-      # turn a no-op PR into a red check.
-      - name: List added/edited action files vs PR base
+      # --diff-filter=AM skips deletions (don't gate PRs that REMOVE bad files).
+      - name: List added/edited action files
         id: changed
         run: |
           set -euo pipefail
           base="${{ github.event.pull_request.base.sha }}"
           head="${{ github.event.pull_request.head.sha }}"
-
-          # `mapfile` reads stdin into a bash array, one element per line.
-          # `< <(...)` is process substitution — it feeds the git output
-          # to mapfile without spawning a subshell that would lose the array.
           mapfile -t files < <(git diff --name-only --diff-filter=AM "$base" "$head" -- \
             '.github/workflows/*.yml' \
             '.github/workflows/*.yaml' \
             '.github/actions/**/action.yml' \
             '.github/actions/**/action.yaml')
-
-          # Persist the list for the next step. `printf '%s\n'` correctly
-          # handles paths containing spaces or special chars (unlike `echo`).
           printf '%s\n' "${files[@]}" > changed.txt
-
-          # Emit a count so downstream `if:` conditions can skip cleanly.
           echo "count=${#files[@]}" >> "$GITHUB_OUTPUT"
+          echo "Files to lint:"; cat changed.txt
 
-          # Surface the list in the job log for debugging.
-          echo "Files to lint:"
-          cat changed.txt
-
-      # -----------------------------------------------------------------------
-      # Step 3 — Install zizmor.
-      # -----------------------------------------------------------------------
-      # `pipx` installs Python apps in isolated venvs — preferred over plain
-      # `pip install` to avoid polluting the runner's system Python and to
-      # keep zizmor's deps from clashing with anything else.
-      #
-      # We pin zizmor itself to a specific version, both for reproducibility
-      # (a silent upgrade could change the rule set or severity assignments
-      # and start failing PRs that used to pass) and because this workflow's
-      # whole point is "pin your dependencies". Bump deliberately when ready.
-      #
-      # The `if:` skips the install when there are no files to lint — cheaper,
-      # and avoids a misleading green tick on a job that did nothing.
       - name: Install zizmor
         if: steps.changed.outputs.count != '0'
         run: pipx install 'zizmor==1.24.1'
 
-      # -----------------------------------------------------------------------
-      # Step 4 — Run zizmor once and split its output into errors + warnings.
-      # -----------------------------------------------------------------------
-      # We run zizmor a single time with the full default audit set enabled,
-      # then post-process the GitHub annotations so that:
-      #   - `unpinned-uses` findings stay as `::error::` and FAIL the job
-      #     (this is the gate for issue #25934).
-      #   - Every other audit's `::error::` and `::notice::` is demoted to
-      #     `::warning::` — visible in the PR diff as a yellow annotation,
-      #     but never blocks merge.
-      #
-      # Why one run instead of two: zizmor has no flag to scope which audits
-      # contribute to the exit code, so we'd otherwise need either two
-      # invocations (gate + advisory) or per-audit `disable: true` in the
-      # config. Splitting the output is cleaner: one zizmor invocation, one
-      # config file, and the audit-id is preserved in the `title=` field of
-      # GitHub's documented workflow-command format — stable to grep/awk.
-      #
-      # `xargs -a changed.txt -r zizmor ...`:
-      #   `-a changed.txt` reads file paths from the file (one per line).
-      #   `-r` (--no-run-if-empty) prevents xargs from invoking zizmor with
-      #         no arguments if the list happens to be empty — without this,
-      #         zizmor would run against the whole repo, which is exactly
-      #         the behavior we DON'T want for this incremental check.
-      #
-      # `--config .github/zizmor.yml` points at our policy file, which
-      #   defines the per-org pinning rules for the unpinned-uses audit.
-      #
-      # `--format=github` makes zizmor emit
-      #     ::error file=PATH,line=N,title=AUDIT_ID::MESSAGE
-      #   annotations. The `title=AUDIT_ID` part is what we filter on.
-      #
-      # `set +e` (and the `|| true` after the xargs) keep this step alive
-      #   even when zizmor exits non-zero on findings — we need the captured
-      #   output for post-processing, and we run our own gate logic at the
-      #   bottom.
-      - name: Run zizmor and emit annotations
+      # One zizmor invocation; one awk pass that:
+      #   - keeps unpinned-uses errors (gating) and writes them to JSON for the comment step
+      #   - demotes every other ::error and ::notice to ::warning (advisory only)
+      - name: Run zizmor
         if: steps.changed.outputs.count != '0'
         run: |
-          set -uo pipefail   # NOT -e — zizmor's non-zero on findings is expected
+          set -uo pipefail
           out=$(xargs -a changed.txt -r zizmor --config .github/zizmor.yml --format=github 2>&1) || true
-
-          # Stream the captured annotations to GitHub Actions, transforming
-          # everything that isn't unpinned-uses into a warning. Order of
-          # awk patterns matters: the unpinned-uses match must come first
-          # so it isn't caught by the broader `^::error /` rewrite below it.
-          echo "$out" | awk '
-            /^::error /  && /title=unpinned-uses/ { print; next }
-            /^::error /                           { sub(/^::error /,  "::warning "); print; next }
-            /^::notice /                          { sub(/^::notice /, "::warning "); print; next }
-                                                  { print }
+          echo "$out" | awk -v jsonfile=unpinned-violations.json '
+            BEGIN { v = "[" }
+            /^::error / && /title=unpinned-uses/ {
+              print
+              match($0, /file=[^,]+/); path = substr($0, RSTART+5, RLENGTH-5)
+              match($0, /line=[0-9]+/); line = substr($0, RSTART+5, RLENGTH-5)
+              v = v (n++ ? "," : "") "{\"path\":\"" path "\",\"line\":" line "}"
+              next
+            }
+            /^::error /  { sub(/^::error /,  "::warning "); print; next }
+            /^::notice / { sub(/^::notice /, "::warning "); print; next }
+                         { print }
+            END { print v "]" > jsonfile }
           '
+          echo "Captured violations:"; cat unpinned-violations.json
 
-          # Capture unpinned-uses violations as JSON for the comment step.
-          # The inner sed extracts {path,line} objects from the github-format
-          # error annotations; jq -s wraps them into an array. Empty input to
-          # jq -s yields `[]`, so downstream steps always see a well-formed
-          # JSON array regardless of whether anything fired.
-          #
-          # The brace group `{ ... || true; }` is critical: when there are
-          # no unpinned-uses violations, grep exits 1 (no match), and the
-          # GitHub Actions default `bash -e` would abort the whole step
-          # before the JSON file is written. The `|| true` shield makes
-          # "no match" indistinguishable from "match with zero results"
-          # from the pipeline's exit-code perspective.
-          { echo "$out" | grep -E '^::error.*title=unpinned-uses' || true; } \
-            | sed -E 's|^::error file=([^,]+),line=([0-9]+),title=unpinned-uses::.*$|{"path":"\1","line":\2}|' \
-            | jq -s '.' > unpinned-violations.json
-          echo "Captured violations:"
-          cat unpinned-violations.json
-
-      # -----------------------------------------------------------------------
-      # Step 5 — PR comment state machine.
-      # -----------------------------------------------------------------------
-      # We render a markdown summary as a single bot comment on the PR so
-      # the author sees, in the conversation tab, *which* `uses:` lines are
-      # unpinned and how to fix them — without scrolling the Files tab to
-      # find the inline annotations.
-      #   prev state               | current run    | action
-      #   ─────────────────────────┼────────────────┼────────────────────
-      #   no comment               | clean          | noop
-      #   no comment               | violations     | create violation comment
-      #   has same violations      | same set       | noop  (no spam on rebase)
-      #   has different violations | different set  | update violation comment
-      #   has violations           | clean          | update to "resolved"
-      #   already-resolved         | clean          | noop  (don't churn)
-      #   already-resolved         | violations     | update to violation comment (regression)
-
+      # State stored in a hidden HTML state blob inside the bot comment body
+      # so the next run can compare and avoid spam:
+      #   prev state           | current run    | action
+      #   ─────────────────────┼────────────────┼─────────────────────
+      #   no comment           | clean          | noop
+      #   no comment           | violations     | create violation comment
+      #   same violations      | same set       | noop  (no rebase churn)
+      #   different violations | different set  | update comment in place
+      #   has violations       | clean          | update to "resolved"
+      #   already resolved     | clean          | noop
+      #   already resolved     | violations     | update with new violations
       - name: Manage PR comment
         if: steps.changed.outputs.count != '0' && github.event_name == 'pull_request'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             const fs = require('fs');
-
             const MARKER = '<!-- check-action-pins-bot -->';
             const STATE_RE = /<!--\s*state:\s*(.*?)\s*-->/;
-            const stateLine = (state) => `<!-- state: ${JSON.stringify(state)} -->`;
+            const stateLine = (s) => `<!-- state: ${JSON.stringify(s)} -->`;
 
-            // Read the current violation set the previous step captured.
             const current = fs.existsSync('unpinned-violations.json')
               ? JSON.parse(fs.readFileSync('unpinned-violations.json', 'utf8'))
               : [];
 
-            // List the PR's existing comments and find ours (if any).
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -284,44 +110,24 @@ jobs:
             });
             const existing = comments.find(c => c.body && c.body.includes(MARKER));
 
-            // Recover previous state from the existing comment, if any. We
-            // tolerate parse failures (manual edits, schema drift) by
-            // treating them as "no prior state".
             let prev = { violations: [], resolved: false };
             if (existing) {
               const m = existing.body.match(STATE_RE);
               if (m) { try { prev = JSON.parse(m[1]); } catch (_) {} }
             }
 
-            // Stable key for comparing violations. Path+line is enough; we
-            // don't track which action repo because zizmor's annotation
-            // doesn't expose it without re-parsing the workflow file.
             const key = v => `${v.path}:${v.line}`;
-            const sameSet = (a, b) => {
-              const A = a.map(key).sort().join('|');
-              const B = b.map(key).sort().join('|');
-              return A === B;
-            };
+            const sameSet = (a, b) =>
+              a.map(key).sort().join('|') === b.map(key).sort().join('|');
 
-            // Decide the action.
             let action;
             if (current.length === 0) {
-              if (prev.violations.length === 0 || prev.resolved) {
-                action = 'noop';                 // already clean OR already marked resolved
-              } else {
-                action = 'resolve';              // newly resolved
-              }
+              action = (prev.violations.length === 0 || prev.resolved) ? 'noop' : 'resolve';
             } else {
-              if (!prev.resolved && sameSet(prev.violations, current)) {
-                action = 'noop';                 // no churn on rebase/sync
-              } else {
-                action = 'update';               // new set, or regression after resolve
-              }
+              action = (!prev.resolved && sameSet(prev.violations, current)) ? 'noop' : 'update';
             }
+            console.log(`Decision: ${action} (prev=${JSON.stringify(prev)}, current=${current.length})`);
 
-            console.log(`Decision: ${action} (prev=${JSON.stringify(prev)}, current=${current.length} violations)`);
-
-            // Body builders — kept as small helpers for readability.
             const violationBody = (violations) => [
               MARKER,
               stateLine({ violations, resolved: false }),
@@ -334,7 +140,7 @@ jobs:
               ...violations.map(v => `- \`${v.path}:${v.line}\``),
               '',
               '### How to fix',
-              'Replace each `@<tag>` with `@<sha> # <tag>` so the version is recorded in the comment but the binary identity is locked to a SHA. Look up the SHA via:',
+              'Replace each `@<tag>` with `@<sha> # <tag>`. Look up the SHA via:',
               '```bash',
               'gh api repos/<owner>/<repo>/git/refs/tags/<tag> --jq .object.sha',
               '```',
@@ -356,38 +162,20 @@ jobs:
               'All previously detected unpinned 3rd-party action references in this PR have been fixed. Compliant with the SHA-pinning policy ([issue #25934](https://github.com/camunda/camunda/issues/25934)).',
             ].join('\n');
 
-            // Execute the chosen action.
+            if (action === 'noop') return;
+            const body = action === 'resolve' ? resolvedBody() : violationBody(current);
             const common = {
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             };
-
-            if (action === 'noop') {
-              return;
-            }
-
-            const body = action === 'resolve' ? resolvedBody() : violationBody(current);
-
             if (existing) {
-              await github.rest.issues.updateComment({
-                ...common,
-                comment_id: existing.id,
-                body,
-              });
+              await github.rest.issues.updateComment({ ...common, comment_id: existing.id, body });
             } else {
               await github.rest.issues.createComment({ ...common, body });
             }
 
-      # -----------------------------------------------------------------------
-      # Step 6 — Gate.
-      # -----------------------------------------------------------------------
-      # Final, deterministic check: if any unpinned-uses violations were
-      # captured, fail the job. We do this as a separate step (rather than
-      # exiting from Step 4) so that Step 5 always runs first and the PR
-      # comment is up-to-date *before* the red check appears — otherwise
-      # a fast reviewer could see the failure annotation without the
-      # actionable comment yet.
+      # Separate from the awk step so the bot comment lands BEFORE the red ❌.
       - name: Gate on unpinned-uses violations
         if: steps.changed.outputs.count != '0'
         run: |
