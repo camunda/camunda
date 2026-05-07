@@ -311,6 +311,24 @@ describe('<VariableFilterModal />', () => {
     expect(screen.queryByText('Value is required')).not.toBeInTheDocument();
   });
 
+  it('should show value error for contains operator with empty value', async () => {
+    const onApply = vi.fn();
+    const {user} = render(
+      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
+    );
+
+    await user.type(
+      screen.getAllByPlaceholderText('Variable name')[0]!,
+      'myVar',
+    );
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('contains'));
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    expect(screen.getByText('Value is required')).toBeInTheDocument();
+    expect(onApply).not.toHaveBeenCalled();
+  });
+
   it('should apply successfully when all conditions are valid', async () => {
     const onApply = vi.fn();
     const {user} = render(

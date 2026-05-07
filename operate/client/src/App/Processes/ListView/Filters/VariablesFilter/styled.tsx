@@ -9,6 +9,7 @@
 import styled from 'styled-components';
 import {IconButton as BaseIconButton} from '@carbon/react';
 import {styles} from '@carbon/elements';
+import {IconContainer, IconButton} from 'modules/components/IconInput/styled';
 
 const ModalContent = styled.div`
   min-height: 350px;
@@ -28,6 +29,16 @@ const FilterRow = styled.div`
 
 const ValueFieldContainer = styled.div`
   position: relative;
+
+  ${IconContainer} {
+    top: 0;
+    bottom: auto;
+    right: var(--cds-spacing-08);
+
+    ${IconButton} {
+      margin-top: 0;
+    }
+  }
 `;
 
 const DeleteButton = styled(BaseIconButton)<{$hidden?: boolean}>`

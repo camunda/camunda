@@ -28,7 +28,7 @@ type RowErrors = {
 const validateCondition = (condition: DraftCondition): RowErrors => {
   const errors: RowErrors = {};
 
-  if (!condition.name.trim()) {
+  if (!condition.name?.trim()) {
     errors.name = 'Variable name is required';
   }
 
@@ -36,7 +36,7 @@ const validateCondition = (condition: DraftCondition): RowErrors => {
     condition.operator !== 'exists' &&
     condition.operator !== 'doesNotExist'
   ) {
-    if (!condition.value.trim()) {
+    if (!condition.value?.trim()) {
       errors.value = 'Value is required';
     } else if (condition.operator === 'oneOf') {
       let parsed: unknown;
