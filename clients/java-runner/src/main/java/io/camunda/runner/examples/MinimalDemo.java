@@ -43,18 +43,18 @@ public final class MinimalDemo {
   public static void main(final String[] args) throws Exception {
     final List<String> names = List.of("Stephan", "", "World"); // empty triggers fail
 
-    try (var cluster = LiveBpmn.cluster().testcontainer()) {
+    try (final var cluster = LiveBpmn.cluster().testcontainer()) {
       LiveBpmn.createExecutableProcess("hello")
           .startEvent()
           .serviceTask(
               "greet",
-              (Job job) -> {
+              (final Job job) -> {
                 final String name = job.variable("name", String.class);
                 if (name == null || name.isBlank()) {
                   job.fail("missing 'name' variable");
-                  return;
+                } else {
+                  job.complete(Map.of("greeting", "hello, " + name));
                 }
-                job.complete(Map.of("greeting", "hello, " + name));
               })
           .serviceTask(
               "print", (Job job) -> System.out.println(job.variable("greeting", String.class)))

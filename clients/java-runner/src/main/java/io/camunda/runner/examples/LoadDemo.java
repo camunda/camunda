@@ -20,22 +20,18 @@ import io.camunda.runner.LiveBpmn;
 import io.camunda.runner.Run;
 import io.camunda.runner.RunOptions;
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.IntFunction;
 
 /**
- * Self-contained scale demo: 50 instances of a small two-step flow, paced 100 ms apart so they
- * trickle into Operate visibly instead of all completing in milliseconds.
+ * Scale demo: fire {@value #INSTANCES} instances paced {@code PACING} apart so they trickle into
+ * Operate visibly instead of all completing in milliseconds.
  *
  * <pre>
- *   start -> enrich -> notify -> end
+ *   start -> work -> end
  * </pre>
  *
- * <p>Independent from {@link OrderDemos} — its own model, its own handlers, its own variable
- * generator. The point here is throughput, not realism. {@code workersHandled} should always read
- * 50 per task at the end.
+ * <p>The {@code work} task simulates ~50 ms of work. Open the printed Operate URL to watch the
+ * instances move through the diagram in real time. {@code run.workersHandled()} should read {@value
+ * #INSTANCES} for {@code work} when {@code await()} returns.
  */
 public final class LoadDemo {
 
@@ -44,54 +40,25 @@ public final class LoadDemo {
   private static final int INSTANCES = 50;
   private static final Duration PACING = Duration.ofMillis(100);
 
-  /** Per-instance generator producing a distinct payload per item. */
-  private static final IntFunction<Map<String, Object>> INITIAL_VARIABLES =
-      i -> Map.of("itemId", "ITEM-" + i, "priority", i % 3 == 0 ? "high" : "normal");
-
   public static void main(final String[] args) throws Exception {
-    final AtomicLong enriched = new AtomicLong();
-    final AtomicLong notified = new AtomicLong();
+    System.out.println("[LoadDemo] firing " + INSTANCES + " instances, " + PACING + " apart…");
 
-    System.out.println("[LoadDemo] booting cluster (first run pulls the image, ~1-2 min)…");
     try (var cluster = LiveBpmn.cluster().testcontainer()) {
-      System.out.println(
-          "[LoadDemo] cluster ready, firing " + INSTANCES + " instances at " + PACING + " each…");
-
       final Run run =
           LiveBpmn.createExecutableProcess("load")
               .startEvent()
               .serviceTask(
-                  "enrich",
+                  "work",
                   (Job job) -> {
-                    sleep(20 + ThreadLocalRandom.current().nextInt(30));
-                    final long n = enriched.incrementAndGet();
-                    if (n % 10 == 0) {
-                      System.out.println("[enrich] " + n + "/" + INSTANCES);
-                    }
-                    return Map.of("score", ThreadLocalRandom.current().nextInt(100));
-                  })
-              .serviceTask(
-                  "notify",
-                  (Job job) -> {
-                    sleep(10 + ThreadLocalRandom.current().nextInt(20));
-                    final long n = notified.incrementAndGet();
-                    if (n % 10 == 0) {
-                      System.out.println("[notify] " + n + "/" + INSTANCES);
-                    }
+                    sleep(50); // pretend work
                   })
               .endEvent()
-              .run(RunOptions.of(INSTANCES).pacing(PACING).variables(INITIAL_VARIABLES), cluster);
+              .run(RunOptions.of(INSTANCES).pacing(PACING), cluster);
 
       System.out.println("Operate: " + run.operateUrl());
       run.await(Duration.ofMinutes(5));
-      summarise(run.workersHandled());
+      System.out.println("done; handled = " + run.workersHandled());
     }
-  }
-
-  private static void summarise(final Map<String, Long> handled) {
-    System.out.println("done; handled per task = " + handled);
-    final long total = handled.values().stream().mapToLong(Long::longValue).sum();
-    System.out.println("total job completions = " + total + " (expected " + (INSTANCES * 2) + ")");
   }
 
   private static void sleep(final long ms) {
