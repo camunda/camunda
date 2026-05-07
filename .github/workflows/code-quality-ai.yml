@@ -10,6 +10,11 @@ name: Code Quality AI Pipeline
 
 on:
   workflow_dispatch:
+    inputs:
+      max_tickets:
+        description: "Max issues / PRs to open (per run)"
+        type: number
+        default: 5
   push:
     branches:
       - feat/ai-code-quality-pipeline
@@ -33,6 +38,7 @@ concurrency:
 
 env:
   CODE_MAAT_VERSION: "1.0.4"
+  MAX_TICKETS: ${{ inputs.max_tickets || 5 }}
 
 jobs:
   hotspots:
@@ -230,7 +236,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_SECRET }}
           BEDROCK_INFERENCE_PROFILE_ARN: ${{ secrets.HACKDAY_NK_DK_BEDROCK_ACCESS_ARN }}
-        run: node triage.js --input "${{ steps.locate.outputs.sarif }}" --output triaged.json
+        run: node triage.js --input "${{ steps.locate.outputs.sarif }}" --output triaged.json --max-tickets ${{ env.MAX_TICKETS }}
 
       - name: Upload triage output
         if: always()
@@ -290,7 +296,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
-        run: node pr_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-prs 5 --output pr-summary.json
+        run: node pr_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-prs ${{ env.MAX_TICKETS }} --output pr-summary.json
 
       - name: Upload PR-track summary
         if: always()
@@ -332,7 +338,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: node issue_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-issues 10 --output issue-summary.json
+        run: node issue_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-issues ${{ env.MAX_TICKETS }} --output issue-summary.json
 
       - name: Upload issue-track summary
         if: always()

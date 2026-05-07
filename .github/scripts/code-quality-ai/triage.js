@@ -195,30 +195,36 @@ function toFinding(result) {
 
 /**
  * Triage a parsed SARIF object into pr_eligible / issue_only lists.
+ * At most `maxTickets` results are processed to keep runtime bounded.
+ * @param {object} sarif
+ * @param {number} [maxTickets=5]
  */
-export async function triage(sarif) {
-  const findings = [];
-  for (const run of sarif.runs ?? []) {
-    for (const result of run.results ?? []) {
-      const f = toFinding(result);
-      if (f) findings.push(f);
-    }
-  }
+export async function triage(sarif, maxTickets = 5) {
+  const findings = (sarif.runs ?? [])
+    .flatMap((run) => run.results ?? [])
+    .map(toFinding)
+    .filter(Boolean)
+    .slice(0, maxTickets);
 
-  const pr_eligible = [];
-  const issue_only = [];
+  const classified = [];
   for (const finding of findings) {
     const c = await classify(finding);
-    const entry = { ...finding, confidence: c.confidence };
-    if (c.track === "pr_eligible") {
-      pr_eligible.push(entry);
-    } else {
-      issue_only.push({
-        ...entry,
-        reason: c.reason ?? ISSUE_REASON_DEFAULT,
-      });
-    }
+    classified.push({
+      ...finding,
+      confidence: c.confidence,
+      prEligible: c.track === "pr_eligible",
+      reason: c.reason ?? ISSUE_REASON_DEFAULT,
+    });
   }
+
+  const pr_eligible = classified
+    .filter((f) => f.prEligible)
+    .map(({ prEligible, reason, ...f }) => f);
+
+  const issue_only = classified
+    .filter((f) => !f.prEligible)
+    .map(({ prEligible, ...f }) => f);
+
   return { pr_eligible, issue_only };
 }
 
@@ -240,7 +246,7 @@ function writeJson(outputPath, payload) {
 }
 
 function parseArgs(argv) {
-  const args = { input: "-", output: "-" };
+  const args = { input: "-", output: "-", maxTickets: 5 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -250,13 +256,17 @@ function parseArgs(argv) {
       case "--output":
         args.output = argv[++i];
         break;
+      case "--max-tickets":
+        args.maxTickets = Number.parseInt(argv[++i]);
+        break;
       case "-h":
       case "--help":
         console.log(
           [
             "Usage: triage.js [options]",
-            "  --input PATH    SARIF file (default: stdin)",
-            "  --output PATH   classified JSON (default: stdout)",
+            "  --input PATH       SARIF file (default: stdin)",
+            "  --output PATH      classified JSON (default: stdout)",
+            "  --max-tickets N    max findings to triage (default: 5)",
             "",
             "Env (Claude/Bedrock dispatch — set ENABLE_AI_TRIAGE=true):",
             "  AWS_REGION                       (required)",
@@ -279,7 +289,7 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const sarif = readSarif(args.input);
-  const out = await triage(sarif);
+  const out = await triage(sarif, args.maxTickets);
   writeJson(args.output, out);
 }
 
