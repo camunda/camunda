@@ -6,15 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
+import {useLocation} from 'react-router-dom';
 import {IconButton, Layer, Loading} from '@carbon/react';
 import {Download} from '@carbon/react/icons';
 import styled from 'styled-components';
-import {StructuredList} from 'modules/components/StructuredList';
-import {EmptyMessage} from 'modules/components/EmptyMessage';
-import {ErrorMessage} from 'modules/components/ErrorMessage';
+import {SortableTable} from 'modules/components/SortableTable';
 import {useDocuments} from 'modules/queries/variables/useDocuments';
 import {fetchDocument} from 'modules/api/v2/documentReferences/fetchDocument';
+import {getSortParams} from 'modules/utils/filter';
 import {type DocumentReferenceSearchResult} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const Content = styled(Layer)`
@@ -22,25 +22,51 @@ const Content = styled(Layer)`
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 0 var(--cds-spacing-05);
 `;
 
-const ScrollContainer = styled.div`
-  height: 100%;
-  overflow-y: auto;
-`;
-
-const CenteredContainer = styled.div`
-  display: flex;
-  height: 100%;
-  justify-content: center;
-  align-items: center;
-`;
+const HEADER_COLUMNS = [
+  {header: 'Variable', key: 'variableName'},
+  {header: 'File name', key: 'fileName'},
+  {header: 'File type', key: 'contentType', isDisabled: true},
+  {header: 'Size', key: 'size', isDisabled: true},
+  {header: '', key: 'download', isDisabled: true},
+];
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function sortDocuments(
+  docs: DocumentReferenceSearchResult[],
+  sortBy: string,
+  sortOrder: 'asc' | 'desc',
+): DocumentReferenceSearchResult[] {
+  return [...docs].sort((a, b) => {
+    let aVal: string | number | null;
+    let bVal: string | number | null;
+
+    switch (sortBy) {
+      case 'variableName':
+        aVal = a.variableName;
+        bVal = b.variableName;
+        break;
+      case 'fileName':
+        aVal = a.fileName;
+        bVal = b.fileName;
+        break;
+      default:
+        return 0;
+    }
+
+    if (aVal === null && bVal === null) return 0;
+    if (aVal === null) return 1;
+    if (bVal === null) return -1;
+
+    const cmp = String(aVal).localeCompare(String(bVal));
+    return sortOrder === 'asc' ? cmp : -cmp;
+  });
 }
 
 const DocumentsTab: React.FC = () => {
@@ -55,6 +81,21 @@ const DocumentsTab: React.FC = () => {
   } = useDocuments();
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const location = useLocation();
+
+  const sortedDocuments = useMemo(() => {
+    const sortParams = getSortParams(location.search);
+    if (sortParams === null) return documents;
+    return sortDocuments(documents, sortParams.sortBy, sortParams.sortOrder);
+  }, [documents, location.search]);
+
+  const tableState = isError
+    ? ('error' as const)
+    : isLoading
+      ? ('skeleton' as const)
+      : sortedDocuments.length === 0
+        ? ('empty' as const)
+        : ('content' as const);
 
   const handleDownload = async (doc: DocumentReferenceSearchResult) => {
     if (downloadingId !== null) return;
@@ -83,76 +124,45 @@ const DocumentsTab: React.FC = () => {
     }
   };
 
-  if (isError) {
-    return (
-      <Content>
-        <CenteredContainer>
-          <ErrorMessage
-            message="Documents could not be fetched"
-            additionalInfo="Refresh the page to try again"
-          />
-        </CenteredContainer>
-      </Content>
-    );
-  }
-
   return (
     <Content>
-      {!isLoading && documents.length === 0 ? (
-        <CenteredContainer>
-          <EmptyMessage message="No document references found for this process instance" />
-        </CenteredContainer>
-      ) : (
-        <ScrollContainer>
-          <StructuredList
-            dataTestId="documents-list"
-            headerColumns={[
-              {cellContent: 'Variable', width: '25%'},
-              {cellContent: 'File name', width: '35%'},
-              {cellContent: 'File type', width: '20%'},
-              {cellContent: 'Size', width: '15%'},
-              {cellContent: '', width: '5%'},
-            ]}
-            headerSize="sm"
-            verticalCellPadding="var(--cds-spacing-02)"
-            label="Documents List"
-            onVerticalScrollStartReach={() => {
-              if (hasPreviousPage) fetchPreviousPage();
-            }}
-            onVerticalScrollEndReach={() => {
-              if (hasNextPage) fetchNextPage();
-            }}
-            rows={documents.map((doc) => ({
-              key: doc.variableKey,
-              dataTestId: doc.variableKey,
-              columns: [
-                {cellContent: doc.variableName ?? '—'},
-                {cellContent: doc.fileName ?? '—'},
-                {cellContent: doc.contentType ?? '—'},
-                {cellContent: doc.size !== null ? formatSize(doc.size) : '—'},
-                {
-                  cellContent: (
-                    <IconButton
-                      kind="ghost"
-                      size="sm"
-                      label="Download"
-                      aria-label={`Download ${doc.fileName ?? doc.documentId}`}
-                      disabled={downloadingId !== null}
-                      onClick={() => handleDownload(doc)}
-                    >
-                      {downloadingId === doc.documentId ? (
-                        <Loading withOverlay={false} small />
-                      ) : (
-                        <Download />
-                      )}
-                    </IconButton>
-                  ),
-                },
-              ],
-            }))}
-          />
-        </ScrollContainer>
-      )}
+      <SortableTable
+        state={tableState}
+        emptyMessage={{
+          message: 'No document references found for this process instance',
+        }}
+        headerColumns={HEADER_COLUMNS}
+        columnsWithNoContentPadding={['download']}
+        onVerticalScrollStartReach={() => {
+          if (hasPreviousPage) fetchPreviousPage();
+        }}
+        onVerticalScrollEndReach={() => {
+          if (hasNextPage) fetchNextPage();
+        }}
+        rows={sortedDocuments.map((doc) => ({
+          id: doc.variableKey,
+          variableName: doc.variableName ?? '—',
+          fileName: doc.fileName ?? '—',
+          contentType: doc.contentType ?? '—',
+          size: doc.size !== null ? formatSize(doc.size) : '—',
+          download: (
+            <IconButton
+              kind="ghost"
+              size="sm"
+              label="Download"
+              aria-label={`Download ${doc.fileName ?? doc.documentId}`}
+              disabled={downloadingId !== null}
+              onClick={() => handleDownload(doc)}
+            >
+              {downloadingId === doc.documentId ? (
+                <Loading withOverlay={false} small />
+              ) : (
+                <Download />
+              )}
+            </IconButton>
+          ),
+        }))}
+      />
     </Content>
   );
 };
