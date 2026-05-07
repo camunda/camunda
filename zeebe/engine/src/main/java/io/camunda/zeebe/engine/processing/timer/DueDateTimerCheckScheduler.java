@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.timer;
 
-import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
 import io.camunda.zeebe.engine.processing.scheduled.api.ScheduledTask;
 import io.camunda.zeebe.engine.processing.scheduled.api.TaskContext;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
@@ -18,17 +18,17 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
  * Triggers BPMN timers (start events, boundary events, intermediate catch events) once their due
  * date is reached.
  *
- * <p>On-demand: returns {@link Outcome.AwaitDueAt} for the next due-date so the runtime sleeps
- * until then. External callers ({@code TimerStartEventSubscriptionManager} and friends) call {@code
- * managed.requestRun(dueDate)} via {@link #scheduleTimer} whenever a new timer is created with an
- * earlier due-date than the currently-scheduled run.
+ * <p>On-demand: returns {@link Result.Builder#awaitDueAt} for the next due-date so the runtime
+ * sleeps until then. External callers ({@code TimerStartEventSubscriptionManager} and friends) call
+ * {@code managed.requestRun(dueDate)} via {@code scheduleTimer} whenever a new timer is created
+ * with an earlier due-date than the currently-scheduled run.
  *
  * <p>Cooperative yielding: when many timers are due at once, the task polls {@link
- * TaskContext#shouldYield()} between entries and returns {@link Outcome.YieldNow} so the actor
- * thread can serve other work. The schedule's yield budget controls how long a single run may
+ * TaskContext#shouldYield()} between entries and returns {@link Result.Builder#yieldNow()} so the
+ * actor thread can serve other work. The schedule's yield budget controls how long a single run may
  * consume.
  */
-public final class DueDateTimerCheckScheduler implements ScheduledTask {
+public final class DueDateTimerCheckScheduler implements ScheduledTask<Void> {
 
   private final TimerInstanceState timerInstanceState;
 
@@ -45,7 +45,8 @@ public final class DueDateTimerCheckScheduler implements ScheduledTask {
   }
 
   @Override
-  public Outcome run(final TaskContext ctx) {
+  public Result run(final TaskContext<Void> ctx) {
+    final Result.Builder<Void> result = ctx.result();
     final long now = ctx.clock().millis();
 
     final long nextDueDate =
@@ -64,14 +65,12 @@ public final class DueDateTimerCheckScheduler implements ScheduledTask {
                   .setRepetitions(timer.getRepetitions())
                   .setProcessDefinitionKey(timer.getProcessDefinitionKey())
                   .setTenantId(timer.getTenantId());
-              return ctx.sink().append(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
+              return result.append(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
             });
 
     if (nextDueDate > 0) {
-      return new Outcome.AwaitDueAt(nextDueDate);
+      return result.awaitDueAt(nextDueDate);
     }
-    // No more timers; if the visitor stopped because we yielded or the batch was full, the
-    // runtime will reschedule on the YieldNow path. Plain Idle here means "actually nothing to do".
-    return ctx.shouldYield() ? Outcome.YIELD_NOW : Outcome.IDLE;
+    return ctx.shouldYield() ? result.yieldNow() : result.idle();
   }
 }

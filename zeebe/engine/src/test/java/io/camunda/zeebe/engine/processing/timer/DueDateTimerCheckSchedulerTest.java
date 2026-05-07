@@ -13,7 +13,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.scheduled.api.Outcome;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result;
+import io.camunda.zeebe.engine.processing.scheduled.api.Result.Decision;
 import io.camunda.zeebe.engine.processing.scheduled.runtime.FakeTaskContext;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
@@ -32,11 +33,11 @@ final class DueDateTimerCheckSchedulerTest {
     final var scheduler = new DueDateTimerCheckScheduler(state);
 
     // when
-    final Outcome outcome = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
+    final Result result = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
 
     // then
-    assertThat(outcome).isInstanceOf(Outcome.AwaitDueAt.class);
-    assertThat(((Outcome.AwaitDueAt) outcome).timestampMs()).isEqualTo(2_500L);
+    assertThat(result.decision()).isInstanceOf(Decision.AwaitDueAt.class);
+    assertThat(((Decision.AwaitDueAt) result.decision()).timestampMs()).isEqualTo(2_500L);
   }
 
   @Test
@@ -47,10 +48,10 @@ final class DueDateTimerCheckSchedulerTest {
     final var scheduler = new DueDateTimerCheckScheduler(state);
 
     // when
-    final Outcome outcome = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
+    final Result result = scheduler.run(FakeTaskContext.create().withClockMillis(1_000L));
 
     // then
-    assertThat(outcome).isEqualTo(Outcome.IDLE);
+    assertThat(result.decision()).isEqualTo(Decision.IDLE);
   }
 
   @Test
@@ -62,10 +63,11 @@ final class DueDateTimerCheckSchedulerTest {
     final var ctx = FakeTaskContext.create().withClockMillis(1_000L).withShouldYield(true);
 
     // when
-    final Outcome outcome = scheduler.run(ctx);
+    final Result result = scheduler.run(ctx);
 
-    // then
-    assertThat(outcome).isEqualTo(Outcome.YIELD_NOW);
+    // then — yield with null cursor since this task is <Void>
+    assertThat(result.decision()).isInstanceOf(Decision.YieldNow.class);
+    assertThat(((Decision.YieldNow) result.decision()).cursor()).isNull();
   }
 
   @Test
@@ -90,9 +92,9 @@ final class DueDateTimerCheckSchedulerTest {
 
     // then
     assertThat(accepted).isTrue();
-    assertThat(ctx.appended()).hasSize(1);
-    assertThat(ctx.appended().get(0).key()).isEqualTo(7L);
-    assertThat(ctx.appended().get(0).intent()).isEqualTo(TimerIntent.TRIGGER);
+    assertThat(ctx.lastResult().appendedCommands()).hasSize(1);
+    assertThat(ctx.lastResult().appendedCommands().get(0).key()).isEqualTo(7L);
+    assertThat(ctx.lastResult().appendedCommands().get(0).intent()).isEqualTo(TimerIntent.TRIGGER);
   }
 
   @Test
@@ -110,6 +112,6 @@ final class DueDateTimerCheckSchedulerTest {
 
     // then
     assertThat(accepted).isFalse();
-    assertThat(ctx.appended()).isEmpty();
+    assertThat(ctx.lastResult().appendedCommands()).isEmpty();
   }
 }
