@@ -163,7 +163,7 @@
     <version.commons-collections>20040616</version.commons-collections>
 
     <version.commons-io>2.20.0</version.commons-io>
-    <version.thymeleaf>3.1.4.RELEASE</version.thymeleaf>
+    <version.thymeleaf>3.1.5.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.4</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>
     <version.springdoc>2.8.16</version.springdoc>
@@ -2197,8 +2197,8 @@
         <version>${version.nimbus-jose-jwt}</version>
       </dependency>
 
-      <!-- override transitive dependency in spring-boot-starter-thymeleaf until a
-           new version using thymeleaf-spring6:3.1.4.RELEASE is released -->
+      <!-- override transitive dependency in spring-boot-starter-thymeleaf as
+           older thymeleaf-spring6 versions < 3.15.RELEASE are being used -->
       <dependency>
         <groupId>org.thymeleaf</groupId>
         <artifactId>thymeleaf-spring6</artifactId>
