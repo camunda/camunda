@@ -25,7 +25,7 @@ Run these from the respective `client/` directory.
 npm ci                # Install dependencies
 npm run build         # Build for production
 npm run test          # Run unit tests
-npm run lint          # Lint (TypeScript + ESLint + Prettier check)
+npm run lint          # Lint (TypeScript + ESLint + Prettier check; runs Stylelint in tasklist)
 npm run format        # Auto-format with Prettier
 npm run start         # Start dev server
 ```

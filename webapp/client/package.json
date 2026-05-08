@@ -15,7 +15,9 @@
 	],
 	"scripts": {
 		"dev:oc": "npm run dev -w @camunda/orchestration-cluster-webapp",
-		"lint": "eslint . && prettier -c .",
+		"lint:eslint": "eslint .",
+		"lint:prettier": "prettier -c .",
+		"lint": "npm run lint:eslint && npm run lint:prettier",
 		"typecheck": "npm run typecheck --workspaces --if-present",
 		"format": "prettier --write .",
 		"build": "npm run build --workspaces --if-present",
