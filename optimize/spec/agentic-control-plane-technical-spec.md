@@ -40,6 +40,32 @@
 
 **Scope**: Read-only analytics. No write-back to Zeebe.
 
+**Architectural approach — nested in `ProcessInstanceIndex`**:
+
+Agent instance data is stored as a `nested` field (`agentInstances`) inside the existing
+`ProcessInstanceIndex` document. This is the same pattern used for `flowNodeInstances`,
+`incidents`, and `variables`.
+
+Key consequences of this choice:
+
+- **Process and agent data are always co-located.** Any future analytics widget that correlates
+  agent metrics with process-level conditions (e.g. "agent runs where the parent process exceeded
+  SLA") is a first-class single-index query — no cross-index join required.
+- **All existing process filters apply automatically.** `tenantId`, `processDefinitionKey`, date
+  range, and any future process-level filter work against agent data without additional
+  implementation.
+- **`ProcessInstanceIndex` VERSION bump required.** The index mapping change (8 → 9) must be
+  deployed before the import pipeline is activated. A wrong mapping type on first write is
+  hard to fix without a full reindex.
+- **Painless script required.** Agent instance upsert-by-key into the nested array, plus
+  re-aggregation of parent-level token totals, is implemented as a Painless update script.
+  This is the highest-risk task in the implementation (see impl plan).
+- **Nested aggregation overhead.** All agent-scoped queries use ES/OS nested aggregations.
+  At high agent invocation volume per process instance, nested overhead is measurable.
+
+See `agentic-control-plane-impl-plan-comparison.md` for the full tradeoff analysis against
+the separate index variant.
+
 **Non-goals (phase 1)**:
 
 - Reasoning tokens (phase 2 via Zeebe schema change)
