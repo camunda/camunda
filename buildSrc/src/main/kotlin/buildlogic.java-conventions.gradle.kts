@@ -30,7 +30,6 @@ val nullAwayVersion =
     versionCatalog.findVersion("com-uber-nullaway-nullaway").get().requiredVersion
 val googleJavaFormatVersion =
     versionCatalog.findVersion("com-google-googlejavaformat-google-java-format").get().requiredVersion
-val skipChecks = providers.gradleProperty("skipChecks").map(String::toBoolean).getOrElse(false)
 val isCi = providers.environmentVariable("CI")
     .map { it.equals("true", ignoreCase = true) }
     .getOrElse(false)
@@ -46,6 +45,7 @@ dependencies {
 
 extensions.configure<SpotlessExtension> {
     isEnforceCheck = isCi
+
 
     java {
         target("src/**/*.java")
@@ -102,8 +102,3 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-if (!skipChecks) {
-    tasks.named("build") {
-        dependsOn(if (isCi) "spotlessCheck" else "spotlessApply")
-    }
-}

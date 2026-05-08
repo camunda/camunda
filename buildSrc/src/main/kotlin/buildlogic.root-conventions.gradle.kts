@@ -16,7 +16,6 @@ plugins {
     id("com.diffplug.spotless")
 }
 
-val skipChecks = providers.gradleProperty("skipChecks").map(String::toBoolean).getOrElse(false)
 val isCi = providers.environmentVariable("CI")
     .map { it.equals("true", ignoreCase = true) }
     .getOrElse(false)
@@ -54,8 +53,3 @@ extensions.configure<SpotlessExtension> {
     }
 }
 
-if (!skipChecks) {
-    tasks.named("build") {
-        dependsOn(if (isCi) "spotlessCheck" else "spotlessApply")
-    }
-}
