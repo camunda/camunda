@@ -328,4 +328,13 @@ public final class SearchQueryBuilders {
       final Function<DeployedResourceQuery.Builder, ObjectBuilder<DeployedResourceQuery>> fn) {
     return fn.apply(deployedResourceSearchQuery()).build();
   }
+
+  public static DocumentReferenceQuery.Builder documentReferenceSearchQuery() {
+    return new DocumentReferenceQuery.Builder();
+  }
+
+  public static DocumentReferenceQuery documentReferenceSearchQuery(
+      final Function<DocumentReferenceQuery.Builder, ObjectBuilder<DocumentReferenceQuery>> fn) {
+    return fn.apply(documentReferenceSearchQuery()).build();
+  }
 }

@@ -380,4 +380,13 @@ public final class SortOptionBuilders {
       final Function<DeployedResourceSort.Builder, ObjectBuilder<DeployedResourceSort>> fn) {
     return fn.apply(deployedResource()).build();
   }
+
+  public static DocumentReferenceSort.Builder documentReference() {
+    return new DocumentReferenceSort.Builder();
+  }
+
+  public static DocumentReferenceSort documentReference(
+      final Function<DocumentReferenceSort.Builder, ObjectBuilder<DocumentReferenceSort>> fn) {
+    return fn.apply(documentReference()).build();
+  }
 }

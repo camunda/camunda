@@ -405,4 +405,13 @@ public final class FilterBuilders {
       final Function<DeployedResourceFilter.Builder, ObjectBuilder<DeployedResourceFilter>> fn) {
     return fn.apply(deployedResource()).build();
   }
+
+  public static DocumentReferenceFilter.Builder documentReference() {
+    return new DocumentReferenceFilter.Builder();
+  }
+
+  public static DocumentReferenceFilter documentReference(
+      final Function<DocumentReferenceFilter.Builder, ObjectBuilder<DocumentReferenceFilter>> fn) {
+    return fn.apply(documentReference()).build();
+  }
 }
