@@ -388,7 +388,12 @@ def main() -> None:
             fqn_class = f"{test['packageName']}.{test['className']}"
             method = test["methodName"]
             query = (
-                "SELECT DATE(ts.report_time) AS day, build_trigger, test_status, COUNT(*) AS occurrences\n"
+                "SELECT\n"
+                "  DATE(ts.report_time) AS day,\n"
+                "  build_trigger,\n"
+                '  REPLACE(COALESCE(build_base_ref, build_ref), "refs/heads/", "") AS branch,\n'
+                "  test_status,\n"
+                "  COUNT(*) AS occurrences\n"
                 "FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts\n"
                 "LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs\n"
                 "  ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name\n"
@@ -396,7 +401,7 @@ def main() -> None:
                 '  AND ts.ci_url = "https://github.com/camunda/camunda"\n'
                 f'  AND test_class_name = "{fqn_class}"\n'
                 f'  AND (test_name = "{method}" OR STARTS_WITH(test_name, "{method}("))\n'
-                "GROUP BY day, build_trigger, test_status\n"
+                "GROUP BY day, build_trigger, branch, test_status\n"
                 "ORDER BY day DESC, occurrences DESC"
             )
             lines.append("")
@@ -407,7 +412,7 @@ def main() -> None:
                 lines.append(f"  {q_line}")
             lines.append("  ```")
             lines.append("")
-            lines.append("  Rows with `flaky` status on `main`/`stable/*` (or other PRs) over the last 60 days indicate a pre-existing intermittent flake — likely a false alarm. No prior `flaky` rows means this PR genuinely introduced it.")
+            lines.append("  Each row aggregates runs by day, trigger, branch, and status. Rows with `flaky` status on `main` or `stable/*` (`build_trigger` `merge_group`/`push`) over the last 60 days indicate a pre-existing intermittent flake — likely a false alarm. `flaky` rows only on `pull_request` mean other PRs hit it too. No prior `flaky` rows means this PR genuinely introduced it.")
             lines.append("  </details>")
         lines.append("")
 
