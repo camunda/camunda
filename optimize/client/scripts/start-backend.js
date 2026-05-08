@@ -42,7 +42,6 @@ let backendVersion;
 let elasticSearchVersion;
 let opensearchVersion;
 let camundaVersion;
-let identityVersion;
 
 const commonEnv = {
   OPTIMIZE_API_ACCESS_TOKEN: 'secret',
@@ -197,7 +196,7 @@ function startDocker() {
         ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
         ES_VERSION: elasticSearchVersion,
         OS_VERSION: opensearchVersion,
-        IDENTITY_VERSION: identityVersion,
+        IDENTITY_VERSION: camundaVersion,
         // we assume that the version of operate is the same as zeebe
         CAMUNDA_VERSION: camundaVersion,
         // to start only the opensearch services, we create profiles for mode + database
@@ -208,7 +207,7 @@ function startDocker() {
 
     dockerProcess.stdout.on('data', (data) => server.addLog(data, 'docker'));
     dockerProcess.stderr.on('data', (data) => {
-      process.stdout.write(`docker stderr: ${data}`);
+      process.stderr.write(`docker stderr: ${data}`);
       server.addLog(data, 'docker', true);
     });
 
@@ -245,10 +244,9 @@ function setVersionInfo() {
         const properties = data.project.properties;
         elasticSearchVersion = properties['elasticsearch.test.version'];
         opensearchVersion = properties['opensearch.test.version'];
-        camundaVersion = properties['zeebe.docker.version'];
-        identityVersion = properties['identity.version'];
+        camundaVersion = properties['camunda.docker.version'];
         console.log(
-          `backend version: ${backendVersion}, elasticsearch version: ${elasticSearchVersion}, opensearch version: ${opensearchVersion}, zeebe version: ${camundaVersion}, identity version: ${identityVersion}`
+          `Backend version: ${backendVersion}, Elasticsearch version: ${elasticSearchVersion}, Opensearch version: ${opensearchVersion}, Camunda/Identity version: ${camundaVersion}`
         );
         resolve();
       });
