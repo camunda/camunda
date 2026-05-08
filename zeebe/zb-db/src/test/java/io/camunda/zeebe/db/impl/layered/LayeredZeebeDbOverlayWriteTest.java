@@ -69,6 +69,25 @@ final class LayeredZeebeDbOverlayWriteTest {
   }
 
   @Test
+  void shouldFlushCommittedOverlayToPersistentWhenOverlayLimitIsReached(
+      final @TempDir File path) throws Exception {
+    try (final var layeredDb = openLayeredDb(path, 4 * 1024L)) {
+      final var columnFamily = longColumnFamily(layeredDb);
+      final var key = dbLong(1L);
+
+      // when
+      columnFamily.insert(key, dbLong(100L));
+
+      // then
+      assertThat(columnFamily.get(key)).isNotNull();
+      assertThat(columnFamily.get(key).getValue()).isEqualTo(100L);
+      assertThat(longColumnFamily(layeredDb.activeDb()).count()).isZero();
+      assertThat(longColumnFamily(layeredDb.persistentDb()).get(key)).isNotNull();
+      assertThat(longColumnFamily(layeredDb.persistentDb()).get(key).getValue()).isEqualTo(100L);
+    }
+  }
+
+  @Test
   void shouldRollbackOverlayWritesAndTombstones(final @TempDir File path) throws Exception {
     // given
     writePersistentLongValue(path, 1L, 100L);
@@ -102,9 +121,15 @@ final class LayeredZeebeDbOverlayWriteTest {
 
   @SuppressWarnings("unchecked")
   private LayeredZeebeDb<DefaultColumnFamily> openLayeredDb(final File path) {
+    return openLayeredDb(path, RocksDbConfiguration.DEFAULT_MEMORY_LIMIT);
+  }
+
+  @SuppressWarnings("unchecked")
+  private LayeredZeebeDb<DefaultColumnFamily> openLayeredDb(
+      final File path, final long memoryLimit) {
     return (LayeredZeebeDb<DefaultColumnFamily>)
         new LayeredZeebeDbFactory<DefaultColumnFamily>(
-                new RocksDbConfiguration(),
+                new RocksDbConfiguration().setMemoryLimit(memoryLimit),
                 new ConsistencyChecksSettings(true, true),
                 new AccessMetricsConfiguration(Kind.NONE, 1),
                 SimpleMeterRegistry::new)

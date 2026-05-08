@@ -27,14 +27,8 @@ final class LayeredSnapshotFlusher {
    * writes participate in the transaction's commit/rollback lifecycle.
    */
   @SuppressWarnings("unchecked")
-  static NavigableSet<byte[]> flush(final LayeredZeebeDb<?> db) {
+  static void flush(final LayeredZeebeDb<?> db, final LayeredZeebeDb.FlushSnapshot snapshot) {
     final var persistentDb = (ZeebeTransactionDb<ZbColumnFamilies>) db.persistentDb();
-
-    // Capture committed entries AND tombstones atomically under the LayeredZeebeDb monitor.
-    // This is the same monitor held by commitActiveAndTombstones(), so we are guaranteed to
-    // see a consistent pair: every entry whose tombstone was cleared will be present, and
-    // every tombstone corresponds to an entry that is genuinely deleted.
-    final var snapshot = db.captureFlushSnapshot();
 
     // Use a dedicated RawTransactionalColumnFamily for writing. The rawPut/rawDelete methods
     // go through the transaction (not around it), so the writes are properly atomic.
@@ -70,6 +64,5 @@ final class LayeredSnapshotFlusher {
           }
         });
 
-    return snapshot.tombstones();
   }
 }

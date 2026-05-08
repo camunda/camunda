@@ -45,6 +45,8 @@ final class LayeredZeebeDbSnapshotFlushTest {
       // when
       final var snapshotPath = new File(snapshotDir, "snapshot");
       layeredDb.createSnapshot(snapshotPath);
+
+      assertThat(longColumnFamily(layeredDb.activeDb()).count()).isZero();
     }
 
     // then

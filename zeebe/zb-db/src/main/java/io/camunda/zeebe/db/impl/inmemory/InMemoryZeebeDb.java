@@ -171,4 +171,14 @@ public class InMemoryZeebeDb<
       return new ArrayList<>(committedData.entrySet());
     }
   }
+
+  public long committedEntryCount() {
+    return committedData.size();
+  }
+
+  public void clearCommittedEntries() {
+    synchronized (this) {
+      committedData.clear();
+    }
+  }
 }

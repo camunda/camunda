@@ -29,6 +29,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Layered ZeebeDb with an active in-memory overlay in front of the persistent RocksDB-backed
@@ -52,6 +54,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
     implements ZeebeDb<ColumnFamilyType> {
 
+  private static final Logger LOG = LoggerFactory.getLogger(LayeredZeebeDb.class);
+
   private final ZeebeDb<ColumnFamilyType> activeDb;
   private final ZeebeDb<ColumnFamilyType> persistentDb;
   private final ConsistencyChecksSettings consistencyChecksSettings;
@@ -65,16 +69,19 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
    * always {@code stateLock → InMemoryZeebeDb monitor} to avoid deadlocks.
    */
   private final ReadWriteLock stateLock = new ReentrantReadWriteLock();
+  private final long maxOverlayEntriesBeforeFlush;
 
   private volatile boolean closed;
 
   public LayeredZeebeDb(
       final ZeebeDb<ColumnFamilyType> activeDb,
       final ZeebeDb<ColumnFamilyType> persistentDb,
-      final ConsistencyChecksSettings consistencyChecksSettings) {
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final long maxOverlayEntriesBeforeFlush) {
     this.activeDb = activeDb;
     this.persistentDb = persistentDb;
     this.consistencyChecksSettings = consistencyChecksSettings;
+    this.maxOverlayEntriesBeforeFlush = maxOverlayEntriesBeforeFlush;
   }
 
   ZeebeDb<ColumnFamilyType> activeDb() {
@@ -107,6 +114,14 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
     try {
       activeTransaction.commit();
       applyCommittedTombstoneChangesUnlocked(pendingTombstones, pendingTombstoneRemovals);
+
+      if (shouldFlushCommittedOverlayUnlocked()) {
+        try {
+          flushCommittedOverlayUnlocked();
+        } catch (final Exception e) {
+          LOG.warn("Failed to flush full layered overlay to RocksDB; keeping data in memory", e);
+        }
+      }
     } finally {
       stateLock.writeLock().unlock();
     }
@@ -180,11 +195,10 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
       if (closed) {
         return; // DB was closed before we acquired the lock — nothing to snapshot
       }
-      final var flushed = LayeredSnapshotFlusher.flush(this);
+      final var snapshot = captureFlushSnapshot();
+      LayeredSnapshotFlusher.flush(this, snapshot);
       persistentDb.createSnapshot(snapshotDir);
-      // Tombstone removal only needs to remove the specific set we flushed.
-      // Safe under the read lock because committedTombstones is a ConcurrentSkipListMap.
-      flushed.forEach(committedTombstones::remove);
+      clearCommittedOverlayState();
     } finally {
       stateLock.readLock().unlock();
     }
@@ -239,6 +253,27 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<? extends EnumVa
     final NavigableSet<byte[]> snapshot = new TreeSet<>(Arrays::compareUnsigned);
     committedTombstones.forEach(key -> snapshot.add(Arrays.copyOf(key, key.length)));
     return snapshot;
+  }
+
+  private boolean shouldFlushCommittedOverlayUnlocked() {
+    final var inMemoryDb = (InMemoryZeebeDb<?>) activeDb;
+    final long overlayEntries = inMemoryDb.committedEntryCount() + committedTombstones.size();
+    return overlayEntries >= maxOverlayEntriesBeforeFlush;
+  }
+
+  private void flushCommittedOverlayUnlocked() {
+    final var snapshot = captureFlushSnapshot();
+    if (snapshot.entries().isEmpty() && snapshot.tombstones().isEmpty()) {
+      return;
+    }
+
+    LayeredSnapshotFlusher.flush(this, snapshot);
+    clearCommittedOverlayState();
+  }
+
+  private void clearCommittedOverlayState() {
+    ((InMemoryZeebeDb<?>) activeDb).clearCommittedEntries();
+    committedTombstones.clear();
   }
 
   // ---- Internal helpers ----

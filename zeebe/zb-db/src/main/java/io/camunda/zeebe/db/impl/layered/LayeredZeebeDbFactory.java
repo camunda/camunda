@@ -33,10 +33,12 @@ public final class LayeredZeebeDbFactory<
     implements ZeebeDbFactory<ColumnFamilyType> {
   private static final ConsistencyChecksSettings INDIVIDUAL_DB_CONSISTENCY_SETTINGS =
       new ConsistencyChecksSettings();
+  private static final long ESTIMATED_OVERLAY_ENTRY_BYTES = 4 * 1024L;
 
   private final ZeebeRocksDbFactory<ColumnFamilyType> persistentFactory;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration accessMetricsConfiguration;
+  private final long maxOverlayEntriesBeforeFlush;
 
   @VisibleForTesting
   public LayeredZeebeDbFactory(
@@ -71,6 +73,12 @@ public final class LayeredZeebeDbFactory<
             partitionCount);
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.accessMetricsConfiguration = accessMetricsConfiguration;
+    maxOverlayEntriesBeforeFlush =
+        Math.max(
+            1,
+            rocksDbConfiguration.getMemoryLimit()
+                / partitionCount
+                / ESTIMATED_OVERLAY_ENTRY_BYTES);
   }
 
   public ZeebeRocksDbFactory<ColumnFamilyType> persistentFactory() {
@@ -86,7 +94,8 @@ public final class LayeredZeebeDbFactory<
             accessMetricsConfiguration,
             persistentDb.getMeterRegistry());
     wireLayeredFkFallback(activeDb, persistentDb);
-    return new LayeredZeebeDb<>(activeDb, persistentDb, consistencyChecksSettings);
+    return new LayeredZeebeDb<>(
+        activeDb, persistentDb, consistencyChecksSettings, maxOverlayEntriesBeforeFlush);
   }
 
   @Override
@@ -98,7 +107,8 @@ public final class LayeredZeebeDbFactory<
             accessMetricsConfiguration,
             persistentDb.getMeterRegistry());
     wireLayeredFkFallback(activeDb, persistentDb);
-    return new LayeredZeebeDb<>(activeDb, persistentDb, consistencyChecksSettings);
+    return new LayeredZeebeDb<>(
+        activeDb, persistentDb, consistencyChecksSettings, maxOverlayEntriesBeforeFlush);
   }
 
   private static void wireLayeredFkFallback(
