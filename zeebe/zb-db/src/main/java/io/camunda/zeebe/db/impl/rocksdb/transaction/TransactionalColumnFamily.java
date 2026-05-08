@@ -341,18 +341,32 @@ class TransactionalColumnFamily<
   @Override
   public boolean exists(final KeyType key) {
     try (final var timer = metrics.measureGetLatency()) {
+      final var exists = new AtomicBoolean(false);
       ensureInOpenTransaction(
           transaction -> {
             columnFamilyContext.writeKey(key);
-            final byte[] value =
-                transaction.get(
-                    transactionDb.getDefaultNativeHandle(),
-                    transactionDb.getReadOptionsNativeHandle(),
-                    columnFamilyContext.getKeyBufferArray(),
-                    columnFamilyContext.getKeyLength());
-            columnFamilyContext.wrapValueView(value);
+
+            if (transaction.hasPendingWrites()) {
+              final byte[] value =
+                  transaction.get(
+                      transactionDb.getDefaultNativeHandle(),
+                      transactionDb.getReadOptionsNativeHandle(),
+                      columnFamilyContext.getKeyBufferArray(),
+                      columnFamilyContext.getKeyLength());
+              exists.set(value != null);
+            } else {
+              exists.set(
+                  transactionDb
+                      .getRocksDb()
+                      .keyExists(
+                          transactionDb.getDefaultHandle(),
+                          transactionDb.getDefaultReadOptions(),
+                          columnFamilyContext.getKeyBufferArray(),
+                          0,
+                          columnFamilyContext.getKeyLength()));
+            }
           });
-      return !columnFamilyContext.isValueViewEmpty();
+      return exists.get();
     }
   }
 

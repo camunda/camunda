@@ -141,8 +141,16 @@ public class ZeebeTransactionDb<
     return prefixReadOptions;
   }
 
+  protected ReadOptions getDefaultReadOptions() {
+    return defaultReadOptions;
+  }
+
   protected ColumnFamilyHandle getDefaultHandle() {
     return defaultHandle;
+  }
+
+  protected RocksDB getRocksDb() {
+    return rocksDB;
   }
 
   protected long getReadOptionsNativeHandle() {

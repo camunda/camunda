@@ -97,6 +97,10 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     return writeBatch.newIteratorWithBase(handle, db.newIterator(handle, options));
   }
 
+  boolean hasPendingWrites() {
+    return writeBatch.count() > 0;
+  }
+
   void resetTransaction() {
     writeBatch.clear();
     inCurrentTransaction = true;
