@@ -2,7 +2,8 @@
 
 A CI quality gate that prevents PRs from introducing **new** flaky tests.
 It compares flaky tests detected in the PR's CI run against a baseline of
-tests that are already known to be flaky on `main` and `stable/*` branches.
+tests already known to be flaky on `main`, `stable/*`, or in any other
+pull request in the last 20 days.
 
 Only truly **new** flaky tests block the PR — pre-existing flaky tests are ignored.
 
@@ -89,8 +90,9 @@ This returns every test that flaked at least once on `main`, `stable/*`, or
 in any other pull request in the last 20 days. The 20-day window matches the
 range of clustered BigQuery data. PR runs are included so tests that flake
 mostly on PRs are still recognised, but the current PR's own observations are
-excluded (via the `@pr_ref` parameter, e.g. `refs/pull/12345/merge`) so a
-new flake cannot launder itself across re-runs. The GCP service account key
+excluded so a new flake cannot launder itself across re-runs. The current
+PR's ref is supplied at query time via `bq query --parameter='pr_ref:STRING:refs/pull/<N>/merge'`
+(see the [workflow step](../../workflows/ci.yml)). The GCP service account key
 is fetched from Vault.
 
 ## Processing Steps
