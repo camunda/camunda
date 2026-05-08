@@ -3,7 +3,7 @@
 #              one for new infra (Teleport auth). Posts deleted namespaces to Slack.
 # type: CI
 # owner: camunda/orchestration-cluster-team
-name: camunda-load-test-clean-up.yml
+name: camunda-load-test-ttl-cleanup.yml
 on:
   schedule:
     - cron: "0 4 * * *"
