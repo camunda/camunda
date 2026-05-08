@@ -22,17 +22,22 @@ Camunda, Connectors, and Docker Compose in one place. Wait for it to be merged b
 Open the Renovate PR described above. The table at the top of the PR body lists every version
 change. Record:
 
-|     `.env` variable      |               Where to read it from                |
-|--------------------------|----------------------------------------------------|
-| `CAMUNDA_VERSION`        | `camunda/camunda` row in the Renovate PR           |
-| `CAMUNDA_DOCKER_VERSION` | Same as `CAMUNDA_VERSION`                          |
-| `CONNECTORS_VERSION`     | `camunda/connectors-bundle` row in the Renovate PR |
-| `ELASTICSEARCH_VERSION`  | Only changes when Elasticsearch itself is bumped   |
+These two variables are the ones you will update in `./c8run/.env`:
+
+| `./c8run/.env` variable |               Where to read it from                |
+|-------------------------|----------------------------------------------------|
+| `CAMUNDA_VERSION`       | `camunda/camunda` row in the Renovate PR           |
+| `CONNECTORS_VERSION`    | `camunda/connectors-bundle` row in the Renovate PR |
+
+> **Note:** `CAMUNDA_DOCKER_VERSION` and `ELASTICSEARCH_VERSION` are **not** part of `./c8run/.env`
+> — they belong to the Docker Compose distribution and are managed separately in
+> `camunda/camunda-distributions`.
 
 You can also cross-check that no c8run artifacts have been published yet for the target release:
 
 ```bash
-gh release view <version> --repo camunda/camunda --json assets --jq '.assets[].name' | grep -i c8run
+gh release view <version> --repo camunda/camunda --json assets --jq '.assets[].name' 2>/dev/null \
+  | grep 'camunda8-run-' || echo "No c8run artifacts found (or release does not exist yet)"
 ```
 
 If there is no output, the c8run release has not been done yet.
