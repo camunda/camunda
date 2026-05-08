@@ -11,7 +11,7 @@ import {useQuery} from '@tanstack/react-query';
 import {DataTableSkeleton, Tile} from '@carbon/react';
 import {requestWithThrow} from 'modules/request';
 import type {WidgetConfig} from '../types';
-import {WidgetTitle, WidgetTable, EmptyState} from '../styled';
+import {WidgetTitle, WidgetSubtitle, WidgetTable, EmptyState} from '../styled';
 
 type Props = {
   config: WidgetConfig;
@@ -23,7 +23,7 @@ type ApiResponse = {
 };
 
 const TableWidget: React.FC<Props> = ({config}) => {
-  const {title, query, columns = []} = config;
+  const {title, subtitle, query, columns = []} = config;
 
   const {data, status} = useQuery({
     queryKey: ['notebook-widget', config.id, query],
@@ -44,6 +44,7 @@ const TableWidget: React.FC<Props> = ({config}) => {
     return (
       <Tile>
         <WidgetTitle>{title}</WidgetTitle>
+        {subtitle && <WidgetSubtitle>{subtitle}</WidgetSubtitle>}
         <DataTableSkeleton
           role="status"
           data-testid="table-skeleton"
@@ -58,25 +59,33 @@ const TableWidget: React.FC<Props> = ({config}) => {
     return (
       <Tile>
         <WidgetTitle>{title}</WidgetTitle>
+        {subtitle && <WidgetSubtitle>{subtitle}</WidgetSubtitle>}
         <EmptyState>Could not load data.</EmptyState>
       </Tile>
     );
   }
 
   const items = data?.items ?? [];
+  const totalItems = data?.page?.totalItems ?? items.length;
 
   if (items.length === 0) {
     return (
       <Tile>
         <WidgetTitle>{title}</WidgetTitle>
+        {subtitle && <WidgetSubtitle>{subtitle}</WidgetSubtitle>}
         <EmptyState>No data available.</EmptyState>
       </Tile>
     );
   }
 
+  const MAX_ROWS = 15;
+  const visibleItems = items.slice(0, MAX_ROWS);
+  const truncated = items.length > MAX_ROWS;
+
   return (
     <Tile>
       <WidgetTitle>{title}</WidgetTitle>
+      {subtitle && <WidgetSubtitle>{subtitle}</WidgetSubtitle>}
       <WidgetTable>
         <thead>
           <tr>
@@ -86,7 +95,7 @@ const TableWidget: React.FC<Props> = ({config}) => {
           </tr>
         </thead>
         <tbody>
-          {items.map((item, rowIndex) => (
+          {visibleItems.map((item, rowIndex) => (
             <tr key={String(item['id'] ?? rowIndex)}>
               {columns.map((col) => (
                 <td key={col}>{String(item[col] ?? '')}</td>
@@ -95,6 +104,12 @@ const TableWidget: React.FC<Props> = ({config}) => {
           ))}
         </tbody>
       </WidgetTable>
+      {(truncated || items.length < totalItems) && (
+        <EmptyState style={{marginTop: 'var(--cds-spacing-04)'}}>
+          Showing first {visibleItems.length} of {totalItems.toLocaleString()}{' '}
+          rows.
+        </EmptyState>
+      )}
     </Tile>
   );
 };

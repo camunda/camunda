@@ -147,6 +147,7 @@ describe('<NotebookPage />', () => {
     expect(generateWidgets).toHaveBeenCalledWith(
       expect.stringContaining('show running instances'),
       expect.anything(),
+      expect.objectContaining({fromPill: expect.any(Boolean)}),
     );
   });
 

@@ -15,13 +15,112 @@ const WidgetQuerySchema = z.object({
   pathParams: z.record(z.string(), z.string()).optional(),
 });
 
+const AccentSchema = z.enum(['info', 'success', 'warning', 'error', 'neutral']);
+
+const KpiItemSchema = z.object({
+  label: z.string(),
+  query: WidgetQuerySchema,
+  /** dot-path into the response; defaults to 'page.totalItems' */
+  field: z.string().optional(),
+  accent: AccentSchema.optional(),
+});
+
+const FunnelStageSchema = z.object({
+  label: z.string(),
+  elementId: z.string(),
+});
+
+const ActivitySourceSchema = z.object({
+  label: z.string(),
+  query: WidgetQuerySchema,
+  titleField: z.string(),
+  subtitleField: z.string().optional(),
+  timeField: z.string(),
+  accent: z.enum(['info', 'success', 'warning', 'error', 'neutral']).optional(),
+});
+
 const WidgetConfigSchema = z.object({
   id: z.string(),
-  type: z.enum(['metric', 'table']),
+  type: z.enum([
+    'metric',
+    'table',
+    'bpmn',
+    'chart',
+    'text',
+    'kpi',
+    'status-grid',
+    'activity-feed',
+    'funnel',
+    'trend',
+  ]),
   title: z.string(),
+  /**
+   * One-to-three sentence natural-language summary of the widget's purpose
+   * and what the user is seeing. Authored by the LLM (or fake-LLM presets).
+   * Surfaced in the "Show config" modal so users can understand a widget
+   * without reading the JSON.
+   */
+  description: z.string().optional(),
+  /**
+   * Short helper line (≤80 chars) shown below the widget title. Adds
+   * context: how data is sorted, what's filtered, what's live.
+   * Authored by the LLM (or fake-LLM presets). Skipped on metric and text
+   * widgets where it would be redundant.
+   */
+  subtitle: z.string().optional(),
+  // Required at schema level — text widgets pass a placeholder query (see
+  // textWidget() in presets.ts). The query is ignored by widgets that don't
+  // need it. This avoids spreading optional-narrowing throughout the data
+  // widgets.
   query: WidgetQuerySchema,
   field: z.string().optional(),
   columns: z.array(z.string()).optional(),
+  // metric-specific accent color (semantic stripe on the left edge):
+  accent: AccentSchema.optional(),
+  // trend-specific fields (only when type === 'trend'):
+  trendDateField: z.string().optional(),
+  trendBuckets: z.number().optional(),
+  trendBucketSpan: z.string().optional(),
+  trendAccent: z
+    .enum(['info', 'success', 'warning', 'error', 'neutral'])
+    .optional(),
+  // chart-specific fields (only used when type === 'chart'):
+  chartType: z
+    .enum([
+      'bar',
+      'line',
+      'donut',
+      'pie',
+      'stacked-bar',
+      'stacked-area',
+      'meter',
+      'treemap',
+      'radar',
+    ])
+    .optional(),
+  chartGroupBy: z.string().optional(),
+  chartValueField: z.string().optional(),
+  chartStackBy: z.string().optional(),
+  // bpmn-specific fields (only used when type === 'bpmn'):
+  processDefinitionKey: z.string().optional(),
+  overlay: z
+    .enum(['active', 'incidents', 'combined', 'stuck', 'none', 'heatmap'])
+    .optional(),
+  // text-specific (only used when type === 'text'):
+  // Markdown content to render. Headings (#, ##), bold, italics, lists,
+  // links, and inline code are supported.
+  text: z.string().optional(),
+  // kpi-specific: array of individual metric cells shown side-by-side
+  kpis: z.array(KpiItemSchema).optional(),
+  // activity-feed-specific fields:
+  activityTitleField: z.string().optional(),
+  activitySubtitleField: z.string().optional(),
+  activityTimeField: z.string().optional(),
+  activityKindField: z.string().optional(),
+  // Multi-source activity feed: when set, overrides the single-source fields above.
+  activitySources: z.array(ActivitySourceSchema).optional(),
+  // funnel-specific fields:
+  funnelStages: z.array(FunnelStageSchema).optional(),
 });
 
 const NotebookSchema = z.object({
@@ -39,13 +138,27 @@ const NotebookIndexEntrySchema = z.object({
 });
 
 type WidgetConfig = z.infer<typeof WidgetConfigSchema>;
+type KpiItem = z.infer<typeof KpiItemSchema>;
 type Notebook = z.infer<typeof NotebookSchema>;
 type NotebookIndexEntry = z.infer<typeof NotebookIndexEntrySchema>;
+type FunnelStage = z.infer<typeof FunnelStageSchema>;
+
+type ActivitySource = z.infer<typeof ActivitySourceSchema>;
 
 export {
   WidgetConfigSchema,
   NotebookSchema,
   NotebookIndexEntrySchema,
   WidgetQuerySchema,
+  KpiItemSchema,
+  FunnelStageSchema,
+  ActivitySourceSchema,
 };
-export type {WidgetConfig, Notebook, NotebookIndexEntry};
+export type {
+  WidgetConfig,
+  KpiItem,
+  Notebook,
+  NotebookIndexEntry,
+  FunnelStage,
+  ActivitySource,
+};

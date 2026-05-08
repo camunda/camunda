@@ -7,7 +7,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {generateWidgets} from './llm';
+import {generateWidgets, type BedrockCredentials} from './llm';
 import type {WidgetConfig} from './types';
 
 // ---------------------------------------------------------------------------
@@ -26,12 +26,18 @@ const MOCK_WIDGET: WidgetConfig = {
   field: 'page.totalItems',
 };
 
+const VALID_CREDENTIALS: BedrockCredentials = {
+  arn: 'arn:aws:bedrock:us-east-1:123456789012:inference-profile/my-profile',
+  accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+  secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+};
+
 /**
- * Build the minimal Anthropic tool-use response envelope that llm.ts is
- * expected to parse.  The LLM returns widget configs via a tool call so the
- * JSON shape is deterministic.
+ * Build the Bedrock/Anthropic tool-use response envelope that llm.ts is
+ * expected to parse. Bedrock returns the same JSON shape as the direct
+ * Anthropic Messages API.
  */
-function makeAnthropicToolUseResponse(widgets: WidgetConfig[]) {
+function makeToolUseResponse(widgets: WidgetConfig[]) {
   return {
     id: 'msg_01',
     type: 'message',
@@ -59,37 +65,100 @@ describe('generateWidgets', () => {
     vi.stubGlobal('fetch', vi.fn());
   });
 
-  it('should throw a clear error when apiKey is undefined', async () => {
+  it('should throw a clear error when credentials are undefined', async () => {
     // given
     const prompt = 'show me active process instances';
 
     // when / then
     await expect(generateWidgets(prompt, undefined)).rejects.toThrow(
-      /api key/i,
+      /VITE_AWS_BEDROCK_ARN/i,
     );
   });
 
-  it('should call Anthropic API with the prompt and return parsed widget configs', async () => {
+  it('should throw a clear error when arn is missing', async () => {
+    // given
+    const creds: BedrockCredentials = {
+      ...VALID_CREDENTIALS,
+      arn: '',
+    };
+
+    // when / then
+    await expect(generateWidgets('any prompt', creds)).rejects.toThrow(
+      /VITE_AWS_BEDROCK_ARN/i,
+    );
+  });
+
+  it('should throw a clear error when accessKeyId is missing', async () => {
+    // given
+    const creds: BedrockCredentials = {
+      ...VALID_CREDENTIALS,
+      accessKeyId: '',
+    };
+
+    // when / then
+    await expect(generateWidgets('any prompt', creds)).rejects.toThrow(
+      /VITE_AWS_BEDROCK_ARN/i,
+    );
+  });
+
+  it('should throw a clear error when secretAccessKey is missing', async () => {
+    // given
+    const creds: BedrockCredentials = {
+      ...VALID_CREDENTIALS,
+      secretAccessKey: '',
+    };
+
+    // when / then
+    await expect(generateWidgets('any prompt', creds)).rejects.toThrow(
+      /VITE_AWS_BEDROCK_ARN/i,
+    );
+  });
+
+  it('should throw a clear error when ARN does not match expected format', async () => {
+    // given
+    const creds: BedrockCredentials = {
+      ...VALID_CREDENTIALS,
+      arn: 'not-a-valid-arn',
+    };
+
+    // when / then
+    await expect(generateWidgets('any prompt', creds)).rejects.toThrow(
+      /invalid bedrock arn/i,
+    );
+  });
+
+  it('should call Bedrock API with the prompt and return parsed widget configs', async () => {
     // given
     const prompt = 'show me active process instances';
-    const apiKey = 'sk-ant-test-key';
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => makeAnthropicToolUseResponse([MOCK_WIDGET]),
+      json: async () => makeToolUseResponse([MOCK_WIDGET]),
     });
     vi.stubGlobal('fetch', mockFetch);
 
     // when
-    const result = await generateWidgets(prompt, apiKey);
+    const result = await generateWidgets(prompt, VALID_CREDENTIALS);
 
-    // then – the request must reach the Anthropic messages endpoint
+    // then – the request must reach the Bedrock runtime endpoint
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain('anthropic');
-    expect(url).toContain('messages');
+    expect(url).toContain('bedrock-runtime.us-east-1.amazonaws.com');
+    expect(url).toContain('/model/');
+    expect(url).toContain('/invoke');
 
-    // request body must carry the user prompt and a tool definition
+    // method must be POST
+    expect(init.method).toBe('POST');
+
+    // Authorization header must use SigV4
+    const headers = init.headers as Record<string, string>;
+    expect(headers['Authorization']).toMatch(/^AWS4-HMAC-SHA256 /);
+
+    // request body must use bedrock-specific anthropic_version (not a header)
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(body['anthropic_version']).toBe('bedrock-2023-05-31');
+    // no "model" field — it is in the URL
+    expect(body).not.toHaveProperty('model');
+
     const messages = body['messages'] as Array<{role: string; content: string}>;
     expect(messages).toBeInstanceOf(Array);
     const userMsg = messages.find((m) => m.role === 'user');
@@ -106,15 +175,15 @@ describe('generateWidgets', () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () =>
-        makeAnthropicToolUseResponse([
-          MOCK_WIDGET,
-          {...MOCK_WIDGET, id: 'w-2'},
-        ]),
+        makeToolUseResponse([MOCK_WIDGET, {...MOCK_WIDGET, id: 'w-2'}]),
     });
     vi.stubGlobal('fetch', mockFetch);
 
     // when
-    const result = await generateWidgets('show me two widgets', 'sk-ant-key');
+    const result = await generateWidgets(
+      'show me two widgets',
+      VALID_CREDENTIALS,
+    );
 
     // then
     expect(result.length).toBeGreaterThanOrEqual(1);
@@ -132,14 +201,72 @@ describe('generateWidgets', () => {
       ok: false,
       status: 401,
       json: async () => ({
-        error: {type: 'authentication_error', message: 'invalid api key'},
+        message: 'The security token included in the request is invalid.',
       }),
     });
     vi.stubGlobal('fetch', mockFetch);
 
     // when / then
-    await expect(generateWidgets('anything', 'bad-key')).rejects.toThrow(
-      /401|authentication|invalid/i,
-    );
+    await expect(
+      generateWidgets('anything', VALID_CREDENTIALS),
+    ).rejects.toThrow(/401|security token|invalid/i);
+  });
+
+  it('should throw when the response contains no tool_use block', async () => {
+    // given
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        content: [{type: 'text', text: 'I cannot help with that.'}],
+        stop_reason: 'end_turn',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    // when / then
+    await expect(
+      generateWidgets('anything', VALID_CREDENTIALS),
+    ).rejects.toThrow(/tool_use/i);
+  });
+
+  it('should throw when the tool_use input fails Zod validation', async () => {
+    // given — response is valid JSON but has wrong widget shape
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        content: [
+          {
+            type: 'tool_use',
+            id: 'tu_01',
+            name: 'create_widgets',
+            input: {widgets: [{broken: true}]},
+          },
+        ],
+        stop_reason: 'tool_use',
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    // when / then
+    await expect(
+      generateWidgets('anything', VALID_CREDENTIALS),
+    ).rejects.toThrow(/malformed/i);
+  });
+
+  it('should URL-encode the ARN in the request path', async () => {
+    // given
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => makeToolUseResponse([MOCK_WIDGET]),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    // when
+    await generateWidgets('test', VALID_CREDENTIALS);
+
+    // then – colons and slashes in the ARN must be percent-encoded in the URL path
+    const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const encodedArn = encodeURIComponent(VALID_CREDENTIALS.arn);
+    expect(url).toContain(encodedArn);
   });
 });

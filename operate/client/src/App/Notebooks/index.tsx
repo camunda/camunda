@@ -8,16 +8,56 @@
 
 import React, {useState} from 'react';
 import {useParams} from 'react-router-dom';
-import {InlineNotification} from '@carbon/react';
-import {generateWidgets} from './llm';
+import {InlineNotification, Button} from '@carbon/react';
+import {TrashCan} from '@carbon/react/icons';
+import {generateWidgets, type BedrockCredentials} from './llm';
 import {loadNotebook, saveNotebook} from './persistence';
 import {PromptInput} from './PromptInput';
 import {WidgetRenderer} from './WidgetRenderer';
-import {PageContainer, NotebookTitle, WidgetsGrid} from './styled';
+import {
+  PageContainer,
+  ContentScroll,
+  NotebookTitle,
+  NotebookHeader,
+  WidgetsGrid,
+  WidgetSlot,
+} from './styled';
 import type {Notebook, WidgetConfig} from './types';
 
-const API_KEY: string =
-  (import.meta.env['VITE_ANTHROPIC_API_KEY'] as string | undefined) ?? '';
+/**
+ * Map widget type to its height tier. Used by `<WidgetSlot data-tier=…>`
+ * to opt TALL widgets into a shared 296px min-height so they line up in
+ * the same row.
+ */
+function widgetTier(
+  type: WidgetConfig['type'],
+): 'short' | 'tall' | 'hero' | 'auto' {
+  switch (type) {
+    case 'metric':
+    case 'trend':
+      return 'short';
+    case 'kpi':
+    case 'chart':
+    case 'funnel':
+    case 'activity-feed':
+      return 'tall';
+    case 'bpmn':
+    case 'status-grid':
+      return 'hero';
+    case 'table':
+    case 'text':
+    default:
+      return 'auto';
+  }
+}
+
+const BEDROCK_CREDENTIALS: BedrockCredentials = {
+  arn: (import.meta.env['VITE_AWS_BEDROCK_ARN'] as string | undefined) ?? '',
+  accessKeyId:
+    (import.meta.env['VITE_AWS_ACCESS_KEY_ID'] as string | undefined) ?? '',
+  secretAccessKey:
+    (import.meta.env['VITE_AWS_SECRET_ACCESS_KEY'] as string | undefined) ?? '',
+};
 
 function createFreshNotebook(id: string): Notebook {
   return {
@@ -44,9 +84,15 @@ const NotebookPage: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const handleSubmit = async () => {
-    const trimmedPrompt = prompt.trim();
+  // Pills route to static presets via {fromPill: true}; freeform → real LLM.
+  const handleSubmit = async (
+    promptOverride?: string,
+    options: {fromPill?: boolean} = {},
+  ) => {
+    // Allow callers (e.g. one-click suggestion pills) to pass an explicit
+    // prompt that bypasses local state — avoids stale-closure issues when the
+    // textarea was just populated and submitted in the same tick.
+    const trimmedPrompt = (promptOverride ?? prompt).trim();
     if (!trimmedPrompt || isLoading) {
       return;
     }
@@ -57,7 +103,8 @@ const NotebookPage: React.FC = () => {
     try {
       const newWidgets: WidgetConfig[] = await generateWidgets(
         trimmedPrompt,
-        API_KEY,
+        BEDROCK_CREDENTIALS,
+        {fromPill: options.fromPill ?? false},
       );
 
       setNotebook((prev) => {
@@ -83,29 +130,79 @@ const NotebookPage: React.FC = () => {
     }
   };
 
+  const handleRemoveWidget = (widgetId: string) => {
+    setNotebook((prev) => {
+      const updated: Notebook = {
+        ...prev,
+        widgets: prev.widgets.filter((w) => w.id !== widgetId),
+        updatedAt: Date.now(),
+      };
+      saveNotebook(updated);
+      return updated;
+    });
+  };
+
+  const handleClearAll = () => {
+    setNotebook((prev) => {
+      const updated: Notebook = {
+        ...prev,
+        title: 'Untitled notebook',
+        widgets: [],
+        updatedAt: Date.now(),
+      };
+      saveNotebook(updated);
+      return updated;
+    });
+    setErrorMessage(null);
+  };
+
   const hasContent = notebook.widgets.length > 0;
   const hasCustomTitle = notebook.title !== 'Untitled notebook';
 
   return (
     <PageContainer>
-      {(hasContent || hasCustomTitle) && (
-        <NotebookTitle>{notebook.title}</NotebookTitle>
-      )}
+      <ContentScroll>
+        {(hasContent || hasCustomTitle) && (
+          <NotebookHeader>
+            <NotebookTitle>{notebook.title}</NotebookTitle>
+            {hasContent && (
+              <Button
+                kind="ghost"
+                size="sm"
+                renderIcon={TrashCan}
+                onClick={handleClearAll}
+              >
+                Clear all widgets
+              </Button>
+            )}
+          </NotebookHeader>
+        )}
 
-      {errorMessage && (
-        <InlineNotification
-          kind="error"
-          title="Error"
-          subtitle={errorMessage}
-          onCloseButtonClick={() => setErrorMessage(null)}
-        />
-      )}
+        {errorMessage && (
+          <InlineNotification
+            kind="error"
+            title="Error"
+            subtitle={errorMessage}
+            onCloseButtonClick={() => setErrorMessage(null)}
+          />
+        )}
 
-      <WidgetsGrid>
-        {notebook.widgets.map((widget) => (
-          <WidgetRenderer key={widget.id} config={widget} />
-        ))}
-      </WidgetsGrid>
+        <WidgetsGrid>
+          {notebook.widgets.map((widget, index) => (
+            <WidgetSlot
+              key={widget.id}
+              $type={widget.type}
+              data-tier={widgetTier(widget.type)}
+              style={{animationDelay: `${index * 90}ms`}}
+            >
+              <WidgetRenderer
+                config={widget}
+                onRemove={() => handleRemoveWidget(widget.id)}
+              />
+            </WidgetSlot>
+          ))}
+        </WidgetsGrid>
+      </ContentScroll>
 
       <PromptInput
         value={prompt}

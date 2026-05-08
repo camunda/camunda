@@ -28,6 +28,7 @@ const useCurrentPage = () => {
     | 'process-details-operations-log'
     | 'process-details-instance-history'
     | 'decision-details'
+    | 'notebooks'
     | 'login'
     | undefined {
     if (matchPath(Paths.dashboard(), location.pathname) !== null) {
@@ -106,6 +107,10 @@ const useCurrentPage = () => {
 
     if (matchPath(Paths.decisionInstance(), location.pathname) !== null) {
       return 'decision-details';
+    }
+
+    if (matchPath(Paths.notebook(), location.pathname) !== null) {
+      return 'notebooks';
     }
 
     return;
