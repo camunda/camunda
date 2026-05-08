@@ -71,6 +71,12 @@
       <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
       <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
         AND (
+        <!--
+          The foreach rebinds the OGNL `filter` variable to each inner OR group so that the
+          included `searchFilter` resolves to the inner filter's fields. The `searchFilter`
+          block must NOT reference `filter.orFilters` itself; otherwise this loop would
+          recurse and break inner-OR composition.
+        -->
         <foreach collection="filter.orFilters" item="filter" separator=" OR ">
           <trim prefix="(" suffix=")">
             <trim prefixOverrides="AND">

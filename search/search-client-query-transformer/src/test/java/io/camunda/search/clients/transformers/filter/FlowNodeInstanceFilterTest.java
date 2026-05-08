@@ -530,4 +530,24 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
     // then - no extra OR clause is appended
     assertThat(filter.orFilters()).isNull();
   }
+
+  @Test
+  public void shouldNotAddOrClauseWhenOrFiltersIsEmpty() {
+    // given - filter with explicitly empty orFilters list
+    final var filter =
+        FilterBuilders.flowNodeInstance(f -> f.processInstanceKeys(123L).orFilters(List.of()));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then - the resulting query is just the AND of top-level fields, no OR bool wrapper
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("processInstanceKey");
+              assertThat(t.value().longValue()).isEqualTo(123L);
+            });
+  }
 }
