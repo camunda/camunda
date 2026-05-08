@@ -621,7 +621,6 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.editableExistingVariableByName(
       variableName,
     ).readModeValue.click();
-    await this.clearMonacoEditor();
 
     await this.editableExistingVariableByName(
       variableName,
@@ -631,6 +630,8 @@ export class OperateProcessInstanceViewModificationModePage {
     await expect(jsonEditorModal.header).toBeVisible();
     await expect(jsonEditorModal.inputField).toBeVisible();
     await expect(jsonEditorModal.inputField).toBeEnabled();
+    await jsonEditorModal.inputField.evaluate((el: HTMLElement) => el.focus());
+    await this.clearMonacoEditor();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
     await expect(jsonEditorModal.header).toBeHidden();
