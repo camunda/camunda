@@ -900,7 +900,18 @@ test.describe('Parallel job-based user task migration', () => {
 
   test.afterAll(async () => {
     await Promise.all(
-      parallelProcesses.map((p) => cancelProcessInstance(p.processInstanceKey)),
+      parallelProcesses.map(async (p) => {
+        try {
+          await cancelProcessInstance(p.processInstanceKey);
+        } catch (error) {
+          // Ignore 404 — instance may already be completed/cancelled or
+          // migrated to a process that has since finished.
+          const message = error instanceof Error ? error.message : String(error);
+          if (!message.includes('404') && !message.includes('NOT_FOUND')) {
+            throw error;
+          }
+        }
+      }),
     );
   });
 
