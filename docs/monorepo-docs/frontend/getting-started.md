@@ -29,7 +29,7 @@ The workspace install covers all `packages/*` and `apps/*`.
 
 ## Run the backend
 
-From `webapp/client`:
+From `webapp`:
 
 ```sh
 make env-up
