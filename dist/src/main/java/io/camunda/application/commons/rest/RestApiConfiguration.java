@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.rest;
 
+import io.camunda.authentication.CachingCamundaAuthenticationProvider;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
 import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
@@ -20,7 +21,9 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -53,9 +56,27 @@ public class RestApiConfiguration {
   @Bean
   public CamundaAuthenticationProvider camundaAuthenticationProvider(
       final List<CamundaAuthenticationHolder> holders,
-      final List<CamundaAuthenticationConverter<Authentication>> converters) {
-    return new DefaultCamundaAuthenticationProvider(
-        new CamundaAuthenticationDelegatingHolder(holders),
-        new CamundaAuthenticationDelegatingConverter(converters));
+      final List<CamundaAuthenticationConverter<Authentication>> converters,
+      @Value("${camunda.security.authentication.oidc.camunda-auth-cache.enabled:true}")
+          final boolean cacheEnabled,
+      @Value("${camunda.security.authentication.oidc.camunda-auth-cache.max-size:10000}")
+          final long cacheMaxSize,
+      @Value("${camunda.security.authentication.oidc.camunda-auth-cache.max-ttl:PT5M}")
+          final Duration cacheMaxTtl) {
+    final CamundaAuthenticationProvider underlying =
+        new DefaultCamundaAuthenticationProvider(
+            new CamundaAuthenticationDelegatingHolder(holders),
+            new CamundaAuthenticationDelegatingConverter(converters));
+    // Per-token cross-request cache for the built CamundaAuthentication. The default in-request
+    // RequestContextBasedAuthenticationHolder dedups within one request; this wrapper additionally
+    // dedups across requests for the same bearer token, eliminating the 3-4 secondary-storage
+    // queries that DefaultMembershipService issues per build (mappingRules, groups, roles,
+    // tenants). Only JwtAuthenticationToken-authenticated requests are cached; session-based and
+    // basic-auth flows fall through to the delegate. See {@link
+    // CachingCamundaAuthenticationProvider}.
+    if (cacheEnabled) {
+      return new CachingCamundaAuthenticationProvider(underlying, cacheMaxSize, cacheMaxTtl);
+    }
+    return underlying;
   }
 }
