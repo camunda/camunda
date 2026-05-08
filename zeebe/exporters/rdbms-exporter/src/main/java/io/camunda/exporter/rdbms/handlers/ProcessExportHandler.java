@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -28,12 +29,15 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final ToolsConfiguration toolsConfiguration;
 
   public ProcessExportHandler(
       final ProcessDefinitionWriter processDefinitionWriter,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final ToolsConfiguration toolsConfiguration) {
     this.processDefinitionWriter = processDefinitionWriter;
     this.processCache = processCache;
+    this.toolsConfiguration = toolsConfiguration;
   }
 
   @Override
@@ -59,7 +63,9 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
       final var flowNodes = processModelReader.extractFlowNodes();
       final var flowNodesMap = ProcessCacheUtil.getFlowNodesMap(flowNodes);
       final var hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
-      final var extensionProperties = ProcessModelReader.extractExtensionProperties(flowNodes);
+      final var extensionProperties =
+          ProcessModelReader.extractExtensionProperties(
+              flowNodes, toolsConfiguration.extensionPropertyFilter());
       cachedProcessEntity =
           new CachedProcessEntity(
               dbModel.name(),
