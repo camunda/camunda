@@ -170,7 +170,8 @@ test.describe.serial('Process Instance Migration', () => {
       // has prior deployments of the same bpmnProcessId.
       await expect(operateProcessMigrationModePage.targetVersionDropdown).toBeVisible();
       const currentTargetVersion = await operateProcessMigrationModePage.targetVersionDropdown.innerText();
-      if (currentTargetVersion.trim() !== targetVersion) {
+      const versionChanged = currentTargetVersion.trim() !== targetVersion;
+      if (versionChanged) {
         await operateProcessMigrationModePage.clickTargetVersionCombo();
         await operateProcessMigrationModePage.selectTargetVersion(targetVersion);
       }
@@ -181,7 +182,7 @@ test.describe.serial('Process Instance Migration', () => {
         timeout: 10000,
       });
 
-      await operateProcessMigrationModePage.verifyFlowNodeMappings([
+      const flowNodeMappings: Array<{label: string | RegExp; targetValue: string}> = [
         {
           label: 'target element for check payment',
           targetValue: 'checkPayment',
@@ -292,7 +293,29 @@ test.describe.serial('Process Instance Migration', () => {
           label: 'target element for message start event',
           targetValue: 'MessageStartEvent',
         },
-      ]);
+      ];
+
+      // Operate clears auto-mappings when the target version is changed
+      // manually. If we had to override the auto-selected version, restore the
+      // mappings explicitly so the migration has flow nodes to migrate.
+      if (versionChanged) {
+        for (const {label, targetValue} of flowNodeMappings) {
+          const sourceFlowNodeName = (
+            typeof label === 'string' ? label : label.source
+          )
+            .replace(/^\^?target element for /i, '')
+            .replace(/\$\/?i?$/, '')
+            .trim();
+          await operateProcessMigrationModePage.mapFlowNode(
+            sourceFlowNodeName,
+            targetValue,
+          );
+        }
+      }
+
+      await operateProcessMigrationModePage.verifyFlowNodeMappings(
+        flowNodeMappings,
+      );
 
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
     });
