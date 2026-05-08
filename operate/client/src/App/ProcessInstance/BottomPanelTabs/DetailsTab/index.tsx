@@ -14,6 +14,7 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
+import {useElementInstance} from 'modules/queries/elementInstances/useElementInstance';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
@@ -109,6 +110,16 @@ const DetailsTab: React.FC = () => {
   const showAgentContent =
     isAgentElement(selectedElementId) && agentSubprocessKey !== null;
 
+  // Inner ad-hoc subprocess activations share the parent's elementId
+  // (`AI_Agent`), so clicking the agent on the BPMN diagram resolves to
+  // multiple element instances and `resolvedElementInstance` is null. Look up
+  // the outer subprocess instance directly so the agent panel can render
+  // regardless of which entry point the user took (diagram vs. history).
+  const {data: agentSubprocessInstance} = useElementInstance(
+    agentSubprocessKey ?? '',
+    {enabled: showAgentContent && !!agentSubprocessKey},
+  );
+
   const agentData = useMemo(() => {
     if (!showAgentContent || !agentSubprocessKey) {
       return null;
@@ -116,19 +127,32 @@ const DetailsTab: React.FC = () => {
     return getAgentDataForElement(agentSubprocessKey);
   }, [showAgentContent, agentSubprocessKey, getAgentDataForElement]);
 
-  const elementDetails = useMemo<ElementDetailsProps | null>(() => {
-    if (!resolvedElementInstance) {
+  const agentElementDetails = useMemo<ElementDetailsProps | null>(() => {
+    if (!showAgentContent) {
       return null;
     }
-    const {startDate, endDate} = resolvedElementInstance;
+    // Prefer the user's resolved selection (specific tool / inner instance).
+    // Fall back to the outer agent subprocess only when the selection can't
+    // be resolved — e.g., clicking AI_Agent on the diagram matches every
+    // inner-instance row, leaving `resolvedElementInstance` null.
+    const source = resolvedElementInstance ?? agentSubprocessInstance;
+    if (!source) {
+      return null;
+    }
+    const {startDate, endDate} = source;
     return {
-      elementInstanceKey: elementInstanceKey ?? '-',
+      elementInstanceKey: source.elementInstanceKey ?? '-',
       executionDuration: startDate
         ? getExecutionDuration(startDate, endDate)
         : '-',
       retriesLeft: job?.retries,
     };
-  }, [resolvedElementInstance, elementInstanceKey, job]);
+  }, [
+    showAgentContent,
+    resolvedElementInstance,
+    agentSubprocessInstance,
+    job,
+  ]);
 
   const rows = useMemo(() => {
     if (!resolvedElementInstance) {
@@ -281,30 +305,15 @@ const DetailsTab: React.FC = () => {
     calledDecisionInstance,
   ]);
 
-  if (isFetchingElement) {
-    return <StructuredListSkeleton rowCount={5} />;
-  }
-
-  if (resolvedElementInstance === null) {
-    const isMultiInstance =
-      selectedInstancesCount !== null && selectedInstancesCount > 1;
-
-    return (
-      <EmptyMessageContainer>
-        <EmptyMessage
-          message={
-            isMultiInstance
-              ? 'To view the details, select a single element instance in the instance history.'
-              : 'There is no element selected.'
-          }
-        />
-      </EmptyMessageContainer>
-    );
-  }
-
   // When an agent element is selected, show the appropriate agent detail view
-  // inline inside the Details tab (no dedicated tab).
-  if (showAgentContent && agentData && elementDetails && selectedElementId) {
+  // inline inside the Details tab (no dedicated tab). This must happen before
+  // the multi-instance empty-state below: clicking AI_Agent on the diagram
+  // matches every inner-instance row, so `resolvedElementInstance` is null.
+  if (showAgentContent) {
+    if (!agentData || !agentElementDetails || !selectedElementId) {
+      return <StructuredListSkeleton rowCount={5} />;
+    }
+
     const iteration = getIterationForElement(selectedElementId);
     const toolInfo = !iteration
       ? getToolCallForElement(selectedElementId)
@@ -315,7 +324,7 @@ const DetailsTab: React.FC = () => {
         data-testid="details-tab"
         style={{flex: 1, minHeight: 0, overflowY: 'auto'}}
       >
-        <ElementDetailsSection details={elementDetails} />
+        <ElementDetailsSection details={agentElementDetails} />
         <h4
           style={{
             fontSize: 'var(--cds-heading-compact-01-font-size)',
@@ -336,6 +345,27 @@ const DetailsTab: React.FC = () => {
           <DefaultAgentDetail agentData={agentData} />
         )}
       </Container>
+    );
+  }
+
+  if (isFetchingElement) {
+    return <StructuredListSkeleton rowCount={5} />;
+  }
+
+  if (resolvedElementInstance === null) {
+    const isMultiInstance =
+      selectedInstancesCount !== null && selectedInstancesCount > 1;
+
+    return (
+      <EmptyMessageContainer>
+        <EmptyMessage
+          message={
+            isMultiInstance
+              ? 'To view the details, select a single element instance in the instance history.'
+              : 'There is no element selected.'
+          }
+        />
+      </EmptyMessageContainer>
     );
   }
 
