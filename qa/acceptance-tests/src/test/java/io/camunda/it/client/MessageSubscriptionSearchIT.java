@@ -14,6 +14,7 @@ import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
@@ -239,9 +240,7 @@ public class MessageSubscriptionSearchIT {
     // toolProperties only includes keys prefixed with "io.camunda.tool:"; "inbound.type" is
     // excluded
     assertThat(sub.getToolProperties())
-        .containsEntry("io.camunda.tool:name", "myWebhookTool")
-        .doesNotContainKey("inbound.type")
-        .doesNotContainKey("customKey");
+        .containsExactly(entry("io.camunda.tool:name", "myWebhookTool"));
     assertThat(sub.getToolName()).isEqualTo("myWebhookTool");
     assertThat(sub.getInboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
   }
