@@ -52,6 +52,8 @@ graph TD
         CORE["camunda-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        METRICS["camunda-load-test-metrics.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
+        DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
     end
 
     subgraph "Deployment Layer"
@@ -70,6 +72,7 @@ graph TD
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
     PR -- "after 15min wait" --> PROFILE
+    PR -- "metrics + comparison<br/>vs daily-on-main" --> METRICS
     ADHOC --> CORE
     ADHOC --> RELEASE
 
