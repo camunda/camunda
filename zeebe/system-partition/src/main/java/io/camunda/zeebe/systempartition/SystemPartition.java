@@ -8,11 +8,8 @@
 package io.camunda.zeebe.systempartition;
 
 import io.camunda.zeebe.dynamic.config.ClusterConfigCommandSubmitter;
-import io.camunda.zeebe.dynamic.config.SystemPartitionBackupCommandSubmitter;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.protocol.impl.record.value.backupmetadata.BackupMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clusterconfiguration.ClusterConfigurationRecord;
-import io.camunda.zeebe.protocol.record.intent.BackupMetadataIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.function.Consumer;
@@ -30,8 +27,7 @@ import java.util.function.Consumer;
  * <p>Extends {@link ClusterConfigCommandSubmitter} so the dynamic-config layer can accept this
  * interface directly without a circular module dependency.
  */
-public interface SystemPartition
-    extends ClusterConfigCommandSubmitter, SystemPartitionBackupCommandSubmitter {
+public interface SystemPartition extends ClusterConfigCommandSubmitter {
 
   /**
    * Subscribe to commit notifications for cluster-configuration events.
@@ -53,24 +49,6 @@ public interface SystemPartition
   @Override
   ActorFuture<ClusterConfigurationRecord> submitCommand(
       ClusterConfigurationIntent intent, ClusterConfigurationRecord record);
-
-  /**
-   * Submit a backup-metadata command to the system partition.
-   *
-   * <p>Same semantics as {@link #submitCommand} but for {@link BackupMetadataIntent} commands
-   * (RECORD / MARK_FAILED / DELETE). The future completes with the resulting committed event record
-   * once it is observed locally by the system-partition mirror.
-   */
-  @Override
-  ActorFuture<BackupMetadataRecord> submitBackupCommand(
-      BackupMetadataIntent intent, BackupMetadataRecord record);
-
-  /**
-   * Iterate every persisted backup-metadata row. Caller-side iteration runs on the mirror's actor
-   * thread; the consumer receives independent {@link BackupMetadataRecord} copies.
-   */
-  @Override
-  ActorFuture<Void> queryBackupMetadata(Consumer<BackupMetadataRecord> consumer);
 
   /** True iff this broker hosts a system-partition replica that is currently the Raft leader. */
   boolean isLeader();

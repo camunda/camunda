@@ -52,7 +52,6 @@ import io.camunda.zeebe.systempartition.SystemPartitionFactory;
 import io.camunda.zeebe.systempartition.SystemPartitionLogStream;
 import io.camunda.zeebe.systempartition.SystemPartitionMirror;
 import io.camunda.zeebe.systempartition.SystemPartitionStreamProcessorFactory;
-import io.camunda.zeebe.systempartition.backup.BackupOrchestrator;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
@@ -260,16 +259,15 @@ public final class SystemPartitionStep implements StartupStep<BrokerStartupConte
 
     // 4) StreamProcessor.
     // Mount the full BPMN engine (Approach A from the design doc): the system partition hosts
-    // cluster-management BPMNs (scale-operation, exporter-operation, modification_starter,
-    // checkpoint_scheduler, retention_scheduler) which require the standard engine processors
-    // (DeploymentProcessor, JobProcessor, ProcessInstanceCreationProcessor, ...). The
-    // SystemPartitionStreamProcessorFactory composes the engine processors with the
-    // cluster-configuration and backup-metadata processors registered on top.
+    // cluster-management BPMNs (scale-operation, exporter-operation, modification_starter)
+    // which require the standard engine processors (DeploymentProcessor, JobProcessor,
+    // ProcessInstanceCreationProcessor, ...). The SystemPartitionStreamProcessorFactory
+    // composes the engine processors with the cluster-configuration processors registered on top.
     //
     // Hackday MVP notes:
     //  - JobStreamer is a no-op: workers on the system partition use standard polling, not push.
-    //  - InterPartitionCommandSender is the no-op stub below; backup control-plane fan-out
-    //    (Phase 6) will swap this for a BrokerClient-backed sender.
+    //  - InterPartitionCommandSender is a no-op stub: the system partition does not fan out
+    //    commands to data partitions today.
     final var featureFlags = cfg.getExperimental().getFeatures().toFeatureFlags();
     final int partitionsCount = cfg.getCluster().getPartitionsCount();
     final var searchClientsProxy = context.getSearchClientsProxy();
@@ -363,28 +361,6 @@ public final class SystemPartitionStep implements StartupStep<BrokerStartupConte
                 LOG.info(
                     "Embedded gateway is disabled — system-partition BPMN auto-deployer not started");
               }
-
-              // Submit the BackupOrchestrator: a leader-only actor that drives backup fan-out
-              // to data partitions when a BACKUP_METADATA RECORDED PENDING row is observed. The
-              // actor itself ignores events when isLeader() is false, so it's safe to keep it
-              // running on every replica that hosts the system partition.
-              final var orchestrator = new BackupOrchestrator(facade, context.getBrokerClient());
-              context
-                  .getActorSchedulingService()
-                  .submitActor(orchestrator)
-                  .onComplete(
-                      (orchestratorOk, orchestratorErr) -> {
-                        if (orchestratorErr != null) {
-                          LOG.warn(
-                              "Failed to submit BackupOrchestrator on system partition; backup fan-out disabled",
-                              orchestratorErr);
-                        }
-                      });
-
-              // Publish the facade to the static accessor used by BackupApiRequestHandler when
-              // routing TAKE_BACKUP requests through the system partition.
-              io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler
-                  .setSystemPartition(facade);
 
               context.setSystemPartition(facade);
               result.complete(context);

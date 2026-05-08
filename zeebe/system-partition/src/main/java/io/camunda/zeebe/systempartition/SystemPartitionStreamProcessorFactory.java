@@ -22,7 +22,6 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
-import io.camunda.zeebe.systempartition.processors.BackupControlPlaneProcessors;
 import io.camunda.zeebe.systempartition.processors.ClusterConfigurationProcessors;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
@@ -31,9 +30,9 @@ import java.util.List;
  * Factory that constructs the system-partition's {@link StreamProcessor}.
  *
  * <p>The system partition runs the same workflow {@link Engine} as data partitions; the engine's
- * {@link TypedRecordProcessorFactory} is augmented to register the cluster-configuration and
- * backup-metadata processors alongside the standard engine processors. The resulting processor
- * pipeline operates on the system-partition's own {@link LogStream} and {@link ZeebeDb}.
+ * {@link TypedRecordProcessorFactory} is augmented to register the cluster-configuration processors
+ * alongside the standard engine processors. The resulting processor pipeline operates on the
+ * system-partition's own {@link LogStream} and {@link ZeebeDb}.
  *
  * <p>The broker bootstrap (Phase 3) provides the engine factory and infrastructure dependencies.
  * This factory only knows how to compose the system-specific processors with whatever engine the
@@ -53,8 +52,8 @@ public final class SystemPartitionStreamProcessorFactory {
    * @param mode {@link StreamProcessorMode#PROCESSING} on the leader, {@link
    *     StreamProcessorMode#REPLAY} on followers
    * @param engineProcessorFactory the engine's typed-record-processor factory; the standard
-   *     workflow engine processors are obtained from it, then augmented with the cluster-config and
-   *     backup processors registered by this factory
+   *     workflow engine processors are obtained from it, then augmented with the cluster-config
+   *     processors registered by this factory
    * @param engineConfig the engine configuration
    * @param securityConfig the security configuration
    * @param appliers cluster configuration change appliers (used by the apply-operation processor)
@@ -87,12 +86,6 @@ public final class SystemPartitionStreamProcessorFactory {
               ctx.getWriters(),
               ctx.getProcessingState().getKeyGenerator(),
               appliers);
-
-          BackupControlPlaneProcessors.register(
-              processors,
-              ctx.getProcessingState().getBackupMetadataState(),
-              ctx.getWriters(),
-              ctx.getProcessingState().getKeyGenerator());
           return processors;
         };
 

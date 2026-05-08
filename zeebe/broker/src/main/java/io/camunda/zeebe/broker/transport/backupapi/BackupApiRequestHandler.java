@@ -17,7 +17,9 @@ import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.CheckpointInfo;
@@ -25,21 +27,22 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.PartitionBac
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
-import io.camunda.zeebe.protocol.impl.record.value.backupmetadata.BackupMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.protocol.record.intent.BackupMetadataIntent;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.systempartition.SystemPartition;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.PrimitiveIterator;
 
 /**
  * Request handler to handle commands and queries related to the backup ({@link RequestType#BACKUP})
@@ -48,6 +51,7 @@ public final class BackupApiRequestHandler
     extends AsyncApiRequestHandler<BackupApiRequestReader, BackupApiResponseWriter>
     implements DiskSpaceUsageListener {
   private boolean isDiskSpaceAvailable = true;
+  private final LogStreamWriter logStreamWriter;
   private final BackupManager backupManager;
   private final AtomixServerTransport transport;
   private final CheckpointState checkpointState;
@@ -55,19 +59,6 @@ public final class BackupApiRequestHandler
   private final DbBackupRangeState backupRangeState;
   private final int partitionId;
   private final boolean backupFeatureEnabled;
-
-  /**
-   * Process-wide reference to the local broker's {@code SystemPartition} facade. Set by {@code
-   * SystemPartitionStep} when the system partition is enabled; otherwise null. The static accessor
-   * avoids threading the facade through {@code ZeebePartitionFactory} → {@code
-   * PartitionStartupAndTransitionContextImpl} → {@code BackupApiRequestHandlerStep}, which would
-   * touch every partition-context call site.
-   */
-  private static volatile SystemPartition SYSTEM_PARTITION;
-
-  public static void setSystemPartition(final SystemPartition systemPartition) {
-    SYSTEM_PARTITION = systemPartition;
-  }
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
@@ -79,8 +70,7 @@ public final class BackupApiRequestHandler
       final int partitionId,
       final boolean backupFeatureEnabled) {
     super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
-    // logStreamWriter is retained in the signature for source compatibility with the existing
-    // BackupApiRequestHandlerStep wiring; TAKE_BACKUP no longer writes to the local log directly.
+    this.logStreamWriter = logStreamWriter;
     this.transport = transport;
     this.backupManager = backupManager;
     this.checkpointState = checkpointState;
@@ -139,45 +129,27 @@ public final class BackupApiRequestHandler
       return Either.left(errorWriter.outOfDiskSpace(partitionId));
     }
 
-    final SystemPartition systemPartition = SYSTEM_PARTITION;
-    if (systemPartition == null) {
-      return Either.left(
-          errorWriter
-              .errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
-              .errorMessage(
-                  "Cannot route TAKE_BACKUP: system partition is not available on this broker"));
-    }
+    final RecordMetadata metadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .valueType(ValueType.CHECKPOINT)
+            .intent(CheckpointIntent.CREATE)
+            .requestId(requestId)
+            .requestStreamId(requestStreamId);
+    final var checkpointRecord =
+        new CheckpointRecord()
+            .setCheckpointId(requestReader.backupId())
+            .setCheckpointType(requestReader.checkpointType());
+    final var written =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));
 
-    if (!systemPartition.isLeader()) {
-      return Either.left(
-          errorWriter
-              .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
-              .errorMessage(
-                  "Cannot route TAKE_BACKUP: this broker does not host the system-partition leader"));
+    if (written.isRight()) {
+      // Response will be sent by the processor
+      return Either.right(responseWriter.noResponse());
+    } else {
+      return Either.left(errorWriter.mapWriteError(partitionId, written.getLeft()));
     }
-
-    final long checkpointId = requestReader.backupId();
-    final var partitionIds = systemPartition.query().partitionIds();
-    int submitted = 0;
-    final PrimitiveIterator.OfInt it = partitionIds.iterator();
-    while (it.hasNext()) {
-      final int p = it.nextInt();
-      final BackupMetadataRecord record =
-          new BackupMetadataRecord()
-              .setCheckpointId(checkpointId)
-              .setPartitionId(p)
-              .setStatus("PENDING");
-      systemPartition.submitBackupCommand(BackupMetadataIntent.RECORD, record);
-      submitted++;
-    }
-    if (submitted == 0) {
-      return Either.left(
-          errorWriter
-              .errorCode(ErrorCode.INTERNAL_ERROR)
-              .errorMessage(
-                  "Cannot route TAKE_BACKUP: cluster configuration has no known data partitions"));
-    }
-    return Either.right(responseWriter.noResponse());
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>

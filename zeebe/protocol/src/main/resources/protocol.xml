@@ -86,7 +86,6 @@
       <validValue name="GLOBAL_LISTENER">68</validValue>
       <validValue name="RESOURCE_REEXPORT">69</validValue>
       <validValue name="CLUSTER_CONFIGURATION">70</validValue>
-      <validValue name="BACKUP_METADATA">71</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->

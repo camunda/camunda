@@ -279,8 +279,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   ACTIVE_PROCESS_INSTANCE_COUNT(142, PARTITION_LOCAL),
 
   // system partition
-  CLUSTER_CONFIGURATION(143, PARTITION_LOCAL),
-  BACKUP_METADATA(144, PARTITION_LOCAL);
+  CLUSTER_CONFIGURATION(143, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
