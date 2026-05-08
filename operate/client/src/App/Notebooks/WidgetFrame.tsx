@@ -7,21 +7,30 @@
  */
 
 import React, {useState} from 'react';
-import {IconButton, Modal} from '@carbon/react';
-import {Code, TrashCan} from '@carbon/react/icons';
-import type {WidgetConfig} from './types';
+import {Button, IconButton, Modal} from '@carbon/react';
+import {Code, Edit, TrashCan} from '@carbon/react/icons';
+import {WidgetConfigSchema, type WidgetConfig} from './types';
 import {
   WidgetFrameContainer,
   WidgetActions,
   ConfigDescription,
   ConfigSectionLabel,
   ConfigPanelBlock,
+  ConfigEditorTextarea,
+  ConfigEditorActions,
+  ConfigEditorError,
 } from './styled';
 
 type Props = {
   config: WidgetConfig;
   children: React.ReactNode;
   onRemove?: () => void;
+  /**
+   * Called when the user saves an edited config from the details modal. The
+   * incoming `next` is already validated against `WidgetConfigSchema`, with
+   * `id` preserved from the original.
+   */
+  onUpdate?: (next: WidgetConfig) => void;
   // When true, the "show details" (</>) action and modal are skipped. Used
   // for narrative widgets (text) where the markdown is the content and the
   // config JSON has no useful information.
@@ -65,30 +74,101 @@ function shouldShowConfigJson(config: WidgetConfig): boolean {
 
 /**
  * Wraps a widget with a hover-revealed action bar (currently: a "Show details"
- * toggle). When toggled, a Carbon Modal opens showing the LLM-authored
- * description first, then the resolved HTTP request, then the raw
- * WidgetConfig JSON for the curious.
+ * toggle, an "Edit config" toggle, and a remove button). Selecting either of
+ * the first two opens a Carbon Modal showing the LLM-authored description
+ * first, then the config JSON — read-only by default, editable when the user
+ * clicks the pencil icon (or chose "Edit config" directly).
  */
 const WidgetFrame: React.FC<Props> = ({
   config,
   children,
   onRemove,
+  onUpdate,
   hideDetails = false,
 }) => {
-  const [showDetails, setShowDetails] = useState(false);
+  const [modalState, setModalState] = useState<'closed' | 'view' | 'edit'>(
+    'closed',
+  );
+  const [draft, setDraft] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+
+  const openView = () => {
+    setModalState('view');
+    setError(null);
+  };
+  const openEdit = () => {
+    setDraft(JSON.stringify(presentableConfig(config), null, 2));
+    setModalState('edit');
+    setError(null);
+  };
+  const close = () => {
+    setModalState('closed');
+    setError(null);
+  };
+
+  const handleSave = () => {
+    if (onUpdate == null) {
+      return;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(draft);
+    } catch (err) {
+      setError(
+        err instanceof Error ? `Invalid JSON: ${err.message}` : 'Invalid JSON.',
+      );
+      return;
+    }
+
+    // Preserve the original id — editing should never silently re-key a
+    // widget (would break React reconciliation and any saved layout).
+    const merged =
+      parsed != null && typeof parsed === 'object'
+        ? {...(parsed as Record<string, unknown>), id: config.id}
+        : parsed;
+
+    const result = WidgetConfigSchema.safeParse(merged);
+    if (!result.success) {
+      const issues = result.error.issues
+        .slice(0, 5)
+        .map((i) => `• ${i.path.join('.') || '(root)'}: ${i.message}`)
+        .join('\n');
+      setError(`Invalid widget config:\n${issues}`);
+      return;
+    }
+
+    onUpdate(result.data);
+    close();
+  };
+
+  const isEditable = onUpdate != null && shouldShowConfigJson(config);
 
   return (
     <WidgetFrameContainer>
-      <WidgetActions className="widget-actions" $visible={showDetails}>
+      <WidgetActions
+        className="widget-actions"
+        $visible={modalState !== 'closed'}
+      >
         {!hideDetails && (
           <IconButton
             kind="ghost"
             size="sm"
             align="left"
             label="Show widget details"
-            onClick={() => setShowDetails(true)}
+            onClick={openView}
           >
             <Code />
+          </IconButton>
+        )}
+        {!hideDetails && isEditable && (
+          <IconButton
+            kind="ghost"
+            size="sm"
+            align="left"
+            label="Edit widget config"
+            onClick={openEdit}
+          >
+            <Edit />
           </IconButton>
         )}
         {onRemove && (
@@ -106,13 +186,13 @@ const WidgetFrame: React.FC<Props> = ({
 
       {children}
 
-      {showDetails && (
+      {modalState !== 'closed' && (
         <Modal
           open
           modalHeading={config.title}
-          modalLabel="Widget details"
+          modalLabel={modalState === 'edit' ? 'Edit widget' : 'Widget details'}
           passiveModal
-          onRequestClose={() => setShowDetails(false)}
+          onRequestClose={close}
           size="md"
         >
           <ConfigDescription>
@@ -121,10 +201,46 @@ const WidgetFrame: React.FC<Props> = ({
 
           {shouldShowConfigJson(config) && (
             <>
-              <ConfigSectionLabel>Generated config</ConfigSectionLabel>
-              <ConfigPanelBlock>
-                {JSON.stringify(presentableConfig(config), null, 2)}
-              </ConfigPanelBlock>
+              <ConfigSectionLabel>
+                {modalState === 'edit'
+                  ? 'Edit config (JSON)'
+                  : 'Generated config'}
+              </ConfigSectionLabel>
+
+              {modalState === 'view' && (
+                <>
+                  <ConfigPanelBlock>
+                    {JSON.stringify(presentableConfig(config), null, 2)}
+                  </ConfigPanelBlock>
+                  {isEditable && (
+                    <ConfigEditorActions>
+                      <Button kind="tertiary" size="sm" onClick={openEdit}>
+                        Edit
+                      </Button>
+                    </ConfigEditorActions>
+                  )}
+                </>
+              )}
+
+              {modalState === 'edit' && (
+                <>
+                  <ConfigEditorTextarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    spellCheck={false}
+                    aria-label="Widget config JSON"
+                  />
+                  {error && <ConfigEditorError>{error}</ConfigEditorError>}
+                  <ConfigEditorActions>
+                    <Button kind="ghost" size="sm" onClick={openView}>
+                      Cancel
+                    </Button>
+                    <Button kind="primary" size="sm" onClick={handleSave}>
+                      Save
+                    </Button>
+                  </ConfigEditorActions>
+                </>
+              )}
             </>
           )}
         </Modal>

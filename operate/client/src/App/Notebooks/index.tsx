@@ -160,6 +160,24 @@ const NotebookPage: React.FC = () => {
     });
   };
 
+  /**
+   * Replace a widget's config in place. Called from the WidgetFrame edit
+   * modal. The new config has already been Zod-validated and shares the
+   * widget's original id, so React keys and the visual position are
+   * preserved.
+   */
+  const handleUpdateWidget = (widgetId: string, next: WidgetConfig) => {
+    setNotebook((prev) => {
+      const updated: Notebook = {
+        ...prev,
+        widgets: prev.widgets.map((w) => (w.id === widgetId ? next : w)),
+        updatedAt: Date.now(),
+      };
+      saveNotebook(updated);
+      return updated;
+    });
+  };
+
   const handleClearAll = () => {
     setNotebook((prev) => {
       const updated: Notebook = {
@@ -225,6 +243,7 @@ const NotebookPage: React.FC = () => {
               <WidgetRenderer
                 config={widget}
                 onRemove={() => handleRemoveWidget(widget.id)}
+                onUpdate={(next) => handleUpdateWidget(widget.id, next)}
               />
             </WidgetSlot>
           ))}

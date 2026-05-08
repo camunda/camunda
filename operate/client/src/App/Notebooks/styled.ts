@@ -600,6 +600,51 @@ const ConfigPanelBlock = styled.pre`
   overflow-y: auto;
 `;
 
+/**
+ * Editable JSON editor for the widget config modal. Same visual treatment as
+ * ConfigPanelBlock so toggling between "view" and "edit" mode doesn't shift
+ * the layout — only the underlying element (pre vs textarea) and the focus
+ * affordances change.
+ */
+const ConfigEditorTextarea = styled.textarea`
+  ${styles.code01};
+  color: var(--cds-text-primary);
+  background: var(--cds-layer-accent);
+  border: 1px solid var(--cds-border-strong);
+  border-radius: 2px;
+  padding: var(--cds-spacing-04);
+  width: 100%;
+  min-height: 320px;
+  resize: vertical;
+  font-family: var(--cds-code-01-font-family, monospace);
+  white-space: pre;
+  overflow: auto;
+  outline: none;
+
+  &:focus {
+    border-color: var(--cds-focus);
+    box-shadow: 0 0 0 1px var(--cds-focus);
+  }
+`;
+
+const ConfigEditorActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--cds-spacing-03);
+  margin-top: var(--cds-spacing-04);
+`;
+
+const ConfigEditorError = styled.div`
+  ${styles.bodyShort01};
+  color: var(--cds-text-error);
+  background: var(--cds-notification-background-error);
+  padding: var(--cds-spacing-03) var(--cds-spacing-04);
+  border-left: 3px solid var(--cds-support-error);
+  border-radius: 2px;
+  margin-top: var(--cds-spacing-03);
+  white-space: pre-wrap;
+`;
+
 // ---------------------------------------------------------------------------
 // BpmnWidget — diagram container + overlay badges
 // ---------------------------------------------------------------------------
@@ -1079,6 +1124,9 @@ export {
   ConfigSectionLabel,
   ConfigEndpoint,
   ConfigPanelBlock,
+  ConfigEditorTextarea,
+  ConfigEditorActions,
+  ConfigEditorError,
   BpmnDiagramContainer,
   BpmnLegend,
   BpmnLegendItem,

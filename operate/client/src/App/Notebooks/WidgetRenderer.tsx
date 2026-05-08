@@ -23,6 +23,7 @@ import type {WidgetConfig} from './types';
 type Props = {
   config: WidgetConfig;
   onRemove?: () => void;
+  onUpdate?: (next: WidgetConfig) => void;
 };
 
 function renderInner(config: WidgetConfig): React.ReactElement {
@@ -63,7 +64,7 @@ function renderInner(config: WidgetConfig): React.ReactElement {
   );
 }
 
-const WidgetRenderer: React.FC<Props> = ({config, onRemove}) => {
+const WidgetRenderer: React.FC<Props> = ({config, onRemove, onUpdate}) => {
   // Text widgets are pure narrative — no need for the frame's "show details"
   // button (the markdown IS the content). They still get the remove button
   // via a slim wrapper inside the slot's grid placement.
@@ -75,7 +76,7 @@ const WidgetRenderer: React.FC<Props> = ({config, onRemove}) => {
     );
   }
   return (
-    <WidgetFrame config={config} onRemove={onRemove}>
+    <WidgetFrame config={config} onRemove={onRemove} onUpdate={onUpdate}>
       {renderInner(config)}
     </WidgetFrame>
   );
