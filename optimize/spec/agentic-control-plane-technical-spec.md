@@ -1,7 +1,7 @@
 # Agentic Control Plane — Technical Specification (v3)
 
-**Module**: `optimize/`  
-**Status**: Draft  
+**Module**: `optimize/`
+**Status**: Draft
 **Author**: Alexandre Janoni
 
 ---
@@ -44,7 +44,7 @@
 | Status badges | Dropped — use KPI stats block only |
 | Layer 4 (settings) | Dropped entirely |
 | Token trend | Multi-line: top-5 agents by total tokens + "Other" rollup |
-| Incident rate at L2 | Fraction of completed process-instance runs (where selected agent was activated) that had at least one incident on the agent element |
+| Incident rate at L2 | Ratio of total incidents on the agent element to total activations of that agent element, across all completed process instances for the process |
 
 ---
 
@@ -761,7 +761,7 @@ Incident rate = process instances with ≥1 incident / total process instances (
 
 Incident rate = total incidents on that agent element / total activations of that agent element, both counted across all completed process instances for the process.
 
-Denominator = `value_count(agentInstanceKey)` filtered by `agentElementId` (total activations).  
+Denominator = `value_count(agentInstanceKey)` filtered by `agentElementId` (total activations).
 Numerator = `value_count(incidents.id)` filtered by `activityId = agentElementId` (total incidents on that element).
 
 Single query, two separate nested aggs:
