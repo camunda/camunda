@@ -58,10 +58,12 @@ const targetTaskCards: TaskCard[] = parseAssignedTasksFromFile(
 test.describe.serial('Process Instance Migration', () => {
   test.beforeAll(async () => {
 
-    await deploy(['./resources/orderProcessMigration_v_1.bpmn']);
+    const newProcessMigrationV1: DeployResourceResponse = await deploy([
+      './resources/orderProcessMigration_v_1.bpmn',
+    ]);
     const processV1: ProcessDeployment = {
       bpmnProcessId: 'orderProcessMigration',
-      version: 1,
+      version: newProcessMigrationV1.processes[0].processDefinitionVersion,
     };
 
     processes = await Promise.all(
