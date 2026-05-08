@@ -23,17 +23,13 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-/**
- * @deprecated since 8.10, use {@link ResourceContentBinaryGetRequestImpl} instead.
- */
-@Deprecated
-public class ResourceContentGetRequestImpl implements ResourceContentGetRequest {
+public class ResourceContentBinaryGetRequestImpl implements ResourceContentGetRequest {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final long resourceKey;
 
-  public ResourceContentGetRequestImpl(final HttpClient httpClient, final long resourceKey) {
+  public ResourceContentBinaryGetRequestImpl(final HttpClient httpClient, final long resourceKey) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     this.resourceKey = resourceKey;
@@ -49,7 +45,7 @@ public class ResourceContentGetRequestImpl implements ResourceContentGetRequest 
   public CamundaFuture<String> send() {
     final HttpCamundaFuture<String> result = new HttpCamundaFuture<>();
     httpClient.get(
-        String.format("/resources/%d/content", resourceKey),
+        String.format("/resources/%d/content/binary", resourceKey),
         httpRequestConfig.build(),
         String.class,
         s -> s,

@@ -24,35 +24,22 @@ import io.camunda.client.util.RestGatewayService;
 import io.camunda.client.util.assertions.LoggedRequestAssert;
 import org.junit.jupiter.api.Test;
 
-public class GetResourceContentTest extends ClientRestTest {
+class GetResourceContentBinaryTest extends ClientRestTest {
+
   @Test
-  void shouldGetResourceContent() {
+  void shouldGetResourceContentBinary() {
     // given
-    final String resourceContent = "test content";
-    gatewayService.onResourceContentGetRequest(123L, resourceContent);
+    final String resourceContent = "binary content";
+    gatewayService.onResourceContentBinaryGetRequest(123L, resourceContent);
 
     // when
-    final String response = client.newResourceContentGetRequest(123L).execute();
+    final String response = client.newResourceContentBinaryGetRequest(123L).execute();
 
     // then
     LoggedRequestAssert.assertThat(RestGatewayService.getLastRequest())
         .hasMethod(RequestMethod.GET)
-        .hasUrl(RestGatewayPaths.getResourceContentUrl("123"));
+        .hasUrl(RestGatewayPaths.getResourceContentBinaryUrl("123"));
 
-    assertThat(response).isEqualTo(resourceContent);
-  }
-
-  @Test
-  void shouldGetResourceContentWhenContentIsJsonStructure() {
-    // given - RPA resource content is itself a JSON document returned as application/json
-    final String resourceContent =
-        "{\n  \"type\": \"default\",\n  \"id\": \"RPA_auditlog_test\",\n  \"schemaVersion\": 7\n}\n";
-    gatewayService.onResourceContentGetRequest(456L, resourceContent);
-
-    // when
-    final String response = client.newResourceContentGetRequest(456L).execute();
-
-    // then
     assertThat(response).isEqualTo(resourceContent);
   }
 }

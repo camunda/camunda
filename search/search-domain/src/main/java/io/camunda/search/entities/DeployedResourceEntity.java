@@ -17,8 +17,7 @@ public record DeployedResourceEntity(
     Long resourceKey,
     String resourceId,
     String resourceName,
-    // null when fetched via the no-secondary-storage broker path (BrokerFetchResourceRequest does
-    // not carry the type), or when ResourceUtils.deriveResourceType() cannot derive a type from the
+    // null when ResourceUtils.deriveResourceType() cannot derive a type from the
     // resource name (no extension / empty name).
     @Nullable String resourceType,
     Integer version,
