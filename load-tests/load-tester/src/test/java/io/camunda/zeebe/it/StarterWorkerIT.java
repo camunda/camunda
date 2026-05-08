@@ -14,6 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,7 @@ class StarterWorkerIT {
   static final CamundaContainer CAMUNDA = CamundaContainerProvider.createCamundaContainer();
 
   @Autowired private CamundaClient client;
+  @Autowired private MeterRegistry meterRegistry;
 
   @DynamicPropertySource
   static void configure(final DynamicPropertyRegistry registry) {
@@ -88,5 +90,23 @@ class StarterWorkerIT {
                   .describedAs("Worker should have completed at least one instance")
                   .anyMatch(pi -> pi.getState() == ProcessInstanceState.COMPLETED);
             });
+
+    // and — the starter should have exposed a counter that recorded each submitted request.
+    final var counter = meterRegistry.find("starter.process.instances.started").counter();
+    assertThat(counter)
+        .describedAs("starter.process.instances.started counter should be registered")
+        .isNotNull();
+    assertThat(counter.count())
+        .describedAs("counter should reflect the number of submitted start requests (>0)")
+        .isGreaterThan(0.0);
+
+    // and — the run-finished gauge should have flipped to 1 once the duration limit elapsed.
+    final var runFinishedGauge = meterRegistry.find("starter.run.finished").gauge();
+    assertThat(runFinishedGauge)
+        .describedAs("starter.run.finished gauge should be registered")
+        .isNotNull();
+    assertThat(runFinishedGauge.value())
+        .describedAs("gauge should be 1 after the starter finished its creation loop")
+        .isEqualTo(1.0);
   }
 }
