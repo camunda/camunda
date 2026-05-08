@@ -1,0 +1,67 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "variableKey": {
+        "type": "long"
+      },
+      "variableName": {
+        "type": "keyword"
+      },
+      "scopeKey": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "processDefinitionKey": {
+        "type": "long"
+      },
+      "processDefinitionId": {
+        "type": "keyword"
+      },
+      "rootProcessInstanceKey": {
+        "type": "long"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "position": {
+        "type": "long"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "documentId": {
+        "type": "keyword"
+      },
+      "storeId": {
+        "type": "keyword"
+      },
+      "fileName": {
+        "type": "keyword",
+        "ignore_above": 8191
+      },
+      "contentType": {
+        "type": "keyword"
+      },
+      "size": {
+        "type": "long"
+      },
+      "expiresAt": {
+        "type": "date"
+      },
+      "contentHash": {
+        "type": "keyword",
+        "ignore_above": 8191
+      },
+      "customProperties": {
+        "type": "keyword",
+        "ignore_above": 8191
+      }
+    }
+  }
+}
