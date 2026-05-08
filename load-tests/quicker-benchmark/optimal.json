@@ -1,0 +1,42 @@
+{
+  "scenario": "max",
+  "duration-seconds": 600,
+  "metrics": {
+    "process-instances-started": {
+      "per-second": 300,
+      "tolerance-percent": 5
+    },
+    "process-instances-completed": {
+      "per-second": 300,
+      "tolerance-percent": 5
+    },
+    "throughput-per-second": {
+      "expected": 300,
+      "tolerance-percent": 5
+    },
+    "completed-pi-rate-per-second": {
+      "expected": 300,
+      "tolerance-percent": 5
+    },
+    "completion-ratio": {
+      "expected": 100,
+      "tolerance-percent": 2
+    },
+    "backpressure-percent": {
+      "expected": 0,
+      "tolerance-percent": 0
+    },
+    "starter-rate-per-second": {
+      "expected": 300,
+      "tolerance-percent": 5
+    },
+    "data-availability": {
+      "expected": 5,
+      "tolerance-percent": 100
+    },
+    "request-response-latency": {
+      "expected": 5,
+      "tolerance-percent": 100
+    }
+  }
+}

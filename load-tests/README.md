@@ -47,6 +47,7 @@ graph TD
 
     subgraph "Event Triggers"
         PR["camunda-pr-load-test.yaml<br/><i>PR label: benchmark</i>"]
+        QUICKER["camunda-quicker-pr-load-test.yaml<br/><i>PR label: quicker-max</i>"]
         ADHOC["Manual workflow_dispatch"]
     end
 
@@ -76,6 +77,7 @@ graph TD
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
     PR -- "after 15min wait" --> PROFILE
+    QUICKER -- "scenario: quicker<br/>~1h finite run + PR comment" --> CORE
     ADHOC --> CORE
     ADHOC --> RELEASE
 

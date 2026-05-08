@@ -1,0 +1,512 @@
+# description: Creates a finite (default 10min) load test when a PR is labeled with
+#              'quicker-max'. Maps to the shared `max` scenario in camunda-load-test.yml.
+#              Auto-cleans up the namespace once results are posted (or on label removal /
+#              PR close).
+# calls: camunda-load-test.yml (scenario: max + starter.durationLimit override)
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda Pull Request Quicker Benchmark
+on:
+  pull_request:
+    types:
+      - labeled
+      - unlabeled
+      - synchronize
+      - closed
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref (branch, tag or commit SHA) to benchmark'
+        required: true
+        type: string
+      duration-seconds:
+        description: 'Test duration in seconds (overrides the default 600)'
+        required: false
+        type: string
+        default: '600'
+      pr-number:
+        description: 'PR number to comment on (optional). When empty, only writes a job summary.'
+        required: false
+        type: string
+        default: ''
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+  # Default test duration in seconds. The platform takes ~7min to come up; 10min leaves a
+  # short but usable load window. Override per-run via workflow_dispatch input.
+  DEFAULT_DURATION_SECONDS: '600'
+  # Cluster's central Prometheus, exposed via the LDAP-protected ingress. Auth creds come
+  # from Vault (see the `Import Prometheus credentials from Vault` step).
+  PROM_URL: https://ci-monitor.benchmark.camunda.cloud
+
+jobs:
+  sanitize-branch-name:
+    name: Sanitize Branch Name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'quicker-max') ||
+      (github.event.action == 'unlabeled' && github.event.label.name == 'quicker-max') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-max')) ||
+      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'quicker-max'))
+    outputs:
+      sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
+      pr-number: ${{ steps.compute-meta.outputs.pr-number }}
+      duration-seconds: ${{ steps.compute-meta.outputs.duration-seconds }}
+      ref: ${{ steps.compute-meta.outputs.ref }}
+    steps:
+      - id: sanitize-author
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ github.event_name == 'workflow_dispatch' && github.actor || github.event.pull_request.user.login }}
+          max_length: 10
+      - id: compute-meta
+        name: Compute pr-number, duration, and ref
+        env:
+          # Pass untrusted user-controlled refs/inputs through env so a maliciously named
+          # branch can't break out of the shell context (actionlint expression check).
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_PR_NUMBER: ${{ inputs.pr-number }}
+          DISPATCH_REF: ${{ inputs.ref }}
+          DISPATCH_DURATION: ${{ inputs.duration-seconds }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            pr_number="$DISPATCH_PR_NUMBER"
+            ref="$DISPATCH_REF"
+            duration="${DISPATCH_DURATION:-$DEFAULT_DURATION_SECONDS}"
+          else
+            pr_number="$PR_NUMBER"
+            ref="$PR_HEAD_REF"
+            duration="$DEFAULT_DURATION_SECONDS"
+          fi
+          {
+            echo "pr-number=${pr_number}"
+            echo "duration-seconds=${duration}"
+            echo "ref=${ref}"
+          } >> "$GITHUB_OUTPUT"
+      - id: compute-namespace
+        name: Compute safe namespace from PR author and number
+        env:
+          AUTHOR_SANITIZED: ${{ steps.sanitize-author.outputs.branch_name }}
+          PR_NUMBER: ${{ steps.compute-meta.outputs.pr-number }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          # Compose namespace: c8-{author}-quicker-pr-{number}. The `quicker-`
+          # segment distinguishes this from the indefinite `benchmark` label's
+          # namespace (c8-{author}-pr-{number}) so both can coexist on the same
+          # PR. workflow_dispatch without a PR number falls back to run-{id}.
+          id_suffix="${PR_NUMBER:-run-$RUN_ID}"
+          echo "namespace=c8-${AUTHOR_SANITIZED}-quicker-pr-${id_suffix}" >> "$GITHUB_OUTPUT"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  create-benchmark:
+    name: Quicker Benchmark
+    needs: sanitize-branch-name
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'quicker-max') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-max'))
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      ref: ${{ needs.sanitize-branch-name.outputs.ref }}
+      scenario: max
+      reuse-tag: 'c8-pranjalg13-quicker-max-pr-52326-a919fc45'
+      load-test-load: --set starter.durationLimit=${{ needs.sanitize-branch-name.outputs.duration-seconds }}
+
+  await-load-test:
+    name: Await load test completion
+    needs: [sanitize-branch-name, create-benchmark]
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'quicker-max') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-max'))
+    runs-on: ubuntu-latest
+    # Test runs for `duration-seconds` and we want headroom for platform bring-up + scrape.
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    env:
+      NAMESPACE: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      DURATION_SECONDS: ${{ needs.sanitize-branch-name.outputs.duration-seconds }}
+    outputs:
+      starter-finished: ${{ steps.wait-starter.outputs.finished }}
+      restart-count: ${{ steps.restarts.outputs.count }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - name: Authenticate to Cluster using Teleport
+        # Needed for the `Read starter pod restart count` step's kubectl call.
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
+      - name: Import Prometheus credentials from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/qa/ci/common LDAP_QA_USER | PROM_USER;
+            secret/data/products/qa/ci/common LDAP_QA_PASSWORD | PROM_PASS;
+
+      - name: Verify platform & load-test client are ready
+        uses: ./.github/actions/await-load-test
+        with:
+          namespace: ${{ env.NAMESPACE }}
+
+      - name: Wait for benchmark duration to elapse
+        run: |
+          # The starter is configured with --set starter.durationLimit=$DURATION_SECONDS,
+          # so it can't flip the run-finished gauge before then. Sleep through that window
+          # rather than burn curl traffic actively polling for it.
+          echo "Sleeping ${DURATION_SECONDS}s for the benchmark run to complete..."
+          sleep "$DURATION_SECONDS"
+
+      - name: Wait for starter run-finished
+        id: wait-starter
+        run: |
+          # Poll `starter_run_finished{namespace=...}` against the LDAP-protected
+          # Prometheus until it flips to 1, or the deadline (DURATION + 300s) elapses.
+          # 300s is enough to absorb ONE full restart's worth of extra runtime; multi-
+          # restart cases get surfaced via the restart-count check below.
+          deadline=$(( $(date +%s) + DURATION_SECONDS + 300 ))
+          finished=0
+          echo "Polling starter_run_finished{namespace=\"${NAMESPACE}\"} for up to $((DURATION_SECONDS + 300))s..."
+          while [[ $(date +%s) -lt $deadline ]]; do
+            v=$(curl -sf -G --user "$PROM_USER:$PROM_PASS" \
+              "$PROM_URL/api/v1/query" \
+              --data-urlencode "query=starter_run_finished{namespace=\"$NAMESPACE\"}" 2>/dev/null \
+              | jq -r '.data.result[0].value[1] // "0"' 2>/dev/null) || v="0"
+            if [[ "$v" == "1" ]]; then
+              finished=1
+              break
+            fi
+            sleep 15
+          done
+          if [[ "$finished" != "1" ]]; then
+            echo "::warning::Starter did not flip starter_run_finished=1 within deadline"
+          fi
+          echo "finished=${finished}" >> "$GITHUB_OUTPUT"
+
+      - name: Read starter pod restart count
+        id: restarts
+        run: |
+          # If the starter was restarted by k8s mid-run, the actual elapsed wall-clock time
+          # exceeds DURATION_SECONDS (the new pod runs another full duration_limit). Surface
+          # the count so the comment can warn — we don't try to recover.
+          rc=$(kubectl -n "$NAMESPACE" get pod -l app=starter \
+            -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}' 2>/dev/null \
+            | tr ' ' '\n' | awk '{s+=$1} END {print s+0}')
+          echo "count=${rc:-0}" >> "$GITHUB_OUTPUT"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: await-load-test
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Query the PR's namespace via the reusable metrics workflow. Returns the JSON
+  # via `outputs.results-json` for the render job below to consume.
+  get-pr-metrics:
+    name: Collect PR namespace metrics
+    needs: [sanitize-branch-name, create-benchmark, await-load-test]
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'quicker-max') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-max'))
+    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      duration-seconds: ${{ needs.sanitize-branch-name.outputs.duration-seconds }}
+
+  # Same reusable workflow, regex selector targeting the most recent active
+  # daily-on-main namespace. Window is the PR's $DURATION_S so the rate/increase
+  # numbers are directly comparable against the PR.
+  get-daily-metrics:
+    name: Collect daily-on-main metrics
+    needs: [sanitize-branch-name, create-benchmark, await-load-test]
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'quicker-max') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-max'))
+    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    secrets: inherit
+    with:
+      namespace: c8-medic-daily-.*-test
+      duration-seconds: ${{ needs.sanitize-branch-name.outputs.duration-seconds }}
+
+  render-results:
+    name: Render and post results
+    needs: [sanitize-branch-name, await-load-test, get-pr-metrics, get-daily-metrics]
+    # `always()` so we still post a comment when one or both metrics jobs fail —
+    # missing values render as `n/a` / `-` instead of skipping the comment entirely.
+    if: >
+      always() && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.action == 'labeled' && github.event.label.name == 'quicker-max') ||
+        (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-max'))
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+    env:
+      NAMESPACE: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      DURATION_SECONDS: ${{ needs.sanitize-branch-name.outputs.duration-seconds }}
+      PR_NUMBER: ${{ needs.sanitize-branch-name.outputs.pr-number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install js-yaml (for render step)
+        run: npm install --no-save js-yaml@4.1.0
+
+      - name: Render and post results
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          STARTER_FINISHED: ${{ needs.await-load-test.outputs.starter-finished }}
+          RESTART_COUNT: ${{ needs.await-load-test.outputs.restart-count }}
+          PR_NUMBER: ${{ needs.sanitize-branch-name.outputs.pr-number }}
+          # JSON results from the two reusable-workflow jobs. May be empty strings
+          # if the upstream job failed; the render code below handles that.
+          PR_RESULTS_JSON: ${{ needs.get-pr-metrics.outputs.results-json }}
+          DAILY_RESULTS_JSON: ${{ needs.get-daily-metrics.outputs.results-json }}
+        with:
+          script: |
+            const fs = require('fs');
+            const yaml = require('js-yaml');
+
+            const namespace = process.env.NAMESPACE;
+            const durationSeconds = parseInt(process.env.DURATION_SECONDS, 10);
+
+            // Three sources of truth, all data-driven:
+            //   queries.yaml      → which metrics to display + how to format them
+            //   optimal.json      → aspirational target + tolerance per metric
+            //   *_RESULTS_JSON    → scraped values from the two metrics jobs (env vars)
+            const queriesDoc = yaml.load(
+              fs.readFileSync('load-tests/quicker-benchmark/queries.yaml', 'utf8'),
+            );
+            const optimal = JSON.parse(
+              fs.readFileSync('load-tests/quicker-benchmark/optimal.json', 'utf8'),
+            );
+            const optimalMetrics = optimal.metrics || {};
+
+            // Upstream job outputs are empty strings when the job failed before
+            // writing. Parse defensively so we still post a comment.
+            const safeJsonParse = (raw, label) => {
+              if (!raw || !raw.trim()) {
+                core.warning(`${label} JSON is empty — column will render as n/a / '-'`);
+                return {};
+              }
+              try { return JSON.parse(raw); }
+              catch (e) {
+                core.warning(`${label} JSON failed to parse — ${e.message}`);
+                return {};
+              }
+            };
+            const results = safeJsonParse(process.env.PR_RESULTS_JSON, 'Current');
+            const dailyResults = safeJsonParse(process.env.DAILY_RESULTS_JSON, 'Daily');
+
+            const restartCount = parseInt(process.env.RESTART_COUNT || '0', 10) || 0;
+            const finishedFlag = process.env.STARTER_FINISHED === '1';
+
+            // Some metrics (counts) scale linearly with run duration; others (rates,
+            // percentages) are duration-invariant. optimal.json encodes the difference:
+            // counts use `per-second`, everything else uses `expected`.
+            const optimalFor = (spec) => {
+              if (spec.expected != null) return spec.expected;
+              if (spec['per-second'] != null) return spec['per-second'] * durationSeconds;
+              return null;
+            };
+
+            const numericOrNull = (v) =>
+              (typeof v === 'number' && Number.isFinite(v)) ? v : null;
+
+            const formatValue = (n, q) => {
+              if (n == null || !Number.isFinite(n)) return 'n/a';
+              const decimals = q.decimals ?? 2;
+              const unit = q.unit ?? '';
+              switch (q.format) {
+                case 'integer':
+                  return Math.round(n).toLocaleString();
+                case 'percent':
+                  return n.toFixed(decimals) + (unit || '%');
+                case 'float':
+                  return n.toFixed(decimals) + (unit ? ' ' + unit : '');
+                default:
+                  return String(n);
+              }
+            };
+
+            // Daily column is allowed to be empty (daily run hasn't happened yet, or
+            // no metric in this Prometheus window). Render a literal '-' rather than
+            // 'n/a' to make it visually distinct from "the query ran and got null."
+            const formatOrDash = (n, q) =>
+              (n == null || !Number.isFinite(n)) ? '-' : formatValue(n, q);
+
+            const verdict = (current, baseline, tolerance, higherIsBetter) => {
+              if (current == null || !Number.isFinite(current) || baseline == null) return '❔';
+              if (baseline === 0) {
+                if (!higherIsBetter && current === 0) return '✅';
+                if (!higherIsBetter && current > 0) return '⚠️';
+                return current > 0 ? '✅' : '❔';
+              }
+              const diff = ((current - baseline) / baseline) * 100;
+              if (Math.abs(diff) <= (tolerance ?? 10)) return '✅';
+              return (higherIsBetter ? diff > 0 : diff < 0) ? '✅' : '⚠️';
+            };
+
+            const delta = (current, baseline) => {
+              if (current == null || !Number.isFinite(current) || baseline == null) return 'n/a';
+              if (baseline === 0) return current === 0 ? '0' : '+∞';
+              const diff = ((current - baseline) / baseline) * 100;
+              const sign = diff >= 0 ? '+' : '';
+              return `${sign}${diff.toFixed(1)}%`;
+            };
+
+            const tableLines = [
+              '| Metric | Current | Daily | Optimal | Δ vs Daily | |',
+              '|---|---:|---:|---:|---:|:---:|',
+            ];
+            for (const q of queriesDoc.queries) {
+              const current = numericOrNull(results[q.name]);
+              const daily = numericOrNull(dailyResults[q.name]);
+              const spec = optimalMetrics[q.name] || {};
+              const optimalVal = optimalFor(spec);
+              const tolerance = spec['tolerance-percent'];
+              tableLines.push(
+                `| ${q.description} | ${formatValue(current, q)} | ${formatOrDash(daily, q)} | ${formatValue(optimalVal, q)} | ${delta(current, daily)} | ${verdict(current, daily, tolerance, q.higher_is_better)} |`,
+              );
+            }
+
+            const warnings = [];
+            if (!finishedFlag) {
+              warnings.push('⚠️ Starter never reported `starter_run_finished=1`. Numbers may reflect a partial run.');
+            }
+            if (restartCount > 0) {
+              warnings.push(`⚠️ Starter pod restarted **${restartCount}** time(s). Wall-clock runtime exceeds the configured ${durationSeconds}s — the comparison against Daily is no longer apples-to-apples.`);
+            }
+
+            const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${namespace}`;
+            const body = [
+              `## ⏱️ Quicker Benchmark Results`,
+              '',
+              `Duration: ${durationSeconds}s · Namespace: \`${namespace}\``,
+              ...(warnings.length ? ['', ...warnings] : []),
+              '',
+              ...tableLines,
+              '',
+              `📊 [Grafana dashboard](${dashboard}) · 🔁 [Workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+              '',
+              `_Metrics defined in \`load-tests/quicker-benchmark/queries.yaml\`. Daily reference is the most recent active \`c8-medic-daily-*-test\` namespace on main. Optimal target at \`load-tests/quicker-benchmark/optimal.json\`. Verdict compares Current to Daily; tolerance from Optimal. ⚠️ only fires on the regression side — improvements outside tolerance still show ✅._`,
+            ].join('\n');
+
+            await core.summary.addRaw(body).write();
+
+            const prNumber = parseInt(process.env.PR_NUMBER || '0', 10);
+            if (prNumber > 0) {
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  delete-benchmark:
+    name: Quicker Benchmark Cleanup
+    needs: [sanitize-branch-name, render-results]
+    # Run after results are posted (success or failure), and also on label-removal / PR-close
+    # so abandoned tests don't leak namespaces. `if: always()` lets it fire when render-results
+    # fails too.
+    if: >
+      always() && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.action == 'labeled' && github.event.label.name == 'quicker-max') ||
+        (github.event.action == 'unlabeled' && github.event.label.name == 'quicker-max') ||
+        (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'quicker-max')) ||
+        (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'quicker-max'))
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    env:
+      NAMESPACE: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
+      - name: Delete benchmark namespace
+        run: |
+          kubectl delete ns "$NAMESPACE" --ignore-not-found=true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
