@@ -528,6 +528,45 @@ public final class SearchQueryBuilders {
         .toList();
   }
 
+  public static <C extends List<Operation<String>>> SearchQuery stringMatchPhraseInSingleHasChild(
+      final String field, final C operations, final String childType) {
+
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    }
+
+    final List<SearchQuery> innerClauses =
+        operations.stream()
+            .map(
+                op ->
+                    switch (op.operator()) {
+                      case EQUALS -> matchPhrase(field, op.value());
+
+                      case NOT_EQUALS ->
+                          bool(b ->
+                                  b.must(List.of(exists(field)))
+                                      .mustNot(List.of(matchPhrase(field, op.value()))))
+                              .toSearchQuery();
+
+                      case EXISTS -> bool(b -> b.must(List.of(exists(field)))).toSearchQuery();
+
+                      case NOT_EXISTS ->
+                          bool(b -> b.must(List.of(exists(field))).mustNot(List.of(exists(field))))
+                              .toSearchQuery();
+
+                      case IN ->
+                          or(op.values().stream().map(value -> matchPhrase(field, value)).toList());
+
+                      case LIKE ->
+                          wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase());
+
+                      default -> throw unexpectedOperation("String", op.operator());
+                    })
+            .toList();
+
+    return hasChildQuery(childType, bool(b -> b.must(innerClauses)).toSearchQuery());
+  }
+
   private static String formatDate(final OffsetDateTime dateTime) {
     return DATE_TIME_FORMATTER.format(dateTime);
   }
