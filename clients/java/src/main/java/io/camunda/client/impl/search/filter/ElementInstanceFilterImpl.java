@@ -169,7 +169,7 @@ public class ElementInstanceFilterImpl
   }
 
   @Override
-  public ElementInstanceFilter orFilters(final List<Consumer<ElementInstanceFilterBase>> fns) {
+  public ElementInstanceFilterBase orFilters(final List<Consumer<ElementInstanceFilterBase>> fns) {
     for (final Consumer<ElementInstanceFilterBase> fn : fns) {
       final ElementInstanceFilterImpl orFilter = new ElementInstanceFilterImpl();
       fn.accept(orFilter);

@@ -84,5 +84,5 @@ public interface ElementInstanceFilter extends ElementInstanceFilterBase {
   ElementInstanceFilter elementInstanceScopeKey(final long value);
 
   /** Filter by or conjunction using {@link ElementInstanceFilterBase} consumer. */
-  ElementInstanceFilter orFilters(List<Consumer<ElementInstanceFilterBase>> filters);
+  ElementInstanceFilterBase orFilters(List<Consumer<ElementInstanceFilterBase>> filters);
 }
