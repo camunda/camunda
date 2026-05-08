@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.net.URI;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -74,6 +75,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext
                 .getClusterConfigurationService()
                 .registerPartitionChangeExecutors(partitionManager, partitionManager);
+            startBpmnWorkersIfApplicable(brokerStartupContext);
             startupFuture.complete(brokerStartupContext);
           } catch (final Exception e) {
             startupFuture.completeExceptionally(e);
@@ -108,6 +110,27 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
     brokerShutdownContext
         .getClusterConfigurationService()
         .removeInconsistentConfigurationListener();
+  }
+
+  /**
+   * Derives the embedded-gateway REST address from the broker configuration and invokes {@link
+   * io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService#startBpmnWorkers}.
+   *
+   * <p>Workers are only started when the broker runs an embedded gateway; on brokers without an
+   * embedded gateway a warning is logged and workers are skipped.
+   */
+  private void startBpmnWorkersIfApplicable(final BrokerStartupContext ctx) {
+    final var gatewayCfg = ctx.getBrokerConfiguration().getGateway();
+    if (!gatewayCfg.isEnable()) {
+      LOGGER.warn(
+          "Embedded gateway is disabled on this broker — BPMN job workers for cluster-configuration changes will not be started.");
+      return;
+    }
+    final var networkCfg = gatewayCfg.getNetwork();
+    final var host = networkCfg.getHost() != null ? networkCfg.getHost() : "localhost";
+    final var port = networkCfg.getPort();
+    final var grpcAddress = URI.create("http://" + host + ":" + port);
+    ctx.getClusterConfigurationService().startBpmnWorkers(grpcAddress, ctx.getSystemPartition());
   }
 
   private void shutdownOnInconsistentTopology(

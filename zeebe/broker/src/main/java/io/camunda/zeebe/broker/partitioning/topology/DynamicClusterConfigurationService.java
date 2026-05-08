@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning.topology;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.config.ClusterConfigCommandSubmitter;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
@@ -20,9 +21,15 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.systempartition.SystemPartition;
+import java.net.URI;
 import java.nio.file.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(DynamicClusterConfigurationService.class);
 
   private PartitionDistribution partitionDistribution;
 
@@ -58,6 +65,54 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   public void removePartitionChangeExecutor() {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.removePartitionChangeExecutor();
+    }
+  }
+
+  /**
+   * Wires up the BPMN job workers that drive cluster-configuration changes. Workers are started
+   * lazily: only once this broker's system-partition replica becomes Raft leader, ensuring that
+   * only one broker in the cluster runs the workers at any given time.
+   *
+   * <p>If {@code systemPartition} is {@code null} (system partition disabled) or if no embedded
+   * gateway is present, a warning is logged and no workers are started.
+   */
+  @Override
+  public void startBpmnWorkers(
+      final URI grpcAddress, final ClusterConfigCommandSubmitter systemPartition) {
+    if (clusterConfigurationManagerService == null) {
+      LOG.warn(
+          "startBpmnWorkers called before the cluster-configuration manager was started; ignoring.");
+      return;
+    }
+    if (grpcAddress == null) {
+      LOG.warn(
+          "No embedded gateway address available — BPMN job workers for cluster-configuration changes will not be started.");
+      return;
+    }
+    if (systemPartition == null) {
+      LOG.warn(
+          "No system partition available — BPMN job workers for cluster-configuration changes will not be started.");
+      return;
+    }
+
+    // Cast to SystemPartition to access addLeaderListener; the facade always implements it
+    // when the system-partition feature is enabled.
+    if (systemPartition instanceof final SystemPartition sp) {
+      sp.addLeaderListener(
+          isLeader -> {
+            if (isLeader) {
+              LOG.info(
+                  "System-partition leader elected on this broker; starting BPMN job workers (gateway={})",
+                  grpcAddress);
+              clusterConfigurationManagerService.startBpmnWorkers(grpcAddress, systemPartition);
+            }
+          });
+    } else {
+      // Fallback: start workers unconditionally (e.g. in tests with a stub submitter).
+      LOG.info(
+          "Starting BPMN job workers unconditionally (no leader-listener support) for gateway={}",
+          grpcAddress);
+      clusterConfigurationManagerService.startBpmnWorkers(grpcAddress, systemPartition);
     }
   }
 

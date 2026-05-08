@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning.topology;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
+import io.camunda.zeebe.dynamic.config.ClusterConfigCommandSubmitter;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.net.URI;
 import java.util.List;
 
 public interface ClusterConfigurationService extends AsyncClosable {
@@ -75,4 +77,16 @@ public interface ClusterConfigurationService extends AsyncClosable {
   ClusterChangeExecutor getClusterChangeExecutor();
 
   ActorFuture<ClusterConfiguration> getLatestClusterConfiguration();
+
+  /**
+   * Starts the BPMN job workers that drive cluster-configuration changes via the system-partition
+   * engine. Must be called after {@link #registerPartitionChangeExecutors}.
+   *
+   * <p>Default implementation is a no-op for implementations that do not use the system partition.
+   *
+   * @param grpcAddress the REST/gRPC address of the local gateway
+   * @param systemPartition the system-partition facade
+   */
+  default void startBpmnWorkers(
+      final URI grpcAddress, final ClusterConfigCommandSubmitter systemPartition) {}
 }
