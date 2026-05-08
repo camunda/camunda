@@ -57,6 +57,11 @@ public class HttpSessionBasedAuthenticationHolder implements CamundaAuthenticati
         .orElse(null);
   }
 
+  @Override
+  public void clear() {
+    Optional.ofNullable(getHttpSession()).ifPresent(this::removeCamundaAuthenticationInSession);
+  }
+
   protected HttpSession getHttpSession() {
     return request.getSession(false);
   }
