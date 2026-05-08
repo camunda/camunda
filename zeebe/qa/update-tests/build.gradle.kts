@@ -8,6 +8,7 @@ plugins {
 
 dependencies {
     testImplementation(libs.org.testcontainers.testcontainers)
+    testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
     testImplementation(libs.com.github.docker.java.docker.java.api)
     testImplementation(project(":zeebe-test-util"))
     testImplementation(project(":camunda-zeebe"))

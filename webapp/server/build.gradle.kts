@@ -29,8 +29,8 @@ dependencies {
     testImplementation(libs.org.springframework.boot.spring.boot.autoconfigure)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.springframework.spring.test)
-    testImplementation("org.springframework.boot:spring-boot-resttestclient:4.0.2")
-    testImplementation("org.springframework.boot:spring-boot-restclient:4.0.2")
+    testImplementation(libs.org.springframework.boot.spring.boot.resttestclient)
+    testImplementation(libs.org.springframework.boot.spring.boot.restclient)
 }
 
 description = "Webapp Server"
