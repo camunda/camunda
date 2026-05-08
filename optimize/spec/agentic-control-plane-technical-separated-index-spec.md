@@ -334,6 +334,23 @@ Merge in Java by processDefinitionKey / processInstanceKey / processDefinitionVe
 
 **WoW delta**: Same as base spec — parallel query for `[startDate - 7d, endDate - 7d]`.
 
+**Multi-tenancy**: Optimize does not apply tenant filtering automatically. Every query must include an explicit `tenantId` filter. Resolution flow:
+
+```
+REST controller  →  AgenticControlPlaneService
+  →  CamundaCCSMTenantAuthorizationService.getCurrentUserAuthorizedTenants(userId)
+       (resolves authorized tenant IDs from JWT via CCSMTokenService)
+  →  inject as terms filter into every ES/OS query against both AgentInstanceIndex and ProcessInstanceIndex
+```
+
+Both indices store `tenantId` as a top-level field. Every query adds:
+
+```json
+{ "terms": { "tenantId": ["<authorized-tenant-1>", "<authorized-tenant-2>"] } }
+```
+
+Query examples in sections 4.2–4.11 omit the `tenantId` clause for brevity — it must be present in every generated query against both indices. Omitting it is a security regression.
+
 ---
 
 ### 4.1 Endpoint Overview
@@ -377,19 +394,19 @@ Two requests merged in Java by `processDefinitionKey`.
 
 **Request 2 — ProcessInstanceIndex** (run counts, process duration, incident counts):
 
+Runs **after** Request 1 completes. The distinct `processDefinitionKey` values returned by Request 1
+are injected as a `terms` filter so the scan is bounded to relevant process definitions only.
+Querying all COMPLETED process instances without this filter would perform a full-index scan at
+fleet level — unacceptable at high process definition cardinality.
+
 ```json
 {
   "size": 0,
   "query": {
     "bool": {
       "must": [
-        { "term": { "state": "COMPLETED" } },
-        {
-          "nested": {
-            "path": "agentInstances",
-            "query": { "exists": { "field": "agentInstances.agentInstanceKey" } }
-          }
-        }
+        { "term":  { "state": "COMPLETED" } },
+        { "terms": { "processDefinitionKey": ["<key-1>", "<key-2>", "...from Request 1 results"] } }
       ]
     }
   },
@@ -408,12 +425,6 @@ Two requests merged in Java by `processDefinitionKey`.
   }
 }
 ```
-
-> Request 2 still uses the existing `agentInstances` nested field for filtering — but that field is
-> no longer present in the separate-index variant. Replace the `nested` filter with a terms-lookup
-> or a set of `processDefinitionKey` values from Request 1 results. Simplest: just query all
-> COMPLETED process instances and group by processDefinitionKey; filter to only keys that appear in
-> the AgentInstanceIndex result set at merge time.
 
 **Response shape**: same as base spec.
 

@@ -525,6 +525,38 @@ All endpoints under `/api/agentic-control-plane/`.
 
 ---
 
+### 4.1.1 Multi-tenancy
+
+Optimize does not apply tenant filtering automatically. There is no intercept layer — every query must include an explicit `tenantId` filter.
+
+**Resolution flow**:
+
+```
+REST controller  →  AgenticControlPlaneService
+  →  CamundaCCSMTenantAuthorizationService.getCurrentUserAuthorizedTenants(userId)
+       (resolves authorized tenant IDs from JWT via CCSMTokenService)
+  →  inject as terms filter into every ES/OS query
+```
+
+**Applied to queries**: every endpoint adds a `terms` filter on `tenantId` alongside `state = "COMPLETED"`:
+
+```json
+{
+  "bool": {
+    "must": [
+      { "term":  { "state": "COMPLETED" } },
+      { "terms": { "tenantId": ["<authorized-tenant-1>", "<authorized-tenant-2>"] } }
+    ]
+  }
+}
+```
+
+The `tenantId` field is indexed on every `ProcessInstanceIndex` document (and within the `agentInstances` nested field). Query examples in sections 4.2–4.11 omit the `tenantId` clause for brevity — it must be present in every generated query.
+
+Omitting this filter is a security regression: users would see data across tenants they are not authorized for.
+
+---
+
 ### 4.2 A1 — Process Breakdown
 
 **Purpose**: L0 only. Top token consumers by process, with aggregate KPIs per process.
