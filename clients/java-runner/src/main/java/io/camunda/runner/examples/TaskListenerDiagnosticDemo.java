@@ -34,18 +34,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Diagnostic demo for understanding why task-listener jobs don't reach the worker.
  *
- * <p>Builds the listener flow, fires one instance, then in parallel polls the SDK's <em>search</em>
- * APIs every second to print:
+ * <p>After deploying and creating one instance, polls the SDK's <em>search</em> APIs every 1.5 s
+ * — but filtered to <em>this run's</em> {@code processDefinitionKey} and {@code
+ * processInstanceKey} so we don't trip over polluted entries left in the index by other runs or
+ * other projects.
  *
- * <ul>
- *   <li>Every job in the system for our run id — its kind, type, state, retries, worker name.
- *   <li>Every user task — its state, assignee, candidate users/groups.
- * </ul>
- *
- * <p>Run it, watch the output. The interesting question: when the user task hits {@code assigning},
- * is there a {@code TASK_LISTENER} job with state {@code CREATED} matching our prefixed jobType? If
- * yes — the broker did emit it and our worker should activate it. If our worker never receives it,
- * the issue is on the activation/streaming path.
+ * <p>What to look for: when the user task hits {@code ASSIGNING}, is there a {@code
+ * TASK_LISTENER} job in {@code CREATED} state with the prefixed jobType matching what we
+ * registered for? If yes — the broker emitted it and the activation path is the gap. If no —
+ * the listener-job creation step itself isn't happening for our run.
  */
 public final class TaskListenerDiagnosticDemo {
 
@@ -56,11 +53,6 @@ public final class TaskListenerDiagnosticDemo {
 
     try (final var cluster = LiveBpmn.cluster().localhost()) {
       final CamundaClient client = cluster.client();
-
-      // Spin up a background poller BEFORE running, so it sees every state transition.
-      final Thread poller = new Thread(() -> pollLoop(client, stopPolling), "diag-poller");
-      poller.setDaemon(true);
-      poller.start();
 
       final Run run =
           LiveBpmn.createExecutableProcess("hello")
@@ -96,14 +88,21 @@ public final class TaskListenerDiagnosticDemo {
               .endEvent()
               .run(RunOptions.of(1).variables(i -> Map.of("name", "World")), cluster);
 
+      // Capture the keys to filter on AFTER instance creation.
+      final long pdk = run.processDefinitionKey();
+      final long pik = run.instances().get(0);
+
       System.out.println();
       System.out.println("══════════════════════════════════════════════════════════════════");
-      System.out.println(" Diagnostic poller running — printing all jobs and user tasks");
-      System.out.println(" Open Tasklist (http://localhost:8080/tasklist) to complete the");
-      System.out.println(" user task. Watch the [diag] lines below to see what the broker");
-      System.out.println(" actually has.");
+      System.out.printf("  diagnostic poller — filtered to processInstanceKey=%d%n", pik);
+      System.out.printf("                                processDefinitionKey=%d%n", pdk);
+      System.out.println("  Open  http://localhost:8080/tasklist  and complete 'review'.");
       System.out.println("══════════════════════════════════════════════════════════════════");
       System.out.println();
+
+      final Thread poller = new Thread(() -> pollLoop(client, pdk, pik, stopPolling), "diag-poller");
+      poller.setDaemon(true);
+      poller.start();
 
       try {
         run.await(Duration.ofMinutes(3));
@@ -115,13 +114,16 @@ public final class TaskListenerDiagnosticDemo {
     }
   }
 
-  /** Polls the SDK's job + user-task search APIs every second until {@code stop} flips true. */
-  private static void pollLoop(final CamundaClient client, final AtomicBoolean stop) {
+  private static void pollLoop(
+      final CamundaClient client, final long pdk, final long pik, final AtomicBoolean stop) {
     while (!stop.get()) {
       try {
-        snapshot(client);
+        snapshot(client, pdk, pik);
       } catch (final Exception e) {
-        System.out.println("[diag] poll error: " + e.getMessage());
+        // Print only the first frame so the corrupt-row NPE doesn't drown the output.
+        final var first = e.getStackTrace().length > 0 ? e.getStackTrace()[0].toString() : "";
+        System.out.printf(
+            "[diag] poll error (%s): %s @ %s%n", e.getClass().getSimpleName(), e.getMessage(), first);
       }
       try {
         Thread.sleep(1500);
@@ -132,32 +134,55 @@ public final class TaskListenerDiagnosticDemo {
     }
   }
 
-  private static void snapshot(final CamundaClient client) {
-    final SearchResponse<Job> jobs = client.newJobSearchRequest().send().join();
-    final SearchResponse<UserTask> tasks = client.newUserTaskSearchRequest().send().join();
-
+  private static void snapshot(final CamundaClient client, final long pdk, final long pik) {
     System.out.println("[diag] -------- snapshot --------");
-    System.out.printf("[diag] jobs: %d total%n", jobs.items().size());
-    for (final Job j : jobs.items()) {
+
+    // Filter jobs to ONLY this run — avoids tripping over polluted entries from other projects.
+    try {
+      final SearchResponse<Job> jobs =
+          client
+              .newJobSearchRequest()
+              .filter(f -> f.processDefinitionKey(pdk))
+              .send()
+              .join();
+      System.out.printf("[diag] jobs (processDefinitionKey=%d): %d%n", pdk, jobs.items().size());
+      for (final Job j : jobs.items()) {
+        System.out.printf(
+            "[diag]   job key=%d kind=%s state=%s type=%s retries=%d worker=%s eventType=%s%n",
+            j.getJobKey(),
+            j.getKind(),
+            j.getState(),
+            j.getType(),
+            j.getRetries() == null ? -1 : j.getRetries(),
+            j.getWorker(),
+            j.getListenerEventType());
+      }
+    } catch (final Exception e) {
       System.out.printf(
-          "[diag]   job key=%d kind=%s state=%s type=%s retries=%d worker=%s eventType=%s%n",
-          j.getJobKey(),
-          j.getKind(),
-          j.getState(),
-          j.getType(),
-          j.getRetries() == null ? -1 : j.getRetries(),
-          j.getWorker(),
-          j.getListenerEventType());
+          "[diag] job search failed: %s — %s%n", e.getClass().getSimpleName(), e.getMessage());
     }
-    System.out.printf("[diag] user tasks: %d total%n", tasks.items().size());
-    for (final UserTask ut : tasks.items()) {
+
+    try {
+      final SearchResponse<UserTask> tasks =
+          client
+              .newUserTaskSearchRequest()
+              .filter(f -> f.processInstanceKey(pik))
+              .send()
+              .join();
+      System.out.printf("[diag] user tasks (processInstanceKey=%d): %d%n", pik, tasks.items().size());
+      for (final UserTask ut : tasks.items()) {
+        System.out.printf(
+            "[diag]   userTask key=%d state=%s assignee=%s candidateUsers=%s candidateGroups=%s%n",
+            ut.getUserTaskKey(),
+            ut.getState(),
+            ut.getAssignee(),
+            ut.getCandidateUsers(),
+            ut.getCandidateGroups());
+      }
+    } catch (final Exception e) {
       System.out.printf(
-          "[diag]   userTask key=%d state=%s assignee=%s candidateUsers=%s candidateGroups=%s%n",
-          ut.getUserTaskKey(),
-          ut.getState(),
-          ut.getAssignee(),
-          ut.getCandidateUsers(),
-          ut.getCandidateGroups());
+          "[diag] user-task search failed: %s — %s%n",
+          e.getClass().getSimpleName(), e.getMessage());
     }
   }
 }
