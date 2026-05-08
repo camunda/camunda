@@ -11,6 +11,13 @@ fi
 
 file="$1"
 
+# Normalize to a repo-relative path; otherwise `git cat-file -e "$tag:$file"`
+# below silently misses every tag and falls through to UNRELEASED.
+file=$(git ls-files --full-name --error-unmatch -- "$file" 2>/dev/null) || {
+  echo "Path not tracked in git: $1" >&2
+  exit 2
+}
+
 # Filter to release tags only (X.Y.Z, no -rc/-alpha/etc.). The `|| true`
 # tolerates `grep` exiting 1 when no tags match, which would otherwise
 # abort the script under `set -o pipefail` and skip the UNRELEASED path.
