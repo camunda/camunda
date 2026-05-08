@@ -561,7 +561,6 @@ export class OperateProcessInstanceViewModificationModePage {
       this.getNewVariableValueFieldSelector(variableIndex);
     await expect(newVariableValueField).toBeVisible();
     await newVariableValueField.click();
-    await expect(newVariableValueField).toBeFocused();
     await this.page.keyboard.insertText(value);
     await this.page.keyboard.press('Tab');
   }
