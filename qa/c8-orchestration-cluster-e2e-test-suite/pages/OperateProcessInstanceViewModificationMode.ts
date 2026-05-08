@@ -549,12 +549,13 @@ export class OperateProcessInstanceViewModificationModePage {
 
   async addNewVariable(variableIndex: string, name: string, value: string) {
     await this.addVariableModificationButton.click();
-    await expect(
-      this.page.getByTestId(`variable-newVariables[${variableIndex}]`),
-    ).toBeVisible();
-
-    await this.getNewVariableNameFieldSelector(variableIndex).clear();
-    await this.getNewVariableNameFieldSelector(variableIndex).type(name);
+    const nameField = this.getNewVariableNameFieldSelector(variableIndex);
+    // Wait for a fresh empty input — guards against matching a pre-existing row
+    // at the same index that is about to be detached by the re-render.
+    await expect(nameField).toBeVisible();
+    await expect(nameField).toHaveValue('');
+    await nameField.click();
+    await nameField.type(name);
     await this.page.keyboard.press('Tab');
 
     await this.expectEditorToBeLoaded();
