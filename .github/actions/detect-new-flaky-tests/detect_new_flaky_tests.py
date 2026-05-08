@@ -371,7 +371,7 @@ def main() -> None:
         COMMENT_MARKER,
         "# ⚠️ New Flaky Tests Detected",
         "",
-        f"This PR introduces **{len(new_flaky_tests)} new flaky test(s)** that are not currently flaky on `main`, `stable/*`, or in any other open PR.",
+        f"This PR introduces **{len(new_flaky_tests)} new flaky test(s)** that have not flaked recently on `main`, `stable/*`, or in any other pull request.",
         "",
     ]
 
@@ -386,6 +386,7 @@ def main() -> None:
         lines.append(f"  - Retries in this run: {test['currentRunFailures']}")
         if test.get("packageName") and test.get("className") and test.get("methodName"):
             fqn_class = f"{test['packageName']}.{test['className']}"
+            method = test["methodName"]
             query = (
                 "SELECT DATE(report_time) AS day, build_trigger, test_status, COUNT(*) AS occurrences\n"
                 "FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts\n"
@@ -394,7 +395,7 @@ def main() -> None:
                 "WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 DAY)\n"
                 '  AND ts.ci_url = "https://github.com/camunda/camunda"\n'
                 f'  AND test_class_name = "{fqn_class}"\n'
-                f"  AND test_name = \"{test['methodName']}\"\n"
+                f'  AND (test_name = "{method}" OR STARTS_WITH(test_name, "{method}("))\n'
                 "GROUP BY day, build_trigger, test_status\n"
                 "ORDER BY day DESC, occurrences DESC"
             )
