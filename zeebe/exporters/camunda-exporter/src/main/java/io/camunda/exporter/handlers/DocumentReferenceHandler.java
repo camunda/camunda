@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -44,6 +45,14 @@ public class DocumentReferenceHandler
   private final String indexName;
   private final ObjectMapper objectMapper;
 
+  // Single-record cache: the exporter processes records strictly sequentially on one thread.
+  // handlesRecord(), generateIds(), and updateEntity() are all called for the same record in
+  // order — handlesRecord first, then generateIds, then updateEntity once per id.  Caching the
+  // parsed JsonNode list here avoids re-deserializing the same (potentially large) JSON string
+  // up to (2 + N) times for an N-document array variable.
+  private Long cachedRecordKey = null;
+  private List<JsonNode> cachedDocRefs = Collections.emptyList();
+
   public DocumentReferenceHandler(final String indexName, final ObjectMapper objectMapper) {
     this.indexName = indexName;
     this.objectMapper = objectMapper;
@@ -59,6 +68,9 @@ public class DocumentReferenceHandler
     return DocumentReferenceEntity.class;
   }
 
+  // Note: this method mutates the per-instance cache fields (cachedRecordKey, cachedDocRefs) so
+  // the parse result can be reused by generateIds() and updateEntity() during the same lifecycle
+  // pass.  Do not call it speculatively expecting predicate purity.
   @Override
   public boolean handlesRecord(final Record<VariableRecordValue> record) {
     if (!SUPPORTED_INTENTS.contains(record.getIntent())) {
@@ -71,28 +83,23 @@ public class DocumentReferenceHandler
     if (!value.contains(DOCUMENT_TYPE_DISCRIMINATOR)) {
       return false;
     }
-    return isDocumentReference(value);
+    final List<JsonNode> docRefs = parseDocumentRefs(value);
+    if (docRefs.isEmpty()) {
+      return false;
+    }
+    // Populate the cache so generateIds() and updateEntity() can reuse this parse result.
+    cachedRecordKey = record.getKey();
+    cachedDocRefs = docRefs;
+    return true;
   }
 
   @Override
   public List<String> generateIds(final Record<VariableRecordValue> record) {
     final List<String> ids = new ArrayList<>();
-    try {
-      final JsonNode root = objectMapper.readTree(record.getValue().getValue());
-      if (root.isArray()) {
-        for (final JsonNode node : root) {
-          if (isDocumentReferenceNode(node) && node.has("documentId")) {
-            ids.add(generateId(record.getKey(), node.get("documentId").asText()));
-          }
-        }
-      } else if (isDocumentReferenceNode(root) && root.has("documentId")) {
-        ids.add(generateId(record.getKey(), root.get("documentId").asText()));
+    for (final JsonNode node : getDocRefs(record)) {
+      if (node.has("documentId")) {
+        ids.add(generateId(record.getKey(), node.get("documentId").asText()));
       }
-    } catch (final Exception e) {
-      LOG.debug(
-          "Failed to parse document reference ids from variable record key={}: {}",
-          record.getKey(),
-          e.getMessage());
     }
     return ids;
   }
@@ -126,48 +133,35 @@ public class DocumentReferenceHandler
     // Format is "{variableKey}_{documentId}" — we strip the prefix to recover the documentId.
     final String docId = extractDocumentId(entity.getId(), record.getKey());
 
-    try {
-      final JsonNode root = objectMapper.readTree(recordValue.getValue());
-      JsonNode docNode = null;
-      if (root.isArray()) {
-        for (final JsonNode node : root) {
-          if (isDocumentReferenceNode(node)
-              && node.has("documentId")
-              && docId.equals(node.get("documentId").asText())) {
-            docNode = node;
-            break;
-          }
-        }
-      } else if (isDocumentReferenceNode(root)) {
-        docNode = root;
+    JsonNode docNode = null;
+    for (final JsonNode node : getDocRefs(record)) {
+      if (node.has("documentId") && docId.equals(node.get("documentId").asText())) {
+        docNode = node;
+        break;
       }
-      if (docNode != null) {
-        entity.setDocumentId(docNode.get("documentId").asText());
-        entity.setStoreId(getTextOrNull(docNode, "storeId"));
-        entity.setContentHash(getTextOrNull(docNode, "contentHash"));
-        final JsonNode metadata = docNode.get("metadata");
-        if (metadata != null) {
-          entity.setFileName(getTextOrNull(metadata, "fileName"));
-          entity.setContentType(getTextOrNull(metadata, "contentType"));
-          entity.setExpiresAt(getTextOrNull(metadata, "expiresAt"));
-          if (metadata.has("size") && !metadata.get("size").isNull()) {
-            entity.setSize(metadata.get("size").asLong());
-          }
-          if (metadata.has("customProperties") && !metadata.get("customProperties").isNull()) {
-            entity.setCustomProperties(metadata.get("customProperties").toString());
-          }
+    }
+
+    if (docNode != null) {
+      entity.setDocumentId(docNode.get("documentId").asText());
+      entity.setStoreId(getTextOrNull(docNode, "storeId"));
+      entity.setContentHash(getTextOrNull(docNode, "contentHash"));
+      final JsonNode metadata = docNode.get("metadata");
+      if (metadata != null) {
+        entity.setFileName(getTextOrNull(metadata, "fileName"));
+        entity.setContentType(getTextOrNull(metadata, "contentType"));
+        entity.setExpiresAt(getTextOrNull(metadata, "expiresAt"));
+        if (metadata.has("size") && !metadata.get("size").isNull()) {
+          entity.setSize(metadata.get("size").asLong());
         }
-      } else {
-        LOG.warn(
-            "Document reference with id='{}' not found in variable record key={}",
-            docId,
-            record.getKey());
+        if (metadata.has("customProperties") && !metadata.get("customProperties").isNull()) {
+          entity.setCustomProperties(metadata.get("customProperties").toString());
+        }
       }
-    } catch (final Exception e) {
-      LOG.error(
-          "Failed to parse document reference data from variable record key={}: {}",
-          record.getKey(),
-          e.getMessage());
+    } else {
+      LOG.warn(
+          "Document reference with id='{}' not found in variable record key={}",
+          docId,
+          record.getKey());
     }
   }
 
@@ -181,16 +175,40 @@ public class DocumentReferenceHandler
     return indexName;
   }
 
-  private boolean isDocumentReference(final String value) {
+  // Returns the cached parsed list if the key matches, otherwise re-parses and warms the cache.
+  // The re-parse path exists as a safety net: in practice handlesRecord() is always called first
+  // for every record the handler processes, so the cache will be warm.  Updating the cache on
+  // miss ensures any subsequent calls in the same lifecycle pass (e.g. updateEntity per array
+  // element) reuse the same parse result.
+  private List<JsonNode> getDocRefs(final Record<VariableRecordValue> record) {
+    if (cachedRecordKey != null && cachedRecordKey == record.getKey()) {
+      return cachedDocRefs;
+    }
+    final List<JsonNode> parsed = parseDocumentRefs(record.getValue().getValue());
+    cachedRecordKey = record.getKey();
+    cachedDocRefs = parsed;
+    return parsed;
+  }
+
+  private List<JsonNode> parseDocumentRefs(final String value) {
     try {
       final JsonNode root = objectMapper.readTree(value);
       if (root.isArray()) {
-        return root.size() > 0 && isDocumentReferenceNode(root.get(0));
+        final List<JsonNode> refs = new ArrayList<>();
+        for (final JsonNode node : root) {
+          if (isDocumentReferenceNode(node)) {
+            refs.add(node);
+          }
+        }
+        return refs;
+      } else if (isDocumentReferenceNode(root)) {
+        return List.of(root);
       }
-      return isDocumentReferenceNode(root);
     } catch (final Exception e) {
-      return false;
+      LOG.debug(
+          "Failed to parse document reference from variable record value: {}", e.getMessage());
     }
+    return Collections.emptyList();
   }
 
   private boolean isDocumentReferenceNode(final JsonNode node) {
