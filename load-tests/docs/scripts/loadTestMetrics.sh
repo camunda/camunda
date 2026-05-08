@@ -11,8 +11,8 @@ Usage: loadTestMetrics.sh [--queries FILE] <namespace> [duration_seconds] [endpo
 
 Options:
   -q, --queries FILE   Queries YAML file. Relative paths are resolved from this
-                       script's directory. Default: queries.yaml (all metrics).
-                       Use basic.yaml for a focused starter-side summary.
+                       script's directory. Default: basic.yaml (key metrics).
+                       Use queries.yaml for the full documented metric set.
   -h, --help           Show this help message.
 
 Arguments:
@@ -24,11 +24,11 @@ Arguments:
                      Pass "" if not needed. Default: "".
 
 Examples:
-  # Local dev, port-forward already open (all metrics):
+  # Local dev, port-forward already open (key metrics):
   ./loadTestMetrics.sh c8-pgoyal-quicker-pr-1234
 
-  # Key metrics only (starter-side view):
-  ./loadTestMetrics.sh --queries basic.yaml c8-pgoyal-quicker-pr-1234
+  # All documented metrics:
+  ./loadTestMetrics.sh --queries queries.yaml c8-pgoyal-quicker-pr-1234
 
   # CI against the LDAP-protected ingress:
   ./loadTestMetrics.sh \
@@ -86,7 +86,7 @@ DURATION_S="${DURATION_SECONDS}s"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 if [[ -z "$QUERIES_OPT" ]]; then
-  QUERIES_FILE="${SCRIPT_DIR}/queries.yaml"
+  QUERIES_FILE="${SCRIPT_DIR}/basic.yaml"
 elif [[ "$QUERIES_OPT" = /* ]]; then
   QUERIES_FILE="$QUERIES_OPT"
 else

@@ -89,16 +89,16 @@ Two query files are provided:
 
 **Examples:**
 
-Local dev, all metrics (port-forward already open):
+Local dev, key metrics (port-forward already open):
 
 ```
 ./loadTestMetrics.sh c8-pgoyal-quicker-pr-1234
 ```
 
-Key metrics only:
+All documented metrics:
 
 ```
-./loadTestMetrics.sh --queries basic.yaml c8-pgoyal-quicker-pr-1234
+./loadTestMetrics.sh --queries queries.yaml c8-pgoyal-quicker-pr-1234
 ```
 
 Against the LDAP-protected ingress:

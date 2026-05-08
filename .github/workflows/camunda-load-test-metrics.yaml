@@ -18,10 +18,10 @@ on:
         type: string
         default: '600'
       queries-file:
-        description: 'Queries YAML file in load-tests/docs/scripts/ (queries.yaml = all metrics, basic.yaml = key metrics only)'
+        description: 'Queries YAML file in load-tests/docs/scripts/ (basic.yaml = key metrics only, queries.yaml = all metrics)'
         required: false
         type: string
-        default: 'queries.yaml'
+        default: 'basic.yaml'
   workflow_call:
     inputs:
       namespace:
@@ -34,10 +34,10 @@ on:
         type: string
         default: '600'
       queries-file:
-        description: 'Queries YAML file in load-tests/docs/scripts/ (queries.yaml = all metrics, basic.yaml = key metrics only)'
+        description: 'Queries YAML file in load-tests/docs/scripts/ (basic.yaml = key metrics only, queries.yaml = all metrics)'
         required: false
         type: string
-        default: 'queries.yaml'
+        default: 'basic.yaml'
     outputs:
       results-json:
         description: 'JSON object {name: number, ...} from loadTestMetrics.sh stdout (queries that scrape no data are omitted)'
@@ -61,7 +61,7 @@ jobs:
     env:
       NAMESPACE: ${{ inputs.namespace }}
       DURATION_SECONDS: ${{ inputs.duration-seconds }}
-      QUERIES_FILE: ${{ inputs.queries-file || 'queries.yaml' }}
+      QUERIES_FILE: ${{ inputs.queries-file || 'basic.yaml' }}
     outputs:
       results-json: ${{ steps.run-queries.outputs.results-json }}
     steps:
