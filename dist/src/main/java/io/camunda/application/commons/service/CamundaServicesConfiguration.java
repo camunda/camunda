@@ -16,6 +16,7 @@ import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.BatchOperationSearchClient;
 import io.camunda.search.clients.ClusterVariableSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
+import io.camunda.search.clients.DocumentReferenceSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.DeployedResourceSearchClient;
@@ -50,6 +51,7 @@ import io.camunda.service.ConditionalServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
+import io.camunda.service.DocumentReferenceServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ExpressionServices;
@@ -391,6 +393,21 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         clusterVariableSearchClient,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public DocumentReferenceServices documentReferenceServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final DocumentReferenceSearchClient documentReferenceSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new DocumentReferenceServices(
+        brokerClient,
+        securityContextProvider,
+        documentReferenceSearchClient,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
