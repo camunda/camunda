@@ -169,6 +169,7 @@ public class DbVariableState implements MutableVariableState {
     this.parentKey.set(parentKey);
 
     childParentColumnFamily.insert(this.childKey, this.parentKey);
+    variableNameCache.get(childKey, ignored -> new HashSet<>());
   }
 
   @Override
@@ -185,24 +186,11 @@ public class DbVariableState implements MutableVariableState {
 
   @Override
   public void removeAllVariables(final long scopeKey) {
-    final Set<DirectBuffer> cachedNames = variableNameCache.getIfPresent(scopeKey);
-    if (cachedNames != null) {
-      try {
-        this.scopeKey.wrapLong(scopeKey);
-        for (final DirectBuffer name : cachedNames) {
-          variableName.wrapBuffer(name);
-          variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey);
-        }
-      } finally {
-        cachedNames.clear();
-      }
-    } else {
-      visitVariablesLocal(
-          scopeKey,
-          dbString -> true,
-          (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
-          () -> false);
-    }
+    visitVariablesLocal(
+        scopeKey,
+        dbString -> true,
+        (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
+        () -> false);
   }
 
   @Override
@@ -435,6 +423,22 @@ public class DbVariableState implements MutableVariableState {
       final Predicate<DbString> variableFilter,
       final BiConsumer<DbString, VariableInstance> variableConsumer,
       final BooleanSupplier completionCondition) {
+    final Set<DirectBuffer> cachedNames = variableNameCache.getIfPresent(scopeKey);
+    if (cachedNames != null) {
+      for (final DirectBuffer cachedName : cachedNames) {
+        final VariableInstance variable =
+            getVariableLocal(scopeKey, cachedName, 0, cachedName.capacity());
+        if (variable != null && variableFilter.test(variableName)) {
+          variableConsumer.accept(variableName, variable);
+        }
+
+        if (completionCondition.getAsBoolean()) {
+          return true;
+        }
+      }
+      return completionCondition.getAsBoolean();
+    }
+
     this.scopeKey.wrapLong(scopeKey);
 
     variablesColumnFamily.whileEqualPrefix(
@@ -448,6 +452,6 @@ public class DbVariableState implements MutableVariableState {
 
           return !completionCondition.getAsBoolean();
         });
-    return false;
+    return completionCondition.getAsBoolean();
   }
 }
