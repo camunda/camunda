@@ -721,6 +721,9 @@
   <profiles>
     <profile>
       <id>dl-nightly</id>
+      <properties>
+        <failsafe.excluded.nightly/>
+      </properties>
       <build>
         <plugins>
           <plugin>
