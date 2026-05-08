@@ -312,11 +312,27 @@ jobs:
     needs: ai-triage
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions:
-      contents: read
-      issues: write
+    permissions: {}  # Using GitHub App token instead of GITHUB_TOKEN
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Mint a short-lived token from a GitHub App so issue creation acts
+      # as the App, not as github-actions[bot]. Required for Copilot
+      # Coding Agent assignment to actually trigger pickup — assignments
+      # made by github-actions[bot] are silently dropped.
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_CODE_QUALITY_AI_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_CODE_QUALITY_AI_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: "22"
@@ -336,7 +352,7 @@ jobs:
       - name: Run issue-track runner
         working-directory: .github/scripts/code-quality-ai
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: node issue_runner.js --triaged triaged.json --repo-root "$GITHUB_WORKSPACE" --max-issues ${{ env.MAX_TICKETS }} --dry-run ${{ env.DRY_RUN }} --output issue-summary.json
 
