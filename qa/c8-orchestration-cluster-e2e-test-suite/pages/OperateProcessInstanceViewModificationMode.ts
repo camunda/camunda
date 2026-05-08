@@ -549,15 +549,20 @@ export class OperateProcessInstanceViewModificationModePage {
 
   async addNewVariable(variableIndex: string, name: string, value: string) {
     await this.addVariableModificationButton.click();
-    await expect(
-      this.page.getByTestId(`variable-newVariables[${variableIndex}]`),
-    ).toBeVisible();
-
-    await this.getNewVariableNameFieldSelector(variableIndex).clear();
-    await this.getNewVariableNameFieldSelector(variableIndex).type(name);
-    await this.page.keyboard.press('Tab');
-
-    await this.expectEditorToBeLoaded();
+    const nameField = this.getNewVariableNameFieldSelector(variableIndex);
+    // Wait for a fresh empty input — guards against matching a pre-existing row
+    // at the same index that is about to be detached by the re-render.
+    await expect(nameField).toBeVisible();
+    await expect(nameField).toHaveValue('');
+    await nameField.click();
+    await nameField.type(name);
+    const valueField = this.getNewVariableValueFieldSelector(variableIndex);
+    await valueField.click();
+    await expect(async () => {
+      expect(
+        await valueField.evaluate((el) => el.matches(':focus-within')),
+      ).toBe(true);
+    }).toPass({timeout: 10_000});
     await this.page.keyboard.insertText(value);
     await this.page.keyboard.press('Tab');
   }
@@ -606,8 +611,9 @@ export class OperateProcessInstanceViewModificationModePage {
     const jsonEditorModal =
       this.newVariableByIndex(variableIndex).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeEnabled();
+    // await expect(jsonEditorModal.inputField).toBeVisible();
+    // await expect(jsonEditorModal.inputField).toBeEnabled();
+    await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
     await this.page.keyboard.press('Tab');
@@ -617,7 +623,6 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.editableExistingVariableByName(
       variableName,
     ).readModeValue.click();
-    await this.clearMonacoEditor();
 
     await this.editableExistingVariableByName(
       variableName,
@@ -625,10 +630,14 @@ export class OperateProcessInstanceViewModificationModePage {
     const jsonEditorModal =
       this.editableExistingVariableByName(variableName).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeEnabled();
+    // await expect(jsonEditorModal.inputField).toBeVisible();
+    // await expect(jsonEditorModal.inputField).toBeEnabled();
+    await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
+    await jsonEditorModal.inputField.evaluate((el: HTMLElement) => el.focus());
+    await this.clearMonacoEditor();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
+    await expect(jsonEditorModal.header).toBeHidden();
     await this.editableExistingVariableByName(
       variableName,
     ).writeModeValue.click();
