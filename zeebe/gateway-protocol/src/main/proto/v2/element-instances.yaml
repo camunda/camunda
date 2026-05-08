@@ -287,7 +287,7 @@ components:
                   <li style="list-style-type: disc;"><code>elementId</code> contains <em>Order</em></li>
                 </ul>
                 <br>
-                <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.</p>
+                <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
               type: array
               items:
                 $ref: '#/components/schemas/ElementInstanceFilterFields'

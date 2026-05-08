@@ -848,14 +848,6 @@ public class SearchQueryFilterMapper {
 
     if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
       for (final ElementInstanceFilterFields or : filter.get$Or()) {
-        // elementInstanceScopeKey is resolved by FlowNodeInstanceDocumentReader's scopeKey
-        // fallback, which only inspects the top-level filter. Allowing it inside $or would
-        // silently drop the condition, so reject it explicitly.
-        if (or != null && or.getElementInstanceScopeKey() != null) {
-          validationErrors.add(
-              "Field 'elementInstanceScopeKey' is not supported inside an $or filter group.");
-          continue;
-        }
         final var orBuilder = toElementInstanceFilterFields(or);
         if (orBuilder.isLeft()) {
           validationErrors.addAll(orBuilder.getLeft());

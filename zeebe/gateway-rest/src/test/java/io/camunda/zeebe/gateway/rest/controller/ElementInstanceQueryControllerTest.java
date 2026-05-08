@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -440,49 +439,6 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                             .build())
                     .build()),
             any());
-  }
-
-  @Test
-  void shouldRejectElementInstanceScopeKeyInsideOrFilter() {
-    // given - elementInstanceScopeKey is resolved by the scopeKey fallback, which only inspects
-    // the top-level filter; allowing it inside $or would silently drop the condition.
-    final var request =
-        """
-            {
-              "filter":{
-                "$or": [
-                  { "elementInstanceScopeKey": "2251799813685979" }
-                ]
-              }
-            }
-            """;
-    final var expectedResponse =
-        String.format(
-            """
-                {
-                  "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
-                  "status": 400,
-                  "detail": "Field 'elementInstanceScopeKey' is not supported inside an $or filter group.",
-                  "instance": "%s"
-                }""",
-            ELEMENT_INSTANCES_SEARCH_URL);
-    // when / then
-    webClient
-        .post()
-        .uri(ELEMENT_INSTANCES_SEARCH_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
-
-    verify(elementInstanceServices, never()).search(any(FlowNodeInstanceQuery.class), any());
   }
 
   @Test
