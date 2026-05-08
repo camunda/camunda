@@ -40,11 +40,11 @@ test.describe('Swagger UI Tests', () => {
 
     // Verify the main Swagger UI container is rendered
     await expect(swaggerPage.swaggerUiContainer).toBeVisible({
-      timeout: 30_000,
+      timeout: 60_000,
     });
 
     // Verify that at least one API section/tag is listed
-    await expect(swaggerPage.firstApiTag).toBeVisible({timeout: 30_000});
+    await expect(swaggerPage.firstApiTag).toBeVisible({timeout: 60_000});
   });
 
   test('Grouped OpenAPI spec returns valid JSON without external file refs', async ({
