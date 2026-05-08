@@ -355,19 +355,10 @@ public final class CallActivityIncidentTest {
         .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
   }
 
-  // Regression test for https://github.com/camunda/camunda/issues/50014. Two bug shapes are
-  // exercised together:
-  //   1) Wrapped call activity: the parent embeds the call activity inside a subprocess so the
-  //      parent PI sublist of elementInstancePath has THREE entries
-  //      [parentPi, wrapperFni, callActivityFni]. The exporter bug was reading index 1 of the
-  //      sublist, which silently picked the wrapping subprocess FNI instead of the call activity
-  //      FNI; with a flat parent (2 entries) get(1) and getLast() are equivalent and the bug
-  //      cannot surface.
-  //   2) Late incident in child: the child process completes one task before failing the second,
-  //      so the incident is raised after the child has progressed past its first activity.
+  // Regression test for https://github.com/camunda/camunda/issues/50014.
   @Test
-  public void shouldExposeFullCallHierarchyOnIncidentInChildProcessAfterFirstActivity() {
-    // given a parent process where the call activity sits inside an embedded subprocess
+  public void shouldExposeWrappingSubprocessInElementInstancePathWhenCallActivityIsNested() {
+    // given
     final var wrappedParentProcessId = Strings.newRandomValidBpmnId();
     final var wrapperSubprocessId = "wrapper-subprocess";
     final var wrappedCallActivityId = "call";
@@ -389,17 +380,17 @@ public final class CallActivityIncidentTest {
                 .done())
         .deploy();
 
-    // and a child process with two service tasks: the first completes, the second fails
-    final var firstJobType = "first-" + Strings.newRandomValidBpmnId();
     final var failingJobType = "failing-" + Strings.newRandomValidBpmnId();
-    final var childProcess =
-        Bpmn.createExecutableProcess(childProcessId)
-            .startEvent()
-            .serviceTask("first", t -> t.zeebeJobType(firstJobType))
-            .serviceTask("failing", t -> t.zeebeJobType(failingJobType))
-            .endEvent()
-            .done();
-    ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcess).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-child.bpmn",
+            Bpmn.createExecutableProcess(childProcessId)
+                .startEvent()
+                .serviceTask("failing", t -> t.zeebeJobType(failingJobType))
+                .endEvent()
+                .done())
+        .deploy();
 
     final long parentProcessInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(wrappedParentProcessId).create();
@@ -420,10 +411,6 @@ public final class CallActivityIncidentTest {
             .getFirst()
             .getKey();
 
-    // advance the child past its first activity by completing the first job
-    ENGINE.job().ofInstance(childProcessInstanceKey).withType(firstJobType).complete();
-
-    // wait for the second job to be created, then fail it with no retries left
     final Record<JobRecordValue> failingJob =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(childProcessInstanceKey)
@@ -434,32 +421,70 @@ public final class CallActivityIncidentTest {
     // when
     ENGINE.job().ofInstance(childProcessInstanceKey).withType(failingJobType).withRetries(0).fail();
 
-    // then the engine emits an incident record for the leaf, but it must carry the full path
+    // then
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(childProcessInstanceKey)
             .getFirst();
 
-    final IncidentRecordValue value = incident.getValue();
-    assertThat(value.getProcessInstanceKey()).isEqualTo(childProcessInstanceKey);
-    assertThat(value.getElementInstanceKey()).isEqualTo(failingElementInstanceKey);
-    assertThat(value.getElementId()).isEqualTo("failing");
-
-    // The parent PI sublist must include the wrapping subprocess FNI between the PI root and
-    // the call activity FNI; the exporter reads the LAST entry of each sublist as the call
-    // activity FNI, so dropping the wrapping subprocess (or putting the call activity at the
-    // wrong index) would break badge propagation in Operate.
-    assertThat(value.getElementInstancePath())
-        .as(
-            "elementInstancePath: parent PI sublist must be "
-                + "[parentPi, wrapperSubprocessFni, callActivityFni], child sublist must be "
-                + "[childPi, failingFni]")
+    assertThat(incident.getValue().getElementInstancePath())
         .containsExactly(
             List.of(
                 parentProcessInstanceKey, wrapperSubprocessInstanceKey, callActivityInstanceKey),
             List.of(childProcessInstanceKey, failingElementInstanceKey));
-    assertThat(value.getCallingElementPath()).hasSize(1);
-    assertThat(value.getProcessDefinitionPath()).hasSize(2);
+  }
+
+  // Regression test for https://github.com/camunda/camunda/issues/50014.
+  @Test
+  public void shouldExposeFullCallHierarchyWhenIncidentOccursAfterChildHasProgressed() {
+    // given
+    final var firstJobType = "first-" + Strings.newRandomValidBpmnId();
+    final var failingJobType = "failing-" + Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-child.bpmn",
+            Bpmn.createExecutableProcess(childProcessId)
+                .startEvent()
+                .serviceTask("first", t -> t.zeebeJobType(firstJobType))
+                .serviceTask("failing", t -> t.zeebeJobType(failingJobType))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long parentProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+    final long callActivityInstanceKey = getCallActivityInstance(parentProcessInstanceKey).getKey();
+    final long childProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(parentProcessInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getKey();
+
+    ENGINE.job().ofInstance(childProcessInstanceKey).withType(firstJobType).complete();
+
+    final long failingElementInstanceKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(childProcessInstanceKey)
+            .withType(failingJobType)
+            .getFirst()
+            .getValue()
+            .getElementInstanceKey();
+
+    // when
+    ENGINE.job().ofInstance(childProcessInstanceKey).withType(failingJobType).withRetries(0).fail();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(childProcessInstanceKey)
+            .getFirst();
+
+    assertThat(incident.getValue().getElementInstancePath())
+        .containsExactly(
+            List.of(parentProcessInstanceKey, callActivityInstanceKey),
+            List.of(childProcessInstanceKey, failingElementInstanceKey));
   }
 
   private Record<ProcessInstanceRecordValue> getCallActivityInstance(

@@ -50,15 +50,10 @@ class IncidentExportHandlerTest {
     handler = new IncidentExportHandler(incidentWriter, processCache, MAX_TREE_PATH_SIZE);
   }
 
-  // Regression test for https://github.com/camunda/camunda/issues/50014. RDBMS counterpart of
-  // IncidentHandlerTest#shouldUpdateTreePathWhenCallActivityIsNestedInAnotherFlowScope on the
-  // ES/OS side. When the call activity is wrapped in another flow scope (e.g. an embedded
-  // subprocess) the parent PI sublist of `elementInstancePath` becomes
-  // [parentPi, wrapperFni, callActivityFni] and the tree path must reference the call-activity
-  // FNI (last entry) — not the wrapping subprocess FNI (index 1).
+  // Regression test for https://github.com/camunda/camunda/issues/50014.
   @Test
   void shouldUpdateTreePathWhenCallActivityIsNestedInAnotherFlowScope() {
-    // given a parent PI where the call activity sits inside a subprocess
+    // given
     final long parentProcessDefinitionKey = 999L;
     final long parentPiKey = 111L;
     final long parentSubprocessFnInstanceKey = 122L;
@@ -77,9 +72,7 @@ class IncidentExportHandlerTest {
             .withElementId("userTask")
             .withElementInstancePath(
                 List.of(
-                    // parent PI level: PI root -> wrapping subprocess FNI -> call activity FNI
                     List.of(parentPiKey, parentSubprocessFnInstanceKey, callActivityFnInstanceKey),
-                    // child PI level: PI root -> leaf FNI
                     List.of(childPiKey, leafFnInstanceKey)))
             .withCallingElementPath(List.of(callActivityIndex))
             .withProcessDefinitionPath(
@@ -99,10 +92,7 @@ class IncidentExportHandlerTest {
     // when
     handler.export(record);
 
-    // then the tree path must reference the call activity FNI (123), not the wrapping
-    // subprocess FNI (122). Using get(1) instead of getLast() previously produced
-    // PI_111/FN_callActivity/FNI_122/... which prevented Operate from marking the call
-    // activity as having an incident.
+    // then
     verify(incidentWriter).create(incidentCaptor.capture());
     assertThat(incidentCaptor.getValue().treePath())
         .isEqualTo("PI_111/FN_callActivity/FNI_123/PI_222/FN_userTask/FNI_234");
