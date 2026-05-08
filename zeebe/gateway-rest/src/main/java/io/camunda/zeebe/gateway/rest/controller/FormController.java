@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequestMapping(path = {"/v1/forms", "/v2/forms"})
+@RequestMapping("/v2/forms")
 public class FormController {
 
   private final FormServices formServices;
