@@ -1,3 +1,5 @@
+## Endpoint definitions
+
 paths:
   /forms/{formKey}:
     get:
@@ -29,7 +31,7 @@ paths:
         "403":
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "404":
-          description: Not found
+          description: The form with the given key was not found.
           content:
             application/problem+json:
               schema:

@@ -426,15 +426,13 @@ public final class ProtocolFactory {
 
     // A randomizer for any String property whose name ends with the "Date" suffix,
     // generating a random date between 2000-01-01 and 2099-12-31
+    final var epochRandomizer = new LongRangeRandomizer(DATE_RANGE_MIN, DATE_RANGE_MAX, getSeed());
     randomizerRegistry.registerRandomizer(
         field -> field.getType() == String.class && field.getName().endsWith("Date"),
-        () -> {
-          final var epochRandomizer =
-              new LongRangeRandomizer(DATE_RANGE_MIN, DATE_RANGE_MAX, getSeed());
-          return OffsetDateTime.ofInstant(
-                  Instant.ofEpochSecond(epochRandomizer.getRandomValue()), ZoneOffset.UTC)
-              .format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
-        });
+        () ->
+            OffsetDateTime.ofInstant(
+                    Instant.ofEpochSecond(epochRandomizer.getRandomValue()), ZoneOffset.UTC)
+                .format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
   }
 
   /**
