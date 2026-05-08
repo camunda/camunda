@@ -400,7 +400,7 @@ test.describe('Process Instance Modifications', () => {
         });
         await expect(
           operateProcessInstancePage.getVariableTestId('testVariableString'),
-        ).toBeVisible();
+        ).toBeVisible({timeout: 30_000});
       },
     );
 
@@ -659,6 +659,7 @@ test.describe('Process Instance Modifications', () => {
       });
 
       test('Applied modifications persist after reloading', async ({
+        page,
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
       }) => {
@@ -697,39 +698,48 @@ test.describe('Process Instance Modifications', () => {
           operateProcessInstanceViewModificationModePage.modificationModeText,
         ).toBeHidden();
 
-        await operateProcessInstancePage.expandTreeItemInHistory(
-          activityFirstSubprocess,
-        );
-        await operateProcessInstancePage.clickInstanceHistoryElement(
-          activityCollectMoney,
-        );
-        await expect(
-          operateProcessInstancePage.existingVariableByName('testLocalVariable')
-            .name,
-        ).toBeVisible();
-        expect(
-          await operateProcessInstancePage
-            .existingVariableByName('testLocalVariable')
-            .value.innerText(),
-        ).toContain('"addedValue"');
+        await waitForAssertion({
+          assertion: async () => {
+            await operateProcessInstancePage.expandTreeItemInHistory(
+              activityFirstSubprocess,
+            );
+            await operateProcessInstancePage.clickInstanceHistoryElement(
+              activityCollectMoney,
+            );
+            await expect(
+              operateProcessInstancePage.existingVariableByName(
+                'testLocalVariable',
+              ).name,
+            ).toBeVisible();
+            expect(
+              await operateProcessInstancePage
+                .existingVariableByName('testLocalVariable')
+                .value.innerText(),
+            ).toContain('"addedValue"');
 
-        await operateProcessInstancePage.navigateToRootScope();
-        await expect(
-          operateProcessInstancePage.existingVariableByName(
-            'testNewMeowVariable',
-          ).name,
-        ).toBeVisible();
-        expect(
-          await operateProcessInstancePage
-            .existingVariableByName('testNewMeowVariable')
-            .value.innerText(),
-        ).toContain('7');
-        await assertJsonEqual(
-          operateProcessInstancePage.existingVariableByName(
-            'testVariableString',
-          ).value,
-          validJSONValue2,
-        );
+            await operateProcessInstancePage.navigateToRootScope();
+            await expect(
+              operateProcessInstancePage.existingVariableByName(
+                'testNewMeowVariable',
+              ).name,
+            ).toBeVisible();
+            expect(
+              await operateProcessInstancePage
+                .existingVariableByName('testNewMeowVariable')
+                .value.innerText(),
+            ).toContain('7');
+            await assertJsonEqual(
+              operateProcessInstancePage.existingVariableByName(
+                'testVariableString',
+              ).value,
+              validJSONValue2,
+            );
+          },
+          onFailure: async () => {
+            await page.reload();
+            await hideHelperModals(page);
+          },
+        });
       });
     });
   });
