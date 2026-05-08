@@ -736,14 +736,18 @@ public class SecondaryStorageOpensearchTest {
     @Test
     void shouldUseOperatePropertiesDefaults() {
       assertThat(operateProperties.getOpensearch())
-          .returns(null, OperateOpensearchProperties::getSocketTimeout)
+          .returns(
+              OperateOpensearchProperties.SOCKET_TIMEOUT_DEFAULT,
+              OperateOpensearchProperties::getSocketTimeout)
           .returns(null, OperateOpensearchProperties::getConnectTimeout);
     }
 
     @Test
     void shouldUseTasklistPropertiesDefaults() {
       assertThat(tasklistProperties.getOpenSearch())
-          .returns(null, TasklistOpenSearchProperties::getSocketTimeout)
+          .returns(
+              TasklistOpenSearchProperties.SOCKET_TIMEOUT_DEFAULT,
+              TasklistOpenSearchProperties::getSocketTimeout)
           .returns(null, TasklistOpenSearchProperties::getConnectTimeout);
     }
 
