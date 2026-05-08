@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.backupmetadata.BackupMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
@@ -217,7 +218,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.GLOBAL_LISTENER_BATCH -> new GlobalListenerBatchRecord();
       case ValueType.JOB_METRICS_BATCH -> new JobMetricsBatchRecord();
       case ValueType.GLOBAL_LISTENER -> new GlobalListenerRecord();
-      case ValueType.BACKUP_METADATA -> null; // BackupMetadataRecord not yet implemented
+      case ValueType.BACKUP_METADATA -> new BackupMetadataRecord();
       case ValueType.SBE_UNKNOWN -> null;
       case ValueType.NULL_VAL -> null;
     };
