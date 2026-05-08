@@ -20,10 +20,12 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.systempartition.processors.ClusterConfigurationProcessors;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.InstantSource;
 import java.util.List;
 
 /**
@@ -102,6 +104,7 @@ public final class SystemPartitionStreamProcessorFactory {
         .partitionCommandSender(partitionCommandSender)
         .streamProcessorMode(mode)
         .meterRegistry(meterRegistry)
+        .clock(StreamClock.controllable(InstantSource.system()))
         .build();
   }
 }
