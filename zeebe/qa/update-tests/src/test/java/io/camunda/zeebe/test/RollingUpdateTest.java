@@ -15,6 +15,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.CamundaContainer;
 import io.camunda.container.cluster.BrokerNode;
 import io.camunda.container.cluster.CamundaCluster;
 import io.camunda.container.cluster.CamundaClusterBuilder;
@@ -316,9 +317,24 @@ final class RollingUpdateTest {
       broker.setDockerImageName(
           ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
       broker.withEnv(VersionUtil.VERSION_OVERRIDE_ENV_NAME, currentVersion());
+      // Restore profiles for the current version (may have been removed for an old version)
+      broker.withEnv("SPRING_PROFILES_ACTIVE", "broker,standalone");
+      // Ensure these settings are applied via env vars even if config injection is skipped
+      // (readOnlyContainer may have been set when the broker previously ran an old version)
+      broker.withEnv("CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK", "false");
+      broker.withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "none");
     } else {
       broker.setDockerImageName(
           DockerImageName.parse("camunda/camunda").withTag(version).asCanonicalNameString());
+      // Old images define their own SPRING_PROFILES_ACTIVE in the image config.
+      // Overriding it (as the CamundaContainer default does) strips required profiles
+      // (e.g. operate, tasklist, auth) causing the container to fail to start.
+      broker.getEnvMap().remove("SPRING_PROFILES_ACTIVE");
+      // Skip unified config injection — old images may not understand the current
+      // camunda.* property structure, and all required settings are passed via env vars.
+      if (broker instanceof CamundaContainer.BrokerContainer brokerContainer) {
+        brokerContainer.withReadOnlyFileSystem();
+      }
     }
   }
 

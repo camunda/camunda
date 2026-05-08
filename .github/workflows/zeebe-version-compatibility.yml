@@ -121,6 +121,7 @@ jobs:
           maven-extra-args: -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         with:
+          repository: camunda/camunda
           version: current-test
       - name: Test snapshot
         timeout-minutes: 300
