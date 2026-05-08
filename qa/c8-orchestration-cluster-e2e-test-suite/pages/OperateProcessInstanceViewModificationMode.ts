@@ -627,7 +627,7 @@ export class OperateProcessInstanceViewModificationModePage {
     await expect(jsonEditorModal.header).toBeVisible();
     await expect(jsonEditorModal.inputField).toBeVisible();
     await expect(jsonEditorModal.inputField).toBeEnabled();
-    await jsonEditorModal.inputField.click();
+    await jsonEditorModal.inputField.evaluate((el: HTMLElement) => el.focus());
     await this.clearMonacoEditor();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
