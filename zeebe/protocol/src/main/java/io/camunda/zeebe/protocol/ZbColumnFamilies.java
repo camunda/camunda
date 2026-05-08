@@ -279,7 +279,10 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   ACTIVE_PROCESS_INSTANCE_COUNT(142, PARTITION_LOCAL),
 
   // variable scope index
-  VARIABLE_NAMES_BY_SCOPE_KEY(143, PARTITION_LOCAL);
+  VARIABLE_NAMES_BY_SCOPE_KEY(143, PARTITION_LOCAL),
+
+  // event trigger scope index
+  EVENT_TRIGGER_KEYS_BY_SCOPE_KEY(144, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

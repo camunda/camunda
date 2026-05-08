@@ -27,6 +27,8 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   private final ColumnFamily<DbLong, EventScopeInstance> eventScopeInstanceColumnFamily;
 
   private final DbLong eventTriggerScopeKey;
+  private final ColumnFamily<DbLong, PersistedEventTriggerKeys>
+      eventTriggerKeysByScopeKeyColumnFamily;
   private final DbLong eventTriggerEventKey;
   private final DbCompositeKey<DbLong, DbLong> eventTriggerKey;
   private final EventTrigger eventTrigger;
@@ -41,6 +43,12 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
             ZbColumnFamilies.EVENT_SCOPE, transactionContext, eventScopeKey, eventScopeInstance);
 
     eventTriggerScopeKey = new DbLong();
+    eventTriggerKeysByScopeKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.EVENT_TRIGGER_KEYS_BY_SCOPE_KEY,
+            transactionContext,
+            eventTriggerScopeKey,
+            new PersistedEventTriggerKeys());
     eventTriggerEventKey = new DbLong();
     eventTriggerKey = new DbCompositeKey<>(eventTriggerScopeKey, eventTriggerEventKey);
     eventTrigger = new EventTrigger();
@@ -74,8 +82,17 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   public void deleteInstance(final long eventScopeKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
 
-    eventTriggerColumnFamily.whileEqualPrefix(
-        eventTriggerScopeKey, (DbCompositeKey<DbLong, DbLong> key) -> deleteTrigger(key));
+    final var trackedEventTriggerKeys =
+        eventTriggerKeysByScopeKeyColumnFamily.get(
+            eventTriggerScopeKey, PersistedEventTriggerKeys::new);
+
+    if (trackedEventTriggerKeys == null) {
+      // Fall back to the prefix scan for state restored from snapshots that predate the index.
+      eventTriggerColumnFamily.whileEqualPrefix(
+          eventTriggerScopeKey, (DbCompositeKey<DbLong, DbLong> key) -> deleteTrigger(key));
+    } else {
+      deleteTrackedTriggers(eventScopeKey, trackedEventTriggerKeys);
+    }
 
     this.eventScopeKey.wrapLong(eventScopeKey);
     eventScopeInstanceColumnFamily.deleteIfExists(this.eventScopeKey);
@@ -219,9 +236,80 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
         .setProcessInstanceKey(processInstanceKey);
 
     eventTriggerColumnFamily.insert(eventTriggerKey, eventTrigger);
+    upsertTrackedEventTriggerKey(eventScopeKey, eventKey);
   }
 
   private void deleteTrigger(final DbCompositeKey<DbLong, DbLong> triggerKey) {
+    final long eventScopeKey = triggerKey.first().getValue();
+    final long eventKey = triggerKey.second().getValue();
+
     eventTriggerColumnFamily.deleteIfExists(triggerKey);
+    removeTrackedEventTriggerKey(eventScopeKey, eventKey);
+  }
+
+  private void deleteTrackedTriggers(
+      final long eventScopeKey, final PersistedEventTriggerKeys trackedEventTriggerKeys) {
+    eventTriggerScopeKey.wrapLong(eventScopeKey);
+
+    for (final long eventKey : trackedEventTriggerKeys.getEventTriggerKeys()) {
+      eventTriggerEventKey.wrapLong(eventKey);
+      eventTriggerColumnFamily.deleteIfExists(eventTriggerKey);
+    }
+
+    eventTriggerScopeKey.wrapLong(eventScopeKey);
+    eventTriggerKeysByScopeKeyColumnFamily.deleteIfExists(eventTriggerScopeKey);
+  }
+
+  private void upsertTrackedEventTriggerKey(final long eventScopeKey, final long eventKey) {
+    eventTriggerScopeKey.wrapLong(eventScopeKey);
+
+    final var trackedEventTriggerKeys =
+        eventTriggerKeysByScopeKeyColumnFamily.get(
+            eventTriggerScopeKey, PersistedEventTriggerKeys::new);
+
+    if (trackedEventTriggerKeys == null) {
+      final var initializedTrackedEventTriggerKeys = new PersistedEventTriggerKeys();
+      // Backfill existing triggers so the index is complete even after loading an older snapshot.
+      eventTriggerColumnFamily.whileEqualPrefix(
+          eventTriggerScopeKey,
+          (key, value) -> {
+            initializedTrackedEventTriggerKeys.addEventTriggerKey(key.second().getValue());
+            return true;
+          });
+
+      eventTriggerScopeKey.wrapLong(eventScopeKey);
+      eventTriggerKeysByScopeKeyColumnFamily.insert(
+          eventTriggerScopeKey, initializedTrackedEventTriggerKeys);
+      return;
+    }
+
+    if (trackedEventTriggerKeys.contains(eventKey)) {
+      return;
+    }
+
+    trackedEventTriggerKeys.addEventTriggerKey(eventKey);
+    eventTriggerScopeKey.wrapLong(eventScopeKey);
+    eventTriggerKeysByScopeKeyColumnFamily.update(eventTriggerScopeKey, trackedEventTriggerKeys);
+  }
+
+  private void removeTrackedEventTriggerKey(final long eventScopeKey, final long eventKey) {
+    eventTriggerScopeKey.wrapLong(eventScopeKey);
+
+    final var trackedEventTriggerKeys =
+        eventTriggerKeysByScopeKeyColumnFamily.get(
+            eventTriggerScopeKey, PersistedEventTriggerKeys::new);
+
+    if (trackedEventTriggerKeys == null
+        || !trackedEventTriggerKeys.removeEventTriggerKey(eventKey)) {
+      return;
+    }
+
+    eventTriggerScopeKey.wrapLong(eventScopeKey);
+    if (trackedEventTriggerKeys.isEmpty()) {
+      eventTriggerKeysByScopeKeyColumnFamily.deleteIfExists(eventTriggerScopeKey);
+      return;
+    }
+
+    eventTriggerKeysByScopeKeyColumnFamily.update(eventTriggerScopeKey, trackedEventTriggerKeys);
   }
 }
