@@ -193,6 +193,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
         brokerStartupContext.getBrokerConfiguration().getCluster().getConfigManager().gossip(),
         clusterChangeExecutor,
         brokerStartupContext.getMeterRegistry(),
-        systemPartition == null ? null : systemPartition::isLeader);
+        systemPartition == null ? null : systemPartition::isLeader,
+        systemPartition);
   }
 }

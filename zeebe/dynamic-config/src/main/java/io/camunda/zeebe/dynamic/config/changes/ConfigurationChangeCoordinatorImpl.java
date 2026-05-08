@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.changes;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.ClusterConfigCommandSubmitter;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
@@ -15,13 +16,17 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.OperationNotAllowed;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.protocol.impl.record.value.clusterconfiguration.ClusterConfigurationRecord;
+import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +46,15 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
    */
   private final BooleanSupplier isCoordinatorOverride;
 
+  /**
+   * When non-null, change-plan stamps are routed through the system-partition stream processor
+   * ({@code CC.STAMP_CHANGE_PLAN}) instead of mutating local state directly. Null means the legacy
+   * local-mutation / gossip path is used.
+   */
+  private final ClusterConfigCommandSubmitter systemPartition;
+
+  private final ProtoBufSerializer serializer = new ProtoBufSerializer();
+
   public ConfigurationChangeCoordinatorImpl(
       final ClusterConfigurationManager clusterTopologyManager,
       final MemberId localMemberId,
@@ -53,10 +67,20 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       final MemberId localMemberId,
       final ConcurrencyControl executor,
       final BooleanSupplier isCoordinatorOverride) {
+    this(clusterTopologyManager, localMemberId, executor, isCoordinatorOverride, null);
+  }
+
+  public ConfigurationChangeCoordinatorImpl(
+      final ClusterConfigurationManager clusterTopologyManager,
+      final MemberId localMemberId,
+      final ConcurrencyControl executor,
+      final BooleanSupplier isCoordinatorOverride,
+      final ClusterConfigCommandSubmitter systemPartition) {
     this.clusterTopologyManager = clusterTopologyManager;
     this.executor = executor;
     this.localMemberId = localMemberId;
     this.isCoordinatorOverride = isCoordinatorOverride;
+    this.systemPartition = systemPartition;
   }
 
   @Override
@@ -245,6 +269,70 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   }
 
   private void applyTopologyChange(
+      final List<ClusterConfigurationChangeOperation> operations,
+      final ClusterConfiguration currentClusterConfiguration,
+      final ClusterConfiguration simulatedFinalTopology,
+      final ActorFuture<ClusterConfiguration> future) {
+    if (systemPartition != null) {
+      applyTopologyChangeViaSystemPartition(
+          operations, currentClusterConfiguration, simulatedFinalTopology, future);
+    } else {
+      applyTopologyChangeLegacy(
+          operations, currentClusterConfiguration, simulatedFinalTopology, future);
+    }
+  }
+
+  /**
+   * Routes the change-plan stamp through the system-partition stream processor via {@code
+   * CC.STAMP_CHANGE_PLAN}. The processor performs the CAS check and emits {@code
+   * CC.CHANGE_PLAN_STAMPED}; the resulting committed event carries the new {@link
+   * ClusterConfiguration} with the {@link ClusterChangePlan} attached.
+   */
+  private void applyTopologyChangeViaSystemPartition(
+      final List<ClusterConfigurationChangeOperation> operations,
+      final ClusterConfiguration currentClusterConfiguration,
+      final ClusterConfiguration simulatedFinalTopology,
+      final ActorFuture<ClusterConfiguration> future) {
+    // Build the proposed configuration: current + a new ClusterChangePlan carrying the operations.
+    // The stream processor's StampProcessor bumps the version when it writes the event.
+    final ClusterConfiguration proposed =
+        currentClusterConfiguration.startConfigurationChange(operations);
+    final byte[] encodedProposed = serializer.encode(proposed);
+
+    final ClusterConfigurationRecord record =
+        new ClusterConfigurationRecord()
+            .setRequestId(UUID.randomUUID().toString())
+            .setExpectedPreviousVersion(currentClusterConfiguration.version())
+            .setConfiguration(encodedProposed);
+
+    executor.run(
+        () ->
+            systemPartition
+                .submitCommand(ClusterConfigurationIntent.STAMP_CHANGE_PLAN, record)
+                .onComplete(
+                    (responseRecord, error) -> {
+                      if (error != null) {
+                        failFuture(future, error);
+                        return;
+                      }
+                      final String rejectionReason = responseRecord.getRejectionReason();
+                      if (rejectionReason != null && !rejectionReason.isEmpty()) {
+                        failFuture(future, new ConcurrentModificationException(rejectionReason));
+                        return;
+                      }
+                      final byte[] responseBytes = responseRecord.getConfiguration();
+                      final ClusterConfiguration stampedConfig =
+                          serializer.decodeClusterTopology(responseBytes, 0, responseBytes.length);
+                      LOG.debug(
+                          "Applying the topology change has started via system partition. "
+                              + "The resulting topology will be {}",
+                          simulatedFinalTopology);
+                      future.complete(stampedConfig);
+                    }));
+  }
+
+  /** Legacy path: mutates local state directly and gossips. */
+  private void applyTopologyChangeLegacy(
       final List<ClusterConfigurationChangeOperation> operations,
       final ClusterConfiguration currentClusterConfiguration,
       final ClusterConfiguration simulatedFinalTopology,

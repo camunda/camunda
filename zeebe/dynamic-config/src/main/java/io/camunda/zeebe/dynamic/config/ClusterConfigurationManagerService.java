@@ -89,6 +89,26 @@ public final class ClusterConfigurationManagerService
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry,
       final BooleanSupplier isCoordinatorOverride) {
+    this(
+        dataRootDirectory,
+        communicationService,
+        memberShipService,
+        config,
+        clusterChangeExecutor,
+        meterRegistry,
+        isCoordinatorOverride,
+        null);
+  }
+
+  public ClusterConfigurationManagerService(
+      final Path dataRootDirectory,
+      final ClusterCommunicationService communicationService,
+      final ClusterMembershipService memberShipService,
+      final ClusterConfigurationGossiperConfig config,
+      final ClusterChangeExecutor clusterChangeExecutor,
+      final MeterRegistry meterRegistry,
+      final BooleanSupplier isCoordinatorOverride,
+      final ClusterConfigCommandSubmitter systemPartition) {
     gossiperConfig = config;
     this.clusterChangeExecutor = clusterChangeExecutor;
     topologyMetrics = new TopologyMetrics(meterRegistry);
@@ -108,6 +128,9 @@ public final class ClusterConfigurationManagerService
     clusterConfigurationManager =
         new ClusterConfigurationManagerImpl(
             managerActor, localMemberId, persistedClusterConfiguration, topologyManagerMetrics);
+    if (systemPartition != null) {
+      clusterConfigurationManager.setSystemPartition(systemPartition);
+    }
     clusterConfigurationGossiper =
         new ClusterConfigurationGossiper(
             gossipActor,
@@ -120,7 +143,11 @@ public final class ClusterConfigurationManagerService
     isCoordinator = localMemberId.nodeIdx() == COORDINATOR_NODE_ID;
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
-            clusterConfigurationManager, localMemberId, managerActor, isCoordinatorOverride);
+            clusterConfigurationManager,
+            localMemberId,
+            managerActor,
+            isCoordinatorOverride,
+            systemPartition);
     configurationRequestServer =
         new ClusterConfigurationRequestServer(
             communicationService,

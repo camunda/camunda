@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.systempartition;
 
+import io.camunda.zeebe.dynamic.config.ClusterConfigCommandSubmitter;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.record.value.clusterconfiguration.ClusterConfigurationRecord;
 import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
@@ -22,15 +23,11 @@ import java.util.function.Consumer;
  * accepted only on the leader by submitting {@link ClusterConfigurationIntent} commands to the
  * system partition's stream processor; the resulting events propagate to followers via Raft
  * replication and are applied deterministically on every replica.
+ *
+ * <p>Extends {@link ClusterConfigCommandSubmitter} so the dynamic-config layer can accept this
+ * interface directly without a circular module dependency.
  */
-public interface SystemPartition {
-
-  /**
-   * Returns the latest committed {@link ClusterConfiguration} as observed by this replica's commit
-   * listener. After the first commit, this is guaranteed non-null and at least as fresh as the most
-   * recently applied commit on this replica.
-   */
-  ClusterConfiguration query();
+public interface SystemPartition extends ClusterConfigCommandSubmitter {
 
   /**
    * Subscribe to commit notifications for cluster-configuration events.
@@ -49,6 +46,7 @@ public interface SystemPartition {
    * CHANGE_PLAN_STAMPED} for a {@code STAMP_CHANGE_PLAN} command) once it is committed and applied
    * on this replica.
    */
+  @Override
   ActorFuture<ClusterConfigurationRecord> submitCommand(
       ClusterConfigurationIntent intent, ClusterConfigurationRecord record);
 

@@ -11,9 +11,12 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics.OperationObserver;
+import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.protocol.impl.record.value.clusterconfiguration.ClusterConfigurationRecord;
+import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -22,6 +25,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
@@ -66,6 +70,15 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final ExponentialBackoffRetryDelay backoffRetry;
   private boolean initialized = false;
   private final TopologyManagerMetrics topologyMetrics;
+
+  /**
+   * When non-null, operation-applied writes are routed through the system-partition stream
+   * processor ({@code CC.APPLY_OPERATION}) instead of persisting and gossiping locally. The {@link
+   * SystemPartitionMirror}'s commit listener then drives the local update.
+   */
+  private ClusterConfigCommandSubmitter systemPartition;
+
+  private final ProtoBufSerializer serializer = new ProtoBufSerializer();
 
   ClusterConfigurationManagerImpl(
       final ConcurrencyControl executor,
@@ -333,23 +346,84 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
             persistedClusterConfiguration.getConfiguration());
         return;
       }
-      updateLocalConfiguration(
-          persistedClusterConfiguration.getConfiguration().advanceConfigurationChange(transformer));
-      LOG.info(
-          "Operation {} applied. Updated local configuration to {}",
-          operation,
-          persistedClusterConfiguration.getConfiguration());
-
-      executor.run(
-          () -> {
-            // Continue applying configuration change, if the next operation is for the local member
-            applyConfigurationChangeOperation(persistedClusterConfiguration.getConfiguration());
-          });
+      applyOperationDirectly(topologyOnWhichOperationIsApplied, operation, transformer, observer);
     } else {
       observer.failed();
       // Retry after a delay. The failure is most likely due to timeouts such
       // as when joining a raft partition.
       logAndScheduleRetry(operation, error);
+    }
+  }
+
+  /**
+   * Persists the result of a successfully applied operation. When the system partition is
+   * configured, this routes the update through {@code CC.APPLY_OPERATION} so the stream processor
+   * performs the authoritative CAS write and the {@link
+   * io.camunda.zeebe.systempartition.SystemPartitionMirror} drives the local update via its commit
+   * listener. Otherwise, the legacy local-mutation / gossip path is used.
+   */
+  private void applyOperationDirectly(
+      final ClusterConfiguration baseConfig,
+      final ClusterConfigurationChangeOperation operation,
+      final UnaryOperator<ClusterConfiguration> transformer,
+      final OperationObserver observer) {
+    final ClusterConfiguration nextConfig = baseConfig.advanceConfigurationChange(transformer);
+
+    if (systemPartition != null) {
+      final byte[] encodedNext = serializer.encode(nextConfig);
+      final ClusterConfigurationRecord record =
+          new ClusterConfigurationRecord()
+              .setRequestId(UUID.randomUUID().toString())
+              .setExpectedPreviousVersion(baseConfig.version())
+              .setConfiguration(encodedNext);
+
+      systemPartition
+          .submitCommand(ClusterConfigurationIntent.APPLY_OPERATION, record)
+          .onComplete(
+              (responseRecord, submitError) -> {
+                if (submitError != null) {
+                  LOG.warn(
+                      "Failed to submit CC.APPLY_OPERATION for operation {} via system partition. "
+                          + "Will retry.",
+                      operation,
+                      submitError);
+                  logAndScheduleRetry(operation, submitError);
+                  return;
+                }
+                final String rejectionReason = responseRecord.getRejectionReason();
+                if (rejectionReason != null && !rejectionReason.isEmpty()) {
+                  LOG.warn(
+                      "System partition rejected CC.APPLY_OPERATION for operation {}: {}. "
+                          + "Will retry.",
+                      operation,
+                      rejectionReason);
+                  logAndScheduleRetry(
+                      operation,
+                      new IllegalStateException(
+                          "System partition rejected APPLY_OPERATION: " + rejectionReason));
+                  return;
+                }
+                // The local configuration update is driven by the SystemPartitionMirror's commit
+                // listener; we only need to trigger the next operation in the sequence here.
+                LOG.info(
+                    "Operation {} submitted to system partition. "
+                        + "Local configuration will be updated by commit listener.",
+                    operation);
+                executor.run(
+                    () ->
+                        applyConfigurationChangeOperation(
+                            persistedClusterConfiguration.getConfiguration()));
+              });
+    } else {
+      // Legacy path: persist and gossip locally.
+      updateLocalConfiguration(nextConfig);
+      LOG.info(
+          "Operation {} applied. Updated local configuration to {}",
+          operation,
+          persistedClusterConfiguration.getConfiguration());
+      executor.run(
+          () ->
+              applyConfigurationChangeOperation(persistedClusterConfiguration.getConfiguration()));
     }
   }
 
@@ -365,6 +439,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     } catch (final Exception e) {
       return Either.left(e);
     }
+  }
+
+  void setSystemPartition(final ClusterConfigCommandSubmitter systemPartition) {
+    executor.run(() -> this.systemPartition = systemPartition);
   }
 
   void registerTopologyChangeAppliers(
