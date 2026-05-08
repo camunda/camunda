@@ -19,10 +19,12 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -247,5 +249,18 @@ public final class EventHandle {
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
+
+    final var creationRecord = new ProcessInstanceCreationRecord();
+    creationRecord
+        .setBpmnProcessId(process.getBpmnProcessId())
+        .setProcessDefinitionKey(process.getKey())
+        .setVersion(process.getVersion())
+        .setProcessInstanceKey(processInstanceKey)
+        .setRootProcessInstanceKey(processInstanceKey)
+        .setVariables(variablesBuffer)
+        .setTenantId(tenantId);
+
+    stateWriter.appendFollowUpEvent(
+        processInstanceKey, ProcessInstanceCreationIntent.CREATED, creationRecord);
   }
 }
