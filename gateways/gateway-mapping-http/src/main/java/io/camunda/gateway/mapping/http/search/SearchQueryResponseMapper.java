@@ -1135,7 +1135,7 @@ public final class SearchQueryResponseMapper {
         .correlationKey(messageSubscription.correlationKey())
         .elementId(messageSubscription.flowNodeId())
         .elementInstanceKey(keyToStringOrNull(messageSubscription.flowNodeInstanceKey()))
-        .extensionProperties(messageSubscription.extensionProperties())
+        .toolProperties(messageSubscription.toolProperties())
         .inboundConnectorType(messageSubscription.inboundConnectorType())
         // `dateTime` can be absent on subscriptions that predate the field being populated;
         // fall back to the epoch sentinel (see EPOCH_DATE_SENTINEL) rather than 500.

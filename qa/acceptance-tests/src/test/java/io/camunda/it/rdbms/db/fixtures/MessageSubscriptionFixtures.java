@@ -41,7 +41,7 @@ public final class MessageSubscriptionFixtures extends CommonFixtures {
             .processDefinitionVersion((int) (Math.random() * 50))
             .messageSubscriptionType(randomEnum(MessageSubscriptionType.class))
             .messageSubscriptionState(randomEnum(MessageSubscriptionState.class))
-            .extensionProperties(Map.of("key-" + UUID.randomUUID(), "value-" + UUID.randomUUID()));
+            .toolProperties(Map.of("key-" + UUID.randomUUID(), "value-" + UUID.randomUUID()));
 
     return builderFunction.apply(builder).build();
   }

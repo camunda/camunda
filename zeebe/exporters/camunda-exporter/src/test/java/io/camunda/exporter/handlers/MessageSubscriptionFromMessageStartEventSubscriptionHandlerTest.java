@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.CORRELATION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -234,7 +235,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
     // then
     assertThat(entity.getToolName()).isEqualTo("myTool");
     assertThat(entity.getInboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
-    // TODO: Add an assertion for the extension properties once they are included in the entity
+    assertThat(entity.getToolProperties()).containsExactly(entry("io.camunda.tool:name", "myTool"));
   }
 
   @Test
@@ -305,6 +306,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
     expectedUpdateFields.put("processDefinitionVersion", null);
     expectedUpdateFields.put("toolName", null);
     expectedUpdateFields.put("inboundConnectorType", null);
+    expectedUpdateFields.put("toolProperties", null);
     expectedUpdateFields.put("metadata", metadataMap);
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 

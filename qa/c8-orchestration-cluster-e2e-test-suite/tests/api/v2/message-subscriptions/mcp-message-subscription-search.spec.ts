@@ -6,8 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-/* eslint-disable playwright/no-skipped-test */
-
 import {test, expect} from '@playwright/test';
 import {
   buildUrl,
@@ -139,47 +137,39 @@ test.describe('MCP Message Subscription Search API Tests', () => {
       expect(types).toContain('PROCESS_EVENT');
     });
 
-    //Skipped due to bug: 52514 https://github.com/camunda/camunda/issues/52514
-    await test.step.skip(
-      'SC-API-04 — extensionProperties contains tool metadata',
-      async () => {
-        const res = await request.post(
-          buildUrl('/message-subscriptions/search'),
-          {
-            headers: jsonHeaders(),
-            data: {
-              filter: {
-                processDefinitionId: 'mcpProcessAlpha',
-                messageSubscriptionType: 'START_EVENT',
-              },
+    await test.step('SC-API-04 — toolProperties contains tool metadata', async () => {
+      const res = await request.post(
+        buildUrl('/message-subscriptions/search'),
+        {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              processDefinitionId: 'mcpProcessAlpha',
+              messageSubscriptionType: 'START_EVENT',
             },
           },
-        );
-        await assertStatusCode(res, 200);
-        await validateResponse(
-          {
-            path: '/message-subscriptions/search',
-            method: 'POST',
-            status: '200',
-          },
-          res,
-        );
-        const json = await res.json();
-        expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
+        },
+      );
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const json = await res.json();
+      expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
 
-        json.items.forEach(
-          (it: {extensionProperties: Record<string, string>}) => {
-            expect(it.extensionProperties).toBeDefined();
-            expect(it.extensionProperties['io.camunda.tool:name']).toBe(
-              'alpha-tool-name',
-            );
-            expect(
-              it.extensionProperties['io.camunda.tool:purpose'],
-            ).toBeDefined();
-          },
+      json.items.forEach((it: {toolProperties: Record<string, string>}) => {
+        expect(it.toolProperties).toBeDefined();
+        expect(it.toolProperties['io.camunda.tool:name']).toBe(
+          'alpha-tool-name',
         );
-      },
-    );
+        expect(it.toolProperties['io.camunda.tool:purpose']).toBeDefined();
+      });
+    });
 
     await test.step('SC-API-05 — processDefinitionName and processDefinitionVersion returned', async () => {
       const res = await request.post(
@@ -257,8 +247,7 @@ test.describe('MCP Message Subscription Search API Tests', () => {
       );
     });
 
-    //Skipped due to bug: 52532 https://github.com/camunda/camunda/issues/52532
-    await test.step.skip('SC-API-07 — Filter by toolName', async () => {
+    await test.step('SC-API-07 — Filter by toolName', async () => {
       const res = await request.post(
         buildUrl('/message-subscriptions/search'),
         {
@@ -282,11 +271,17 @@ test.describe('MCP Message Subscription Search API Tests', () => {
       const json = await res.json();
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
 
-      // extensionProperties assertion skipped due to bug 52514: https://github.com/camunda/camunda/issues/52514
       json.items.forEach(
-        (it: {processDefinitionId: string; toolName: string}) => {
+        (it: {
+          processDefinitionId: string;
+          toolName: string;
+          toolProperties: Record<string, string>;
+        }) => {
           expect(it.processDefinitionId).toBe('mcpProcessAlpha');
           expect(it.toolName).toBe('alpha-tool-name');
+          expect(it.toolProperties['io.camunda.tool:name']).toBe(
+            'alpha-tool-name',
+          );
         },
       );
     });
@@ -316,8 +311,7 @@ test.describe('MCP Message Subscription Search API Tests', () => {
       const json = await res.json();
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
 
-      // extensionProperties assertions skipped due to bug 52514: https://github.com/camunda/camunda/issues/52514
-      json.items.forEach((it: object) => {
+      json.items.forEach((it: {toolProperties: Record<string, string>}) => {
         assertEqualsForKeys(
           it,
           {
@@ -326,6 +320,18 @@ test.describe('MCP Message Subscription Search API Tests', () => {
             tenantId: '<default>',
           },
           ['processDefinitionId', 'messageSubscriptionType', 'tenantId'],
+        );
+        expect(it.toolProperties['io.camunda.tool:input_1_name']).toBe(
+          'firstName',
+        );
+        expect(it.toolProperties['io.camunda.tool:input_1_type']).toBe(
+          'string',
+        );
+        expect(it.toolProperties['io.camunda.tool:input_2_name']).toBe(
+          'amount',
+        );
+        expect(it.toolProperties['io.camunda.tool:input_2_required']).toBe(
+          'true',
         );
       });
     });

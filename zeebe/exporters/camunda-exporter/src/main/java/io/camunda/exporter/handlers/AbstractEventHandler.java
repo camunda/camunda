@@ -30,6 +30,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_NAME;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.TOOL_PROPERTIES;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
@@ -98,6 +99,7 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     jsonMap.put(FLOW_NODE_ID, entity.getFlowNodeId());
     jsonMap.put(PROCESS_DEFINITION_NAME, entity.getProcessDefinitionName());
     jsonMap.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
+    jsonMap.put(TOOL_PROPERTIES, entity.getToolProperties());
     jsonMap.put(TOOL_NAME, entity.getToolName());
     jsonMap.put(INBOUND_CONNECTOR_TYPE, entity.getInboundConnectorType());
     jsonMap.put(positionFieldName, positionFieldValue);
@@ -147,7 +149,8 @@ public abstract class AbstractEventHandler<R extends RecordValue>
               .orElse(Map.of());
       entity
           .setToolName(ProcessCacheUtil.getToolName(ext))
-          .setInboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext));
+          .setInboundConnectorType(ProcessCacheUtil.getInboundConnectorType(ext))
+          .setToolProperties(ProcessCacheUtil.getToolProperties(ext));
     }
   }
 }

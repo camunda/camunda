@@ -195,7 +195,7 @@ final class MessageSubscriptionExportHandlerTest {
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(timestamp)));
     assertThat(model.processDefinitionName()).isEqualTo(processName);
     assertThat(model.processDefinitionVersion()).isEqualTo(processVersion);
-    assertThat(model.extensionProperties()).isEqualTo(Map.of());
+    assertThat(model.toolProperties()).isEqualTo(Map.of("io.camunda.tool:name", "myTool"));
     assertThat(model.toolName()).isEqualTo("myTool");
     assertThat(model.inboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
   }
@@ -245,7 +245,7 @@ final class MessageSubscriptionExportHandlerTest {
     final MessageSubscriptionDbModel model = captor.getValue();
     assertThat(model.processDefinitionName()).isNull();
     assertThat(model.processDefinitionVersion()).isNull();
-    assertThat(model.extensionProperties()).isEqualTo(Map.of());
+    assertThat(model.toolProperties()).isEqualTo(Map.of());
     assertThat(model.toolName()).isNull();
     assertThat(model.inboundConnectorType()).isNull();
   }

@@ -100,7 +100,7 @@
       "processDefinitionVersion": {
         "type": "integer"
       },
-      "extensionProperties": {
+      "toolProperties": {
         "type": "object",
         "enabled": false
       },

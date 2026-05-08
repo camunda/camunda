@@ -164,8 +164,7 @@ test.describe('Identity MCP Processes', () => {
     });
   });
 
-  // TODO: Re-evaluate once extensionProperties are exported again
-  test.skip('MCP Processes rows can be expanded to show more tool information', async ({
+  test('MCP Processes rows can be expanded to show more tool information', async ({
     identityMcpProcessesPage,
   }) => {
     await identityMcpProcessesPage.navigateToMcpProcesses();
