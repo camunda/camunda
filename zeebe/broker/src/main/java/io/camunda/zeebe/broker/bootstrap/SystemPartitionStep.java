@@ -24,8 +24,10 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.changes.NoopConfigurationChangeAppliers;
+import io.camunda.zeebe.engine.processing.EngineProcessors;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
@@ -254,11 +256,37 @@ public final class SystemPartitionStep implements StartupStep<BrokerStartupConte
     final ZeebeDb<ZbColumnFamilies> db = zeebeFactory.createDb(stateDir);
 
     // 4) StreamProcessor.
-    // Use a no-op engine factory (ctx -> empty processors) — the system partition only handles
-    // CLUSTER_CONFIGURATION and BACKUP_METADATA records; running the BPMN engine here is out of
-    // scope. The factory wraps in an Engine, so EventAppliers (including the cluster-config
-    // applier) are still registered.
-    final TypedRecordProcessorFactory engineFactory = ctx -> TypedRecordProcessors.processors();
+    // Mount the full BPMN engine (Approach A from the design doc): the system partition hosts
+    // cluster-management BPMNs (scale-operation, exporter-operation, modification_starter,
+    // checkpoint_scheduler, retention_scheduler) which require the standard engine processors
+    // (DeploymentProcessor, JobProcessor, ProcessInstanceCreationProcessor, ...). The
+    // SystemPartitionStreamProcessorFactory composes the engine processors with the
+    // cluster-configuration and backup-metadata processors registered on top.
+    //
+    // Hackday MVP notes:
+    //  - JobStreamer is a no-op: workers on the system partition use standard polling, not push.
+    //  - InterPartitionCommandSender is the no-op stub below; backup control-plane fan-out
+    //    (Phase 6) will swap this for a BrokerClient-backed sender.
+    final var featureFlags = cfg.getExperimental().getFeatures().toFeatureFlags();
+    final int partitionsCount = cfg.getCluster().getPartitionsCount();
+    final var searchClientsProxy = context.getSearchClientsProxy();
+    final var brokerRequestAuthorizationConverter =
+        context.getBrokerRequestAuthorizationConverter();
+    final TypedRecordProcessorFactory engineFactory =
+        ctx -> {
+          final var partitionCommandSender = ctx.getPartitionCommandSender();
+          final var subscriptionCommandSender =
+              new SubscriptionCommandSender(ctx.getPartitionId(), partitionCommandSender);
+          return EngineProcessors.createEngineProcessors(
+              ctx,
+              partitionsCount,
+              subscriptionCommandSender,
+              partitionCommandSender,
+              featureFlags,
+              JobStreamer.noop(),
+              searchClientsProxy,
+              brokerRequestAuthorizationConverter);
+        };
     final StreamProcessorMode mode =
         partition.getRole() == Role.LEADER
             ? StreamProcessorMode.PROCESSING
