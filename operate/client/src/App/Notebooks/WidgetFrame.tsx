@@ -8,7 +8,7 @@
 
 import React, {useState} from 'react';
 import {Button, IconButton, Modal} from '@carbon/react';
-import {Code, Edit, TrashCan} from '@carbon/react/icons';
+import {Code, TrashCan} from '@carbon/react/icons';
 import {WidgetConfigSchema, type WidgetConfig} from './types';
 import {
   WidgetFrameContainer,
@@ -122,10 +122,23 @@ const WidgetFrame: React.FC<Props> = ({
 
     // Preserve the original id — editing should never silently re-key a
     // widget (would break React reconciliation and any saved layout).
-    const merged =
+    //
+    // Also restore the original `query` when it was stripped by
+    // `presentableConfig` (placeholder queries on kpi/text widgets are hidden
+    // from the user). The schema requires `query` for every widget; without
+    // this restore the user would be forced to invent a fake endpoint URL.
+    const parsedObj =
       parsed != null && typeof parsed === 'object'
-        ? {...(parsed as Record<string, unknown>), id: config.id}
-        : parsed;
+        ? (parsed as Record<string, unknown>)
+        : null;
+    let merged: unknown = parsed;
+    if (parsedObj != null) {
+      const next: Record<string, unknown> = {...parsedObj, id: config.id};
+      if (next.query == null) {
+        next.query = config.query;
+      }
+      merged = next;
+    }
 
     const result = WidgetConfigSchema.safeParse(merged);
     if (!result.success) {
@@ -158,17 +171,6 @@ const WidgetFrame: React.FC<Props> = ({
             onClick={openView}
           >
             <Code />
-          </IconButton>
-        )}
-        {!hideDetails && isEditable && (
-          <IconButton
-            kind="ghost"
-            size="sm"
-            align="left"
-            label="Edit widget config"
-            onClick={openEdit}
-          >
-            <Edit />
           </IconButton>
         )}
         {onRemove && (
