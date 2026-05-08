@@ -238,6 +238,7 @@ org-springframework-boot-spring-boot-actuator-autoconfigure = "4.0.6"
 org-springframework-boot-spring-boot-autoconfigure = "4.0.6"
 org-springframework-boot-spring-boot-freemarker = "4.0.6"
 org-springframework-boot-spring-boot-health = "4.0.6"
+org-springframework-boot-spring-boot-micrometer-metrics-test = "4.0.6"
 org-springframework-boot-spring-boot-jackson = "4.0.6"
 org-springframework-boot-spring-boot-jackson2 = "4.0.6"
 org-springframework-boot-spring-boot-starter-actuator = "4.0.6"
@@ -253,6 +254,8 @@ org-springframework-boot-spring-boot-starter-validation = "4.0.6"
 org-springframework-boot-spring-boot-starter-web = "4.0.6"
 org-springframework-boot-spring-boot-test = "4.0.6"
 org-springframework-boot-spring-boot-test-autoconfigure = "4.0.6"
+org-springframework-boot-spring-boot-restclient = "4.0.6"
+org-springframework-boot-spring-boot-resttestclient = "4.0.6"
 org-springframework-boot-spring-boot-webmvc = "4.0.6"
 org-springframework-boot-spring-boot-webmvc-test = "4.0.6"
 org-springframework-boot-spring-boot-webtestclient = "4.0.6"
@@ -556,6 +559,7 @@ org-springframework-boot-spring-boot-actuator-autoconfigure = { module = "org.sp
 org-springframework-boot-spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "org-springframework-boot-spring-boot-autoconfigure" }
 org-springframework-boot-spring-boot-freemarker = { module = "org.springframework.boot:spring-boot-freemarker", version.ref = "org-springframework-boot-spring-boot-freemarker" }
 org-springframework-boot-spring-boot-health = { module = "org.springframework.boot:spring-boot-health", version.ref = "org-springframework-boot-spring-boot-health" }
+org-springframework-boot-spring-boot-micrometer-metrics-test = { module = "org.springframework.boot:spring-boot-micrometer-metrics-test", version.ref = "org-springframework-boot-spring-boot-micrometer-metrics-test" }
 org-springframework-boot-spring-boot-jackson = { module = "org.springframework.boot:spring-boot-jackson", version.ref = "org-springframework-boot-spring-boot-jackson" }
 org-springframework-boot-spring-boot-jackson2 = { module = "org.springframework.boot:spring-boot-jackson2", version.ref = "org-springframework-boot-spring-boot-jackson2" }
 org-springframework-boot-spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator", version.ref = "org-springframework-boot-spring-boot-starter-actuator" }
@@ -571,8 +575,8 @@ org-springframework-boot-spring-boot-starter-validation = { module = "org.spring
 org-springframework-boot-spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web", version.ref = "org-springframework-boot-spring-boot-starter-web" }
 org-springframework-boot-spring-boot-test = { module = "org.springframework.boot:spring-boot-test", version.ref = "org-springframework-boot-spring-boot-test" }
 org-springframework-boot-spring-boot-test-autoconfigure = { module = "org.springframework.boot:spring-boot-test-autoconfigure", version.ref = "org-springframework-boot-spring-boot-test-autoconfigure" }
-org-springframework-boot-spring-boot-restclient = { module = "org.springframework.boot:spring-boot-restclient", version.ref = "org-springframework-boot-spring-boot" }
-org-springframework-boot-spring-boot-resttestclient = { module = "org.springframework.boot:spring-boot-resttestclient", version.ref = "org-springframework-boot-spring-boot" }
+org-springframework-boot-spring-boot-restclient = { module = "org.springframework.boot:spring-boot-restclient", version.ref = "org-springframework-boot-spring-boot-restclient" }
+org-springframework-boot-spring-boot-resttestclient = { module = "org.springframework.boot:spring-boot-resttestclient", version.ref = "org-springframework-boot-spring-boot-resttestclient" }
 org-springframework-boot-spring-boot-webmvc = { module = "org.springframework.boot:spring-boot-webmvc", version.ref = "org-springframework-boot-spring-boot-webmvc" }
 org-springframework-boot-spring-boot-webmvc-test = { module = "org.springframework.boot:spring-boot-webmvc-test", version.ref = "org-springframework-boot-spring-boot-webmvc-test" }
 org-springframework-boot-spring-boot-webtestclient = { module = "org.springframework.boot:spring-boot-webtestclient", version.ref = "org-springframework-boot-spring-boot-webtestclient" }

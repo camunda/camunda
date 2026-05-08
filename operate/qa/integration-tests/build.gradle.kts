@@ -27,6 +27,8 @@ dependencies {
     testImplementation(libs.org.springframework.boot.spring.boot.autoconfigure)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.springframework.boot.spring.boot.actuator)
+    testImplementation(libs.org.springframework.boot.spring.boot.health)
+    testImplementation(libs.org.springframework.boot.spring.boot.micrometer.metrics.test)
     testImplementation(libs.org.springframework.boot.spring.boot.resttestclient)
     testImplementation(libs.org.springframework.boot.spring.boot.restclient)
     testImplementation(libs.org.springframework.spring.context)
