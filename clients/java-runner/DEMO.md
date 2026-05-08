@@ -20,9 +20,9 @@
 > - **Deploy + workers** — the Java SDK (`client.newDeployResourceCommand()`, `newWorker()`).
 > - **Lambda breakpoints** — your IDE.
 >
-> What's missing: a single fluent surface that unifies them, and a per-run prefix that gives
-> *you* a private universe inside the shared cluster. No collisions, no production interference,
-> no "wait don't deploy that yet."
+> What's missing: a single source of truth that ties them together. One file you can read
+> top-to-bottom, hit Run, and tweak — no Modeler-then-deploy-then-worker dance, no "where
+> do I even start," no separate project just to try an idea.
 
 ### Slide 2 — *the kernel*
 > **Everything as code. Debuggable end-to-end.**
@@ -41,7 +41,15 @@
 > Operate URL printed. No `mvn deploy`, no docker-compose, no separate worker app.
 
 ### Slide 4 — *what's next*
-> AI-generated Java that the runner verifies by execution. Property-based tests for processes. **(See VISION.md.)**
+> - AI writes the Java; the runner verifies by execution.
+> - Property-based testing for processes.
+> - JUnit / `camunda-process-test` integration — same DSL, assertion-grade.
+>
+> *Side note:* ran into two upstream bugs while building this (gateway NPE on
+> task-listener activation; `/v2/process-instances/search` rejecting `CANCELED`).
+> Reproducers + suggested fixes in [`UPSTREAM_BUGS.md`](UPSTREAM_BUGS.md).
+>
+> **(See [VISION.md](VISION.md).)**
 
 ## Demo prep checklist (do this 5 minutes before)
 
@@ -65,48 +73,46 @@
 
 ## 3-minute live demo transcript
 
-**Beat 1 — open `MinimalDemo.java` (0:00 → 0:30)**
+**Beat 1 — `MinimalDemo.java` (0:00 → 0:40)**
 
 > "Smallest demo first. Twelve lines of Java. One service task, one lambda. The lambda calls
-> `job.fail` if there's no name, otherwise `job.complete` with the greeting. Standard Java —
-> nothing exotic."
+> `job.fail` if there's no name, otherwise `job.complete` with the greeting. Standard Java."
 >
-> *Right-click → Run.*
+> *Set a breakpoint inside the lambda. Right-click → Run.*
 >
-> "Connects to my local cluster — c8run started before the demo, so this is instant. Three
-> instances run, breakpoint hits inside the lambda, instances complete."
+> "Connects to my local cluster — instant. The runner registers our lambda as a real Camunda
+> worker, the broker activates a job, breakpoint hits *inside the IDE*. `job.variable(...)` —
+> that's the variable our previous task wrote. Step out, instances complete."
 
-**Beat 2 — set a breakpoint, re-run (0:30 → 1:15)**
-
-> *Set a breakpoint inside the `print` task lambda.*
->
-> "Now I'm going to set a breakpoint inside the `print` task. Re-run."
->
-> *Wait for first breakpoint hit.*
->
-> "There. The runner registered our lambda as a real Camunda worker, the broker activated a
-> job, and we're sitting inside our IDE on a real production-grade execution. `job.variable("greeting", String.class)` — that's the variable our previous task wrote. Step out, three more
-> hits — there's a fail in the middle one because of an empty name."
-
-**Beat 3 — open `OrderDemos.java`, switch to bindings (1:15 → 2:00)**
+**Beat 2 — `OrderDemos.java` (0:40 → 1:30)**
 
 > "Now a real flow. Validate, charge, ship. Same `main()` runs in two modes — inline lambdas
 > at the top, binding API at the bottom. Same handlers, same Operate output, two ways to wire."
 >
-> *Run with default (inline). Show the prefixed `Operate:` URL in console.*
+> *Run with default (inline). Click the `Operate:` URL in console.*
 >
-> "Click the URL — there's our run in Operate, three instances completing, prefixed with my
-> username and a random suffix so two devs running this at the same time don't collide. The
-> elementIds — `validate`, `charge`, `ship` — stay clean."
+> "There's our run in Operate, three instances completing. The elementIds —
+> `validate`, `charge`, `ship` — stay clean."
 
-**Beat 4 — `LoadDemo.java` (2:00 → 2:30)**
+**Beat 3 — `ListenerDemo.java` (1:30 → 2:15)**
+
+> "Listeners, same `.on(...)` surface. Execution listeners on a service task —
+> `start` and `end` — plus task listeners on a user task — `assigning`, `completing`. Same
+> lambda shape as workers, debuggable the same way."
+>
+> *Run; show the interleaved `[el-*]` / `[tl-*]` log lines.*
+>
+> "Lifecycle hooks become Java lambdas. No separate worker app, no listener configuration
+> file — they're sitting in the same builder as the tasks themselves."
+
+**Beat 4 — `LoadDemo.java` (2:15 → 2:40)**
 
 > "Same idea, scaled. Fifty instances, paced 100 ms apart. `RunOptions.of(50).pacing(...)`.
 > Watch them trickle into Operate."
 >
 > *Open Operate; show the moving picture.*
 
-**Beat 5 — close on the vision (2:30 → 3:00)**
+**Beat 5 — close on the vision (2:40 → 3:00)**
 
 > "Two things make this matter. **Composition** — Camunda already had BPMN-as-code, deploy,
 > workers, breakpoints. They were in different files. Now they're in one. **Isolation** — every
