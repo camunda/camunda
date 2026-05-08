@@ -45,10 +45,34 @@
 
 **Scope**: Read-only analytics. No write-back to Zeebe.
 
-**Architectural choice**: Agent instances live in a dedicated per-process-definition
-`AgentInstanceIndex`. `ProcessInstanceIndex` is **unchanged**. Some L2 metrics (incident rate,
-failure rate by version) require two ES/OS requests — one per index — merged at the Java service
-layer. See [Section 8](#8-architectural-tradeoffs-vs-nested-variant) for the full tradeoff table.
+**Architectural approach — dedicated `AgentInstanceIndex`**:
+
+Each agent instance is stored as a flat top-level document in a dedicated per-process-definition
+`AgentInstanceIndex` (`optimize-agent-instance-<processDefinitionKey>`). `ProcessInstanceIndex`
+is **completely unchanged** — no VERSION bump, no new fields, no Painless script changes.
+
+Key consequences of this choice:
+
+- **`ProcessInstanceIndex` zero blast radius.** No risk of mapping errors or VERSION-bump regressions
+  affecting existing process analytics. The new index is purely additive.
+- **No Painless script required.** Agent instance upsert is a standard ES/OS `IndexRequest`
+  (CREATED) + partial `UpdateRequest` (UPDATED/COMPLETED). No merge scripting, no token
+  re-aggregation side effects.
+- **Flat documents — simpler queries.** All agent-scoped aggregations use plain terms, date
+  histograms, and percentiles on flat fields. No nested aggregation syntax anywhere in the
+  agent query path.
+- **Cross-index merges required for some metrics.** L2 incident rate, A3 summary at L2, A10
+  failure rate by version, and A1 process breakdown each require two ES/OS requests — one to
+  `AgentInstanceIndex`, one to `ProcessInstanceIndex` — merged in the Java service layer.
+  This is standard Java; AI tooling handles it reliably.
+- **Future "filter agents by parent process condition" is not feasible at scale.** Any widget
+  that needs to filter agent data based on a process-level value computed at query time
+  (e.g. "agent runs where parent process exceeded SLA") would require an application-level
+  join that hits the ES/OS 65k terms query limit at scale. This is not needed in phase 1
+  but is a constraint to evaluate before committing to this architecture long-term.
+
+See `agentic-control-plane-impl-plan-comparison.md` for the full tradeoff analysis against
+the nested variant.
 
 **Non-goals (phase 1)**:
 
