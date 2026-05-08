@@ -22,13 +22,16 @@ import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotMigrationTransitionStepTest.ActorWithControl;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,6 +42,7 @@ class SnapshotDirectorPartitionTransitionStepTest {
 
   private static final long LAST_LOG_POSITION = 9;
   TestPartitionTransitionContext transitionContext = new TestPartitionTransitionContext();
+  @AutoClose final ActorWithControl actor = new ActorWithControl();
 
   @RegisterExtension
   private final ControlledActorSchedulerExtension schedulerExtension =
@@ -64,6 +68,7 @@ class SnapshotDirectorPartitionTransitionStepTest {
 
     // Use the real ActorScheduler from the extension instead of a mock
     transitionContext.setActorSchedulingService(schedulerExtension.getActorScheduler());
+    transitionContext.setConcurrencyControl(new TestConcurrencyControl());
 
     when(snapshotDirectorFromPrevRole.closeAsync())
         .thenReturn(TestActorFuture.completedFuture(null));
@@ -105,9 +110,30 @@ class SnapshotDirectorPartitionTransitionStepTest {
     if (Role.LEADER.equals(targetRole)) {
       // verify that the last position is read to notify snapshot director
       verify(logstreamReader, times(1)).seekToEnd();
+      schedulerExtension.workUntilDone();
       assertThat(transitionContext.getSnapshotDirector().getCommitPosition())
           .isEqualTo(LAST_LOG_POSITION);
     }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(TransitionsThatShouldInstallService.class)
+  void shouldPublishSnapshotDirectorBeforeFutureCompletes(
+      final Role currentRole, final Role targetRole) {
+    // regression for #43421: by the time the transition future completes, the snapshot director
+    // must be visible on the context. Otherwise the next transition step can read null and
+    // construct a MigrationSnapshotDirector that NPEs on its first forceSnapshot.
+    // given
+    initializeContext(currentRole);
+    step.prepareTransition(transitionContext, 1, targetRole).join();
+    final ActorFuture<Void> transition = step.transitionTo(transitionContext, 1, targetRole);
+
+    // when
+    schedulerExtension.workUntilDone();
+
+    // then
+    assertThat(transition.isDone()).isTrue();
+    assertThat(transitionContext.getSnapshotDirector()).isNotNull();
   }
 
   @ParameterizedTest
