@@ -557,6 +557,13 @@ public final class EventAppliers implements EventApplier {
             state.getProcessState(),
             state.getUsageMetricState()));
     register(
+        ProcessEventIntent.TRIGGERING,
+        3,
+        new ProcessEventTriggeringV3Applier(
+            state.getEventScopeInstanceState(),
+            state.getElementInstanceState(),
+            state.getProcessState()));
+    register(
         ProcessEventIntent.TRIGGERED,
         new ProcessEventTriggeredApplier(state.getEventScopeInstanceState()));
   }
