@@ -87,9 +87,11 @@ function buildIssueBody(finding) {
       "",
       "<details>",
       "<summary>Claude's triage response</summary>",
-      "<p>",
+      "",
+      "```json",
       finding.triage_response,
-      "<p/>",
+      "```",
+      "",
       "</details>",
     );
   }
