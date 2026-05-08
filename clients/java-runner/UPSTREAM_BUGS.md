@@ -48,17 +48,47 @@ job kind=TASK_LISTENER state=CREATED type=<prefix>-review-tl-assigning retries=3
                                                                                        ^^^^ empty: never activated
 ```
 
-### Root cause — three-layer contract mismatch
+### Root cause — broker has two paths to ASSIGNING, only one sets `action`
+
+**Path A (always sets action):** explicit user-task command from API / Tasklist UI / SDK.
+`UserTaskAssignProcessor.onCommand` (line 81) calls
+`userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION))` where
+`DEFAULT_ACTION = "assign"`. Header always present. Mapper happy.
+
+**Path B (never sets action):** broker-initiated auto-assignment from a static
+`<zeebe:assignmentDefinition assignee="..." />` declared at modelling time.
+`UserTaskCreateProcessor.onFinalizeCommand` → `assignUserTask()` →
+`BpmnUserTaskBehavior.userTaskAssigning(record, assignee)` writes the `ASSIGNING` event
+**without ever calling `setAction(...)`**:
+
+```java
+public void userTaskAssigning(final UserTaskRecord userTaskRecord, final String assignee) {
+  if (!userTaskRecord.getAssignee().equals(assignee)) {
+    userTaskRecord.setAssignee(assignee);
+    userTaskRecord.setAssigneeChanged();
+  }
+  stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
+  // ^^ no setAction
+}
+```
+
+The same three-layer chain then crashes because all three layers disagreed about
+whether action is optional:
 
 | Layer | What it says |
 |---|---|
-| **Engine** — `BpmnJobBehavior.extractUserTaskHeaders:518` (`zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/behavior/BpmnJobBehavior.java`) | `if (StringUtils.isNotEmpty(userTaskRecord.getAction())) headers.put(USER_TASK_ACTION_HEADER_NAME, ...);` — action header is **conditional**. For programmatic transitions (e.g. broker auto-assigning from `zeebeAssignee`), `userTaskRecord.getAction()` is empty, so no header is emitted. |
-| **OpenAPI schema** — `zeebe/gateway-protocol/src/main/proto/v2/jobs.yaml`, `UserTaskProperties` | Declares `action` (and `assignee`, `dueDate`, `followUpDate`, `formKey`, `priority`, `userTaskKey`, `candidateGroups`, `candidateUsers`, `changedAttributes`) in the `required:` list. Schema says: action is mandatory. |
+| **Engine** — `BpmnJobBehavior.extractUserTaskHeaders:518` (`zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/behavior/BpmnJobBehavior.java`) | `if (StringUtils.isNotEmpty(userTaskRecord.getAction())) headers.put(USER_TASK_ACTION_HEADER_NAME, ...);` — header is **conditional**. Path B has empty action → no header. |
+| **OpenAPI schema** — `zeebe/gateway-protocol/src/main/proto/v2/jobs.yaml`, `UserTaskProperties` | `action` is in the `required:` list (alongside `assignee`, `dueDate`, `followUpDate`, `formKey`, `priority`, `userTaskKey`, `candidateGroups`, `candidateUsers`, `changedAttributes`). Schema says: action is mandatory. |
 | **Mapper** — `gateways/gateway-mapping-http/src/main/java/io/camunda/gateway/mapping/http/ResponseMapper.java:251` (commit `1bba1641dd6c`, *"feat: enforce OpenAPI nullability contract with NullAway in mapping-http"*, 2026-04-17, by `megglos`) | `props.setAction(requireNonNull(headers.get(USER_TASK_ACTION_HEADER_NAME), "action"));` — enforces the schema's claim. |
 
 The recent NullAway pass made the mapper enforce the OpenAPI contract. The OpenAPI
-contract has been wrong for a while (it was just silently tolerated before). Now it
-NPEs.
+contract has been wrong for a while (just silently tolerated). Now any consumer that
+hits Path B trips the NPE.
+
+The same asymmetry likely exists for other broker-internal transitions (programmatic
+completion, parent-scope cancellation, …). Each `BpmnUserTaskBehavior` method that
+writes an `ASSIGNING` / `COMPLETING` / `CANCELING` / `UPDATING` event without an
+explicit command should be audited for the same omission.
 
 The existing test `ResponseMapperTest.java:155-160` only covers the *with-action* case
 and even comments:
@@ -123,7 +153,31 @@ Expected output: nothing (worker never gets a job). Broker log: NPE every ~5 s.
 
 ### Fix
 
-**Preferred — fix the schema** (most defensible; restores honest contract):
+**Preferred — fix the engine to set the missing action** (smallest change, restores
+contract symmetry between the two paths). In
+`zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/behavior/BpmnUserTaskBehavior.java`:
+
+```java
+public void userTaskAssigning(final UserTaskRecord userTaskRecord, final String assignee) {
+  final long userTaskKey = userTaskRecord.getUserTaskKey();
+  if (!userTaskRecord.getAssignee().equals(assignee)) {
+    userTaskRecord.setAssignee(assignee);
+    userTaskRecord.setAssigneeChanged();
+  }
+  if (userTaskRecord.getAction() == null || userTaskRecord.getAction().isEmpty()) {
+    userTaskRecord.setAction("assign");   // align with UserTaskAssignProcessor.DEFAULT_ACTION
+  }
+  stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
+}
+```
+
+Audit the sibling methods (`userTaskCompleting`, `userTaskCanceling`, `userTaskUpdating`,
+…) for the same omission and apply the same default in each. After this, the engine
+emits the same shape of event regardless of who initiated the transition; the schema's
+`required: action` becomes honest; the mapper's `requireNonNull` becomes correct.
+
+**Alternative — relax the schema** (if any internal use case actually wants `null`
+action):
 
 In `zeebe/gateway-protocol/src/main/proto/v2/jobs.yaml`, `UserTaskProperties`, drop
 `action` (and the other always-conditional fields) from `required:`:
