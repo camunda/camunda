@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication;
 
+import static io.camunda.security.api.model.config.AuthenticationConfiguration.DEFAULT_METHOD;
+
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import java.lang.annotation.Documented;
@@ -41,8 +43,12 @@ public @interface ConditionalOnAuthenticationMethod {
                     ConditionalOnAuthenticationMethod.class.getName()));
       }
       final Environment env = context.getEnvironment();
-      return AuthenticationMethod.parse(env.getProperty(AuthenticationProperties.METHOD))
-          == attributes.get("value");
+      final var method = env.getProperty(AuthenticationProperties.METHOD);
+      if (method == null) {
+        return attributes.get("value") == DEFAULT_METHOD;
+      }
+
+      return AuthenticationMethod.parse(method) == attributes.get("value");
     }
   }
 }
