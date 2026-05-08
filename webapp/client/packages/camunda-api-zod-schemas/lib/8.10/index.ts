@@ -8,6 +8,7 @@
 
 import {getCurrentUser} from './authentication';
 import {activateAdHocSubProcessActivities} from './ad-hoc-sub-process';
+import {getAgentInstance, searchAgentInstances} from './agent-instance';
 import {
 	createAuthorization,
 	updateAuthorization,
@@ -188,6 +189,8 @@ const endpoints = {
 	getCurrentUser,
 
 	activateAdHocSubProcessActivities,
+	getAgentInstance,
+	searchAgentInstances,
 	createAuthorization,
 	updateAuthorization,
 	getAuthorization,
@@ -410,6 +413,26 @@ export {
 	type GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
 } from './incident-statistics';
 export {currentUserSchema, getCurrentUser, type CurrentUser} from './authentication';
+export {
+	agentInstanceStatusSchema,
+	agentInstanceDefinitionSchema,
+	agentInstanceMetricsSchema,
+	agentInstanceLimitsSchema,
+	agentInstanceSchema,
+	agentInstanceFilterSchema,
+	queryAgentInstancesRequestBodySchema,
+	queryAgentInstancesResponseBodySchema,
+	getAgentInstanceResponseBodySchema,
+	type AgentInstanceStatus,
+	type AgentInstanceDefinition,
+	type AgentInstanceMetrics,
+	type AgentInstanceLimits,
+	type AgentInstance,
+	type AgentInstanceFilter,
+	type QueryAgentInstancesRequestBody,
+	type QueryAgentInstancesResponseBody,
+	type GetAgentInstanceResponseBody,
+} from './agent-instance';
 export {
 	activityTypeSchema,
 	queryActivatableActivitiesRequestBodySchema,
