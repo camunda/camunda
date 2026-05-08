@@ -95,11 +95,11 @@ LDAP-protected ingress at `https://ci-monitor.benchmark.camunda.cloud`. The work
 
 A table with three reference columns per metric:
 
-| Column  |                                    Source                                    |
-|---------|------------------------------------------------------------------------------|
-| Current | This PR's run                                                                |
-| Daily   | Most recent active daily run on `main` (regex match `c8-medic-daily-*-test`) |
-| Optimal | Static aspirational target from [`optimal.json`](optimal.json)               |
+| Column  |                                     Source                                     |
+|---------|--------------------------------------------------------------------------------|
+| Current | This PR's run                                                                  |
+| Daily   | Most recent active daily run on `main` (regex match `c8-medic-daily-*-test`)   |
+| Optimal | Static aspirational target from [`optimal.json`](../docs/scripts/optimal.json) |
 
 The verdict (✅/⚠️/❔) compares **Current vs Daily** so the signal is
 "did this PR regress vs main today?" Tolerance bands come from `optimal.json`'s
@@ -156,7 +156,7 @@ The PR comment uses two reference columns alongside Current:
   `c8-medic-daily-*-test` namespace on main. This is what drives the verdict
   (✅/⚠️). No file to maintain; the daily workflow keeps it fresh.
 - **Optimal** — static aspirational target stored in
-  [`load-tests/quicker-benchmark/optimal.json`](optimal.json). Each metric
+  [`load-tests/docs/scripts/optimal.json`](../docs/scripts/optimal.json). Each metric
   key under `metrics` must match a `name:` from `queries.yaml`. Carries
   either `expected` or `per-second` plus `tolerance-percent`. The current
   values are **placeholders** until we calibrate from clean main runs.
