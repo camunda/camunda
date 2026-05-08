@@ -177,6 +177,19 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
+  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
+    scopeKey.wrapLong(record.getScopeKey());
+    variableDocumentStateToWrite.setKey(key).setRecord(record);
+    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
+  }
+
+  @Override
+  public void removeVariableDocumentState(final long scopeKey) {
+    this.scopeKey.wrapLong(scopeKey);
+    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
+  }
+
+  @Override
   public DirectBuffer getVariableLocal(final long scopeKey, final DirectBuffer name) {
     final VariableInstance variable = getVariableLocal(scopeKey, name, 0, name.capacity());
 
@@ -347,19 +360,6 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
-    scopeKey.wrapLong(record.getScopeKey());
-    variableDocumentStateToWrite.setKey(key).setRecord(record);
-    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
-  }
-
-  @Override
-  public void removeVariableDocumentState(final long scopeKey) {
-    this.scopeKey.wrapLong(scopeKey);
-    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
-  }
-
-  @Override
   public Optional<VariableDocumentState> findVariableDocumentState(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
     return Optional.ofNullable(variableDocumentStateByScopeKeyColumnFamily.get(this.scopeKey));
@@ -378,20 +378,11 @@ public class DbVariableState implements MutableVariableState {
     this.scopeKey.wrapLong(scopeKey);
 
     final var trackedVariableNames =
-        variableNamesByScopeKeyColumnFamily.get(this.scopeKey, PersistedVariableNames::new);
-
-    if (trackedVariableNames == null) {
-      variableNamesByScopeKeyColumnFamily.insert(
-          this.scopeKey, new PersistedVariableNames().addVariableName(name));
-      return;
-    }
-
-    if (trackedVariableNames.contains(name)) {
-      return;
-    }
+        Optional.ofNullable(variableNamesByScopeKeyColumnFamily.get(this.scopeKey))
+            .orElseGet(PersistedVariableNames::new);
 
     trackedVariableNames.addVariableName(name);
-    variableNamesByScopeKeyColumnFamily.update(this.scopeKey, trackedVariableNames);
+    variableNamesByScopeKeyColumnFamily.upsert(this.scopeKey, trackedVariableNames);
   }
 
   /**
