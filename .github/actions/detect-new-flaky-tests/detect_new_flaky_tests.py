@@ -388,7 +388,7 @@ def main() -> None:
             fqn_class = f"{test['packageName']}.{test['className']}"
             method = test["methodName"]
             query = (
-                "SELECT DATE(report_time) AS day, build_trigger, test_status, COUNT(*) AS occurrences\n"
+                "SELECT DATE(ts.report_time) AS day, build_trigger, test_status, COUNT(*) AS occurrences\n"
                 "FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts\n"
                 "LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs\n"
                 "  ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name\n"
