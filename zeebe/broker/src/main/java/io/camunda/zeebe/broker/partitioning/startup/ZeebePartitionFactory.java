@@ -86,6 +86,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -355,8 +356,16 @@ public final class ZeebePartitionFactory implements Closeable {
   @Override
   public void close() {
     if (rocksDbResources instanceof final RocksDbResources.Shared sharedRocksDbMemory) {
-      sharedRocksDbMemory.getSharedWriteBufferManager().close();
-      sharedRocksDbMemory.getSharedCache().close();
+      LockUtil.withLock(
+          rocksDbResourcesLock,
+          () -> {
+            if (rocksDbResources != null) {
+              rocksDbResources = null;
+              CloseHelper.closeAll(
+                  sharedRocksDbMemory.getSharedWriteBufferManager(),
+                  sharedRocksDbMemory.getSharedCache());
+            }
+          });
     }
   }
 }
