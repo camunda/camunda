@@ -374,7 +374,7 @@ Use the following values directly in the workflow form:
    - `load-test-load`:
 
      ```text
-     --set starter.rate=75 --set workers.worker.replicas=8
+     --set 'starter.rate=75' --set 'workers.worker.replicas=8'
      ```
 4. **Combine platform and workload overrides safely**
    - `platform-helm-values`:
@@ -385,13 +385,13 @@ Use the following values directly in the workflow form:
    - `load-test-load`:
 
      ```text
-     --set starter.rate=350 --set workers.worker.replicas=10
+     --set 'starter.rate=350' --set 'workers.worker.replicas=10'
      ```
 5. **Override a string path in the load test chart**
    - `load-test-load`:
 
      ```text
-     --set-string 'starter.bpmnXmlPath=bpmn/typical_process.bpmn' --set starter.rate=50
+     --set-string 'starter.bpmnXmlPath=bpmn/typical_process.bpmn' --set 'starter.rate=50'
      ```
 
 ##### Creating load test for old versions
