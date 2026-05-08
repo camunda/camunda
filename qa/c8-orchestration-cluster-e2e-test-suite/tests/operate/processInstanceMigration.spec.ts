@@ -165,10 +165,20 @@ test.describe.serial('Process Instance Migration', () => {
         operateProcessMigrationModePage.targetProcessCombobox,
       ).toHaveValue(targetBpmnProcessId);
 
+      // Explicitly select the target version to avoid relying on Operate's
+      // auto-selection, which can pick a different version when the cluster
+      // has prior deployments of the same bpmnProcessId.
+      await expect(operateProcessMigrationModePage.targetVersionDropdown).toBeVisible();
+      const currentTargetVersion = await operateProcessMigrationModePage.targetVersionDropdown.innerText();
+      if (currentTargetVersion.trim() !== targetVersion) {
+        await operateProcessMigrationModePage.clickTargetVersionCombo();
+        await operateProcessMigrationModePage.selectTargetVersion(targetVersion);
+      }
       await expect(
         operateProcessMigrationModePage.targetVersionDropdown,
       ).toHaveText(targetVersion, {
         useInnerText: true,
+        timeout: 10000,
       });
 
       await operateProcessMigrationModePage.verifyFlowNodeMappings([
