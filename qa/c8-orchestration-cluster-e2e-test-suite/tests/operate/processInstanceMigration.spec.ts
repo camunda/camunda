@@ -371,7 +371,7 @@ test.describe.serial('Process Instance Migration', () => {
     for (const taskId of tasksToVerify) {
       await test.step(`Verify ${taskId} instances`, async () => {
         await page.goto(
-          `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=${taskId}`,
+          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=${taskId}`,
         );
 
         await expect(page.getByText('6 results')).toBeVisible({timeout: 90000});
@@ -400,7 +400,7 @@ test.describe.serial('Process Instance Migration', () => {
     for (const taskId of tasksToVerify) {
       await test.step(`Verify ${taskId} instances`, async () => {
         await page.goto(
-          `operate/processes?active=true&incidents=true&processDefinitionId=${targetBpmnProcessId}&processDefinitionVersion=${targetVersion}&elementId=${taskId}`,
+          `operate/processes?active=true&incidents=true&process=${targetBpmnProcessId}&version=${targetVersion}&flowNodeId=${taskId}`,
         );
 
         await expect(page.getByText('6 results')).toBeVisible({
