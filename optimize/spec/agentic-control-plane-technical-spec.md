@@ -712,7 +712,10 @@ Run top-5 queries in parallel (5 separate requests). "Other" = L1 total minus su
 
 ### 3.7 A6 — Incident Rate
 
-**Purpose**: KPI and chart showing the fraction of runs that had at least one incident.
+**Purpose**: KPI showing incident rate scoped to the active filter level.
+
+- **L0 / L1** (process scope): incidents in process / total process instances with agents
+- **L2** (agent scope): agent-element incidents / total agent activations for that element
 
 #### L0 / L1 (no specific agent selected)
 
@@ -756,7 +759,12 @@ Incident rate = process instances with ≥1 incident / total process instances (
 
 #### L2 (specific agent element selected)
 
-Incident rate = distinct process instances with ≥1 incident on `activityId = agentElementId` / total process instances where that agent ran.
+Incident rate = total incidents on that agent element / total activations of that agent element, both counted across all completed process instances for the process.
+
+Denominator = `value_count(agentInstanceKey)` filtered by `agentElementId` (total activations).  
+Numerator = `value_count(incidents.id)` filtered by `activityId = agentElementId` (total incidents on that element).
+
+Single query, two separate nested aggs:
 
 ```json
 {
@@ -765,30 +773,29 @@ Incident rate = distinct process instances with ≥1 incident on `activityId = a
     "bool": {
       "must": [
         { "term": { "state": "COMPLETED" } },
-        { "term": { "processDefinitionKey": "<processKey>" } },
-        {
-          "nested": {
-            "path": "agentInstances",
-            "query": { "term": { "agentInstances.agentElementId": "<agentElementId>" } }
-          }
-        }
+        { "term": { "processDefinitionKey": "<processKey>" } }
       ]
     }
   },
   "aggs": {
-    "totalRuns": { "value_count": { "field": "processInstanceId" } },
-    "incidents_for_agent": {
+    "agent_runs": {
+      "nested": { "path": "agentInstances" },
+      "aggs": {
+        "for_element": {
+          "filter": { "term": { "agentInstances.agentElementId": "<agentElementId>" } },
+          "aggs": {
+            "activationCount": { "value_count": { "field": "agentInstances.agentInstanceKey" } }
+          }
+        }
+      }
+    },
+    "agent_incidents": {
       "nested": { "path": "incidents" },
       "aggs": {
         "for_element": {
           "filter": { "term": { "incidents.activityId": "<agentElementId>" } },
           "aggs": {
-            "pis_with_incident": {
-              "reverse_nested": {},
-              "aggs": {
-                "count": { "value_count": { "field": "processInstanceId" } }
-              }
-            }
+            "incidentCount": { "value_count": { "field": "incidents.id" } }
           }
         }
       }
@@ -797,17 +804,17 @@ Incident rate = distinct process instances with ≥1 incident on `activityId = a
 }
 ```
 
-`incidentRate = incidents_for_agent.for_element.pis_with_incident.count / totalRuns`
+`incidentRate = agent_incidents.for_element.incidentCount / agent_runs.for_element.activationCount`
 
-> `reverse_nested.doc_count` gives the count of distinct parent process instance documents that had at least one matching incident — this is the correct numerator for "fraction of activations with an incident".
+> No `reverse_nested` needed. Outer query stays broad (all completed PIs for that process) — the nested filters inside each agg handle scoping independently.
 
 **Response shape**:
 
 ```json
 {
   "incidentRate": 0.024,
-  "runsWithIncident": 34,
-  "totalRuns": 1420
+  "incidentCount": 34,
+  "activationCount": 1420
 }
 ```
 
