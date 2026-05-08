@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -189,7 +190,7 @@ public class DbVariableState implements MutableVariableState {
     visitVariablesLocal(
         scopeKey,
         dbString -> true,
-        (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
+        (name, supplier) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
         () -> false);
   }
 
@@ -273,7 +274,7 @@ public class DbVariableState implements MutableVariableState {
         (name, value) -> {
           final DirectBuffer variableNameBuffer = name.getBuffer();
           writer.writeString(variableNameBuffer);
-          writer.writeRaw(value.getValue());
+          writer.writeRaw(value.get().getValue());
 
           // must create a new name wrapper, because we keep them all in the hashset at the same
           // time
@@ -304,7 +305,7 @@ public class DbVariableState implements MutableVariableState {
         name -> variablesToCollect.contains(name.getBuffer()),
         (name, value) -> {
           writer.writeString(name.getBuffer());
-          writer.writeRaw(value.getValue());
+          writer.writeRaw(value.get().getValue());
 
           variablesToCollect.remove(name.getBuffer());
         },
@@ -327,7 +328,7 @@ public class DbVariableState implements MutableVariableState {
         name -> true,
         (name, value) -> {
           writer.writeString(name.getBuffer());
-          writer.writeRaw(value.getValue());
+          writer.writeRaw(value.get().getValue());
 
           variableCount.addAndGet(1);
         },
@@ -350,13 +351,15 @@ public class DbVariableState implements MutableVariableState {
     visitVariablesLocal(
         scopeKey,
         name -> true,
-        (name, variable) ->
-            variables.add(
-                new Variable(
-                    variable.getKey(),
-                    scopeKey,
-                    BufferUtil.cloneBuffer(name.getBuffer()),
-                    BufferUtil.cloneBuffer(variable.getValue()))),
+        (name, getVariable) -> {
+          final var variable = getVariable.get();
+          variables.add(
+              new Variable(
+                  variable.getKey(),
+                  scopeKey,
+                  BufferUtil.cloneBuffer(name.getBuffer()),
+                  BufferUtil.cloneBuffer(variable.getValue())));
+        },
         () -> false);
     return variables;
   }
@@ -380,12 +383,16 @@ public class DbVariableState implements MutableVariableState {
     return Optional.ofNullable(variableDocumentStateByScopeKeyColumnFamily.get(this.scopeKey));
   }
 
-  private VariableInstance getVariableLocal(
+  private void wrapKeys(
       final long scopeKey, final DirectBuffer name, final int nameOffset, final int nameLength) {
     this.scopeKey.wrapLong(scopeKey);
     variableNameView.wrap(name, nameOffset, nameLength);
     variableName.wrapBuffer(variableNameView);
+  }
 
+  private VariableInstance getVariableLocal(
+      final long scopeKey, final DirectBuffer name, final int nameOffset, final int nameLength) {
+    wrapKeys(scopeKey, name, nameOffset, nameLength);
     return variablesColumnFamily.get(scopeKeyVariableNameKey);
   }
 
@@ -396,13 +403,13 @@ public class DbVariableState implements MutableVariableState {
   private void visitVariables(
       final long scopeKey,
       final Predicate<DbString> filter,
-      final BiConsumer<DbString, VariableInstance> variableConsumer,
+      final BiConsumer<DbString, Supplier<VariableInstance>> runnable,
       final BooleanSupplier completionCondition) {
     long currentScope = scopeKey;
 
     boolean completed;
     do {
-      completed = visitVariablesLocal(currentScope, filter, variableConsumer, completionCondition);
+      completed = visitVariablesLocal(currentScope, filter, runnable, completionCondition);
 
       currentScope = getParentScopeKey(currentScope);
 
@@ -414,22 +421,22 @@ public class DbVariableState implements MutableVariableState {
    *
    * @param variableFilter evaluated with the name of each variable; the variable is consumed only
    *     if the filter returns true
-   * @param variableConsumer a consumer that receives variable name and value
+   * @param variableConsumer a runnable that can run with the names already bound
    * @param completionCondition evaluated after every consumption; if true, consumption stops.
    * @return true if the completion condition was met
    */
   private boolean visitVariablesLocal(
       final long scopeKey,
       final Predicate<DbString> variableFilter,
-      final BiConsumer<DbString, VariableInstance> variableConsumer,
+      final BiConsumer<DbString, Supplier<VariableInstance>> variableConsumer,
       final BooleanSupplier completionCondition) {
     final Set<DirectBuffer> cachedNames = variableNameCache.getIfPresent(scopeKey);
     if (cachedNames != null) {
       for (final DirectBuffer cachedName : cachedNames) {
-        final VariableInstance variable =
-            getVariableLocal(scopeKey, cachedName, 0, cachedName.capacity());
-        if (variable != null && variableFilter.test(variableName)) {
-          variableConsumer.accept(variableName, variable);
+        wrapKeys(scopeKey, cachedName, 0, cachedName.capacity());
+        if (variableFilter.test(variableName)) {
+          variableConsumer.accept(
+              variableName, () -> variablesColumnFamily.get(scopeKeyVariableNameKey));
         }
 
         if (completionCondition.getAsBoolean()) {
@@ -445,9 +452,8 @@ public class DbVariableState implements MutableVariableState {
         this.scopeKey,
         (compositeKey, variable) -> {
           final DbString name = compositeKey.second();
-
           if (variableFilter.test(name)) {
-            variableConsumer.accept(name, variable);
+            variableConsumer.accept(name, () -> variable);
           }
 
           return !completionCondition.getAsBoolean();
