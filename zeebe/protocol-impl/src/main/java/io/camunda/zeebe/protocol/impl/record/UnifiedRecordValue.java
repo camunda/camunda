@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clusterconfiguration.ClusterConfigurationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
@@ -161,6 +162,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.VARIABLE -> new VariableRecord();
       case ValueType.VARIABLE_DOCUMENT -> new VariableDocumentRecord();
       case ValueType.CLUSTER_VARIABLE -> new ClusterVariableRecord();
+      case ValueType.CLUSTER_CONFIGURATION -> new ClusterConfigurationRecord();
       case ValueType.PROCESS_INSTANCE_CREATION -> new ProcessInstanceCreationRecord();
       case ValueType.ERROR -> new ErrorRecord();
       case ValueType.PROCESS_INSTANCE_RESULT -> new ProcessInstanceResultRecord();
@@ -215,6 +217,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.GLOBAL_LISTENER_BATCH -> new GlobalListenerBatchRecord();
       case ValueType.JOB_METRICS_BATCH -> new JobMetricsBatchRecord();
       case ValueType.GLOBAL_LISTENER -> new GlobalListenerRecord();
+      case ValueType.BACKUP_METADATA -> null; // BackupMetadataRecord not yet implemented
       case ValueType.SBE_UNKNOWN -> null;
       case ValueType.NULL_VAL -> null;
     };

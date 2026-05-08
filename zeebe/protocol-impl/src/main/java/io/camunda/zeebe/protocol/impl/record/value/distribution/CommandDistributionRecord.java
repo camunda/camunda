@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clusterconfiguration.ClusterConfigurationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
@@ -86,6 +87,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     RECORDS_BY_TYPE.put(
         ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE, BatchOperationPartitionLifecycleRecord::new);
     RECORDS_BY_TYPE.put(ValueType.CLUSTER_VARIABLE, ClusterVariableRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.CLUSTER_CONFIGURATION, ClusterConfigurationRecord::new);
     RECORDS_BY_TYPE.put(ValueType.GLOBAL_LISTENER_BATCH, GlobalListenerBatchRecord::new);
     RECORDS_BY_TYPE.put(ValueType.GLOBAL_LISTENER, GlobalListenerRecord::new);
   }
