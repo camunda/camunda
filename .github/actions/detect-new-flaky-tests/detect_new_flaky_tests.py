@@ -391,7 +391,14 @@ def main() -> None:
                 "SELECT\n"
                 "  DATE(ts.report_time) AS day,\n"
                 "  build_trigger,\n"
-                '  REPLACE(COALESCE(build_base_ref, build_ref), "refs/heads/", "") AS branch,\n'
+                "  CASE\n"
+                '    WHEN build_ref LIKE "refs/pull/%/merge" THEN CONCAT("PR #", REGEXP_EXTRACT(build_ref, r"^refs/pull/(\\d+)/"))\n'
+                '    WHEN build_ref LIKE "%gh-readonly-queue/%" THEN CONCAT("queue PR #", REGEXP_EXTRACT(build_ref, r"/pr-(\\d+)-"))\n'
+                '    WHEN build_ref LIKE "refs/heads/%" THEN REPLACE(build_ref, "refs/heads/", "")\n'
+                '    ELSE IFNULL(build_ref, "")\n'
+                "  END AS source,\n"
+                '  IF(build_trigger = "pull_request", REPLACE(IFNULL(build_head_ref, ""), "refs/heads/", ""), "") AS head_branch,\n'
+                '  REPLACE(IFNULL(build_base_ref, ""), "refs/heads/", "") AS target,\n'
                 "  test_status,\n"
                 "  COUNT(*) AS occurrences\n"
                 "FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts\n"
@@ -401,18 +408,30 @@ def main() -> None:
                 '  AND ts.ci_url = "https://github.com/camunda/camunda"\n'
                 f'  AND test_class_name = "{fqn_class}"\n'
                 f'  AND (test_name = "{method}" OR STARTS_WITH(test_name, "{method}("))\n'
-                "GROUP BY day, build_trigger, branch, test_status\n"
+                '  AND test_status IN ("flaky","failure","error")\n'
+                "GROUP BY day, build_trigger, source, head_branch, target, test_status\n"
                 "ORDER BY day DESC, occurrences DESC"
             )
             lines.append("")
             lines.append("  <details><summary>Verify in BigQuery — is this a real new flake or a false alarm?</summary>")
             lines.append("")
-            lines.append("  ```sql")
-            for q_line in query.split("\n"):
-                lines.append(f"  {q_line}")
+            lines.append("  Run this from your terminal (`bq` CLI must be authenticated against `ci-30-162810`):")
+            lines.append("")
+            lines.append("  ```bash")
+            lines.append("  bq --project_id=ci-30-162810 query --use_legacy_sql=false --max_rows=200 \\")
+            sql_lines = query.split("\n")
+            for idx, q_line in enumerate(sql_lines):
+                if idx == 0:
+                    lines.append(f"    '{q_line}")
+                elif idx == len(sql_lines) - 1:
+                    lines.append(f"     {q_line}'")
+                else:
+                    lines.append(f"     {q_line}")
             lines.append("  ```")
             lines.append("")
-            lines.append("  Each row aggregates runs by day, trigger, branch, and status. Rows with `flaky` status on `main` or `stable/*` (`build_trigger` `merge_group`/`push`) over the last 60 days indicate a pre-existing intermittent flake — likely a false alarm. `flaky` rows only on `pull_request` mean other PRs hit it too. No prior `flaky` rows means this PR genuinely introduced it.")
+            lines.append("  By default this filters to `flaky`/`failure`/`error` rows so the result is immediately actionable. Drop the `AND test_status IN (...)` line to also see how often the test ran successfully (typically thousands of rows).")
+            lines.append("")
+            lines.append("  Each row aggregates runs by day, trigger, source, head branch, and target. `source` is the PR (`PR #N`), merge-queue ref (`queue PR #N`), or branch name; `head_branch` is the PR's source branch (only meaningful for `pull_request`); `target` is the branch the change is heading into. **Empty result → genuine new flake** — the test has no recorded `flaky`/`failure`/`error` over the last 60 days, so your PR introduced it. **Non-empty result → false alarm** — the test has flaked before; the gate just hadn't seen those exact runs in its 20-day baseline.")
             lines.append("  </details>")
         lines.append("")
 
