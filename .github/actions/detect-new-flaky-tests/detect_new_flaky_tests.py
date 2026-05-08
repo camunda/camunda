@@ -388,28 +388,34 @@ def main() -> None:
             fqn_class = f"{test['packageName']}.{test['className']}"
             method = test["methodName"]
             query = (
-                "SELECT\n"
-                "  DATE(ts.report_time) AS day,\n"
-                "  build_trigger,\n"
-                "  CASE\n"
-                '    WHEN build_ref LIKE "refs/pull/%/merge" THEN CONCAT("PR #", REGEXP_EXTRACT(build_ref, r"^refs/pull/(\\d+)/"))\n'
-                '    WHEN build_ref LIKE "%gh-readonly-queue/%" THEN CONCAT("queue PR #", REGEXP_EXTRACT(build_ref, r"/pr-(\\d+)-"))\n'
-                '    WHEN build_ref LIKE "refs/heads/%" THEN REPLACE(build_ref, "refs/heads/", "")\n'
-                '    ELSE IFNULL(build_ref, "")\n'
-                "  END AS source,\n"
-                '  IF(build_trigger = "pull_request", REPLACE(IFNULL(build_head_ref, ""), "refs/heads/", ""), "") AS head_branch,\n'
-                '  REPLACE(IFNULL(build_base_ref, ""), "refs/heads/", "") AS target,\n'
-                "  test_status,\n"
-                "  COUNT(*) AS occurrences\n"
-                "FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts\n"
-                "LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs\n"
-                "  ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name\n"
-                "WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 DAY)\n"
-                '  AND ts.ci_url = "https://github.com/camunda/camunda"\n'
-                f'  AND test_class_name = "{fqn_class}"\n'
-                f'  AND (test_name = "{method}" OR STARTS_WITH(test_name, "{method}("))\n'
-                '  AND test_status IN ("flaky","failure","error")\n'
-                "GROUP BY day, build_trigger, source, head_branch, target, test_status\n"
+                "WITH r AS (\n"
+                "  SELECT\n"
+                "    DATE(ts.report_time) AS day,\n"
+                "    build_trigger,\n"
+                "    CASE\n"
+                '      WHEN build_ref LIKE "refs/pull/%/merge" THEN CONCAT("PR #", REGEXP_EXTRACT(build_ref, r"^refs/pull/(\\d+)/"))\n'
+                '      WHEN build_ref LIKE "%gh-readonly-queue/%" THEN CONCAT("queue PR #", REGEXP_EXTRACT(build_ref, r"/pr-(\\d+)-"))\n'
+                '      WHEN build_ref LIKE "refs/heads/%" THEN REPLACE(build_ref, "refs/heads/", "")\n'
+                '      ELSE IFNULL(build_ref, "")\n'
+                "    END AS source,\n"
+                '    IF(build_trigger = "pull_request", REPLACE(IFNULL(build_head_ref, ""), "refs/heads/", ""), "") AS head_branch,\n'
+                '    REPLACE(IFNULL(build_base_ref, ""), "refs/heads/", "") AS target,\n'
+                "    test_status,\n"
+                "    COUNT(*) AS occurrences\n"
+                "  FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts\n"
+                "  LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs\n"
+                "    ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name\n"
+                "  WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 DAY)\n"
+                '    AND ts.ci_url = "https://github.com/camunda/camunda"\n'
+                f'    AND test_class_name = "{fqn_class}"\n'
+                f'    AND (test_name = "{method}" OR STARTS_WITH(test_name, "{method}("))\n'
+                '    AND test_status IN ("flaky","failure","error")\n'
+                "  GROUP BY day, build_trigger, source, head_branch, target, test_status\n"
+                ")\n"
+                "SELECT * FROM r\n"
+                "UNION ALL\n"
+                "SELECT CAST(NULL AS DATE), \"\", \"(no past flake/failure/error — genuine new flake)\", \"\", \"\", \"\", 0\n"
+                "FROM (SELECT 1) WHERE NOT EXISTS (SELECT 1 FROM r)\n"
                 "ORDER BY day DESC, occurrences DESC"
             )
             lines.append("")
@@ -429,9 +435,9 @@ def main() -> None:
                     lines.append(f"     {q_line}")
             lines.append("  ```")
             lines.append("")
-            lines.append("  By default this filters to `flaky`/`failure`/`error` rows so the result is immediately actionable. Drop the `AND test_status IN (...)` line to also see how often the test ran successfully (typically thousands of rows).")
+            lines.append("  By default this filters to `flaky`/`failure`/`error` rows. If there are no such rows in the last 60 days, the query returns a single sentinel row labelled `(no past flake/failure/error — genuine new flake)` so you can tell the query ran successfully (vs. an empty terminal output). Drop the `AND test_status IN (...)` clause to also see how often the test ran successfully (typically thousands of rows).")
             lines.append("")
-            lines.append("  Each row aggregates runs by day, trigger, source, head branch, and target. `source` is the PR (`PR #N`), merge-queue ref (`queue PR #N`), or branch name; `head_branch` is the PR's source branch (only meaningful for `pull_request`); `target` is the branch the change is heading into. **Empty result → genuine new flake** — the test has no recorded `flaky`/`failure`/`error` over the last 60 days, so your PR introduced it. **Non-empty result → false alarm** — the test has flaked before; the gate just hadn't seen those exact runs in its 20-day baseline.")
+            lines.append("  Each row aggregates runs by day, trigger, source, head branch, and target. `source` is the PR (`PR #N`), merge-queue ref (`queue PR #N`), or branch name; `head_branch` is the PR's source branch (only meaningful for `pull_request`); `target` is the branch the change is heading into. **Sentinel row → genuine new flake** — your PR introduced it. **Real `flaky`/`failure`/`error` rows → false alarm** — the test has flaked before; the gate just hadn't seen those exact runs in its 20-day baseline.")
             lines.append("  </details>")
         lines.append("")
 
