@@ -926,8 +926,8 @@
             -Dfile.encoding=UTF-8 -Xshare:auto
             ${jvm.module.opens}</extraJvmArguments>
           <!-- Custom templates add optional @argfile support via config/jvm.options -->
-          <unixScriptTemplate>src/main/scripts/unixBinTemplate</unixScriptTemplate>
-          <windowsScriptTemplate>src/main/scripts/windowsBinTemplate</windowsScriptTemplate>
+          <unixScriptTemplate>${project.basedir}/src/main/scripts/unixBinTemplate</unixScriptTemplate>
+	  <windowsScriptTemplate>${project.basedir}/src/main/scripts/windowsBinTemplate</windowsScriptTemplate>
           <!-- This will be added to the classpath as /urs/local/camunda/driver-lib/* -->
           <endorsedDir>driver-lib</endorsedDir>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
