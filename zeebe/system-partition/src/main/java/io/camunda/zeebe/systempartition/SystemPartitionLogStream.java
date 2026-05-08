@@ -11,6 +11,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.InstantSource;
 
 /**
  * Helper that builds a {@link LogStream} on top of the system partition's {@link RaftPartition}.
@@ -51,6 +52,7 @@ public final class SystemPartitionLogStream {
         .withLogStorage(logStorage)
         .withLogName("system-" + raftPartition.id().id())
         .withMeterRegistry(meterRegistry)
+        .withClock(InstantSource.system())
         .build();
   }
 }
