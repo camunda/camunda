@@ -68,17 +68,32 @@ Available V2 API endpoints (POST, body is JSON filter object):
 - GET /v2/process-definitions/{key}/xml — returns BPMN XML for a given processDefinitionKey (NUMERIC key, not the id string)
 - POST /v2/process-definitions/{key}/statistics/element-instances — returns per-flow-node counts {elementId, active, incidents, completed, canceled}
 
-PRE-AGGREGATED STATISTICS endpoints — prefer these over manual grouping when available:
-- POST /v2/incidents/statistics/process-instances-by-error    — incidents grouped by errorType (already aggregated; no client-side grouping needed)
-- POST /v2/incidents/statistics/process-instances-by-definition — incidents grouped by processDefinitionId
-- POST /v2/process-definitions/statistics/process-instances    — process instances grouped by definition
-- POST /v2/process-definitions/statistics/process-instances-by-version — process instances grouped by version
+PRE-AGGREGATED STATISTICS endpoints — these have STRICT body shapes and unusual response fields. Prefer the regular search endpoints with client-side grouping (using chartGroupBy on /v2/incidents/search etc.) UNLESS you carefully match these contracts:
 
-These return arrays of {key, count} (or similar) — when used with a chart widget, set chartGroupBy to the appropriate field and the widget will plot the counts directly.
+- POST /v2/incidents/statistics/process-instances-by-error
+    Body: {} (empty — does NOT accept a "filter" field). Sending {filter:...} returns 400.
+    Returns items: [{errorHashCode, errorMessage, activeInstancesWithErrorCount}]
+    For a chart, set: chartGroupBy: "errorMessage", chartValueField: "activeInstancesWithErrorCount"
+    Note: groups by full error MESSAGE (long strings), not by short errorType. For shorter labels prefer /v2/incidents/search with chartGroupBy: "errorType".
 
-DATE FILTERS work across most search endpoints with Mongo-style operators:
+- POST /v2/process-definitions/statistics/process-instances
+    Body: {} (empty).
+    Returns items: [{processDefinitionId, latestProcessDefinitionName, activeInstancesWithoutIncidentCount, activeInstancesWithIncidentCount, ...}]
+    For a chart of healthy instances: chartGroupBy: "latestProcessDefinitionName", chartValueField: "activeInstancesWithoutIncidentCount"
+
+The other statistics endpoints (-by-definition, -by-version) require specific filter shapes that are tricky — for hackday safety, prefer /v2/incidents/search and /v2/process-instances/search with chartGroupBy + page.limit: 1000.
+
+DATE FIELD NAMES — different endpoints use DIFFERENT names. Use the wrong one and the request returns 400 ("Unrecognized field"):
+- /v2/process-instances/search  → "startDate", "endDate"
+- /v2/incidents/search          → "creationTime"
+- /v2/jobs/search               → "deadline" (no creation date)
+- /v2/user-tasks/search         → "creationDate", "completionDate", "dueDate", "followUpDate"
+- /v2/element-instances/search  → "startDate", "endDate"
+
+DATE FILTERS use Mongo-style operators with the field name appropriate to that endpoint:
 - {"startDate": {"$gte": "2026-05-01T00:00:00Z", "$lt": "2026-05-08T00:00:00Z"}}
-- {"creationTime": {"$gte": ..., "$lt": ...}}
+- {"creationTime": {"$gte": ..., "$lt": ...}} (incidents only)
+- {"creationDate": {"$gte": ..., "$lt": ...}} (user-tasks only — NOT "creationTime")
 
 Widget types:
 - "metric" — shows a single number. Set field to a dot-path into the response (default: "page.totalItems"). Set accent to communicate intent: info for activity, success for completion, warning for queues/load, error for failures/incidents.
@@ -108,6 +123,7 @@ Widget types:
 - "activity-feed" — a vertical timeline of recent events. Supports two modes:
   - Single-source (legacy): configure activityTitleField, activitySubtitleField, activityTimeField, activityKindField. Use the incidents or element-instances endpoint.
   - Multi-source (preferred): set activitySources[] instead. Each source has: label (display name), query (its own endpoint/method/body), titleField, subtitleField (optional), timeField, and accent ("info"|"success"|"warning"|"error"|"neutral" for dot color). The widget fires one query per source in parallel, merges all results by timestamp (newest first), and renders a single interleaved timeline with colored dots per source. When the user asks for an activity timeline or "what's happening", prefer the multi-source variant so different event types (incidents, instance starts, etc.) interleave with different-colored dots. Set the root query to {endpoint: "/__notebook_activity_multi__", method: "GET"} as a placeholder when using activitySources.
+  - Size variant: set activityFeedSize to "hero" (full-width 480px, internally scrollable, shows up to 20 rows) when the user wants a "live activity stream", "recent activity", or a prominent hero element on the dashboard. Omit activityFeedSize (defaults to "tall") for a standard 6-col 296px feed. Hero feeds occupy their own full-width row — treat them like HERO-tier widgets in the layout rules.
 - "funnel" — a horizontal bar funnel showing conversion through BPMN process stages. Set processDefinitionKey and funnelStages[] with {label, elementId} for each stage. Stages are ordered top-to-bottom (highest volume first). Use when the user asks about "funnel", "conversion", "drop-off", or "stage volumes".
 
 When to use chart widget:
@@ -357,6 +373,12 @@ const CREATE_WIDGETS_TOOL = {
               type: 'string',
               description:
                 'For activity-feed: field used to derive the dot color (e.g. "state" or "errorType"). Only used in single-source mode.',
+            },
+            activityFeedSize: {
+              type: 'string',
+              enum: ['tall', 'hero'],
+              description:
+                'For activity-feed: "hero" makes the feed full-width (12 cols, 480px, internally scrollable, up to 20 rows). Use when the user wants a prominent live activity stream or recent activity hero element. Defaults to "tall" (6 cols, 296px).',
             },
             activitySources: {
               type: 'array',

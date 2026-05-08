@@ -28,19 +28,28 @@ import {styles} from '@carbon/elements';
 // ---------------------------------------------------------------------------
 const TILE_HEIGHT_SHORT = '132px';
 const TILE_HEIGHT_TALL = '296px';
+const TILE_HEIGHT_HERO = '480px';
 
 /**
- * Two-row grid: scrollable content area (1fr) and a fixed prompt row (auto).
- * The page itself fills the parent (PageContent is height:100%), so the
- * content area scrolls internally while the prompt stays anchored.
+ * Two-column grid: scrollable content area (1fr) on the left and a sticky
+ * 360px prompt rail on the right. The page itself fills the parent
+ * (PageContent is height:100%), so the content area scrolls internally
+ * while the prompt rail stays in view.
  */
 const PageContainer = styled.div`
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-columns: 1fr 520px;
   height: 100%;
   width: 100%;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
+
+  @media (max-width: 1100px) {
+    /* Below 1100px there's no room for both columns. Collapse to a single
+       column with the prompt back at the bottom (the way it was). */
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
 `;
 
 const ContentScroll = styled.div`
@@ -68,6 +77,16 @@ const NotebookTitle = styled.h1`
   margin: 0;
   flex: 1;
   min-width: 0;
+  /* Allow long auto-derived titles ("give me a deep dive dashboard for the
+     payment process") to wrap onto multiple lines instead of being clipped.
+     The !important overrides Carbon's productiveHeading04 mixin which sets
+     a no-wrap text style on h1 by default. */
+  white-space: normal !important;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.25;
 `;
 
 const WidgetsGrid = styled.div`
@@ -76,10 +95,13 @@ const WidgetsGrid = styled.div`
   gap: var(--cds-spacing-05);
   flex: 1;
   align-content: start;
-  /* Dense flow lets later widgets fill earlier holes — keeps the dashboard
-     compact even when widget sizes mix. The visual order can drift slightly
-     from DOM order, which is acceptable for dashboard layouts. */
-  grid-auto-flow: dense;
+  /* Strict row order — DOM order = visual order. We do NOT use grid-auto-flow:
+     dense because it lets later widgets backfill earlier gaps. When the user
+     submits two prompts in a row, dense flow causes widgets from the second
+     prompt's "short" row to fill leftover columns from the first prompt's
+     last row, visually merging the two batches. Presets are sized so they
+     compose without internal gaps — no need for dense. */
+  grid-auto-flow: row;
 `;
 
 /**
@@ -99,24 +121,50 @@ const WidgetsGrid = styled.div`
  * a CSS rule below — so all TALLs in the same row at least floor at 296px,
  * and don't wildly disagree on height.
  */
-const WidgetSlot = styled.div<{$type: string}>`
+const WidgetSlot = styled.div<{
+  $type: string;
+  $chartType?: string;
+  $activityFeedSize?: 'tall' | 'hero';
+}>`
   grid-column: span
-    ${({$type}) =>
+    ${({$type, $chartType, $activityFeedSize}) => {
+      // Activity-feed hero variant spans full width.
+      if ($type === 'activity-feed' && $activityFeedSize === 'hero') {
+        return 12;
+      }
+      // Radar charts need a square-ish aspect ratio to render the polygon
+      // legibly; at 6 cols they get squashed into a thin sliver. Span the
+      // full row so the radar gets ~960px of width.
+      if ($type === 'chart' && $chartType === 'radar') {
+        return 12;
+      }
       // SHORT (3 cols): metric tiles + trend (which is also a metric tile
       // shape with a tiny inline sparkline)
-      $type === 'metric' || $type === 'trend'
-        ? 3
-        : $type === 'table' ||
-            $type === 'bpmn' ||
-            $type === 'text' ||
-            $type === 'status-grid'
-          ? 12
-          : $type === 'chart' ||
-              $type === 'kpi' ||
-              $type === 'activity-feed' ||
-              $type === 'funnel'
-            ? 6
-            : 6};
+      if ($type === 'metric' || $type === 'trend') {
+        return 3;
+      }
+      if (
+        $type === 'table' ||
+        $type === 'bpmn' ||
+        $type === 'text' ||
+        $type === 'status-grid'
+      ) {
+        return 12;
+      }
+      // KPI tiles always span the full width — they're a horizontal row of
+      // numbers and need every column they can get so the labels never clip.
+      if ($type === 'kpi') {
+        return 12;
+      }
+      if (
+        $type === 'chart' ||
+        $type === 'activity-feed' ||
+        $type === 'funnel'
+      ) {
+        return 6;
+      }
+      return 6;
+    }};
   min-width: 0;
 
   @media (max-width: 900px) {
@@ -144,6 +192,27 @@ const WidgetSlot = styled.div<{$type: string}>`
     overflow: hidden;
   }
 
+  /* HERO activity-feed: full-width 480px tile with internal scroll.
+     The ActivityFeed inside handles overflow via overflow-y: auto. */
+  &[data-tier='hero'][data-type='activity-feed'] > div > .cds--tile {
+    min-height: ${TILE_HEIGHT_HERO};
+    max-height: ${TILE_HEIGHT_HERO};
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* HERO chart (currently used for radar): full-width 480px tile so the
+     polygon can render with a near-square aspect ratio. Without this the
+     chart inherits its component-level CHART_HEIGHT (240px) and squashes. */
+  &[data-tier='hero'][data-type='chart'] > div > .cds--tile {
+    min-height: ${TILE_HEIGHT_HERO};
+    max-height: ${TILE_HEIGHT_HERO};
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   /* Cascade fade-in on mount. The animation-delay is set inline per index. */
   animation: notebook-widget-appear 320ms cubic-bezier(0.2, 0.8, 0.2, 1)
     backwards;
@@ -161,44 +230,94 @@ const WidgetSlot = styled.div<{$type: string}>`
 `;
 
 /**
- * Anchored prompt — sits in the bottom row of the page grid so it is always
- * visible regardless of how many widgets exist or how far the content above
- * is scrolled.
+ * Right-side prompt rail. Compact: textarea on top, button below it, then
+ * pills wrap-flowing as content-sized chips. Below 1100px it becomes a
+ * bottom strip (the layout we had before).
  */
-const PromptSection = styled.div`
+const PromptSection = styled.aside`
   display: flex;
   flex-direction: column;
-  gap: var(--cds-spacing-03);
-  padding: var(--cds-spacing-04) var(--cds-spacing-07) var(--cds-spacing-05);
-  background: var(--cds-background);
-  border-top: 1px solid var(--cds-border-subtle);
+  gap: var(--cds-spacing-04);
+  padding: var(--cds-spacing-05);
+  background: var(--cds-layer);
+  border-left: 1px solid var(--cds-border-subtle);
+  /* Sit at the top of the rail, content-sized — don't stretch the section
+     to the full grid row height. */
+  align-self: start;
+
+  @media (max-width: 1100px) {
+    border-left: none;
+    border-top: 1px solid var(--cds-border-subtle);
+    background: var(--cds-background);
+    padding: var(--cds-spacing-04) var(--cds-spacing-07) var(--cds-spacing-05);
+  }
 `;
 
 /**
- * Clickable example prompts shown above the textarea so the user can see
- * what kinds of dashboards they can ask for. Each pill maps to a known
- * preset in presets.ts.
+ * Section header for the rail. Tight — just a small uppercase label so the
+ * eye finds the rail quickly without taking vertical real estate.
+ */
+const PromptSectionTitle = styled.h3`
+  ${styles.label01};
+  text-transform: uppercase;
+  letter-spacing: 0.32px;
+  color: var(--cds-text-secondary);
+  margin: 0;
+
+  @media (max-width: 1100px) {
+    display: none;
+  }
+`;
+
+const PromptSectionHint = styled.p`
+  ${styles.helperText01};
+  color: var(--cds-text-helper);
+  margin: 0 0 var(--cds-spacing-02) 0;
+
+  @media (max-width: 1100px) {
+    display: none;
+  }
+`;
+
+/**
+ * Pill row — content-sized chips that wrap. Same layout in both the rail
+ * and the bottom-strip; only the surrounding flow direction changes.
+ * Pills hover with a subtle lift, no fixed width.
  */
 const PromptSuggestions = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: var(--cds-spacing-02);
   align-items: center;
-  margin-bottom: var(--cds-spacing-02);
+  gap: var(--cds-spacing-02);
+  margin-top: var(--cds-spacing-02);
 
   .cds--tag {
     cursor: pointer;
     transition: transform 120ms ease;
+    margin: 0;
   }
   .cds--tag:hover:not([disabled]) {
     transform: translateY(-1px);
+  }
+
+  @media (max-width: 1100px) {
+    margin-top: 0;
+    .cds--tag {
+      width: auto;
+    }
+    .cds--tag:hover:not([disabled]) {
+      transform: translateY(-1px);
+    }
   }
 `;
 
 const PromptRow = styled.div`
   display: flex;
   gap: var(--cds-spacing-03);
-  align-items: flex-end;
+  align-items: center;
+  justify-content: flex-end;
+  /* Button stays content-sized; if the InlineLoading is also rendered, the
+     loading indicator pushes the button to the right. */
 `;
 
 const WidgetTitle = styled.h4`
@@ -216,6 +335,26 @@ const WidgetSubtitle = styled.p`
   ${styles.helperText01};
   color: var(--cds-text-helper);
   margin: calc(var(--cds-spacing-03) * -1) 0 var(--cds-spacing-04) 0;
+`;
+
+/**
+ * Centering wrapper for circular charts (pie/donut). Carbon Charts renders
+ * its SVG anchored to the left of its container; without this wrapper the
+ * disk sits flush-left while the bottom legend takes the full width.
+ */
+const CircularChartWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+
+  /* Carbon Charts root — let it consume full width so the inner SVG can
+     center itself; the chart layout engine reads container size and lays
+     out disk + legend within. */
+  .cds--cc--chart-wrapper {
+    width: 100%;
+  }
 `;
 
 /**
@@ -550,7 +689,10 @@ const OverlayBadgeGroup = styled.div`
  */
 const KpiGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  /* Single-row layout: all cells share the available width. Using minmax(0, 1fr)
+     means cells shrink instead of forcing the grid to wrap, which would push
+     KPIs below the 296px TALL cap and clip them. */
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: var(--cds-spacing-05);
   margin-top: var(--cds-spacing-04);
 `;
@@ -561,14 +703,16 @@ const KpiGrid = styled.div`
  */
 const KpiCell = styled.div<{$accent?: string}>`
   position: relative;
-  padding: var(--cds-spacing-04) var(--cds-spacing-04) var(--cds-spacing-04)
+  padding: var(--cds-spacing-03) var(--cds-spacing-04) var(--cds-spacing-03)
     calc(var(--cds-spacing-04) + 3px + var(--cds-spacing-03));
   background: var(--cds-layer-accent);
   border-radius: 2px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: var(--cds-spacing-02);
   overflow: hidden;
+  min-width: 0;
 
   &::before {
     content: '';
@@ -675,11 +819,19 @@ const StatusTileSkeleton = styled.div`
 // ActivityFeedWidget — vertical timeline of events
 // ---------------------------------------------------------------------------
 
-const ActivityFeed = styled.div`
+const ActivityFeed = styled.div<{$scrollable?: boolean}>`
   display: flex;
   flex-direction: column;
   margin-top: var(--cds-spacing-04);
   position: relative;
+  ${({$scrollable}) =>
+    $scrollable
+      ? `
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  `
+      : ''}
 `;
 
 const ActivityRow = styled.div`
@@ -779,19 +931,29 @@ const TrendSparklineArea = styled.div`
 const FunnelContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--cds-spacing-03);
-  margin-top: var(--cds-spacing-04);
+  /* Compact gap so 4 stages (bar + inline drop-off) fit within the 296px TALL
+     tile. Target: 4 × ~46px content + 3 × 4px gaps + 56px chrome ≈ 260px. */
+  gap: var(--cds-spacing-02);
+  margin-top: var(--cds-spacing-03);
+  width: 100%;
+  min-width: 0;
 `;
 
 const FunnelRow = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: var(--cds-spacing-02);
+  flex-direction: row;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+  width: 100%;
+  min-width: 0;
 `;
 
 const FunnelBarTrack = styled.div`
   position: relative;
-  height: 32px;
+  /* Reduced from 32px to 28px so 4 stages fit cleanly in the 296px TALL tier
+     without overflow. Label and count remain readable at this height. */
+  height: 28px;
+  flex: 1;
   background: var(--cds-layer-accent);
   border-radius: 2px;
   overflow: hidden;
@@ -831,8 +993,15 @@ const FunnelBarCount = styled.div`
 const FunnelDropoff = styled.div`
   ${styles.label01};
   color: var(--cds-text-helper);
+  /* Inline next to the bar track. Fixed width keeps bars vertically aligned
+     regardless of whether a drop-off is shown. Wide enough for "↓ 100% drop-off"
+     without clipping. */
+  flex-shrink: 0;
+  width: 96px;
   text-align: right;
-  padding-right: var(--cds-spacing-02);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 // ---------------------------------------------------------------------------
@@ -879,11 +1048,14 @@ export {
   WidgetsGrid,
   WidgetSlot,
   PromptSection,
+  PromptSectionTitle,
+  PromptSectionHint,
   PromptRow,
   PromptSuggestions,
   WidgetTitle,
   WidgetSubtitle,
   WidgetDivider,
+  CircularChartWrap,
   WidgetTable,
   EmptyState,
   MetricTile,

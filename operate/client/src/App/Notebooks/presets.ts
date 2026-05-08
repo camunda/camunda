@@ -115,6 +115,61 @@ function activeIncidentsMetric(): WidgetConfig {
   };
 }
 
+/**
+ * Age of the oldest still-active process instance. Renders as "3d 4h" by
+ * pulling the single oldest active instance's startDate and computing
+ * "now − startDate" in the metric widget.
+ */
+function oldestActiveInstanceAgeMetric(): WidgetConfig {
+  return {
+    id: uid('m-oldest-active'),
+    type: 'metric',
+    title: 'Oldest active instance',
+    description:
+      'Age of the longest-running active process instance. Computed as now − startDate of the oldest ACTIVE instance across all processes. A high value means a token has been parked for a long time and is likely stuck.',
+    query: {
+      endpoint: '/v2/process-instances/search',
+      method: 'POST',
+      body: {
+        filter: {state: 'ACTIVE'},
+        sort: [{field: 'startDate', order: 'ASC'}],
+        page: {limit: 1},
+      },
+    },
+    field: 'items.0.startDate',
+    metricFormat: 'age-from',
+    metricSubvalueField: 'items.0.processDefinitionId',
+    accent: 'warning',
+  };
+}
+
+/**
+ * Age of the most recently completed process instance. Useful as a
+ * "throughput pulse" — if it's hours old, nothing is finishing.
+ */
+function lastCompletedInstanceAgeMetric(): WidgetConfig {
+  return {
+    id: uid('m-last-completed'),
+    type: 'metric',
+    title: 'Last completion',
+    description:
+      'How long since the most recent process instance completed. A growing number suggests throughput has stalled.',
+    query: {
+      endpoint: '/v2/process-instances/search',
+      method: 'POST',
+      body: {
+        filter: {state: 'COMPLETED'},
+        sort: [{field: 'endDate', order: 'DESC'}],
+        page: {limit: 1},
+      },
+    },
+    field: 'items.0.endDate',
+    metricFormat: 'age-from',
+    metricSubvalueField: 'items.0.processDefinitionId',
+    accent: 'success',
+  };
+}
+
 function activeJobsMetric(): WidgetConfig {
   return {
     id: uid('m-jobs'),
@@ -596,6 +651,21 @@ function combinedActivityFeed(): WidgetConfig {
   };
 }
 
+/**
+ * Hero-size multi-source activity feed — same content as combinedActivityFeed()
+ * but rendered full-width at 480px with internal scroll (holds 12-20 rows).
+ * Use this as the headline widget when the user asks for a "live activity
+ * stream" or "recent activity" as a prominent hero element.
+ */
+function combinedActivityFeedHero(): WidgetConfig {
+  return {
+    ...combinedActivityFeed(),
+    id: uid('af-hero'),
+    activityFeedSize: 'hero',
+    subtitle: 'instances + incidents · newest first · 20 items · full width',
+  };
+}
+
 // =============================================================================
 // FUNNEL — process stage conversion
 // =============================================================================
@@ -723,6 +793,195 @@ function instancesByProcessStackedArea(): WidgetConfig {
       method: 'POST',
       body: {page: {limit: 1000}},
     },
+  };
+}
+
+// =============================================================================
+// LINE — incidents by error type (rendered as a line)
+// =============================================================================
+
+/**
+ * A real time-series line chart: number of process instances started today,
+ * bucketed per hour. Categorical x-axis labels (00:00 … 23:00) read naturally
+ * as time, so the line shape genuinely conveys throughput-over-time — unlike
+ * a line drawn across unordered categorical values.
+ *
+ * The chart widget bucket-keys client-side by hour-of-day from each item's
+ * `startDate`; chartValueField is unused (count of items per bucket).
+ */
+function completedTodayPerHourLine(): WidgetConfig {
+  const startOfToday = new Date();
+  startOfToday.setUTCHours(0, 0, 0, 0);
+  return {
+    id: uid('c-line-completed'),
+    type: 'chart',
+    title: 'Completions today (per hour)',
+    description:
+      'A line chart of process instances that *finished* today, bucketed by hour. The shape shows when the system is most productive — useful paired with starts-per-hour to see throughput end-to-end.',
+    subtitle: 'today · grouped by hour-of-day · COMPLETED only',
+    chartType: 'line',
+    chartGroupBy: 'endHour',
+    query: {
+      endpoint: '/v2/process-instances/search',
+      method: 'POST',
+      body: {
+        filter: {
+          state: 'COMPLETED',
+          endDate: {$gte: startOfToday.toISOString()},
+        },
+        page: {limit: 1000},
+      },
+    },
+    accent: 'success',
+  };
+}
+
+function instancesStartedTodayLine(): WidgetConfig {
+  // Server-side filter for "today" (UTC). Doing it on the server keeps the
+  // payload small and avoids fetching weeks of data.
+  const startOfToday = new Date();
+  startOfToday.setUTCHours(0, 0, 0, 0);
+  return {
+    id: uid('c-line'),
+    type: 'chart',
+    title: 'Instances started today (per hour)',
+    description:
+      "A line chart of process instances started today, bucketed by hour. The x-axis is hour-of-day, so the line's slope shows when traffic ramps up and tails off — a real throughput-over-time view.",
+    subtitle: 'today · grouped by hour-of-day',
+    chartType: 'line',
+    chartGroupBy: 'startHour',
+    query: {
+      endpoint: '/v2/process-instances/search',
+      method: 'POST',
+      body: {
+        filter: {startDate: {$gte: startOfToday.toISOString()}},
+        page: {limit: 1000},
+      },
+    },
+    accent: 'info',
+  };
+}
+
+// =============================================================================
+// TREEMAP — instances by process (area-proportional)
+// =============================================================================
+
+/**
+ * Treemap of all process instances grouped by lifecycle state. State has
+ * a small fixed cardinality (ACTIVE / COMPLETED / CANCELED / TERMINATED)
+ * with well-distributed counts in any non-trivial cluster, so the treemap
+ * always renders multiple distinguishable rectangles instead of a single
+ * dominant tile.
+ */
+/**
+ * Treemap of active jobs grouped by job `type`. Job types in any non-trivial
+ * cluster span 5–15 distinct values (one per service-task element across
+ * deployed processes), and Carbon Charts assigns a different palette color
+ * to each — so the treemap renders many distinguishable, colorful rectangles
+ * instead of two blue blobs.
+ */
+/**
+ * Treemap of all process instances grouped by their process definition.
+ * Works on any non-trivial cluster (every deployed BPMN gets a rectangle)
+ * and grows naturally with deployment scale — 3 processes give 3 colored
+ * rectangles, a real customer with 30 BPMNs gets a much richer chart.
+ *
+ * Uses ALL instances (not just ACTIVE) so even processes with no active
+ * tokens still appear, and the relative sizing reflects total volume — a
+ * better story than queue depth, which can be near-zero in a healthy
+ * cluster.
+ */
+function instancesByProcessTreemap(): WidgetConfig {
+  return {
+    id: uid('c-treemap'),
+    type: 'chart',
+    title: 'Process volume (treemap)',
+    description:
+      'Each rectangle is one process definition, sized by how many instances it has produced overall. The biggest tile is the workhorse process — most of your runtime traffic flows through it.',
+    subtitle: 'all instances · area = volume · grouped by process',
+    chartType: 'treemap',
+    chartGroupBy: 'processDefinitionId',
+    query: {
+      endpoint: '/v2/process-instances/search',
+      method: 'POST',
+      body: {page: {limit: 1000}},
+    },
+  };
+}
+
+// =============================================================================
+// RADAR — instances per process broken out by state
+// =============================================================================
+
+/**
+ * Radar of active jobs broken down by job type, with one polygon per process.
+ * Lifecycle state has only ~4 distinct values (a degenerate radar shape);
+ * job type spans 5–15 distinct values across deployed BPMNs, giving the
+ * polygon enough axes for the silhouette to actually convey something —
+ * which process is heavy on validation vs. shipping vs. charging, etc.
+ */
+/**
+ * Radar of process instances broken down by job type, with one polygon per
+ * process. We query a much bigger sample (all jobs, any state) so that even
+ * processes whose queues are momentarily empty still have data to plot —
+ * otherwise the radar shows axes but no polygon when only one process has
+ * active jobs.
+ *
+ * Polygon: processDefinitionId (one per BPMN). Axis: job `type` (one per
+ * service-task element across the deployed BPMNs — typically 5–15 axes).
+ */
+/**
+ * Radar of completed element instances grouped by process. Element instances
+ * accumulate over time (every BPMN node execution creates one), so even a
+ * quiet cluster has plenty of data and every deployed process is represented.
+ *
+ * We avoided /v2/jobs/search because the backend's JobEntity transformer
+ * NPEs on jobs whose elementId is null in the index — a server-side bug
+ * triggered by completed jobs in some cluster states.
+ *
+ * Polygon: processDefinitionId (one per BPMN). Axis: `type` (the BPMN element
+ * kind — SERVICE_TASK, USER_TASK, EXCLUSIVE_GATEWAY, …). Typically 4–8
+ * distinct types per BPMN, plenty for a meaningful polygon shape.
+ */
+function elementsByTypeRadar(): WidgetConfig {
+  return {
+    id: uid('c-radar'),
+    type: 'chart',
+    title: 'Element-type profile per process (radar)',
+    description:
+      'Each polygon is one process; each axis is a BPMN element kind (service task, user task, gateway, …). The shape reveals the structural fingerprint of each process — heavily-gatewayed flows look very different from straight pipelines.',
+    subtitle: 'completed element instances · polygons = process · axes = type',
+    chartType: 'radar',
+    chartGroupBy: 'processDefinitionId',
+    chartStackBy: 'type',
+    query: {
+      endpoint: '/v2/element-instances/search',
+      method: 'POST',
+      body: {filter: {state: 'COMPLETED'}, page: {limit: 1000}},
+    },
+  };
+}
+
+// =============================================================================
+// METER — jobs queue saturation
+// =============================================================================
+
+function jobsMeter(): WidgetConfig {
+  return {
+    id: uid('c-meter'),
+    type: 'chart',
+    title: 'Job queue saturation (meter)',
+    description:
+      'Active jobs grouped by type, rendered as a horizontal meter. Each bar shows the relative depth of one worker queue — handy for spotting outliers in saturation.',
+    subtitle: 'active jobs · grouped by type',
+    chartType: 'meter',
+    chartGroupBy: 'type',
+    query: {
+      endpoint: '/v2/jobs/search',
+      method: 'POST',
+      body: {filter: {state: 'CREATED'}, page: {limit: 1000}},
+    },
+    accent: 'warning',
   };
 }
 
@@ -953,14 +1212,16 @@ These widgets focus on failure modes. The **incident chart** breaks down errors 
     ],
   },
   {
-    // Workload / throughput / worker capacity per job type
+    // Worker capacity — drills into job queues per type. About worker pools:
+    // which ones are backlogged, which are idle. Job-centric.
     match: (p) =>
-      /workload|throughput|capacity|worker.*capacity|jobs.*by.*type/i.test(p),
+      /\bcapacity\b|worker.*capacity|jobs.*by.*type|worker.*pool|queue.*depth/i.test(
+        p,
+      ),
     build: () => [
       activeJobsMetric(),
-      activeInstancesMetric(),
-      // Bar chart grouping jobs by type — visualizes which worker pool is
-      // under-loaded vs. backed up. Real V2 query, no client-side fakery.
+      jobsTrendHourly(),
+      // Bar chart grouping jobs by type — which worker pool is backed up.
       {
         id: uid('c-jobs-by-type'),
         type: 'chart',
@@ -977,6 +1238,20 @@ These widgets focus on failure modes. The **incident chart** breaks down errors 
         accent: 'warning',
       },
       jobsTable(),
+    ],
+  },
+  {
+    // Workload / throughput — system-wide load. About instances and the
+    // overall cluster, not per-worker queues. Process-centric.
+    match: (p) => /workload|throughput|how.*busy|how.*loaded/i.test(p),
+    build: () => [
+      activeInstancesMetric(),
+      activeIncidentsMetric(),
+      completedInstancesMetric(),
+      instancesTrendDaily(),
+      instancesByProcessStackedArea(),
+      instancesByProcess(),
+      recentInstancesTable(),
     ],
   },
   {
@@ -1019,10 +1294,32 @@ These widgets focus on failure modes. The **incident chart** breaks down errors 
     ],
   },
   {
-    // Slowest / longest-running instances
+    // Slowest / longest-running instances — top-row KPIs (with creative
+    // age-based metrics), then where-they-live chart + heatmap, then the
+    // longest-running table at the bottom.
     match: (p) =>
       /slow|long.*running|longest|outlier|taking.*forever|stuck.*long/i.test(p),
     build: () => [
+      oldestActiveInstanceAgeMetric(),
+      activeInstancesMetric(),
+      lastCompletedInstanceAgeMetric(),
+      activeIncidentsMetric(),
+      {
+        id: uid('c-active-by-process'),
+        type: 'chart',
+        title: 'Active instances by process',
+        description:
+          'Where the active workload is concentrated. Process definitions with many active instances may be the source of long-running outliers.',
+        chartType: 'bar',
+        chartGroupBy: 'processDefinitionId',
+        query: {
+          endpoint: '/v2/process-instances/search',
+          method: 'POST',
+          body: {filter: {state: 'ACTIVE'}, page: {limit: 1000}},
+        },
+        accent: 'info',
+      },
+      bpmnDiagram(DEMO_PROCESS_KEY, 'active'),
       {
         id: uid('t-slowest'),
         type: 'table',
@@ -1040,22 +1337,6 @@ These widgets focus on failure modes. The **incident chart** breaks down errors 
           },
         },
         columns: ['processInstanceKey', 'processDefinitionId', 'startDate'],
-      },
-      activeInstancesMetric(),
-      {
-        id: uid('c-active-by-process'),
-        type: 'chart',
-        title: 'Active instances by process',
-        description:
-          'Where the active workload is concentrated. Process definitions with many active instances may be the source of long-running outliers.',
-        chartType: 'bar',
-        chartGroupBy: 'processDefinitionId',
-        query: {
-          endpoint: '/v2/process-instances/search',
-          method: 'POST',
-          body: {filter: {state: 'ACTIVE'}, page: {limit: 1000}},
-        },
-        accent: 'info',
       },
     ],
   },
@@ -1078,13 +1359,19 @@ These widgets focus on failure modes. The **incident chart** breaks down errors 
   // -------------------------------------------------------------------------
 
   {
-    // Explicit "list incidents" — always include the table.
+    // Explicit "list incidents" — triage layout: KPIs on top (short row),
+    // breakdown + heatmap in the middle (tall row), full incidents table at
+    // the bottom as the hero of the page.
     match: (p) =>
       /incident/i.test(p) && /\blist\b|\btable\b|\ball\b|\bshow\b/i.test(p),
     build: () => [
-      incidentsTable(),
       activeIncidentsMetric(),
+      incidentsTrendHourly(),
+      activeInstancesMetric(),
+      activeJobsMetric(),
       incidentsByErrorType(),
+      bpmnDiagram(DEMO_PROCESS_KEY, 'incidents'),
+      incidentsTable(),
     ],
   },
   {
@@ -1312,15 +1599,33 @@ These widgets focus on failure modes. The **incident chart** breaks down errors 
     build: () => [statusGridWidget(), incidentsByErrorType()],
   },
   {
-    // Multi-source activity feed / live stream
+    // Multi-source activity feed / live stream — KPI strip on top so the
+    // viewer has live counters while events flow below in the hero feed.
     match: (p) => /live.*activity|activity.*stream|recent activity/i.test(p),
-    build: () => [combinedActivityFeed(), activeIncidentsMetric()],
+    build: () => [
+      activeInstancesMetric(),
+      activeIncidentsMetric(),
+      activeJobsMetric(),
+      completedInstancesMetric(),
+      incidentsTrendHourly(),
+      jobsTrendHourly(),
+      instancesTrendDaily(),
+      processHealthKpi(),
+      combinedActivityFeedHero(),
+    ],
   },
   {
-    // Activity feed / recent events / timeline
+    // Activity feed / recent events / timeline (lighter version)
     match: (p) =>
       /\bactivity\b|recent.*events?|timeline|feed|latest.*incidents?/i.test(p),
-    build: () => [combinedActivityFeed(), activeIncidentsMetric()],
+    build: () => [
+      activeInstancesMetric(),
+      activeIncidentsMetric(),
+      activeJobsMetric(),
+      completedInstancesMetric(),
+      combinedActivityFeed(),
+      incidentsByErrorType(),
+    ],
   },
   {
     // Pie chart — proportional breakdown emphasis
@@ -1361,10 +1666,33 @@ These widgets focus on failure modes. The **incident chart** breaks down errors 
     ],
   },
   {
-    // "where are instances stuck" / "heatmap" → heatmap overlay,
-    // process-aware (detects "order"/"payment"/"shipping" in the prompt).
+    // "where are instances stuck" / "heatmap" → broader stuck-instance triage.
+    // If the prompt names a specific process, show a deep dive on that one;
+    // otherwise show heatmaps for ALL demo processes side-by-side, plus
+    // supporting KPIs and the longest-running instances table.
     match: (p) => /where.*stuck|heatmap/i.test(p),
-    build: (p) => [bpmnDiagram(detectProcessFromPrompt(p), 'heatmap')],
+    build: (p) => {
+      const named = ALL_DEMO_PROCESSES.find((key) =>
+        new RegExp(`\\b${key.split('-')[0]}\\b`, 'i').test(p),
+      );
+      if (named != null) {
+        return [
+          activeIncidentsMetric(),
+          activeInstancesMetric(),
+          activeJobsMetric(),
+          bpmnDiagram(named, 'heatmap'),
+          incidentsByErrorType(),
+          failingInstancesTable(),
+        ];
+      }
+      return [
+        activeIncidentsMetric(),
+        activeInstancesMetric(),
+        activeJobsMetric(),
+        ...ALL_DEMO_PROCESSES.map((key) => bpmnDiagram(key, 'heatmap')),
+        failingInstancesTable(),
+      ];
+    },
   },
   {
     // "show me live diagram" / "live diagram"
@@ -1406,36 +1734,47 @@ These widgets focus on failure modes. The **incident chart** breaks down errors 
       textWidget(
         `## The full notebook tour
 
-Below is **one of every widget type** the notebook can render — each one independent, each one reading live data from your Camunda cluster. Watch them cascade in: metrics, trend sparklines, a KPI tile, charts (donut, pie, stacked-bar, stacked-area), a per-process status grid, a BPMN heatmap, a combined activity stream, a conversion funnel, and a list. Hover any tile and click </> to see exactly what query produced it.`,
+Below is **one of every widget type** the notebook can render — each one independent, each one reading live data from your Camunda cluster. You'll see metrics, trend sparklines, a KPI strip, all 9 chart subtypes (bar, line, donut, pie, stacked-bar, stacked-area, meter, treemap, radar), a per-process status grid, a BPMN heatmap, a combined activity stream, a conversion funnel, and a list. Hover any tile and click </> to see exactly what query produced it.`,
         'Widget showcase',
       ),
-      // Row 2: 4 SHORT tiles (3+3+3+3) — 2 metrics + 2 trends. All 132px.
+      // Row: KPI strip (full width AUTO, ~140px)
+      processHealthKpi(),
+      // Row: 4 SHORT tiles (3+3+3+3) — metrics + trends. All 132px.
       activeInstancesMetric(),
       activeIncidentsMetric(),
       instancesTrendDaily(),
       incidentsTrendHourly(),
-      // Row 3: 4 more SHORT tiles — different metrics
+      // Row: 4 more SHORT tiles — different metrics
       activeJobsMetric(),
       completedInstancesMetric(),
       processDefinitionsMetric(),
       jobsTrendHourly(),
-      // Row 4: KPI (6) + first chart (6) — both TALL 296px
-      processHealthKpi(),
+      // Row: bar + line (6+6) — both TALL
+      incidentsByErrorType(), // bar
+      instancesStartedTodayLine(), // line
+      // Row: donut + pie (6+6) — both TALL
       instancesByState(), // donut
-      // Row 5: pie + stacked-area (6+6) — both TALL
-      instancesByStatePie(),
-      instancesByProcessStackedArea(),
-      // Row 6: stacked-bar + activity feed (6+6) — both TALL
-      instancesByProcessStacked(),
-      combinedActivityFeed(),
-      // Row 7: incidents-by-error chart + funnel (6+6) — both TALL
-      incidentsByErrorType(),
-      funnelWidget(),
-      // Row 8: status grid, full width HERO
+      instancesByStatePie(), // pie
+      // Row: stacked-bar + stacked-area (6+6)
+      instancesByProcessStacked(), // stacked-bar
+      instancesByProcessStackedArea(), // stacked-area
+      // Row: meter + treemap (6+6)
+      jobsMeter(), // meter
+      instancesByProcessTreemap(), // treemap
+      // Row: radar + funnel (6+6)
+      elementsByTypeRadar(), // radar
+      funnelWidget(), // funnel
+      // Row: completed-today line — paired in the row above with the bar.
+      completedTodayPerHourLine(),
+      // Row: hero activity stream (full width HERO)
+      combinedActivityFeedHero(), // activity-feed (hero variant)
+      // Row: status grid, full width HERO
       statusGridWidget(),
-      // Row 9: BPMN heatmap, full width HERO
+      // Row: BPMN heatmap, full width HERO
       bpmnDiagram(DEMO_PROCESS_KEY, 'heatmap'),
-      // Row 10: closing details table, full width AUTO
+      // Row: BPMN combined overlay (different variant), full width HERO
+      bpmnDiagram(DEMO_PROCESS_KEY, 'combined'),
+      // Row: closing details table, full width AUTO
       incidentsTable(),
     ],
   },

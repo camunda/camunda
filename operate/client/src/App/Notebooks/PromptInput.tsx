@@ -57,17 +57,8 @@ const SUGGESTIONS: Array<{label: string; prompt: string}> = [
     label: 'Slowest instances',
     prompt: 'What are the slowest-running process instances?',
   },
-  {
-    label: 'Task workload by assignee',
-    prompt: 'Who has the most user tasks pending right now?',
-  },
   {label: 'Live activity stream', prompt: 'Show me a live activity stream'},
-  {label: 'Recent activity', prompt: 'Show me a recent activity stream'},
   {label: 'Trends over time', prompt: 'Show me trends over time'},
-  {
-    label: 'Error types + recent examples',
-    prompt: 'Show me incidents by error type with recent examples',
-  },
 ];
 
 const PromptInput: React.FC<Props> = ({
@@ -109,8 +100,8 @@ const PromptInput: React.FC<Props> = ({
       </PromptSuggestions>
       <TextArea
         id="notebook-prompt"
-        labelText="Ask a question about your processes"
-        placeholder="Ask about your processes… (e.g. show active process instances)"
+        labelText="Ask anything about your processes"
+        placeholder="e.g. how many incidents in payment-process?"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}

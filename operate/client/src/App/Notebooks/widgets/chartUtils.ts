@@ -116,11 +116,17 @@ function buildTreemapData(
     countMap.set(key, (countMap.get(key) ?? 0) + 1);
   }
 
-  const children = Array.from(countMap.entries())
-    .map(([name, value]) => ({name, value}))
-    .sort((a, b) => b.value - a.value);
-
-  return [{name: groupBy, children}];
+  // Return ONE ROOT PER GROUP. Carbon Charts colors children of the same
+  // root with shades of a single color — so a single root wrapping all
+  // children produced one-color treemaps. Wrapping each leaf in its own
+  // root makes Carbon treat each as a distinct color group, picking up the
+  // per-name color scale we pass in.
+  return Array.from(countMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, value]) => ({
+      name,
+      children: [{name, value}],
+    }));
 }
 
 // ---------------------------------------------------------------------------
@@ -142,6 +148,14 @@ type RadarDataPoint = {
  * For hackday simplicity this reuses the `chartStackBy` concept: the axes
  * are the distinct values of `keyBy` across all items.
  */
+/**
+ * Cap on the number of distinct groups (legend entries / radar polygons).
+ * More than this and the legend dominates the tile, pushing the radar
+ * polygon off-screen. Top groups by total value are kept; the rest are
+ * dropped.
+ */
+const RADAR_MAX_GROUPS = 5;
+
 function buildRadarData(
   items: Record<string, unknown>[],
   groupBy: string,
@@ -169,9 +183,23 @@ function buildRadarData(
     inner.set(key, (inner.get(key) ?? 0) + 1);
   }
 
+  // Keep only the top-N groups by total count. Anything beyond that is
+  // dropped so the legend stays readable and the radar polygon has room.
+  const groupTotals = Array.from(acc.entries())
+    .map(([group, inner]) => {
+      let total = 0;
+      for (const v of inner.values()) {
+        total += v;
+      }
+      return [group, total] as const;
+    })
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, RADAR_MAX_GROUPS)
+    .map(([group]) => group);
+
   const result: RadarDataPoint[] = [];
-  for (const [group, inner] of acc.entries()) {
-    // Ensure every group has an entry for every key (zero if absent)
+  for (const group of groupTotals) {
+    const inner = acc.get(group)!;
     for (const key of allKeys) {
       result.push({group, key, value: inner.get(key) ?? 0});
     }

@@ -27,13 +27,16 @@ import {
 
 type Props = {
   config: WidgetConfig;
+  /** When true the feed uses internal scroll (hero variant). */
+  isHero?: boolean;
 };
 
 type ApiResponse = {
   items: Record<string, unknown>[];
 };
 
-const MAX_ITEMS = 12;
+const MAX_ITEMS_TALL = 12;
+const MAX_ITEMS_HERO = 20;
 
 /**
  * Returns a human-readable relative time string ("2 minutes ago", "1 hour ago").
@@ -106,12 +109,14 @@ type MultiSourceFeedProps = {
   title: string;
   subtitle?: string;
   sources: ActivitySource[];
+  isHero?: boolean;
 };
 
 const MultiSourceFeed: React.FC<MultiSourceFeedProps> = ({
   title,
   subtitle,
   sources,
+  isHero = false,
 }) => {
   const results = useQueries({
     queries: sources.map((source) => ({
@@ -190,10 +195,10 @@ const MultiSourceFeed: React.FC<MultiSourceFeedProps> = ({
     }
   });
 
+  const maxItems = isHero ? MAX_ITEMS_HERO : MAX_ITEMS_TALL;
+
   // Sort newest-first, take top N
-  const sorted = entries
-    .sort((a, b) => b.timeMs - a.timeMs)
-    .slice(0, MAX_ITEMS);
+  const sorted = entries.sort((a, b) => b.timeMs - a.timeMs).slice(0, maxItems);
 
   if (sorted.length === 0) {
     return (
@@ -216,7 +221,7 @@ const MultiSourceFeed: React.FC<MultiSourceFeedProps> = ({
     <Tile>
       <WidgetTitle>{title}</WidgetTitle>
       {subtitle && <WidgetSubtitle>{subtitle}</WidgetSubtitle>}
-      <ActivityFeed data-testid="activity-feed">
+      <ActivityFeed $scrollable={isHero} data-testid="activity-feed">
         {sorted.map((entry, i) => (
           <ActivityRow key={i}>
             <ActivityDot $color={entry.dotColor} />
@@ -246,9 +251,13 @@ const MultiSourceFeed: React.FC<MultiSourceFeedProps> = ({
 
 type SingleSourceFeedProps = {
   config: WidgetConfig;
+  isHero?: boolean;
 };
 
-const SingleSourceFeed: React.FC<SingleSourceFeedProps> = ({config}) => {
+const SingleSourceFeed: React.FC<SingleSourceFeedProps> = ({
+  config,
+  isHero = false,
+}) => {
   const {
     title,
     subtitle,
@@ -317,7 +326,7 @@ const SingleSourceFeed: React.FC<SingleSourceFeedProps> = ({config}) => {
       const db = tb != null ? new Date(tb as string).getTime() : 0;
       return db - da;
     })
-    .slice(0, MAX_ITEMS);
+    .slice(0, isHero ? MAX_ITEMS_HERO : MAX_ITEMS_TALL);
 
   if (sorted.length === 0) {
     return (
@@ -335,7 +344,7 @@ const SingleSourceFeed: React.FC<SingleSourceFeedProps> = ({config}) => {
     <Tile>
       <WidgetTitle>{title}</WidgetTitle>
       {subtitle && <WidgetSubtitle>{subtitle}</WidgetSubtitle>}
-      <ActivityFeed data-testid="activity-feed">
+      <ActivityFeed $scrollable={isHero} data-testid="activity-feed">
         {sorted.map((item, i) => {
           const titleVal = item[activityTitleField];
           const subtitleVal = item[activitySubtitleField];
@@ -370,8 +379,9 @@ const SingleSourceFeed: React.FC<SingleSourceFeedProps> = ({config}) => {
 // Public component — routes to multi-source or single-source
 // ---------------------------------------------------------------------------
 
-const ActivityFeedWidget: React.FC<Props> = ({config}) => {
-  const {activitySources, title, subtitle} = config;
+const ActivityFeedWidget: React.FC<Props> = ({config, isHero}) => {
+  const {activitySources, title, subtitle, activityFeedSize} = config;
+  const heroMode = isHero ?? activityFeedSize === 'hero';
 
   if (activitySources != null && activitySources.length > 0) {
     return (
@@ -379,11 +389,12 @@ const ActivityFeedWidget: React.FC<Props> = ({config}) => {
         title={title}
         subtitle={subtitle}
         sources={activitySources}
+        isHero={heroMode}
       />
     );
   }
 
-  return <SingleSourceFeed config={config} />;
+  return <SingleSourceFeed config={config} isHero={heroMode} />;
 };
 
 export {ActivityFeedWidget};

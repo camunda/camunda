@@ -77,6 +77,19 @@ const WidgetConfigSchema = z.object({
   columns: z.array(z.string()).optional(),
   // metric-specific accent color (semantic stripe on the left edge):
   accent: AccentSchema.optional(),
+  /**
+   * How to render the metric value.
+   * - 'count' (default): format as localized integer
+   * - 'age-from': interpret the field value as a date string and render
+   *   "3d 4h" / "12m" relative to now. Useful for "oldest instance" tiles.
+   * - 'duration-ms': interpret the field value as a millisecond duration.
+   * - 'percent': format the field value as a percentage (0–1 → 0–100%).
+   */
+  metricFormat: z
+    .enum(['count', 'age-from', 'duration-ms', 'percent'])
+    .optional(),
+  /** Optional caption rendered below the value (e.g. "since 2026-04-30"). */
+  metricSubvalueField: z.string().optional(),
   // trend-specific fields (only when type === 'trend'):
   trendDateField: z.string().optional(),
   trendBuckets: z.number().optional(),
@@ -119,6 +132,9 @@ const WidgetConfigSchema = z.object({
   activityKindField: z.string().optional(),
   // Multi-source activity feed: when set, overrides the single-source fields above.
   activitySources: z.array(ActivitySourceSchema).optional(),
+  // Size variant: 'hero' spans the full 12-col row and is internally scrollable
+  // (fits 12-20 rows). Defaults to 'tall' (6 cols, 296px, overflow-hidden).
+  activityFeedSize: z.enum(['tall', 'hero']).optional(),
   // funnel-specific fields:
   funnelStages: z.array(FunnelStageSchema).optional(),
 });

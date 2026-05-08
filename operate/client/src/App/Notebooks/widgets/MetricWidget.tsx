@@ -34,8 +34,55 @@ function getByPath(obj: unknown, path: string): unknown {
     );
 }
 
+function formatAgeFrom(value: unknown): string {
+  if (value == null) {
+    return '—';
+  }
+  const t = new Date(value as string).getTime();
+  if (isNaN(t)) {
+    return '—';
+  }
+  const ms = Math.max(0, Date.now() - t);
+  return formatDurationMs(ms);
+}
+
+function formatDurationMs(ms: number): string {
+  if (!isFinite(ms) || ms < 0) {
+    return '—';
+  }
+  const sec = Math.floor(ms / 1000);
+  const min = Math.floor(sec / 60);
+  const hr = Math.floor(min / 60);
+  const day = Math.floor(hr / 24);
+  if (day > 0) {
+    return `${day}d ${hr % 24}h`;
+  }
+  if (hr > 0) {
+    return `${hr}h ${min % 60}m`;
+  }
+  if (min > 0) {
+    return `${min}m`;
+  }
+  return `${sec}s`;
+}
+
+function formatPercent(value: unknown): string {
+  if (typeof value !== 'number' || !isFinite(value)) {
+    return '—';
+  }
+  const pct = value <= 1 ? value * 100 : value;
+  return `${pct.toFixed(pct >= 10 ? 0 : 1)}%`;
+}
+
 const MetricWidget: React.FC<Props> = ({config}) => {
-  const {title, query, field = 'page.totalItems', accent = 'info'} = config;
+  const {
+    title,
+    query,
+    field = 'page.totalItems',
+    accent = 'info',
+    metricFormat = 'count',
+    metricSubvalueField,
+  } = config;
 
   const {data, status} = useQuery({
     queryKey: ['notebook-widget', config.id, query],
@@ -76,15 +123,35 @@ const MetricWidget: React.FC<Props> = ({config}) => {
   }
 
   const rawValue = getByPath(data, field);
-  const numericValue =
-    typeof rawValue === 'number'
-      ? rawValue.toLocaleString()
-      : String(rawValue ?? '—');
+  let displayValue: string;
+  switch (metricFormat) {
+    case 'age-from':
+      displayValue = formatAgeFrom(rawValue);
+      break;
+    case 'duration-ms':
+      displayValue =
+        typeof rawValue === 'number' ? formatDurationMs(rawValue) : '—';
+      break;
+    case 'percent':
+      displayValue = formatPercent(rawValue);
+      break;
+    default:
+      displayValue =
+        typeof rawValue === 'number'
+          ? rawValue.toLocaleString()
+          : String(rawValue ?? '—');
+  }
+
+  const subvalueRaw =
+    metricSubvalueField != null ? getByPath(data, metricSubvalueField) : null;
+  const subvalue =
+    subvalueRaw != null && subvalueRaw !== '' ? String(subvalueRaw) : null;
 
   return (
     <MetricTile $accent={accent}>
       <MetricCaption>{title}</MetricCaption>
-      <MetricValue>{numericValue}</MetricValue>
+      <MetricValue>{displayValue}</MetricValue>
+      {subvalue != null && <MetricSubvalue>{subvalue}</MetricSubvalue>}
     </MetricTile>
   );
 };

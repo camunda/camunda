@@ -157,12 +157,17 @@ function donutOptions(groupBy: string, height: string, total?: number) {
     height,
     resizable: true,
     donut: {
+      // Carbon Charts anchors the disk to the left of the SVG by default;
+      // explicit 'center' alignment positions it in the middle of the tile.
+      alignment: 'center' as const,
       center:
         total != null
           ? {number: total, label: toTitleCase(groupBy)}
           : {label: toTitleCase(groupBy)},
     },
-    legend: {position: 'right' as const},
+    // 'bottom' uses tile width better and avoids the legend being clipped
+    // against the right edge when group labels are long.
+    legend: {position: 'bottom' as const},
     color: {scale: SEMANTIC_COLOR_SCALE, pairing: {option: 2}},
   };
 }

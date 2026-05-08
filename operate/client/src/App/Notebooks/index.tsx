@@ -25,22 +25,33 @@ import {
 import type {Notebook, WidgetConfig} from './types';
 
 /**
- * Map widget type to its height tier. Used by `<WidgetSlot data-tier=…>`
+ * Map widget config to its height tier. Used by `<WidgetSlot data-tier=…>`
  * to opt TALL widgets into a shared 296px min-height so they line up in
- * the same row.
+ * the same row. Activity-feed with activityFeedSize==='hero' upgrades to
+ * the HERO tier (full-width, 480px, internally scrollable).
  */
-function widgetTier(
-  type: WidgetConfig['type'],
-): 'short' | 'tall' | 'hero' | 'auto' {
-  switch (type) {
+function widgetTier(widget: WidgetConfig): 'short' | 'tall' | 'hero' | 'auto' {
+  if (widget.type === 'activity-feed' && widget.activityFeedSize === 'hero') {
+    return 'hero';
+  }
+  // Radar charts span the full row; pair that with HERO height so the polygon
+  // can render with a near-square aspect ratio. At TALL (296px) the radar
+  // gets squashed into a thin horizontal strip.
+  if (widget.type === 'chart' && widget.chartType === 'radar') {
+    return 'hero';
+  }
+  switch (widget.type) {
     case 'metric':
     case 'trend':
       return 'short';
-    case 'kpi':
     case 'chart':
     case 'funnel':
     case 'activity-feed':
       return 'tall';
+    case 'kpi':
+      // KPI spans the full row but only needs enough height for one strip of
+      // numbers. Auto tier lets the tile size to content, ~140px in practice.
+      return 'auto';
     case 'bpmn':
     case 'status-grid':
       return 'hero';
@@ -112,7 +123,14 @@ const NotebookPage: React.FC = () => {
           prev.widgets.length === 0 && prev.title === 'Untitled notebook';
         const updated: Notebook = {
           ...prev,
-          title: isFirstPrompt ? trimmedPrompt.slice(0, 50) : prev.title,
+          title: isFirstPrompt
+            ? // Cap the auto-derived title at 120 chars so longer prompts
+              // ("give me a deep dive dashboard for the payment process")
+              // aren't clipped mid-word.
+              trimmedPrompt.length > 120
+              ? `${trimmedPrompt.slice(0, 117).trimEnd()}…`
+              : trimmedPrompt
+            : prev.title,
           widgets: [...prev.widgets, ...newWidgets],
           updatedAt: Date.now(),
         };
@@ -192,7 +210,16 @@ const NotebookPage: React.FC = () => {
             <WidgetSlot
               key={widget.id}
               $type={widget.type}
-              data-tier={widgetTier(widget.type)}
+              $chartType={
+                widget.type === 'chart' ? widget.chartType : undefined
+              }
+              $activityFeedSize={
+                widget.type === 'activity-feed'
+                  ? (widget.activityFeedSize ?? 'tall')
+                  : undefined
+              }
+              data-tier={widgetTier(widget)}
+              data-type={widget.type}
               style={{animationDelay: `${index * 90}ms`}}
             >
               <WidgetRenderer
