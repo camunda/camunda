@@ -454,6 +454,17 @@ const WidgetTable = styled.table`
   td {
     color: var(--cds-text-primary);
   }
+
+  /* Linkable cell values (instance keys → Operate's instance page).
+     Carbon's link blue with subtle hover underline. */
+  td a {
+    color: var(--cds-link-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 `;
 
 const EmptyState = styled.p`

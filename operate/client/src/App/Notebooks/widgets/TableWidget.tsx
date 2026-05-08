@@ -12,6 +12,7 @@ import {DataTableSkeleton, Tile} from '@carbon/react';
 import {requestWithThrow} from 'modules/request';
 import type {WidgetConfig} from '../types';
 import {WidgetTitle, WidgetSubtitle, WidgetTable, EmptyState} from '../styled';
+import {columnLabel, renderCellValue} from './tableCells';
 
 type Props = {
   config: WidgetConfig;
@@ -90,7 +91,7 @@ const TableWidget: React.FC<Props> = ({config}) => {
         <thead>
           <tr>
             {columns.map((col) => (
-              <th key={col}>{col}</th>
+              <th key={col}>{columnLabel(col)}</th>
             ))}
           </tr>
         </thead>
@@ -98,7 +99,7 @@ const TableWidget: React.FC<Props> = ({config}) => {
           {visibleItems.map((item, rowIndex) => (
             <tr key={String(item['id'] ?? rowIndex)}>
               {columns.map((col) => (
-                <td key={col}>{String(item[col] ?? '')}</td>
+                <td key={col}>{renderCellValue(col, item[col], item)}</td>
               ))}
             </tr>
           ))}
