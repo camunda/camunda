@@ -36,10 +36,11 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.process.test.api.coverage.CoverageDataSource;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class CamundaDataSource {
+public class CamundaDataSource implements CoverageDataSource {
 
   private static final Consumer<AnyPage> DEFAULT_PAGE_REQUEST = page -> page.limit(100);
 

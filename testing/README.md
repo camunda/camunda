@@ -5,7 +5,7 @@ Camunda's testing libraries for processes and process applications.
 - [Camunda Process Test for Java](camunda-process-test-java)
 - [Camunda Process Test for Spring](camunda-process-test-spring)
 - [Camunda Process Test Starter for Langchain4j](camunda-process-test-langchain4j)
-- [Frontend for Process Test Coverage](camunda-process-test-coverage-frontend)
+- [Camunda Process Test Coverage](camunda-process-test-coverage)
 - [Example project](camunda-process-test-example) for demos and documentation snippets.
 
 Read more about the libraries and how to get started in our

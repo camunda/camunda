@@ -346,7 +346,7 @@
         "npm"
       ],
       "matchFileNames": [
-        "testing/camunda-process-test-coverage-frontend/package.json"
+        "testing/camunda-process-test-coverage/package.json"
       ],
       "matchPackageNames": [
         "/bpmn-js/"
@@ -536,7 +536,7 @@
         "npm"
       ],
       "matchFileNames": [
-        "testing/camunda-process-test-coverage-frontend/**"
+        "testing/camunda-process-test-coverage/**"
       ],
       "matchUpdateTypes": [
         "patch"

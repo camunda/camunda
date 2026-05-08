@@ -216,7 +216,7 @@ docker pull camunda/connectors-bundle:SNAPSHOT
 ### The process test coverage HTML report is empty/broken
 
 The HTML report requires generated code
-from [camunda-process-test-coverage-frontend](camunda-process-test-coverage-frontend). Maven
+from [camunda-process-test-coverage](camunda-process-test-coverage). Maven
 generates the code during the `generate-sources` phase, unless you disabled it via the profile
 `skipFrontendBuild` or the property `skip.fe.build`.
 

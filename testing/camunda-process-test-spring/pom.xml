@@ -26,6 +26,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-test-coverage</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-process-test-json-test-cases</artifactId>
     </dependency>
 
