@@ -42,6 +42,7 @@ dependencies {
     testImplementation(project(":zeebe-test-util"))
     testImplementation(project(":zeebe-protocol-jackson"))
     testImplementation(libs.org.agrona.agrona)
+    testImplementation(libs.org.jeasy.easy.random.core)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.wiremock.wiremock.standalone)
     testImplementation(project(":zeebe-protocol-impl"))
