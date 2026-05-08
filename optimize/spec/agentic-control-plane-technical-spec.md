@@ -40,6 +40,17 @@
 
 **Scope**: Read-only analytics. No write-back to Zeebe.
 
+**Non-goals (phase 1)**:
+
+- Reasoning tokens (phase 2 via Zeebe schema change)
+- Per-tool call breakdown / distribution (phase 2 when Zeebe provides per-tool data)
+- Status badges (Healthy / Degraded / Failing)
+- Agent details panel / click-through from Agents tab
+- FAILED agent status enum
+- Settings page / threshold configuration
+- Write-back or incident resolution
+- Real-time / live data
+
 **Key decisions from Q&A** (source of truth):
 
 | Decision | Details |
@@ -466,7 +477,7 @@ All endpoints under `/api/agentic-control-plane/`.
 | A5 | `GET /duration-stats` | L0/L1/L2 | Duration P50/P95 KPIs + stability trend |
 | A6 | `GET /incident-rate` | L0/L1/L2 | Incident rate |
 | A7 | `GET /agents` | L2 | Paginated agent instance list |
-| A8 | `GET /token-outlier-bands` | L0/L1/L2 | Token p0/p50/p95 bands over time |
+| A8 | `GET /token-outlier-bands` | L0/L1/L2 | Token p5/p50/p95 bands over time |
 | A9 | `GET /tokens-per-agent-call` | L1/L2 | Avg tokens per model call, per agent element |
 | A10 | `GET /failure-rate-by-version` | L1/L2 | Incident rate broken down by process version |
 
@@ -613,6 +624,14 @@ Use `ElasticsearchCompositeAggregationScroller.consumeAllPages()` with `setPathT
     "avgDuration":      { "avg":         { "field": "duration" } },
     "totalInputTokens": { "sum":         { "field": "agentTotalInputTokens" } },
     "totalOutputTokens":{ "sum":         { "field": "agentTotalOutputTokens" } },
+    "medianTokens": {
+      "percentiles": {
+        "script": {
+          "source": "(doc['agentTotalInputTokens'].size() > 0 ? doc['agentTotalInputTokens'].value : 0) + (doc['agentTotalOutputTokens'].size() > 0 ? doc['agentTotalOutputTokens'].value : 0)"
+        },
+        "percents": [50]
+      }
+    },
     "agent_stats": {
       "nested": { "path": "agentInstances" },
       "aggs": {
@@ -657,6 +676,14 @@ Use `ElasticsearchCompositeAggregationScroller.consumeAllPages()` with `setPathT
             "avgDuration":    { "avg": { "field": "agentInstances.durationInMs" } },
             "totalInput":     { "sum": { "field": "agentInstances.metrics.inputTokens" } },
             "totalOutput":    { "sum": { "field": "agentInstances.metrics.outputTokens" } },
+            "medianTokens": {
+              "percentiles": {
+                "script": {
+                  "source": "(doc['agentInstances.metrics.inputTokens'].size() > 0 ? doc['agentInstances.metrics.inputTokens'].value : 0) + (doc['agentInstances.metrics.outputTokens'].size() > 0 ? doc['agentInstances.metrics.outputTokens'].value : 0)"
+                },
+                "percents": [50]
+              }
+            },
             "totalToolCalls": { "sum": { "field": "agentInstances.metrics.toolCalls" } }
           }
         }
@@ -686,6 +713,7 @@ Use `ElasticsearchCompositeAggregationScroller.consumeAllPages()` with `setPathT
   "durationScope": "process",
   "totalInputTokens": 240000,
   "totalOutputTokens": 185000,
+  "medianTokens": 2180,
   "totalToolCalls": 8820,
   "incidentCount": 34
 }
@@ -1198,7 +1226,7 @@ Use `setPathToAggregation("agent_scope", "for_element", "by_instance")`.
 
 ### 4.9 A8 — Token Outlier Bands
 
-**Purpose**: p0/p50/p95 of total tokens (`inputTokens + outputTokens`) per time bucket. Shows token consumption distribution over time.
+**Purpose**: p5/p50/p95 of total tokens (`inputTokens + outputTokens`) per time bucket. Shows token consumption distribution over time.
 
 Uses `agentTotalInputTokens + agentTotalOutputTokens` at parent level (L0/L1). At L2, uses nested `metrics.inputTokens + metrics.outputTokens` for the selected agent.
 
@@ -1224,7 +1252,7 @@ Uses `agentTotalInputTokens + agentTotalOutputTokens` at parent level (L0/L1). A
             "script": {
               "source": "(doc['agentTotalInputTokens'].size() > 0 ? doc['agentTotalInputTokens'].value : 0) + (doc['agentTotalOutputTokens'].size() > 0 ? doc['agentTotalOutputTokens'].value : 0)"
             },
-            "percents": [0, 50, 95]
+            "percents": [5, 50, 95]
           }
         }
       }
@@ -1270,7 +1298,7 @@ Uses `agentTotalInputTokens + agentTotalOutputTokens` at parent level (L0/L1). A
                     "script": {
                       "source": "(doc['agentInstances.metrics.inputTokens'].size() > 0 ? doc['agentInstances.metrics.inputTokens'].value : 0) + (doc['agentInstances.metrics.outputTokens'].size() > 0 ? doc['agentInstances.metrics.outputTokens'].value : 0)"
                     },
-                    "percents": [0, 50, 95]
+                    "percents": [5, 50, 95]
                   }
                 }
               }
@@ -1288,7 +1316,7 @@ Uses `agentTotalInputTokens + agentTotalOutputTokens` at parent level (L0/L1). A
 ```json
 {
   "bands": [
-    { "date": "2025-01-01", "p0": 120, "p50": 1700, "p95": 4200 }
+    { "date": "2025-01-01", "p5": 180, "p50": 1700, "p95": 4200 }
   ]
 }
 ```
