@@ -36,7 +36,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.MutableInteger;
 
 public final class DbElementInstanceState implements MutableElementInstanceState {
 
@@ -65,6 +64,19 @@ public final class DbElementInstanceState implements MutableElementInstanceState
    */
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbString>, DbInt>
       numberOfTakenSequenceFlowsColumnFamily;
+
+  /** [flow scope key] => [tracked taken sequence flow keys in the scope] */
+  private final ColumnFamily<DbLong, PersistedTakenSequenceFlowKeys>
+      takenSequenceFlowKeysByScopeKeyColumnFamily;
+
+  /** [flow scope key | gateway element id] => [number of taken sequence flows for the gateway] */
+  private final DbLong takenSequenceFlowCountFlowScopeKey = new DbLong();
+
+  private final DbString takenSequenceFlowCountGatewayElementId = new DbString();
+  private final DbCompositeKey<DbLong, DbString> takenSequenceFlowCountByGatewayKey;
+  private final DbInt takenSequenceFlowCountByGateway = new DbInt();
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbInt>
+      takenSequenceFlowCountByGatewayColumnFamily;
 
   private final MutableVariableState variableState;
   private final DbLong processDefinitionKey;
@@ -140,6 +152,21 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             numberOfTakenSequenceFlowsKey,
             numberOfTakenSequenceFlows);
+    takenSequenceFlowKeysByScopeKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.TAKEN_SEQUENCE_FLOW_KEYS_BY_SCOPE_KEY,
+            transactionContext,
+            flowScopeKey,
+            new PersistedTakenSequenceFlowKeys());
+    takenSequenceFlowCountByGatewayKey =
+        new DbCompositeKey<>(
+            takenSequenceFlowCountFlowScopeKey, takenSequenceFlowCountGatewayElementId);
+    takenSequenceFlowCountByGatewayColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.TAKEN_SEQUENCE_FLOW_COUNT_BY_GATEWAY,
+            transactionContext,
+            takenSequenceFlowCountByGatewayKey,
+            takenSequenceFlowCountByGateway);
 
     processDefinitionKey = new DbLong();
     processInstanceKeyByProcessDefinitionKey =
@@ -302,6 +329,11 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     numberOfTakenSequenceFlowsColumnFamily.upsert(
         numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
+
+    if (number == null) {
+      addTrackedTakenSequenceFlowKey(flowScopeKey, gatewayElementId, sequenceFlowElementId);
+      incrementTakenSequenceFlowCountByGateway(flowScopeKey, gatewayElementId);
+    }
   }
 
   @Override
@@ -309,6 +341,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       final long flowScopeKey, final DirectBuffer gatewayElementId) {
     this.flowScopeKey.wrapLong(flowScopeKey);
     this.gatewayElementId.wrapBuffer(gatewayElementId);
+
+    final var trackedTakenSequenceFlowKeys = getTrackedTakenSequenceFlowKeys(flowScopeKey);
 
     numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
         flowScopeKeyAndElementId,
@@ -319,8 +353,14 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             numberOfTakenSequenceFlowsColumnFamily.update(key, numberOfTakenSequenceFlows);
           } else {
             numberOfTakenSequenceFlowsColumnFamily.deleteExisting(key);
+            trackedTakenSequenceFlowKeys.removeTakenSequenceFlowKey(
+                key.first().second().getBuffer(), key.second().getBuffer());
+            decrementTakenSequenceFlowCountByGateway(
+                flowScopeKey, key.first().second().getBuffer());
           }
         });
+
+    persistTrackedTakenSequenceFlowKeys(flowScopeKey, trackedTakenSequenceFlowKeys);
   }
 
   @Override
@@ -341,6 +381,12 @@ public final class DbElementInstanceState implements MutableElementInstanceState
           numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
     } else {
       numberOfTakenSequenceFlowsColumnFamily.deleteExisting(numberOfTakenSequenceFlowsKey);
+
+      final var trackedTakenSequenceFlowKeys = getTrackedTakenSequenceFlowKeys(flowScopeKey);
+      trackedTakenSequenceFlowKeys.removeTakenSequenceFlowKey(
+          gatewayElementId, sequenceFlowElementId);
+      decrementTakenSequenceFlowCountByGateway(flowScopeKey, gatewayElementId);
+      persistTrackedTakenSequenceFlowKeys(flowScopeKey, trackedTakenSequenceFlowKeys);
     }
   }
 
@@ -520,24 +566,18 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   @Override
   public int getNumberOfTakenSequenceFlows(
       final long flowScopeKey, final DirectBuffer gatewayElementId) {
-    this.flowScopeKey.wrapLong(flowScopeKey);
-    this.gatewayElementId.wrapBuffer(gatewayElementId);
+    takenSequenceFlowCountFlowScopeKey.wrapLong(flowScopeKey);
+    takenSequenceFlowCountGatewayElementId.wrapBuffer(gatewayElementId);
 
-    return (int) numberOfTakenSequenceFlowsColumnFamily.countEqualPrefix(flowScopeKeyAndElementId);
+    final var count =
+        takenSequenceFlowCountByGatewayColumnFamily.get(takenSequenceFlowCountByGatewayKey);
+    return count != null ? count.getValue() : 0;
   }
 
   @Override
   public int getNumberOfTakenSequenceFlows(final long flowScopeKey) {
-    this.flowScopeKey.wrapLong(flowScopeKey);
-
-    final var count = new MutableInteger(0);
-    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        this.flowScopeKey,
-        key -> {
-          count.increment();
-        });
-
-    return count.get();
+    final var trackedTakenSequenceFlowKeys = getTrackedTakenSequenceFlowKeys(flowScopeKey);
+    return trackedTakenSequenceFlowKeys != null ? trackedTakenSequenceFlowKeys.getCount() : 0;
   }
 
   @Override
@@ -651,10 +691,94 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
+    final var trackedTakenSequenceFlowKeys = getTrackedTakenSequenceFlowKeys(flowScopeKey);
+    if (trackedTakenSequenceFlowKeys == null) {
+      return;
+    }
+
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    for (final var takenSequenceFlowKey : trackedTakenSequenceFlowKeys.getTakenSequenceFlowKeys()) {
+      gatewayElementId.wrapBuffer(takenSequenceFlowKey.getGatewayElementId());
+      sequenceFlowElementId.wrapBuffer(takenSequenceFlowKey.getSequenceFlowElementId());
+      numberOfTakenSequenceFlowsColumnFamily.deleteIfExists(numberOfTakenSequenceFlowsKey);
+
+      takenSequenceFlowCountFlowScopeKey.wrapLong(flowScopeKey);
+      takenSequenceFlowCountGatewayElementId.wrapBuffer(takenSequenceFlowKey.getGatewayElementId());
+      takenSequenceFlowCountByGatewayColumnFamily.deleteIfExists(
+          takenSequenceFlowCountByGatewayKey);
+    }
+
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    takenSequenceFlowKeysByScopeKeyColumnFamily.deleteIfExists(this.flowScopeKey);
+  }
+
+  private PersistedTakenSequenceFlowKeys getTrackedTakenSequenceFlowKeys(final long flowScopeKey) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    return takenSequenceFlowKeysByScopeKeyColumnFamily.get(this.flowScopeKey);
+  }
+
+  private PersistedTakenSequenceFlowKeys getOrCreateTrackedTakenSequenceFlowKeys(
+      final long flowScopeKey) {
+    final var trackedTakenSequenceFlowKeys = getTrackedTakenSequenceFlowKeys(flowScopeKey);
+    return trackedTakenSequenceFlowKeys != null
+        ? trackedTakenSequenceFlowKeys
+        : new PersistedTakenSequenceFlowKeys();
+  }
+
+  private void addTrackedTakenSequenceFlowKey(
+      final long flowScopeKey,
+      final DirectBuffer gatewayElementId,
+      final DirectBuffer sequenceFlowElementId) {
+    final var trackedTakenSequenceFlowKeys = getOrCreateTrackedTakenSequenceFlowKeys(flowScopeKey);
+    if (trackedTakenSequenceFlowKeys.contains(gatewayElementId, sequenceFlowElementId)) {
+      return;
+    }
+
+    trackedTakenSequenceFlowKeys.addTakenSequenceFlowKey(gatewayElementId, sequenceFlowElementId);
+    persistTrackedTakenSequenceFlowKeys(flowScopeKey, trackedTakenSequenceFlowKeys);
+  }
+
+  private void persistTrackedTakenSequenceFlowKeys(
+      final long flowScopeKey, final PersistedTakenSequenceFlowKeys trackedTakenSequenceFlowKeys) {
     this.flowScopeKey.wrapLong(flowScopeKey);
 
-    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        this.flowScopeKey, numberOfTakenSequenceFlowsColumnFamily::deleteExisting);
+    if (trackedTakenSequenceFlowKeys.isEmpty()) {
+      takenSequenceFlowKeysByScopeKeyColumnFamily.deleteIfExists(this.flowScopeKey);
+      return;
+    }
+
+    takenSequenceFlowKeysByScopeKeyColumnFamily.upsert(
+        this.flowScopeKey, trackedTakenSequenceFlowKeys);
+  }
+
+  private void incrementTakenSequenceFlowCountByGateway(
+      final long flowScopeKey, final DirectBuffer gatewayElementId) {
+    takenSequenceFlowCountFlowScopeKey.wrapLong(flowScopeKey);
+    takenSequenceFlowCountGatewayElementId.wrapBuffer(gatewayElementId);
+
+    final var count =
+        takenSequenceFlowCountByGatewayColumnFamily.get(takenSequenceFlowCountByGatewayKey);
+    takenSequenceFlowCountByGateway.wrapInt(count != null ? count.getValue() + 1 : 1);
+    takenSequenceFlowCountByGatewayColumnFamily.upsert(
+        takenSequenceFlowCountByGatewayKey, takenSequenceFlowCountByGateway);
+  }
+
+  private void decrementTakenSequenceFlowCountByGateway(
+      final long flowScopeKey, final DirectBuffer gatewayElementId) {
+    takenSequenceFlowCountFlowScopeKey.wrapLong(flowScopeKey);
+    takenSequenceFlowCountGatewayElementId.wrapBuffer(gatewayElementId);
+
+    final var count =
+        takenSequenceFlowCountByGatewayColumnFamily.get(takenSequenceFlowCountByGatewayKey);
+    final var newValue = count.getValue() - 1;
+    if (newValue > 0) {
+      takenSequenceFlowCountByGateway.wrapInt(newValue);
+      takenSequenceFlowCountByGatewayColumnFamily.update(
+          takenSequenceFlowCountByGatewayKey, takenSequenceFlowCountByGateway);
+    } else {
+      takenSequenceFlowCountByGatewayColumnFamily.deleteExisting(
+          takenSequenceFlowCountByGatewayKey);
+    }
   }
 
   private static class KeyWithTenantId<T extends DbKey> extends DbCompositeKey<T, DbString> {

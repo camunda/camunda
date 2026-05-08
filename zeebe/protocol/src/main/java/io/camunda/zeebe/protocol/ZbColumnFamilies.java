@@ -282,7 +282,13 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   VARIABLE_NAMES_BY_SCOPE_KEY(143, PARTITION_LOCAL),
 
   // event trigger scope index
-  EVENT_TRIGGER_KEYS_BY_SCOPE_KEY(144, PARTITION_LOCAL);
+  EVENT_TRIGGER_KEYS_BY_SCOPE_KEY(144, PARTITION_LOCAL),
+
+  // taken sequence flow scope index
+  TAKEN_SEQUENCE_FLOW_KEYS_BY_SCOPE_KEY(145, PARTITION_LOCAL),
+
+  // taken sequence flow gateway count
+  TAKEN_SEQUENCE_FLOW_COUNT_BY_GATEWAY(146, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
