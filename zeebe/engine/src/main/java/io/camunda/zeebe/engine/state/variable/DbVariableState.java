@@ -48,6 +48,8 @@ public class DbVariableState implements MutableVariableState {
   // (scope key, variable name) => (variable value)
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, VariableInstance>
       variablesColumnFamily;
+  // (scope key) => (tracked variable names)
+  private final ColumnFamily<DbLong, PersistedVariableNames> variableNamesByScopeKeyColumnFamily;
   private final DbCompositeKey<DbLong, DbString> scopeKeyVariableNameKey;
   private final DbLong scopeKey;
   private final DbString variableName;
@@ -86,6 +88,12 @@ public class DbVariableState implements MutableVariableState {
             transactionContext,
             scopeKeyVariableNameKey,
             new VariableInstance());
+    variableNamesByScopeKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.VARIABLE_NAMES_BY_SCOPE_KEY,
+            transactionContext,
+            scopeKey,
+            new PersistedVariableNames());
 
     variableDocumentStateByScopeKeyColumnFamily =
         zeebeDb.createColumnFamily(
@@ -127,6 +135,7 @@ public class DbVariableState implements MutableVariableState {
     variableName.wrapBuffer(variableNameView);
 
     variablesColumnFamily.upsert(scopeKeyVariableNameKey, newVariable);
+    upsertTrackedVariableName(scopeKey, variableNameView);
   }
 
   @Override
@@ -150,11 +159,34 @@ public class DbVariableState implements MutableVariableState {
 
   @Override
   public void removeAllVariables(final long scopeKey) {
-    visitVariablesLocal(
-        scopeKey,
-        dbString -> true,
-        (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
-        () -> false);
+    this.scopeKey.wrapLong(scopeKey);
+
+    final var trackedVariableNames =
+        variableNamesByScopeKeyColumnFamily.get(this.scopeKey, PersistedVariableNames::new);
+
+    if (trackedVariableNames == null) {
+      return;
+    }
+
+    for (final DirectBuffer trackedVariableName : trackedVariableNames.getVariableNames()) {
+      variableName.wrapBuffer(trackedVariableName);
+      variablesColumnFamily.deleteIfExists(scopeKeyVariableNameKey);
+    }
+
+    variableNamesByScopeKeyColumnFamily.deleteExisting(this.scopeKey);
+  }
+
+  @Override
+  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
+    scopeKey.wrapLong(record.getScopeKey());
+    variableDocumentStateToWrite.setKey(key).setRecord(record);
+    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
+  }
+
+  @Override
+  public void removeVariableDocumentState(final long scopeKey) {
+    this.scopeKey.wrapLong(scopeKey);
+    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
   }
 
   @Override
@@ -292,7 +324,9 @@ public class DbVariableState implements MutableVariableState {
 
   @Override
   public boolean isEmpty() {
-    return variablesColumnFamily.isEmpty() && childParentColumnFamily.isEmpty();
+    return variablesColumnFamily.isEmpty()
+        && variableNamesByScopeKeyColumnFamily.isEmpty()
+        && childParentColumnFamily.isEmpty();
   }
 
   @Override
@@ -326,19 +360,6 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
-    scopeKey.wrapLong(record.getScopeKey());
-    variableDocumentStateToWrite.setKey(key).setRecord(record);
-    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
-  }
-
-  @Override
-  public void removeVariableDocumentState(final long scopeKey) {
-    this.scopeKey.wrapLong(scopeKey);
-    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
-  }
-
-  @Override
   public Optional<VariableDocumentState> findVariableDocumentState(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
     return Optional.ofNullable(variableDocumentStateByScopeKeyColumnFamily.get(this.scopeKey));
@@ -351,6 +372,17 @@ public class DbVariableState implements MutableVariableState {
     variableName.wrapBuffer(variableNameView);
 
     return variablesColumnFamily.get(scopeKeyVariableNameKey);
+  }
+
+  private void upsertTrackedVariableName(final long scopeKey, final DirectBuffer name) {
+    this.scopeKey.wrapLong(scopeKey);
+
+    final var trackedVariableNames =
+        Optional.ofNullable(variableNamesByScopeKeyColumnFamily.get(this.scopeKey))
+            .orElseGet(PersistedVariableNames::new);
+
+    trackedVariableNames.addVariableName(name);
+    variableNamesByScopeKeyColumnFamily.upsert(this.scopeKey, trackedVariableNames);
   }
 
   /**
