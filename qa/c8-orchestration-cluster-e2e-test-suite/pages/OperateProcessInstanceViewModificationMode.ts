@@ -560,13 +560,11 @@ export class OperateProcessInstanceViewModificationModePage {
     // The value field is an InlineJsonEditor (Monaco). Click the readonly
     // placeholder to trigger editing mode, then wait for Monaco to lazy-load
     // before typing. Tab exits Monaco (tabFocusMode: true) and triggers onBlur
-    // → createModification().
+    // → createModification(). Check role="code" visibility (not the textarea —
+    // Monaco keeps the textarea hidden in Firefox).
     const valueContainer = this.getNewVariableValueFieldSelector(variableIndex);
     await valueContainer.getByTestId('new-variable-value-readonly').click();
-    const monacoTextbox = valueContainer
-      .getByRole('code')
-      .getByRole('textbox', {name: 'Editor content'});
-    await expect(monacoTextbox).toBeVisible();
+    await expect(valueContainer.getByRole('code')).toBeVisible();
     await this.page.keyboard.insertText(value);
     await this.page.keyboard.press('Tab');
   }
@@ -615,8 +613,7 @@ export class OperateProcessInstanceViewModificationModePage {
     const jsonEditorModal =
       this.newVariableByIndex(variableIndex).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeEnabled();
+    await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
     await this.page.keyboard.press('Tab');
@@ -633,8 +630,9 @@ export class OperateProcessInstanceViewModificationModePage {
     const jsonEditorModal =
       this.editableExistingVariableByName(variableName).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeVisible();
-    await expect(jsonEditorModal.inputField).toBeEnabled();
+    // Monaco keeps the textarea hidden — check role="code" container visibility
+    // instead, which is safe across Chromium/Firefox/Edge.
+    await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
     await jsonEditorModal.inputField.evaluate((el: HTMLElement) => el.focus());
     await this.clearMonacoEditor();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
