@@ -1350,7 +1350,7 @@ public final class SearchQueryResponseMapper {
         .variableName(entity.variableName())
         .processInstanceKey(keyToString(entity.processInstanceKey()))
         .scopeKey(keyToString(entity.scopeKey()))
-        .processDefinitionKey(keyToString(entity.processDefinitionKey()))
+        .processDefinitionKey(keyToStringOrNull(entity.processDefinitionKey()))
         .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId())
         .documentId(entity.documentId())

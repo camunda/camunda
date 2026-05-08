@@ -766,6 +766,7 @@ public class SearchQuerySortRequestMapper {
     } else {
       switch (field) {
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case SCOPE_KEY -> builder.scopeKey();
         case VARIABLE_KEY -> builder.variableKey();
         case DOCUMENT_ID -> builder.documentId();
         case FILE_NAME -> builder.fileName();

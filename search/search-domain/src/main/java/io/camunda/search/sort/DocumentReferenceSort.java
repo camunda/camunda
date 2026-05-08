@@ -31,6 +31,11 @@ public final record DocumentReferenceSort(List<FieldSorting> orderings) implemen
       return this;
     }
 
+    public Builder scopeKey() {
+      currentOrdering = new FieldSorting("scopeKey", null);
+      return this;
+    }
+
     public Builder variableKey() {
       currentOrdering = new FieldSorting("variableKey", null);
       return this;

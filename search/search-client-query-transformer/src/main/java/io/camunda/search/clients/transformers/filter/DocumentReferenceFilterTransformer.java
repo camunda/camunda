@@ -15,6 +15,7 @@ import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex.DOCUMENT_ID;
 import static io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex.SCOPE_KEY;
 import static io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex.VARIABLE_KEY;
 import static java.util.Optional.ofNullable;
 
@@ -35,6 +36,7 @@ public class DocumentReferenceFilterTransformer
   public SearchQuery toSearchQuery(final DocumentReferenceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     queries.addAll(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()));
+    queries.addAll(longOperations(SCOPE_KEY, filter.scopeKeyOperations()));
     queries.addAll(longOperations(VARIABLE_KEY, filter.variableKeyOperations()));
     queries.addAll(stringOperations(DOCUMENT_ID, filter.documentIdOperations()));
     ofNullable(stringTerms(TENANT_ID, filter.tenantIds())).ifPresent(queries::add);
