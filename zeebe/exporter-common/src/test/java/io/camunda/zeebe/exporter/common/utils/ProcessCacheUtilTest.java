@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
@@ -58,7 +59,8 @@ public class ProcessCacheUtilTest {
     final var bpmnXml = Bpmn.convertToString(model);
     // when
     final var callActivities =
-        ProcessCacheUtil.extractProcessDiagramData(bpmnXml, processId).callActivityIds();
+        ProcessCacheUtil.extractProcessDiagramData(bpmnXml, processId, new ToolsConfiguration())
+            .callActivityIds();
     // then
     assertThat(callActivities).containsExactly("A_Activity", "C_Activity", "D_Activity");
   }
@@ -73,6 +75,38 @@ public class ProcessCacheUtilTest {
     final var ids = ProcessCacheUtil.sortedCallActivityIds(callActivities);
     // then
     assertThat(ids).containsExactly("A_Activity", "C_Activity", "D_Activity");
+  }
+
+  @Test
+  void shouldOnlyRetainKnownToolPropertiesInProcessCache() {
+    // given — a service task with both tool-related and unrelated zeebe:properties
+    final String processId = "mixedPropsProcess";
+    final var config = new ToolsConfiguration();
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task1")
+            .zeebeJobType("worker")
+            .zeebeProperty(config.getExtensionPropertyToolName(), "myTool")
+            .zeebeProperty("io.camunda.tool:description", "toolDesc")
+            .zeebeProperty(config.getExtensionPropertyInboundConnectorType(), "connector")
+            .zeebeProperty("unrelated.property", "shouldBeFiltered")
+            .zeebeProperty("another.unrelated", "alsoFiltered")
+            .endEvent()
+            .done();
+
+    // when
+    final var diagramData =
+        ProcessCacheUtil.extractProcessDiagramData(Bpmn.convertToString(model), processId, config);
+    final var task1Props = diagramData.elementExtensionProperties().get("task1");
+
+    // then — only tool-related keys are retained
+    assertThat(task1Props)
+        .containsKey(config.getExtensionPropertyToolName())
+        .containsKey("io.camunda.tool:description")
+        .containsKey(config.getExtensionPropertyInboundConnectorType())
+        .doesNotContainKey("unrelated.property")
+        .doesNotContainKey("another.unrelated");
   }
 
   private BpmnModelInstance buildModel(final String processId, final List<String> callActivities) {

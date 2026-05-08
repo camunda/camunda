@@ -10,6 +10,7 @@ package io.camunda.exporter.cache.process;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -21,11 +22,15 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
 
   private final OpenSearchClient client;
   private final String processIndexName;
+  private final ToolsConfiguration toolsConfiguration;
 
   public OpenSearchProcessCacheLoader(
-      final OpenSearchClient client, final String processIndexName) {
+      final OpenSearchClient client,
+      final String processIndexName,
+      final ToolsConfiguration toolsConfiguration) {
     this.client = client;
     this.processIndexName = processIndexName;
+    this.toolsConfiguration = toolsConfiguration;
   }
 
   @Override
@@ -38,7 +43,7 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
       final var processEntity = response.source();
       final var processDiagramData =
           ProcessCacheUtil.extractProcessDiagramData(
-              processEntity.getBpmnXml(), processEntity.getBpmnProcessId());
+              processEntity.getBpmnXml(), processEntity.getBpmnProcessId(), toolsConfiguration);
       return new CachedProcessEntity(
           processEntity.getName(),
           processEntity.getVersion(),

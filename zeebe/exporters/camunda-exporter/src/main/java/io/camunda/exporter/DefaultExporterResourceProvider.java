@@ -190,7 +190,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         new ExporterEntityCacheImpl<>(
             configuration.getProcessCache().getMaxCacheSize(),
             entityCacheProvider.getProcessCacheLoader(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
+                configuration.getTools()),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry));
 
     decisionRequirementsCache =
@@ -280,7 +281,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionEvaluationHandler(
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), processCache),
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
+                processCache,
+                configuration.getTools()),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),

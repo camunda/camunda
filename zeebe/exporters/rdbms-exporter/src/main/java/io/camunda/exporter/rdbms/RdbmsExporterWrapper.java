@@ -184,7 +184,9 @@ public class RdbmsExporterWrapper implements Exporter {
       builder.withHandler(
           ValueType.PROCESS,
           new ProcessExportHandler(
-              rdbmsWriters.getProcessDefinitionWriter(), cacheRegistry.processCache()));
+              rdbmsWriters.getProcessDefinitionWriter(),
+              cacheRegistry.processCache(),
+              config.getTools()));
       builder.withHandler(
           ValueType.MAPPING_RULE,
           new MappingRuleExportHandler(rdbmsWriters.getMappingRuleWriter()));

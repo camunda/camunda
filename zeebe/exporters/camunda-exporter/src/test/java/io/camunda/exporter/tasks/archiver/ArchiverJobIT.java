@@ -11,6 +11,7 @@ import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas
 import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -242,7 +243,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
 
   private ExporterResourceProvider exporterResourceProvider(final ExporterConfiguration config) {
     final var cacheProvider = mock(ExporterEntityCacheProvider.class);
-    when(cacheProvider.getProcessCacheLoader(anyString())).thenReturn(k -> null);
+    when(cacheProvider.getProcessCacheLoader(anyString(), any())).thenReturn(k -> null);
     when(cacheProvider.getBatchOperationCacheLoader(anyString())).thenReturn(k -> null);
     when(cacheProvider.getDecisionRequirementsCacheLoader(anyString())).thenReturn(k -> null);
     when(cacheProvider.getFormCacheLoader(anyString())).thenReturn(k -> null);

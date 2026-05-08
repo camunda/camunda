@@ -290,7 +290,8 @@ public class ProcessModelReaderTest {
     final var reader = ProcessModelReader.of(bpmnBytes, processId);
     assertThat(reader).isPresent();
     final var allProps =
-        ProcessModelReader.extractExtensionProperties(reader.get().extractFlowNodes());
+        ProcessModelReader.extractExtensionProperties(
+            reader.get().extractFlowNodes(), name -> true);
 
     // then — StartEvent_1 has publicAccess=true
     assertThat(allProps).containsKey("StartEvent_1");
@@ -310,7 +311,8 @@ public class ProcessModelReaderTest {
     final var reader = ProcessModelReader.of(bpmnBytes, processId);
     assertThat(reader).isPresent();
     final var allProps =
-        ProcessModelReader.extractExtensionProperties(reader.get().extractFlowNodes());
+        ProcessModelReader.extractExtensionProperties(
+            reader.get().extractFlowNodes(), name -> true);
 
     // then
     assertThat(allProps).isEmpty();
@@ -327,7 +329,8 @@ public class ProcessModelReaderTest {
     final var reader = ProcessModelReader.of(bpmnBytes, processId);
     assertThat(reader).isPresent();
     final var allProps =
-        ProcessModelReader.extractExtensionProperties(reader.get().extractFlowNodes());
+        ProcessModelReader.extractExtensionProperties(
+            reader.get().extractFlowNodes(), name -> true);
 
     // then — only the valid publicAccess property should be present
     assertThat(allProps).containsKey("StartEvent_1");

@@ -11,6 +11,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.ProcessDiagramData;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
@@ -91,12 +92,16 @@ public final class ProcessCacheUtil {
    * Returns relevant data from process diagram
    *
    * @param processDefinitionEntity
+   * @param toolsConfiguration configured tool extension property names
    * @return ProcessDiagramData
    */
   public static ProcessDiagramData extractProcessDiagramData(
-      final ProcessDefinitionEntity processDefinitionEntity) {
+      final ProcessDefinitionEntity processDefinitionEntity,
+      final ToolsConfiguration toolsConfiguration) {
     return extractProcessDiagramData(
-        processDefinitionEntity.bpmnXml(), processDefinitionEntity.processDefinitionId());
+        processDefinitionEntity.bpmnXml(),
+        processDefinitionEntity.processDefinitionId(),
+        toolsConfiguration);
   }
 
   /**
@@ -104,10 +109,13 @@ public final class ProcessCacheUtil {
    *
    * @param bpmnXml
    * @param bpmnProcessId
+   * @param toolsConfiguration configured tool extension property names
    * @return ProcessDiagramData
    */
   public static ProcessDiagramData extractProcessDiagramData(
-      final String bpmnXml, final String bpmnProcessId) {
+      final String bpmnXml,
+      final String bpmnProcessId,
+      final ToolsConfiguration toolsConfiguration) {
 
     final ProcessModelReader reader =
         ProcessModelReader.of(bpmnXml.getBytes(StandardCharsets.UTF_8), bpmnProcessId).orElse(null);
@@ -118,7 +126,8 @@ public final class ProcessCacheUtil {
       final Map<String, String> flowNodesMap = getFlowNodesMap(flowNodes);
       final boolean hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
       final Map<String, Map<String, String>> elementExtensionProperties =
-          ProcessModelReader.extractExtensionProperties(flowNodes);
+          ProcessModelReader.extractExtensionProperties(
+              flowNodes, toolsConfiguration.extensionPropertyFilter());
       return new ProcessDiagramData(
           callActivityIds, flowNodesMap, hasUserTasks, elementExtensionProperties);
     }

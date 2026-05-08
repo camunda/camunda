@@ -268,7 +268,7 @@ final class CamundaExporterIT {
     final Record record =
         generateRecordWithSupportedBrokerVersion(valueType, VariableIntent.CREATED);
     final var cacheProvider = mock(ExporterEntityCacheProvider.class);
-    when(cacheProvider.getProcessCacheLoader(anyString())).thenReturn(k -> null);
+    when(cacheProvider.getProcessCacheLoader(anyString(), any())).thenReturn(k -> null);
     when(cacheProvider.getBatchOperationCacheLoader(anyString())).thenReturn(k -> null);
     when(cacheProvider.getDecisionRequirementsCacheLoader(anyString())).thenReturn(k -> null);
     when(cacheProvider.getFormCacheLoader(anyString())).thenReturn(k -> null);

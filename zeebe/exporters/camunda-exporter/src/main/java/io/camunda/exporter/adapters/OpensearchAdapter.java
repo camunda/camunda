@@ -25,6 +25,7 @@ import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
@@ -78,8 +79,8 @@ class OpensearchAdapter implements ClientAdapter {
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-        final String processIndexName) {
-      return new OpenSearchProcessCacheLoader(client, processIndexName);
+        final String processIndexName, final ToolsConfiguration toolsConfiguration) {
+      return new OpenSearchProcessCacheLoader(client, processIndexName, toolsConfiguration);
     }
 
     @Override

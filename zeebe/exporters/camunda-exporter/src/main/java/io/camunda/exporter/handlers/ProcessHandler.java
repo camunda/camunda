@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.protocol.record.Record;
@@ -30,11 +31,15 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final ToolsConfiguration toolsConfiguration;
 
   public ProcessHandler(
-      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final String indexName,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final ToolsConfiguration toolsConfiguration) {
     this.indexName = indexName;
     this.processCache = processCache;
+    this.toolsConfiguration = toolsConfiguration;
   }
 
   @Override
@@ -92,7 +97,9 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
       final var flowNodes = reader.extractFlowNodes();
       extractProcessModelData(reader, entity, flowNodes);
       hasUserTasks = ProcessModelReader.hasUserTasks(flowNodes);
-      elementExtensionProperties = ProcessModelReader.extractExtensionProperties(flowNodes);
+      elementExtensionProperties =
+          ProcessModelReader.extractExtensionProperties(
+              flowNodes, toolsConfiguration.extensionPropertyFilter());
     } else {
       hasUserTasks = true;
       elementExtensionProperties = Map.of();

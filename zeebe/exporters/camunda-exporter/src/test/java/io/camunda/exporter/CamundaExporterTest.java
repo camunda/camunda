@@ -137,7 +137,8 @@ final class CamundaExporterTest {
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-        final String processIndexName) {
+        final String processIndexName,
+        final io.camunda.zeebe.exporter.common.tools.ToolsConfiguration toolsConfiguration) {
       return k -> null;
     }
 

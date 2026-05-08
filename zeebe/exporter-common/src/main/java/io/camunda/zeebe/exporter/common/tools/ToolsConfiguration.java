@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter.common.tools;
 
+import java.util.function.Predicate;
+
 /** Exporter-side configuration for which BPMN extension properties map to tool attributes. */
 public class ToolsConfiguration {
 
@@ -44,5 +46,12 @@ public class ToolsConfiguration {
   public void setExtensionPropertyPrefixToolProperties(
       final String extensionPropertyPrefixToolProperties) {
     this.extensionPropertyPrefixToolProperties = extensionPropertyPrefixToolProperties;
+  }
+
+  public Predicate<String> extensionPropertyFilter() {
+    return name ->
+        name.equals(extensionPropertyToolName)
+            || name.equals(extensionPropertyInboundConnectorType)
+            || name.startsWith(extensionPropertyPrefixToolProperties);
   }
 }
