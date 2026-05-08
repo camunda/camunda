@@ -355,15 +355,41 @@ public final class CallActivityIncidentTest {
         .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
   }
 
-  // Regression test for https://github.com/camunda/camunda/issues/50014:
-  // when an incident is raised in the called process AFTER it has progressed past its
-  // first activity, the resulting INCIDENT.CREATED record must still expose the full
-  // call-hierarchy in elementInstancePath / callingElementPath / processDefinitionPath.
-  // Exporters rely on these fields to propagate `hasIncident` to the call activity FNI
-  // and to the parent PI; a truncated path leaves the call activity green in Operate.
+  // Regression test for https://github.com/camunda/camunda/issues/50014. Two bug shapes are
+  // exercised together:
+  //   1) Wrapped call activity: the parent embeds the call activity inside a subprocess so the
+  //      parent PI sublist of elementInstancePath has THREE entries
+  //      [parentPi, wrapperFni, callActivityFni]. The exporter bug was reading index 1 of the
+  //      sublist, which silently picked the wrapping subprocess FNI instead of the call activity
+  //      FNI; with a flat parent (2 entries) get(1) and getLast() are equivalent and the bug
+  //      cannot surface.
+  //   2) Late incident in child: the child process completes one task before failing the second,
+  //      so the incident is raised after the child has progressed past its first activity.
   @Test
   public void shouldExposeFullCallHierarchyOnIncidentInChildProcessAfterFirstActivity() {
-    // given a child process with two service tasks: the first completes, the second fails
+    // given a parent process where the call activity sits inside an embedded subprocess
+    final var wrappedParentProcessId = Strings.newRandomValidBpmnId();
+    final var wrapperSubprocessId = "wrapper-subprocess";
+    final var wrappedCallActivityId = "call";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent-wrapped.bpmn",
+            Bpmn.createExecutableProcess(wrappedParentProcessId)
+                .startEvent()
+                .subProcess(
+                    wrapperSubprocessId,
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .callActivity(
+                                wrappedCallActivityId, c -> c.zeebeProcessId(childProcessId))
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    // and a child process with two service tasks: the first completes, the second fails
     final var firstJobType = "first-" + Strings.newRandomValidBpmnId();
     final var failingJobType = "failing-" + Strings.newRandomValidBpmnId();
     final var childProcess =
@@ -376,7 +402,14 @@ public final class CallActivityIncidentTest {
     ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcess).deploy();
 
     final long parentProcessInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+        ENGINE.processInstance().ofBpmnProcessId(wrappedParentProcessId).create();
+
+    final long wrapperSubprocessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(parentProcessInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst()
+            .getKey();
 
     final long callActivityInstanceKey = getCallActivityInstance(parentProcessInstanceKey).getKey();
 
@@ -412,14 +445,18 @@ public final class CallActivityIncidentTest {
     assertThat(value.getElementInstanceKey()).isEqualTo(failingElementInstanceKey);
     assertThat(value.getElementId()).isEqualTo("failing");
 
-    // elementInstancePath must contain BOTH levels of the call hierarchy. If the second
-    // entry is dropped, exporters lose the call-activity FNI key and the badge is missed.
+    // The parent PI sublist must include the wrapping subprocess FNI between the PI root and
+    // the call activity FNI; the exporter reads the LAST entry of each sublist as the call
+    // activity FNI, so dropping the wrapping subprocess (or putting the call activity at the
+    // wrong index) would break badge propagation in Operate.
     assertThat(value.getElementInstancePath())
         .as(
-            "elementInstancePath must include parent and child PI levels even when the child "
-                + "advanced past its first activity")
+            "elementInstancePath: parent PI sublist must be "
+                + "[parentPi, wrapperSubprocessFni, callActivityFni], child sublist must be "
+                + "[childPi, failingFni]")
         .containsExactly(
-            List.of(parentProcessInstanceKey, callActivityInstanceKey),
+            List.of(
+                parentProcessInstanceKey, wrapperSubprocessInstanceKey, callActivityInstanceKey),
             List.of(childProcessInstanceKey, failingElementInstanceKey));
     assertThat(value.getCallingElementPath()).hasSize(1);
     assertThat(value.getProcessDefinitionPath()).hasSize(2);
