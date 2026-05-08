@@ -11,12 +11,12 @@ import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.mutable.MutableClusterConfigurationState;
 import io.camunda.zeebe.protocol.impl.record.value.clusterconfiguration.ClusterConfigurationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.systempartition.state.ClusterConfigurationState;
 
 /**
  * Processor for {@link ClusterConfigurationIntent#STAMP_CHANGE_PLAN} commands.
@@ -33,13 +33,15 @@ public final class ClusterConfigurationStampProcessor
 
   private static final String MODIFICATION_STARTER_PROCESS_ID = "modification_starter";
 
-  private final ClusterConfigurationState state;
+  private final MutableClusterConfigurationState state;
   private final Writers writers;
   private final KeyGenerator keys;
   private final ProtoBufSerializer serializer = new ProtoBufSerializer();
 
   public ClusterConfigurationStampProcessor(
-      final ClusterConfigurationState state, final Writers writers, final KeyGenerator keys) {
+      final MutableClusterConfigurationState state,
+      final Writers writers,
+      final KeyGenerator keys) {
     this.state = state;
     this.writers = writers;
     this.keys = keys;

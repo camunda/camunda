@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.authorization.DbMembershipState;
 import io.camunda.zeebe.engine.state.authorization.DbRoleState;
 import io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState;
 import io.camunda.zeebe.engine.state.clock.DbClockState;
+import io.camunda.zeebe.engine.state.clusterconfiguration.DbClusterConfigurationState;
 import io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableState;
 import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.conditional.DbConditionalSubscriptionState;
@@ -56,6 +57,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.engine.state.mutable.MutableClockState;
+import io.camunda.zeebe.engine.state.mutable.MutableClusterConfigurationState;
 import io.camunda.zeebe.engine.state.mutable.MutableClusterVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableConditionalSubscriptionState;
@@ -112,6 +114,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
   private final MutableClusterVariableState clusterVariableState;
+  private final MutableClusterConfigurationState clusterConfigurationState;
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
   private final MutableMessageState messageState;
@@ -164,6 +167,7 @@ public class ProcessingDbState implements MutableProcessingState {
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
+    clusterConfigurationState = new DbClusterConfigurationState(zeebeDb, transactionContext);
     processState =
         new DbProcessState(zeebeDb, transactionContext, config, clock, expressionLanguageMetrics);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
@@ -282,6 +286,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableClusterVariableState getClusterVariableState() {
     return clusterVariableState;
+  }
+
+  @Override
+  public MutableClusterConfigurationState getClusterConfigurationState() {
+    return clusterConfigurationState;
   }
 
   @Override

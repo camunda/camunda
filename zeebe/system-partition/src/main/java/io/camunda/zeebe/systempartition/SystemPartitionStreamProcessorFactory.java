@@ -25,7 +25,6 @@ import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.systempartition.processors.BackupControlPlaneProcessors;
 import io.camunda.zeebe.systempartition.processors.ClusterConfigurationProcessors;
 import io.camunda.zeebe.systempartition.state.BackupMetadataState;
-import io.camunda.zeebe.systempartition.state.ClusterConfigurationState;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 
@@ -82,11 +81,7 @@ public final class SystemPartitionStreamProcessorFactory {
     final TypedRecordProcessorFactory composed =
         ctx -> {
           final TypedRecordProcessors processors = engineProcessorFactory.createProcessors(ctx);
-          // TODO Phase 3: thread the engine's TransactionContext through
-          // TypedRecordProcessorContext
-          //  so the cluster-config + backup-metadata column families share a transaction with the
-          //  engine's processing state. For now, each state owns its own context.
-          final var ccState = new ClusterConfigurationState(db, db.createContext());
+          final var ccState = ctx.getProcessingState().getClusterConfigurationState();
           ClusterConfigurationProcessors.register(
               processors,
               ccState,

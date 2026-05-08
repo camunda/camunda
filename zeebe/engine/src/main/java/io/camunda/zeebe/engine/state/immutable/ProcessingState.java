@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableClusterConfigurationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 
@@ -37,6 +38,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   VariableState getVariableState();
 
   ClusterVariableState getClusterVariableState();
+
+  MutableClusterConfigurationState getClusterConfigurationState();
 
   TimerInstanceState getTimerState();
 

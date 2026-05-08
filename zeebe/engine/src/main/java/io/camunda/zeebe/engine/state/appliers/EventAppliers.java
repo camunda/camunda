@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
@@ -153,6 +154,7 @@ public final class EventAppliers implements EventApplier {
     registerUsageMetricsAppliers(state);
     registerMultiInstanceAppliers(state);
     registerClusterVariableEventAppliers(state);
+    registerClusterConfigurationAppliers(state);
     registerHistoryDeletionAppliers();
     registerConditionalSubscriptionAppliers(state);
     registerConditionalEvaluationAppliers();
@@ -202,6 +204,14 @@ public final class EventAppliers implements EventApplier {
     register(
         ClusterVariableIntent.DELETED,
         new ClusterVariableDeletedApplier(state.getClusterVariableState()));
+  }
+
+  private void registerClusterConfigurationAppliers(final MutableProcessingState state) {
+    final var applier = new ClusterConfigurationStateApplier(state.getClusterConfigurationState());
+    register(ClusterConfigurationIntent.CHANGE_PLAN_STAMPED, applier);
+    register(ClusterConfigurationIntent.OPERATION_APPLIED, applier);
+    register(ClusterConfigurationIntent.CHANGE_COMPLETED, applier);
+    register(ClusterConfigurationIntent.REJECT, applier);
   }
 
   private void registerMultiInstanceAppliers(final MutableProcessingState state) {

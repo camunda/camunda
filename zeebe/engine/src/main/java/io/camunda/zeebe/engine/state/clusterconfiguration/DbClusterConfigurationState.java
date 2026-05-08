@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.systempartition.state;
+package io.camunda.zeebe.engine.state.clusterconfiguration;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
@@ -18,8 +18,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableClusterConfigurationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 /**
- * RocksDB-backed state for the single, currently-authoritative {@link ClusterConfiguration} on the
- * system partition.
+ * RocksDB-backed implementation of {@link MutableClusterConfigurationState}.
  *
  * <p>The state is keyed by a single fixed string {@value #CURRENT_KEY}; the value is the
  * proto-encoded {@link ClusterConfiguration} bytes. Encoding is delegated to {@link
@@ -29,7 +28,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
  * always go through {@link #put(ClusterConfiguration)}, which updates RocksDB first and then
  * refreshes the cache.
  */
-public final class ClusterConfigurationState implements MutableClusterConfigurationState {
+public final class DbClusterConfigurationState implements MutableClusterConfigurationState {
 
   private static final String CURRENT_KEY = "current";
 
@@ -40,7 +39,7 @@ public final class ClusterConfigurationState implements MutableClusterConfigurat
 
   private ClusterConfiguration cached = ClusterConfiguration.uninitialized();
 
-  public ClusterConfigurationState(
+  public DbClusterConfigurationState(
       final ZeebeDb<ZbColumnFamilies> db, final TransactionContext ctx) {
     column = db.createColumnFamily(ZbColumnFamilies.CLUSTER_CONFIGURATION, ctx, key, value);
     key.wrapString(CURRENT_KEY);
@@ -51,13 +50,11 @@ public final class ClusterConfigurationState implements MutableClusterConfigurat
     }
   }
 
-  /** Returns the latest cluster configuration. Never null; may be uninitialized. */
   @Override
   public ClusterConfiguration get() {
     return cached;
   }
 
-  /** Replace the persisted configuration and refresh the cache. */
   @Override
   public void put(final ClusterConfiguration config) {
     key.wrapString(CURRENT_KEY);

@@ -10,10 +10,10 @@ package io.camunda.zeebe.systempartition.processors;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.mutable.MutableClusterConfigurationState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.systempartition.state.ClusterConfigurationState;
 
 /**
  * Factory that registers the cluster-configuration record processors into a {@link
@@ -31,7 +31,7 @@ public final class ClusterConfigurationProcessors {
 
   public static void register(
       final TypedRecordProcessors processors,
-      final ClusterConfigurationState state,
+      final MutableClusterConfigurationState state,
       final Writers writers,
       final KeyGenerator keys,
       final ConfigurationChangeAppliers appliers) {

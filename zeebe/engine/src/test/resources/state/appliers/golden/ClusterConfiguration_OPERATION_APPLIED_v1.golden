@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.systempartition.processors;
+package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
@@ -17,21 +17,22 @@ import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
  * Deterministic state applier for {@code CLUSTER_CONFIGURATION} events.
  *
  * <p>Decodes the proto-encoded {@link io.camunda.zeebe.dynamic.config.state.ClusterConfiguration}
- * carried by the event and writes it to the {@link ClusterConfigurationState} column family. Reject
- * events (which carry no configuration payload) are ignored.
+ * carried by the event and writes it to the {@link MutableClusterConfigurationState} column family.
+ * Reject events (which carry no configuration payload) are ignored.
  *
  * <p>The applier is invoked by the engine's {@link io.camunda.zeebe.engine.state.EventApplier}
  * pipeline whenever an event with {@link ClusterConfigurationIntent#CHANGE_PLAN_STAMPED}, {@link
- * ClusterConfigurationIntent#OPERATION_APPLIED}, or {@link
- * ClusterConfigurationIntent#CHANGE_COMPLETED} is replayed or freshly written.
+ * ClusterConfigurationIntent#OPERATION_APPLIED}, {@link
+ * ClusterConfigurationIntent#CHANGE_COMPLETED} or {@link ClusterConfigurationIntent#REJECT} is
+ * replayed or freshly written.
  */
-public final class ClusterConfigurationStateApplier
+final class ClusterConfigurationStateApplier
     implements TypedEventApplier<ClusterConfigurationIntent, ClusterConfigurationRecord> {
 
   private final MutableClusterConfigurationState state;
   private final ProtoBufSerializer serializer = new ProtoBufSerializer();
 
-  public ClusterConfigurationStateApplier(final MutableClusterConfigurationState state) {
+  ClusterConfigurationStateApplier(final MutableClusterConfigurationState state) {
     this.state = state;
   }
 
