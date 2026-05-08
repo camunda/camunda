@@ -272,8 +272,9 @@
       JVM module opens required across the project:
       - java.base/java.io: required for NativeFS raw file descriptor access
       - java.base/jdk.internal.misc: required for agrona's UnsafeApi
+      - enable-native-access=ALL-UNNAMED: suppresses restricted method warnings from jffi (JDK 17+)
     -->
-    <jvm.module.opens>--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</jvm.module.opens>
+    <jvm.module.opens>--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED --enable-native-access=ALL-UNNAMED</jvm.module.opens>
 
     <!--
       you can use the following to disable specific check plugins. this can also be used to skip the

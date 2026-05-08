@@ -3,8 +3,8 @@
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
 
-ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
-ARG BASE_DIGEST="sha256:f21d8148ffd3749c189231e78789ee5ef511f9c8d2c7f497537494d707f95074"
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
+ARG BASE_DIGEST="sha256:e2772c8469b0b3cfc792708153d075fcf17778444d6d57792e4ba83d49bf82e6"
 ARG JATTACH_VERSION="v2.2"
 ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
@@ -12,8 +12,8 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
-ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.10_7-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:420374e45e8e9dce3057e768c87a3e8ba58e815049511d8df95ca88a041ec82b"
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.2_10-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:cd44d91d4b2c7b2a171a96a88d77a5f4e94de4faaefea70eda4f0b8e3c3891e6"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
@@ -182,6 +182,7 @@ VOLUME ${CAMUNDA_HOME}/documents
 VOLUME /driver-lib
 
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
+COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${CAMUNDA_HOME}/config/jvm.options
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 
 RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib

@@ -40,7 +40,7 @@ camunda.Dockerfile          @camunda/orchestration-cluster
 
 # Zeebe shared ownership modules
 zeebe/README.md             @camunda/orchestration-cluster
-zeebe/docker/utils/startup.sh @camunda/orchestration-cluster
+zeebe/docker/utils/         @camunda/orchestration-cluster
 zeebe/docs/.htaccess        @camunda/orchestration-cluster
 zeebe/pom.xml               @camunda/orchestration-cluster
 zeebe/qa/pom.xml            @camunda/orchestration-cluster
