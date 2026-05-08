@@ -498,6 +498,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public BiConsumer<String, Error> getCustomErrorHandlers() {
     return (index, error) -> {
+      // strip of any ordinal to get the "main" index name
+      index = index.replaceAll("ord.*$", "");
       indicesWithCustomErrorHandlers.getOrDefault(index, ErrorHandlers.THROWING).handle(error);
     };
   }
