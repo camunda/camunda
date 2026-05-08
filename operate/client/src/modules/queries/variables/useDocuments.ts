@@ -14,12 +14,17 @@ import {useVariableScopeKey} from 'modules/hooks/variables';
 
 const MAX_DOCUMENTS_PER_REQUEST = 50;
 
-function useDocuments() {
+type SortConfig = {
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+};
+
+function useDocuments(sortConfig?: SortConfig) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const scopeKey = useVariableScopeKey();
 
   const result = useInfiniteQuery({
-    queryKey: ['documents', processInstanceId, scopeKey],
+    queryKey: ['documents', processInstanceId, scopeKey, sortConfig?.sortBy, sortConfig?.sortOrder],
     queryFn: async ({pageParam = 0}) => {
       const {response, error} = await searchDocumentReferences({
         filter: {
@@ -30,7 +35,9 @@ function useDocuments() {
           from: pageParam,
           limit: MAX_DOCUMENTS_PER_REQUEST,
         },
-        sort: [{field: 'variableKey', order: 'asc'}],
+        ...(sortConfig !== undefined
+          ? {sort: [{field: sortConfig.sortBy, order: sortConfig.sortOrder}]}
+          : {}),
       });
 
       if (response !== null) {
@@ -42,7 +49,7 @@ function useDocuments() {
     initialPageParam: 0,
     getNextPageParam: (lastPage, _, lastPageParam) => {
       const nextPage = lastPageParam + MAX_DOCUMENTS_PER_REQUEST;
-      if (nextPage > lastPage.page.totalItems) return null;
+      if (nextPage >= lastPage.page.totalItems) return null;
       return nextPage;
     },
     getPreviousPageParam: (_, __, firstPageParam) => {

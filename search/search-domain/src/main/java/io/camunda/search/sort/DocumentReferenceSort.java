@@ -46,6 +46,11 @@ public final record DocumentReferenceSort(List<FieldSorting> orderings) implemen
       return this;
     }
 
+    public Builder variableName() {
+      currentOrdering = new FieldSorting("variableName", null);
+      return this;
+    }
+
     public Builder fileName() {
       currentOrdering = new FieldSorting("fileName", null);
       return this;

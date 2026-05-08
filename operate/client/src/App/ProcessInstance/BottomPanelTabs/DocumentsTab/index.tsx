@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useState} from 'react';
+import {useState} from 'react';
 import {useLocation} from 'react-router-dom';
 import {IconButton, Layer, Loading} from '@carbon/react';
 import {Download} from '@carbon/react/icons';
@@ -25,7 +25,7 @@ const Content = styled(Layer)`
 `;
 
 const HEADER_COLUMNS = [
-  {header: 'Variable', key: 'variableName'},
+  {header: 'Variable', key: 'variableName', isDisabled: true},
   {header: 'File name', key: 'fileName'},
   {header: 'File type', key: 'contentType', isDisabled: true},
   {header: 'Size', key: 'size', isDisabled: true},
@@ -38,38 +38,10 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function sortDocuments(
-  docs: DocumentReferenceSearchResult[],
-  sortBy: string,
-  sortOrder: 'asc' | 'desc',
-): DocumentReferenceSearchResult[] {
-  return [...docs].sort((a, b) => {
-    let aVal: string | number | null;
-    let bVal: string | number | null;
-
-    switch (sortBy) {
-      case 'variableName':
-        aVal = a.variableName;
-        bVal = b.variableName;
-        break;
-      case 'fileName':
-        aVal = a.fileName;
-        bVal = b.fileName;
-        break;
-      default:
-        return 0;
-    }
-
-    if (aVal === null && bVal === null) return 0;
-    if (aVal === null) return 1;
-    if (bVal === null) return -1;
-
-    const cmp = String(aVal).localeCompare(String(bVal));
-    return sortOrder === 'asc' ? cmp : -cmp;
-  });
-}
-
 const DocumentsTab: React.FC = () => {
+  const location = useLocation();
+  const sortParams = getSortParams(location.search);
+
   const {
     documents,
     isLoading,
@@ -78,22 +50,17 @@ const DocumentsTab: React.FC = () => {
     fetchPreviousPage,
     hasNextPage,
     hasPreviousPage,
-  } = useDocuments();
+    isFetchingNextPage,
+    isFetchingPreviousPage,
+  } = useDocuments(sortParams ?? undefined);
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const location = useLocation();
-
-  const sortedDocuments = useMemo(() => {
-    const sortParams = getSortParams(location.search);
-    if (sortParams === null) return documents;
-    return sortDocuments(documents, sortParams.sortBy, sortParams.sortOrder);
-  }, [documents, location.search]);
 
   const tableState = isError
     ? ('error' as const)
     : isLoading
       ? ('skeleton' as const)
-      : sortedDocuments.length === 0
+      : documents.length === 0
         ? ('empty' as const)
         : ('content' as const);
 
@@ -134,13 +101,13 @@ const DocumentsTab: React.FC = () => {
         headerColumns={HEADER_COLUMNS}
         columnsWithNoContentPadding={['download']}
         onVerticalScrollStartReach={() => {
-          if (hasPreviousPage) fetchPreviousPage();
+          if (hasPreviousPage && !isFetchingPreviousPage) fetchPreviousPage();
         }}
         onVerticalScrollEndReach={() => {
-          if (hasNextPage) fetchNextPage();
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
         }}
-        rows={sortedDocuments.map((doc) => ({
-          id: doc.variableKey,
+        rows={documents.map((doc) => ({
+          id: doc.documentId,
           variableName: doc.variableName ?? '—',
           fileName: doc.fileName ?? '—',
           contentType: doc.contentType ?? '—',

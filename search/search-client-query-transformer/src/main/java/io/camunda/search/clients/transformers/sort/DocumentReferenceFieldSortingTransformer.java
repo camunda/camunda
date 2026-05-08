@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex
 import static io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex.SCOPE_KEY;
 import static io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex.VARIABLE_KEY;
+import static io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex.VARIABLE_NAME;
 
 public class DocumentReferenceFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -22,6 +23,7 @@ public class DocumentReferenceFieldSortingTransformer implements FieldSortingTra
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;
       case "scopeKey" -> SCOPE_KEY;
       case "variableKey" -> VARIABLE_KEY;
+      case "variableName" -> VARIABLE_NAME;
       case "documentId" -> DOCUMENT_ID;
       case "fileName" -> FILE_NAME;
       case "tenantId" -> TENANT_ID;

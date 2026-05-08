@@ -70,6 +70,7 @@ components:
             - processInstanceKey
             - scopeKey
             - variableKey
+            - variableName
             - documentId
             - fileName
             - tenantId

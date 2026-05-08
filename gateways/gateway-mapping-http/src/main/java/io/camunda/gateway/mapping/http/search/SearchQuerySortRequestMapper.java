@@ -768,6 +768,7 @@ public class SearchQuerySortRequestMapper {
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         case SCOPE_KEY -> builder.scopeKey();
         case VARIABLE_KEY -> builder.variableKey();
+        case VARIABLE_NAME -> builder.variableName();
         case DOCUMENT_ID -> builder.documentId();
         case FILE_NAME -> builder.fileName();
         case TENANT_ID -> builder.tenantId();
