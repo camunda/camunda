@@ -1356,6 +1356,79 @@ public class ExecutionListenerCancelTest {
   }
 
   @Test
+  public void shouldExecuteChildCancelElWhenCallActivityIsInterruptedByBoundaryEvent() {
+    // given: parent (no cancel-EL) with a call activity carrying an interrupting boundary timer;
+    // child (with cancel-EL) running a waiting service task
+    final BpmnModelInstance childProcess =
+        Bpmn.createExecutableProcess("child_process")
+            .zeebeCancelExecutionListener(CANCEL_EL_TYPE + "_child")
+            .startEvent()
+            .serviceTask("child_task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
+            .endEvent()
+            .done();
+    final BpmnModelInstance parentProcess =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .callActivity("call_activity", c -> c.zeebeProcessId("child_process"))
+            .boundaryEvent("timeout", b -> b.cancelActivity(true).timerWithDuration("PT1S"))
+            .endEvent("after_boundary")
+            .done();
+
+    ENGINE.deployment().withXmlResource("child.bpmn", childProcess).deploy();
+    ENGINE.deployment().withXmlResource("parent.bpmn", parentProcess).deploy();
+    final long parentInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long childInstanceKey =
+        RecordingExporter.processInstanceRecords()
+            .withParentProcessInstanceKey(parentInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+    jobRecords(JobIntent.CREATED).withType(SERVICE_TASK_TYPE).await();
+
+    // when: the boundary timer interrupts the call activity, terminating the child process
+    ENGINE.increaseTime(Duration.ofSeconds(2));
+    ENGINE.job().ofInstance(childInstanceKey).withType(CANCEL_EL_TYPE + "_child").complete();
+
+    // then: child cancel-EL ran before the child terminated
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(childInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.COMPLETED)
+                .onlyEvents()
+                .getFirst()
+                .getValue())
+        .satisfies(
+            job ->
+                assertThat(job.getJobListenerEventType()).isEqualTo(JobListenerEventType.CANCEL));
+
+    // and: child process reached ELEMENT_TERMINATED after the cancel-EL completed
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(childInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+
+    // and: parent continued out of the boundary event and completed normally
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(parentInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
   public void shouldScopeCancelElOutputVariableToProcessInstance() {
     // given: process with cancel EL and a service task
     final long processInstanceKey =
