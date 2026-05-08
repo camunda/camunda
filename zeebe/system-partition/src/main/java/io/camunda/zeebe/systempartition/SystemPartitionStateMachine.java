@@ -17,6 +17,8 @@ import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.protocol.impl.record.value.clusterconfiguration.ClusterConfigurationRecord;
+import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -175,10 +177,34 @@ public final class SystemPartitionStateMachine extends Actor implements SystemPa
   }
 
   @Override
-  public ActorFuture<ClusterConfiguration> query() {
+  public ActorFuture<ClusterConfiguration> queryAsync() {
     final CompletableActorFuture<ClusterConfiguration> future = new CompletableActorFuture<>();
     actor.run(() -> future.complete(current));
     return future;
+  }
+
+  @Override
+  public ClusterConfiguration query() {
+    // Volatile-ish read: callers see at least the most recent locally applied configuration.
+    return current;
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationRecord> submitCommand(
+      final ClusterConfigurationIntent intent, final ClusterConfigurationRecord record) {
+    // The legacy state machine does not support the stream-processor command API. Phase 3 wires
+    // SystemPartitionFacadeImpl as the canonical SystemPartition implementation; this is a stub.
+    final CompletableActorFuture<ClusterConfigurationRecord> future =
+        new CompletableActorFuture<>();
+    future.completeExceptionally(
+        new UnsupportedOperationException(
+            "submitCommand is not supported by the legacy SystemPartitionStateMachine"));
+    return future;
+  }
+
+  @Override
+  public void addClusterConfigListener(final Consumer<ClusterConfiguration> listener) {
+    addCommitListener(listener);
   }
 
   @Override
