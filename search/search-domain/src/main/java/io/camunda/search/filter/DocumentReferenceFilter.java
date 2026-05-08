@@ -18,7 +18,6 @@ import java.util.Objects;
 
 public record DocumentReferenceFilter(
     List<Operation<Long>> processInstanceKeyOperations,
-    List<Operation<Long>> scopeKeyOperations,
     List<Operation<Long>> variableKeyOperations,
     List<String> tenantIds,
     List<Operation<String>> documentIdOperations)
@@ -26,7 +25,6 @@ public record DocumentReferenceFilter(
 
   public static final class Builder implements ObjectBuilder<DocumentReferenceFilter> {
     private List<Operation<Long>> processInstanceKeyOperations;
-    private List<Operation<Long>> scopeKeyOperations;
     private List<Operation<Long>> variableKeyOperations;
     private List<String> tenantIds;
     private List<Operation<String>> documentIdOperations;
@@ -44,21 +42,6 @@ public record DocumentReferenceFilter(
 
     public Builder processInstanceKey(final long value) {
       return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value));
-    }
-
-    public Builder scopeKeyOperations(final List<Operation<Long>> operations) {
-      scopeKeyOperations = addValuesToList(scopeKeyOperations, operations);
-      return this;
-    }
-
-    @SafeVarargs
-    public final Builder scopeKeyOperations(
-        final Operation<Long> operation, final Operation<Long>... operations) {
-      return scopeKeyOperations(collectValues(operation, operations));
-    }
-
-    public Builder scopeKey(final long value) {
-      return scopeKeyOperations(FilterUtil.mapDefaultToOperation(value));
     }
 
     public Builder variableKeyOperations(final List<Operation<Long>> operations) {
@@ -104,7 +87,6 @@ public record DocumentReferenceFilter(
     public DocumentReferenceFilter build() {
       return new DocumentReferenceFilter(
           Objects.requireNonNullElseGet(processInstanceKeyOperations, Collections::emptyList),
-          Objects.requireNonNullElseGet(scopeKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(variableKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(tenantIds, Collections::emptyList),
           Objects.requireNonNullElseGet(documentIdOperations, Collections::emptyList));

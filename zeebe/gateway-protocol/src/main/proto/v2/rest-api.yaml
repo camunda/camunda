@@ -38,6 +38,7 @@ tags:
   - name: Decision instance
   - name: Decision requirements
   - name: Document
+  - name: Document reference
   - name: Element instance
   - name: Expression
   - name: Global listener
@@ -151,6 +152,10 @@ paths:
   # Deployment/Resource endpoints
   /deployments:
     $ref: 'deployments.yaml#/paths/~1deployments'
+
+  # Document reference endpoints
+  /document-references/search:
+    $ref: 'document-references.yaml#/paths/~1document-references~1search'
 
   # Document endpoints
   /documents:
