@@ -43,6 +43,7 @@ public interface Intent {
     map.put(ValueType.BATCH_OPERATION_INITIALIZATION, BatchOperationIntent.class);
     map.put(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, BatchOperationIntent.class);
     map.put(ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE, BatchOperationIntent.class);
+    map.put(ValueType.BACKUP_METADATA, BackupMetadataIntent.class);
     map.put(ValueType.CHECKPOINT, CheckpointIntent.class);
     map.put(ValueType.CLOCK, ClockIntent.class);
     map.put(ValueType.CLUSTER_CONFIGURATION, ClusterConfigurationIntent.class);
