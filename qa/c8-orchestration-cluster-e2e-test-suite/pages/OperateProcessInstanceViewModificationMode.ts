@@ -557,12 +557,18 @@ export class OperateProcessInstanceViewModificationModePage {
     await nameField.click();
     await nameField.type(name);
 
-    const valueInput = this.page
-      .getByTestId(`variable-newVariables[${variableIndex}]`)
-      .getByTestId('new-variable-value')
-      .locator('input');
-    await valueInput.fill(value);
-    await valueInput.press('Tab');
+    // The value field is an InlineJsonEditor (Monaco). Click the readonly
+    // placeholder to trigger editing mode, then wait for Monaco to lazy-load
+    // before typing. Tab exits Monaco (tabFocusMode: true) and triggers onBlur
+    // → createModification().
+    const valueContainer = this.getNewVariableValueFieldSelector(variableIndex);
+    await valueContainer.getByTestId('new-variable-value-readonly').click();
+    const monacoTextbox = valueContainer
+      .getByRole('code')
+      .getByRole('textbox', {name: 'Editor content'});
+    await expect(monacoTextbox).toBeVisible();
+    await this.page.keyboard.insertText(value);
+    await this.page.keyboard.press('Tab');
   }
 
   async editVariableValue(variableName: string, value: string) {
