@@ -15,6 +15,7 @@ import io.camunda.search.clients.reader.BatchOperationDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemDocumentReader;
 import io.camunda.search.clients.reader.ClusterVariableDocumentReader;
 import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionDocumentReader;
+import io.camunda.search.clients.reader.DocumentReferenceDocumentReader;
 import io.camunda.search.clients.reader.DecisionDefinitionDocumentReader;
 import io.camunda.search.clients.reader.DecisionInstanceDocumentReader;
 import io.camunda.search.clients.reader.DecisionRequirementsDocumentReader;
@@ -54,6 +55,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DocumentReferenceIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.DeployedResourceIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
@@ -151,6 +153,8 @@ public final class SearchClientReadersFactory {
         new VariableDocumentReader(executor, descriptors.get(VariableTemplate.class));
     final var clusterVariableReader =
         new ClusterVariableDocumentReader(executor, descriptors.get(ClusterVariableIndex.class));
+    final var documentReferenceReader =
+        new DocumentReferenceDocumentReader(executor, descriptors.get(DocumentReferenceIndex.class));
     final var auditLogReader =
         new AuditLogDocumentReader(executor, descriptors.get(AuditLogTemplate.class));
     final var globalListenerReader =
@@ -240,6 +244,7 @@ public final class SearchClientReadersFactory {
         userTaskReader,
         variableReader,
         clusterVariableReader,
+        documentReferenceReader,
         auditLogReader,
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,

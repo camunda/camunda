@@ -19,6 +19,7 @@ import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.clients.reader.BatchOperationReader;
 import io.camunda.search.clients.reader.ClusterVariableReader;
 import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionReader;
+import io.camunda.search.clients.reader.DocumentReferenceReader;
 import io.camunda.search.clients.reader.DecisionDefinitionReader;
 import io.camunda.search.clients.reader.DecisionInstanceReader;
 import io.camunda.search.clients.reader.DecisionRequirementsReader;
@@ -141,6 +142,7 @@ public class SearchClientConfiguration {
       final UserTaskReader userTaskReader,
       final VariableReader variableReader,
       final ClusterVariableReader clusterVariableReader,
+      final DocumentReferenceReader documentReferenceReader,
       final AuditLogReader auditLogReader,
       final IncidentProcessInstanceStatisticsByErrorReader
           incidentProcessInstanceStatisticsByErrorReader,
@@ -184,6 +186,7 @@ public class SearchClientConfiguration {
         userTaskReader,
         variableReader,
         clusterVariableReader,
+        documentReferenceReader,
         auditLogReader,
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,
