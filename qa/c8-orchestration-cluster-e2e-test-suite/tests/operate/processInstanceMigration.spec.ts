@@ -306,10 +306,13 @@ test.describe.serial('Process Instance Migration', () => {
             .replace(/^\^?target element for /i, '')
             .replace(/\$\/?i?$/, '')
             .trim();
-          await operateProcessMigrationModePage.mapFlowNode(
-            sourceFlowNodeName,
-            targetValue,
+          const escaped = sourceFlowNodeName.replace(
+            /[.*+?^${}()|[\]\\]/g,
+            '\\$&',
           );
+          await page
+            .getByLabel(new RegExp(`^Target element for ${escaped}$`, 'i'))
+            .selectOption(targetValue);
         }
       }
 
