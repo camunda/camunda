@@ -4,7 +4,7 @@
 # docs/metrics.md: throughput, latency (p50 + p99), resources, and health.
 # Use `--queries basic.yaml` for a smaller focused set (starter-side view only).
 #
-# Template variables (substituted by loadTestMetrics.sh before each query):
+# Template variables (substituted by loadTestMetrics.sh before each query is executed):
 #   $NAMESPACE   exact test namespace label, e.g. c8-bot-quicker-pr-1234.
 #   $DURATION_S  run duration with `s` suffix, e.g. 600s (used in range vectors)
 #
@@ -270,10 +270,11 @@ queries:
       max(kube_pod_container_resource_limits_memory_bytes{
         namespace="$NAMESPACE",
         container=~".*(orchestration|zeebe|camunda).*"
-      })
+      }) / 1073741824
     higher_is_better: true
-    format: integer
-    unit: bytes
+    format: float
+    decimals: 1
+    unit: GiB
 
   - name: memory-rss
     description: Memory RSS (total, all containers)
@@ -281,10 +282,11 @@ queries:
       sum(container_memory_rss{
         namespace="$NAMESPACE",
         container!=""
-      })
+      }) / 1073741824
     higher_is_better: false
-    format: integer
-    unit: bytes
+    format: float
+    decimals: 1
+    unit: GiB
 
   - name: jvm-heap
     description: JVM heap usage (total, all pods)
@@ -292,10 +294,11 @@ queries:
       sum(jvm_memory_bytes_used{
         namespace="$NAMESPACE",
         area="heap"
-      })
+      }) / 1073741824
     higher_is_better: false
-    format: integer
-    unit: bytes
+    format: float
+    decimals: 1
+    unit: GiB
 
   # Max ratio across ES PVCs — any disk filling up is a problem.
   - name: disk-usage
@@ -331,8 +334,11 @@ queries:
 
   # ── Health indicators ──────────────────────────────────────────────────────
 
-  # Fraction of all received requests that were dropped over the test window.
-  # Uses increase() to get a stable ratio over the full window.
+  # Percentage of requests dropped over the full test window. increase() in
+  # numerator and denominator is mathematically equivalent to rate() in a ratio,
+  # but yields a stable whole-window average rather than an instantaneous rate.
+  # Result is multiplied by 100 to express as a percent (vs. the 0–1 ratio form
+  # used in the Grafana dashboard queries in docs/metrics.md).
   - name: backpressure-percent
     description: Backpressure (dropped / received)
     query: |

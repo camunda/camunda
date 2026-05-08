@@ -4,7 +4,7 @@
 # fast, focused summary — throughput, latency, and health ratios only.
 # For the complete metric set see queries.yaml.
 #
-# Template variables (substituted by the workflow before each query is sent):
+# Template variables (substituted by loadTestMetrics.sh before each query is executed):
 #   $NAMESPACE   exact test namespace label, e.g. c8-bot-quicker-pr-1234.
 #   $DURATION_S  run duration with `s` suffix, e.g. 600s
 #

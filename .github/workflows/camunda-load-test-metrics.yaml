@@ -65,7 +65,7 @@ jobs:
     outputs:
       results-json: ${{ steps.run-queries.outputs.results-json }}
     steps:
-      - name: Validate namespace prefix
+      - name: Validate inputs
         env:
           NAMESPACE: ${{ inputs.namespace }}
         run: |
@@ -73,6 +73,10 @@ jobs:
             echo "::error::Namespace '$NAMESPACE' must start with 'c8-' (e.g. c8-pgoyal-quicker-pr-1234)."
             exit 1
           fi
+          case "$QUERIES_FILE" in
+            basic.yaml|queries.yaml) ;;
+            *) echo "::error::queries-file must be one of: basic.yaml, queries.yaml. Got: '$QUERIES_FILE'"; exit 1 ;;
+          esac
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -157,7 +161,7 @@ jobs:
               const unit = q.unit ?? '';
               switch (q.format) {
                 case 'integer':
-                  return Math.round(n).toLocaleString();
+                  return Math.round(n).toLocaleString() + (unit ? ' ' + unit : '');
                 case 'percent':
                   return n.toFixed(decimals) + (unit || '%');
                 case 'float':
