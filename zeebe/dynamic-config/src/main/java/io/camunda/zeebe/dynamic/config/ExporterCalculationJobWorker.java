@@ -46,7 +46,7 @@ public final class ExporterCalculationJobWorker implements AutoCloseable {
   private void handleJob(final JobClient jobClient, final ActivatedJob job) {
     final var vars = job.getVariablesAsMap();
     try {
-      final var configMap = toConfigMap(vars.get("configuration"));
+      final var configMap = toConfigMap(vars.get("clusterConfiguration"));
       final var config = BpmnClusterConfigurationMapper.fromMap(configMap);
 
       final List<Map<String, Object>> operations = new ArrayList<>();

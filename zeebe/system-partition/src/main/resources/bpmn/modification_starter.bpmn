@@ -21,15 +21,9 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1diieq1" sourceRef="Activity_0nqm2bx" targetRef="Event_13r8rej" />
     <bpmn:startEvent id="StartEvent_1">
-      <bpmn:extensionElements>
-        <zeebe:subscription correlationKey="=request_id" />
-      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0it81hm</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_1" messageRef="Message_0sf7vgm" />
     </bpmn:startEvent>
   </bpmn:process>
-  <bpmn:message id="Message_0sf7vgm" name="cluster_modification" />
-  <bpmn:message id="Message_1n3l7f6" name="Message_1n3l7f6" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="cluster_modification_executor">
       <bpmndi:BPMNShape id="Event_13r8rej_di" bpmnElement="Event_13r8rej">

@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.mutable.MutableClusterConfigurationState;
 import io.camunda.zeebe.protocol.impl.record.value.clusterconfiguration.ClusterConfigurationRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -31,7 +30,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public final class ClusterConfigurationStampProcessor
     implements TypedRecordProcessor<ClusterConfigurationRecord> {
 
-  private static final String MODIFICATION_STARTER_PROCESS_ID = "modification_starter";
+  private static final String MODIFICATION_STARTER_PROCESS_ID = "cluster_modification_executor";
 
   private final MutableClusterConfigurationState state;
   private final Writers writers;
@@ -53,12 +52,13 @@ public final class ClusterConfigurationStampProcessor
     final ClusterConfiguration current = state.get();
 
     if (current.hasPendingChanges()) {
+      final ClusterConfigurationRecord rejected =
+          new ClusterConfigurationRecord()
+              .setRequestId(cmd.getRequestId())
+              .setRejectionReason("Cannot stamp change plan: another plan is active");
       writers
-          .rejection()
-          .appendRejection(
-              command,
-              RejectionType.INVALID_STATE,
-              "Cannot stamp change plan: another plan is active");
+          .state()
+          .appendFollowUpEvent(keys.nextKey(), ClusterConfigurationIntent.REJECT, rejected);
       return;
     }
 

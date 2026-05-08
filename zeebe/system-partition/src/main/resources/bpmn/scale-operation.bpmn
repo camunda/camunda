@@ -14,7 +14,7 @@
         <zeebe:taskDefinition type="=&#34;config-change-&#34;+string(brokerId)" />
         <zeebe:ioMapping>
           <zeebe:input source="member-join" target="operationType" />
-          <zeebe:output source="=configuration" target="configuration" />
+          <zeebe:output source="=clusterConfiguration" target="clusterConfiguration" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_ScaleUp</bpmn:incoming>
@@ -30,7 +30,7 @@
         <zeebe:taskDefinition type="=&#34;config-change-&#34;+string(brokerId)" />
         <zeebe:ioMapping>
           <zeebe:input source="member-leave" target="operationType" />
-          <zeebe:output source="=configuration" target="configuration" />
+          <zeebe:output source="=clusterConfiguration" target="clusterConfiguration" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0rg2qak</bpmn:incoming>
@@ -94,7 +94,7 @@
             <zeebe:input source="partition-join" target="operationType" />
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="=joinOperation.priority" target="priority" />
-            <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=clusterConfiguration" target="clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_025dcc9</bpmn:incoming>
@@ -112,7 +112,7 @@
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="partition-leave" target="operationType" />
             <zeebe:input source="=1" target="minimumAllowedReplicas" />
-            <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=clusterConfiguration" target="clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_1vbgjbt</bpmn:incoming>
@@ -130,7 +130,7 @@
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="partition-reconfigure-priority" target="operationType" />
             <zeebe:input source="=reconfigureOperation.priority" target="priority" />
-            <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=clusterConfiguration" target="clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_12v18sw</bpmn:incoming>
@@ -170,7 +170,7 @@
             <zeebe:input source="partition-join" target="operationType" />
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="=joinOperation.priority" target="priority" />
-            <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=clusterConfiguration" target="clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_1s0rssj</bpmn:incoming>
@@ -188,7 +188,7 @@
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="partition-leave" target="operationType" />
             <zeebe:input source="=1" target="minimumAllowedReplicas" />
-            <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=clusterConfiguration" target="clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_03edrm4</bpmn:incoming>
@@ -206,7 +206,7 @@
             <zeebe:input source="=partitionOperations.partitionId" target="partitionId" />
             <zeebe:input source="partition-reconfigure-priority" target="operationType" />
             <zeebe:input source="=reconfigureOperation.priority" target="priority" />
-            <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=clusterConfiguration" target="clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_0t8jpz4</bpmn:incoming>
@@ -229,7 +229,7 @@
     <bpmn:sequenceFlow id="Flow_1p4kr9b" sourceRef="Gateway_Merge" targetRef="Task_PostScaling" />
     <bpmn:scriptTask id="Task_PreScaling" name="Pre-Scaling">
       <bpmn:extensionElements>
-        <zeebe:script expression="=clusterConfiguration" resultVariable="configuration" />
+        <zeebe:script expression="=clusterConfiguration" resultVariable="clusterConfiguration" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0mgfh4m</bpmn:incoming>
       <bpmn:outgoing>Flow_PreToDirection</bpmn:outgoing>
@@ -241,7 +241,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="=membersToAdd" target="membersToAdd" />
           <zeebe:input source="=membersToRemove" target="membersToRemove" />
-          <zeebe:input source="=clusterConfiguration" target="configuration" />
+          <zeebe:input source="=clusterConfiguration" target="clusterConfiguration" />
           <zeebe:input source="=direction" target="direction" />
           <zeebe:output source="=workPayload" target="workPayload" />
         </zeebe:ioMapping>

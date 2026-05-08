@@ -7,26 +7,26 @@
  */
 package io.camunda.zeebe.systempartition.processors;
 
-import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.BpmnClusterConfigurationMapper;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
-import java.util.Base64;
+import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Helper that emits a {@link ProcessInstanceCreationIntent#CREATE} command for a configuration
- * BPMN, seeded with the proto-encoded {@link ClusterConfiguration} as a process variable.
+ * BPMN, seeded with the {@link ClusterConfiguration} as a JSON-friendly map process variable.
  *
- * <p>The variables are encoded as a one-key msgpack map: {@code {"clusterConfiguration":
- * "<base64>"}}. Workers decode the base64 string, parse the proto, and operate on the configuration
- * during BPMN execution.
+ * <p>The variables are encoded as a one-key msgpack map: {@code {"clusterConfiguration": {...}}}.
+ * Workers and the {@link BpmnClusterConfigurationMapper} share the same map representation so no
+ * base64/proto decoding is required inside the BPMN.
  */
 public final class BpmnInstanceStarter {
 
-  private static final String CLUSTER_CONFIG_VARIABLE = "clusterConfiguration";
+  static final String CLUSTER_CONFIG_VARIABLE = "clusterConfiguration";
 
   private BpmnInstanceStarter() {}
 
@@ -46,10 +46,8 @@ public final class BpmnInstanceStarter {
   }
 
   private static byte[] packInitialVariables(final ClusterConfiguration cfg) {
-    final ProtoBufSerializer serializer = new ProtoBufSerializer();
-    final byte[] proto = serializer.encode(cfg);
-    final String base64 = Base64.getEncoder().encodeToString(proto);
-    final String json = "{\"" + CLUSTER_CONFIG_VARIABLE + "\":\"" + base64 + "\"}";
-    return MsgPackConverter.convertToMsgPack(json);
+    final Map<String, Object> configMap = BpmnClusterConfigurationMapper.toMap(cfg);
+    final Map<String, Object> vars = Map.of(CLUSTER_CONFIG_VARIABLE, configMap);
+    return MsgPackConverter.convertToMsgPack(vars);
   }
 }

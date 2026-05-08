@@ -62,7 +62,8 @@ public final class BpmnConfigurationChangeJobWorker implements AutoCloseable {
     final ClusterConfigurationChangeOperation operation;
     try {
       providedConfig =
-          BpmnClusterConfigurationMapper.fromMap((Map<String, Object>) vars.get("configuration"));
+          BpmnClusterConfigurationMapper.fromMap(
+              (Map<String, Object>) vars.get("clusterConfiguration"));
       operation = deserializeOperation(vars);
     } catch (final Exception e) {
       jobClient
@@ -80,7 +81,8 @@ public final class BpmnConfigurationChangeJobWorker implements AutoCloseable {
               if (error == null) {
                 jobClient
                     .newCompleteCommand(job.getKey())
-                    .variable("configuration", BpmnClusterConfigurationMapper.toMap(updatedConfig))
+                    .variable(
+                        "clusterConfiguration", BpmnClusterConfigurationMapper.toMap(updatedConfig))
                     .send();
               } else {
                 jobClient

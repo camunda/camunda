@@ -8,7 +8,7 @@
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="exporter-calculation" />
         <zeebe:ioMapping>
-          <zeebe:input source="=configuration" target="configuration" />
+          <zeebe:input source="=clusterConfiguration" target="clusterConfiguration" />
           <zeebe:input source="=exporterId" target="exporterId" />
           <zeebe:input source="=direction" target="direction" />
           <zeebe:output source="=operations" target="operations" />
@@ -36,7 +36,7 @@
             <zeebe:input source="=op.partitionId" target="partitionId" />
             <zeebe:input source="=exporterId" target="exporterId" />
             <zeebe:input source="=initializeFrom" target="initializeFrom" />
-            <zeebe:output source="=configuration" target="configuration" />
+            <zeebe:output source="=clusterConfiguration" target="clusterConfiguration" />
           </zeebe:ioMapping>
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_SubStartToTask</bpmn:incoming>
