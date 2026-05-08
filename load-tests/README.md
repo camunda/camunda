@@ -47,7 +47,6 @@ graph TD
 
     subgraph "Event Triggers"
         PR["camunda-pr-load-test.yaml<br/><i>PR label: benchmark</i>"]
-        QUICKER["camunda-quicker-pr-load-test.yaml<br/><i>PR label: quicker-max</i>"]
         ADHOC["Manual workflow_dispatch"]
     end
 
@@ -57,6 +56,7 @@ graph TD
         ECS["camunda-ecs-weekly-load-test.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        METRICS["camunda-load-test-metrics.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
     end
 
@@ -77,7 +77,7 @@ graph TD
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
     PR -- "after 15min wait" --> PROFILE
-    QUICKER -- "scenario: quicker<br/>~1h finite run + PR comment" --> CORE
+    PR -- "metrics + comparison<br/>vs daily-on-main" --> METRICS
     ADHOC --> CORE
     ADHOC --> RELEASE
 
@@ -306,6 +306,12 @@ On top of the previous scenarios, we support running ad-hoc load tests. They can
 It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
 
 This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
+
+Alongside the flamegraph comment, the `benchmark` label also posts a **metrics-comparison comment** on the PR. After the 15-minute warm-up the workflow:
+
+1. Resolves the most recent active daily-on-main namespace (`c8-medic-daily-*-test`) via `kubectl`.
+2. Calls the reusable [`camunda-load-test-metrics.yaml`](../.github/workflows/camunda-load-test-metrics.yaml) workflow against the PR's namespace and the resolved daily namespace, both over a 600s window so PromQL `rate`/`increase` numbers are apples-to-apples.
+3. Renders a Current / Daily / Optimal / Δ table from [`docs/scripts/queries.yaml`](docs/scripts/queries.yaml) and [`docs/scripts/optimal.json`](docs/scripts/optimal.json), with per-metric tolerances driving the verdict (✅/⚠️/❔). Missing daily values render as `-` so the comment still posts when no daily run is live.
 
 #### Trigger Camunda load test GitHub workflow (recommended)
 
