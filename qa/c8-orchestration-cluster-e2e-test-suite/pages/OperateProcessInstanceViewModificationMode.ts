@@ -556,9 +556,13 @@ export class OperateProcessInstanceViewModificationModePage {
     await expect(nameField).toHaveValue('');
     await nameField.click();
     await nameField.type(name);
-    await nameField.press('Tab');
-    await this.page.keyboard.insertText(value);
-    await this.page.keyboard.press('Tab');
+
+    const valueInput = this.page
+      .getByTestId(`variable-newVariables[${variableIndex}]`)
+      .getByTestId('new-variable-value')
+      .locator('input');
+    await valueInput.fill(value);
+    await valueInput.press('Tab');
   }
 
   async editVariableValue(variableName: string, value: string) {
