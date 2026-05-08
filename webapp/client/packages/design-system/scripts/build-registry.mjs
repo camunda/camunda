@@ -170,7 +170,7 @@ async function buildRegistry(components) {
     })),
   };
   await writeFile(
-    join(OUTPUT_DIR, 'registry.json'),
+    join(OUTPUT_DIR, 'r', 'registry.json'),
     JSON.stringify(index, null, 2) + '\n',
   );
   return items.length;
