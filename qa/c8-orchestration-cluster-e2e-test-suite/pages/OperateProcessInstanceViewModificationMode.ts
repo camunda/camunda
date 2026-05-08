@@ -558,14 +558,19 @@ export class OperateProcessInstanceViewModificationModePage {
     await nameField.type(name);
 
     // The value field is an InlineJsonEditor (Monaco). Click the readonly
-    // placeholder to trigger editing mode, then wait for Monaco to lazy-load
-    // before typing. Tab exits Monaco (tabFocusMode: true) and triggers onBlur
-    // → createModification(). Check role="code" visibility (not the textarea —
-    // Monaco keeps the textarea hidden in Firefox).
+    // placeholder to trigger editing mode, then wait for Monaco to lazy-load.
+    // Monaco keeps its textarea hidden in Firefox (visibility:hidden vs
+    // Chromium's opacity:0), so we wait on role="code" and use fillMonacoEditor
+    // (evaluate focus + insertText) for cross-browser consistency with the JSON
+    // modal methods. Tab exits Monaco (tabFocusMode:true) → onBlur → createModification().
     const valueContainer = this.getNewVariableValueFieldSelector(variableIndex);
     await valueContainer.getByTestId('new-variable-value-readonly').click();
-    await expect(valueContainer.getByRole('code')).toBeVisible();
-    await this.page.keyboard.insertText(value);
+    const monacoCode = valueContainer.getByRole('code');
+    await expect(monacoCode).toBeVisible();
+    await this.fillMonacoEditor(
+      monacoCode.getByRole('textbox', {name: 'Editor content'}),
+      value,
+    );
     await this.page.keyboard.press('Tab');
   }
 
