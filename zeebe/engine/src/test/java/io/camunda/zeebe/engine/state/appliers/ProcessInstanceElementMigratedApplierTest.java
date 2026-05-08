@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,6 +92,49 @@ public class ProcessInstanceElementMigratedApplierTest {
                 processInstance.getProcessDefinitionKey()))
         .describedAs("Expect that there are no instances of the old process definition")
         .isEmpty();
+  }
+
+  @Test
+  void shouldUpdateProcessDefinitionPathOnMigrationV4() {
+    // given
+    final var elementInstanceKey = 3L;
+    final var sourceProcessDefinitionKey = 1L;
+    final var targetProcessDefinitionKey = 4L;
+    final var processInstance =
+        new ProcessInstanceRecord()
+            .setProcessDefinitionKey(sourceProcessDefinitionKey)
+            .setBpmnProcessId("process")
+            .setVersion(1)
+            .setElementId("task")
+            .setBpmnElementType(BpmnElementType.SERVICE_TASK)
+            .setProcessInstanceKey(2L)
+            .setProcessDefinitionPath(List.of(sourceProcessDefinitionKey));
+    elementInstanceState.createInstance(
+        new ElementInstance(
+            elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, processInstance));
+
+    final var applier =
+        new ProcessInstanceElementMigratedV4Applier(
+            elementInstanceState,
+            processingState.getProcessState(),
+            processingState.getMessageState());
+
+    // when
+    final var migratedProcessInstance = new ProcessInstanceRecord();
+    migratedProcessInstance.wrap(processInstance);
+    migratedProcessInstance
+        .setProcessDefinitionKey(targetProcessDefinitionKey)
+        .setVersion(2)
+        .setBpmnProcessId("another_process")
+        .setElementId("another_task")
+        .setProcessDefinitionPath(List.of(targetProcessDefinitionKey));
+    applier.applyState(elementInstanceKey, migratedProcessInstance);
+
+    // then
+    assertThat(elementInstanceState.getInstance(elementInstanceKey).getValue())
+        .describedAs(
+            "Expect that the process definition path is updated to the target process definition")
+        .hasProcessDefinitionPath(List.of(targetProcessDefinitionKey));
   }
 
   @Test
