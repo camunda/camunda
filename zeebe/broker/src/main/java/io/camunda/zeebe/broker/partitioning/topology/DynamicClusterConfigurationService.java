@@ -20,7 +20,6 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.systempartition.SystemPartition;
-import io.camunda.zeebe.systempartition.SystemPartitionMirror;
 import java.nio.file.Path;
 
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
@@ -80,14 +79,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
                 brokerStartupContext.getBrokerClient().getTopologyManager());
             clusterConfigurationManagerService.addUpdateListener(
                 config -> currentClusterConfiguration = config);
-            // When the system partition is enabled, mirror every locally observed cluster
-            // configuration change into its Raft log on the leader. Followers observe via the
-            // committed log — see SystemPartitionMirror.
-            final SystemPartition systemPartition = brokerStartupContext.getSystemPartition();
-            if (systemPartition != null) {
-              clusterConfigurationManagerService.addUpdateListener(
-                  new SystemPartitionMirror(systemPartition));
-            }
+            // The system partition (when enabled) is now the canonical writer for cluster
+            // configuration changes via its stream processor; the dynamic-config gossip layer
+            // mirrors what's been committed there. The Phase 3 bootstrap installs the
+            // SystemPartitionMirror actor that consumes committed events directly from the
+            // system-partition log stream — no extra listener is needed here.
             clusterConfigurationManagerService
                 .getClusterTopology()
                 .onComplete(
