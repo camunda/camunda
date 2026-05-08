@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_exporter" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.44.0">
+  <bpmn:process id="exporter_operation_executor" name="Exporter Operation" isExecutable="true">
+    <bpmn:startEvent id="Event_Start" name="Exporter Request Received">
+      <bpmn:outgoing>Flow_StartToCalc</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Activity_Calculation" name="Calculate Exporter Operations">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="exporter-calculation" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=configuration" target="configuration" />
+          <zeebe:input source="=exporterId" target="exporterId" />
+          <zeebe:input source="=direction" target="direction" />
+          <zeebe:output source="=operations" target="operations" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToCalc</bpmn:incoming>
+      <bpmn:outgoing>Flow_CalcToLoop</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:subProcess id="Activity_ApplyOperations" name="Apply Exporter Operations">
+      <bpmn:incoming>Flow_CalcToLoop</bpmn:incoming>
+      <bpmn:outgoing>Flow_LoopToCommit</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=operations" inputElement="op" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="Event_SubStart">
+        <bpmn:outgoing>Flow_SubStartToTask</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="Activity_ConfigChange" name="Apply Exporter Operation">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="=&#34;config-change-&#34;+op.memberId" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=&#34;partition-&#34;+direction+&#34;-exporter&#34;" target="operationType" />
+            <zeebe:input source="=op.partitionId" target="partitionId" />
+            <zeebe:input source="=exporterId" target="exporterId" />
+            <zeebe:input source="=initializeFrom" target="initializeFrom" />
+            <zeebe:output source="=configuration" target="configuration" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_SubStartToTask</bpmn:incoming>
+        <bpmn:outgoing>Flow_TaskToSubEnd</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="Event_SubEnd">
+        <bpmn:incoming>Flow_TaskToSubEnd</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_SubStartToTask" sourceRef="Event_SubStart" targetRef="Activity_ConfigChange" />
+      <bpmn:sequenceFlow id="Flow_TaskToSubEnd" sourceRef="Activity_ConfigChange" targetRef="Event_SubEnd" />
+    </bpmn:subProcess>
+    <bpmn:serviceTask id="Task_CommitChange" name="Commit change">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="cc-complete-change" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_LoopToCommit</bpmn:incoming>
+      <bpmn:outgoing>Flow_CommitToEnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_End" name="Exporter Operation Complete">
+      <bpmn:incoming>Flow_CommitToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToCalc" sourceRef="Event_Start" targetRef="Activity_Calculation" />
+    <bpmn:sequenceFlow id="Flow_CalcToLoop" sourceRef="Activity_Calculation" targetRef="Activity_ApplyOperations" />
+    <bpmn:sequenceFlow id="Flow_LoopToCommit" sourceRef="Activity_ApplyOperations" targetRef="Task_CommitChange" />
+    <bpmn:sequenceFlow id="Flow_CommitToEnd" sourceRef="Task_CommitChange" targetRef="Event_End" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="exporter_operation_executor">
+      <bpmndi:BPMNShape id="Event_Start_di" bpmnElement="Event_Start">
+        <dc:Bounds x="172" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="147" y="205" width="86" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Calculation_di" bpmnElement="Activity_Calculation">
+        <dc:Bounds x="280" y="140" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CommitChange_di" bpmnElement="Task_CommitChange">
+        <dc:Bounds x="1072" y="140" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_End_di" bpmnElement="Event_End">
+        <dc:Bounds x="1242" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1216" y="205" width="89" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ApplyOperations_di" bpmnElement="Activity_ApplyOperations" isExpanded="true">
+        <dc:Bounds x="480" y="80" width="510" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_SubStart_di" bpmnElement="Event_SubStart">
+        <dc:Bounds x="520" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ConfigChange_di" bpmnElement="Activity_ConfigChange">
+        <dc:Bounds x="620" y="140" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_SubEnd_di" bpmnElement="Event_SubEnd">
+        <dc:Bounds x="822" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_SubStartToTask_di" bpmnElement="Flow_SubStartToTask">
+        <di:waypoint x="556" y="180" />
+        <di:waypoint x="620" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_TaskToSubEnd_di" bpmnElement="Flow_TaskToSubEnd">
+        <di:waypoint x="740" y="180" />
+        <di:waypoint x="822" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StartToCalc_di" bpmnElement="Flow_StartToCalc">
+        <di:waypoint x="208" y="180" />
+        <di:waypoint x="280" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CalcToLoop_di" bpmnElement="Flow_CalcToLoop">
+        <di:waypoint x="400" y="180" />
+        <di:waypoint x="480" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LoopToCommit_di" bpmnElement="Flow_LoopToCommit">
+        <di:waypoint x="990" y="180" />
+        <di:waypoint x="1072" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CommitToEnd_di" bpmnElement="Flow_CommitToEnd">
+        <di:waypoint x="1172" y="180" />
+        <di:waypoint x="1242" y="180" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

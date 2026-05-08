@@ -15,6 +15,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
+import io.camunda.zeebe.systempartition.SystemPartitionBpmnAutoDeployer;
 import io.camunda.zeebe.systempartition.SystemPartitionFacadeImpl;
 import io.camunda.zeebe.systempartition.SystemPartitionFactory;
 import io.camunda.zeebe.systempartition.SystemPartitionLogStream;
@@ -342,6 +344,25 @@ public final class SystemPartitionStep implements StartupStep<BrokerStartupConte
               }
               partition.addRoleChangeListener(
                   (newRole, term) -> facade.notifyLeaderChange(newRole == Role.LEADER));
+
+              // Wire the BPMN auto-deployer if the embedded gateway is enabled.
+              final BrokerCfg cfg = context.getBrokerConfiguration();
+              if (cfg.getGateway().isEnable()) {
+                final int grpcPort = cfg.getGateway().getNetwork().getPort();
+                final String host = cfg.getGateway().getNetwork().getHost();
+                final CamundaClient camundaClient =
+                    CamundaClient.newClientBuilder()
+                        .grpcAddress(java.net.URI.create("http://" + host + ":" + grpcPort))
+                        .preferRestOverGrpc(false)
+                        .build();
+                final SystemPartitionBpmnAutoDeployer deployer =
+                    new SystemPartitionBpmnAutoDeployer(camundaClient);
+                deployer.register(facade);
+              } else {
+                LOG.info(
+                    "Embedded gateway is disabled — system-partition BPMN auto-deployer not started");
+              }
+
               context.setSystemPartition(facade);
               result.complete(context);
             });

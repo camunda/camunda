@@ -445,6 +445,51 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(() -> this.systemPartition = systemPartition);
   }
 
+  /**
+   * Applies a single {@link ClusterConfigurationChangeOperation} directly on behalf of the BPMN job
+   * worker. The provided {@code baseConfig} is the working configuration carried as a process
+   * variable; the method initialises the operation applier, executes it, and returns the resulting
+   * updated {@link ClusterConfiguration} once committed.
+   *
+   * <p>Package-private in the main codebase so that {@link BpmnConfigurationChangeJobWorker} (in
+   * the same package) can call it without exposing it as part of the public API surface.
+   */
+  ActorFuture<ClusterConfiguration> applyOperationDirectly(
+      final ClusterConfiguration providedConfiguration,
+      final ClusterConfigurationChangeOperation operation,
+      final ConfigurationChangeAppliers appliers) {
+    final ActorFuture<ClusterConfiguration> future = executor.createFuture();
+    executor.run(
+        () -> {
+          final var applier = appliers.getApplier(operation);
+
+          final var initResult =
+              applier
+                  .init(providedConfiguration)
+                  .map(initTransformer -> initTransformer.apply(providedConfiguration))
+                  .flatMap(this::updateLocalConfiguration);
+
+          if (initResult.isLeft()) {
+            future.completeExceptionally(initResult.getLeft());
+            return;
+          }
+
+          final var intermediateConfig = initResult.get();
+          applier
+              .apply()
+              .onComplete(
+                  (applyTransformer, error) -> {
+                    if (error != null) {
+                      future.completeExceptionally(error);
+                      return;
+                    }
+                    updateLocalConfiguration(applyTransformer.apply(intermediateConfig))
+                        .ifRightOrLeft(future::complete, future::completeExceptionally);
+                  });
+        });
+    return future;
+  }
+
   void registerTopologyChangeAppliers(
       final ConfigurationChangeAppliers configurationChangeAppliers) {
     executor.run(

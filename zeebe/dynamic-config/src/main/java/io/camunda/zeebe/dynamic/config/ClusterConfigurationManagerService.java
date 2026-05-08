@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.FileInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.GossipInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentC
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
@@ -40,9 +42,12 @@ import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
@@ -50,6 +55,8 @@ public final class ClusterConfigurationManagerService
   // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
   // dynamically.
   private static final int COORDINATOR_NODE_ID = 0;
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ClusterConfigurationManagerService.class);
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
   private final boolean isCoordinator;
@@ -63,6 +70,13 @@ public final class ClusterConfigurationManagerService
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
+  private final MemberId localMemberId;
+  private ConfigurationChangeAppliers currentAppliers;
+  private CamundaClient camundaClient;
+  private BpmnConfigurationChangeJobWorker bpmnJobWorker;
+  private RedistributionCalculationJobWorker redistributionCalculationWorker;
+  private ExporterCalculationJobWorker exporterCalculationWorker;
+  private CcCompleteChangeJobWorker ccCompleteChangeWorker;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -119,7 +133,7 @@ public final class ClusterConfigurationManagerService
       throw new UncheckedIOException("Failed to create data directory", e);
     }
 
-    final MemberId localMemberId = memberShipService.getLocalMember().id();
+    localMemberId = memberShipService.getLocalMember().id();
     configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterConfiguration =
         PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
@@ -276,6 +290,21 @@ public final class ClusterConfigurationManagerService
 
   @Override
   public ActorFuture<Void> closeAsync() {
+    if (bpmnJobWorker != null) {
+      bpmnJobWorker.close();
+    }
+    if (redistributionCalculationWorker != null) {
+      redistributionCalculationWorker.close();
+    }
+    if (exporterCalculationWorker != null) {
+      exporterCalculationWorker.close();
+    }
+    if (ccCompleteChangeWorker != null) {
+      ccCompleteChangeWorker.close();
+    }
+    if (camundaClient != null) {
+      camundaClient.close();
+    }
     if (configurationRequestServer != null) {
       configurationRequestServer.close();
     }
@@ -286,12 +315,47 @@ public final class ClusterConfigurationManagerService
   public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
-    clusterConfigurationManager.registerTopologyChangeAppliers(
+    currentAppliers =
         new ConfigurationChangeAppliersImpl(
             partitionChangeExecutor,
             new NoopClusterMembershipChangeExecutor(),
             partitionScalingChangeExecutor,
-            clusterChangeExecutor));
+            clusterChangeExecutor);
+    clusterConfigurationManager.registerTopologyChangeAppliers(currentAppliers);
+  }
+
+  /**
+   * Starts the BPMN job workers that drive cluster-configuration changes via the system-partition
+   * engine. Must be called after {@link #registerPartitionChangeExecutors} so that {@code
+   * currentAppliers} is non-null.
+   *
+   * @param grpcAddress the REST/gRPC address of the local gateway used to connect the workers
+   * @param systemPartition the system-partition facade used by {@link CcCompleteChangeJobWorker}
+   */
+  public void startBpmnWorkers(
+      final URI grpcAddress, final ClusterConfigCommandSubmitter systemPartition) {
+    camundaClient =
+        CamundaClient.newClientBuilder().restAddress(grpcAddress).preferRestOverGrpc(true).build();
+
+    bpmnJobWorker =
+        new BpmnConfigurationChangeJobWorker(
+            camundaClient, localMemberId, clusterConfigurationManager, currentAppliers);
+    bpmnJobWorker.start();
+
+    redistributionCalculationWorker = new RedistributionCalculationJobWorker(camundaClient);
+    redistributionCalculationWorker.start();
+
+    exporterCalculationWorker = new ExporterCalculationJobWorker(camundaClient);
+    exporterCalculationWorker.start();
+
+    if (systemPartition != null) {
+      ccCompleteChangeWorker = new CcCompleteChangeJobWorker(camundaClient, systemPartition);
+      ccCompleteChangeWorker.start();
+    } else {
+      LOG.warn(
+          "No system partition available — cc-complete-change job worker not started. "
+              + "Change-plan completion must be triggered manually.");
+    }
   }
 
   public void removePartitionChangeExecutor() {
