@@ -466,6 +466,39 @@ mapping failed on every activation attempt.
 
 ---
 
+## Engineers to ping for review
+
+Identified via `git blame` on the relevant code paths. List ordered by amount of
+context per file. Pull whoever's still active on the team; older contributors are
+included for context (they may know historical "why" answers).
+
+### Bug 1
+
+| File / area | Most-relevant engineer(s) | What they know |
+|---|---|---|
+| `BpmnUserTaskBehavior.userTaskAssigning` (the Path B that doesn't set action) | **Dmitriy Melnychuk** (`@melnychukd` — wrote the method in `62c9f96c76fc`, 2024-11-21; last touched it 2025-01-20) | Owns the broker-internal user-task lifecycle path. Best person to confirm whether defaulting `action = "assign"` is the right fix vs. introducing a new field/value. |
+| `ResponseMapper.toUserTaskProperties:251` (the `requireNonNull`) | **Sebastian Bathke** / `megglos` (`sebastian.bathke@camunda.com` — wrote the line in `1bba1641dd6c`, 2026-04-17) | Authored the NullAway enforcement pass that surfaced this. Knows the contract-enforcement intent. Should be a reviewer either way — schema fix or mapper relaxation. |
+| `UserTaskProperties` schema in `zeebe/gateway-protocol/src/main/proto/v2/jobs.yaml` (marks `action` required) | **Nicola Puppa** (`0419e3aa02d9`, 2025-11-06 — added the `required:` block) | Authored the OpenAPI schema that says `action` is mandatory. Decision-maker on whether to mark `action: nullable: true` or move it out of `required:`. |
+| `UserTaskAssignProcessor.onCommand` (Path A reference — sets `action` correctly via default) | **Tobias Metzke-Bernstein** (`77c06a00304d`, 2024-02-06 — `setAction(getActionOrDefault(DEFAULT_ACTION))`) | Long-standing user-task author. The reference for what Path B should look like. |
+| Sibling methods (`userTaskCompleting`, `userTaskCanceling`, `userTaskUpdating`) — likely same omission | Same as above (Dmitriy / Tobias) | Worth their review for the audit. |
+
+**Suggested reviewers on the upstream PR:** Dmitriy Melnychuk (engine fix), Sebastian
+Bathke (mapper / schema enforcement context), Nicola Puppa (schema contract owner).
+
+### Bug 2
+
+| File / area | Most-relevant engineer(s) | What they know |
+|---|---|---|
+| `ProcessInstanceStateEnum` in `zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml` (public REST enum, only `ACTIVE`/`COMPLETED`/`TERMINATED`) | **Nicola Puppa** (`a09beed30889`, 2025-11-06 — wrote the enum) | Same author as the Bug 1 schema. Knows the deliberate naming choice (`TERMINATED` for the public surface). Decision-maker on whether to add `CANCELED` as an alias. |
+| Operate UI's `ProcessInstanceStateDto` (Operate-side enum that includes `CANCELED`) | **Sebastian Menski** (`bf2a78256904`, 2021-03-26 — moved it to current location); originally **Svetlana Dorokhova** (2019, in the `WorkflowInstanceStateDto` predecessor) | Knows Operate's UI-side contract and why the internal/public spellings diverged historically. |
+| Internal `webapps-schema` `ProcessInstanceState` (with `CANCELED`) | **Panagiotis Goutis** (`baed59568dfc`, 2025-03-26 — recent restructure into `webapps-schema`); originally **Svetlana Dorokhova** (2018) | Owns the webapps-schema layer that the exporter writes to. |
+
+**Suggested reviewers on the upstream PR:** Nicola Puppa (gateway enum), plus
+whoever's currently primary on Operate frontend (the team-of-record for the UI side
+that emits `CANCELED`).
+
+---
+
 ## Open questions / things I didn't verify
 
 Worth checking before you cut the upstream PRs:
