@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import java.net.URI;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
@@ -155,7 +156,8 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithMissingUsername() {
       // given
-      final var request = validUserWithPasswordRequest().username(null);
+      final var request =
+          Map.of("password", "zabraboof", "name", "Foo Bar", "email", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -175,7 +177,7 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithBlankUsername() {
       // given
-      final var request = validUserWithPasswordRequest().username("");
+      final var request = userRequestWith("", "zabraboof", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -195,7 +197,7 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithEmptyPassword() {
       // given
-      final var request = validUserWithPasswordRequest().password(null);
+      final var request = Map.of("username", "foo", "name", "Foo Bar", "email", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -215,7 +217,7 @@ public class UserControllerTest {
     @Test
     void shouldRejectUserCreationWithBlankPassword() {
       // given
-      final var request = validUserWithPasswordRequest().password("");
+      final var request = userRequestWith("foo", "", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -271,7 +273,7 @@ public class UserControllerTest {
     void shouldRejectUserCreationWithInvalidEmail() {
       // given
       final var email = "invalid@email.reject";
-      final var request = validUserWithPasswordRequest().email(email);
+      final var request = userRequestWith("foo", "zabraboof", email);
 
       // when then
       assertRequestRejectedExceptionally(
@@ -292,7 +294,7 @@ public class UserControllerTest {
     void shouldRejectUserCreationWithTooLongUsername() {
       // given
       final var username = "x".repeat(257);
-      final var request = validUserWithPasswordRequest().username(username);
+      final var request = userRequestWith(username, "zabraboof", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -318,7 +320,7 @@ public class UserControllerTest {
         })
     void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
       // given
-      final var request = validUserWithPasswordRequest().username(username);
+      final var request = userRequestWith(username, "zabraboof", "bar@baz.com");
 
       // when then
       assertRequestRejectedExceptionally(
@@ -378,10 +380,11 @@ public class UserControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new UserUpdateRequest()
+              UserUpdateRequest.Builder.create()
                   .name(user.name())
                   .email(user.email())
-                  .password(user.password()))
+                  .password(user.password())
+                  .build())
           .exchange()
           .expectStatus()
           .isOk();
@@ -394,15 +397,21 @@ public class UserControllerTest {
     }
 
     private UserRequest validUserWithPasswordRequest() {
-      return new UserRequest()
-          .username("foo")
+      return userRequestWith("foo", "zabraboof", "bar@baz.com");
+    }
+
+    private UserRequest userRequestWith(
+        final String username, final String password, final String email) {
+      return UserRequest.Builder.create()
+          .username(username)
+          .password(password)
           .name("Foo Bar")
-          .email("bar@baz.com")
-          .password("zabraboof");
+          .email(email)
+          .build();
     }
 
     private void assertRequestRejectedExceptionally(
-        final UserRequest request, final String expectedError) {
+        final Object request, final String expectedError) {
       webClient
           .post()
           .uri(USER_BASE_URL)
@@ -467,10 +476,11 @@ public class UserControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(
-              new UserUpdateRequest()
+              UserUpdateRequest.Builder.create()
                   .name(user.name())
                   .email(user.email())
-                  .password(user.password()))
+                  .password(user.password())
+                  .build())
           .exchange()
           .expectStatus()
           .isForbidden()

@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.net.URI;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -170,7 +171,7 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithMissingUsername() {
     // given
-    final var request = validUserWithPasswordRequest().username(null);
+    final var request = Map.of("password", "zabraboof", "name", "Foo Bar", "email", "bar@baz.com");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -190,7 +191,7 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankUsername() {
     // given
-    final var request = validUserWithPasswordRequest().username("");
+    final var request = userRequestWith("", "zabraboof", "bar@baz.com");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -210,7 +211,7 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithEmptyPassword() {
     // given
-    final var request = validUserWithPasswordRequest().password(null);
+    final var request = Map.of("username", "foo", "name", "Foo Bar", "email", "bar@baz.com");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -230,7 +231,7 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void shouldRejectUserCreationWithBlankPassword() {
     // given
-    final var request = validUserWithPasswordRequest().password("");
+    final var request = userRequestWith("foo", "", "bar@baz.com");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -286,7 +287,7 @@ class SetupControllerTest extends RestControllerTest {
   void shouldRejectUserCreationWithInvalidEmail() {
     // given
     final var email = "invalid@email.reject";
-    final var request = validUserWithPasswordRequest().email(email);
+    final var request = userRequestWith("foo", "zabraboof", email);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -307,7 +308,7 @@ class SetupControllerTest extends RestControllerTest {
   void shouldRejectUserCreationWithTooLongUsername() {
     // given
     final var username = "x".repeat(257);
-    final var request = validUserWithPasswordRequest().username(username);
+    final var request = userRequestWith(username, "zabraboof", "bar@baz.com");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -333,7 +334,7 @@ class SetupControllerTest extends RestControllerTest {
       })
   void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
     // given
-    final var request = validUserWithPasswordRequest().username(username);
+    final var request = userRequestWith(username, "zabraboof", "bar@baz.com");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -365,15 +366,21 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   private UserRequest validUserWithPasswordRequest() {
-    return new UserRequest()
-        .username("foo")
+    return userRequestWith("foo", "zabraboof", "bar@baz.com");
+  }
+
+  private UserRequest userRequestWith(
+      final String username, final String password, final String email) {
+    return UserRequest.Builder.create()
+        .username(username)
+        .password(password)
         .name("Foo Bar")
-        .email("bar@baz.com")
-        .password("zabraboof");
+        .email(email)
+        .build();
   }
 
   private void assertRequestRejectedExceptionally(
-      final UserRequest request, final String expectedError) {
+      final Object request, final String expectedError) {
     webClient
         .post()
         .uri(USER_PATH)
