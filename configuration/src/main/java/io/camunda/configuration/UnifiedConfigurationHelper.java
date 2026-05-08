@@ -17,6 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,6 @@ import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
-import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -36,9 +36,10 @@ public class UnifiedConfigurationHelper {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
   private static final ConversionService CONVERSION_SERVICE = new ApplicationConversionService();
+  private static final ThreadLocal<Integer> SKIP_VALIDATION_SEMAPHORE =
+      ThreadLocal.withInitial(() -> 0);
 
   private static Environment environment;
-  private static ConfigurableEnvironment configurableEnvironment;
 
   public UnifiedConfigurationHelper(@Autowired final Environment environment) {
     // We need to pin the environment object statically so that it can be used to perform the
@@ -165,6 +166,10 @@ public class UnifiedConfigurationHelper {
         isSensitiveData);
   }
 
+  private static boolean isValidationSkipped() {
+    return SKIP_VALIDATION_SEMAPHORE.get() > 0;
+  }
+
   private static <T> T validateLegacyConfiguration(
       final String newProperty,
       final T newValue,
@@ -172,6 +177,13 @@ public class UnifiedConfigurationHelper {
       final BackwardsCompatibilityMode backwardsCompatibilityMode,
       final Set<String> legacyProperties,
       final boolean isSensitiveData) {
+
+    // Skip validations entirely, if we're building the UC object as an artifact to pass to a test
+    // container. In these cases, as the configuration goes to a container, we do not want to
+    // validate it against the local current environment.
+    if (isValidationSkipped()) {
+      return newValue;
+    }
 
     // If the environment is not set, it is assumed that the helper is used
     // in a non-Spring context, and the validation of backward compatibility
@@ -348,6 +360,10 @@ public class UnifiedConfigurationHelper {
       final BackwardsCompatibilityMode backwardsCompatibilityMode,
       final Set<Set<String>> legacyProperties,
       final boolean isSensitiveData) {
+
+    if (isValidationSkipped()) {
+      return newValue;
+    }
 
     // If the environment is not set, it is assumed that the helper is used
     // in a non-Spring context, and the validation of backward compatibility
@@ -811,6 +827,15 @@ public class UnifiedConfigurationHelper {
 
   public static void setCustomEnvironment(final Environment environment) {
     UnifiedConfigurationHelper.environment = environment;
+  }
+
+  public static <T> T withoutValidation(final Supplier<T> block) {
+    SKIP_VALIDATION_SEMAPHORE.set(SKIP_VALIDATION_SEMAPHORE.get() + 1);
+    try {
+      return block.get();
+    } finally {
+      SKIP_VALIDATION_SEMAPHORE.set(SKIP_VALIDATION_SEMAPHORE.get() - 1);
+    }
   }
 
   public enum BackwardsCompatibilityMode {

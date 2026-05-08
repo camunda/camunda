@@ -30,6 +30,7 @@ import io.camunda.configuration.Monitoring;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Security;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.Webapps;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -245,24 +246,27 @@ public class ExtendedConfigurationBuilder {
    * included, avoiding serialization bloat from eagerly initialized nested objects.
    */
   public String exportConfigAsString() {
-    try {
-      // Compute the diff between the configured Camunda bean and a pristine default instance.
-      // This avoids serializing hundreds of default properties that can interfere with the
-      // Docker image's own defaults (e.g. secondary-storage type, thread counts, etc.).
-      final Map<String, Object> defaultMap = flatten(createDefaultCamunda());
-      final Map<String, Object> configuredMap = flatten(unifiedConfig);
-      final Map<String, Object> diff = diffMaps(defaultMap, configuredMap);
+    return UnifiedConfigurationHelper.withoutValidation(
+        () -> {
+          try {
+            // Compute the diff between the configured Camunda bean and a pristine default instance.
+            // This avoids serializing hundreds of default properties that can interfere with the
+            // Docker image's own defaults (e.g. secondary-storage type, thread counts, etc.).
+            final Map<String, Object> defaultMap = flatten(createDefaultCamunda());
+            final Map<String, Object> configuredMap = flatten(unifiedConfig);
+            final Map<String, Object> diff = diffMaps(defaultMap, configuredMap);
 
-      final Map<String, Object> fullConfig = new LinkedHashMap<>();
-      if (!diff.isEmpty()) {
-        fullConfig.put(CAMUNDA_HEADER, diff);
-      }
-      mergeConfigs(fullConfig, flatten(additionalConfigs));
+            final Map<String, Object> fullConfig = new LinkedHashMap<>();
+            if (!diff.isEmpty()) {
+              fullConfig.put(CAMUNDA_HEADER, diff);
+            }
+            mergeConfigs(fullConfig, flatten(additionalConfigs));
 
-      return YAML_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(fullConfig);
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
+            return YAML_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(fullConfig);
+          } catch (final IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**
