@@ -75,6 +75,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.LockUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -219,19 +220,21 @@ public final class ZeebePartitionFactory implements Closeable {
 
   private RocksDbResources getOrInitRocksDbResources(
       final RocksDbConfiguration rocksDbConfiguration, final MemberId localMemberId) {
-    rocksDbResourcesLock.lock();
-    try {
-      if (rocksDbResources == null) {
-        rocksDbResources =
-            RocksDbResources.of(
-                rocksDbConfiguration,
-                new RuntimeInfo(
-                    getPartitionsPerBroker(clusterConfigurationService, localMemberId, brokerCfg)));
-      }
+    if (rocksDbResources != null) {
       return rocksDbResources;
-    } finally {
-      rocksDbResourcesLock.unlock();
     }
+
+    final var runtimeInfo =
+        new RuntimeInfo(
+            getPartitionsPerBroker(clusterConfigurationService, localMemberId, brokerCfg));
+    return LockUtil.withLock(
+        rocksDbResourcesLock,
+        () -> {
+          if (rocksDbResources == null) {
+            rocksDbResources = RocksDbResources.of(rocksDbConfiguration, runtimeInfo);
+          }
+          return rocksDbResources;
+        });
   }
 
   /**
