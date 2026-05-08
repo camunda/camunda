@@ -40,6 +40,7 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.systempartition.SystemPartition;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -75,6 +76,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private ClusterConfigurationService clusterConfigurationService =
       mock(ClusterConfigurationService.class);
   private BrokerClient brokerClient = mock(BrokerClient.class);
+  private SystemPartition systemPartition;
   private Duration shutdownTimeout = Duration.ofSeconds(30);
   private SnowflakeIdGenerator requestIdGenerator = mock(SnowflakeIdGenerator.class);
   private MeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -310,6 +312,16 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   public void setClusterConfigurationService(
       final ClusterConfigurationService clusterConfigurationService) {
     this.clusterConfigurationService = clusterConfigurationService;
+  }
+
+  @Override
+  public SystemPartition getSystemPartition() {
+    return systemPartition;
+  }
+
+  @Override
+  public void setSystemPartition(final SystemPartition systemPartition) {
+    this.systemPartition = systemPartition;
   }
 
   @Override
