@@ -381,7 +381,12 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     try {
       return CoverageDataSourceSnapshot.from(dataSource);
     } catch (final Throwable t) {
-      LOG.warn("Failed to create coverage data snapshot for '{}', using empty snapshot.", testName, t);
+      LOG.warn(
+          "Failed to create coverage data snapshot for '{}': {} - {}. Using empty snapshot.",
+          testName,
+          t.getClass().getSimpleName(),
+          t.getMessage(),
+          t);
       return CoverageDataSourceSnapshot.empty();
     }
   }
