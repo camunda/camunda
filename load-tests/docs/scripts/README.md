@@ -60,6 +60,42 @@ Done
 **GitHub Actions Workflow:**
 You can also use the [Profile Load Test workflow](https://github.com/camunda/camunda/actions/workflows/profile-load-test.yml) to profile pods running in load tests. This workflow allows you to select the load test name, pod name, event type (cpu/wall/alloc), and optional profiler options through the GitHub UI.
 
+## loadTestMetrics.sh
+
+**Usage:**
+Runs every PromQL query defined in `queries.yaml` against a Prometheus HTTP endpoint and emits a `{name: value, ...}` JSON object on stdout. Failed/empty queries are omitted. Used by the [Camunda Load Test Metrics workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test-metrics.yaml) and runnable locally against any reachable Prometheus.
+
+**Syntax:**
+
+```
+./loadTestMetrics.sh <namespace> [duration_seconds] [endpoint] [extra_curl_opts]
+```
+
+**Arguments:**
+- `namespace` — exact namespace label, e.g. `c8-pgoyal-quicker-pr-1234`. Required.
+- `duration_seconds` — PromQL range-vector window. Default: `600`.
+- `endpoint` — Prometheus base URL. Default: `http://localhost:9090` (assumes `kubectl port-forward` is open).
+- `extra_curl_opts` — free-form curl options string, e.g. `--user "u:p"` for HTTP basic auth.
+
+**Examples:**
+
+Local dev (port-forward already open):
+
+```
+./loadTestMetrics.sh c8-pgoyal-quicker-pr-1234
+```
+
+Against the LDAP-protected ingress:
+
+```
+./loadTestMetrics.sh \
+  c8-medic-daily-2026-05-08-abc1234-test 600 \
+  https://ci-monitor.benchmark.camunda.cloud \
+  "--user $PROM_USER:$PROM_PASS" > /tmp/results.json
+```
+
+zsh users: quote regex-looking arguments to avoid `no matches found` glob errors.
+
 ## PartitionDistribution.sh
 
 **Usage:**
