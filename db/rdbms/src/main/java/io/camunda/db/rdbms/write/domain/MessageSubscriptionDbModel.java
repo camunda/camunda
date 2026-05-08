@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.db.rdbms.write.util.MapSerializer;
+import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.util.ObjectBuilder;
@@ -239,6 +240,15 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
   public MessageSubscriptionDbModel partitionId(final int partitionId) {
     this.partitionId = partitionId;
     return this;
+  }
+
+  public void truncateToolFields(final int sizeLimit, final Integer byteLimit) {
+    if (TruncateUtil.shouldTruncate(toolName, sizeLimit, byteLimit)) {
+      toolName = TruncateUtil.truncateValue(toolName, sizeLimit, byteLimit);
+    }
+    if (TruncateUtil.shouldTruncate(inboundConnectorType, sizeLimit, byteLimit)) {
+      inboundConnectorType = TruncateUtil.truncateValue(inboundConnectorType, sizeLimit, byteLimit);
+    }
   }
 
   @Override

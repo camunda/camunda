@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -17,14 +18,21 @@ import io.camunda.db.rdbms.write.queue.WriteStatementType;
 public class MessageSubscriptionWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
 
   public MessageSubscriptionWriter(
-      final ExecutionQueue executionQueue, final MessageSubscriptionMapper mapper) {
+      final ExecutionQueue executionQueue,
+      final MessageSubscriptionMapper mapper,
+      final VendorDatabaseProperties vendorDatabaseProperties) {
     super(mapper);
     this.executionQueue = executionQueue;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
   public void create(final MessageSubscriptionDbModel messageSubscription) {
+    messageSubscription.truncateToolFields(
+        vendorDatabaseProperties.userCharColumnSize(),
+        vendorDatabaseProperties.charColumnMaxBytes());
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.MESSAGE_SUBSCRIPTION,
@@ -35,6 +43,9 @@ public class MessageSubscriptionWriter extends ProcessInstanceDependant implemen
   }
 
   public void update(final MessageSubscriptionDbModel messageSubscription) {
+    messageSubscription.truncateToolFields(
+        vendorDatabaseProperties.userCharColumnSize(),
+        vendorDatabaseProperties.charColumnMaxBytes());
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.MESSAGE_SUBSCRIPTION,

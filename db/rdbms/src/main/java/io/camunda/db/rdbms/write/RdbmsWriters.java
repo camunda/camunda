@@ -164,7 +164,8 @@ public class RdbmsWriters {
         UsageMetricTUWriter.class, new UsageMetricTUWriter(executionQueue, usageMetricTUMapper));
     writers.put(
         MessageSubscriptionWriter.class,
-        new MessageSubscriptionWriter(executionQueue, messageSubscriptionMapper));
+        new MessageSubscriptionWriter(
+            executionQueue, messageSubscriptionMapper, vendorDatabaseProperties));
     writers.put(
         CorrelatedMessageSubscriptionWriter.class,
         new CorrelatedMessageSubscriptionWriter(
