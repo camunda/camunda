@@ -8,13 +8,20 @@
 package io.camunda.exporter.store;
 
 import com.google.common.base.Strings;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
+import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromChunkItemHandler;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.AuditLogProcessInstanceRelated;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +42,7 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
 
   @Override
   public IndexLocator createIndexLocator(final Record<?> record) {
+    // TODO stop using instanceof
     if (record.getValue() instanceof final AuditLogProcessInstanceRelated processInstanceRelated) {
       final long rootProcessInstanceKey = processInstanceRelated.getRootProcessInstanceKey();
       if (rootProcessInstanceKey > 0) {
@@ -42,8 +50,40 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
         final var suffix = getOrCreateOrdinalSuffix(ordinal);
         return new SingleSuffixOrdinalIndexLocator(suffix);
       }
+    } else {
+      final var rootProcessInstanceIdsByKey = extractRootProcessInstanceIdsByKey(record);
+      if (!rootProcessInstanceIdsByKey.isEmpty()) {
+        final var suffixesByKey =
+            rootProcessInstanceIdsByKey.entrySet().stream()
+                .collect(
+                    Collectors.toMap(
+                        Entry::getKey, entry -> getOrdinalSuffixForRootPI(entry.getValue())));
+        return new MultiSuffixOrdinalIndexLocator(suffixesByKey);
+      }
     }
     return noopIndexLocator;
+  }
+
+  private Map<String, Long> extractRootProcessInstanceIdsByKey(final Record<?> record) {
+    if (record.getValue() instanceof final BatchOperationChunkRecordValue chunks) {
+      // TODO probably need to void tying this to specific handlers in the future
+      final Map<String, Long> idsToPIs = new HashMap<>();
+      for (final var item : chunks.getItems()) {
+        final var rootPi = item.getRootProcessInstanceKey();
+        idsToPIs.put(
+            BatchOperationChunkCreatedItemHandler.generateId(
+                chunks.getBatchOperationKey(), item.getItemKey()),
+            rootPi);
+        idsToPIs.put(ListViewFromChunkItemHandler.generateId(chunks, item), rootPi);
+      }
+      return idsToPIs;
+    }
+    return Map.of();
+  }
+
+  private String getOrdinalSuffixForRootPI(final long rootProcessInstanceKey) {
+    final int ordinal = getOrdinal(rootProcessInstanceKey);
+    return getOrCreateOrdinalSuffix(ordinal);
   }
 
   private static int getOrdinal(final long rootProcessInstanceKey) {
@@ -90,6 +130,23 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
       }
 
       return baseIndexName + suffix;
+    }
+  }
+
+  class MultiSuffixOrdinalIndexLocator implements IndexLocator {
+    private final Map<String, String> suffixesById;
+
+    public MultiSuffixOrdinalIndexLocator(final Map<String, String> suffixesById) {
+      this.suffixesById = suffixesById;
+    }
+
+    @Override
+    public String getIndexLocation(final ExporterEntity<?> entity, final String baseIndexName) {
+      if (!ordinalBasedIndexes.contains(baseIndexName)) {
+        return baseIndexName;
+      }
+
+      return baseIndexName + Objects.requireNonNull(suffixesById.get(entity.getId()));
     }
   }
 }

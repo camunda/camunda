@@ -141,7 +141,7 @@ public class BatchOperationChunkCreatedItemHandler
    * @param itemKey the key of the item within the batch operation
    * @return a unique identifier string for an item in a batch operation
    */
-  private String generateId(final long batchOperationKey, final long itemKey) {
+  public static String generateId(final long batchOperationKey, final long itemKey) {
     return String.format(ID_PATTERN, batchOperationKey, itemKey);
   }
 
