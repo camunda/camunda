@@ -23,6 +23,14 @@ on:
         description: "Dry run — don't actually open PRs / issues, just print what would be created"
         type: boolean
         default: false
+      static_scan:
+        description: "Static scan — skip hotspot / BigQuery analysis and scan static_scan_paths directly"
+        type: boolean
+        default: false
+      static_scan_paths:
+        description: "Comma-separated paths to scan when static_scan is true (e.g. zeebe/engine,zeebe/broker)"
+        type: string
+        default: "zeebe/engine"
   #push:
   #  branches:
   #    - feat/ai-code-quality-pipeline
@@ -80,6 +88,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Download code-maat JAR
+        if: ${{ !inputs.static_scan }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -91,6 +100,7 @@ jobs:
           echo "CODE_MAAT_JAR=$GITHUB_WORKSPACE/code-maat/code-maat-${CODE_MAAT_VERSION}-standalone.jar" >> "$GITHUB_ENV"
 
       - name: Run hotspot analysis
+        if: ${{ !inputs.static_scan }}
         run: |
           node .github/scripts/code-quality-ai/hotspots.js \
             --jar "$CODE_MAAT_JAR" \
@@ -103,6 +113,7 @@ jobs:
           cat hotspots.tsv
 
       - name: Import Secrets
+        if: ${{ !inputs.static_scan }}
         id: secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
@@ -115,14 +126,17 @@ jobs:
             secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
 
       - name: Login to Google Cloud
+        if: ${{ !inputs.static_scan }}
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           credentials_json: ${{ steps.secrets.outputs.gcloud_sa_key }}
 
       - name: Setup Google Cloud SDK
+        if: ${{ !inputs.static_scan }}
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
 
       - name: Query top failing tests from BigQuery
+        if: ${{ !inputs.static_scan }}
         run: |
           set -euo pipefail
 
@@ -162,12 +176,19 @@ jobs:
       - name: Generate dynamic CodeQL config
         id: generate
         run: |
-          HOTSPOT_PATHS=$(tail -n +2 hotspots.tsv | awk -F'\t' '{print $4}' | jq -R . | jq -s .)
-          FAILING_TEST_PATHS=$(cat failing-test-paths.json)
+          if [[ "${{ inputs.static_scan }}" == "true" ]]; then
+            # Static mode: convert comma-separated input directly to JSON array
+            PATHS_JSON=$(echo "${{ inputs.static_scan_paths }}" \
+              | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' \
+              | jq -R . | jq -s .)
+          else
+            HOTSPOT_PATHS=$(tail -n +2 hotspots.tsv | awk -F'\t' '{print $4}' | jq -R . | jq -s .)
+            FAILING_TEST_PATHS=$(cat failing-test-paths.json)
 
-          # Merge hotspot paths with failing-test module paths, deduplicated
-          PATHS_JSON=$(jq -s '(.[0] + .[1]) | unique' \
-            <(echo "$HOTSPOT_PATHS") <(echo "$FAILING_TEST_PATHS"))
+            # Merge hotspot paths with failing-test module paths, deduplicated
+            PATHS_JSON=$(jq -s '(.[0] + .[1]) | unique' \
+              <(echo "$HOTSPOT_PATHS") <(echo "$FAILING_TEST_PATHS"))
+          fi
 
           if [ -z "$PATHS_JSON" ] || [ "$PATHS_JSON" = "[]" ]; then
             echo "No paths produced; falling back to module path." >&2
