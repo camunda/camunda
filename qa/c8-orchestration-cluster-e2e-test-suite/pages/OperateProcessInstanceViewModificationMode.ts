@@ -633,6 +633,7 @@ export class OperateProcessInstanceViewModificationModePage {
     await expect(jsonEditorModal.inputField).toBeEnabled();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
+    await expect(jsonEditorModal.header).toBeHidden();
     await this.editableExistingVariableByName(
       variableName,
     ).writeModeValue.click();
