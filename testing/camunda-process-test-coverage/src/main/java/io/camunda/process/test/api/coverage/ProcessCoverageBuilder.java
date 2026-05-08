@@ -15,26 +15,17 @@
  */
 package io.camunda.process.test.api.coverage;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
- * Builder class for creating configured instances of ProcessCoverage.
+ * Builder API for creating configured instances of {@link ProcessCoverage}.
  *
  * <p>Provides a fluent API for setting up process coverage collection and reporting with specific
  * configurations such as excluded process definitions, report directory, and test class
  * information.
  */
-public class ProcessCoverageBuilder {
-
-  private String reportDirectory = null;
-  private List<String> excludedProcessDefinitionIds = Collections.emptyList();
-  private List<String> excludedDecisionDefinitionIds = Collections.emptyList();
-  private Class<?> testClass = null;
-  private Supplier<CoverageDataSource> dataSourceSupplier;
-  private Consumer<String> printStream;
+public interface ProcessCoverageBuilder {
 
   /**
    * Specifies process definition keys to exclude from coverage analysis.
@@ -42,11 +33,7 @@ public class ProcessCoverageBuilder {
    * @param processDefinitionIds the process definition ids to exclude
    * @return This builder instance for method chaining
    */
-  public ProcessCoverageBuilder excludeProcessDefinitionIds(
-      final List<String> processDefinitionIds) {
-    excludedProcessDefinitionIds = processDefinitionIds;
-    return this;
-  }
+  ProcessCoverageBuilder excludeProcessDefinitionIds(List<String> processDefinitionIds);
 
   /**
    * Specifies decision definition IDs to exclude from coverage analysis.
@@ -54,11 +41,7 @@ public class ProcessCoverageBuilder {
    * @param decisionDefinitionIds the decision definition IDs to exclude
    * @return This builder instance for method chaining
    */
-  public ProcessCoverageBuilder excludeDecisionDefinitionIds(
-      final List<String> decisionDefinitionIds) {
-    excludedDecisionDefinitionIds = decisionDefinitionIds;
-    return this;
-  }
+  ProcessCoverageBuilder excludeDecisionDefinitionIds(List<String> decisionDefinitionIds);
 
   /**
    * Sets the directory where coverage reports will be generated.
@@ -66,10 +49,7 @@ public class ProcessCoverageBuilder {
    * @param reportDirectory Path to the directory for storing coverage reports
    * @return This builder instance for method chaining
    */
-  public ProcessCoverageBuilder reportDirectory(final String reportDirectory) {
-    this.reportDirectory = reportDirectory;
-    return this;
-  }
+  ProcessCoverageBuilder reportDirectory(String reportDirectory);
 
   /**
    * Sets the test class being executed to provide context for coverage reports.
@@ -77,21 +57,7 @@ public class ProcessCoverageBuilder {
    * @param testClass Class object representing the test class
    * @return This builder instance for method chaining
    */
-  public ProcessCoverageBuilder testClass(final Class<?> testClass) {
-    this.testClass = testClass;
-    return this;
-  }
-
-  /**
-   * Sets the data source supplier for accessing Camunda process engine data.
-   *
-   * @param dataSourceSupplier Supplier function that provides a CoverageDataSource
-   * @return This builder instance for method chaining
-   */
-  public ProcessCoverageBuilder dataSource(final Supplier<CoverageDataSource> dataSourceSupplier) {
-    this.dataSourceSupplier = dataSourceSupplier;
-    return this;
-  }
+  ProcessCoverageBuilder testClass(Class<?> testClass);
 
   /**
    * Sets a custom print stream consumer for coverage report output.
@@ -102,23 +68,12 @@ public class ProcessCoverageBuilder {
    * @param printStream Consumer function that handles output strings
    * @return This builder instance for method chaining
    */
-  public ProcessCoverageBuilder printStream(final Consumer<String> printStream) {
-    this.printStream = printStream;
-    return this;
-  }
+  ProcessCoverageBuilder printStream(Consumer<String> printStream);
 
   /**
    * Builds and returns a configured ProcessCoverage instance.
    *
    * @return A new ProcessCoverage instance configured with the builder settings
    */
-  public ProcessCoverage build() {
-    return new ProcessCoverage(
-        testClass,
-        excludedProcessDefinitionIds,
-        excludedDecisionDefinitionIds,
-        reportDirectory,
-        printStream,
-        dataSourceSupplier);
-  }
+  ProcessCoverage build();
 }

@@ -15,63 +15,17 @@
  */
 package io.camunda.process.test.api.coverage.model;
 
-import java.util.Objects;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.immutables.value.Value;
 
-public class DecisionModel {
+@Value.Immutable
+@JsonDeserialize(builder = ImmutableDecisionModel.Builder.class)
+public interface DecisionModel {
+  String getDecisionDefinitionId();
 
-  /** The decision definition id. */
-  private final String decisionDefinitionId;
+  int getTotalRuleCount();
 
-  /** Total count of rules in the decision table. */
-  private final int totalRuleCount;
+  String getVersion();
 
-  /** Version of the decision definition. */
-  private final String version;
-
-  /** XML representation of the decision requirements (DRD). */
-  private final String xml;
-
-  public DecisionModel(
-      final String decisionDefinitionId,
-      final int totalRuleCount,
-      final String version,
-      final String xml) {
-    this.decisionDefinitionId = decisionDefinitionId;
-    this.totalRuleCount = totalRuleCount;
-    this.version = version;
-    this.xml = xml;
-  }
-
-  public String getDecisionDefinitionId() {
-    return decisionDefinitionId;
-  }
-
-  public int getTotalRuleCount() {
-    return totalRuleCount;
-  }
-
-  public String getVersion() {
-    return version;
-  }
-
-  public String xml() {
-    return xml;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(decisionDefinitionId, totalRuleCount, version, xml);
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-    final DecisionModel other = (DecisionModel) obj;
-    return decisionDefinitionId.equals(other.decisionDefinitionId)
-        && totalRuleCount == other.totalRuleCount
-        && version.equals(other.version)
-        && xml.equals(other.xml);
-  }
+  String xml();
 }

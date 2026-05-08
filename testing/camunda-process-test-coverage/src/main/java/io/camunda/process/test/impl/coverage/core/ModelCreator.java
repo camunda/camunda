@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.coverage.core;
 
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.process.test.api.coverage.CoverageDataSource;
+import io.camunda.process.test.api.coverage.model.ImmutableModel;
 import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -54,7 +55,8 @@ public class ModelCreator {
     final ByteArrayInputStream inputStream =
         new ByteArrayInputStream(
             dataSource
-                .getProcessDefinitionXmlByProcessDefinitionId(processDefinitionId)
+                .getProcessDefinitionXmlByProcessDefinitionId()
+                .get(processDefinitionId)
                 .getBytes());
     final BpmnModelInstance modelInstance = Bpmn.readModelFromStream(inputStream);
 
@@ -64,7 +66,7 @@ public class ModelCreator {
     }
 
     final ProcessDefinition processDefinition =
-        dataSource.findProcessDefinitionByProcessDefinitionId(processDefinitionId);
+        dataSource.getProcessDefinitionsByProcessDefinitionId().get(processDefinitionId);
 
     final Set<FlowNode> definitionFlowNodes =
         modelInstance.getModelElementsByType(FlowNode.class).stream()
@@ -76,11 +78,12 @@ public class ModelCreator {
             .filter(s -> definitionFlowNodes.contains(s.getSource()))
             .collect(Collectors.toSet());
 
-    return new Model(
-        processDefinition.getProcessDefinitionId(),
-        definitionFlowNodes.size() + definitionSequenceFlows.size(),
-        String.valueOf(processDefinition.getVersion()),
-        Bpmn.convertToString(modelInstance));
+    return ImmutableModel.builder()
+        .processDefinitionId(processDefinition.getProcessDefinitionId())
+        .totalElementCount(definitionFlowNodes.size() + definitionSequenceFlows.size())
+        .version(String.valueOf(processDefinition.getVersion()))
+        .xml(Bpmn.convertToString(modelInstance))
+        .build();
   }
 
   /**

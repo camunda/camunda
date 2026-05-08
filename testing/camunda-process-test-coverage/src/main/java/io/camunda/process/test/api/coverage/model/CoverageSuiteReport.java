@@ -20,13 +20,15 @@ import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableCoverage.Builder.class)
-public interface Coverage {
-  String getProcessDefinitionId();
+@JsonDeserialize(builder = ImmutableCoverageSuiteReport.Builder.class)
+public interface CoverageSuiteReport {
+  String getId();
 
-  List<String> getCompletedElements();
+  String getName();
 
-  List<String> getTakenSequenceFlows();
+  List<Run> getRuns();
 
-  double getCoverage();
+  List<Coverage> getCoverages();
+
+  List<DecisionCoverage> getDecisionCoverages();
 }

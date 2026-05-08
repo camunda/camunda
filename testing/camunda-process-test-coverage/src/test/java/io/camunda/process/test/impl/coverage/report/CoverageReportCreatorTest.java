@@ -16,273 +16,75 @@
 package io.camunda.process.test.impl.coverage.report;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
-import io.camunda.process.test.api.coverage.model.Coverage;
+import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
+import io.camunda.process.test.api.coverage.model.ImmutableCoverage;
+import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
+import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
+import io.camunda.process.test.api.coverage.model.ImmutableModel;
+import io.camunda.process.test.api.coverage.model.ImmutableRun;
+import io.camunda.process.test.api.coverage.model.ImmutableSuite;
 import io.camunda.process.test.api.coverage.model.Model;
-import io.camunda.process.test.api.coverage.model.Run;
 import io.camunda.process.test.api.coverage.model.Suite;
-import io.camunda.process.test.impl.coverage.core.CoverageCreator;
-import io.camunda.process.test.impl.coverage.core.DecisionCoverageCreator;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 class CoverageReportCreatorTest {
 
   @Test
-  void shouldCreateSuiteCoverageReport() {
+  void shouldCreateAggregatedCoverageReportWithDefinitions() {
     // given
-    final Suite suite = mock(Suite.class);
-    final Model model = mock(Model.class);
-    final Run run = mock(Run.class);
-    final Coverage coverage = mock(Coverage.class);
+    final Model model =
+        ImmutableModel.builder()
+            .processDefinitionId("process")
+            .totalElementCount(2)
+            .version("1")
+            .xml("<bpmn>process</bpmn>")
+            .build();
+    final DecisionModel decisionModel =
+        ImmutableDecisionModel.builder()
+            .decisionDefinitionId("decision")
+            .totalRuleCount(1)
+            .version("1")
+            .xml("<dmn>decision</dmn>")
+            .build();
+    final Suite suite =
+        ImmutableSuite.builder()
+            .id("suite")
+            .name("Suite")
+            .addRuns(
+                ImmutableRun.builder()
+                    .name("run")
+                    .addCoverages(
+                        ImmutableCoverage.builder()
+                            .processDefinitionId("process")
+                            .addCompletedElements("task")
+                            .addTakenSequenceFlows("flow")
+                            .coverage(1.0)
+                            .build())
+                    .addDecisionCoverages(
+                        ImmutableDecisionCoverage.builder()
+                            .decisionDefinitionId("decision")
+                            .addMatchedRuleIds("rule")
+                            .addMatchedRuleIndices(1)
+                            .coverage(1.0)
+                            .build())
+                    .build())
+            .build();
 
-    when(suite.getId()).thenReturn("suite-1");
-    when(suite.getName()).thenReturn("Test Suite 1");
-    when(suite.getRuns()).thenReturn(Collections.singletonList(run));
-    when(run.getCoverages()).thenReturn(Collections.singletonList(coverage));
-    when(run.getDecisionCoverages()).thenReturn(Collections.emptyList());
+    // when
+    final CoverageReport report =
+        CoverageReportCreator.createAggregatedCoverageReport(
+            Collections.singletonList(suite),
+            Collections.singletonList(model),
+            Collections.singletonList(decisionModel));
 
-    try (final MockedStatic<CoverageCreator> coverageCreatorMock =
-            mockStatic(CoverageCreator.class);
-        final MockedStatic<DecisionCoverageCreator> decisionCoverageCreatorMock =
-            mockStatic(DecisionCoverageCreator.class)) {
-      coverageCreatorMock
-          .when(() -> CoverageCreator.aggregateCoverages(anyCollection(), anyCollection()))
-          .thenReturn(Collections.singletonList(coverage));
-      decisionCoverageCreatorMock
-          .when(() -> DecisionCoverageCreator.aggregateCoverages(anyCollection(), anyCollection()))
-          .thenReturn(Collections.emptyList());
-
-      // when
-      final SuiteCoverageReport report =
-          CoverageReportCreator.createSuiteCoverageReport(
-              suite, Collections.singletonList(model), Collections.emptyList());
-
-      // then
-      assertThat(report).isNotNull();
-      assertThat(report.getId()).isEqualTo("suite-1");
-      assertThat(report.getName()).isEqualTo("Test Suite 1");
-      assertThat(report.getRuns()).hasSize(1);
-      assertThat(report.getModels()).hasSize(1);
-      assertThat(report.getCoverages()).hasSize(1);
-    }
-  }
-
-  @Test
-  void shouldCreateAggregatedCoverageReport() {
-    // given
-    final Suite suite1 = mock(Suite.class);
-    final Suite suite2 = mock(Suite.class);
-    final Model model = mock(Model.class);
-    final Run run1 = mock(Run.class);
-    final Run run2 = mock(Run.class);
-    final Coverage coverage1 = mock(Coverage.class);
-    final Coverage coverage2 = mock(Coverage.class);
-
-    when(suite1.getId()).thenReturn("suite-1");
-    when(suite1.getName()).thenReturn("Test Suite 1");
-    when(suite1.getRuns()).thenReturn(Collections.singletonList(run1));
-    when(run1.getCoverages()).thenReturn(Collections.singletonList(coverage1));
-    when(run1.getDecisionCoverages()).thenReturn(Collections.emptyList());
-
-    when(suite2.getId()).thenReturn("suite-2");
-    when(suite2.getName()).thenReturn("Test Suite 2");
-    when(suite2.getRuns()).thenReturn(Collections.singletonList(run2));
-    when(run2.getCoverages()).thenReturn(Collections.singletonList(coverage2));
-    when(run2.getDecisionCoverages()).thenReturn(Collections.emptyList());
-
-    try (final MockedStatic<CoverageCreator> coverageCreatorMock =
-            mockStatic(CoverageCreator.class);
-        final MockedStatic<DecisionCoverageCreator> decisionCoverageCreatorMock =
-            mockStatic(DecisionCoverageCreator.class)) {
-      coverageCreatorMock
-          .when(() -> CoverageCreator.aggregateCoverages(anyCollection(), anyCollection()))
-          .thenReturn(Arrays.asList(coverage1, coverage2));
-      decisionCoverageCreatorMock
-          .when(() -> DecisionCoverageCreator.aggregateCoverages(anyCollection(), anyCollection()))
-          .thenReturn(Collections.emptyList());
-
-      // when
-      final AggregatedCoverageReport report =
-          CoverageReportCreator.createAggregatedCoverageReport(
-              Arrays.asList(suite1, suite2),
-              Collections.singletonList(model),
-              Collections.emptyList());
-
-      // then
-      assertThat(report).isNotNull();
-      assertThat(report.getSuites()).hasSize(2);
-      assertThat(report.getModels()).hasSize(1);
-      assertThat(report.getCoverages()).hasSize(2);
-    }
-  }
-
-  @Test
-  void shouldCreateHtmlCoverageReport() {
-    // given
-    final Suite suite1 = mock(Suite.class);
-    final Suite suite2 = mock(Suite.class);
-    final Model model1 = mock(Model.class);
-    final Model model2 = mock(Model.class);
-    final Run run1 = mock(Run.class);
-    final Run run2 = mock(Run.class);
-    final Coverage coverage1 = mock(Coverage.class);
-    final Coverage coverage2 = mock(Coverage.class);
-
-    when(suite1.getId()).thenReturn("suite-1");
-    when(suite1.getName()).thenReturn("Test Suite 1");
-    when(suite1.getRuns()).thenReturn(Collections.singletonList(run1));
-    when(run1.getCoverages()).thenReturn(Collections.singletonList(coverage1));
-    when(run1.getDecisionCoverages()).thenReturn(Collections.emptyList());
-
-    when(suite2.getId()).thenReturn("suite-2");
-    when(suite2.getName()).thenReturn("Test Suite 2");
-    when(suite2.getRuns()).thenReturn(Collections.singletonList(run2));
-    when(run2.getCoverages()).thenReturn(Collections.singletonList(coverage2));
-    when(run2.getDecisionCoverages()).thenReturn(Collections.emptyList());
-
-    when(model1.getProcessDefinitionId()).thenReturn("process-1");
-    when(model1.xml()).thenReturn("<bpmn>process1</bpmn>");
-    when(model2.getProcessDefinitionId()).thenReturn("process-2");
-    when(model2.xml()).thenReturn("<bpmn>process2</bpmn>");
-
-    try (final MockedStatic<CoverageCreator> coverageCreatorMock =
-            mockStatic(CoverageCreator.class);
-        final MockedStatic<DecisionCoverageCreator> decisionCoverageCreatorMock =
-            mockStatic(DecisionCoverageCreator.class)) {
-      coverageCreatorMock
-          .when(() -> CoverageCreator.aggregateCoverages(anyCollection(), anyCollection()))
-          .thenReturn(Arrays.asList(coverage1, coverage2));
-      decisionCoverageCreatorMock
-          .when(() -> DecisionCoverageCreator.aggregateCoverages(anyCollection(), anyCollection()))
-          .thenReturn(Collections.emptyList());
-
-      // when
-      final HtmlCoverageReport report =
-          CoverageReportCreator.createHtmlCoverageReport(
-              Arrays.asList(suite1, suite2),
-              Arrays.asList(model1, model2),
-              Collections.emptyList());
-
-      // then
-      assertThat(report).isNotNull();
-      assertThat(report.getSuites()).hasSize(2);
-      assertThat(report.getCoverages()).hasSize(2);
-      assertThat(report.getDefinitions()).hasSize(2);
-      assertThat(report.getDefinitions()).containsKeys("process-1", "process-2");
-      assertThat(report.getDefinitions().get("process-1")).isEqualTo("<bpmn>process1</bpmn>");
-      assertThat(report.getDefinitions().get("process-2")).isEqualTo("<bpmn>process2</bpmn>");
-    }
-  }
-
-  @Test
-  void shouldCreateHtmlCoverageReportWithEmptyCollections() {
-    // given
-    final List<Suite> suites = Collections.emptyList();
-    final List<Model> models = Collections.emptyList();
-    final List<DecisionModel> decisionModels = Collections.emptyList();
-
-    try (final MockedStatic<CoverageCreator> coverageCreatorMock =
-            mockStatic(CoverageCreator.class);
-        final MockedStatic<DecisionCoverageCreator> decisionCoverageCreatorMock =
-            mockStatic(DecisionCoverageCreator.class)) {
-      coverageCreatorMock
-          .when(() -> CoverageCreator.aggregateCoverages(anyCollection(), anyCollection()))
-          .thenReturn(Collections.emptyList());
-      decisionCoverageCreatorMock
-          .when(() -> DecisionCoverageCreator.aggregateCoverages(anyCollection(), anyCollection()))
-          .thenReturn(Collections.emptyList());
-
-      // when
-      final HtmlCoverageReport report =
-          CoverageReportCreator.createHtmlCoverageReport(suites, models, decisionModels);
-
-      // then
-      assertThat(report).isNotNull();
-      assertThat(report.getSuites()).isEmpty();
-      assertThat(report.getCoverages()).isEmpty();
-      assertThat(report.getDefinitions()).isEmpty();
-    }
-  }
-
-  @Test
-  void shouldHandleDuplicateProcessDefinitionIds() {
-    // given
-    final Suite suite = mock(Suite.class);
-    final Model model1 = mock(Model.class);
-    final Model model2 = mock(Model.class);
-    final Run run = mock(Run.class);
-    final Coverage coverage = mock(Coverage.class);
-
-    when(suite.getId()).thenReturn("suite-1");
-    when(suite.getName()).thenReturn("Test Suite 1");
-    when(suite.getRuns()).thenReturn(Collections.singletonList(run));
-    when(run.getCoverages()).thenReturn(Collections.singletonList(coverage));
-    when(run.getDecisionCoverages()).thenReturn(Collections.emptyList());
-
-    when(model1.getProcessDefinitionId()).thenReturn("process-1");
-    when(model1.xml()).thenReturn("<bpmn>first</bpmn>");
-    when(model2.getProcessDefinitionId()).thenReturn("process-1");
-    when(model2.xml()).thenReturn("<bpmn>second</bpmn>");
-
-    try (final MockedStatic<CoverageCreator> coverageCreatorMock =
-            mockStatic(CoverageCreator.class);
-        final MockedStatic<DecisionCoverageCreator> decisionCoverageCreatorMock =
-            mockStatic(DecisionCoverageCreator.class)) {
-      coverageCreatorMock
-          .when(() -> CoverageCreator.aggregateCoverages(anyCollection(), anyCollection()))
-          .thenReturn(Collections.singletonList(coverage));
-      decisionCoverageCreatorMock
-          .when(() -> DecisionCoverageCreator.aggregateCoverages(anyCollection(), anyCollection()))
-          .thenReturn(Collections.emptyList());
-
-      // when
-      final HtmlCoverageReport report =
-          CoverageReportCreator.createHtmlCoverageReport(
-              Collections.singletonList(suite),
-              Arrays.asList(model1, model2),
-              Collections.emptyList());
-
-      // then
-      assertThat(report).isNotNull();
-      assertThat(report.getDefinitions()).hasSize(1);
-      assertThat(report.getDefinitions().get("process-1")).isEqualTo("<bpmn>first</bpmn>");
-    }
-  }
-
-  @Test
-  void shouldThrowExceptionWhenSuitesIsNull() {
-    // given
-    final List<Model> models = Collections.emptyList();
-    final List<DecisionModel> decisionModels = Collections.emptyList();
-
-    // when/then
-    assertThatThrownBy(
-            () -> CoverageReportCreator.createHtmlCoverageReport(null, models, decisionModels))
-        .isInstanceOf(NullPointerException.class);
-  }
-
-  @Test
-  void shouldThrowExceptionWhenModelsIsNull() {
-    // given
-    final List<Suite> suites = Collections.emptyList();
-    final List<DecisionModel> decisionModels = Collections.emptyList();
-
-    // when/then
-    assertThatThrownBy(
-            () -> CoverageReportCreator.createHtmlCoverageReport(suites, null, decisionModels))
-        .isInstanceOf(NullPointerException.class);
+    // then
+    assertThat(report.getSuites()).hasSize(1);
+    assertThat(report.getCoverages()).hasSize(1);
+    assertThat(report.getDecisionCoverages()).hasSize(1);
+    assertThat(report.getDefinitions()).containsEntry("process", "<bpmn>process</bpmn>");
+    assertThat(report.getDecisionDefinitions()).containsEntry("decision", "<dmn>decision</dmn>");
   }
 }

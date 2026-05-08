@@ -15,45 +15,16 @@
  */
 package io.camunda.process.test.api.coverage.model;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.List;
+import org.immutables.value.Value;
 
-/** A suite includes several Runs and contains the data for the coverage calculation. */
-public class Suite {
+@Value.Immutable
+@JsonDeserialize(builder = ImmutableSuite.Builder.class)
+public interface Suite {
+  String getId();
 
-  /** The id of the suite */
-  private final String id;
+  String getName();
 
-  /** The name of the suite */
-  private final String name;
-
-  /** List of runs that are in the suite */
-  private final Collection<Run> runs;
-
-  public Suite(final String id, final String name) {
-    this(id, name, new ArrayList<>());
-  }
-
-  public Suite(final String id, final String name, final Collection<Run> runs) {
-    this.id = id;
-    this.name = name;
-    this.runs = runs;
-  }
-
-  /** Adds a Run to the suite */
-  public void addRun(final Run run) {
-    runs.add(run);
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public Collection<Run> getRuns() {
-    return runs;
-  }
+  List<Run> getRuns();
 }

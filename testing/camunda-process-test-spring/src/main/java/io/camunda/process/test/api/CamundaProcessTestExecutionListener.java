@@ -28,6 +28,7 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
+import io.camunda.process.test.impl.coverage.CoverageDataSourceSnapshot;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
@@ -143,7 +144,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     processCoverage =
         processCoverageBuilder
             .testClass(testContext.getTestClass())
-            .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
             .reportDirectory(coverageReportConfiguration.getReportDirectory())
             .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
             .excludeDecisionDefinitionIds(coverageReportConfiguration.getExcludedDecisions())
@@ -208,7 +208,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     conditionalBehaviorEngine.stop();
 
     try {
-      processCoverage.collectTestRunCoverage(testContext.getTestMethod().getName());
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
+      final CoverageDataSourceSnapshot coverageDataSnapshot =
+          createCoverageDataSnapshot(dataSource, testContext.getTestMethod().getName());
+      processCoverage.collectTestRunCoverage(
+          testContext.getTestMethod().getName(), coverageDataSnapshot);
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -370,6 +374,16 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private static boolean isTestFailed(final TestContext testContext) {
     return testContext.getTestException() != null;
+  }
+
+  private CoverageDataSourceSnapshot createCoverageDataSnapshot(
+      final CamundaDataSource dataSource, final String testName) {
+    try {
+      return CoverageDataSourceSnapshot.from(dataSource);
+    } catch (final Throwable t) {
+      LOG.warn("Failed to create coverage data snapshot for '{}', using empty snapshot.", testName, t);
+      return CoverageDataSourceSnapshot.empty();
+    }
   }
 
   @Override

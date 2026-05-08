@@ -50,33 +50,42 @@ camunda-process-test-coverage/
 ├── webpack.config.js     Webpack configuration (bundling + CSS extraction)
 ├── pom.xml               Maven module (packaging=jar, runs webpack via frontend-maven-plugin)
 ├── src/
-│   ├── app.js            Entry point – imports CSS, wires router + views
-│   ├── utils.js          Shared helpers (formatting, HTML escaping, colours)
-│   ├── router.js         Hash-based router
-│   ├── sidebar.js        Sidebar navigation component
-│   ├── bpmn.js           camunda-bpmn-js viewer wrapper + zoom controls
-│   ├── styles.css        Custom styles (Camunda brand, layout)
-│   ├── index.html        HTML template ({{ COVERAGE_DATA }} placeholder)
-│   └── views/
-│       ├── dashboard.js  Dashboard view
-│       ├── process.js    Process details view (BPMN diagram)
-│       ├── suite.js      Test suite view
-│       └── run.js        Test case (run) view
-└── public/
-    └── static/media/     Logo, favicon
+│   └── main/
+│       ├── java/io/camunda/process/test/
+│       │   ├── api/coverage/          Coverage API interfaces + model interfaces
+│       │   └── impl/coverage/         Coverage implementation and report generation
+│       └── frontend/
+│           ├── app.js                 Entry point – imports CSS, wires router + views
+│           ├── utils.js               Shared helpers (formatting, HTML escaping, colours)
+│           ├── router.js              Hash-based router
+│           ├── sidebar.js             Sidebar navigation component
+│           ├── bpmn.js                camunda-bpmn-js viewer wrapper + zoom controls
+│           ├── styles.css             Custom styles (Camunda brand, layout)
+│           ├── index.html             HTML template ({{ COVERAGE_DATA }} placeholder)
+│           ├── views/                 Frontend views
+│           └── public/static/media/   Logo, favicon
 ```
 
 ---
 
 ## Architecture
 
+### Java coverage backend
+
+- API package (`io.camunda.process.test.api.coverage`) contains interfaces only.
+- Coverage model/report DTOs are defined as interfaces using **Immutables**.
+- Implementation package (`io.camunda.process.test.impl.coverage`) contains collectors, creators, and
+  report writers.
+- `ProcessCoverage` returns coverage report objects, which should be used in unit tests to assert
+  behavior.
+
 ### Webpack bundling
 
 Webpack (`webpack.config.js`) handles:
 
-- **Entry**: `src/app.js` imports all ES modules and CSS.
+- **Entry**: `src/main/frontend/app.js` imports all ES modules and CSS.
 - **CSS**: `MiniCssExtractPlugin` extracts all CSS into `bundle.css`. Fonts are copied to `static/fonts/` via the `asset/resource` rule.
-- **HTML / media**: `CopyWebpackPlugin` copies `src/index.html` and `public/static/media/` to the output directory.
+- **HTML / media**: `CopyWebpackPlugin` copies `src/main/frontend/index.html` and `src/main/frontend/public/static/media/` to the output directory.
 - **Output path**: The `BUILD_PATH` environment variable (set by Maven) controls where webpack writes the `coverage/` directory.
 
 ### Routing
@@ -93,7 +102,7 @@ Hash-based routing (`window.location.hash`) provides deep-linkable URLs:
 
 ### BPMN rendering
 
-`camunda-bpmn-js` `NavigatedViewer` is used. It is destroyed and re-created on each navigation to a process page (`src/bpmn.js`).
+`camunda-bpmn-js` `NavigatedViewer` is used. It is destroyed and re-created on each navigation to a process page (`src/main/frontend/bpmn.js`).
 
 Coverage highlighting uses `canvas.addMarker()`:
 - **Completed elements** → marker `coverage-completed` (blue fill via CSS)
@@ -124,3 +133,4 @@ npm install camunda-bpmn-js@latest
 # Rebuild
 npm run build
 ```
+

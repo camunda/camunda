@@ -16,8 +16,12 @@
 package io.camunda.process.test.impl.coverage.report;
 
 import io.camunda.process.test.api.coverage.model.Coverage;
+import io.camunda.process.test.api.coverage.model.CoverageReport;
+import io.camunda.process.test.api.coverage.model.CoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
+import io.camunda.process.test.api.coverage.model.ImmutableCoverageReport;
+import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
 import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.api.coverage.model.Suite;
 import io.camunda.process.test.impl.coverage.core.CoverageCreator;
@@ -29,83 +33,35 @@ import java.util.stream.Collectors;
 
 /** Utility class for creating and aggregating coverage reports. */
 public class CoverageReportCreator {
-  /**
-   * Creates a coverage report from a single test suite and associated process models.
-   *
-   * @param suite The test suite containing coverage information
-   * @param models Collection of process models with structure information
-   * @param decisionModels Collection of decision models with rule information
-   * @return A CoverageReport containing the suite, models and aggregated coverage data
-   */
-  public static SuiteCoverageReport createSuiteCoverageReport(
+  public static CoverageSuiteReport createSuiteCoverageReport(
       final Suite suite,
       final Collection<Model> models,
       final Collection<DecisionModel> decisionModels) {
-    final Collection<Coverage> coverages =
+    final java.util.List<Coverage> coverages =
         CoverageCreator.aggregateCoverages(allCoverages(Collections.singletonList(suite)), models);
-    final Collection<DecisionCoverage> decisionCoverages =
+    final java.util.List<DecisionCoverage> decisionCoverages =
         DecisionCoverageCreator.aggregateCoverages(
             allDecisionCoverages(Collections.singletonList(suite)), decisionModels);
-    return new SuiteCoverageReport(
-        suite.getId(), suite.getName(), suite.getRuns(), models, coverages, decisionCoverages);
+    return ImmutableCoverageSuiteReport.builder()
+        .id(suite.getId())
+        .name(suite.getName())
+        .addAllRuns(suite.getRuns())
+        .addAllCoverages(coverages)
+        .addAllDecisionCoverages(decisionCoverages)
+        .build();
   }
 
-  /**
-   * Creates a coverage report from multiple test suites and associated process models.
-   *
-   * @param suites Collection of test suites containing coverage information
-   * @param models Collection of process models with structure information
-   * @param decisionModels Collection of decision models with rule information
-   * @return A CoverageReport containing all suites, models and aggregated coverage data
-   */
-  public static AggregatedCoverageReport createAggregatedCoverageReport(
+  public static CoverageReport createAggregatedCoverageReport(
       final Collection<Suite> suites,
       final Collection<Model> models,
       final Collection<DecisionModel> decisionModels) {
-    final Collection<Coverage> coverages =
-        CoverageCreator.aggregateCoverages(allCoverages(suites), models);
-    final Collection<DecisionCoverage> decisionCoverages =
-        DecisionCoverageCreator.aggregateCoverages(allDecisionCoverages(suites), decisionModels);
-    final Collection<AggregatedSuiteInfo> suiteInfos =
-        suites.stream()
-            .map(
-                suite ->
-                    new AggregatedSuiteInfo(
-                        suite.getId(),
-                        suite.getName(),
-                        CoverageCreator.aggregateCoverages(
-                            allCoverages(Collections.singletonList(suite)), models),
-                        DecisionCoverageCreator.aggregateCoverages(
-                            allDecisionCoverages(Collections.singletonList(suite)),
-                            decisionModels)))
-            .collect(Collectors.toList());
-    return new AggregatedCoverageReport(suiteInfos, models, coverages, decisionCoverages);
-  }
-
-  /**
-   * Creates an HTML coverage report from multiple test suites and their associated process models.
-   *
-   * <p>This method: 1. Generates individual suite coverage reports for each provided test suite
-   * 2.Aggregates coverage data from all suites 3. Collects process definitions from models for
-   * visualization 4. Creates a unified HTML report containing all coverage data
-   *
-   * @param suites Collection of test suites containing execution data and coverage information
-   * @param models Collection of process models with structure information for coverage calculation
-   * @param decisionModels Collection of decision models with rule information
-   * @return A complete HTML coverage report object containing suite reports, aggregated coverage
-   *     data, and process definitions
-   */
-  public static HtmlCoverageReport createHtmlCoverageReport(
-      final Collection<Suite> suites,
-      final Collection<Model> models,
-      final Collection<DecisionModel> decisionModels) {
-    final Collection<SuiteCoverageReport> suiteReports =
+    final java.util.List<CoverageSuiteReport> suiteReports =
         suites.stream()
             .map(suite -> createSuiteCoverageReport(suite, models, decisionModels))
             .collect(Collectors.toList());
-    final Collection<Coverage> coverages =
+    final java.util.List<Coverage> coverages =
         CoverageCreator.aggregateCoverages(allCoverages(suites), models);
-    final Collection<DecisionCoverage> decisionCoverages =
+    final java.util.List<DecisionCoverage> decisionCoverages =
         DecisionCoverageCreator.aggregateCoverages(allDecisionCoverages(suites), decisionModels);
     final Map<String, String> definitions =
         models.stream()
@@ -115,8 +71,15 @@ public class CoverageReportCreator {
             .collect(
                 Collectors.toMap(
                     DecisionModel::getDecisionDefinitionId, DecisionModel::xml, (a, b) -> a));
-    return new HtmlCoverageReport(
-        suiteReports, coverages, decisionCoverages, definitions, decisionDefinitions);
+    return ImmutableCoverageReport.builder()
+        .addAllSuites(suiteReports)
+        .addAllModels(models)
+        .addAllDecisionModels(decisionModels)
+        .addAllCoverages(coverages)
+        .addAllDecisionCoverages(decisionCoverages)
+        .putAllDefinitions(definitions)
+        .putAllDecisionDefinitions(decisionDefinitions)
+        .build();
   }
 
   /**

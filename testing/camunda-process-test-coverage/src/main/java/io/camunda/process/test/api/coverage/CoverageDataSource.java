@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.api.coverage;
 
-import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ElementInstance;
@@ -23,25 +22,25 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Map;
 
 public interface CoverageDataSource {
 
-  List<ProcessInstance> findProcessInstances();
+  List<ProcessInstance> getProcessInstances();
 
-  List<ElementInstance> findElementInstancesByProcessInstanceKey(long processInstanceKey);
+  Map<Long, List<ElementInstance>> getElementInstancesByProcessInstanceKey();
 
-  List<ProcessInstanceSequenceFlow> findSequenceFlowsByProcessInstanceKey(long processInstanceKey);
+  Map<Long, List<ProcessInstanceSequenceFlow>> getSequenceFlowsByProcessInstanceKey();
 
-  ProcessDefinition findProcessDefinitionByProcessDefinitionId(String processDefinitionId);
+  Map<String, ProcessDefinition> getProcessDefinitionsByProcessDefinitionId();
 
-  String getProcessDefinitionXmlByProcessDefinitionId(String processDefinitionId);
+  Map<String, String> getProcessDefinitionXmlByProcessDefinitionId();
 
-  List<DecisionInstance> findDecisionInstances(Consumer<DecisionInstanceFilter> filter);
+  List<DecisionInstance> getDecisionInstances();
 
-  DecisionInstance getDecisionInstance(String decisionInstanceId);
+  Map<String, DecisionInstance> getDecisionInstancesByDecisionInstanceId();
 
-  DecisionDefinition findDecisionDefinitionByDecisionDefinitionId(String decisionDefinitionId);
+  Map<String, DecisionDefinition> getDecisionDefinitionsByDecisionDefinitionId();
 
-  String getDecisionDefinitionXmlByDecisionDefinitionKey(long decisionDefinitionKey);
+  Map<Long, String> getDecisionDefinitionXmlByDecisionDefinitionKey();
 }

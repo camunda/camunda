@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.coverage.report;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.process.test.api.coverage.model.Coverage;
+import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
 import io.camunda.process.test.api.coverage.model.Model;
@@ -85,7 +86,7 @@ public class CoverageReporter {
    *
    * @param coverageCollector The collector containing coverage data to report
    */
-  public void reportCoverage(final CoverageCollector coverageCollector) {
+  public CoverageReport reportCoverage(final CoverageCollector coverageCollector) {
     final Collection<Suite> suites =
         CoverageCollector.collectors().stream()
             .map(CoverageCollector::getSuite)
@@ -101,14 +102,19 @@ public class CoverageReporter {
             .distinct()
             .collect(Collectors.toList());
 
-    writeJsonReport(
-        CoverageReportCreator.createSuiteCoverageReport(
-            coverageCollector.getSuite(),
+    final CoverageReport suiteReport =
+        CoverageReportCreator.createAggregatedCoverageReport(
+            java.util.Collections.singletonList(coverageCollector.getSuite()),
             coverageCollector.getModels(),
-            coverageCollector.getDecisionModels()));
-    writeJsonReport(
-        CoverageReportCreator.createAggregatedCoverageReport(suites, models, decisionModels));
-    writeHtmlReport(CoverageReportCreator.createHtmlCoverageReport(suites, models, decisionModels));
+            coverageCollector.getDecisionModels());
+    final CoverageReport aggregatedReport =
+        CoverageReportCreator.createAggregatedCoverageReport(suites, models, decisionModels);
+
+    writeJsonReport(coverageCollector.getSuite().getId(), suiteReport);
+    writeJsonReport(aggregatedReport);
+    writeHtmlReport(aggregatedReport);
+    printCoverage(coverageCollector);
+    return aggregatedReport;
   }
 
   /**
@@ -119,7 +125,14 @@ public class CoverageReporter {
    *
    * @param coverageCollector The collector containing coverage data to print
    */
-  public void printCoverage(final CoverageCollector coverageCollector) {
+  public CoverageReport createSuiteCoverageReport(final CoverageCollector coverageCollector) {
+    return CoverageReportCreator.createAggregatedCoverageReport(
+        java.util.Collections.singletonList(coverageCollector.getSuite()),
+        coverageCollector.getModels(),
+        coverageCollector.getDecisionModels());
+  }
+
+  private void printCoverage(final CoverageCollector coverageCollector) {
     final Suite suite = coverageCollector.getSuite();
     final Collection<Coverage> coverages =
         CoverageCreator.aggregateCoverages(
@@ -171,20 +184,20 @@ public class CoverageReporter {
     printStream.accept(message);
   }
 
-  private void writeJsonReport(final SuiteCoverageReport report) {
-    final File destFile = new File(resourceDirectory, report.getId() + "/report.json");
+  private void writeJsonReport(final String suiteId, final CoverageReport report) {
+    final File destFile = new File(resourceDirectory, suiteId + "/report.json");
     writeContent(destFile, () -> CoverageReportUtil.toJson(report));
   }
 
-  private void writeJsonReport(final AggregatedCoverageReport aggregatedReport) {
+  private void writeJsonReport(final CoverageReport aggregatedReport) {
     final File jsonFile = new File(resourceDirectory, "/report.json");
     writeContent(jsonFile, () -> CoverageReportUtil.toJson(aggregatedReport));
   }
 
-  private void writeHtmlReport(final HtmlCoverageReport htmlCoverageReport) {
+  private void writeHtmlReport(final CoverageReport coverageReport) {
     CoverageReportUtil.installReportDependencies(resourceDirectory);
     final File destFile = new File(resourceDirectory, "report.html");
-    writeContent(destFile, () -> CoverageReportUtil.toHtml(htmlCoverageReport));
+    writeContent(destFile, () -> CoverageReportUtil.toHtml(coverageReport));
   }
 
   private void writeContent(final File destFile, final Supplier<String> contentProvider) {

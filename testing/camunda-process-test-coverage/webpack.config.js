@@ -22,13 +22,14 @@ const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
+const FRONTEND_DIR = path.resolve(__dirname, 'src/main/frontend');
 const OUTPUT_DIR = process.env.BUILD_PATH
   ? path.resolve(process.env.BUILD_PATH)
   : path.resolve(__dirname, 'target/generated-frontend-resources/coverage');
 const STATIC_DIR = path.join(OUTPUT_DIR, 'static');
 
 module.exports = {
-  entry: './src/app.js',
+  entry: path.join(FRONTEND_DIR, 'app.js'),
 
   output: {
     path: STATIC_DIR,
@@ -58,12 +59,12 @@ module.exports = {
       patterns: [
         // index.html → coverage/index.html (one level above static/)
         {
-          from: path.resolve(__dirname, 'src/index.html'),
+          from: path.join(FRONTEND_DIR, 'index.html'),
           to: path.join(OUTPUT_DIR, 'index.html'),
         },
         // Logo and favicon → coverage/static/media/
         {
-          from: path.resolve(__dirname, 'public/static/media'),
+          from: path.join(FRONTEND_DIR, 'public/static/media'),
           to: path.join(STATIC_DIR, 'media'),
           noErrorOnMissing: true,
         },

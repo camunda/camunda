@@ -15,36 +15,64 @@
  */
 package io.camunda.process.test.api.coverage;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
-import java.util.Collections;
+import io.camunda.process.test.api.coverage.model.CoverageReport;
 import org.junit.jupiter.api.Test;
 
 class ProcessCoverageBuilderTest {
 
   @Test
-  void shouldCollectCoverageForRunWithBuilderConfiguration() {
+  void shouldApplyExclusionConfigurationToCoverageResult() {
     // given
+    final ProcessInstance processInstance = mock(ProcessInstance.class);
+    when(processInstance.getProcessDefinitionId()).thenReturn("excluded-process");
+
+    final DecisionInstance decisionInstance = mock(DecisionInstance.class);
+    when(decisionInstance.getDecisionDefinitionId()).thenReturn("excluded-decision");
+    when(decisionInstance.getDecisionDefinitionType())
+        .thenReturn(DecisionDefinitionType.DECISION_TABLE);
+
     final CoverageDataSource dataSource = mock(CoverageDataSource.class);
-    when(dataSource.findProcessInstances()).thenReturn(Collections.<ProcessInstance>emptyList());
-    when(dataSource.findDecisionInstances(any()))
-        .thenReturn(Collections.<DecisionInstance>emptyList());
+    when(dataSource.getProcessInstances())
+        .thenReturn(java.util.Collections.singletonList(processInstance));
+    when(dataSource.getDecisionInstances())
+        .thenReturn(java.util.Collections.singletonList(decisionInstance));
+    when(dataSource.getElementInstancesByProcessInstanceKey())
+        .thenReturn(java.util.Collections.emptyMap());
+    when(dataSource.getSequenceFlowsByProcessInstanceKey())
+        .thenReturn(java.util.Collections.emptyMap());
+    when(dataSource.getProcessDefinitionsByProcessDefinitionId())
+        .thenReturn(java.util.Collections.emptyMap());
+    when(dataSource.getProcessDefinitionXmlByProcessDefinitionId())
+        .thenReturn(java.util.Collections.emptyMap());
+    when(dataSource.getDecisionInstancesByDecisionInstanceId())
+        .thenReturn(java.util.Collections.emptyMap());
+    when(dataSource.getDecisionDefinitionsByDecisionDefinitionId())
+        .thenReturn(java.util.Collections.emptyMap());
+    when(dataSource.getDecisionDefinitionXmlByDecisionDefinitionKey())
+        .thenReturn(java.util.Collections.emptyMap());
 
     final ProcessCoverage processCoverage =
         ProcessCoverage.newBuilder()
             .testClass(getClass())
-            .excludeProcessDefinitionIds(Collections.singletonList("excluded-process"))
-            .excludeDecisionDefinitionIds(Collections.singletonList("excluded-decision"))
-            .dataSource(() -> dataSource)
+            .excludeProcessDefinitionIds(java.util.Collections.singletonList("excluded-process"))
+            .excludeDecisionDefinitionIds(java.util.Collections.singletonList("excluded-decision"))
             .build();
 
-    // when / then
-    assertThatCode(() -> processCoverage.collectTestRunCoverage("run-1"))
-        .doesNotThrowAnyException();
+    // when
+    final CoverageReport report = processCoverage.collectTestRunCoverage("run-1", dataSource);
+
+    // then
+    assertThat(report.getSuites())
+        .singleElement()
+        .satisfies(suite -> assertThat(suite.getRuns()).hasSize(1));
+    assertThat(report.getCoverages()).isEmpty();
+    assertThat(report.getDecisionCoverages()).isEmpty();
   }
 }

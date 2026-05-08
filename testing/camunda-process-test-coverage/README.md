@@ -26,7 +26,7 @@ The production build bundles all vendor libraries and application modules into:
 ```
 target/generated-frontend-resources/
 └── coverage/
-    ├── index.html            ← copied from src/index.html
+    ├── index.html            ← copied from src/main/frontend/index.html
     └── static/
         ├── bundle.js         ← all JS (camunda-bpmn-js, Bootstrap, application)
         ├── bundle.css        ← all CSS (extracted by MiniCssExtractPlugin)

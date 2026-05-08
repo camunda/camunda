@@ -22,6 +22,8 @@ import io.camunda.process.test.api.coverage.CoverageDataSource;
 import io.camunda.process.test.api.coverage.model.Coverage;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
+import io.camunda.process.test.api.coverage.model.ImmutableRun;
+import io.camunda.process.test.api.coverage.model.ImmutableSuite;
 import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.api.coverage.model.Run;
 import io.camunda.process.test.api.coverage.model.Suite;
@@ -31,7 +33,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,20 +49,20 @@ public final class CoverageCollector {
   private static final List<CoverageCollector> COLLECTORS = new ArrayList<>();
   private final List<String> excludedProcessDefinitionIds;
   private final List<String> excludedDecisionDefinitionIds;
-  private final Supplier<CoverageDataSource> dataSourceSupplier;
+  private final String suiteId;
+  private final String suiteName;
   private final Map<String, Model> models = new HashMap<>();
   private final Map<String, DecisionModel> decisionModels = new HashMap<>();
-  private final Suite suite;
+  private final List<Run> runs = new ArrayList<>();
 
   private CoverageCollector(
       final Class<?> testClass,
       final List<String> excludedProcessDefinitionIds,
-      final List<String> excludedDecisionDefinitionIds,
-      final Supplier<CoverageDataSource> dataSourceSupplier) {
+      final List<String> excludedDecisionDefinitionIds) {
     this.excludedProcessDefinitionIds = excludedProcessDefinitionIds;
     this.excludedDecisionDefinitionIds = excludedDecisionDefinitionIds;
-    this.dataSourceSupplier = dataSourceSupplier;
-    suite = new Suite(testClass.getName(), testClass.getSimpleName());
+    suiteId = testClass.getName();
+    suiteName = testClass.getSimpleName();
   }
 
   /**
@@ -77,14 +78,10 @@ public final class CoverageCollector {
   public static CoverageCollector createCollector(
       final Class<?> testClass,
       final List<String> excludedProcessDefinitionIds,
-      final List<String> excludedDecisionDefinitionIds,
-      final Supplier<CoverageDataSource> dataSourceSupplier) {
+      final List<String> excludedDecisionDefinitionIds) {
     final CoverageCollector collector =
         new CoverageCollector(
-            testClass,
-            excludedProcessDefinitionIds,
-            excludedDecisionDefinitionIds,
-            dataSourceSupplier);
+            testClass, excludedProcessDefinitionIds, excludedDecisionDefinitionIds);
     COLLECTORS.add(collector);
     return collector;
   }
@@ -111,10 +108,9 @@ public final class CoverageCollector {
    *
    * @param runName Identifier for the current test run
    */
-  public void collectTestRunCoverage(final String runName) {
-    final CoverageDataSource dataSource = dataSourceSupplier.get();
+  public void collectTestRunCoverage(final String runName, final CoverageDataSource dataSource) {
     final List<ProcessInstance> processInstances =
-        dataSource.findProcessInstances().stream()
+        dataSource.getProcessInstances().stream()
             .filter(
                 processInstance ->
                     !excludedProcessDefinitionIds.contains(
@@ -135,7 +131,12 @@ public final class CoverageCollector {
 
     final List<DecisionCoverage> decisionCoverages = collectDecisionCoverages(dataSource);
 
-    suite.addRun(new Run(runName, coverages, decisionCoverages));
+    runs.add(
+        ImmutableRun.builder()
+            .name(runName)
+            .addAllCoverages(coverages)
+            .addAllDecisionCoverages(decisionCoverages)
+            .build());
   }
 
   /**
@@ -144,7 +145,7 @@ public final class CoverageCollector {
    * @return The test suite with coverage information
    */
   public Suite getSuite() {
-    return suite;
+    return ImmutableSuite.builder().id(suiteId).name(suiteName).addAllRuns(runs).build();
   }
 
   /**
@@ -167,10 +168,8 @@ public final class CoverageCollector {
 
   private List<DecisionCoverage> collectDecisionCoverages(final CoverageDataSource dataSource) {
     final List<DecisionInstance> decisionInstances =
-        dataSource
-            .findDecisionInstances(
-                f -> f.decisionDefinitionType(DecisionDefinitionType.DECISION_TABLE))
-            .stream()
+        dataSource.getDecisionInstances().stream()
+            .filter(di -> di.getDecisionDefinitionType() == DecisionDefinitionType.DECISION_TABLE)
             .filter(di -> !excludedDecisionDefinitionIds.contains(di.getDecisionDefinitionId()))
             .collect(Collectors.toList());
 

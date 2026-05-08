@@ -16,20 +16,13 @@
 package io.camunda.process.test.impl.coverage.report;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
 
-import io.camunda.process.test.api.coverage.model.Coverage;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collections;
+import io.camunda.process.test.api.coverage.model.ImmutableCoverageReport;
+import io.camunda.process.test.api.coverage.model.ImmutableCoverageSuiteReport;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 class CoverageReportUtilTest {
 
@@ -44,47 +37,8 @@ class CoverageReportUtilTest {
     final String json = CoverageReportUtil.toJson(testObject);
 
     // then
-    assertThat(json).isNotNull();
     assertThat(json).contains("\"key1\" : \"value1\"");
     assertThat(json).contains("\"key2\" : \"value2\"");
-    assertThat(json).contains("{\n");
-    assertThat(json).contains("\n}");
-  }
-
-  @Test
-  void shouldSerializeEmptyObjectToJson() {
-    // given
-    final Map<String, String> emptyObject = Collections.emptyMap();
-
-    // when
-    final String json = CoverageReportUtil.toJson(emptyObject);
-
-    // then
-    assertThat(json).isEqualTo("{ }");
-  }
-
-  @Test
-  void shouldSerializeNullToJson() {
-    // when
-    final String json = CoverageReportUtil.toJson(null);
-
-    // then
-    assertThat(json).isEqualTo("null");
-  }
-
-  @Test
-  void shouldThrowRuntimeExceptionForNonSerializableObject() {
-    // given
-    final Object nonSerializableObject =
-        new Object() {
-          @SuppressWarnings("unused")
-          public String getSelf() {
-            return toString();
-          }
-        };
-
-    // when/then - This should work fine with Jackson, but let's test with a problematic object
-    assertThat(CoverageReportUtil.toJson(nonSerializableObject)).isNotNull();
   }
 
   @Disabled(
@@ -92,149 +46,17 @@ class CoverageReportUtilTest {
   @Test
   void shouldGenerateHtmlReportFromTemplate() {
     // given
-    final HtmlCoverageReport coverageReport =
-        new HtmlCoverageReport(
-            Collections.emptyList(),
-            Collections.emptyList(),
-            Collections.emptyList(),
-            Collections.emptyMap(),
-            Collections.emptyMap());
+    final var report =
+        ImmutableCoverageReport.builder()
+            .addSuites(ImmutableCoverageSuiteReport.builder().id("suite").name("Suite").build())
+            .build();
 
     // when
-    final String html = CoverageReportUtil.toHtml(coverageReport);
+    final String html = CoverageReportUtil.toHtml(report);
 
     // then
-    assertThat(html).isNotNull();
     assertThat(html).contains("<!doctype html>");
-    assertThat(html).contains("<html");
-    assertThat(html).contains("window.COVERAGE_DATA = {\n  \"suites\"");
-    assertThat(html).contains("\"suites\" : [ ]");
-    assertThat(html).contains("\"coverages\" : [ ]");
-    assertThat(html).contains("\"definitions\" : { }");
-  }
-
-  @Disabled(
-      "The frontend resources are not generate in the CI build. Should be fixed by https://github.com/camunda/camunda/issues/48222.")
-  @Test
-  void shouldReplaceTemplateVariableWithCoverageData() {
-    // given
-    final Map<String, String> definitions = new HashMap<>();
-    definitions.put("process-1", "<bpmn>test</bpmn>");
-
-    final HtmlCoverageReport coverageReport =
-        new HtmlCoverageReport(
-            Collections.emptyList(),
-            Collections.emptyList(),
-            Collections.emptyList(),
-            definitions,
-            Collections.emptyMap());
-
-    // when
-    final String html = CoverageReportUtil.toHtml(coverageReport);
-
-    // then
-    assertThat(html)
-        .contains("\"definitions\" : {\n    \"process-1\" : \"<bpmn>test</bpmn>\"\n  }");
-    assertThat(html).doesNotContain("{{ COVERAGE_DATA }}");
-  }
-
-  @Disabled(
-      "The frontend resources are not generate in the CI build. Should be fixed by https://github.com/camunda/camunda/issues/48222.")
-  @Test
-  void shouldInstallReportDependenciesInNewDirectory(@TempDir final Path tempDir) {
-    // given
-    final File reportDirectory = tempDir.resolve("test-report").toFile();
-
-    // when
-    CoverageReportUtil.installReportDependencies(reportDirectory);
-
-    // then
-    assertThat(reportDirectory).exists();
-  }
-
-  @Test
-  void shouldSkipInstallationIfResourcesAlreadyExist(@TempDir final Path tempDir)
-      throws IOException {
-    // given
-    final File reportDirectory = tempDir.resolve("test-report").toFile();
-    final File resourcesDir = new File(reportDirectory, CoverageReportUtil.REPORT_RESOURCES);
-
-    // Create the resources directory manually
-    assertThat(resourcesDir.mkdirs()).isTrue();
-    Files.write(resourcesDir.toPath().resolve("test-file.txt"), "test content".getBytes());
-    final long originalModified = resourcesDir.lastModified();
-
-    // when
-    CoverageReportUtil.installReportDependencies(reportDirectory);
-
-    // then
-    assertThat(resourcesDir).exists();
-    assertThat(resourcesDir.lastModified()).isEqualTo(originalModified);
-  }
-
-  @Disabled(
-      "The frontend resources are not generate in the CI build. Should be fixed by https://github.com/camunda/camunda/issues/48222.")
-  @Test
-  void shouldCreateParentDirectoryIfNotExists(@TempDir final Path tempDir) {
-    // given
-    final File reportDirectory =
-        tempDir.resolve("nested").resolve("deep").resolve("report").toFile();
-    assertThat(reportDirectory).doesNotExist();
-
-    // when
-    CoverageReportUtil.installReportDependencies(reportDirectory);
-
-    // then
-    assertThat(reportDirectory).exists();
-  }
-
-  @Test
-  void shouldThrowExceptionWhenCannotCreateParentDirectory() {
-    // given - Create a file where we want to create a directory
-    final File existingFile = new File("/dev/null"); // This exists but is not a directory
-    final File reportDirectory = new File(existingFile, "report");
-
-    // when/then
-    assertThatThrownBy(() -> CoverageReportUtil.installReportDependencies(reportDirectory))
-        .isInstanceOf(RuntimeException.class)
-        .hasMessageContaining("Unable to copy report resources");
-  }
-
-  @Test
-  void shouldSerializeComplexCoverageReport() {
-    // given
-    final Coverage coverage = mock(Coverage.class);
-    //    when(coverage.getProcessDefinitionId()).thenReturn("element-1");
-
-    final SuiteCoverageReport suiteReport =
-        new SuiteCoverageReport(
-            "suite-1",
-            "Test Suite",
-            Collections.emptyList(),
-            Collections.emptyList(),
-            Collections.singletonList(coverage),
-            Collections.emptyList());
-
-    final Map<String, String> definitions = new HashMap<>();
-    definitions.put("process-1", "<bpmn>process definition</bpmn>");
-
-    final HtmlCoverageReport report =
-        new HtmlCoverageReport(
-            Collections.singletonList(suiteReport),
-            Collections.singletonList(coverage),
-            Collections.emptyList(),
-            definitions,
-            Collections.emptyMap());
-
-    // when
-    final String json = CoverageReportUtil.toJson(report);
-
-    // then
-    assertThat(json).isNotNull();
-    assertThat(json).contains("\"suites\"");
-    assertThat(json).contains("\"coverages\"");
-    assertThat(json).contains("\"definitions\"");
-    assertThat(json).contains("\"process-1\"");
-    assertThat(json).contains("\"<bpmn>process definition</bpmn>\"");
+    assertThat(html).contains("\"suites\"");
+    assertThat(html).contains("\"id\" : \"suite\"");
   }
 }

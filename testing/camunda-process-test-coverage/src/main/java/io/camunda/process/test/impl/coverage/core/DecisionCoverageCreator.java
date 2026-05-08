@@ -19,6 +19,7 @@ import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.process.test.api.coverage.CoverageDataSource;
 import io.camunda.process.test.api.coverage.model.DecisionCoverage;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
+import io.camunda.process.test.api.coverage.model.ImmutableDecisionCoverage;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -50,7 +51,9 @@ public class DecisionCoverageCreator {
       final DecisionInstance decisionInstance,
       final DecisionModel model) {
     final DecisionInstance detailedInstance =
-        dataSource.getDecisionInstance(decisionInstance.getDecisionInstanceId());
+        dataSource
+            .getDecisionInstancesByDecisionInstanceId()
+            .get(decisionInstance.getDecisionInstanceId());
 
     final List<String> matchedRuleIds =
         detailedInstance.getMatchedRules() == null
@@ -68,11 +71,12 @@ public class DecisionCoverageCreator {
                 .distinct()
                 .collect(Collectors.toList());
 
-    return new DecisionCoverage(
-        decisionInstance.getDecisionDefinitionId(),
-        matchedRuleIds,
-        matchedRuleIndices,
-        calculateCoverage(matchedRuleIds, model));
+    return ImmutableDecisionCoverage.builder()
+        .decisionDefinitionId(decisionInstance.getDecisionDefinitionId())
+        .addAllMatchedRuleIds(matchedRuleIds)
+        .addAllMatchedRuleIndices(matchedRuleIndices)
+        .coverage(calculateCoverage(matchedRuleIds, model))
+        .build();
   }
 
   /**
@@ -115,11 +119,12 @@ public class DecisionCoverageCreator {
                               "No model found for decision definition id: "
                                   + decisionDefinitionId));
           aggregatedCoverages.add(
-              new DecisionCoverage(
-                  decisionDefinitionId,
-                  matchedRuleIds,
-                  matchedRuleIndices,
-                  calculateCoverage(matchedRuleIds, model)));
+              ImmutableDecisionCoverage.builder()
+                  .decisionDefinitionId(decisionDefinitionId)
+                  .addAllMatchedRuleIds(matchedRuleIds)
+                  .addAllMatchedRuleIndices(matchedRuleIndices)
+                  .coverage(calculateCoverage(matchedRuleIds, model))
+                  .build());
         });
     return aggregatedCoverages;
   }

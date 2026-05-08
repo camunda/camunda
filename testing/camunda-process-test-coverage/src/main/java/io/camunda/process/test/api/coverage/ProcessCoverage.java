@@ -15,72 +15,39 @@
  */
 package io.camunda.process.test.api.coverage;
 
-import io.camunda.process.test.impl.coverage.core.CoverageCollector;
-import io.camunda.process.test.impl.coverage.report.CoverageReporter;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import io.camunda.process.test.api.coverage.model.CoverageReport;
+import io.camunda.process.test.impl.coverage.DefaultProcessCoverageBuilder;
 
 /**
- * Manages process coverage collection and reporting for Camunda processes.
+ * API for process coverage collection and report generation.
  *
- * <p>This class provides functionality to collect coverage data during test runs and generate
- * reports showing the process coverage metrics.
+ * <p>Use {@link #newBuilder()} to create an instance.
  */
-public class ProcessCoverage {
-
-  private final CoverageCollector coverageCollector;
-  private final CoverageReporter coverageReporter;
+public interface ProcessCoverage {
 
   /**
-   * Creates a new ProcessCoverage instance.
+   * Collects coverage data for one test run and returns the suite-level coverage report.
    *
-   * @param testClass The test class being executed
-   * @param excludedProcessDefinitionIds List of process definition ids to exclude from coverage
-   *     analysis
-   * @param reportDirectory Directory where the coverage reports will be generated
-   * @param dataSourceSupplier Supplier for the coverage data source used to access process data
+   * @param runName Name of the test run for identification in reports
+   * @param dataSource Snapshot of all test run data required for coverage calculation
+   * @return Coverage report for the current suite
    */
-  public ProcessCoverage(
-      final Class<?> testClass,
-      final List<String> excludedProcessDefinitionIds,
-      final List<String> excludedDecisionDefinitionIds,
-      final String reportDirectory,
-      final Consumer<String> printStream,
-      final Supplier<CoverageDataSource> dataSourceSupplier) {
-    coverageCollector =
-        CoverageCollector.createCollector(
-            testClass,
-            excludedProcessDefinitionIds,
-            excludedDecisionDefinitionIds,
-            dataSourceSupplier);
-    coverageReporter = new CoverageReporter(reportDirectory, printStream);
-  }
+  CoverageReport collectTestRunCoverage(String runName, CoverageDataSource dataSource);
+
+  /**
+   * Generates coverage reports (JSON/HTML), prints coverage summary, and returns the aggregated
+   * report.
+   *
+   * @return Aggregated coverage report
+   */
+  CoverageReport reportCoverage();
 
   /**
    * Creates a new builder for configuring and creating ProcessCoverage instances.
    *
    * @return A new ProcessCoverageBuilder instance
    */
-  public static ProcessCoverageBuilder newBuilder() {
-    return new ProcessCoverageBuilder();
-  }
-
-  /**
-   * Collects coverage data for the current test run.
-   *
-   * @param runName Name of the test run for identification in reports
-   */
-  public void collectTestRunCoverage(final String runName) {
-    coverageCollector.collectTestRunCoverage(runName);
-  }
-
-  /**
-   * Generates and outputs coverage reports based on the collected data. The reports are generated
-   * in the configured report directory and summary information is printed to standard error.
-   */
-  public void reportCoverage() {
-    coverageReporter.reportCoverage(coverageCollector);
-    coverageReporter.printCoverage(coverageCollector);
+  static ProcessCoverageBuilder newBuilder() {
+    return new DefaultProcessCoverageBuilder();
   }
 }

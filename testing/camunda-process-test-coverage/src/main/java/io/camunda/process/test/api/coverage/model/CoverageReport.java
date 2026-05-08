@@ -17,16 +17,23 @@ package io.camunda.process.test.api.coverage.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableCoverage.Builder.class)
-public interface Coverage {
-  String getProcessDefinitionId();
+@JsonDeserialize(builder = ImmutableCoverageReport.Builder.class)
+public interface CoverageReport {
+  List<CoverageSuiteReport> getSuites();
 
-  List<String> getCompletedElements();
+  List<Model> getModels();
 
-  List<String> getTakenSequenceFlows();
+  List<DecisionModel> getDecisionModels();
 
-  double getCoverage();
+  List<Coverage> getCoverages();
+
+  List<DecisionCoverage> getDecisionCoverages();
+
+  Map<String, String> getDefinitions();
+
+  Map<String, String> getDecisionDefinitions();
 }

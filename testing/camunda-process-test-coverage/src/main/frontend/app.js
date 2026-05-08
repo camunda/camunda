@@ -7,7 +7,7 @@
  * Data format (window.COVERAGE_DATA)
  * ────────────────────────────────────
  * {
- *   suites:              SuiteCoverageReport[]
+ *   suites:              CoverageSuiteReport[]
  *   coverages:           Coverage[]
  *   decisionCoverages:   DecisionCoverage[]
  *   definitions:         { [processId]: string }        // BPMN XML per process

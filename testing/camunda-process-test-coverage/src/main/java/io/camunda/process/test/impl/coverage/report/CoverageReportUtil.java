@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.coverage.report;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.process.test.api.coverage.model.CoverageReport;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -55,8 +56,7 @@ public class CoverageReportUtil {
   }
 
   /**
-   * Converts an HtmlCoverageReport to an HTML string by injecting the coverage data into a
-   * template.
+   * Converts a coverage report to an HTML string by injecting the coverage data into a template.
    *
    * <p>This method reads the HTML template from the classpath, serializes the coverage report to
    * JSON, and replaces the template placeholder with the actual coverage data. The resulting HTML
@@ -70,7 +70,7 @@ public class CoverageReportUtil {
    * @return A complete HTML string with embedded coverage data ready for display
    * @see #toJson(Object) for the JSON serialization implementation
    */
-  public static String toHtml(final HtmlCoverageReport coverageReport) {
+  public static String toHtml(final CoverageReport coverageReport) {
     final InputStream template =
         CoverageReportUtil.class.getClassLoader().getResourceAsStream(REPORT_TEMPLATE);
     Objects.requireNonNull(template, "Report template not found in classpath: " + REPORT_TEMPLATE);

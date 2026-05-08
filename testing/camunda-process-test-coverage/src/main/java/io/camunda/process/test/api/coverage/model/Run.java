@@ -15,40 +15,17 @@
  */
 package io.camunda.process.test.api.coverage.model;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import org.immutables.value.Value;
 
-public class Run {
+@Value.Immutable
+public interface Run {
+  String getName();
 
-  /** The name of the run */
-  private final String name;
+  List<Coverage> getCoverages();
 
-  private final List<Coverage> coverages;
-  private final List<DecisionCoverage> decisionCoverages;
-
-  public Run(final String name, final List<Coverage> coverages) {
-    this(name, coverages, Collections.emptyList());
-  }
-
-  public Run(
-      final String name,
-      final List<Coverage> coverages,
-      final List<DecisionCoverage> decisionCoverages) {
-    this.name = name;
-    this.coverages = coverages;
-    this.decisionCoverages = decisionCoverages;
-  }
-
-  public Collection<Coverage> getCoverages() {
-    return coverages;
-  }
-
-  public Collection<DecisionCoverage> getDecisionCoverages() {
-    return decisionCoverages;
-  }
-
-  public String getName() {
-    return name;
+  @Value.Default
+  default List<DecisionCoverage> getDecisionCoverages() {
+    return java.util.Collections.emptyList();
   }
 }

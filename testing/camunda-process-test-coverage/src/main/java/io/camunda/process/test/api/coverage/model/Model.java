@@ -15,63 +15,17 @@
  */
 package io.camunda.process.test.api.coverage.model;
 
-import java.util.Objects;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.immutables.value.Value;
 
-public class Model {
+@Value.Immutable
+@JsonDeserialize(builder = ImmutableModel.Builder.class)
+public interface Model {
+  String getProcessDefinitionId();
 
-  /** Key of the model. */
-  private final String processDefinitionId;
+  int getTotalElementCount();
 
-  /** Total count of executable elements. */
-  private final int totalElementCount;
+  String getVersion();
 
-  /** Version of the model. */
-  private final String version;
-
-  /** XML representation of the model. */
-  private final String xml;
-
-  public Model(
-      final String processDefinitionId,
-      final int totalElementCount,
-      final String version,
-      final String xml) {
-    this.processDefinitionId = processDefinitionId;
-    this.totalElementCount = totalElementCount;
-    this.version = version;
-    this.xml = xml;
-  }
-
-  public String getProcessDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public String getVersion() {
-    return version;
-  }
-
-  public int getTotalElementCount() {
-    return totalElementCount;
-  }
-
-  public String xml() {
-    return xml;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(processDefinitionId, totalElementCount, version, xml);
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-    final Model other = (Model) obj;
-    return processDefinitionId.equals(other.processDefinitionId)
-        && totalElementCount == other.totalElementCount
-        && version.equals(other.version)
-        && xml.equals(other.xml);
-  }
+  String xml();
 }

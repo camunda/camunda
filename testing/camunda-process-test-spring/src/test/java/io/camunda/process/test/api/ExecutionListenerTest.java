@@ -400,7 +400,7 @@ public class ExecutionListenerTest {
 
     // then
     verify(processCoverageBuilder).build();
-    verify(processCoverage).collectTestRunCoverage("test");
+    verify(processCoverage).collectTestRunCoverage(any(), any());
     verify(processCoverage).reportCoverage();
   }
 

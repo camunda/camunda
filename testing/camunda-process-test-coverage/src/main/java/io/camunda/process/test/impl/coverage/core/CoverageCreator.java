@@ -21,6 +21,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.api.coverage.CoverageDataSource;
 import io.camunda.process.test.api.coverage.model.Coverage;
+import io.camunda.process.test.api.coverage.model.ImmutableCoverage;
 import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -64,7 +65,9 @@ public class CoverageCreator {
 
     final List<ElementInstance> takenElementInstances =
         dataSource
-            .findElementInstancesByProcessInstanceKey(processInstance.getProcessInstanceKey())
+            .getElementInstancesByProcessInstanceKey()
+            .getOrDefault(
+                processInstance.getProcessInstanceKey(), java.util.Collections.emptyList())
             .stream()
             .filter(elementInstance -> !EXCLUDED_ELEMENT_TYPES.contains(elementInstance.getType()))
             .collect(Collectors.toList());
@@ -77,7 +80,9 @@ public class CoverageCreator {
 
     final List<String> takenSequenceFlows =
         dataSource
-            .findSequenceFlowsByProcessInstanceKey(processInstance.getProcessInstanceKey())
+            .getSequenceFlowsByProcessInstanceKey()
+            .getOrDefault(
+                processInstance.getProcessInstanceKey(), java.util.Collections.emptyList())
             .stream()
             .map(ProcessInstanceSequenceFlow::getElementId)
             .distinct()
@@ -88,11 +93,12 @@ public class CoverageCreator {
     // not reflected in the records
     enhanceSequenceFlowsByEventBasedGateway(takenSequenceFlows, takenElementInstances, model);
 
-    return new Coverage(
-        processInstance.getProcessDefinitionId(),
-        takenElements,
-        takenSequenceFlows,
-        calculateCoverage(takenElements, takenSequenceFlows, model));
+    return ImmutableCoverage.builder()
+        .processDefinitionId(processInstance.getProcessDefinitionId())
+        .addAllCompletedElements(takenElements)
+        .addAllTakenSequenceFlows(takenSequenceFlows)
+        .coverage(calculateCoverage(takenElements, takenSequenceFlows, model))
+        .build();
   }
 
   /**
@@ -131,11 +137,12 @@ public class CoverageCreator {
                           new IllegalStateException(
                               "No model found for process definition id: " + processDefinitionId));
           aggregatedCoverages.add(
-              new Coverage(
-                  processDefinitionId,
-                  completedElements,
-                  takenSequenceFlows,
-                  calculateCoverage(completedElements, takenSequenceFlows, model)));
+              ImmutableCoverage.builder()
+                  .processDefinitionId(processDefinitionId)
+                  .addAllCompletedElements(completedElements)
+                  .addAllTakenSequenceFlows(takenSequenceFlows)
+                  .coverage(calculateCoverage(completedElements, takenSequenceFlows, model))
+                  .build());
         });
     return aggregatedCoverages;
   }

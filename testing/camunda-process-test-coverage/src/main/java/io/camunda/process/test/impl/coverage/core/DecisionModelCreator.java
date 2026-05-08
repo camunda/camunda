@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.coverage.core;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.process.test.api.coverage.CoverageDataSource;
 import io.camunda.process.test.api.coverage.model.DecisionModel;
+import io.camunda.process.test.api.coverage.model.ImmutableDecisionModel;
 import java.io.ByteArrayInputStream;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -48,11 +49,12 @@ public class DecisionModelCreator {
   public static DecisionModel createModel(
       final CoverageDataSource dataSource, final String decisionDefinitionId) {
     final DecisionDefinition decisionDefinition =
-        dataSource.findDecisionDefinitionByDecisionDefinitionId(decisionDefinitionId);
+        dataSource.getDecisionDefinitionsByDecisionDefinitionId().get(decisionDefinitionId);
 
     final String xml =
-        dataSource.getDecisionDefinitionXmlByDecisionDefinitionKey(
-            decisionDefinition.getDecisionKey());
+        dataSource
+            .getDecisionDefinitionXmlByDecisionDefinitionKey()
+            .get(decisionDefinition.getDecisionKey());
 
     if (xml == null || xml.isEmpty()) {
       throw new IllegalArgumentException(
@@ -64,8 +66,12 @@ public class DecisionModelCreator {
 
     final int ruleCount = countRulesForDecision(modelInstance, decisionDefinitionId);
 
-    return new DecisionModel(
-        decisionDefinitionId, ruleCount, String.valueOf(decisionDefinition.getVersion()), xml);
+    return ImmutableDecisionModel.builder()
+        .decisionDefinitionId(decisionDefinitionId)
+        .totalRuleCount(ruleCount)
+        .version(String.valueOf(decisionDefinition.getVersion()))
+        .xml(xml)
+        .build();
   }
 
   /**
