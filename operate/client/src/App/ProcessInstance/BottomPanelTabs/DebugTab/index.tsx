@@ -6,17 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useMutation} from '@tanstack/react-query';
-import CodeMirror, {
-  EditorView,
-  Prec,
-  keymap,
-} from '@uiw/react-codemirror';
-import {feel, feelLanguage} from '@bpmn-io/lang-feel';
+import CodeMirror, {EditorView, Prec, keymap} from '@uiw/react-codemirror';
+import {
+  feel,
+  keywordCompletions,
+  snippetCompletion,
+  snippets,
+} from '@bpmn-io/lang-feel';
+import type {
+  CompletionContext,
+  CompletionSource,
+} from '@codemirror/autocomplete';
 import {evaluateExpression} from 'modules/api/v2/expression/evaluateExpression';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useVariables} from 'modules/queries/variables/useVariables';
 import {ResultView} from './ResultView';
 import {
   Content,
@@ -25,7 +31,6 @@ import {
   ExpressionLabel,
   WarningFilled,
 } from './styled';
-import {LanguageDescription} from '@codemirror/language';
 
 const EXPRESSION_INPUT_ID = 'debug-expression-input';
 
@@ -38,8 +43,7 @@ const DebugTab: React.FC = () => {
     resolvedElementInstance.elementInstanceKey !== processInstanceId;
   const useElementContext =
     isElementSelected && resolvedElementInstance.state === 'ACTIVE';
-  const showInactiveElementWarning =
-    isElementSelected && !useElementContext;
+  const showInactiveElementWarning = isElementSelected && !useElementContext;
 
   const {mutate, reset, data, error, isPending} = useMutation({
     mutationFn: (value: string) => {
@@ -52,6 +56,37 @@ const DebugTab: React.FC = () => {
       return evaluateExpression({expression, ...context});
     },
   });
+
+  const {data: variablesData} = useVariables();
+  const variableNamesRef = useRef<string[]>([]);
+  useEffect(() => {
+    variableNamesRef.current =
+      variablesData?.pages.flatMap((page) =>
+        page.items.map((variable) => variable.name),
+      ) ?? [];
+  }, [variablesData]);
+
+  const variableCompletionSource = useMemo<CompletionSource>(
+    () => (context: CompletionContext) => {
+      const word = context.matchBefore(/[A-Za-z_$][\w$]*/);
+      if (!word || (word.from === word.to && !context.explicit)) {
+        return null;
+      }
+      const names = variableNamesRef.current;
+      if (names.length === 0) {
+        return null;
+      }
+      return {
+        from: word.from,
+        options: names.map((name) => ({
+          label: name,
+          type: 'variable',
+        })),
+        validFor: /^[\w$]*$/,
+      };
+    },
+    [],
+  );
 
   const handleChange = (value: string) => {
     setExpression(value);
@@ -68,7 +103,13 @@ const DebugTab: React.FC = () => {
 
   const extensions = useMemo(
     () => [
-      feel({dialect: 'expression', completions: []}).extension,
+      feel({
+        dialect: 'expression',
+        completions: [
+          snippetCompletion(snippets),
+          variableCompletionSource,
+        ],
+      }).extension,
       EditorView.lineWrapping,
       EditorView.theme(
         {
@@ -107,7 +148,7 @@ const DebugTab: React.FC = () => {
         ]),
       ),
     ],
-    [mutate],
+    [mutate, variableCompletionSource],
   );
 
   const basicSetup = useMemo(
@@ -117,16 +158,18 @@ const DebugTab: React.FC = () => {
       highlightActiveLine: false,
       highlightActiveLineGutter: true,
       indentOnInput: false,
-      bracketMatching: false,
+      bracketMatching: true,
       autocompletion: true,
-      searchKeymap: false,
+      searchKeymap: true,
     }),
     [],
   );
 
   return (
     <Content>
-      <ExpressionLabel htmlFor={EXPRESSION_INPUT_ID}>Expression</ExpressionLabel>
+      <ExpressionLabel htmlFor={EXPRESSION_INPUT_ID}>
+        Expression
+      </ExpressionLabel>
       <ExpressionEditor>
         <CodeMirror
           id={EXPRESSION_INPUT_ID}
