@@ -124,6 +124,259 @@ jobs:
       pod: ''
       database: ${{ needs.sanitize-branch-name.outputs.storage-type }}
 
+  resolve-daily-namespace:
+    name: Resolve latest daily-on-main namespace
+    needs: await-benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    outputs:
+      daily-namespace: ${{ steps.find.outputs.namespace }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Teleport
+        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@0f46164469ae4fcd4d359d40e06bab17d4be17c9 # v2.0.6
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+      - id: find
+        name: Find most recent c8-medic-daily-*-test namespace
+        run: |
+          # Pick the most recently created namespace matching the daily-on-main
+          # naming pattern. Empty string when no daily run is currently live;
+          # the get-daily-metrics job is gated on this output so we skip the
+          # comparison cleanly rather than failing.
+          ns=$(kubectl get ns -o json \
+            | jq -r '.items[]
+                | select(.metadata.name | test("^c8-medic-daily-.*-test$"))
+                | "\(.metadata.creationTimestamp) \(.metadata.name)"' \
+            | sort -r | head -n1 | awk '{print $2}')
+          if [[ -z "$ns" ]]; then
+            echo "::warning::No active c8-medic-daily-*-test namespace found; daily comparison will be skipped"
+          else
+            echo "Resolved daily namespace: $ns"
+          fi
+          echo "namespace=${ns}" >> "$GITHUB_OUTPUT"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  get-pr-metrics:
+    name: Collect PR namespace metrics
+    needs: [sanitize-branch-name, await-benchmark]
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == inputs.label) ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, inputs.label))
+    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      duration-seconds: '600'
+
+  get-daily-metrics:
+    name: Collect daily-on-main metrics
+    needs: resolve-daily-namespace
+    if: needs.resolve-daily-namespace.outputs.daily-namespace != ''
+    uses: ./.github/workflows/camunda-load-test-metrics.yaml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.resolve-daily-namespace.outputs.daily-namespace }}
+      duration-seconds: '600'
+
+  render-comparison:
+    name: Render PR vs Daily comparison
+    needs: [sanitize-branch-name, resolve-daily-namespace, get-pr-metrics, get-daily-metrics]
+    # always() so we still post a comment when one or both metrics jobs fail —
+    # missing values render as `n/a` / `-` instead of skipping the comment entirely.
+    if: >
+      always() && (
+        (github.event.action == 'labeled' && github.event.label.name == inputs.label) ||
+        (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, inputs.label))
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+    env:
+      NAMESPACE: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      DAILY_NAMESPACE: ${{ needs.resolve-daily-namespace.outputs.daily-namespace }}
+      DURATION_SECONDS: '600'
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      STORAGE_TYPE: ${{ needs.sanitize-branch-name.outputs.storage-type }}
+      PR_RESULTS_JSON: ${{ needs.get-pr-metrics.outputs.results-json }}
+      DAILY_RESULTS_JSON: ${{ needs.get-daily-metrics.outputs.results-json }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Convert queries.yaml to JSON for render step
+        run: yq -o=json '.' load-tests/docs/scripts/queries.yaml > /tmp/queries.json
+      - name: Render and post comparison comment
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+
+            const namespace = process.env.NAMESPACE;
+            const dailyNamespace = process.env.DAILY_NAMESPACE || '';
+            const durationSeconds = parseInt(process.env.DURATION_SECONDS, 10);
+            const storageType = process.env.STORAGE_TYPE || '';
+
+            // Three sources of truth, all data-driven:
+            //   queries.yaml      → which metrics to display + how to format them
+            //   optimal.json      → aspirational target + tolerance per metric
+            //   *_RESULTS_JSON    → scraped values from the two metrics jobs (env vars)
+            const queriesDoc = JSON.parse(
+              fs.readFileSync('/tmp/queries.json', 'utf8'),
+            );
+            const optimal = JSON.parse(
+              fs.readFileSync('load-tests/docs/scripts/optimal.json', 'utf8'),
+            );
+            const optimalMetrics = optimal.metrics || {};
+
+            // Upstream job outputs are empty strings when the job failed or was
+            // skipped (e.g. no daily namespace found). Parse defensively so we
+            // still post a comment.
+            const safeJsonParse = (raw, label) => {
+              if (!raw || !raw.trim()) {
+                core.warning(`${label} JSON is empty — column will render as n/a / '-'`);
+                return {};
+              }
+              try { return JSON.parse(raw); }
+              catch (e) {
+                core.warning(`${label} JSON failed to parse — ${e.message}`);
+                return {};
+              }
+            };
+            const results = safeJsonParse(process.env.PR_RESULTS_JSON, 'Current');
+            const dailyResults = safeJsonParse(process.env.DAILY_RESULTS_JSON, 'Daily');
+
+            // Some metrics (counts) scale linearly with run duration; others (rates,
+            // percentages) are duration-invariant. optimal.json encodes the difference:
+            // counts use `per-second`, everything else uses `expected`.
+            const optimalFor = (spec) => {
+              if (spec.expected != null) return spec.expected;
+              if (spec['per-second'] != null) return spec['per-second'] * durationSeconds;
+              return null;
+            };
+
+            const numericOrNull = (v) =>
+              (typeof v === 'number' && Number.isFinite(v)) ? v : null;
+
+            const formatValue = (n, q) => {
+              if (n == null || !Number.isFinite(n)) return 'n/a';
+              const decimals = q.decimals ?? 2;
+              const unit = q.unit ?? '';
+              switch (q.format) {
+                case 'integer':
+                  return Math.round(n).toLocaleString();
+                case 'percent':
+                  return n.toFixed(decimals) + (unit || '%');
+                case 'float':
+                  return n.toFixed(decimals) + (unit ? ' ' + unit : '');
+                default:
+                  return String(n);
+              }
+            };
+
+            // Daily column is allowed to be empty (no active daily run, or no
+            // metric in this Prometheus window). Render a literal '-' rather than
+            // 'n/a' to make it visually distinct from "the query ran and got null."
+            const formatOrDash = (n, q) =>
+              (n == null || !Number.isFinite(n)) ? '-' : formatValue(n, q);
+
+            const verdict = (current, baseline, tolerance, higherIsBetter) => {
+              if (current == null || !Number.isFinite(current) || baseline == null) return '❔';
+              if (baseline === 0) {
+                if (!higherIsBetter && current === 0) return '✅';
+                if (!higherIsBetter && current > 0) return '⚠️';
+                return current > 0 ? '✅' : '❔';
+              }
+              const diff = ((current - baseline) / baseline) * 100;
+              if (Math.abs(diff) <= (tolerance ?? 10)) return '✅';
+              return (higherIsBetter ? diff > 0 : diff < 0) ? '✅' : '⚠️';
+            };
+
+            const delta = (current, baseline) => {
+              if (current == null || !Number.isFinite(current) || baseline == null) return 'n/a';
+              if (baseline === 0) return current === 0 ? '0' : '+∞';
+              const diff = ((current - baseline) / baseline) * 100;
+              const sign = diff >= 0 ? '+' : '';
+              return `${sign}${diff.toFixed(1)}%`;
+            };
+
+            const tableLines = [
+              '| Metric | Current | Daily | Optimal | Δ vs Daily | |',
+              '|---|---:|---:|---:|---:|:---:|',
+            ];
+            for (const q of queriesDoc.queries) {
+              const current = numericOrNull(results[q.name]);
+              const daily = numericOrNull(dailyResults[q.name]);
+              const spec = optimalMetrics[q.name] || {};
+              const optimalVal = optimalFor(spec);
+              const tolerance = spec['tolerance-percent'];
+              tableLines.push(
+                `| ${q.description} | ${formatValue(current, q)} | ${formatOrDash(daily, q)} | ${formatValue(optimalVal, q)} | ${delta(current, daily)} | ${verdict(current, daily, tolerance, q.higher_is_better)} |`,
+              );
+            }
+
+            const dailyLine = dailyNamespace
+              ? `Daily reference: \`${dailyNamespace}\``
+              : '_No active daily-on-main namespace found; Daily column shows \`-\`._';
+
+            const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${namespace}`;
+            const heading = storageType
+              ? `## 📈 Load Test Metrics - ${storageType}`
+              : `## 📈 Load Test Metrics`;
+            const body = [
+              heading,
+              '',
+              `Window: ${durationSeconds}s · Namespace: \`${namespace}\``,
+              dailyLine,
+              '',
+              ...tableLines,
+              '',
+              `📊 [Grafana dashboard](${dashboard}) · 🔁 [Workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+              '',
+              `_Metrics defined in \`load-tests/docs/scripts/queries.yaml\`. Daily reference is the most recent active \`c8-medic-daily-*-test\` namespace on main. Optimal target at \`load-tests/docs/scripts/optimal.json\`. Verdict compares Current to Daily; tolerance from Optimal. ⚠️ only fires on the regression side — improvements outside tolerance still show ✅._`,
+            ].join('\n');
+
+            await core.summary.addRaw(body).write();
+
+            const prNumber = parseInt(process.env.PR_NUMBER || '0', 10);
+            if (prNumber > 0) {
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   comment-pr:
     name: Comment on PR with profiling results
     needs: [run-profiling, sanitize-branch-name]
