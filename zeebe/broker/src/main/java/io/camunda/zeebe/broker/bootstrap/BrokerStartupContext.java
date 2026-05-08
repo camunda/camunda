@@ -36,6 +36,7 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.systempartition.SystemPartition;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -122,6 +123,10 @@ public interface BrokerStartupContext {
   ClusterConfigurationService getClusterConfigurationService();
 
   void setClusterConfigurationService(ClusterConfigurationService clusterConfigurationService);
+
+  SystemPartition getSystemPartition();
+
+  void setSystemPartition(SystemPartition systemPartition);
 
   BrokerClient getBrokerClient();
 

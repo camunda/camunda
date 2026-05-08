@@ -19,6 +19,8 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.systempartition.SystemPartition;
+import io.camunda.zeebe.systempartition.SystemPartitionMirror;
 import java.nio.file.Path;
 
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
@@ -78,6 +80,14 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
                 brokerStartupContext.getBrokerClient().getTopologyManager());
             clusterConfigurationManagerService.addUpdateListener(
                 config -> currentClusterConfiguration = config);
+            // When the system partition is enabled, mirror every locally observed cluster
+            // configuration change into its Raft log on the leader. Followers observe via the
+            // committed log — see SystemPartitionMirror.
+            final SystemPartition systemPartition = brokerStartupContext.getSystemPartition();
+            if (systemPartition != null) {
+              clusterConfigurationManagerService.addUpdateListener(
+                  new SystemPartitionMirror(systemPartition));
+            }
             clusterConfigurationManagerService
                 .getClusterTopology()
                 .onComplete(
@@ -179,12 +189,14 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
       final BrokerStartupContext brokerStartupContext) {
     final var rootDirectory =
         Path.of(brokerStartupContext.getBrokerConfiguration().getData().getDirectory());
+    final SystemPartition systemPartition = brokerStartupContext.getSystemPartition();
     return new ClusterConfigurationManagerService(
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
         brokerStartupContext.getBrokerConfiguration().getCluster().getConfigManager().gossip(),
         clusterChangeExecutor,
-        brokerStartupContext.getMeterRegistry());
+        brokerStartupContext.getMeterRegistry(),
+        systemPartition == null ? null : systemPartition::isLeader);
   }
 }

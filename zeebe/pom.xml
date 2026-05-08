@@ -65,6 +65,7 @@
     <module>backup-stores/common</module>
     <module>restore</module>
     <module>dynamic-config</module>
+    <module>system-partition</module>
     <module>dynamic-node-id-provider</module>
   </modules>
 

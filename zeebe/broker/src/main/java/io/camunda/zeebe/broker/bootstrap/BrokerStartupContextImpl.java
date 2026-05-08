@@ -39,6 +39,7 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.systempartition.SystemPartition;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -85,6 +86,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private BrokerAdminServiceImpl brokerAdminService;
   private JobStreamService jobStreamService;
   private ClusterConfigurationService clusterConfigurationService;
+  private SystemPartition systemPartition;
   private SnapshotApiRequestHandler snapshotApiRequestHandler;
   private CheckpointSchedulingService checkpointSchedulingService;
 
@@ -320,6 +322,16 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public void setClusterConfigurationService(
       final ClusterConfigurationService clusterConfigurationService) {
     this.clusterConfigurationService = clusterConfigurationService;
+  }
+
+  @Override
+  public SystemPartition getSystemPartition() {
+    return systemPartition;
+  }
+
+  @Override
+  public void setSystemPartition(final SystemPartition systemPartition) {
+    this.systemPartition = systemPartition;
   }
 
   @Override

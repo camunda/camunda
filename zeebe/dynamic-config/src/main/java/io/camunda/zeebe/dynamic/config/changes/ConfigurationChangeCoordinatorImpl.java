@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,13 +33,30 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
 
+  /**
+   * When non-null, this overrides the static "lowest member id is coordinator" rule. Wired by the
+   * broker to {@code SystemPartition::isLeader} when the system partition is enabled, so that
+   * coordinator role moves with the system partition's Raft leadership instead of being pinned to a
+   * specific node.
+   */
+  private final BooleanSupplier isCoordinatorOverride;
+
   public ConfigurationChangeCoordinatorImpl(
       final ClusterConfigurationManager clusterTopologyManager,
       final MemberId localMemberId,
       final ConcurrencyControl executor) {
+    this(clusterTopologyManager, localMemberId, executor, null);
+  }
+
+  public ConfigurationChangeCoordinatorImpl(
+      final ClusterConfigurationManager clusterTopologyManager,
+      final MemberId localMemberId,
+      final ConcurrencyControl executor,
+      final BooleanSupplier isCoordinatorOverride) {
     this.clusterTopologyManager = clusterTopologyManager;
     this.executor = executor;
     this.localMemberId = localMemberId;
+    this.isCoordinatorOverride = isCoordinatorOverride;
   }
 
   @Override
@@ -330,8 +348,13 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   }
 
   private boolean isCoordinator(final ClusterConfiguration clusterConfiguration) {
-    // coordinator is usually the broker with the lowest member id
-    // return false if there are currently no known members, which means it will be uninitialized.
+    if (isCoordinatorOverride != null) {
+      // When the system partition is wired, leadership of that Raft partition is the source of
+      // truth for the coordinator role — broker 0 is no longer special.
+      return isCoordinatorOverride.getAsBoolean();
+    }
+    // Fallback: the broker with the lowest member id. Return false if there are no known members,
+    // which means the configuration is uninitialized.
     return localMemberId.equals(
         clusterConfiguration.members().keySet().stream().min(MemberId::compareTo).orElse(null));
   }

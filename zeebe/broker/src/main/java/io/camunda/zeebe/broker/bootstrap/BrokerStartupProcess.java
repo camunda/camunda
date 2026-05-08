@@ -47,6 +47,10 @@ public final class BrokerStartupProcess {
     final var result = new ArrayList<StartupStep<BrokerStartupContext>>();
 
     result.add(new ClusterServicesStep());
+    // The system partition runs before the dynamic-config manager so that, when its feature flag
+    // is on, the cluster configuration manager can be wired against the Raft state machine that
+    // will become the source of truth.
+    result.add(new SystemPartitionStep());
     result.add(new ClusterConfigurationManagerStep());
 
     // must be executed before any disk space usage listeners are registered

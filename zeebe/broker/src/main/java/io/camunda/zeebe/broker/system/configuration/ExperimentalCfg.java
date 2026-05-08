@@ -48,6 +48,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private ConsistencyCheckCfg consistencyChecks = new ConsistencyCheckCfg();
   private EngineCfg engine = new EngineCfg();
   private FeatureFlagsCfg features = new FeatureFlagsCfg();
+  private SystemPartitionCfg systemPartition = new SystemPartitionCfg();
 
   public boolean isContinuousBackups() {
     return continuousBackups;
@@ -165,6 +166,14 @@ public class ExperimentalCfg implements ConfigurationEntry {
 
   public void setFeatures(final FeatureFlagsCfg features) {
     this.features = features;
+  }
+
+  public SystemPartitionCfg getSystemPartition() {
+    return systemPartition;
+  }
+
+  public void setSystemPartition(final SystemPartitionCfg systemPartition) {
+    this.systemPartition = systemPartition;
   }
 
   public boolean isSendOnLegacySubject() {
