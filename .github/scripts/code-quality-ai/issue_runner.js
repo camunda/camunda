@@ -118,10 +118,15 @@ function ownersToAssignees(owners) {
   return users;
 }
 
+// Bot login that triggers the GitHub Copilot Coding Agent when added as
+// an assignee. Requires Copilot Coding Agent to be enabled for the repo;
+// without it, GitHub silently drops the assignment.
+const PR_ELIGIBLE_AGENT = "Copilot";
+
 function buildIssuePayload(finding, repoRoot) {
   const token = findingIdToken(finding.finding_id);
   const assignees = ownersToAssignees(lookupCodeowners(finding.file, repoRoot));
-  if (finding.track === "pr_eligible") assignees.push("claude");
+  if (finding.track === "pr_eligible") assignees.push(PR_ELIGIBLE_AGENT);
   return {
     finding_id: finding.finding_id,
     token,
