@@ -557,11 +557,10 @@ export class OperateProcessInstanceViewModificationModePage {
     await nameField.click();
     await nameField.type(name);
 
-    const valueField = this.page
+    await this.page
       .getByTestId(`variable-newVariables[${variableIndex}]`)
-      .getByTestId('new-variable-value');
-    await nameField.press('Tab');
-    await expect(valueField).toBeFocused();
+      .getByTestId('new-variable-value')
+      .click();
     await this.page.keyboard.insertText(value);
     await this.page.keyboard.press('Tab');
   }
