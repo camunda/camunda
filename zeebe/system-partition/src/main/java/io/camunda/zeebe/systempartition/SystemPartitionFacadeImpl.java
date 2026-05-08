@@ -15,16 +15,21 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.backupmetadata.BackupMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clusterconfiguration.ClusterConfigurationRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BackupMetadataIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -56,6 +61,14 @@ public final class SystemPartitionFacadeImpl implements SystemPartition {
       new CopyOnWriteArrayList<>();
 
   private volatile ClusterConfiguration cached = ClusterConfiguration.uninitialized();
+
+  // In-memory mirror of the BACKUP_METADATA column family, refreshed by the
+  // SystemPartitionMirror on every committed BackupMetadata event. Outer key: checkpointId,
+  // inner key: partitionId.
+  private final ConcurrentMap<Long, ConcurrentMap<Integer, BackupMetadataRecord>>
+      backupMetadataCache = new ConcurrentHashMap<>();
+  private final CopyOnWriteArrayList<BackupMetadataListener> backupListeners =
+      new CopyOnWriteArrayList<>();
 
   public SystemPartitionFacadeImpl(
       final RaftPartition raftPartition, final LogStreamWriter logStreamWriter) {
@@ -104,26 +117,134 @@ public final class SystemPartitionFacadeImpl implements SystemPartition {
 
     PendingRequests.register(record.getRequestId(), future);
 
-    final RecordMetadata metadata =
-        new RecordMetadata()
-            .recordType(RecordType.COMMAND)
-            .valueType(ValueType.CLUSTER_CONFIGURATION)
-            .intent(intent);
-
-    final LogAppendEntry entry = LogAppendEntry.of(metadata, record);
-    final Either<WriteFailure, Long> result =
-        logStreamWriter.tryWrite(WriteContext.userCommand(intent), entry);
-
-    if (result.isLeft()) {
+    if (!writeCommand(intent, ValueType.CLUSTER_CONFIGURATION, record)) {
       PendingRequests.cancel(record.getRequestId());
       future.completeExceptionally(
           new IllegalStateException(
-              "Failed to write "
-                  + intent
-                  + " command to system-partition log: "
-                  + result.getLeft()));
+              "Failed to write " + intent + " command to system-partition log"));
     }
     return future;
+  }
+
+  @Override
+  public ActorFuture<BackupMetadataRecord> submitBackupCommand(
+      final BackupMetadataIntent intent, final BackupMetadataRecord record) {
+    final CompletableActorFuture<BackupMetadataRecord> future = new CompletableActorFuture<>();
+
+    if (!isLeader()) {
+      future.completeExceptionally(
+          new NotLeaderException(
+              "Local replica is not the leader of the system partition; cannot accept "
+                  + intent
+                  + " commands"));
+      return future;
+    }
+
+    // Backup commands carry no caller-side requestId on the wire today; correlate by checkpoint+
+    // partition+intent which is unique per in-flight command in our usage. The orchestrator avoids
+    // overlapping requests for the same row.
+    final BackupRequestKey requestKey =
+        new BackupRequestKey(record.getCheckpointId(), record.getPartitionId(), intent);
+    BackupPendingRequests.register(requestKey, future);
+
+    if (!writeCommand(intent, ValueType.BACKUP_METADATA, record)) {
+      BackupPendingRequests.cancel(requestKey);
+      future.completeExceptionally(
+          new IllegalStateException(
+              "Failed to write " + intent + " command to system-partition log"));
+    }
+    return future;
+  }
+
+  @Override
+  public ActorFuture<Void> queryBackupMetadata(final Consumer<BackupMetadataRecord> consumer) {
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    try {
+      for (final var perCp : backupMetadataCache.values()) {
+        for (final var record : perCp.values()) {
+          consumer.accept(record);
+        }
+      }
+      future.complete(null);
+    } catch (final Exception e) {
+      future.completeExceptionally(e);
+    }
+    return future;
+  }
+
+  private boolean writeCommand(
+      final Intent intent,
+      final ValueType valueType,
+      final io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue record) {
+    final RecordMetadata metadata =
+        new RecordMetadata().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
+    final LogAppendEntry entry = LogAppendEntry.of(metadata, record);
+    final Either<WriteFailure, Long> result =
+        logStreamWriter.tryWrite(WriteContext.userCommand(intent), entry);
+    if (result.isLeft()) {
+      LOG.warn("Failed to write {} command to system-partition log: {}", intent, result.getLeft());
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Subscribe to per-row backup-metadata events. Used by {@link
+   * io.camunda.zeebe.systempartition.backup.BackupOrchestrator} to react to RECORDED rows that are
+   * still PENDING.
+   */
+  public void addBackupMetadataListener(final BackupMetadataListener listener) {
+    backupListeners.add(listener);
+  }
+
+  /**
+   * Invoked by {@link SystemPartitionMirror} on every committed BACKUP_METADATA event; refreshes
+   * the in-memory cache, resolves pending command futures, and notifies listeners.
+   */
+  public void applyBackupCommit(final BackupMetadataIntent intent, final BackupMetadataRecord r) {
+    switch (intent) {
+      case RECORDED, MARKED_FAILED ->
+          backupMetadataCache
+              .computeIfAbsent(r.getCheckpointId(), k -> new ConcurrentHashMap<>())
+              .put(r.getPartitionId(), copyOf(r));
+      case DELETED -> {
+        final var perCp = backupMetadataCache.get(r.getCheckpointId());
+        if (perCp != null) {
+          perCp.remove(r.getPartitionId());
+          if (perCp.isEmpty()) {
+            backupMetadataCache.remove(r.getCheckpointId());
+          }
+        }
+      }
+      default -> {}
+    }
+    BackupPendingRequests.resolve(
+        new BackupRequestKey(r.getCheckpointId(), r.getPartitionId(), commandIntentFor(intent)), r);
+    for (final var listener : backupListeners) {
+      try {
+        listener.onBackupMetadataEvent(intent, copyOf(r));
+      } catch (final Exception e) {
+        LOG.warn("Backup-metadata listener {} threw on {}", listener, intent, e);
+      }
+    }
+  }
+
+  private static BackupMetadataIntent commandIntentFor(final BackupMetadataIntent eventIntent) {
+    return switch (eventIntent) {
+      case RECORDED -> BackupMetadataIntent.RECORD;
+      case MARKED_FAILED -> BackupMetadataIntent.MARK_FAILED;
+      case DELETED -> BackupMetadataIntent.DELETE;
+      default -> eventIntent;
+    };
+  }
+
+  private static BackupMetadataRecord copyOf(final BackupMetadataRecord source) {
+    final org.agrona.ExpandableArrayBuffer buf = new org.agrona.ExpandableArrayBuffer();
+    final int len = source.getLength();
+    source.write(buf, 0);
+    final BackupMetadataRecord c = new BackupMetadataRecord();
+    c.wrap(buf, 0, len);
+    return c;
   }
 
   /**
@@ -156,6 +277,8 @@ public final class SystemPartitionFacadeImpl implements SystemPartition {
       // requests our own append produced, so we fail all of them — the worst case is a duplicate
       // submit on retry, which is fine because requestId is unique per attempt.
       PendingRequests.failAll(
+          new NotLeaderException("Lost leadership of the system partition before commit"));
+      BackupPendingRequests.failAll(
           new NotLeaderException("Lost leadership of the system partition before commit"));
     }
     for (final var listener : leaderListeners) {
@@ -210,6 +333,49 @@ public final class SystemPartitionFacadeImpl implements SystemPartition {
       // Drain by snapshotting keys to avoid concurrent-modification surprises.
       for (final var requestId : PENDING.keySet().toArray(new String[0])) {
         final var future = PENDING.remove(requestId);
+        if (future != null) {
+          future.completeExceptionally(error);
+        }
+      }
+    }
+  }
+
+  /** Listener for committed BackupMetadata events; receives independent record copies. */
+  public interface BackupMetadataListener {
+    void onBackupMetadataEvent(BackupMetadataIntent intent, BackupMetadataRecord record);
+  }
+
+  /** Composite key correlating a submitted backup command to its committed event. */
+  public record BackupRequestKey(long checkpointId, int partitionId, BackupMetadataIntent intent) {}
+
+  /** Static registry of in-flight {@link #submitBackupCommand} futures. */
+  public static final class BackupPendingRequests {
+
+    private static final Map<BackupRequestKey, CompletableActorFuture<BackupMetadataRecord>>
+        PENDING = new HashMap<>();
+
+    private BackupPendingRequests() {}
+
+    static synchronized void register(
+        final BackupRequestKey key, final CompletableActorFuture<BackupMetadataRecord> future) {
+      PENDING.put(key, future);
+    }
+
+    static synchronized void cancel(final BackupRequestKey key) {
+      PENDING.remove(key);
+    }
+
+    static synchronized void resolve(
+        final BackupRequestKey key, final BackupMetadataRecord record) {
+      final var future = PENDING.remove(key);
+      if (future != null) {
+        future.complete(record);
+      }
+    }
+
+    static synchronized void failAll(final Throwable error) {
+      for (final var key : PENDING.keySet().toArray(new BackupRequestKey[0])) {
+        final var future = PENDING.remove(key);
         if (future != null) {
           future.completeExceptionally(error);
         }

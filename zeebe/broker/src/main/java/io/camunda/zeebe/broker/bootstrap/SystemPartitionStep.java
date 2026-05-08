@@ -52,6 +52,7 @@ import io.camunda.zeebe.systempartition.SystemPartitionFactory;
 import io.camunda.zeebe.systempartition.SystemPartitionLogStream;
 import io.camunda.zeebe.systempartition.SystemPartitionMirror;
 import io.camunda.zeebe.systempartition.SystemPartitionStreamProcessorFactory;
+import io.camunda.zeebe.systempartition.backup.BackupOrchestrator;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
@@ -362,6 +363,28 @@ public final class SystemPartitionStep implements StartupStep<BrokerStartupConte
                 LOG.info(
                     "Embedded gateway is disabled — system-partition BPMN auto-deployer not started");
               }
+
+              // Submit the BackupOrchestrator: a leader-only actor that drives backup fan-out
+              // to data partitions when a BACKUP_METADATA RECORDED PENDING row is observed. The
+              // actor itself ignores events when isLeader() is false, so it's safe to keep it
+              // running on every replica that hosts the system partition.
+              final var orchestrator = new BackupOrchestrator(facade, context.getBrokerClient());
+              context
+                  .getActorSchedulingService()
+                  .submitActor(orchestrator)
+                  .onComplete(
+                      (orchestratorOk, orchestratorErr) -> {
+                        if (orchestratorErr != null) {
+                          LOG.warn(
+                              "Failed to submit BackupOrchestrator on system partition; backup fan-out disabled",
+                              orchestratorErr);
+                        }
+                      });
+
+              // Publish the facade to the static accessor used by BackupApiRequestHandler when
+              // routing TAKE_BACKUP requests through the system partition.
+              io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler
+                  .setSystemPartition(facade);
 
               context.setSystemPartition(facade);
               result.complete(context);

@@ -24,7 +24,6 @@ import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.systempartition.processors.BackupControlPlaneProcessors;
 import io.camunda.zeebe.systempartition.processors.ClusterConfigurationProcessors;
-import io.camunda.zeebe.systempartition.state.BackupMetadataState;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 
@@ -89,9 +88,11 @@ public final class SystemPartitionStreamProcessorFactory {
               ctx.getProcessingState().getKeyGenerator(),
               appliers);
 
-          final var bmState = new BackupMetadataState(db, db.createContext());
           BackupControlPlaneProcessors.register(
-              processors, bmState, ctx.getProcessingState().getKeyGenerator());
+              processors,
+              ctx.getProcessingState().getBackupMetadataState(),
+              ctx.getWriters(),
+              ctx.getProcessingState().getKeyGenerator());
           return processors;
         };
 

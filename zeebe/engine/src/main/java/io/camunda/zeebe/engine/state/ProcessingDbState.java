@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
 import io.camunda.zeebe.engine.state.authorization.DbMappingRuleState;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState;
 import io.camunda.zeebe.engine.state.authorization.DbRoleState;
+import io.camunda.zeebe.engine.state.backupmetadata.DbBackupMetadataState;
 import io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState;
 import io.camunda.zeebe.engine.state.clock.DbClockState;
 import io.camunda.zeebe.engine.state.clusterconfiguration.DbClusterConfigurationState;
@@ -54,6 +55,7 @@ import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.multiinstance.DbMultiInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableAsyncRequestState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
+import io.camunda.zeebe.engine.state.mutable.MutableBackupMetadataState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.engine.state.mutable.MutableClockState;
@@ -115,6 +117,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableVariableState variableState;
   private final MutableClusterVariableState clusterVariableState;
   private final MutableClusterConfigurationState clusterConfigurationState;
+  private final MutableBackupMetadataState backupMetadataState;
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
   private final MutableMessageState messageState;
@@ -168,6 +171,7 @@ public class ProcessingDbState implements MutableProcessingState {
     variableState = new DbVariableState(zeebeDb, transactionContext);
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
     clusterConfigurationState = new DbClusterConfigurationState(zeebeDb, transactionContext);
+    backupMetadataState = new DbBackupMetadataState(zeebeDb, transactionContext);
     processState =
         new DbProcessState(zeebeDb, transactionContext, config, clock, expressionLanguageMetrics);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
@@ -291,6 +295,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableClusterConfigurationState getClusterConfigurationState() {
     return clusterConfigurationState;
+  }
+
+  @Override
+  public MutableBackupMetadataState getBackupMetadataState() {
+    return backupMetadataState;
   }
 
   @Override

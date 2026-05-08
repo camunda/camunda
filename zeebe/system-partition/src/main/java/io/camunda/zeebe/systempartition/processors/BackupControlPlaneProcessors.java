@@ -8,22 +8,31 @@
 package io.camunda.zeebe.systempartition.processors;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.BackupMetadataState;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BackupMetadataIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.systempartition.state.BackupMetadataState;
 
 /**
- * Phase 2 stub for the backup control-plane processor factory. The real implementation, which
- * registers {@code BackupMetadataRecordProcessor} and friends, lands in Phase 6.
+ * Factory that registers the backup control-plane command processors (RECORD / MARK_FAILED /
+ * DELETE) into a {@link TypedRecordProcessors} bundle.
+ *
+ * <p>The companion {@code BackupMetadataStateApplier} is registered with the engine's {@code
+ * EventApplier} pipeline separately — see {@code EventAppliers#registerEventAppliers}.
  */
 public final class BackupControlPlaneProcessors {
 
   private BackupControlPlaneProcessors() {}
 
-  @SuppressWarnings("unused")
   public static void register(
       final TypedRecordProcessors processors,
       final BackupMetadataState state,
+      final Writers writers,
       final KeyGenerator keys) {
-    // Phase 2 stub: no processors registered yet.
+    final var processor = new BackupMetadataRecordProcessor(state, writers, keys);
+    processors.onCommand(ValueType.BACKUP_METADATA, BackupMetadataIntent.RECORD, processor);
+    processors.onCommand(ValueType.BACKUP_METADATA, BackupMetadataIntent.MARK_FAILED, processor);
+    processors.onCommand(ValueType.BACKUP_METADATA, BackupMetadataIntent.DELETE, processor);
   }
 }

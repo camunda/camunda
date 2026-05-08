@@ -31,7 +31,8 @@ public class CheckpointSchedulerServiceStep extends AbstractBrokerStartupStep {
                   scheduler,
                   backupCfg,
                   brokerStartupContext.getBrokerClient(),
-                  meterRegistry);
+                  meterRegistry,
+                  brokerStartupContext.getSystemPartition());
 
           concurrencyControl.runOnCompletion(
               scheduler.submitActor(schedulingService),

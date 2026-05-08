@@ -13,8 +13,10 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.backupmetadata.BackupMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clusterconfiguration.ClusterConfigurationRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BackupMetadataIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterConfigurationIntent;
 import io.camunda.zeebe.scheduler.Actor;
 import org.slf4j.Logger;
@@ -91,10 +93,16 @@ public final class SystemPartitionMirror extends Actor {
   private void applyEvent(final LoggedEvent event) {
     final RecordMetadata metadata = new RecordMetadata();
     event.readMetadata(metadata);
-    if (metadata.getValueType() != ValueType.CLUSTER_CONFIGURATION) {
-      return;
-    }
+    final ValueType valueType = metadata.getValueType();
 
+    if (valueType == ValueType.CLUSTER_CONFIGURATION) {
+      applyClusterConfigEvent(metadata, event);
+    } else if (valueType == ValueType.BACKUP_METADATA) {
+      applyBackupMetadataEvent(metadata, event);
+    }
+  }
+
+  private void applyClusterConfigEvent(final RecordMetadata metadata, final LoggedEvent event) {
     final ClusterConfigurationRecord record = new ClusterConfigurationRecord();
     event.readValue(record);
 
@@ -127,5 +135,18 @@ public final class SystemPartitionMirror extends Actor {
       }
       SystemPartitionFacadeImpl.PendingRequests.resolve(record.getRequestId(), record);
     }
+  }
+
+  private void applyBackupMetadataEvent(final RecordMetadata metadata, final LoggedEvent event) {
+    final var intent = metadata.getIntent();
+    if (!(intent instanceof BackupMetadataIntent bmIntent)) {
+      return;
+    }
+    if (!bmIntent.isEvent()) {
+      return;
+    }
+    final BackupMetadataRecord record = new BackupMetadataRecord();
+    event.readValue(record);
+    facade.applyBackupCommit(bmIntent, record);
   }
 }

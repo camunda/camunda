@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BackupMetadataIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -155,6 +156,7 @@ public final class EventAppliers implements EventApplier {
     registerMultiInstanceAppliers(state);
     registerClusterVariableEventAppliers(state);
     registerClusterConfigurationAppliers(state);
+    registerBackupMetadataAppliers(state);
     registerHistoryDeletionAppliers();
     registerConditionalSubscriptionAppliers(state);
     registerConditionalEvaluationAppliers();
@@ -212,6 +214,19 @@ public final class EventAppliers implements EventApplier {
     register(ClusterConfigurationIntent.OPERATION_APPLIED, applier);
     register(ClusterConfigurationIntent.CHANGE_COMPLETED, applier);
     register(ClusterConfigurationIntent.REJECT, applier);
+  }
+
+  private void registerBackupMetadataAppliers(final MutableProcessingState state) {
+    final var bmState = state.getBackupMetadataState();
+    register(
+        BackupMetadataIntent.RECORDED,
+        new BackupMetadataStateApplier(bmState, BackupMetadataIntent.RECORDED));
+    register(
+        BackupMetadataIntent.MARKED_FAILED,
+        new BackupMetadataStateApplier(bmState, BackupMetadataIntent.MARKED_FAILED));
+    register(
+        BackupMetadataIntent.DELETED,
+        new BackupMetadataStateApplier(bmState, BackupMetadataIntent.DELETED));
   }
 
   private void registerMultiInstanceAppliers(final MutableProcessingState state) {
