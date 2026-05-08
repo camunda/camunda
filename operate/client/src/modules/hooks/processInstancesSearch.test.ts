@@ -9,23 +9,15 @@
 import {buildVariableEntry, parseOneOfValues} from './processInstancesSearch';
 import type {VariableCondition} from 'modules/stores/variableFilter';
 
-const makeCondition = (
-  overrides: Partial<VariableCondition> = {},
-): VariableCondition =>
-  ({
-    name: 'status',
-    operator: 'equals',
-    value: '"active"',
-    ...overrides,
-  }) as VariableCondition;
+const mockCondition = {
+  name: 'status',
+  operator: 'equals',
+  value: '"active"',
+} satisfies VariableCondition;
 
 describe('buildVariableEntry', () => {
   it('should build equals entry as plain string value', () => {
-    expect(
-      buildVariableEntry(
-        makeCondition({operator: 'equals', value: '"active"'}),
-      ),
-    ).toEqual({
+    expect(buildVariableEntry(mockCondition)).toEqual({
       name: 'status',
       value: '"active"',
     });
@@ -33,9 +25,11 @@ describe('buildVariableEntry', () => {
 
   it('should build notEqual entry as {$neq}', () => {
     expect(
-      buildVariableEntry(
-        makeCondition({operator: 'notEqual', value: '"inactive"'}),
-      ),
+      buildVariableEntry({
+        ...mockCondition,
+        operator: 'notEqual',
+        value: '"inactive"',
+      }),
     ).toEqual({
       name: 'status',
       value: {$neq: '"inactive"'},
@@ -44,9 +38,11 @@ describe('buildVariableEntry', () => {
 
   it('should build contains entry as {$like: "*value*"}', () => {
     expect(
-      buildVariableEntry(
-        makeCondition({operator: 'contains', value: 'active'}),
-      ),
+      buildVariableEntry({
+        ...mockCondition,
+        operator: 'contains',
+        value: 'active',
+      }),
     ).toEqual({
       name: 'status',
       value: {$like: '*active*'},
@@ -55,9 +51,11 @@ describe('buildVariableEntry', () => {
 
   it('should build oneOf entry as {$in: [...]} from JSON array', () => {
     expect(
-      buildVariableEntry(
-        makeCondition({operator: 'oneOf', value: '["active","pending"]'}),
-      ),
+      buildVariableEntry({
+        ...mockCondition,
+        operator: 'oneOf',
+        value: '["active","pending"]',
+      }),
     ).toEqual({
       name: 'status',
       value: {$in: ['"active"', '"pending"']},
@@ -66,7 +64,11 @@ describe('buildVariableEntry', () => {
 
   it('should build exists entry as {$exists: true}', () => {
     expect(
-      buildVariableEntry(makeCondition({operator: 'exists', value: ''})),
+      buildVariableEntry({
+        ...mockCondition,
+        operator: 'exists',
+        value: '',
+      }),
     ).toEqual({
       name: 'status',
       value: {$exists: true},
@@ -75,7 +77,11 @@ describe('buildVariableEntry', () => {
 
   it('should build doesNotExist entry as {$exists: false}', () => {
     expect(
-      buildVariableEntry(makeCondition({operator: 'doesNotExist', value: ''})),
+      buildVariableEntry({
+        ...mockCondition,
+        operator: 'doesNotExist',
+        value: '',
+      }),
     ).toEqual({
       name: 'status',
       value: {$exists: false},
