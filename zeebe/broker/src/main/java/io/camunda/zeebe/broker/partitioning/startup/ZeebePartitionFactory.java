@@ -368,8 +368,16 @@ public final class ZeebePartitionFactory implements Closeable {
   @Override
   public void close() {
     if (rocksDbResources instanceof final RocksDbResources.Shared sharedRocksDbMemory) {
-      sharedRocksDbMemory.getSharedWriteBufferManager().close();
-      sharedRocksDbMemory.getSharedCache().close();
+      LockUtil.withLock(
+          rocksDbResourcesLock,
+          () -> {
+            if (rocksDbResources != null) {
+              rocksDbResources = null;
+              CloseHelper.closeAll(
+                  sharedRocksDbMemory.getSharedWriteBufferManager(),
+                  sharedRocksDbMemory.getSharedCache());
+            }
+          });
     }
   }
 }
