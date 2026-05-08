@@ -256,7 +256,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(null, entity, mockRequest);
 
     // then
     verify(mockRequest, times(1)).add(expectedIndexName, entity);

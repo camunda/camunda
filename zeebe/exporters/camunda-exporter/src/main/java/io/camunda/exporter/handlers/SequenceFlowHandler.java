@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -70,8 +71,11 @@ public class SequenceFlowHandler
   }
 
   @Override
-  public void flush(final SequenceFlowEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+  public void flush(
+      final IndexLocator indexLocator,
+      final SequenceFlowEntity entity,
+      final BatchRequest batchRequest) {
+    batchRequest.add(indexLocator.getIndexLocation(entity, indexName), entity);
   }
 
   @Override

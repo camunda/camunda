@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -63,10 +64,15 @@ public class GroupEntityRemovedHandler
   }
 
   @Override
-  public void flush(final GroupMemberEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator,
+      final GroupMemberEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.deleteWithRouting(
-        indexName, entity.getId(), String.valueOf(entity.getJoin().parent()));
+        indexLocator.getIndexLocation(entity, indexName),
+        entity.getId(),
+        String.valueOf(entity.getJoin().parent()));
   }
 
   @Override

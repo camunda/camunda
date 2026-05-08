@@ -12,6 +12,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.AuditLogHandler.AuditLogBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
@@ -120,12 +121,14 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   }
 
   @Override
-  public void flush(final AuditLogBatch batch, final BatchRequest batchRequest)
+  public void flush(
+      final IndexLocator indexLocator, final AuditLogBatch batch, final BatchRequest batchRequest)
       throws PersistenceException {
 
-    batchRequest.add(indexName, batch.auditLogEntity);
+    batchRequest.add(indexLocator.getIndexLocation(batch, indexName), batch.auditLogEntity);
     ofNullable(batch.auditLogCleanupEntity)
-        .ifPresent(e -> batchRequest.add(auditLogCleanupIndexName, e));
+        .ifPresent(
+            e -> batchRequest.add(indexLocator.getIndexLocation(e, auditLogCleanupIndexName), e));
   }
 
   @Override

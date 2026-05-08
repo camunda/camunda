@@ -12,6 +12,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -154,7 +155,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
 
   @Override
   public void flush(
-      final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest) {
+      final IndexLocator indexLocator,
+      final ProcessInstanceForListViewEntity entity,
+      final BatchRequest batchRequest) {
 
     final Map<String, Object> updateFields = new HashMap<>();
     if (entity.getStartDate() != null) {
@@ -185,7 +188,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       updateFields.put(ListViewTemplate.BUSINESS_ID, entity.getBusinessId());
     }
 
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(entity, indexName), entity.getId(), entity, updateFields);
   }
 
   @Override

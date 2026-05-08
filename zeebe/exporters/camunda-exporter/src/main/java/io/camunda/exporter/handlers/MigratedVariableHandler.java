@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
@@ -66,14 +67,18 @@ public class MigratedVariableHandler implements ExportHandler<VariableEntity, Va
   }
 
   @Override
-  public void flush(final VariableEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final IndexLocator indexLocator,
+      final VariableEntity entity,
+      final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
 
     updateFields.put(VariableTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     updateFields.put(VariableTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
     updateFields.put(VariableTemplate.POSITION, entity.getPosition());
 
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(entity, indexName), entity.getId(), entity, updateFields);
   }
 
   @Override

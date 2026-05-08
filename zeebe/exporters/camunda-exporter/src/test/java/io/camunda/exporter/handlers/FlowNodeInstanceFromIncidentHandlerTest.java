@@ -91,7 +91,7 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
     expectedUpdateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, inputEntity.getIncidentKey());
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))

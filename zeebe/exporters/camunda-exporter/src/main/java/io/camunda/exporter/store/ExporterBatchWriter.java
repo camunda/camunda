@@ -36,19 +36,22 @@ public final class ExporterBatchWriter {
   private static final Logger LOG = LoggerFactory.getLogger(ExporterBatchWriter.class);
   private boolean warnAboutMessageSizeEstimation = false;
   private final Map<EntityIdAndEntityType, CachedEntity> cachedEntities = new HashMap<>();
-  private final Map<EntityIdTypeAndHandler, ExporterEntity> cachedEntitiesToFlush =
+  private final Map<EntityIdTypeAndHandler, CachedEntity> cachedEntitiesToFlush =
       new LinkedHashMap<>();
   private final Map<Long, Long> cachedRecordTimestamps = new HashMap<>();
   private final Map<ValueType, List<ExportHandler>> handlers;
   private final BiConsumer<String, Error> customErrorHandler;
   private final CamundaExporterMetrics metrics;
+  private final IndexLocatorProvider indexLocatorProvider;
   private long totalMemoryEstimate = 0L;
 
   private ExporterBatchWriter(
       final Map<ValueType, List<ExportHandler>> handlers,
+      final IndexLocatorProvider indexLocatorProvider,
       final BiConsumer<String, Error> customErrorHandler,
       final CamundaExporterMetrics metrics) {
     this.handlers = new HashMap<>(handlers);
+    this.indexLocatorProvider = indexLocatorProvider;
     this.customErrorHandler = customErrorHandler;
     this.metrics = metrics;
   }
@@ -79,7 +82,7 @@ public final class ExporterBatchWriter {
     totalMemoryEstimate += length;
     final var cached =
         cachedEntities.computeIfAbsent(
-            cacheKey, (k) -> new CachedEntity(handler.createNewEntity(id), length));
+            cacheKey, (k) -> createCachedEntity(record, handler, id, length));
 
     handler.updateEntity(record, cached.entity());
     cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());
@@ -89,7 +92,13 @@ public final class ExporterBatchWriter {
     // in cases where we have bugs with writing to the same index + id, but with a different
     // entity, this helps avoid race conditions that make that behavior non-deterministic.
     // which would otherwise make spotting and fixing such bugs harder.
-    cachedEntitiesToFlush.put(new EntityIdTypeAndHandler(cacheKey, handler), cached.entity());
+    cachedEntitiesToFlush.put(new EntityIdTypeAndHandler(cacheKey, handler), cached);
+  }
+
+  private CachedEntity createCachedEntity(
+      final Record<?> record, final ExportHandler handler, final String id, final long length) {
+    final var indexLocator = indexLocatorProvider.createIndexLocator(record);
+    return new CachedEntity(handler.createNewEntity(id), indexLocator, length);
   }
 
   public void flush(final BatchRequest batchRequest) throws PersistenceException {
@@ -123,8 +132,10 @@ public final class ExporterBatchWriter {
     for (final var entry : cachedEntitiesToFlush.entrySet()) {
       final var key = entry.getKey();
       final var handler = key.handler();
-      final var entity = entry.getValue();
-      handler.flush(entity, batchRequest);
+      final var cached = entry.getValue();
+      final var indexLocator = cached.indexLocator();
+      final var entity = cached.entity();
+      handler.flush(indexLocator, entity, batchRequest);
     }
 
     batchRequest.execute(customErrorHandler);
@@ -182,6 +193,7 @@ public final class ExporterBatchWriter {
   public static final class Builder {
     private final CamundaExporterMetrics metrics;
     private final Map<ValueType, List<ExportHandler>> handlers = new HashMap<>();
+    private IndexLocatorProvider indexLocatorProvider = new DefaultIndexLocatorProvider();
     private BiConsumer<String, Error> customErrorHandler = (ignored, error) -> {};
 
     private Builder(final CamundaExporterMetrics metrics) {
@@ -204,8 +216,13 @@ public final class ExporterBatchWriter {
       return this;
     }
 
+    public Builder withIndexLocatorProvider(final IndexLocatorProvider indexLocatorProvider) {
+      this.indexLocatorProvider = indexLocatorProvider;
+      return this;
+    }
+
     public ExporterBatchWriter build() {
-      return new ExporterBatchWriter(handlers, customErrorHandler, metrics);
+      return new ExporterBatchWriter(handlers, indexLocatorProvider, customErrorHandler, metrics);
     }
 
     public Builder withCustomErrorHandlers(final BiConsumer<String, Error> customErrorHandler) {
@@ -214,7 +231,8 @@ public final class ExporterBatchWriter {
     }
   }
 
-  private record CachedEntity(ExporterEntity entity, long sourceRecordBytes) {}
+  private record CachedEntity(
+      ExporterEntity entity, IndexLocator indexLocator, long sourceRecordBytes) {}
 
   private record EntityIdAndEntityType(String entityId, Class<?> entityType) {}
 

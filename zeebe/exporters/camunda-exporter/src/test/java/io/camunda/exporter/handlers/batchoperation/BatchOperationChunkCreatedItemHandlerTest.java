@@ -167,7 +167,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
     underTest.updateEntity(record, entity);
 
     // when
-    underTest.flush(entity, mockRequest); // Assuming null is acceptable for this test
+    underTest.flush(null, entity, mockRequest); // Assuming null is acceptable for this test
 
     // then
     final var entityCaptor = ArgumentCaptor.forClass(OperationEntity.class);
@@ -190,7 +190,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
     underTest.updateEntity(record, entity);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(null, entity, mockRequest);
 
     // then
     verify(batchOperationCache).get("42"); // verify cache was consulted

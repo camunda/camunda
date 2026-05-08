@@ -355,7 +355,9 @@ public class ExporterBatchWriterMultipleHandlersTest {
     }
 
     @Override
-    public void flush(final T entity, final BatchRequest batchRequest) throws PersistenceException {
+    public void flush(
+        final IndexLocator indexLocator, final T entity, final BatchRequest batchRequest)
+        throws PersistenceException {
       batchRequest.update(indexName, entity.getId(), entity);
     }
 

@@ -216,7 +216,7 @@ public class UserTaskVariableHandlerTest {
     final ArgumentCaptor<String> routingCaptor = ArgumentCaptor.forClass(String.class);
 
     // when
-    underTest.flush(variableBatch, mockRequest);
+    underTest.flush(null, variableBatch, mockRequest);
 
     // then
     assertThat(variableBatch.getVariables()).hasSize(2);

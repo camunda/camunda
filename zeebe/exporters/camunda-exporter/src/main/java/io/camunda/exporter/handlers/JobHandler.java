@@ -24,6 +24,7 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -146,7 +147,8 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
   }
 
   @Override
-  public void flush(final JobEntity jobEntity, final BatchRequest batchRequest) {
+  public void flush(
+      final IndexLocator indexLocator, final JobEntity jobEntity, final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
     if (jobEntity.getFlowNodeId() != null) {
       updateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());
@@ -171,7 +173,11 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     if (FAILED_JOB_EVENTS.stream().anyMatch(i -> jobEntity.getState().equals(i.name()))) {
       updateFields.put(JOB_FAILED_WITH_RETRIES_LEFT, jobEntity.isJobFailedWithRetriesLeft());
     }
-    batchRequest.upsert(indexName, jobEntity.getId(), jobEntity, updateFields);
+    batchRequest.upsert(
+        indexLocator.getIndexLocation(jobEntity, indexName),
+        jobEntity.getId(),
+        jobEntity,
+        updateFields);
   }
 
   @Override

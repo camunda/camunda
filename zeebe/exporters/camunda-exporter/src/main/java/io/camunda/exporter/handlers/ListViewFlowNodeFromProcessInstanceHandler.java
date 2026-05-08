@@ -16,6 +16,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.IndexLocator;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
@@ -123,7 +124,9 @@ public class ListViewFlowNodeFromProcessInstanceHandler
 
   @Override
   public void flush(
-      final FlowNodeInstanceForListViewEntity entity, final BatchRequest batchRequest) {
+      final IndexLocator indexLocator,
+      final FlowNodeInstanceForListViewEntity entity,
+      final BatchRequest batchRequest) {
 
     LOGGER.debug("Flow node instance for list view: id {}", entity.getId());
 
@@ -136,7 +139,11 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     final Long processInstanceKey = entity.getProcessInstanceKey();
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, processInstanceKey.toString());
+        indexLocator.getIndexLocation(entity, indexName),
+        entity.getId(),
+        entity,
+        updateFields,
+        processInstanceKey.toString());
   }
 
   @Override

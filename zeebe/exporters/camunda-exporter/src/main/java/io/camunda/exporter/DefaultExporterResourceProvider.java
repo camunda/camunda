@@ -95,9 +95,12 @@ import io.camunda.exporter.handlers.operation.OperationFromHistoryDeletionHandle
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
+import io.camunda.exporter.store.FakeOrdinalIndexLocatorProvider;
+import io.camunda.exporter.store.IndexLocatorProvider;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
@@ -142,6 +145,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -500,6 +504,19 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public ExporterEntityCacheImpl<String, CachedFormEntity> getFormCache() {
     return formCache;
+  }
+
+  @Override
+  public IndexLocatorProvider getIndexLocatorProvider() {
+    final Set<String> ordinalBasedIndexes = new HashSet<>();
+    final var listViewName = indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName();
+    ordinalBasedIndexes.add(listViewName);
+    for (final var indexDescriptor : indexDescriptors.templates()) {
+      if (indexDescriptor instanceof ProcessInstanceDependant) {
+        ordinalBasedIndexes.add(indexDescriptor.getFullQualifiedName());
+      }
+    }
+    return new FakeOrdinalIndexLocatorProvider(ordinalBasedIndexes);
   }
 
   private void addAuditLogHandlers(final AuditLogConfiguration auditLog, final int partitionId) {

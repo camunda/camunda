@@ -137,7 +137,7 @@ public class UserTaskCompletionVariableHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(new SnapshotTaskVariableBatch("123", List.of(inputEntity)), mockRequest);
+    underTest.flush(null, new SnapshotTaskVariableBatch("123", List.of(inputEntity)), mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();

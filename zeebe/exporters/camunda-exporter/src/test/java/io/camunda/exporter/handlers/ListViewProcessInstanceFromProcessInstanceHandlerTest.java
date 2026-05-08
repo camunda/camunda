@@ -188,7 +188,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
@@ -219,7 +219,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);

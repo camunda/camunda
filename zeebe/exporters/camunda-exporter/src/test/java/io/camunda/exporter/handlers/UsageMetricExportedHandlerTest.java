@@ -300,7 +300,7 @@ class UsageMetricExportedHandlerTest {
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(usageMetricsBatch, mockRequest);
+    underTest.flush(null, usageMetricsBatch, mockRequest);
 
     // then
     usageMetricsBatch.variables().forEach(entity -> verify(mockRequest).add(indexName, entity));

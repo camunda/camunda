@@ -141,7 +141,7 @@ public class ListViewFlowNodeFromJobHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, true);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(null, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
