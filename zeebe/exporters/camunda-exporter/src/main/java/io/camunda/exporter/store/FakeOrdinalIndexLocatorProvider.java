@@ -27,7 +27,7 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
       100 * 60 * 60 * APPROX_IDS_BETWEEN_ROOT_PROCESS_INSTANCES;
   private final Set<String> ordinalBasedIndexes;
   private final NoopIndexLocator noopIndexLocator = new NoopIndexLocator();
-  private final Map<Integer, FixedOrdinalIndexLocator> ordinals = new ConcurrentHashMap<>();
+  private final Map<Integer, String> ordinalSuffixes = new ConcurrentHashMap<>();
 
   public FakeOrdinalIndexLocatorProvider(final Set<String> ordinalBasedIndexes) {
     this.ordinalBasedIndexes = ordinalBasedIndexes;
@@ -38,21 +38,34 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
     if (record.getValue() instanceof final AuditLogProcessInstanceRelated processInstanceRelated) {
       final long rootProcessInstanceKey = processInstanceRelated.getRootProcessInstanceKey();
       if (rootProcessInstanceKey > 0) {
-        final long key = Protocol.decodeKeyInPartition(rootProcessInstanceKey);
-        final int ordinal = (int) (key / IDS_PER_ORDINAL);
-        var locator = ordinals.get(ordinal);
-        if (locator == null) {
-          final var newLocator = new FixedOrdinalIndexLocator(ordinal);
-          locator = ordinals.putIfAbsent(ordinal, newLocator);
-          if (locator == null) {
-            LOGGER.info("New ordinal started: {} ({} ordinals total)", ordinal, ordinals.size());
-            locator = newLocator;
-          }
-        }
-        return locator;
+        final int ordinal = getOrdinal(rootProcessInstanceKey);
+        final var suffix = getOrCreateOrdinalSuffix(ordinal);
+        return new SingleSuffixOrdinalIndexLocator(suffix);
       }
     }
     return noopIndexLocator;
+  }
+
+  private static int getOrdinal(final long rootProcessInstanceKey) {
+    final long key = Protocol.decodeKeyInPartition(rootProcessInstanceKey);
+    return (int) (key / IDS_PER_ORDINAL);
+  }
+
+  private String getOrCreateOrdinalSuffix(final int ordinal) {
+    var suffix = ordinalSuffixes.get(ordinal);
+    if (suffix == null) {
+      final var newSuffix = createOrdinalSuffix(ordinal);
+      suffix = ordinalSuffixes.putIfAbsent(ordinal, newSuffix);
+      if (suffix == null) {
+        LOGGER.info("New ordinal started: {} ({} ordinals total)", ordinal, ordinalSuffixes.size());
+        suffix = newSuffix;
+      }
+    }
+    return suffix;
+  }
+
+  private String createOrdinalSuffix(final int ordinal) {
+    return "ord" + Strings.padStart(String.valueOf(ordinal), 5, '0');
   }
 
   static class NoopIndexLocator implements IndexLocator {
@@ -63,13 +76,11 @@ public class FakeOrdinalIndexLocatorProvider implements IndexLocatorProvider {
     }
   }
 
-  class FixedOrdinalIndexLocator implements IndexLocator {
-    private final int ordinal;
+  class SingleSuffixOrdinalIndexLocator implements IndexLocator {
     private final String suffix;
 
-    public FixedOrdinalIndexLocator(final int ordinal) {
-      this.ordinal = ordinal;
-      suffix = "ord" + Strings.padStart(String.valueOf(ordinal), 5, '0');
+    public SingleSuffixOrdinalIndexLocator(final String suffix) {
+      this.suffix = suffix;
     }
 
     @Override
