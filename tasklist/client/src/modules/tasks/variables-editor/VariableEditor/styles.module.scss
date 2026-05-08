@@ -19,9 +19,7 @@
 }
 
 .valueCell {
-  overflow-y: hidden;
   word-break: break-all;
-  height: min(100px, min-content);
 }
 
 .controlsCell {
@@ -37,17 +35,6 @@
   &.extraPadding {
     padding-right: calc(var(--cds-spacing-03) + 32px);
   }
-}
-
-.scrollableOuter {
-  height: min-content;
-  overflow-y: auto;
-}
-
-.scrollableInner {
-  max-height: 100px;
-  height: min(min-content, 100%);
-  overflow-y: auto;
 }
 
 .singleLineValue {
