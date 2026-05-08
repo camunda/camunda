@@ -35,17 +35,17 @@ const agentInstanceDefinitionSchema = z.object({
 type AgentInstanceDefinition = z.infer<typeof agentInstanceDefinitionSchema>;
 
 const agentInstanceMetricsSchema = z.object({
-	inputTokens: z.number().int(),
-	outputTokens: z.number().int(),
-	modelCalls: z.number().int(),
-	toolCalls: z.number().int(),
+	inputTokens: z.number(),
+	outputTokens: z.number(),
+	modelCalls: z.number(),
+	toolCalls: z.number(),
 });
 type AgentInstanceMetrics = z.infer<typeof agentInstanceMetricsSchema>;
 
 const agentInstanceLimitsSchema = z.object({
-	maxModelCalls: z.number().int(),
-	maxToolCalls: z.number().int(),
-	maxTokens: z.number().int(),
+	maxModelCalls: z.number(),
+	maxToolCalls: z.number(),
+	maxTokens: z.number(),
 });
 type AgentInstanceLimits = z.infer<typeof agentInstanceLimitsSchema>;
 
@@ -81,7 +81,7 @@ const agentInstanceFilterSchema = z
 type AgentInstanceFilter = z.infer<typeof agentInstanceFilterSchema>;
 
 const queryAgentInstancesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['creationDate', 'lastUpdatedDate', 'completionDate', 'status'],
+	sortFields: ['creationDate', 'lastUpdatedDate', 'completionDate', 'status'] as const,
 	filter: agentInstanceFilterSchema,
 });
 type QueryAgentInstancesRequestBody = z.infer<typeof queryAgentInstancesRequestBodySchema>;

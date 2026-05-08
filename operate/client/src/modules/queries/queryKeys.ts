@@ -14,6 +14,7 @@ import type {
   GetProcessDefinitionInstanceVersionStatisticsRequestBody,
   GetProcessDefinitionStatisticsRequestBody,
   ProcessInstance,
+  QueryAgentInstancesRequestBody,
   QueryAuditLogsRequestBody,
   QueryBatchOperationItemsRequestBody,
   QueryBatchOperationsRequestBody,
@@ -28,6 +29,15 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 const queryKeys = {
+  agentInstance: {
+    get: (agentInstanceKey: string) => ['agentInstance', agentInstanceKey],
+  },
+  agentInstances: {
+    search: (payload?: QueryAgentInstancesRequestBody) => [
+      'agentInstancesSearch',
+      payload,
+    ],
+  },
   variables: {
     search: () => ['searchVariables'],
     searchWithFilter: (params: {
