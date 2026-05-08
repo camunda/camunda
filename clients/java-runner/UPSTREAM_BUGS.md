@@ -1,5 +1,21 @@
 # Upstream bug handover — Camunda 8.10-SNAPSHOT
 
+> **Quick start for the next agent / engineer:**
+>
+> 1. Read this file end-to-end (~5 min).
+> 2. Confirm the bugs reproduce against your local broker — flip `@Disabled` off on
+>    one or both reproducer ITs and run them:
+>    - `clients/java-runner/src/test/java/io/camunda/runner/upstreambugs/TaskListenerActionHeaderNpeIT.java`
+>    - `clients/java-runner/src/test/java/io/camunda/runner/upstreambugs/ProcessInstanceCanceledStateEnumIT.java`
+>    Both should fail today (Bug 1 times out, Bug 2 returns 400). Both should pass
+>    once the upstream fix lands.
+> 3. Apply the preferred fix (see each section). Add the upstream tests listed.
+> 4. Re-run the ITs. They should pass.
+> 5. Open the PRs (or GitHub issues if you'd rather hand off).
+
+---
+
+
 > **For:** another agent or engineer who will fix these in the Camunda monorepo (or file
 > the issues for the team that owns each area).
 >
@@ -100,7 +116,30 @@ and even comments:
 
 That comment encodes the bug.
 
-### Reproducer (Java, ~30 LOC)
+### Runnable reproducer in this repo
+
+`clients/java-runner/src/test/java/io/camunda/runner/upstreambugs/TaskListenerActionHeaderNpeIT.java`
+
+JUnit 5 IT, currently `@Disabled` so it doesn't break the build. Enable to verify a
+fix:
+
+```bash
+# enable: remove the @Disabled on the test class
+./mvnw verify -pl clients/java-runner \
+  -Dit.test=TaskListenerActionHeaderNpeIT \
+  -DskipITs=false -DskipTests=true
+```
+
+**What it does:** deploys a process with a single user task pre-assigned to `demo` plus
+an `assigning` task listener with a unique job type, registers a worker for that type,
+creates one instance, and asserts (via Awaitility, 30 s budget) that the worker handler
+fires.
+
+**Status today:** times out — broker creates the listener job, gateway response mapper
+NPEs, worker never receives. **Status with the engine fix below:** passes within
+~1–2 s.
+
+### Standalone-Java reproducer (~30 LOC, copy-paste runnable)
 
 ```java
 import io.camunda.client.CamundaClient;
@@ -224,7 +263,41 @@ props.setAction(action);
 
 This unblocks the runtime path. The schema fix should follow.
 
-### Test to add
+### Tests to add upstream
+
+#### Engine-side (preferred fix path)
+
+`zeebe/engine/src/test/java/io/camunda/zeebe/engine/processing/usertask/UserTaskAssigningPathTest.java`
+(or extend an existing `UserTaskTest`). Cover both routes:
+
+```java
+@Test
+void shouldSetActionHeaderOnTaskListenerJobWhenAssigneeIsStaticOnTheModel() {
+  // given — process with static <zeebe:assignmentDefinition assignee="demo"/> + assigning listener
+  final BpmnModelInstance model = Bpmn.createExecutableProcess("p")
+      .startEvent()
+      .userTask("review", t -> t
+          .zeebeUserTask().zeebeAssignee("demo")
+          .zeebeTaskListener(b -> b.eventType(assigning).type("listener-type")))
+      .endEvent().done();
+  ENGINE.deployment().withXmlResource(model).deploy();
+
+  // when
+  final long pi = ENGINE.processInstance().ofBpmnProcessId("p").create();
+
+  // then — the assigning listener job carries the action header (= "assign", matching the
+  // explicit-command default). This is the fix's contract.
+  final Record<JobRecordValue> jobCreated =
+      RecordingExporter.jobRecords(JobIntent.CREATED)
+          .withProcessInstanceKey(pi)
+          .withType("listener-type")
+          .getFirst();
+  assertThat(jobCreated.getValue().getCustomHeaders())
+      .containsEntry(Protocol.USER_TASK_ACTION_HEADER_NAME, "assign");
+}
+```
+
+#### Mapper-side (regression guard)
 
 `gateways/gateway-mapping-http/src/test/java/io/camunda/gateway/mapping/http/rest/ResponseMapperTest.java` — add to the parameterized stream:
 
@@ -233,14 +306,18 @@ new ActivatedJobWithUserTaskPropsCase(
     "TASK_LISTENER job for programmatic assigning (no action header)",
     JobKind.TASK_LISTENER,
     Map.of(
-        // No USER_TASK_ACTION_HEADER_NAME — the broker omits it for programmatic transitions.
+        // No USER_TASK_ACTION_HEADER_NAME — pre-engine-fix the broker omits it on Path B.
         Protocol.USER_TASK_KEY_HEADER_NAME, "100",
         Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "demo"),
     props -> {
-      // Mapper should not throw; either return null or return a props object with a null action.
-      // Pick whichever the schema fix lands on.
+      // Mapper should not throw. Whatever the schema lands on (null action vs default
+      // "assign"), assert the contract here.
     }),
 ```
+
+If the engine fix is taken, this case may become unreachable in practice — but it's a
+defence-in-depth regression guard against any future caller emitting a TASK_LISTENER
+job without an action header.
 
 ---
 
@@ -281,7 +358,24 @@ doesn't accept `CANCELED` — it only knows `TERMINATED`. Deserialization fails.
 The internal enum value `CANCELED` and the public API value `TERMINATED` refer to the
 same underlying state (process instance terminated by a cancellation command).
 
-### Reproducer (curl)
+### Runnable reproducer in this repo
+
+`clients/java-runner/src/test/java/io/camunda/runner/upstreambugs/ProcessInstanceCanceledStateEnumIT.java`
+
+JUnit 5 IT, currently `@Disabled`. Bypasses the SDK (which doesn't model `CANCELED`
+either) and sends a raw HTTP POST with the same body Operate's UI sends. Asserts a 2xx
+response.
+
+```bash
+./mvnw verify -pl clients/java-runner \
+  -Dit.test=ProcessInstanceCanceledStateEnumIT \
+  -DskipITs=false -DskipTests=true
+```
+
+**Status today:** fails with HTTP 400 + the gateway parse error. **Status with the
+fix below:** passes.
+
+### Curl one-liner
 
 ```bash
 curl -X POST http://localhost:8080/v2/process-instances/search \
@@ -326,20 +420,29 @@ In Operate's request-building code (search for `ProcessInstanceStateDto.CANCELED
 usages in `operate/webapp/src/main/java/io/camunda/operate/webapp`), map `CANCELED`
 to the public-spelled value before calling the gateway.
 
-### Test to add
+### Tests to add upstream
 
-`zeebe/gateway-rest/.../JobControllerTest` (or wherever process-instance search REST
-tests live):
+#### Path A — accept `CANCELED` at the gateway
+
+`zeebe/gateway-rest/src/test/java/io/camunda/zeebe/gateway/rest/controller/ProcessInstanceControllerTest.java` (or equivalent):
 
 ```java
 @Test
-void shouldAcceptCanceledStateValue() throws Exception {
+void shouldAcceptCanceledStateOnSearch() throws Exception {
   mockMvc.perform(post("/v2/process-instances/search")
       .contentType(MediaType.APPLICATION_JSON)
       .content("{\"filter\": {\"state\": \"CANCELED\"}}"))
       .andExpect(status().isOk());
 }
 ```
+
+#### Path B — Operate normalises before sending
+
+If the fix is on Operate's side, add a unit test in
+`operate/webapp/src/test/java/io/camunda/operate/webapp/v2/api/ProcessInstanceQueryBuilderTest.java`
+(or wherever the v2 query construction lives) asserting that
+`ProcessInstanceStateDto.CANCELED` translates to `"TERMINATED"` in the outgoing
+request body.
 
 ---
 
@@ -362,6 +465,35 @@ with `worker=` empty — confirming the broker emitted it but the gateway's resp
 mapping failed on every activation attempt.
 
 ---
+
+## Open questions / things I didn't verify
+
+Worth checking before you cut the upstream PRs:
+
+1. **Sibling lifecycle methods in `BpmnUserTaskBehavior`.** `userTaskCompleting`,
+   `userTaskCanceling`, `userTaskUpdating`, `userTaskAssigned` — do any of these
+   write events without setting `action`? If they do, they'll trigger the same NPE
+   for `completing` / `canceling` / `updating` task listeners under the same
+   programmatic-vs-explicit-command split.
+
+2. **Does the engine fix break any consumer?** Defaulting the action to `"assign"` on
+   the broker-internal path makes the event indistinguishable from an external
+   `ASSIGN` command. Anyone reading the event log to distinguish "user clicked
+   Assign in Tasklist" vs "broker auto-assigned from BPMN" would lose that signal.
+   Two ways out: (a) use a distinct default like `"initialize"` or `"system-assign"`
+   on the programmatic path, (b) add a separate boolean field / record attribute
+   instead of overloading `action`. Worth a quick conversation with the
+   user-task-feature owners before picking a default.
+
+3. **Is there a JSpecify annotation on the OpenAPI-generated `UserTaskProperties`
+   record that `action` is non-null?** If so, the generator should be re-run after
+   relaxing `required:` (or the schema fix needs to mark `action` as `nullable: true`
+   instead of just removing it from `required:`).
+
+4. **Bug 2 — does Operate actually emit `CANCELED` to the public v2 API, or only on
+   internal-only paths?** Trace the request from the Operate UI to confirm. If it's
+   only internal, the fix may belong inside the internal layer (translate at the
+   boundary) rather than expanding the public enum.
 
 ## Out of scope for these bugs
 

@@ -34,15 +34,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Diagnostic demo for understanding why task-listener jobs don't reach the worker.
  *
- * <p>After deploying and creating one instance, polls the SDK's <em>search</em> APIs every 1.5 s
- * — but filtered to <em>this run's</em> {@code processDefinitionKey} and {@code
- * processInstanceKey} so we don't trip over polluted entries left in the index by other runs or
- * other projects.
+ * <p>After deploying and creating one instance, polls the SDK's <em>search</em> APIs every 1.5 s —
+ * but filtered to <em>this run's</em> {@code processDefinitionKey} and {@code processInstanceKey}
+ * so we don't trip over polluted entries left in the index by other runs or other projects.
  *
- * <p>What to look for: when the user task hits {@code ASSIGNING}, is there a {@code
- * TASK_LISTENER} job in {@code CREATED} state with the prefixed jobType matching what we
- * registered for? If yes — the broker emitted it and the activation path is the gap. If no —
- * the listener-job creation step itself isn't happening for our run.
+ * <p>What to look for: when the user task hits {@code ASSIGNING}, is there a {@code TASK_LISTENER}
+ * job in {@code CREATED} state with the prefixed jobType matching what we registered for? If yes —
+ * the broker emitted it and the activation path is the gap. If no — the listener-job creation step
+ * itself isn't happening for our run.
  */
 public final class TaskListenerDiagnosticDemo {
 
@@ -100,7 +99,8 @@ public final class TaskListenerDiagnosticDemo {
       System.out.println("══════════════════════════════════════════════════════════════════");
       System.out.println();
 
-      final Thread poller = new Thread(() -> pollLoop(client, pdk, pik, stopPolling), "diag-poller");
+      final Thread poller =
+          new Thread(() -> pollLoop(client, pdk, pik, stopPolling), "diag-poller");
       poller.setDaemon(true);
       poller.start();
 
@@ -123,7 +123,8 @@ public final class TaskListenerDiagnosticDemo {
         // Print only the first frame so the corrupt-row NPE doesn't drown the output.
         final var first = e.getStackTrace().length > 0 ? e.getStackTrace()[0].toString() : "";
         System.out.printf(
-            "[diag] poll error (%s): %s @ %s%n", e.getClass().getSimpleName(), e.getMessage(), first);
+            "[diag] poll error (%s): %s @ %s%n",
+            e.getClass().getSimpleName(), e.getMessage(), first);
       }
       try {
         Thread.sleep(1500);
@@ -140,11 +141,7 @@ public final class TaskListenerDiagnosticDemo {
     // Filter jobs to ONLY this run — avoids tripping over polluted entries from other projects.
     try {
       final SearchResponse<Job> jobs =
-          client
-              .newJobSearchRequest()
-              .filter(f -> f.processDefinitionKey(pdk))
-              .send()
-              .join();
+          client.newJobSearchRequest().filter(f -> f.processDefinitionKey(pdk)).send().join();
       System.out.printf("[diag] jobs (processDefinitionKey=%d): %d%n", pdk, jobs.items().size());
       for (final Job j : jobs.items()) {
         System.out.printf(
@@ -164,12 +161,9 @@ public final class TaskListenerDiagnosticDemo {
 
     try {
       final SearchResponse<UserTask> tasks =
-          client
-              .newUserTaskSearchRequest()
-              .filter(f -> f.processInstanceKey(pik))
-              .send()
-              .join();
-      System.out.printf("[diag] user tasks (processInstanceKey=%d): %d%n", pik, tasks.items().size());
+          client.newUserTaskSearchRequest().filter(f -> f.processInstanceKey(pik)).send().join();
+      System.out.printf(
+          "[diag] user tasks (processInstanceKey=%d): %d%n", pik, tasks.items().size());
       for (final UserTask ut : tasks.items()) {
         System.out.printf(
             "[diag]   userTask key=%d state=%s assignee=%s candidateUsers=%s candidateGroups=%s%n",
