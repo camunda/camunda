@@ -86,8 +86,7 @@ class IncidentExportHandlerTest {
     when(processCache.get(parentProcessDefinitionKey))
         .thenReturn(
             Optional.of(
-                new CachedProcessEntity(
-                    null, 1, null, List.of(callActivityId), Map.of(), false, Map.of())));
+                new CachedProcessEntity(null, 1, null, List.of(callActivityId), Map.of(), false)));
 
     // when
     handler.export(record);
