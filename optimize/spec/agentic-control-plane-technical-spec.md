@@ -1,4 +1,4 @@
-# Agentic Control Plane — Technical Specification (v3)
+# Agentic Control Plane — Technical Specification (v4)
 
 **Module**: `optimize/`
 **Status**: Draft
@@ -22,9 +22,12 @@
    - 4.3 [A2 — Agent Dropdown](#43-a2--agent-dropdown)
    - 4.4 [A3 — Summary KPIs](#44-a3--summary-kpis)
    - 4.5 [A4 — Token Trend](#45-a4--token-trend)
-   - 4.6 [A5 — Duration Histogram](#46-a5--duration-histogram)
+   - 4.6 [A5 — Duration Stats](#46-a5--duration-stats)
    - 4.7 [A6 — Incident Rate](#47-a6--incident-rate)
    - 4.8 [A7 — Agents List](#48-a7--agents-list)
+   - 4.9 [A8 — Token Outlier Bands](#49-a8--token-outlier-bands)
+   - 4.10 [A9 — Avg Tokens per Agent Call](#410-a9--avg-tokens-per-agent-call)
+   - 4.11 [A10 — Failure Rate by Process Version](#411-a10--failure-rate-by-process-version)
 5. [Layer 3 — Frontend](#5-layer-3--frontend)
 6. [Out of Scope](#6-out-of-scope)
 7. [Migration](#7-migration)
@@ -37,17 +40,20 @@
 
 **Scope**: Read-only analytics. No write-back to Zeebe.
 
-**Key constraints** from product Q&A:
+**Key decisions from Q&A** (source of truth):
 
 | Decision | Details |
 |---|---|
-| Completed runs only | All metrics are computed over process instances with `state = "COMPLETED"` (parent PI level, not individual agent instance level) |
-| Reasoning tokens | Out of scope for phase 1 |
-| Tool calls | Single KPI stat (`totalToolCalls`), no per-tool breakdown in phase 1 |
-| Status badges | Dropped — use KPI stats block only |
-| Layer 4 (settings) | Dropped entirely |
-| Token trend | Multi-line: top-5 agents by total tokens + "Other" rollup |
-| Incident rate at L2 | Ratio of total incidents on the agent element to total activations of that agent element, across all completed process instances for the process |
+| Run definition | Process instance run = one process start to end. Agent instance run = one agent invocation, creation to completion. Rate denominators follow metric scope. |
+| Completed runs only | All metrics computed over `state = "COMPLETED"` process instances. In-progress = partial values; failures covered by incident rate. |
+| Reasoning tokens | Phase 1: input + output only. Phase 2 via Zeebe schema change. No UI caveat needed. |
+| Duration scope | No agent filter → process duration. Agent selected → that agent's execution time only. Label/tooltip changes with filter. |
+| Total Runs with agent filter | Always counts process instance runs where that agent was activated at least once. |
+| Token trend multi-line | Multi-line (top-5 agents + "Other") when no agent is filtered (L0/L1). Single line when specific agent is selected (L2). |
+| Incident rate scope | Process scope = any incident in the process (existing join). Agent scope = agent-element incidents only, denominator = agent runs. |
+| Tool calls | Single `totalToolCalls` KPI in phase 1. Replace with distribution view when Zeebe provides per-tool data. |
+| Status badges | Dropped for phase 1. Settings page dropped entirely. |
+| Agent details page | Not in scope for phase 1. |
 
 ---
 
@@ -65,12 +71,12 @@
 
 | Intent | Type | Triggered by | Description |
 |---|---|---|---|
-| `CREATE` | Command | Connector | Connector requests creation of a new agent instance |
-| `CREATED` | Event | Engine | Engine assigns `agentInstanceKey`, writes initial record |
-| `UPDATE` | Command | Connector | Connector reports status transitions, metric deltas, tool list replacement |
-| `UPDATED` | Event | Engine | Engine accumulates metric deltas into running totals, emits updated totals |
+| `CREATE` | Command | Connector | Requests creation of a new agent instance |
+| `CREATED` | Event | Engine | Assigns `agentInstanceKey`, writes initial record |
+| `UPDATE` | Command | Connector | Reports status transitions, metric deltas, tool list replacement |
+| `UPDATED` | Event | Engine | Accumulates metric deltas into running totals, emits updated totals |
 | `COMPLETE` | Command | Engine (internal) | Engine-initiated terminal command on process instance completion or cancellation |
-| `COMPLETED` | Event | Engine | Terminal event. Record removed from primary storage (RocksDB). Retained in secondary storage |
+| `COMPLETED` | Event | Engine | Terminal event. Record removed from primary storage (RocksDB) |
 
 The import pipeline consumes **events** only: `CREATED`, `UPDATED`, `COMPLETED`.
 
@@ -98,11 +104,11 @@ Immutable after CREATED. Provided by the connector.
 | `definition.model` | `String` | LLM model identifier (e.g. `gpt-4o`, `claude-sonnet-4-20250514`) |
 | `definition.provider` | `String` | LLM provider (e.g. `openai`, `anthropic`) |
 
-> `definition.systemPrompt` is intentionally excluded from secondary storage — derivable from the process definition XML via `DefinitionService(processDefinitionKey, elementId)`. Storing it would duplicate potentially large strings across every agent instance record.
+> `definition.systemPrompt` excluded from secondary storage — derivable from process definition XML. Storing it duplicates potentially large strings across every record.
 
 #### AgentInstanceRecord — Metrics fields
 
-`UPDATE` commands carry **deltas** (increments). `UPDATED`/`COMPLETED` events carry engine-aggregated **running totals**.
+`UPDATE` commands carry **deltas**. `UPDATED`/`COMPLETED` events carry engine-aggregated **running totals**.
 
 | Field | Type | Description |
 |---|---|---|
@@ -113,34 +119,20 @@ Immutable after CREATED. Provided by the connector.
 
 #### AgentInstanceRecord — Status
 
-| Field | Type | Description |
-|---|---|---|
-| `status` | `AgentInstanceStatus` | Current lifecycle state |
-
-#### AgentInstanceStatus
-
 | Value | Terminal | Description |
 |---|---|---|
-| `INITIALIZING` | No | Reading BPMN tool schemas. No LLM call yet |
-| `TOOL_DISCOVERY` | No | Performing MCP/A2A tool discovery against external tool servers |
+| `INITIALIZING` | No | Reading BPMN tool schemas |
+| `TOOL_DISCOVERY` | No | Performing MCP/A2A tool discovery |
 | `THINKING` | No | Calling the LLM |
 | `TOOL_CALLING` | No | LLM requested tool calls; tools dispatched |
 | `IDLE` | No | Initialized and ready but not actively processing |
-| `COMPLETED` | Yes | Owning process instance completed or cancelled. Record removed from primary storage |
+| `COMPLETED` | Yes | Owning process instance completed or cancelled |
 
-> **FAILED status**: Not included in this design. Failures surface as incidents on the owning element instance. May be added in a future iteration as a non-terminal state.
-
-#### AgentInstanceRecord — Tools
-
-Mutable. When provided in an UPDATE command, the entire list is replaced (replace semantics, idempotent under retries).
-
-| Field | Type | Description |
-|---|---|---|
-| `tools[].name` | `String` | Tool name as visible to the LLM (e.g. `MCP_slack___post_message`) |
+> **FAILED status**: Not included in phase 1. Failures surface as incidents on the owning element instance.
 
 #### Timestamp derivation
 
-The `AgentInstanceRecord` does not carry timestamp fields. Importers derive them from record event timestamps:
+The importer derives timestamp fields from record event timestamps:
 
 | Optimize field | Derived from |
 |---|---|
@@ -149,7 +141,9 @@ The `AgentInstanceRecord` does not carry timestamp fields. Importers derive them
 | `completionDate` | Timestamp of the `COMPLETED` event (null while running) |
 | `durationInMs` | `completionDate - creationDate` in ms (null while running) |
 
-#### CREATED event example
+#### Event examples
+
+**CREATED**:
 
 ```json
 {
@@ -167,18 +161,14 @@ The `AgentInstanceRecord` does not carry timestamp fields. Importers derive them
     "versionTag": "v1.2",
     "tenantId": "<default>",
     "status": "INITIALIZING",
-    "definition": {
-      "model": "gpt-4o",
-      "provider": "openai"
-    },
-    "limits": { "maxTokens": 8000, "maxModelCalls": 10, "maxToolCalls": 20 },
+    "definition": { "model": "gpt-4o", "provider": "openai" },
     "metrics": { "inputTokens": 0, "outputTokens": 0, "modelCalls": 0, "toolCalls": 0 },
     "tools": []
   }
 }
 ```
 
-#### UPDATED event example
+**UPDATED**:
 
 ```json
 {
@@ -188,15 +178,12 @@ The `AgentInstanceRecord` does not carry timestamp fields. Importers derive them
   "value": {
     "status": "TOOL_CALLING",
     "metrics": { "inputTokens": 512, "outputTokens": 148, "modelCalls": 1, "toolCalls": 1 },
-    "tools": [
-      { "name": "extract_line_items" },
-      { "name": "MCP_ocr___scan_document" }
-    ]
+    "tools": [{ "name": "extract_line_items" }, { "name": "MCP_ocr___scan_document" }]
   }
 }
 ```
 
-#### COMPLETED event example
+**COMPLETED**:
 
 ```json
 {
@@ -224,11 +211,11 @@ agentTotalOutputTokens   long
 agentInstances           nested
 
     // Identity
-    agentInstanceKey         keyword    // merge key; used in composite agg (A7)
+    agentInstanceKey         keyword    // merge key; composite agg source (A7)
     elementInstanceKey       keyword
     elementId                keyword    // agent dropdown and groupBy=elementId aggregations
     processDefinitionKey     keyword    // required inside nested scope for filter aggregations
-    processDefinitionVersion integer    // required for groupBy=processDefinitionVersion
+    processDefinitionVersion integer    // required for failure rate by version chart
     versionTag               keyword
     tenantId                 keyword    // required inside nested scope for tenant filtering
 
@@ -258,7 +245,7 @@ agentInstances           nested
 
 #### agentic-control-settings — out of scope (Layer 4 dropped)
 
-One document per Zeebe cluster would hold threshold configuration for incidents, escalation rate, tool call failures, limit hit rate, and stability drift. Deferred to a future iteration.
+Threshold configuration per Zeebe cluster deferred to a future iteration.
 
 ---
 
@@ -274,17 +261,17 @@ Bump `VERSION = 8` → `VERSION = 9` and add an `agentInstances` nested field.
 
 ```java
 // Agent Instance Fields
-public static final String AGENT_INSTANCES            = "agentInstances";
-public static final String AGENT_INSTANCE_KEY         = "agentInstanceKey";
-public static final String AGENT_ELEMENT_INSTANCE_KEY = "elementInstanceKey";
-public static final String AGENT_ELEMENT_ID           = "elementId";
-public static final String AGENT_STATUS               = "status";
-public static final String AGENT_CREATION_DATE        = "creationDate";
-public static final String AGENT_COMPLETION_DATE      = "completionDate";
-public static final String AGENT_LAST_UPDATED_DATE    = "lastUpdatedDate";
-public static final String AGENT_DURATION_IN_MS       = "durationInMs";
-public static final String AGENT_DEFINITION_MODEL     = "definition.model";
-public static final String AGENT_DEFINITION_PROVIDER  = "definition.provider";
+public static final String AGENT_INSTANCES             = "agentInstances";
+public static final String AGENT_INSTANCE_KEY          = "agentInstanceKey";
+public static final String AGENT_ELEMENT_INSTANCE_KEY  = "elementInstanceKey";
+public static final String AGENT_ELEMENT_ID            = "elementId";
+public static final String AGENT_STATUS                = "status";
+public static final String AGENT_CREATION_DATE         = "creationDate";
+public static final String AGENT_COMPLETION_DATE       = "completionDate";
+public static final String AGENT_LAST_UPDATED_DATE     = "lastUpdatedDate";
+public static final String AGENT_DURATION_IN_MS        = "durationInMs";
+public static final String AGENT_DEFINITION_MODEL      = "definition.model";
+public static final String AGENT_DEFINITION_PROVIDER   = "definition.provider";
 public static final String AGENT_METRICS_INPUT_TOKENS  = "metrics.inputTokens";
 public static final String AGENT_METRICS_OUTPUT_TOKENS = "metrics.outputTokens";
 public static final String AGENT_METRICS_MODEL_CALLS   = "metrics.modelCalls";
@@ -292,29 +279,28 @@ public static final String AGENT_METRICS_TOOL_CALLS    = "metrics.toolCalls";
 public static final String AGENT_TOOLS_NAME            = "tools.name";
 
 // Pre-aggregated at PI level — summed over COMPLETED agent instances only
-public static final String AGENT_TOTAL_INPUT_TOKENS   = "agentTotalInputTokens";
-public static final String AGENT_TOTAL_OUTPUT_TOKENS  = "agentTotalOutputTokens";
+public static final String AGENT_TOTAL_INPUT_TOKENS    = "agentTotalInputTokens";
+public static final String AGENT_TOTAL_OUTPUT_TOKENS   = "agentTotalOutputTokens";
 ```
 
-> Constants inside the nested object use the bare field name (e.g. `"elementId"`, `"status"`). When used in ES queries they are qualified as `agentInstances.elementId`, `agentInstances.status`, etc.
+> Constants use bare field names (e.g. `"elementId"`). In ES queries they are qualified as `agentInstances.elementId` etc.
 
 #### Mapping (add to `addProperties()`)
 
 ```java
-// In ProcessInstanceIndex.addProperties():
 .properties(AGENT_TOTAL_INPUT_TOKENS,  p -> p.long_(k -> k))
 .properties(AGENT_TOTAL_OUTPUT_TOKENS, p -> p.long_(k -> k))
 .properties(
     AGENT_INSTANCES,
     p -> p.nested(n -> n
-        .properties(AGENT_INSTANCE_KEY,          np -> np.keyword(k -> k))
-        .properties(AGENT_ELEMENT_INSTANCE_KEY,  np -> np.keyword(k -> k))
-        .properties(AGENT_ELEMENT_ID,            np -> np.keyword(k -> k))
-        .properties(AGENT_STATUS,                np -> np.keyword(k -> k))
-        .properties(AGENT_CREATION_DATE,         np -> np.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
-        .properties(AGENT_COMPLETION_DATE,       np -> np.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
-        .properties(AGENT_LAST_UPDATED_DATE,     np -> np.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
-        .properties(AGENT_DURATION_IN_MS,        np -> np.long_(k -> k))
+        .properties(AGENT_INSTANCE_KEY,         np -> np.keyword(k -> k))
+        .properties(AGENT_ELEMENT_INSTANCE_KEY, np -> np.keyword(k -> k))
+        .properties(AGENT_ELEMENT_ID,           np -> np.keyword(k -> k))
+        .properties(AGENT_STATUS,               np -> np.keyword(k -> k))
+        .properties(AGENT_CREATION_DATE,        np -> np.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(AGENT_COMPLETION_DATE,      np -> np.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(AGENT_LAST_UPDATED_DATE,    np -> np.date(k -> k.format(OPTIMIZE_DATE_FORMAT)))
+        .properties(AGENT_DURATION_IN_MS,       np -> np.long_(k -> k))
         .properties("definition", np -> np.object(o -> o
             .properties("model",    op -> op.keyword(k -> k))
             .properties("provider", op -> op.keyword(k -> k))))
@@ -327,7 +313,7 @@ public static final String AGENT_TOTAL_OUTPUT_TOKENS  = "agentTotalOutputTokens"
             .properties("name", op -> op.keyword(k -> k))))))
 ```
 
-> **Note**: Use `.object()` nesting for `definition`, `metrics`, and `tools` sub-objects. Dot-notation in `.properties()` creates a literal dot-named field, not a nested object.
+> Use `.object()` for `definition`, `metrics`, and `tools` sub-objects. Dot-notation in `.properties()` creates a literal dot-named field, not a nested object.
 
 #### DTO
 
@@ -348,7 +334,6 @@ public class AgentInstanceDto implements Serializable, OptimizeDto {
     @JsonIgnore private String processInstanceId;
     @JsonIgnore private String engineAlias;
 
-    // inner Fields class (same pattern as IncidentDto.Fields)
     public static final class Fields { ... }
 }
 ```
@@ -357,12 +342,7 @@ Add `List<AgentInstanceDto> agentInstances = new ArrayList<>()` to `ProcessInsta
 
 #### Migration class
 
-```
-optimize/upgrade/src/main/java/io/camunda/optimize/upgrade/steps/schema/
-  UpdateProcessInstanceIndexMappingStep_8_9.java
-```
-
-Implements `UpgradeStep` (same pattern as existing version migration steps in that package).
+None required. Old process instances carry no agent data; queries on unmapped/missing nested paths return zero results. The VERSION bump ensures all **new** process instance indices are created with the correct `nested` mapping. Without the bump, ES/OS would auto-map `agentInstances` as `object` on first write, breaking nested aggregations.
 
 ---
 
@@ -370,15 +350,13 @@ Implements `UpgradeStep` (same pattern as existing version migration steps in th
 
 **File**: `optimize/backend/src/main/java/io/camunda/optimize/service/db/repository/script/ZeebeProcessInstanceScriptFactory.java`
 
-This is a Java **interface** with static/private static methods (Java 9+). Add a new static method that produces the agent instance upsert script. The script must **not** reference `flowNodesById` (that variable is set by `createUpdateFlowNodeInstancesScript()` and is out of scope here).
+Java **interface** with static/private static methods (Java 9+). Must not reference `flowNodesById`.
 
 ```java
 static String createUpdateAgentInstancesScript() {
     return
-        // 1. Ensure list exists
         "if (ctx._source.agentInstances == null) { ctx._source.agentInstances = []; }\n" +
 
-        // 2. Dedup by agentInstanceKey — insert new, update existing
         "def existingKeys = new HashSet();\n" +
         "for (def ai : ctx._source.agentInstances) { existingKeys.add(ai.agentInstanceKey); }\n" +
         "for (def newAi : params.agentInstances) {\n" +
@@ -387,18 +365,18 @@ static String createUpdateAgentInstancesScript() {
         "  } else {\n" +
         "    for (def ai : ctx._source.agentInstances) {\n" +
         "      if (ai.agentInstanceKey == newAi.agentInstanceKey) {\n" +
-        "        ai.status           = newAi.status;\n" +
-        "        ai.completionDate   = newAi.completionDate;\n" +
-        "        ai.lastUpdatedDate  = newAi.lastUpdatedDate;\n" +
-        "        ai.durationInMs     = newAi.durationInMs;\n" +
-        "        ai.metrics          = newAi.metrics;\n" +
+        "        ai.status          = newAi.status;\n" +
+        "        ai.completionDate  = newAi.completionDate;\n" +
+        "        ai.lastUpdatedDate = newAi.lastUpdatedDate;\n" +
+        "        ai.durationInMs    = newAi.durationInMs;\n" +
+        "        ai.metrics         = newAi.metrics;\n" +
         "        if (newAi.tools != null) { ai.tools = newAi.tools; }\n" +
         "      }\n" +
         "    }\n" +
         "  }\n" +
         "}\n" +
 
-        // 3. Re-aggregate parent-level token totals (COMPLETED agents only)
+        // Re-aggregate parent-level token totals (COMPLETED agents only)
         "long totalIn = 0; long totalOut = 0;\n" +
         "for (def ai : ctx._source.agentInstances) {\n" +
         "  if ('COMPLETED'.equals(ai.status)) {\n" +
@@ -413,7 +391,7 @@ static String createUpdateAgentInstancesScript() {
 }
 ```
 
-> **Painless context note**: This is an **update script** (`ctx._source`). Use `!= null` guards (not `.empty`). `.empty` guards belong in aggregation scripts (`doc[]` context).
+> Update script context (`ctx._source`): use `!= null` guards, not `.empty`.
 
 Wire into `createProcessInstanceUpdateScript()`:
 
@@ -422,15 +400,13 @@ static String createProcessInstanceUpdateScript() {
     return createUpdateProcessInstancePropertiesScript()
         + createUpdateFlowNodeInstancesScript()
         + createUpdateIncidentsScript()
-        + createUpdateAgentInstancesScript();   // append after incidents
+        + createUpdateAgentInstancesScript();
 }
 ```
 
 ---
 
 ### 3.3 Import Pipeline Classes
-
-Five new classes following the `ZeebeIncidentImportService` pattern:
 
 | Class | Extends / Implements |
 |---|---|
@@ -440,15 +416,10 @@ Five new classes following the `ZeebeIncidentImportService` pattern:
 | `ZeebeAgentInstanceImportMediator` | `AbstractZeebeImportMediator` |
 | `ZeebeAgentInstanceImportMediatorFactory` | `AbstractImportMediatorFactory` |
 
-Key implementation notes for `ZeebeAgentInstanceImportService`:
-
 ```java
 // Import events only (not commands)
 private static final Set<AgentInstanceIntent> INTENTS_TO_IMPORT =
     Set.of(AgentInstanceIntent.CREATED, AgentInstanceIntent.UPDATED, AgentInstanceIntent.COMPLETED);
-
-// Source export index constant (define in ZeebeIndexConstants or equivalent)
-// ZEEBE_AGENT_INSTANCE_INDEX_NAME = "zeebe-record-agent-instance"
 
 @Override
 protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
@@ -461,26 +432,22 @@ protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
         .map(entry -> {
             String processInstanceId = String.valueOf(entry.getKey());
             AgentInstanceRecord first = entry.getValue().get(0).getValue();
-
             ProcessInstanceDto pi = createSkeletonProcessInstance(
                 String.valueOf(first.getProcessDefinitionKey()),
                 processInstanceId,
                 String.valueOf(first.getProcessDefinitionKey()),
                 first.getTenantId()
             );
-
-            List<AgentInstanceDto> agents = entry.getValue().stream()
+            pi.setAgentInstances(entry.getValue().stream()
                 .map(hit -> mapToAgentInstanceDto(hit.getValue(), hit.getIntent(), hit.getTimestamp()))
-                .toList();
-
-            pi.setAgentInstances(agents);
+                .toList());
             return pi;
         })
         .toList();
 }
 ```
 
-> `mapToAgentInstanceDto` derives `creationDate`, `completionDate`, `lastUpdatedDate`, and `durationInMs` from `hit.getTimestamp()` based on the intent (`CREATED` → set `creationDate`; `COMPLETED` → set `completionDate` and compute `durationInMs`).
+> `mapToAgentInstanceDto` derives `creationDate`, `completionDate`, `lastUpdatedDate`, and `durationInMs` from `hit.getTimestamp()` based on intent.
 
 ---
 
@@ -488,17 +455,20 @@ protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
 
 ### 4.1 Endpoint Overview
 
-All endpoints live under `/api/agentic-control-plane/` and accept an optional body for filter params.
+All endpoints under `/api/agentic-control-plane/`.
 
 | ID | Path | Filter Level | Description |
 |---|---|---|---|
-| A1 | `GET /process-breakdown` | L0 | All processes with agent runs, with KPIs |
-| A2 | `GET /agent-elements` | L1 (processKey required) | Distinct agent elementIds for dropdown |
-| A3 | `GET /summary` | L0 / L1 / L2 | Summary KPI stats block |
-| A4 | `GET /token-trend` | L0 / L1 / L2 | Token usage over time (multi-line) |
-| A5 | `GET /duration-histogram` | L0 / L1 | Duration distribution buckets |
-| A6 | `GET /incident-rate` | L0 / L1 / L2 | Incident rate |
-| A7 | `GET /agents` | L2 (processKey + elementId required) | Paginated agent instance list |
+| A1 | `GET /process-breakdown` | L0 | Top token consumers by process |
+| A2 | `GET /agent-elements` | L1 | Agent element dropdown |
+| A3 | `GET /summary` | L0/L1/L2 | Summary KPI stats with WoW deltas |
+| A4 | `GET /token-trend` | L0/L1/L2 | Token trend (multi-line at L0/L1, single at L2) |
+| A5 | `GET /duration-stats` | L0/L1/L2 | Duration P50/P95 KPIs + stability trend |
+| A6 | `GET /incident-rate` | L0/L1/L2 | Incident rate |
+| A7 | `GET /agents` | L2 | Paginated agent instance list |
+| A8 | `GET /token-outlier-bands` | L0/L1/L2 | Token p0/p50/p95 bands over time |
+| A9 | `GET /tokens-per-agent-call` | L1/L2 | Avg tokens per model call, per agent element |
+| A10 | `GET /failure-rate-by-version` | L1/L2 | Incident rate broken down by process version |
 
 **Common filter params**:
 
@@ -512,19 +482,15 @@ All endpoints live under `/api/agentic-control-plane/` and accept an optional bo
 }
 ```
 
-**Baseline query**: All endpoints restrict to `state = "COMPLETED"` at the process instance level.
+**Baseline query**: All endpoints restrict to `state = "COMPLETED"`.
 
-```json
-{ "term": { "state": "COMPLETED" } }
-```
+**WoW delta**: Each endpoint that exposes KPI stats runs the same query for `[startDate - 7d, endDate - 7d]` in parallel and returns the delta as `<field>WoW`.
 
 ---
 
 ### 4.2 A1 — Process Breakdown
 
-**Purpose**: L0 view — table/grid showing each process that has had at least one agent instance run, with aggregate KPIs.
-
-**ES/OS query**:
+**Purpose**: L0 only. Top token consumers by process, with aggregate KPIs per process.
 
 ```json
 {
@@ -540,10 +506,7 @@ All endpoints live under `/api/agentic-control-plane/` and accept an optional bo
       },
       "aggs": {
         "by_process": {
-          "terms": {
-            "field": "processDefinitionKey",
-            "size": 500
-          },
+          "terms": { "field": "processDefinitionKey", "size": 500 },
           "aggs": {
             "processInstanceCount": { "value_count": { "field": "processInstanceId" } },
             "avgDuration":          { "avg":         { "field": "duration" } },
@@ -551,9 +514,7 @@ All endpoints live under `/api/agentic-control-plane/` and accept an optional bo
             "totalOutputTokens":    { "sum":         { "field": "agentTotalOutputTokens" } },
             "incident_count": {
               "nested": { "path": "incidents" },
-              "aggs": {
-                "count": { "value_count": { "field": "incidents.id" } }
-              }
+              "aggs": { "count": { "value_count": { "field": "incidents.id" } } }
             }
           }
         }
@@ -562,9 +523,6 @@ All endpoints live under `/api/agentic-control-plane/` and accept an optional bo
   }
 }
 ```
-
-> `DURATION` field is pre-computed on import (ms). No custom Painless script needed for avg/sum.
-> `FilterLimitedAggregationUtilES.wrapWithFilterLimitedParentAggregation()` can wrap `by_process` if query-level filter limits are needed.
 
 **Response shape**:
 
@@ -575,7 +533,6 @@ All endpoints live under `/api/agentic-control-plane/` and accept an optional bo
       "processDefinitionKey": "myProcess",
       "processInstanceCount": 1420,
       "avgDurationMs": 18340,
-      "durationScope": "process",
       "totalInputTokens": 240000,
       "totalOutputTokens": 185000,
       "incidentCount": 34
@@ -584,15 +541,11 @@ All endpoints live under `/api/agentic-control-plane/` and accept an optional bo
 }
 ```
 
-`durationScope`: `"process"` at L0/L1 (using `DURATION` field), `"agent"` at L2 (using `agentInstances.durationInMs`).
-
 ---
 
 ### 4.3 A2 — Agent Dropdown
 
-**Purpose**: Populate the agent selector for a chosen process. Returns distinct `elementId` values across completed process instances.
-
-**ES/OS query** (uses composite aggregation + scroller):
+**Purpose**: L1. Distinct `elementId` values for a chosen process.
 
 ```json
 {
@@ -623,7 +576,7 @@ All endpoints live under `/api/agentic-control-plane/` and accept an optional bo
 }
 ```
 
-Use `ElasticsearchCompositeAggregationScroller.consumeAllPages()` with `setPathToAggregation("agent_elements", "element_ids")` to collect all element IDs.
+Use `ElasticsearchCompositeAggregationScroller.consumeAllPages()` with `setPathToAggregation("agent_elements", "element_ids")`.
 
 **Response shape**:
 
@@ -640,9 +593,9 @@ Use `ElasticsearchCompositeAggregationScroller.consumeAllPages()` with `setPathT
 
 ### 4.4 A3 — Summary KPIs
 
-**Purpose**: The stat block at the top of the dashboard. Values change based on selected filter level.
+**Purpose**: Stat block at the top of the dashboard. Includes WoW deltas (prior 7-day window, parallel request).
 
-**L0 / L1 query** (no `elementId` filter):
+**L0 / L1 query**:
 
 ```json
 {
@@ -668,15 +621,13 @@ Use `ElasticsearchCompositeAggregationScroller.consumeAllPages()` with `setPathT
     },
     "incident_stats": {
       "nested": { "path": "incidents" },
-      "aggs": {
-        "count": { "value_count": { "field": "incidents.id" } }
-      }
+      "aggs": { "count": { "value_count": { "field": "incidents.id" } } }
     }
   }
 }
 ```
 
-**L2 query** (`elementId` selected — filter to process instances where that agent ran):
+**L2 query** (filter to PIs where selected agent ran):
 
 ```json
 {
@@ -716,9 +667,7 @@ Use `ElasticsearchCompositeAggregationScroller.consumeAllPages()` with `setPathT
       "aggs": {
         "for_element": {
           "filter": { "term": { "incidents.activityId": "<elementId>" } },
-          "aggs": {
-            "count": { "value_count": { "field": "incidents.id" } }
-          }
+          "aggs": { "count": { "value_count": { "field": "incidents.id" } } }
         }
       }
     }
@@ -731,7 +680,9 @@ Use `ElasticsearchCompositeAggregationScroller.consumeAllPages()` with `setPathT
 ```json
 {
   "totalRuns": 1420,
+  "totalRunsWoW": 150,
   "avgDurationMs": 18340,
+  "avgDurationMsWoW": -700,
   "durationScope": "process",
   "totalInputTokens": 240000,
   "totalOutputTokens": 185000,
@@ -746,9 +697,14 @@ Use `ElasticsearchCompositeAggregationScroller.consumeAllPages()` with `setPathT
 
 ### 4.5 A4 — Token Trend
 
-**Purpose**: Time-series chart of token usage. At L2, shows multi-line breakdown (top-5 agents + "Other"). At L0/L1, shows a single aggregated line using the pre-computed parent-level fields.
+**Purpose**: Token usage over time.
 
-**L0 / L1 query** (single line, using parent fields — no nested drill-down needed):
+- **L0/L1** (no agent selected): multi-line, top-5 agents by total tokens + "Other" rollup.
+- **L2** (agent selected): single line for that agent.
+
+#### L0 / L1 — multi-line (top-5 agents + "Other")
+
+Step 1 — identify top-5 agent `elementId`s by total tokens:
 
 ```json
 {
@@ -758,36 +714,6 @@ Use `ElasticsearchCompositeAggregationScroller.consumeAllPages()` with `setPathT
       "must": [
         { "term": { "state": "COMPLETED" } },
         { "term": { "processDefinitionKey": "<optional-processKey>" } }
-      ]
-    }
-  },
-  "aggs": {
-    "over_time": {
-      "date_histogram": {
-        "field": "endDate",
-        "calendar_interval": "1d"
-      },
-      "aggs": {
-        "totalInput":  { "sum": { "field": "agentTotalInputTokens" } },
-        "totalOutput": { "sum": { "field": "agentTotalOutputTokens" } }
-      }
-    }
-  }
-}
-```
-
-**L2 query** (multi-line, top-5 agents by total tokens):
-
-Step 1 — identify top-5 agent elementIds by total tokens within the time range:
-
-```json
-{
-  "size": 0,
-  "query": {
-    "bool": {
-      "must": [
-        { "term": { "state": "COMPLETED" } },
-        { "term": { "processDefinitionKey": "<processKey>" } }
       ]
     }
   },
@@ -817,7 +743,53 @@ Step 1 — identify top-5 agent elementIds by total tokens within the time range
 }
 ```
 
-Step 2 — for each of the top-5 elementIds, run a date histogram:
+Step 2 — for each top-5 `elementId`, run a date histogram (5 parallel requests):
+
+```json
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "state": "COMPLETED" } },
+        { "term": { "processDefinitionKey": "<optional-processKey>" } },
+        {
+          "nested": {
+            "path": "agentInstances",
+            "query": { "term": { "agentInstances.elementId": "<elementId>" } }
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "agent_time": {
+      "nested": { "path": "agentInstances" },
+      "aggs": {
+        "for_element": {
+          "filter": { "term": { "agentInstances.elementId": "<elementId>" } },
+          "aggs": {
+            "over_time": {
+              "date_histogram": {
+                "field": "agentInstances.completionDate",
+                "calendar_interval": "1d"
+              },
+              "aggs": {
+                "inputTokens":  { "sum": { "field": "agentInstances.metrics.inputTokens" } },
+                "outputTokens": { "sum": { "field": "agentInstances.metrics.outputTokens" } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+"Other" = L0/L1 total (using parent `agentTotalInputTokens`/`agentTotalOutputTokens`) minus sum of top-5.
+
+#### L2 — single line
 
 ```json
 {
@@ -861,8 +833,6 @@ Step 2 — for each of the top-5 elementIds, run a date histogram:
 }
 ```
 
-Run top-5 queries in parallel (5 separate requests). "Other" = L1 total minus sum of top-5.
-
 **Response shape**:
 
 ```json
@@ -871,28 +841,28 @@ Run top-5 queries in parallel (5 separate requests). "Other" = L1 total minus su
     {
       "elementId": "Agent_1abc",
       "label": "Agent_1abc",
-      "data": [
-        { "date": "2025-01-01", "inputTokens": 4200, "outputTokens": 3100 }
-      ]
+      "data": [{ "date": "2025-01-01", "inputTokens": 4200, "outputTokens": 3100 }]
     },
     {
       "elementId": "__other__",
       "label": "Other",
-      "data": [
-        { "date": "2025-01-01", "inputTokens": 800, "outputTokens": 600 }
-      ]
+      "data": [{ "date": "2025-01-01", "inputTokens": 800, "outputTokens": 600 }]
     }
   ]
 }
 ```
 
+At L2, `series` contains one entry (the selected agent). No "Other".
+
 ---
 
-### 4.6 A5 — Duration Histogram
+### 4.6 A5 — Duration Stats
 
-**Purpose**: Distribution of durations in configurable buckets (e.g., <1s, 1–5s, 5–30s, >30s). Available at L0 and L1 only (process-level duration).
+**Purpose**: Duration P50/P95 KPI stats + execution duration stability over time (p50/p95 trend).
 
-**Query** (uses `DURATION` pre-computed field — no custom Painless needed):
+Duration field: `duration` (process-level, pre-computed) at L0/L1. `agentInstances.durationInMs` (nested) at L2.
+
+#### L0 / L1 query
 
 ```json
 {
@@ -912,28 +882,83 @@ Run top-5 queries in parallel (5 separate requests). "Other" = L1 total minus su
     }
   },
   "aggs": {
-    "duration_hist": {
-      "histogram": {
+    "duration_percentiles": {
+      "percentiles": {
         "field": "duration",
-        "interval": 5000,
-        "min_doc_count": 0
+        "percents": [50, 95]
+      }
+    },
+    "over_time": {
+      "date_histogram": { "field": "endDate", "calendar_interval": "1d" },
+      "aggs": {
+        "duration_trend": {
+          "percentiles": { "field": "duration", "percents": [50, 95] }
+        }
       }
     }
   }
 }
 ```
 
-> Bucket interval and range are configurable as query parameters. The nested filter ensures only process instances that actually ran agents are included.
+#### L2 query (agent-scoped duration)
+
+```json
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "state": "COMPLETED" } },
+        { "term": { "processDefinitionKey": "<processKey>" } },
+        {
+          "nested": {
+            "path": "agentInstances",
+            "query": { "term": { "agentInstances.elementId": "<elementId>" } }
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "agent_scope": {
+      "nested": { "path": "agentInstances" },
+      "aggs": {
+        "for_element": {
+          "filter": { "term": { "agentInstances.elementId": "<elementId>" } },
+          "aggs": {
+            "duration_percentiles": {
+              "percentiles": { "field": "agentInstances.durationInMs", "percents": [50, 95] }
+            },
+            "over_time": {
+              "date_histogram": {
+                "field": "agentInstances.completionDate",
+                "calendar_interval": "1d"
+              },
+              "aggs": {
+                "duration_trend": {
+                  "percentiles": { "field": "agentInstances.durationInMs", "percents": [50, 95] }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 **Response shape**:
 
 ```json
 {
   "durationScope": "process",
-  "buckets": [
-    { "fromMs": 0,     "toMs": 5000,  "count": 42 },
-    { "fromMs": 5000,  "toMs": 10000, "count": 118 },
-    { "fromMs": 10000, "toMs": null,  "count": 34 }
+  "p50Ms": 3800,
+  "p50MsWoW": -200,
+  "p95Ms": 8700,
+  "p95MsWoW": 400,
+  "trend": [
+    { "date": "2025-01-01", "p50Ms": 3600, "p95Ms": 8200 }
   ]
 }
 ```
@@ -944,12 +969,10 @@ Run top-5 queries in parallel (5 separate requests). "Other" = L1 total minus su
 
 **Purpose**: KPI showing incident rate scoped to the active filter level.
 
-- **L0 / L1** (process scope): incidents in process / total process instances with agents
-- **L2** (agent scope): agent-element incidents / total agent activations for that element
+- **L0/L1**: incidents in process / total process instances with agents
+- **L2**: agent-element incidents / total agent activations
 
-#### L0 / L1 (no specific agent selected)
-
-Incident rate = process instances with ≥1 incident / total process instances (that had agents).
+#### L0 / L1
 
 ```json
 {
@@ -977,9 +1000,7 @@ Incident rate = process instances with ≥1 incident / total process instances (
           "query": { "exists": { "field": "incidents.id" } }
         }
       },
-      "aggs": {
-        "count": { "value_count": { "field": "processInstanceId" } }
-      }
+      "aggs": { "count": { "value_count": { "field": "processInstanceId" } } }
     }
   }
 }
@@ -987,14 +1008,10 @@ Incident rate = process instances with ≥1 incident / total process instances (
 
 `incidentRate = has_incidents.count / totalRuns`
 
-#### L2 (specific agent element selected)
+#### L2
 
-Incident rate = total incidents on that agent element / total activations of that agent element, both counted across all completed process instances for the process.
-
-Denominator = `value_count(agentInstanceKey)` filtered by `elementId` (total activations).
-Numerator = `value_count(incidents.id)` filtered by `activityId = elementId` (total incidents on that element).
-
-Single query, two separate nested aggs:
+Denominator = `value_count(agentInstanceKey)` filtered by `elementId`.
+Numerator = `value_count(incidents.id)` filtered by `activityId = elementId`.
 
 ```json
 {
@@ -1024,9 +1041,7 @@ Single query, two separate nested aggs:
       "aggs": {
         "for_element": {
           "filter": { "term": { "incidents.activityId": "<elementId>" } },
-          "aggs": {
-            "incidentCount": { "value_count": { "field": "incidents.id" } }
-          }
+          "aggs": { "incidentCount": { "value_count": { "field": "incidents.id" } } }
         }
       }
     }
@@ -1036,13 +1051,12 @@ Single query, two separate nested aggs:
 
 `incidentRate = agent_incidents.for_element.incidentCount / agent_runs.for_element.activationCount`
 
-> No `reverse_nested` needed. Outer query stays broad (all completed PIs for that process) — the nested filters inside each agg handle scoping independently.
-
 **Response shape**:
 
 ```json
 {
   "incidentRate": 0.024,
+  "incidentRateWoW": -0.001,
   "incidentCount": 34,
   "activationCount": 1420
 }
@@ -1052,18 +1066,16 @@ Single query, two separate nested aggs:
 
 ### 4.8 A7 — Agents List
 
-**Purpose**: Paginated table of individual agent instance activations for a selected process + agent element.
+**Purpose**: L2. Paginated table of individual agent instance activations. Also computes `successRate` per agent element from the incident join.
 
-**Implementation**: Uses `ElasticsearchCompositeAggregationScroller` (existing utility at `optimize/backend/src/main/java/io/camunda/optimize/service/db/es/ElasticsearchCompositeAggregationScroller.java`).
+**Two-request approach**:
 
-**Two-request approach** to avoid pagination-correctness bug:
+1. `consumeAllPages()` scroller — collects all agent instance rows.
+2. Separate incident count request — merges `incidentCount` and `successRate` by `processInstanceId`.
 
-1. **Request 1**: Use `consumeAllPages()` scroller to collect all `agentInstanceKey` values and their metrics for the filter combination. Builds the full in-memory list.
-2. **Request 2**: Run incident counts for the collected `elementId` set separately — a single aggregation request with a `terms` filter, not per-page.
+`successRate = 1 - (incidentCount / activationCount)` — derivable from A6 L2 result, no FAILED status needed.
 
-> This avoids the pagination-correctness bug where incident counts built from page-1 element IDs would miss elements on later composite pages.
-
-**Request 1 — composite scroller query**:
+**Request 1 — composite scroller**:
 
 ```json
 {
@@ -1098,7 +1110,7 @@ Single query, two separate nested aggs:
                 ]
               },
               "aggs": {
-                "status":          { "terms": { "field": "agentInstances.status", "size": 1 } },
+                "status":          { "terms": { "field": "agentInstances.status",      "size": 1 } },
                 "creationDate":    { "min":   { "field": "agentInstances.creationDate" } },
                 "completionDate":  { "max":   { "field": "agentInstances.completionDate" } },
                 "durationInMs":    { "max":   { "field": "agentInstances.durationInMs" } },
@@ -1117,9 +1129,9 @@ Single query, two separate nested aggs:
 }
 ```
 
-Use `setPathToAggregation("agent_scope", "for_element", "by_instance")` on the scroller.
+Use `setPathToAggregation("agent_scope", "for_element", "by_instance")`.
 
-**Request 2 — incident counts** (after collecting all `agentInstanceKey` values):
+**Request 2 — incident counts per PI** (after scroller completes):
 
 ```json
 {
@@ -1141,9 +1153,7 @@ Use `setPathToAggregation("agent_scope", "for_element", "by_instance")` on the s
           "aggs": {
             "by_pi": {
               "terms": { "field": "incidents.processInstanceId", "size": 10000 },
-              "aggs": {
-                "count": { "value_count": { "field": "incidents.id" } }
-              }
+              "aggs": { "count": { "value_count": { "field": "incidents.id" } } }
             }
           }
         }
@@ -1152,8 +1162,6 @@ Use `setPathToAggregation("agent_scope", "for_element", "by_instance")` on the s
   }
 }
 ```
-
-Merge incident counts into agent instance rows by `processInstanceId` on the Java side.
 
 **Response shape**:
 
@@ -1175,11 +1183,284 @@ Merge incident counts into agent instance rows by `processInstanceId` on the Jav
       "incidentCount":     0
     }
   ],
+  "summary": {
+    "activationCount": 685,
+    "successRate": 0.976,
+    "incidentRate": 0.024
+  },
   "nextCursor": "eyJhZ2VudEluc3RhbmNlS2V5IjoiMjI1MTc5OTgxMzY4ODMyMiJ9"
 }
 ```
 
-`nextCursor`: base64-encoded after-key from the composite aggregation's `after_key`. Null when no more pages.
+`successRate` and `incidentRate` are summary-level (all pages), not per-row.
+
+---
+
+### 4.9 A8 — Token Outlier Bands
+
+**Purpose**: p0/p50/p95 of total tokens (`inputTokens + outputTokens`) per time bucket. Shows token consumption distribution over time.
+
+Uses `agentTotalInputTokens + agentTotalOutputTokens` at parent level (L0/L1). At L2, uses nested `metrics.inputTokens + metrics.outputTokens` for the selected agent.
+
+#### L0 / L1 query
+
+```json
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "state": "COMPLETED" } },
+        { "term": { "processDefinitionKey": "<optional-processKey>" } }
+      ]
+    }
+  },
+  "aggs": {
+    "over_time": {
+      "date_histogram": { "field": "endDate", "calendar_interval": "1d" },
+      "aggs": {
+        "token_bands": {
+          "percentiles": {
+            "script": {
+              "source": "(doc['agentTotalInputTokens'].size() > 0 ? doc['agentTotalInputTokens'].value : 0) + (doc['agentTotalOutputTokens'].size() > 0 ? doc['agentTotalOutputTokens'].value : 0)"
+            },
+            "percents": [0, 50, 95]
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+#### L2 query
+
+```json
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "state": "COMPLETED" } },
+        { "term": { "processDefinitionKey": "<processKey>" } },
+        {
+          "nested": {
+            "path": "agentInstances",
+            "query": { "term": { "agentInstances.elementId": "<elementId>" } }
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "agent_scope": {
+      "nested": { "path": "agentInstances" },
+      "aggs": {
+        "for_element": {
+          "filter": { "term": { "agentInstances.elementId": "<elementId>" } },
+          "aggs": {
+            "over_time": {
+              "date_histogram": {
+                "field": "agentInstances.completionDate",
+                "calendar_interval": "1d"
+              },
+              "aggs": {
+                "token_bands": {
+                  "percentiles": {
+                    "script": {
+                      "source": "(doc['agentInstances.metrics.inputTokens'].size() > 0 ? doc['agentInstances.metrics.inputTokens'].value : 0) + (doc['agentInstances.metrics.outputTokens'].size() > 0 ? doc['agentInstances.metrics.outputTokens'].value : 0)"
+                    },
+                    "percents": [0, 50, 95]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Response shape**:
+
+```json
+{
+  "bands": [
+    { "date": "2025-01-01", "p0": 120, "p50": 1700, "p95": 4200 }
+  ]
+}
+```
+
+---
+
+### 4.10 A9 — Avg Tokens per Agent Call
+
+**Purpose**: L1/L2. Avg tokens consumed per model call, grouped by agent element. Shows which agents are most expensive per LLM invocation.
+
+At L1: all agents for selected process. At L2: scoped to selected agent element (single bar).
+
+```json
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "state": "COMPLETED" } },
+        { "term": { "processDefinitionKey": "<processKey>" } },
+        // L2 only:
+        {
+          "nested": {
+            "path": "agentInstances",
+            "query": { "term": { "agentInstances.elementId": "<optional-elementId>" } }
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "agent_scope": {
+      "nested": { "path": "agentInstances" },
+      "aggs": {
+        "by_element": {
+          "terms": { "field": "agentInstances.elementId", "size": 100 },
+          "aggs": {
+            "totalInput":      { "sum": { "field": "agentInstances.metrics.inputTokens" } },
+            "totalOutput":     { "sum": { "field": "agentInstances.metrics.outputTokens" } },
+            "totalModelCalls": { "sum": { "field": "agentInstances.metrics.modelCalls" } },
+            "tokensPerCall": {
+              "bucket_script": {
+                "buckets_path": {
+                  "input":  "totalInput",
+                  "output": "totalOutput",
+                  "calls":  "totalModelCalls"
+                },
+                "script": "params.calls > 0 ? (params.input + params.output) / params.calls : 0"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Response shape**:
+
+```json
+{
+  "agents": [
+    {
+      "elementId": "Agent_1abc",
+      "label": "Agent_1abc",
+      "avgTokensPerCall": 613,
+      "totalModelCalls": 2050
+    }
+  ]
+}
+```
+
+---
+
+### 4.11 A10 — Failure Rate by Process Version
+
+**Purpose**: L1/L2. Incident rate broken down by `processDefinitionVersion`. Shows whether agent reliability degrades or improves across deployments.
+
+At L1: any incident in the process per version. At L2: agent-element incidents per version, denominator = agent activations per version.
+
+#### L1 query
+
+```json
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "state": "COMPLETED" } },
+        { "term": { "processDefinitionKey": "<processKey>" } }
+      ]
+    }
+  },
+  "aggs": {
+    "by_version": {
+      "terms": { "field": "processDefinitionVersion", "size": 100 },
+      "aggs": {
+        "totalRuns": { "value_count": { "field": "processInstanceId" } },
+        "has_incidents": {
+          "filter": {
+            "nested": {
+              "path": "incidents",
+              "query": { "exists": { "field": "incidents.id" } }
+            }
+          },
+          "aggs": { "count": { "value_count": { "field": "processInstanceId" } } }
+        }
+      }
+    }
+  }
+}
+```
+
+`failureRate[version] = has_incidents.count / totalRuns`
+
+#### L2 query (agent-scoped per version)
+
+```json
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "state": "COMPLETED" } },
+        { "term": { "processDefinitionKey": "<processKey>" } }
+      ]
+    }
+  },
+  "aggs": {
+    "by_version": {
+      "terms": { "field": "processDefinitionVersion", "size": 100 },
+      "aggs": {
+        "agent_runs": {
+          "nested": { "path": "agentInstances" },
+          "aggs": {
+            "for_element": {
+              "filter": { "term": { "agentInstances.elementId": "<elementId>" } },
+              "aggs": {
+                "activationCount": { "value_count": { "field": "agentInstances.agentInstanceKey" } }
+              }
+            }
+          }
+        },
+        "agent_incidents": {
+          "nested": { "path": "incidents" },
+          "aggs": {
+            "for_element": {
+              "filter": { "term": { "incidents.activityId": "<elementId>" } },
+              "aggs": { "count": { "value_count": { "field": "incidents.id" } } }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+`failureRate[version] = agent_incidents.for_element.count / agent_runs.for_element.activationCount`
+
+**Response shape**:
+
+```json
+{
+  "versions": [
+    { "version": 1, "failureRate": 0.041, "runs": 380 },
+    { "version": 2, "failureRate": 0.028, "runs": 520 },
+    { "version": 3, "failureRate": 0.019, "runs": 685 }
+  ]
+}
+```
 
 ---
 
@@ -1187,64 +1468,78 @@ Merge incident counts into agent instance rows by `processInstanceId` on the Jav
 
 **Location**: `optimize/client/src/components/AgenticControlPlane/`
 
-**Framework**: React + Carbon Design System (consistent with existing Optimize UI).
+**Framework**: React + Carbon Design System.
 
-### Views
+### Views and chart visibility per filter level
 
-| View | Route | Default filter level |
-|---|---|---|
-| `ControlPlaneDashboard` | `/agentic-control-plane` | L0 |
-| — with process selected | — | L1 |
-| — with process + agent | — | L2 |
+| Chart / Component | L0 | L1 | L2 |
+|---|---|---|---|
+| Summary KPIs (A3) | ✅ | ✅ | ✅ |
+| Top token consumers by process (A1) | ✅ | — | — |
+| Token trend — multi-line top-5 (A4) | ✅ | ✅ | — |
+| Token trend — single line (A4) | — | — | ✅ |
+| Token outlier bands (A8) | ✅ | ✅ | ✅ |
+| Avg tokens per agent call (A9) | — | ✅ | ✅ |
+| Tool call frequency KPI | ✅ | ✅ | ✅ |
+| Failure rate by process version (A10) | — | ✅ | ✅ |
+| Duration P50/P95 KPIs (A5) | ✅ | ✅ | ✅ |
+| Duration stability trend (A5) | ✅ | ✅ | ✅ |
+| Incident rate (A6) | ✅ | ✅ | ✅ |
 
-### Component Structure
+### Component structure
 
 ```
 AgenticControlPlane/
-  index.tsx                     Entry / route registration
-  ControlPlaneDashboard.tsx     Main dashboard layout
+  index.tsx
+  ControlPlaneDashboard.tsx
   components/
-    ProcessSelector.tsx         Dropdown (uses A1 response)
-    AgentSelector.tsx           Dropdown (uses A2 response)
-    SummaryKPIs.tsx             Stat block (uses A3)
-    TokenTrendChart.tsx         Multi-line chart (uses A4)
-    DurationHistogram.tsx       Bar chart (uses A5)
-    IncidentRateKPI.tsx         KPI + sparkline (uses A6)
-    AgentsList.tsx              Paginated table (uses A7)
+    ProcessSelector.tsx           uses A1
+    AgentSelector.tsx             uses A2
+    SummaryKPIs.tsx               uses A3
+    TokenTrendChart.tsx           uses A4 (multi or single based on filter level)
+    TokenOutlierBands.tsx         uses A8
+    AvgTokensPerAgentCall.tsx     uses A9 (L1/L2 only)
+    DurationStats.tsx             uses A5
+    IncidentRateKPI.tsx           uses A6
+    FailureRateByVersion.tsx      uses A10 (L1/L2 only)
+    AgentsList.tsx                uses A7 (L2 only, Agents tab)
   hooks/
     useProcessBreakdown.ts
     useAgentElements.ts
     useSummaryKPIs.ts
     useTokenTrend.ts
-    useDurationHistogram.ts
+    useTokenOutlierBands.ts
+    useAvgTokensPerCall.ts
+    useDurationStats.ts
     useIncidentRate.ts
+    useFailureRateByVersion.ts
     useAgentsList.ts
 ```
 
 ### Filter propagation
 
-A global `AgentFilterContext` holds `{ processDefinitionKey, elementId, dateRange }`. All hooks read from context. Selecting a process triggers L0→L1 transition; additionally selecting an agent triggers L1→L2.
+`AgentFilterContext` holds `{ processDefinitionKey, elementId, dateRange }`. Selecting a process triggers L0→L1; additionally selecting an agent triggers L1→L2. Duration label/tooltip updates dynamically (`"Process duration"` vs `"Agent execution time"`).
 
 ### Notes
 
-- Token trend chart: render top-5 agent series + "Other" rolled-up series using Carbon `LineChart`.
-- Duration histogram: use Carbon `SimpleBarChart` with custom bucket labels.
-- Agents list: uses `nextCursor` from A7 response for "load more" pagination (not page-number).
-- No status badges rendered — status visible only in agents list table column.
+- Token trend: switch between multi-line (A4 L0/L1) and single-line (A4 L2) based on whether `elementId` is set. Cap multi-line at 5 named series + "Other".
+- No status badges anywhere in the UI.
+- No settings page or "Configure in settings" link.
+- Agents list (`AgentsList.tsx`): cursor-based "load more" pagination. Shows `successRate` at list-header level (summary from A7 response), not per-row.
 
 ---
 
 ## 6. Out of Scope
 
-The following items are explicitly **not** part of this implementation:
-
-- **Reasoning tokens**: Phase 2.
-- **Per-tool call breakdown**: Phase 2. Phase 1 delivers only `totalToolCalls` KPI.
-- **Layer 4 — Settings page**: Dropped after product review. The `agentic-control-settings` index (threshold configuration per Zeebe cluster) is deferred to a future iteration.
-- **Status badges**: Dropped. Agent status visible only in A7 list table.
-- **FAILED agent status**: Not included in phase 1. Failures surface as Zeebe incidents on the owning element instance.
+- **Reasoning tokens**: Phase 2 via Zeebe schema change.
+- **Per-tool call breakdown**: Phase 2 when Zeebe provides per-tool data.
+- **Layer 4 — Settings / threshold configuration**: Dropped entirely.
+- **Status badges** (Healthy / Degraded / Failing): Dropped for phase 1.
+- **Agent details panel** (click-through from Agents tab): Not in scope for phase 1.
+- **FAILED agent status**: Not in phase 1. Failures surface as Zeebe incidents. SUCCESS % derived from incident join instead.
+- **SUCCESS % per-row in Agents list**: Derivable but shown only at summary level in A7 response (`summary.successRate`).
 - **Write-back / incident resolution**: Read-only.
-- **OpenSearch-specific query differences**: Handled at the existing ES/OS abstraction layer (`search/` module) where composite aggregation and nested query builders already have dual implementations.
+- **OpenSearch query differences**: Handled at existing ES/OS abstraction layer (`search/` module).
 
 ---
 
@@ -1254,16 +1549,7 @@ The following items are explicitly **not** part of this implementation:
 
 `ProcessInstanceIndex.VERSION`: `8` → `9`
 
-New class:
-
-```
-optimize/upgrade/src/main/java/io/camunda/optimize/upgrade/steps/schema/
-  UpdateProcessInstanceIndexMappingStep_8_9.java
-```
-
-Implements `UpgradeStep`. Adds the new `agentInstances` mapping and the two parent-level token fields (`agentTotalInputTokens`, `agentTotalOutputTokens`) to all existing process instance indices.
-
-No data migration required for existing documents — missing `agentInstances` lists default to empty array; missing token totals default to 0 at aggregation time.
+No migration class needed. Old process instances carry no agent data; ES/OS queries on missing nested paths return zero results. The VERSION bump ensures all new process instance indices are created with the correct `nested` mapping for `agentInstances`.
 
 ### Import service registration
 
