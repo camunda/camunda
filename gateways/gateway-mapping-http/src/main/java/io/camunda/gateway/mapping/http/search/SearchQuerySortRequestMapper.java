@@ -20,6 +20,7 @@ import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.DeployedResourceSort;
+import io.camunda.search.sort.DocumentReferenceSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.GlobalListenerSort;
 import io.camunda.search.sort.GroupMemberSort;
@@ -198,6 +199,12 @@ public class SearchQuerySortRequestMapper {
 
   static List<SearchQuerySortRequest<VariableSearchQuerySortRequest.FieldEnum>>
       fromVariableSearchQuerySortRequest(final List<VariableSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  static List<SearchQuerySortRequest<DocumentReferenceSearchQuerySortRequest.FieldEnum>>
+      fromDocumentReferenceSearchQuerySortRequest(
+          final List<DocumentReferenceSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -744,6 +751,25 @@ public class SearchQuerySortRequestMapper {
         case VARIABLE_KEY -> builder.variableKey();
         case SCOPE_KEY -> builder.scopeKey();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<String> applyDocumentReferenceSortField(
+      final DocumentReferenceSearchQuerySortRequest.FieldEnum field,
+      final DocumentReferenceSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case VARIABLE_KEY -> builder.variableKey();
+        case DOCUMENT_ID -> builder.documentId();
+        case FILE_NAME -> builder.fileName();
+        case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

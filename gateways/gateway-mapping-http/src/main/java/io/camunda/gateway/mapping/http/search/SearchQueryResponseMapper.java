@@ -52,6 +52,8 @@ import io.camunda.gateway.protocol.model.DecisionInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.gateway.protocol.model.DecisionRequirementsResult;
 import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQueryResult;
+import io.camunda.gateway.protocol.model.DocumentReferenceSearchQueryResult;
+import io.camunda.gateway.protocol.model.DocumentReferenceSearchResult;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
@@ -162,6 +164,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputE
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.DeployedResourceEntity;
+import io.camunda.search.entities.DocumentReferenceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
@@ -1322,6 +1325,41 @@ public final class SearchQueryResponseMapper {
       case UNSPECIFIED -> DecisionDefinitionTypeEnum.UNSPECIFIED;
       default -> DecisionDefinitionTypeEnum.UNKNOWN;
     };
+  }
+
+  public static DocumentReferenceSearchQueryResult toDocumentReferenceSearchQueryResponse(
+      final io.camunda.search.query.SearchQueryResult<DocumentReferenceEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new DocumentReferenceSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toDocumentReferences)
+                .orElseGet(Collections::emptyList));
+  }
+
+  private static List<DocumentReferenceSearchResult> toDocumentReferences(
+      final List<DocumentReferenceEntity> entities) {
+    return entities.stream().map(SearchQueryResponseMapper::toDocumentReference).toList();
+  }
+
+  private static DocumentReferenceSearchResult toDocumentReference(
+      final DocumentReferenceEntity entity) {
+    return new DocumentReferenceSearchResult()
+        .variableKey(keyToString(entity.variableKey()))
+        .variableName(entity.variableName())
+        .processInstanceKey(keyToString(entity.processInstanceKey()))
+        .scopeKey(keyToString(entity.scopeKey()))
+        .processDefinitionKey(keyToString(entity.processDefinitionKey()))
+        .processDefinitionId(entity.processDefinitionId())
+        .tenantId(entity.tenantId())
+        .documentId(entity.documentId())
+        .storeId(entity.storeId())
+        .fileName(entity.fileName())
+        .contentType(entity.contentType())
+        .size(entity.size())
+        .expiresAt(entity.expiresAt())
+        .contentHash(entity.contentHash());
   }
 
   public static VariableSearchQueryResult toVariableSearchQueryResponse(

@@ -34,6 +34,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.DeployedResourceQuery;
+import io.camunda.search.query.DocumentReferenceQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.GroupMemberQuery;
@@ -617,6 +618,22 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyVariableSortField);
     final var filter = SearchQueryFilterMapper.toVariableFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
+  }
+
+  public static Either<ProblemDetail, DocumentReferenceQuery> toDocumentReferenceQuery(
+      final @Nullable DocumentReferenceSearchQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.documentReferenceSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromDocumentReferenceSearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::documentReference,
+            SearchQuerySortRequestMapper::applyDocumentReferenceSortField);
+    final var filter = SearchQueryFilterMapper.toDocumentReferenceFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::documentReferenceSearchQuery);
   }
 
   public static Either<ProblemDetail, ClusterVariableQuery> toClusterVariableQuery(

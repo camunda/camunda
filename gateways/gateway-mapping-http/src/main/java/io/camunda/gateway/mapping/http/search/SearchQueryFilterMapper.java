@@ -53,6 +53,7 @@ import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.filter.DeployedResourceFilter;
+import io.camunda.search.filter.DocumentReferenceFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.GlobalJobStatisticsFilter;
@@ -342,6 +343,30 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
     ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     ofNullable(filter.getValue()).map(mapToStringOperations()).ifPresent(builder::valueOperations);
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, DocumentReferenceFilter> toDocumentReferenceFilter(
+      final io.camunda.gateway.protocol.model.@Nullable DocumentReferenceFilter filter) {
+    if (filter == null) {
+      return Either.right(FilterBuilders.documentReference().build());
+    }
+    final var builder = FilterBuilders.documentReference();
+    final List<String> validationErrors = new ArrayList<>();
+
+    ofNullable(filter.getProcessInstanceKey())
+        .map(mapToKeyOperations("processInstanceKey", validationErrors))
+        .ifPresent(builder::processInstanceKeyOperations);
+    ofNullable(filter.getVariableKey())
+        .map(mapToKeyOperations("variableKey", validationErrors))
+        .ifPresent(builder::variableKeyOperations);
+    ofNullable(filter.getDocumentId())
+        .map(mapToStringOperations())
+        .ifPresent(builder::documentIdOperations);
+    ofNullable(filter.getTenantId()).ifPresent(t -> builder.tenantIds(List.of(t)));
 
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
