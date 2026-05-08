@@ -408,7 +408,7 @@ def main() -> None:
                 "  WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 DAY)\n"
                 '    AND ts.ci_url = "https://github.com/camunda/camunda"\n'
                 f'    AND test_class_name = "{fqn_class}"\n'
-                f'    AND (test_name = "{method}" OR STARTS_WITH(test_name, "{method}("))\n'
+                f'    AND (test_name = "{method}" OR STARTS_WITH(test_name, "{method}(") OR STARTS_WITH(test_name, "{method}["))\n'
                 '    AND test_status IN ("flaky","failure","error")\n'
                 "  GROUP BY day, build_trigger, source, head_branch, target, test_status\n"
                 ")\n"
