@@ -99,7 +99,6 @@ public class CheckpointSchedulerServiceTest {
     schedulingService =
         new CheckpointSchedulingService(
             membershipService,
-            scheduler,
             brokerConfig.getData().getBackup(),
             brokerClient,
             new SimpleMeterRegistry());
@@ -245,7 +244,7 @@ public class CheckpointSchedulerServiceTest {
 
     // then
     assertThat(checkpointCreatorSpy.isActorClosed()).isTrue();
-    assertThat(retentionJobSpy.isActorClosed()).isTrue();
+    assertThat(retentionJobSpy.isClosed()).isTrue();
   }
 
   @Test
@@ -285,7 +284,6 @@ public class CheckpointSchedulerServiceTest {
     schedulingService =
         new CheckpointSchedulingService(
             membershipService,
-            scheduler,
             brokerConfig.getData().getBackup(),
             brokerClient,
             new SimpleMeterRegistry());

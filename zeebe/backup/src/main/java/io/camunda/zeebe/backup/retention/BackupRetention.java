@@ -18,11 +18,6 @@ import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -33,6 +28,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +38,8 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>Retention Process</h2>
  *
- * The retention process is executed on a configurable schedule and performs the following steps for
- * each partition:
+ * The retention process is triggered by the BPMN {@code retention_cleanup_scheduler} process and
+ * performs the following steps for each partition:
  *
  * <ol>
  *   <li><b>Retrieve Backups:</b> Fetches all existing backups for the partition from the backup
@@ -56,27 +52,15 @@ import org.slf4j.LoggerFactory;
  *       asynchronously deleting from the backup store, and syncing the JSON metadata file.
  * </ol>
  *
- * <h2>Scheduling</h2>
- *
- * The retention task is scheduled according to the provided {@link Schedule}. After each execution
- * (successful or failed), the next execution time is calculated and the task is rescheduled.
- *
- * <h2>Metrics</h2>
- *
- * The following metrics are recorded during retention:
- *
- * <ul>
- *   <li>Next scheduled execution time
- *   <li>Last execution time
- *   <li>Earliest retained backup ID
- *   <li>Number of backups deleted
- * </ul>
+ * <p>The pipeline is built from {@link CompletableFuture} stages — no actor is involved.
+ * Continuations execute on the thread that completes the upstream future (storage client executor
+ * for the listing stages, broker client executor for the delete-command stages).
  *
  * @see BackupStore
  * @see Schedule
  * @see BrokerClient
  */
-public class BackupRetention extends Actor {
+public class BackupRetention {
   private static final Logger LOG = LoggerFactory.getLogger(BackupRetention.class);
   private static final Comparator<BackupStatus> BACKUP_STATUS_COMPARATOR =
       Comparator.comparing(
@@ -104,6 +88,8 @@ public class BackupRetention extends Actor {
   private final Duration retentionWindow;
   private final BrokerTopologyManager topologyManager;
   private final RetentionMetrics metrics;
+  private final AtomicReference<CompletableFuture<List<Long>>> inFlight = new AtomicReference<>();
+  private volatile boolean closed;
 
   public BackupRetention(
       final BackupStore backupStore,
@@ -120,88 +106,61 @@ public class BackupRetention extends Actor {
     this.topologyManager = topologyManager;
   }
 
-  @Override
-  protected void onActorStarted() {
+  public void start() {
     LOG.debug("Retention scheduler started");
     metrics.register();
-    // Self-scheduling is disabled — retention is now driven by the BPMN
-    // retention_cleanup_scheduler process. See RetentionTriggerJobWorker.
+    closed = false;
+  }
+
+  public void close() {
+    LOG.debug("Retention scheduler stopped");
+    metrics.close();
+    closed = true;
+  }
+
+  public boolean isClosed() {
+    return closed;
   }
 
   /**
-   * Triggers a single retention pass on the actor thread. Returns the list of unique checkpoint IDs
-   * whose {@code DELETE_BACKUP} commands were submitted on this pass — exposed so the BPMN-driven
-   * {@code retention-trigger} job worker can include them in the PI's variables.
+   * Triggers a single retention pass. If a previous pass is still running, the returned future is
+   * bridged to it — concurrent invocations from BPMN job re-activations share one in-flight pass.
+   * Returns the list of unique checkpoint IDs whose {@code DELETE_BACKUP} commands were submitted
+   * on this pass.
    */
-  public java.util.concurrent.CompletionStage<List<Long>> triggerRetention() {
-    final var future = new java.util.concurrent.CompletableFuture<List<Long>>();
-    actor.run(
-        () ->
-            performRetention()
-                .onComplete(
-                    (deletedIds, err) -> {
-                      metrics.recordLastExecution(
-                          Instant.ofEpochMilli(ActorClock.currentTimeMillis()));
-                      if (err != null) {
-                        future.completeExceptionally(err);
-                      } else {
-                        future.complete(deletedIds);
-                      }
-                    }));
-    return future;
+  public CompletableFuture<List<Long>> triggerRetention() {
+    return inFlight.updateAndGet(prev -> (prev != null && !prev.isDone()) ? prev : runOnce());
   }
 
-  @Override
-  protected void onActorClosed() {
-    LOG.debug("Retention scheduler stopped");
-    metrics.close();
-  }
+  private CompletableFuture<List<Long>> runOnce() {
+    final var partitions = topologyManager.getTopology().getPartitions();
+    @SuppressWarnings("unchecked")
+    final CompletableFuture<List<Long>>[] perPartition =
+        partitions.stream().map(this::retentionForPartition).toArray(CompletableFuture[]::new);
 
-  private void reschedulingTask() {
-    performRetention()
-        .onComplete(
-            (v, err) -> {
-              metrics.recordLastExecution(Instant.ofEpochMilli(ActorClock.currentTimeMillis()));
-              if (err != null) {
-                LOG.error("Unexpected error occurred during backup retention task", err);
-              } else {
-                LOG.debug("Backup retention task completed successfully");
+    return CompletableFuture.allOf(perPartition)
+        .thenApply(
+            v -> {
+              final var aggregated = new ArrayList<Long>();
+              for (final var f : perPartition) {
+                aggregated.addAll(f.join());
               }
-              final var next =
-                  retentionSchedule.nextExecution(
-                      Instant.ofEpochMilli(ActorClock.currentTimeMillis()));
-              LOG.debug("Scheduling next retention task in {} ", next);
-              metrics.recordNextExecution(next.get());
-              actor.runAt(next.get().toEpochMilli(), this::reschedulingTask);
-            });
+              return (List<Long>) aggregated;
+            })
+        .whenComplete((result, error) -> metrics.recordLastExecution(Instant.now()));
   }
 
-  private ActorFuture<List<Long>> performRetention() {
-    final ActorFuture<List<Long>> retentionFuture = createFuture();
-    final var partitionFutures =
-        topologyManager.getTopology().getPartitions().stream()
-            .parallel()
-            .map(this::createRetentionContext)
-            .map(
-                future ->
-                    future
-                        .thenApply(this::logContext, this)
-                        .andThen(this::writeDeleteCommands, this))
-            .collect(new ActorFutureCollector<>(this));
-
-    partitionFutures.onComplete(
-        (futures, error) -> {
-          if (error != null) {
-            retentionFuture.completeExceptionally(error);
-          } else {
-            final var aggregated = new ArrayList<Long>();
-            for (final var perPartition : futures) {
-              aggregated.addAll(perPartition);
-            }
-            retentionFuture.complete(aggregated);
-          }
-        });
-    return retentionFuture;
+  private CompletableFuture<List<Long>> retentionForPartition(final int partitionId) {
+    final var identifier =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.of(partitionId), CheckpointPattern.any());
+    return backupStore
+        .list(identifier)
+        .thenApply(this::excludeBackupsWithoutTimestamps)
+        .thenApply(backups -> backups.stream().sorted(BACKUP_STATUS_COMPARATOR).toList())
+        .thenApply(backups -> processBackups(backups, partitionId))
+        .thenApply(this::logContext)
+        .thenCompose(this::writeDeleteCommands);
   }
 
   private RetentionContext logContext(final RetentionContext ctx) {
@@ -213,33 +172,6 @@ public class BackupRetention extends Actor {
     return ctx;
   }
 
-  private ActorFuture<RetentionContext> createRetentionContext(final int partitionId) {
-    return retrieveBackups(partitionId)
-        .thenApply(this::excludeBackupsWithoutTimestamps, this)
-        .thenApply((statuses) -> processBackups(statuses, partitionId), this);
-  }
-
-  private ActorFuture<Collection<BackupStatus>> retrieveBackups(final int partitionId) {
-    final var identifier =
-        new BackupIdentifierWildcardImpl(
-            Optional.empty(), Optional.of(partitionId), CheckpointPattern.any());
-    final ActorFuture<Collection<BackupStatus>> requestFuture = createFuture();
-    backupStore
-        .list(identifier)
-        .thenApplyAsync(
-            backups -> backups.stream().sorted(BACKUP_STATUS_COMPARATOR).toList(), actor)
-        .whenCompleteAsync(
-            (backups, throwable) -> {
-              if (throwable != null) {
-                requestFuture.completeExceptionally(throwable);
-              } else {
-                requestFuture.complete(backups);
-              }
-            },
-            actor);
-    return requestFuture;
-  }
-
   private RetentionContext processBackups(
       final Collection<BackupStatus> backups, final int partitionId) {
 
@@ -248,7 +180,6 @@ public class BackupRetention extends Actor {
       LOG.debug(
           "Unable to determine retention window for partition {}. No completed backup found.",
           partitionId);
-      // Returning a context with no deletable backups will not trigger any further actions
       return RetentionContext.init(partitionId, List.of(), -1L, null);
     }
 
@@ -264,12 +195,9 @@ public class BackupRetention extends Actor {
         if (backup.id().checkpointId() != latestCompletedBackup.get().id().checkpointId()) {
           deletableBackups.add(backup.id());
         } else {
-          // If the backup is the latest completed backup it should not be deleted and the marker
-          // should be moved to that backup id.
           firstAvailableBackupInNewRange = backup.id().checkpointId();
         }
       } else {
-        // Only consider completed backups for the range change.
         if (backup.statusCode() == BackupStatusCode.COMPLETED
             && firstAvailableBackupInNewRange == -1L) {
           firstAvailableBackupInNewRange = backup.id().checkpointId();
@@ -309,14 +237,11 @@ public class BackupRetention extends Actor {
    * by a single {@code DELETE_BACKUP} command — the stream processor's post-commit task deletes all
    * copies via a wildcard query.
    */
-  private CompletableActorFuture<List<Long>> writeDeleteCommands(final RetentionContext context) {
-    final CompletableActorFuture<List<Long>> future = new CompletableActorFuture<>();
+  private CompletableFuture<List<Long>> writeDeleteCommands(final RetentionContext context) {
     if (context.deletableBackups.isEmpty()) {
-      future.complete(List.of());
-      return future;
+      return CompletableFuture.completedFuture(List.of());
     }
 
-    // Deduplicate by checkpoint ID — a single DELETE_BACKUP command handles all node copies
     final var uniqueCheckpointIds =
         context.deletableBackups.stream()
             .mapToLong(BackupIdentifier::checkpointId)
@@ -329,17 +254,17 @@ public class BackupRetention extends Actor {
         uniqueCheckpointIds.length,
         context.partitionId);
 
-    final var futures = new ArrayList<CompletableFuture<?>>(uniqueCheckpointIds.length);
-    for (final var checkpointId : uniqueCheckpointIds) {
+    final var sends = new CompletableFuture<?>[uniqueCheckpointIds.length];
+    for (int i = 0; i < uniqueCheckpointIds.length; i++) {
       final var request = new BackupDeleteRequest();
       request.setPartitionId(context.partitionId);
-      request.setBackupId(checkpointId);
-      futures.add(brokerClient.sendRequestWithRetry(request));
+      request.setBackupId(uniqueCheckpointIds[i]);
+      sends[i] = brokerClient.sendRequestWithRetry(request);
     }
 
-    CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
-        .thenAcceptAsync(
-            ignore -> {
+    return CompletableFuture.allOf(sends)
+        .thenApply(
+            v -> {
               metrics
                   .forPartition(context.partitionId)
                   .setBackupsDeleted(uniqueCheckpointIds.length);
@@ -348,22 +273,8 @@ public class BackupRetention extends Actor {
                     .forPartition(context.partitionId)
                     .setEarliestBackupId(context.earliestBackupInNewRange);
               }
-            },
-            actor)
-        .whenCompleteAsync(
-            (result, error) -> {
-              if (error != null) {
-                LOG.error(
-                    "Failed to send DELETE_BACKUP commands for partition {}",
-                    context.partitionId,
-                    error);
-                future.completeExceptionally(error);
-              } else {
-                future.complete(deletedIds);
-              }
-            },
-            actor);
-    return future;
+              return deletedIds;
+            });
   }
 
   private Instant backupTimestamp(final BackupStatus backup) {

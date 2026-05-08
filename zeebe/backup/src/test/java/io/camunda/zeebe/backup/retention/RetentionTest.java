@@ -39,7 +39,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
-import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -56,7 +55,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -67,21 +65,19 @@ public class RetentionTest {
 
   private static final int[] DEFAULT_BACKUP_OFFSETS = {375, 315, 255, 195, 50, 30, 10};
 
-  @RegisterExtension
-  public final ControlledActorSchedulerExtension actorScheduler =
-      new ControlledActorSchedulerExtension();
-
   @Mock private BackupStore backupStore;
   @Mock private BrokerClient brokerClient;
   @Mock private BrokerTopologyManager topologyManager;
   @Mock private BrokerClusterState clusterState;
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private BackupRetention backupRetention;
+  private Instant now;
 
   @BeforeEach
   void setUp() {
     meterRegistry.clear();
     backupRetention = createBackupRetention();
+    backupRetention.start();
 
     doReturn(clusterState).when(topologyManager).getTopology();
     doReturn(List.of(1)).when(clusterState).getPartitions();
@@ -91,13 +87,12 @@ public class RetentionTest {
         .when(brokerClient)
         .sendRequestWithRetry(any());
 
-    actorScheduler.getClock().pinCurrentTime();
+    now = Instant.now();
   }
 
   @Test
   void shouldPerformAllActionsSinglePartition() {
     // given
-    final var now = actorScheduler.getClock().instant();
     final List<BackupStatus> backups = createDefaultBackups(1, 1, now);
 
     when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(backups));
@@ -113,7 +108,6 @@ public class RetentionTest {
   @Test
   void shouldPerformAllActionsSinglePartitionWithoutCreatedDate() {
     // given
-    final var now = actorScheduler.getClock().instant();
     final List<BackupStatus> backups = createDefaultBackupsNoCreatedDate(1, 1, now);
 
     when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(backups));
@@ -129,7 +123,6 @@ public class RetentionTest {
   void shouldPerformAllActionsMultiPartition() {
     // given
     setupMultiPartition(List.of(1, 2, 3));
-    final var now = actorScheduler.getClock().instant();
     final Map<Integer, List<BackupStatus>> backupsPerPartition =
         createBackupsForPartitions(List.of(1, 2, 3), now);
 
@@ -161,7 +154,6 @@ public class RetentionTest {
     // given
     final var partitions = List.of(1, 2, 3);
     setupMultiPartition(partitions);
-    final var now = actorScheduler.getClock().instant();
     final Map<Integer, List<BackupStatus>> backupsPerPartition =
         createBackupsForPartitions(partitions, now);
 
@@ -185,7 +177,6 @@ public class RetentionTest {
     // given
     final var partitions = List.of(1, 2, 3);
     setupMultiPartition(partitions);
-    final var now = actorScheduler.getClock().instant();
     final Map<Integer, List<BackupStatus>> backupsPerPartition =
         createBackupsForPartitions(partitions, now);
 
@@ -193,8 +184,7 @@ public class RetentionTest {
 
     // when
     runRetentionCycle();
-    backupRetention.closeAsync();
-    actorScheduler.workUntilDone();
+    backupRetention.close();
 
     // then
     assertThatThrownBy(() -> getGauge(RETENTION_LAST_EXECUTION))
@@ -214,7 +204,6 @@ public class RetentionTest {
   @Test
   void shouldProgressMarkerAfterFailed() {
     // given
-    final var now = actorScheduler.getClock().instant();
     final var backup1 = backup(now.minusSeconds(300));
     final var backup2 = failedBackup(now.minusSeconds(60));
     final var backup3 = failedBackup(now.minusSeconds(50));
@@ -225,7 +214,6 @@ public class RetentionTest {
 
     // when
     runRetentionCycle();
-    actorScheduler.workUntilDone();
 
     // then — only backup1 is outside the retention window (300s > 60s window relative to backup4)
     verifyDeleteCommandSent(1, backup1.id().checkpointId());
@@ -235,7 +223,6 @@ public class RetentionTest {
   @Test
   void shouldIgnoreLastFailedBackup() {
     // given
-    final var now = actorScheduler.getClock().instant();
     final var backup1 = backup(now.minusSeconds(300));
     final var backup2 = backup(now.minusSeconds(100));
     final var backup3 = failedBackup(now.minusSeconds(40));
@@ -245,7 +232,6 @@ public class RetentionTest {
 
     // when
     runRetentionCycle();
-    actorScheduler.workUntilDone();
 
     // then — backup1 is outside the window (300s - 100s = 200s > 60s window); backup2 is the
     // latest completed so it's kept
@@ -275,13 +261,11 @@ public class RetentionTest {
     reset(clusterState);
     doReturn(partitions).when(clusterState).getPartitions();
     backupRetention = createBackupRetention();
+    backupRetention.start();
   }
 
   private void runRetentionCycle() {
-    actorScheduler.submitActor(backupRetention);
-    actorScheduler.workUntilDone();
-    actorScheduler.updateClock(Duration.ofSeconds(10));
-    actorScheduler.workUntilDone();
+    backupRetention.triggerRetention().join();
   }
 
   private List<BackupStatus> createDefaultBackups(
@@ -412,7 +396,7 @@ public class RetentionTest {
   @Nested
   class ErrorHandling {
     @Test
-    void actorShouldNotHangOnBackupListingFailure() {
+    void shouldNotHangOnBackupListingFailure() {
       // given
       reset(backupStore);
       when(backupStore.list(any()))
@@ -421,10 +405,9 @@ public class RetentionTest {
 
       // when
       runRetentionCycle();
+      runRetentionCycle();
 
       // then
-      actorScheduler.updateClock(Duration.ofSeconds(10));
-      actorScheduler.workUntilDone();
       verify(backupStore, times(2)).list(any());
       verifyNoDeleteCommands();
     }
@@ -433,7 +416,6 @@ public class RetentionTest {
     void shouldPerformAllActionOnOnePartition() {
       // given
       setupMultiPartition(List.of(1, 2));
-      final var now = actorScheduler.getClock().instant();
       final Map<Integer, List<BackupStatus>> backupsPerPartition =
           createBackupsForPartitions(List.of(1, 2), now);
 
@@ -468,7 +450,6 @@ public class RetentionTest {
     @Test
     void shouldAlwaysMaintainASingleBackup() {
       // given
-      final var now = actorScheduler.getClock().instant();
       final var backup1 = backup(now.minusSeconds(200));
       final var backup2 = backup(now.minusSeconds(140));
       final var backup3 = backup(now.minusSeconds(70));
@@ -492,7 +473,6 @@ public class RetentionTest {
     @Test
     void shouldAlwaysMaintainASingleBackupWhenNoDescriptor() {
       // given
-      final var now = actorScheduler.getClock().instant();
       final var backup1 = backupNoDescriptor(1, 1, now.minusSeconds(300));
       final var backup2 = backupNoDescriptor(1, 1, now.minusSeconds(200));
       final var backup3 = backupNoDescriptor(1, 1, now.minusSeconds(130));
@@ -512,20 +492,15 @@ public class RetentionTest {
     @Test
     void shouldNotDeleteBackupsIfOnlyOneExists() {
       // given
-      final var now = actorScheduler.getClock().instant();
       final var backup1 = backup(now.minusSeconds(500));
 
       when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(List.of(backup1)));
 
       // when multiple runs occur
-      actorScheduler.submitActor(backupRetention);
-      actorScheduler.workUntilDone();
-      actorScheduler.updateClock(Duration.ofSeconds(10));
-      actorScheduler.workUntilDone();
-      actorScheduler.updateClock(Duration.ofSeconds(10));
-      actorScheduler.workUntilDone();
-      actorScheduler.updateClock(Duration.ofSeconds(10));
-      actorScheduler.workUntilDone();
+      runRetentionCycle();
+      runRetentionCycle();
+      runRetentionCycle();
+      runRetentionCycle();
 
       // then
       verifyNoDeleteCommands();
@@ -534,7 +509,6 @@ public class RetentionTest {
     @Test
     void shouldAlwaysMaintainASingleBackupOnCheckpointId() {
       // given
-      final var now = actorScheduler.getClock().instant();
       final var backup1 = backup(now.minusSeconds(300));
       final var backup2 = backup(now.minusSeconds(200));
       final var backup3 = backupOnlyId(1, 1, now.minusSeconds(130));
@@ -554,7 +528,6 @@ public class RetentionTest {
     @Test
     void shouldNotInterfereIfLatestNotWithinWindow() {
       // given
-      final var now = actorScheduler.getClock().instant();
       final var backup1 = backup(now.minusSeconds(290));
       final var backup2 = backup(now.minusSeconds(220));
       final var backup3 = backup(now.minusSeconds(150));
@@ -577,7 +550,6 @@ public class RetentionTest {
     @Test
     void shouldNotDeleteBackupsRelativeToLastCompleted() {
       // given
-      final var now = actorScheduler.getClock().instant();
       final var backup1 = backup(now.minusSeconds(370));
       final var backup2 = backup(now.minusSeconds(340));
       final var backup3 = backup(now.minusSeconds(300));
@@ -591,7 +563,6 @@ public class RetentionTest {
 
       // when
       runRetentionCycle();
-      actorScheduler.workUntilDone();
 
       // then — window is relative to backup3 (latest completed, 300s ago)
       // Window bound = 300 + 60 = 360s ago; backup1 (370s) is outside

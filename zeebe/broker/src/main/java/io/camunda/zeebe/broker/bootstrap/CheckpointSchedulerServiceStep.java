@@ -28,7 +28,6 @@ public class CheckpointSchedulerServiceStep extends AbstractBrokerStartupStep {
           final CheckpointSchedulingService schedulingService =
               new CheckpointSchedulingService(
                   brokerStartupContext.getClusterServices().getMembershipService(),
-                  scheduler,
                   backupCfg,
                   brokerStartupContext.getBrokerClient(),
                   meterRegistry);

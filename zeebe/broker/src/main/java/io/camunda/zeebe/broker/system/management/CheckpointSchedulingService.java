@@ -38,9 +38,6 @@ import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.scheduler.SchedulingHints;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.net.URI;
 import java.time.Duration;
@@ -64,7 +61,6 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
 
   private final ClusterMembershipService membershipService;
   private final BackupCfg backupCfg;
-  private final ActorSchedulingService actorScheduler;
   private final MeterRegistry meterRegistry;
   private final BrokerClient brokerClient;
   private final BackupRequestHandler backupRequestHandler;
@@ -75,15 +71,14 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   private boolean markerEnabled;
   private boolean backupEnabled;
   private boolean retentionEnabled;
+  private boolean backupRetentionStarted;
 
   public CheckpointSchedulingService(
       final ClusterMembershipService membershipService,
-      final ActorSchedulingService actorScheduler,
       final BackupCfg backupCfg,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry) {
     this.membershipService = membershipService;
-    this.actorScheduler = actorScheduler;
     this.backupCfg = backupCfg;
     this.meterRegistry = meterRegistry;
     this.brokerClient = brokerClient;
@@ -146,9 +141,8 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   @Override
   protected void onActorCloseRequested() {
     membershipService.removeListener(this);
-    final List<ActorFuture<Void>> shutdownFutures = new ArrayList<>();
     if (backupRetentionJob != null) {
-      shutdownFutures.add(backupRetentionJob.closeAsync());
+      backupRetentionJob.close();
     }
     if (checkpointTriggerWorker != null) {
       checkpointTriggerWorker.close();
@@ -158,15 +152,6 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
     }
     if (camundaClient != null) {
       camundaClient.close();
-    }
-    if (!shutdownFutures.isEmpty()) {
-      actor.runOnCompletion(
-          shutdownFutures,
-          (error) -> {
-            if (error != null) {
-              LOG.error("Failed to close checkpoint scheduling service", error);
-            }
-          });
     }
   }
 
@@ -190,6 +175,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   private void checkedStopScheduler() {
     if (shouldStopSchedulers() && backupRetentionJob != null) {
       backupRetentionJob.close();
+      backupRetentionStarted = false;
     }
   }
 
@@ -206,8 +192,9 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
       return;
     }
     deploySchedulerBpmnsAfterClusterReady();
-    if (backupRetentionJob != null) {
-      actorScheduler.submitActor(backupRetentionJob, SchedulingHints.ioBound());
+    if (backupRetentionJob != null && !backupRetentionStarted) {
+      backupRetentionJob.start();
+      backupRetentionStarted = true;
     }
   }
 
