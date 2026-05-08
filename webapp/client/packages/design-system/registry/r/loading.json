@@ -9,7 +9,7 @@
     {
       "path": "components/ui/loading.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `Loading` is the page/section-level loading indicator —\n * a larger spinner (`small` for inline use), optionally backed by a\n * full-page overlay (`withOverlay`). shadcn ships only the `Spinner`\n * primitive; sizing and overlay are app composition. The canonical\n * `Spinner` lives at `spinner/spinner.shadcn.tsx` and is re-exported here.\n */\n\nexport {Spinner} from '../spinner/spinner.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {Loading} from '@camunda/design-system';\nexport type {LoadingProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

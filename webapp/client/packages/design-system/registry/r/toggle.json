@@ -9,7 +9,7 @@
     {
       "path": "components/ui/toggle.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `Toggle` is a binary on/off switch (iOS-style sliding pill).\n * The shadcn equivalent is `Switch` — NOT shadcn `Toggle`, which is a\n * pressable-button primitive (closer to Carbon's `IconButton` with\n * `isSelected`). Canonical primitive lives at\n * `switch/switch.shadcn.tsx` and is re-exported here.\n */\n\nexport {Switch} from '../switch/switch.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {Toggle} from '@camunda/design-system';\nexport type {ToggleProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

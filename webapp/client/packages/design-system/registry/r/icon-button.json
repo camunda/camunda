@@ -9,7 +9,7 @@
     {
       "path": "components/ui/icon-button.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `IconButton` is a square button containing only an icon, with a\n * built-in tooltip on hover/focus (via `label`). shadcn does not ship a\n * dedicated icon button — the canonical pattern is\n * `<Button variant=\"ghost\" size=\"icon\">` wrapped in `<Tooltip>` for the\n * accessible label. Both primitives live in their own folders and are\n * re-exported here for migration ergonomics.\n */\n\nexport {Button, buttonVariants} from '../button/button.shadcn';\nexport type {ButtonProps} from '../button/button.shadcn';\nexport {\n  Tooltip,\n  TooltipContent,\n  TooltipProvider,\n  TooltipTrigger,\n} from '../tooltip/tooltip.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {IconButton} from '@camunda/design-system';\nexport type {IconButtonProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

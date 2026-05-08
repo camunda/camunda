@@ -9,7 +9,7 @@
     {
       "path": "components/ui/skeleton-icon.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `SkeletonIcon` is a small square placeholder for icon slots.\n * shadcn ships one generic `Skeleton` primitive — sized via Tailwind for\n * icon, text, button, etc. The canonical primitive lives at\n * `skeleton/skeleton.shadcn.tsx` and is re-exported here.\n */\n\nexport {Skeleton} from '../skeleton/skeleton.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {SkeletonIcon} from '@camunda/design-system';\nexport type {SkeletonIconProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

@@ -9,7 +9,7 @@
     {
       "path": "components/ui/skeleton-text.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `SkeletonText` renders one or more line-shaped placeholders\n * for text. shadcn ships one generic `Skeleton` primitive — sized via\n * Tailwind for line shapes (e.g. `<Skeleton className=\"h-4 w-full\" />`).\n * For multi-line text, render multiple Skeletons in a vertical stack.\n * Canonical primitive lives at `skeleton/skeleton.shadcn.tsx`.\n */\n\nexport {Skeleton} from '../skeleton/skeleton.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {SkeletonText} from '@camunda/design-system';\nexport type {SkeletonTextProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

@@ -9,7 +9,7 @@
     {
       "path": "components/ui/tile.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `Tile` is a generic content container — basic, clickable,\n * selectable, expandable variants. shadcn's closest primitive is `Card`,\n * which is decomposed into `Card` / `CardHeader` / `CardTitle` /\n * `CardDescription` / `CardContent` / `CardFooter` / `CardAction`.\n * Canonical primitive lives at `card/card.shadcn.tsx` and is re-exported\n * here for migration ergonomics.\n */\n\nexport {\n  Card,\n  CardAction,\n  CardContent,\n  CardDescription,\n  CardFooter,\n  CardHeader,\n  CardTitle,\n} from '../card/card.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {Tile} from '@camunda/design-system';\nexport type {TileProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

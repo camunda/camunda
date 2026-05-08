@@ -9,7 +9,7 @@
     {
       "path": "components/ui/callout.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `Callout` is a permanent/contextual inline notification (a.k.a.\n * StaticNotification). The vanilla shadcn migration target is `Alert` —\n * the canonical primitive lives at `alert/alert.shadcn.tsx` and is\n * re-exported here for ergonomics.\n */\n\nexport {Alert, AlertDescription, AlertTitle} from '../alert/alert.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {Callout} from '@camunda/design-system';\nexport type {CalloutProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

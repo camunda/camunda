@@ -9,7 +9,7 @@
     {
       "path": "components/ui/dropdown.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `Dropdown` is a \"single-select listbox with custom UI\" — closer\n * to shadcn's `Select` than to shadcn's `DropdownMenu` (which is the\n * action-menu primitive used by `MenuButton`/`OverflowMenu`).\n *\n * The canonical primitive lives at `select/select.shadcn.tsx` and is\n * re-exported here for migration ergonomics.\n */\n\nexport {\n  Select,\n  SelectContent,\n  SelectGroup,\n  SelectItem,\n  SelectLabel,\n  SelectScrollDownButton,\n  SelectScrollUpButton,\n  SelectSeparator,\n  SelectTrigger,\n  SelectValue,\n} from '../select/select.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {Dropdown} from '@camunda/design-system';\nexport type {DropdownProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

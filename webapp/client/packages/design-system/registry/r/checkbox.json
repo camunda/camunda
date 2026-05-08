@@ -4,15 +4,12 @@
   "type": "registry:ui",
   "title": "Checkbox",
   "description": "A binary or tri-state input for selecting one or more independent options. Use inside forms, list multi-select, or \"select all\" headers — anywhere the user toggles state independently per row.",
-  "dependencies": [
-    "lucide-react",
-    "radix-ui"
-  ],
+  "dependencies": [],
   "files": [
     {
       "path": "components/ui/checkbox.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nimport * as React from 'react';\nimport {CheckIcon, MinusIcon} from 'lucide-react';\nimport {Checkbox as CheckboxPrimitive} from 'radix-ui';\n\nimport {cn} from '../../../lib/utils';\n\nfunction Checkbox({\n  className,\n  ...props\n}: React.ComponentProps<typeof CheckboxPrimitive.Root>) {\n  return (\n    <CheckboxPrimitive.Root\n      data-slot=\"checkbox\"\n      className={cn(\n        'peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground dark:bg-input/30 dark:aria-invalid:ring-destructive/40 dark:data-[state=checked]:bg-primary dark:data-[state=indeterminate]:bg-primary',\n        className,\n      )}\n      {...props}\n    >\n      <CheckboxPrimitive.Indicator\n        data-slot=\"checkbox-indicator\"\n        className=\"group grid place-content-center text-current transition-none\"\n      >\n        <CheckIcon className=\"size-3.5 group-data-[state=indeterminate]:hidden\" />\n        <MinusIcon className=\"size-3.5 hidden group-data-[state=indeterminate]:block\" />\n      </CheckboxPrimitive.Indicator>\n    </CheckboxPrimitive.Root>\n  );\n}\n\nexport {Checkbox};\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {Checkbox} from '@camunda/design-system';\nexport type {CheckboxProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

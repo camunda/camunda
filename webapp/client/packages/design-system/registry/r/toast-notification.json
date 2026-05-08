@@ -9,7 +9,7 @@
     {
       "path": "components/ui/toast-notification.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `ToastNotification` is a self-rendering banner managed\n * imperatively or by an external store. shadcn's migration target is\n * `Sonner` — a toast queue + viewport rendered once near the app root,\n * with a `toast(...)` imperative API. The canonical primitive lives at\n * `sonner/sonner.shadcn.tsx` (exports `Toaster` + `toast`) and is\n * re-exported here for migration ergonomics.\n */\n\nexport {Toaster, toast} from '../sonner/sonner.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {ToastNotification} from '@camunda/design-system';\nexport type {ToastNotificationProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

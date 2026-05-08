@@ -18,6 +18,14 @@ const OUTPUT_DIR = join(ROOT, 'registry');
 const PACKAGE_NAME = '@camunda/design-system';
 const HOMEPAGE = 'https://design.camunda.io';
 
+const LICENSE_HEADER = `/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */`;
+
 const onlyArgs = process.argv.slice(2);
 
 function pascalCase(kebab) {
@@ -83,6 +91,53 @@ function extractDescription(component, mdSource) {
   return `${pascalCase(component)} component.`;
 }
 
+function extractExports(source) {
+  const values = new Set();
+  const types = new Set();
+
+  // export type FooProps = ... / export type FooProps<T> = ... / export interface Foo
+  const typeDeclRe = /^export\s+(?:type|interface)\s+(\w+)/gm;
+  let m;
+  while ((m = typeDeclRe.exec(source)) !== null) {
+    types.add(m[1]);
+  }
+
+  // export { Foo, Bar } or export type { Foo, Bar } (with optional `from '...'`)
+  const namedRe = /^export\s+(type\s+)?\{([^}]+)\}/gm;
+  while ((m = namedRe.exec(source)) !== null) {
+    const isType = Boolean(m[1]);
+    const names = (m[2] ?? '')
+      .split(',')
+      .map((n) => {
+        const parts = n.trim().split(/\s+as\s+/);
+        return (parts[parts.length - 1] ?? '').trim();
+      })
+      .filter((n) => Boolean(n) && n !== 'type');
+    for (const name of names) {
+      (isType ? types : values).add(name);
+    }
+  }
+
+  // export function Foo / export const Foo / export class Foo / export enum Foo
+  const declRe = /^export\s+(?:default\s+)?(?:function\*?|const|let|var|class|enum)\s+(\w+)/gm;
+  while ((m = declRe.exec(source)) !== null) {
+    values.add(m[1]);
+  }
+
+  return {values: [...values], types: [...types]};
+}
+
+function generateThinWrapper(values, types) {
+  const lines = [LICENSE_HEADER, ''];
+  if (values.length > 0) {
+    lines.push(`export {${values.join(', ')}} from '${PACKAGE_NAME}';`);
+  }
+  if (types.length > 0) {
+    lines.push(`export type {${types.join(', ')}} from '${PACKAGE_NAME}';`);
+  }
+  return lines.join('\n') + '\n';
+}
+
 function extractDependencies(source) {
   const deps = new Set();
   const re = /from\s+['"]([^'"]+)['"]/g;
@@ -109,9 +164,9 @@ function extractDependencies(source) {
 
 async function buildItem(component) {
   const dir = join(COMPONENTS_DIR, component);
-  const sourcePath = join(dir, `${component}.shadcn.tsx`);
-  const source = await readOptional(sourcePath);
-  if (source === null) return null;
+  const adapterPath = join(dir, `${component}.adapter.tsx`);
+  const adapter = await readOptional(adapterPath);
+  if (adapter === null) return null;
   const docsMdx = await readOptional(join(dir, `${component}.docs.mdx`));
   if (docsMdx === null) return null;
   const docs = stripMdxPreamble(docsMdx);
@@ -120,7 +175,8 @@ async function buildItem(component) {
   );
   const migrationGuide = migrationMdx ? stripMdxPreamble(migrationMdx) : null;
 
-  const exportName = pascalCase(component);
+  const {values, types} = extractExports(adapter);
+  const thinContent = generateThinWrapper(values, types);
 
   return {
     $schema: 'https://ui.shadcn.com/schema/registry-item.json',
@@ -128,17 +184,17 @@ async function buildItem(component) {
     type: 'registry:ui',
     title: extractTitle(component, docs),
     description: extractDescription(component, docs),
-    dependencies: extractDependencies(source),
+    dependencies: [],
     files: [
       {
         path: `components/ui/${component}.tsx`,
         type: 'registry:ui',
-        content: source,
+        content: thinContent,
       },
     ],
     meta: {
       package: PACKAGE_NAME,
-      import: `import {${exportName}} from '${PACKAGE_NAME}';`,
+      import: values.length > 0 ? `import {${values.join(', ')}} from '${PACKAGE_NAME}';` : '',
       ...(docs ? {docs} : {}),
       ...(migrationGuide ? {migrationGuide} : {}),
     },

@@ -9,7 +9,7 @@
     {
       "path": "components/ui/inline-loading.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `InlineLoading` is a small spinner + status text + transitions\n * between active / finished / error states. shadcn ships only the\n * `Spinner` primitive (a styled `lucide-react` `Loader2Icon`); inline\n * status text and state transitions are app composition. The canonical\n * Spinner lives at `spinner/spinner.shadcn.tsx` and is re-exported here.\n */\n\nexport {Spinner} from '../spinner/spinner.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {InlineLoading} from '@camunda/design-system';\nexport type {InlineLoadingProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

@@ -4,15 +4,12 @@
   "type": "registry:ui",
   "title": "Link",
   "description": "A styled `<a>` element. Comes in three sizes, an inline variant for in-prose links, optional trailing icon, optional visited styles, and `asChild` for routing-library integration.",
-  "dependencies": [
-    "class-variance-authority",
-    "radix-ui"
-  ],
+  "dependencies": [],
   "files": [
     {
       "path": "components/ui/link.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nimport * as React from 'react';\nimport {cva, type VariantProps} from 'class-variance-authority';\nimport {Slot} from 'radix-ui';\n\nimport {cn} from '../../../lib/utils';\n\nconst linkVariants = cva(\n  'inline-flex items-center gap-1.5 text-primary underline-offset-4 outline-hidden transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 hover:text-primary/80 hover:underline aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[visited=true]:visited:text-purple-600',\n  {\n    variants: {\n      size: {\n        sm: 'text-xs',\n        md: 'text-sm',\n        lg: 'text-base',\n      },\n      inline: {\n        true: 'underline',\n        false: '',\n      },\n    },\n    defaultVariants: {\n      size: 'md',\n      inline: false,\n    },\n  },\n);\n\ntype LinkProps = Omit<React.ComponentProps<'a'>, 'children'> &\n  VariantProps<typeof linkVariants> & {\n    asChild?: boolean;\n    disabled?: boolean;\n    visited?: boolean;\n    renderIcon?: React.ComponentType<{className?: string}>;\n    children?: React.ReactNode;\n  };\n\nfunction Link({\n  className,\n  size,\n  inline,\n  asChild,\n  disabled,\n  visited,\n  renderIcon: Icon,\n  children,\n  ...props\n}: LinkProps) {\n  const Comp = asChild ? Slot.Root : 'a';\n  return (\n    <Comp\n      data-slot=\"link\"\n      data-visited={visited ? 'true' : undefined}\n      aria-disabled={disabled || undefined}\n      tabIndex={disabled ? -1 : props.tabIndex}\n      className={cn(linkVariants({size, inline}), className)}\n      {...props}\n    >\n      {asChild ? (\n        children\n      ) : (\n        <>\n          {children}\n          {Icon ? <Icon className=\"size-4 shrink-0\" /> : null}\n        </>\n      )}\n    </Comp>\n  );\n}\n\nexport {Link, linkVariants};\nexport type {LinkProps};\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {Link} from '@camunda/design-system';\nexport type {LinkProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

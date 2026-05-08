@@ -9,7 +9,7 @@
     {
       "path": "components/ui/tag.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `Tag` is a small pill-shaped label with a colour `type`,\n * optional icon, and optional close (`filter`) button. shadcn's\n * `Badge` is the same shape but with fewer built-in colour variants\n * and no built-in close button. Canonical primitive lives at\n * `badge/badge.shadcn.tsx`.\n */\n\nexport {Badge, badgeVariants} from '../badge/badge.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {Tag} from '@camunda/design-system';\nexport type {TagProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {

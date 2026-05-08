@@ -9,7 +9,7 @@
     {
       "path": "components/ui/inline-notification.tsx",
       "type": "registry:ui",
-      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n *\n * Carbon's `InlineNotification` is a dismissible inline banner with a\n * status icon, title, subtitle, and an X close button. shadcn ships only\n * the `Alert` primitive — dismissibility, status iconography, and the\n * close button are app composition. The canonical `Alert` lives at\n * `alert/alert.shadcn.tsx` and is re-exported here for ergonomics.\n */\n\nexport {Alert, AlertDescription, AlertTitle} from '../alert/alert.shadcn';\n"
+      "content": "/*\n * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under\n * one or more contributor license agreements. See the NOTICE file distributed\n * with this work for additional information regarding copyright ownership.\n * Licensed under the Camunda License 1.0. You may not use this file\n * except in compliance with the Camunda License 1.0.\n */\n\nexport {InlineNotification} from '@camunda/design-system';\nexport type {InlineNotificationProps} from '@camunda/design-system';\n"
     }
   ],
   "meta": {
