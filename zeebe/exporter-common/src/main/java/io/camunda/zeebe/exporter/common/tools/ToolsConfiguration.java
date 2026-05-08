@@ -52,6 +52,8 @@ public class ToolsConfiguration {
     return name ->
         name.equals(extensionPropertyToolName)
             || name.equals(extensionPropertyInboundConnectorType)
-            || name.startsWith(extensionPropertyPrefixToolProperties);
+            || (extensionPropertyPrefixToolProperties != null
+                && !extensionPropertyPrefixToolProperties.isBlank()
+                && name.startsWith(extensionPropertyPrefixToolProperties));
   }
 }
