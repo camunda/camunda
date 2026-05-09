@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Import;
 
 /**
  * Minimal Spring Boot bootstrap used by integration tests in this module (e.g., {@code
- * WebappCacheHeadersIT}, {@code ClusterConfigurationControllerIT}).
+ * WebappCacheHeadersIT}).
  */
 @SpringBootConfiguration
 @EnableAutoConfiguration
@@ -24,9 +24,8 @@ import org.springframework.context.annotation.Import;
 public class TestWebappApplication {
 
   /**
-   * Provides a default {@link SecurityConfiguration} bean with all-default (self-managed) values so
-   * that {@link io.camunda.webapp.rest.ClusterConfigurationController} can be wired up in the test
-   * context without a full {@code CamundaSecurityConfiguration} setup.
+   * Provides a default {@link SecurityConfiguration} bean with all-default (self-managed) values
+   * for testing purposes.
    */
   @Bean
   SecurityConfiguration securityConfiguration() {
