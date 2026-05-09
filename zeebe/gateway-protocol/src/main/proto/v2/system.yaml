@@ -184,6 +184,10 @@ components:
       type: object
       required:
         - jobMetrics
+        - components
+        - deployment
+        - authentication
+        - cloud
       properties:
         jobMetrics:
           $ref: '#/components/schemas/JobMetricsConfigurationResponse'
@@ -239,6 +243,8 @@ components:
     ComponentsConfigurationResponse:
       description: Configuration for active Camunda components in the deployment.
       type: object
+      required:
+        - active
       properties:
         active:
           description: List of webapp components whose UI is enabled in this deployment.
@@ -250,6 +256,11 @@ components:
     DeploymentConfigurationResponse:
       description: Configuration for deployment characteristics.
       type: object
+      required:
+        - isEnterprise
+        - isMultiTenancyEnabled
+        - contextPath
+        - maxRequestSize
       properties:
         isEnterprise:
           description: Whether this is an enterprise deployment.
@@ -272,6 +283,9 @@ components:
     AuthenticationConfigurationResponse:
       description: Configuration for authentication and session management.
       type: object
+      required:
+        - canLogout
+        - isLoginDelegated
       properties:
         canLogout:
           description: Whether users can log out (false for SaaS deployments).
@@ -285,6 +299,12 @@ components:
     CloudConfigurationResponse:
       description: Configuration for SaaS/cloud-specific settings.
       type: object
+      required:
+        - organizationId
+        - clusterId
+        - stage
+        - mixpanelToken
+        - mixpanelAPIHost
       properties:
         organizationId:
           description: The SaaS organization ID, if applicable.
