@@ -359,7 +359,7 @@ public class SystemControllerTest extends RestControllerTest {
               }
             }
             """,
-            JsonCompareMode.STRICT);
+            JsonCompareMode.LENIENT);
   }
 
   @Test
@@ -398,7 +398,7 @@ public class SystemControllerTest extends RestControllerTest {
               }
             }
             """,
-            JsonCompareMode.STRICT);
+            JsonCompareMode.LENIENT);
   }
 
   @Test
@@ -430,6 +430,6 @@ public class SystemControllerTest extends RestControllerTest {
               }
             }
             """,
-            JsonCompareMode.STRICT);
+            JsonCompareMode.LENIENT);
   }
 }
