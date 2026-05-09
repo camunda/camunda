@@ -33,7 +33,9 @@ import org.agrona.collections.MutableBoolean;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -362,10 +364,13 @@ public interface BackupCompatibilityAcceptance {
   }
 
   private BrokerContainer createOldBroker(final String storeBasePath) {
+    final var imageName = DockerImageName.parse("camunda/zeebe").withTag(previousVersion());
     final var broker =
-        new BrokerContainer(
-                DockerImageName.parse("camunda/zeebe").withTag(VersionUtil.getPreviousVersion()))
+        new BrokerContainer(imageName)
             .withNetwork(getNetwork())
+            .withLogConsumer(
+                new Slf4jLogConsumer(LoggerFactory.getLogger(BackupCompatibilityAcceptance.class))
+                    .withPrefix(imageName.asCanonicalNameString()))
             .withEmbeddedGateway()
             .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, 1))
             .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")

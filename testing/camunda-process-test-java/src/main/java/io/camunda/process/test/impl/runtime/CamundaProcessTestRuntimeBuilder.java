@@ -99,6 +99,9 @@ public class CamundaProcessTestRuntimeBuilder {
   private List<String> coverageExcludedProcesses =
       CamundaProcessTestRuntimeDefaults.COVERAGE_EXCLUDED_PROCESSES;
 
+  private List<String> coverageExcludedDecisions =
+      CamundaProcessTestRuntimeDefaults.COVERAGE_EXCLUDED_DECISIONS;
+
   private CamundaClientBuilderFactory camundaClientBuilderFactory =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_BUILDER_FACTORY;
   private Consumer<CamundaClientBuilder> camundaClientOverrides = cb -> {};
@@ -282,6 +285,12 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  public CamundaProcessTestRuntimeBuilder withCoverageExcludedDecisions(
+      final List<String> coverageExcludedDecisions) {
+    this.coverageExcludedDecisions = coverageExcludedDecisions;
+    return this;
+  }
+
   public CamundaProcessTestRuntimeBuilder withContainerProvider(
       final CamundaProcessTestContainerProvider containerProvider) {
     containerProviders.add(containerProvider);
@@ -434,6 +443,10 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public List<String> getCoverageExcludedProcesses() {
     return coverageExcludedProcesses;
+  }
+
+  public List<String> getCoverageExcludedDecisions() {
+    return coverageExcludedDecisions;
   }
 
   public CamundaClientBuilderFactory getConfiguredCamundaClientBuilderFactory() {

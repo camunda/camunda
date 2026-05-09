@@ -12,9 +12,10 @@
     "bpmn"
   ],
   "dependencies": {
-    "camunda-bpmn-js": "^5.27.0",
     "bootstrap": "^5.3.7",
-    "bootstrap-icons": "^1.13.1"
+    "bootstrap-icons": "^1.13.1",
+    "camunda-bpmn-js": "^5.27.0",
+    "camunda-dmn-js": "^3.7.0"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^14.0.0",

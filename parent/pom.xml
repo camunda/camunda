@@ -34,6 +34,9 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
     <maven-profiler-report-directory>${project.build.directory}/profiler</maven-profiler-report-directory>
 
+    <!-- data layer nightly test exclusion flag -->
+    <failsafe.excluded.nightly>dl-nightly</failsafe.excluded.nightly>
+
     <!-- EXTERNAL LIBS -->
     <version.agrona>2.4.0</version.agrona>
     <version.animal-sniffer>1.27</version.animal-sniffer>
@@ -269,8 +272,9 @@
       JVM module opens required across the project:
       - java.base/java.io: required for NativeFS raw file descriptor access
       - java.base/jdk.internal.misc: required for agrona's UnsafeApi
+      - enable-native-access=ALL-UNNAMED: suppresses restricted method warnings from jffi (JDK 17+)
     -->
-    <jvm.module.opens>--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</jvm.module.opens>
+    <jvm.module.opens>--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED --enable-native-access=ALL-UNNAMED</jvm.module.opens>
 
     <!--
       you can use the following to disable specific check plugins. this can also be used to skip the
@@ -2453,7 +2457,7 @@
           <configuration>
             <argLine>${jvm.module.opens}</argLine>
             <!-- by default, exclude performance and strace tests -->
-            <excludedGroups>performance, strace</excludedGroups>
+            <excludedGroups>performance, strace, ${failsafe.excluded.nightly}</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>

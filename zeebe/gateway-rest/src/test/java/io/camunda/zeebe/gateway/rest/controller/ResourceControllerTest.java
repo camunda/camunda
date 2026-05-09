@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -55,6 +56,8 @@ public class ResourceControllerTest extends RestControllerTest {
   static final String DELETE_RESOURCE_ENDPOINT = RESOURCES_BASE_URL + "/resources/%s/deletion";
   static final String GET_RESOURCE_ENDPOINT = RESOURCES_BASE_URL + "/resources/%s";
   static final String GET_RESOURCE_CONTENT_ENDPOINT = RESOURCES_BASE_URL + "/resources/%s/content";
+  static final String GET_RESOURCE_CONTENT_BINARY_ENDPOINT =
+      RESOURCES_BASE_URL + "/resources/%s/content/binary";
 
   @MockitoBean ResourceServices resourceServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
@@ -571,7 +574,7 @@ public class ResourceControllerTest extends RestControllerTest {
           "script": "foo"
         }
         """;
-    when(resourceServices.getContentByKey(eq(1L), any()))
+    when(resourceServices.getContentByKeyFilteredByType(eq(1L), eq("rpa"), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DeployedResourceEntity(
@@ -589,9 +592,42 @@ public class ResourceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldGetResourceContentBinary() {
+    // given
+    final var content =
+        """
+        {
+          "id": "test",
+          "name": "test RPA script",
+          "script": "foo"
+        }
+        """;
+    when(resourceServices.getContentByKey(eq(1L), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DeployedResourceEntity(
+                    1L, "test", "test.rpa", "rpa", 1, null, 100L, "tenant", content)));
+
+    // when / then
+    webClient
+        .get()
+        .uri(GET_RESOURCE_CONTENT_BINARY_ENDPOINT.formatted(1))
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .expectBody(byte[].class)
+        .consumeWith(
+            response ->
+                assertThat(response.getResponseBody())
+                    .isEqualTo(content.getBytes(StandardCharsets.UTF_8)));
+  }
+
+  @Test
   void getResourceContentShouldYieldNotFoundWhenResourceNotFound() {
     // given
-    when(resourceServices.getContentByKey(eq(1L), any()))
+    when(resourceServices.getContentByKeyFilteredByType(eq(1L), eq("rpa"), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -624,9 +660,44 @@ public class ResourceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void getResourceContentShouldYieldInternalServerErrorForProcessingErrorRejection() {
+  void getResourceContentBinaryShouldYieldNotFoundWhenResourceNotFound() {
     // given
     when(resourceServices.getContentByKey(eq(1L), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapBrokerRejection(
+                    new BrokerRejection(
+                        ResourceIntent.FETCH, 1L, RejectionType.NOT_FOUND, "Resource not found"))));
+    final var url = GET_RESOURCE_CONTENT_BINARY_ENDPOINT.formatted(1);
+
+    // when / then
+    webClient
+        .get()
+        .uri(url)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 404,
+              "title": "NOT_FOUND",
+              "detail": "Command 'FETCH' rejected with code 'NOT_FOUND': Resource not found",
+              "instance": "%s"
+            }
+            """
+                .formatted(url),
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void getResourceContentShouldYieldInternalServerErrorForProcessingErrorRejection() {
+    // given
+    when(resourceServices.getContentByKeyFilteredByType(eq(1L), eq("rpa"), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -662,14 +733,86 @@ public class ResourceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void getResourceContentBinaryShouldYieldInternalServerErrorForProcessingErrorRejection() {
+    // given
+    when(resourceServices.getContentByKey(eq(1L), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapBrokerRejection(
+                    new BrokerRejection(
+                        ResourceIntent.FETCH,
+                        1L,
+                        RejectionType.PROCESSING_ERROR,
+                        "something went wrong"))));
+    final var url = GET_RESOURCE_CONTENT_BINARY_ENDPOINT.formatted(1);
+
+    // when / then
+    webClient
+        .get()
+        .uri(url)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 500,
+              "title": "INTERNAL",
+              "detail": "Command 'FETCH' rejected with code 'PROCESSING_ERROR': something went wrong",
+              "instance": "%s"
+            }
+            """
+                .formatted(url),
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
   void getResourceContentShouldYieldInternalServerErrorForBrokerError() {
+    // given
+    when(resourceServices.getContentByKeyFilteredByType(eq(1L), eq("rpa"), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapBrokerError(
+                    new BrokerError(ErrorCode.INTERNAL_ERROR, "something went wrong"))));
+    final var url = GET_RESOURCE_CONTENT_ENDPOINT.formatted(1);
+
+    // when / then
+    webClient
+        .get()
+        .uri(url)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 500,
+              "title": "INTERNAL",
+              "detail": "Unexpected error occurred between gateway and broker (code: INTERNAL_ERROR) (message: something went wrong)",
+              "instance": "%s"
+            }
+            """
+                .formatted(url),
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void getResourceContentBinaryShouldYieldInternalServerErrorForBrokerError() {
     // given
     when(resourceServices.getContentByKey(eq(1L), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.INTERNAL_ERROR, "something went wrong"))));
-    final var url = GET_RESOURCE_CONTENT_ENDPOINT.formatted(1);
+    final var url = GET_RESOURCE_CONTENT_BINARY_ENDPOINT.formatted(1);
 
     // when / then
     webClient

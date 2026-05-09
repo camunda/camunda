@@ -187,6 +187,7 @@ public class CamundaProcessTestExtension
             .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
             .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
             .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
+            .excludeDecisionDefinitionIds(runtimeBuilder.getCoverageExcludedDecisions())
             .build();
 
     // put in store
@@ -698,6 +699,18 @@ public class CamundaProcessTestExtension
   public CamundaProcessTestExtension withCoverageExcludedProcesses(
       final String... processDefinitionIds) {
     runtimeBuilder.withCoverageExcludedProcesses(Arrays.asList(processDefinitionIds));
+    return this;
+  }
+
+  /**
+   * Configures the coverage report to exclude the given decisions.
+   *
+   * @param decisionDefinitionIds the IDs of the decision definitions to exclude
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCoverageExcludedDecisions(
+      final String... decisionDefinitionIds) {
+    runtimeBuilder.withCoverageExcludedDecisions(Arrays.asList(decisionDefinitionIds));
     return this;
   }
 

@@ -15,7 +15,7 @@ import { renderBpmnDiagram } from '../bpmn.js';
  * Renders the process details view into #content.
  * @param {string} processId
  * @param {object} data window.COVERAGE_DATA
- * @param {{ suiteId: string, runName?: string } | null} [context] Optional context for scoped coverage.
+ * @param {{ suiteId: string, runIndex?: number } | null} [context] Optional context for scoped coverage.
  */
 export async function renderProcess(processId, data, context = null) {
   const suites = data.suites || [];
@@ -29,18 +29,17 @@ export async function renderProcess(processId, data, context = null) {
     const suite = suites.find((s) => s.id === context.suiteId);
     const sid = encodeURIComponent(context.suiteId);
 
-    if (context.runName) {
-      // Run-scoped: coverage from a specific test run
-      const run = suite?.runs?.find((r) => r.name === context.runName);
+    if (context.runIndex !== undefined) {
+      // Run-scoped: coverage from a specific test run (identified by index)
+      const run = suite?.runs?.[context.runIndex];
       cov = run?.coverages?.find((c) => c.processDefinitionId === processId) ?? null;
 
       // Breadcrumb: Suite > Run > Process
-      const rn = encodeURIComponent(context.runName);
       breadcrumbHtml = `
         <nav aria-label="breadcrumb" class="mb-3">
           <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="#/suite/${sid}">${escapeHtml(suite?.name ?? context.suiteId)}</a></li>
-            <li class="breadcrumb-item"><a href="#/suite/${sid}/run/${rn}">${escapeHtml(context.runName)}</a></li>
+            <li class="breadcrumb-item"><a href="#/suite/${sid}/run/${context.runIndex}">${escapeHtml(run?.name ?? String(context.runIndex))}</a></li>
             <li class="breadcrumb-item active" aria-current="page">${escapeHtml(processId)}</li>
           </ol>
         </nav>`;

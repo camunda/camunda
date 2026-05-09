@@ -7,10 +7,12 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
+import {LoginPage} from '../pages/Login.page';
 
 test('should match the login page snapshot', async ({page}) => {
-	await page.goto('/login');
-	await expect(page.getByRole('button', {name: /login/i})).toBeVisible();
+	const loginPage = new LoginPage(page);
+	await loginPage.goto();
+	await expect(loginPage.submitButton).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });

@@ -21,6 +21,7 @@ import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import java.net.URI;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +54,7 @@ public class ClockControllerTest extends RestControllerTest {
   void pinClockShouldReturnNoContent() {
     // given
     final long timestamp = 2693098555055L;
-    final var request = new ClockPinRequest().timestamp(timestamp);
+    final var request = ClockPinRequest.Builder.create().timestamp(timestamp).build();
     final var clockRecord = new ClockRecord().pinAt(timestamp);
 
     when(clockServices.pinClock(eq(timestamp), any()))
@@ -75,16 +76,16 @@ public class ClockControllerTest extends RestControllerTest {
 
   static Stream<Arguments> invalidClockPinRequests() {
     return Stream.of(
-        of(new ClockPinRequest(), "No timestamp provided."),
+        of(Map.of(), "No timestamp provided."),
         of(
-            new ClockPinRequest().timestamp(-1L),
+            ClockPinRequest.Builder.create().timestamp(-1L).build(),
             "The value for timestamp is '-1' but must be not negative."));
   }
 
   @ParameterizedTest
   @MethodSource("invalidClockPinRequests")
   public void pinClockShouldReturnBadRequestIfInvalidClockPinRequestProvided(
-      final ClockPinRequest invalidRequest, final String expectedError) {
+      final Object invalidRequest, final String expectedError) {
     // given
     final var expectedBody = CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle(INVALID_ARGUMENT.name());

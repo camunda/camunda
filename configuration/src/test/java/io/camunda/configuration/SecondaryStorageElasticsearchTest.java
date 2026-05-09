@@ -828,14 +828,18 @@ public class SecondaryStorageElasticsearchTest {
     @Test
     void shouldUseOperatePropertiesDefaults() {
       assertThat(operateProperties.getElasticsearch())
-          .returns(null, OperateElasticsearchProperties::getSocketTimeout)
+          .returns(
+              OperateElasticsearchProperties.SOCKET_TIMEOUT_DEFAULT,
+              OperateElasticsearchProperties::getSocketTimeout)
           .returns(null, OperateElasticsearchProperties::getConnectTimeout);
     }
 
     @Test
     void shouldUseTasklistPropertiesDefaults() {
       assertThat(tasklistProperties.getElasticsearch())
-          .returns(null, TasklistElasticsearchProperties::getSocketTimeout)
+          .returns(
+              TasklistElasticsearchProperties.SOCKET_TIMEOUT_DEFAULT,
+              TasklistElasticsearchProperties::getSocketTimeout)
           .returns(null, TasklistElasticsearchProperties::getConnectTimeout);
     }
 

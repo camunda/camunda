@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.coverage.model;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class Run {
@@ -24,14 +25,27 @@ public class Run {
   private final String name;
 
   private final List<Coverage> coverages;
+  private final List<DecisionCoverage> decisionCoverages;
 
   public Run(final String name, final List<Coverage> coverages) {
+    this(name, coverages, Collections.emptyList());
+  }
+
+  public Run(
+      final String name,
+      final List<Coverage> coverages,
+      final List<DecisionCoverage> decisionCoverages) {
     this.name = name;
     this.coverages = coverages;
+    this.decisionCoverages = decisionCoverages;
   }
 
   public Collection<Coverage> getCoverages() {
     return coverages;
+  }
+
+  public Collection<DecisionCoverage> getDecisionCoverages() {
+    return decisionCoverages;
   }
 
   public String getName() {

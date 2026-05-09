@@ -172,10 +172,11 @@ public class RequestMapper {
       final long userTaskKey) {
 
     return toUserTaskAssignmentRequest(
-        new UserTaskAssignmentRequest()
+        UserTaskAssignmentRequest.Builder.create()
             .action(assignmentRequest.getAction())
             .allowOverride(assignmentRequest.getAllowOverride())
-            .assignee(assignmentRequest.getAssignee()),
+            .assignee(assignmentRequest.getAssignee())
+            .build(),
         userTaskKey);
   }
 
@@ -391,7 +392,9 @@ public class RequestMapper {
       for (int i = 0; i < parts.size(); i++) {
         final Part part = parts.get(i);
         final DocumentMetadata metadata =
-            metadataList.get(i) == null ? new DocumentMetadata() : metadataList.get(i);
+            metadataList.get(i) == null
+                ? DocumentMetadata.Builder.create().build()
+                : metadataList.get(i);
         final InputStream inputStream;
         try {
           inputStream = part.getInputStream();
@@ -422,7 +425,7 @@ public class RequestMapper {
                                     throw new RuntimeException(e);
                                   }
                                 })
-                            .orElse(new DocumentMetadata())));
+                            .orElse(DocumentMetadata.Builder.create().build())));
 
     final ProblemDetail validationErrors =
         metadataMap.values().stream()

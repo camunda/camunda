@@ -74,12 +74,14 @@ export function badgeHtml(value) {
  * @param {string} label
  * @param {string} icon Bootstrap Icons class
  * @param {string} [extraClass]
+ * @param {string} [colClass] Bootstrap column class (default: 'col-sm-6 col-lg-3')
  * @returns {string} HTML string.
  */
-export function statCard(value, label, icon, extraClass) {
+export function statCard(value, label, icon, extraClass, colClass) {
   const cls = extraClass ? `coverage-stat-value ${extraClass}` : 'coverage-stat-value';
+  const col = colClass || 'col-sm-6 col-lg-3';
   return `
-    <div class="col-sm-6 col-lg-3">
+    <div class="${col}">
       <div class="card stat-card h-100">
         <div class="card-body text-center">
           <div class="${cls}">${value}</div>

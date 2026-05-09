@@ -42,7 +42,7 @@ graph TD
         DAILY["camunda-daily-load-tests.yml<br/><i>Weekdays 02:00 UTC</i>"]
         WEEKLY["camunda-weekly-load-tests.yml<br/><i>Monday 01:00 UTC</i>"]
         ROLLING["zeebe-update-long-running-<br/>migrating-benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
-        CLEANUP["camunda-load-test-clean-up.yml<br/><i>Daily 04:00 UTC</i>"]
+        CLEANUP["camunda-load-test-ttl-cleanup.yml<br/><i>Daily 04:00 UTC</i>"]
     end
 
     subgraph "Event Triggers"
@@ -56,6 +56,7 @@ graph TD
         ECS["camunda-ecs-weekly-load-test.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
     end
 
     subgraph "Deployment Layer"
@@ -81,7 +82,10 @@ graph TD
     CORE -- "newLoadTest.sh + make install" --> MAKEFILE
     MAKEFILE -- "Helm install" --> GKE
     PROFILE -- "async-profiler" --> GKE
-    VERIFY -- "kubectl wait + delete" --> GKE
+    VERIFY -- "kubectl wait" --> GKE
+    VERIFY -- "delegate cleanup" --> DELETE
+    PR -- "delegate cleanup on label removal / PR close" --> DELETE
+    DELETE -- "kubectl delete ns" --> GKE
     CLEANUP -- "kubectl delete expired ns" --> GKE
 ```
 
@@ -93,7 +97,7 @@ graph TD
 | 01:00 UTC Monday  | `camunda-weekly-load-tests.yml`                      | Weekly    |
 | 02:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml`           | Weekdays  |
 | 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`                       | Weekdays  |
-| 04:00 UTC         | `camunda-load-test-clean-up.yml`                     | Daily     |
+| 04:00 UTC         | `camunda-load-test-ttl-cleanup.yml`                  | Daily     |
 
 For detailed inputs, triggers, and job definitions, see each workflow's header comments in [`.github/workflows/`](../.github/workflows/).
 
@@ -255,7 +259,7 @@ Results are posted to the `#reliability-testing-alerts` Slack channel.
 
 ### Weekly load tests
 
-Weekly load tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). They are automatically created every Monday and run for 4 weeks, then cleaned up by the [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This results in several concurrent weekly tests (multiple variants × four weeks).
+Weekly load tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). They are automatically created every Monday and run for 4 weeks, then cleaned up by the [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-ttl-cleanup.yml). This results in several concurrent weekly tests (multiple variants × four weeks).
 
 The weekly tests cover, for example, the [realistic load](../docs/testing/reliability-testing.md#realistic-load) variants (one with Elasticsearch, one with OpenSearch, and one with PostgreSQL) plus the [latency test](../docs/testing/reliability-testing.md#latency-load-test).
 
