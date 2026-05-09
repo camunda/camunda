@@ -110,19 +110,14 @@ public class SystemController {
             .maxUniqueKeys(jobMetricsCfg.getMaxUniqueKeys())
             .build();
 
-    final var responseBuilder =
-        SystemConfigurationResponse.Builder.create().jobMetrics(jobMetricsResponse);
-
-    // Add webapp configuration sections if dependencies are available
-    if (environment != null) {
-      responseBuilder
-          .components(buildComponentsConfiguration())
-          .deployment(buildDeploymentConfiguration())
-          .authentication(buildAuthenticationConfiguration())
-          .cloud(buildCloudConfiguration());
-    }
-
-    return ResponseEntity.ok(responseBuilder.build());
+    return ResponseEntity.ok(
+        SystemConfigurationResponse.Builder.create()
+            .jobMetrics(jobMetricsResponse)
+            .components(buildComponentsConfiguration())
+            .deployment(buildDeploymentConfiguration())
+            .authentication(buildAuthenticationConfiguration())
+            .cloud(buildCloudConfiguration())
+            .build());
   }
 
   private ComponentsConfigurationResponse buildComponentsConfiguration() {
