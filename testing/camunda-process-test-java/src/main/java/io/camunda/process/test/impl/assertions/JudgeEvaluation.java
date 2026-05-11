@@ -110,10 +110,17 @@ class JudgeEvaluation {
     final String prompt = buildPrompt(expectation, input, docs);
     LOG.debug("Sending prompt to judge LLM (attached documents: {})", docs.size());
 
-    final String response =
-        docs.isEmpty()
-            ? chatModel.generate(prompt)
-            : ((MultimodalChatModelAdapter) chatModel).generate(prompt, docs);
+    final String response;
+    if (docs.isEmpty()) {
+      response = chatModel.generate(prompt);
+    } else if (chatModel instanceof MultimodalChatModelAdapter) {
+      response = ((MultimodalChatModelAdapter) chatModel).generate(prompt, docs);
+    } else {
+      throw new IllegalStateException(
+          "Documents were provided for judge evaluation but the configured ChatModelAdapter "
+              + "does not implement MultimodalChatModelAdapter: "
+              + chatModel.getClass().getName());
+    }
     LOG.debug("Received response from judge LLM");
 
     final Result result = parseResponse(response);

@@ -54,11 +54,6 @@ class JudgeAssertj {
   }
 
   /**
-   * Validates that the judge config has all required settings for evaluation.
-   *
-   * @throws IllegalStateException if judgeConfig or its chatModel is null
-   */
-  /**
    * @return the current judge config (never {@code null} once {@link
    *     #assertJudgeHasAllRequiredSettings()} has passed).
    */
@@ -66,6 +61,11 @@ class JudgeAssertj {
     return judgeConfig;
   }
 
+  /**
+   * Validates that the judge config has all required settings for evaluation.
+   *
+   * @throws IllegalStateException if judgeConfig or its chatModel is null
+   */
   void assertJudgeHasAllRequiredSettings() {
     if (judgeConfig == null) {
       throw new IllegalStateException(

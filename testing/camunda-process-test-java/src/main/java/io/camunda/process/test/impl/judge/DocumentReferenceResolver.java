@@ -110,7 +110,7 @@ public final class DocumentReferenceResolver {
     if (node.isArray()) {
       node.forEach(element -> collectReferences(element, out));
     } else if (node.isObject()) {
-      node.fields().forEachRemaining(entry -> collectReferences(entry.getValue(), out));
+      node.fieldNames().forEachRemaining(fieldName -> collectReferences(node.get(fieldName), out));
     }
   }
 
@@ -126,6 +126,10 @@ public final class DocumentReferenceResolver {
 
   // --- parallel download ---
 
+  // Each download is dispatched to the common ForkJoinPool and blocks that worker on
+  // request.send().join() plus the stream read. This is acceptable for the test-scope
+  // fan-out expected here (a handful of documents per asserted variable); revisit if
+  // we ever need to resolve large batches.
   private List<ResolvedDocument> downloadAll(final List<JsonNode> references) {
     final List<CompletableFuture<ResolvedDocument>> futures =
         references.stream().map(this::downloadAsync).collect(Collectors.toList());
