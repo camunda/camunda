@@ -78,7 +78,7 @@ class Notifications {
     let time = NOTIFICATION_TIMEOUT;
 
     const intervalId = setInterval(() => {
-      if (document.hidden) {
+      if (document !== undefined && document.hidden) {
         return;
       }
 

@@ -28,6 +28,6 @@
     "noUnusedParameters": true,
     "noPropertyAccessFromIndexSignature": false,
     "noUncheckedIndexedAccess": true,
-    "allowUnreachableCode": false,
-  },
+    "allowUnreachableCode": false
+  }
 }

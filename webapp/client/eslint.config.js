@@ -19,7 +19,12 @@ const files = {
 
 export default defineConfig([
 	{
-		ignores: ['packages/**/dist/**/*', 'apps/**/dist/**/*', 'target/**/*', 'apps/orchestration-cluster-webapp/src/modules/svg/**/*'],
+		ignores: [
+			'packages/**/dist/**/*',
+			'apps/**/dist/**/*',
+			'target/**/*',
+			'apps/orchestration-cluster-webapp/src/modules/svg/**/*',
+		],
 	},
 
 	{

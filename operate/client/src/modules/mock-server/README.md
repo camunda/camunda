@@ -52,4 +52,3 @@ mockServer.use(
   ),
 );
 ```
-

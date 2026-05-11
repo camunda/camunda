@@ -156,9 +156,7 @@ test.describe('variables and incidents', () => {
 
     await editVariableButton.click();
 
-    await processInstancePage.variablesEditor
-      .getEditor('orderValue')
-      .click();
+    await processInstancePage.variablesEditor.getEditor('orderValue').click();
     await processInstancePage.variablesEditor.waitForEditorToLoad();
 
     await processInstancePage.variablesEditor.clear();
