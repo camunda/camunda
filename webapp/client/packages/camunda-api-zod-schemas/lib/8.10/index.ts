@@ -156,6 +156,7 @@ import {
 } from './tenant';
 import {createUser, queryUsers, getUser, deleteUser, updateUser} from './user';
 import {getUsageMetrics} from './usage-metrics';
+import {getSystemConfiguration} from './system-configuration';
 import {getAuditLog, queryAuditLogs} from './audit-log';
 import {queryUserTaskAuditLogs} from './user-task-audit-log';
 import {
@@ -332,6 +333,7 @@ const endpoints = {
 	deleteUser,
 	updateUser,
 	getUsageMetrics,
+	getSystemConfiguration,
 	createIncidentResolutionBatchOperation,
 	createCancellationBatchOperation,
 	createDeletionBatchOperation,
@@ -965,6 +967,22 @@ export {
 	type GetUsageMetricsResponseBody,
 	type GetUsageMetricsParams,
 } from './usage-metrics';
+export {
+	jobMetricsConfigurationSchema,
+	componentsConfigurationSchema,
+	deploymentConfigurationSchema,
+	authenticationConfigurationSchema,
+	cloudConfigurationSchema,
+	systemConfigurationSchema,
+	getSystemConfigurationResponseBodySchema,
+	type JobMetricsConfiguration,
+	type ComponentsConfiguration,
+	type DeploymentConfiguration,
+	type AuthenticationConfiguration,
+	type CloudConfiguration,
+	type SystemConfiguration,
+	type GetSystemConfigurationResponseBody,
+} from './system-configuration';
 export {
 	clusterVariableScopeSchema,
 	clusterVariableSchema,
