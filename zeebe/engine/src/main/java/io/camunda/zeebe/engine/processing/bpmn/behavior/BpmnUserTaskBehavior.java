@@ -58,6 +58,10 @@ import org.slf4j.LoggerFactory;
 
 public final class BpmnUserTaskBehavior {
 
+  private static final String DEFAULT_ACTION_CREATE = "create";
+  private static final String DEFAULT_ACTION_ASSIGN = "assign";
+  private static final String DEFAULT_ACTION_CANCEL = "cancel";
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnUserTaskBehavior.class.getPackageName());
   private static final Set<LifecycleState> CANCELABLE_LIFECYCLE_STATES =
@@ -193,7 +197,7 @@ public final class BpmnUserTaskBehavior {
             .setTags(getTagsFromProcessInstance(context))
             .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
 
-    userTaskRecord.setAction("create");
+    userTaskRecord.setAction(DEFAULT_ACTION_CREATE);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
   }
@@ -391,7 +395,7 @@ public final class BpmnUserTaskBehavior {
 
     rejectOngoingRequestsForUserTaskBeforeCancellation(userTask);
 
-    userTask.setAction("cancel");
+    userTask.setAction(DEFAULT_ACTION_CANCEL);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
     return Optional.of(userTask);
   }
@@ -460,7 +464,7 @@ public final class BpmnUserTaskBehavior {
       userTaskRecord.setAssignee(assignee);
       userTaskRecord.setAssigneeChanged();
     }
-    userTaskRecord.setAction("assign");
+    userTaskRecord.setAction(DEFAULT_ACTION_ASSIGN);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
   }
 

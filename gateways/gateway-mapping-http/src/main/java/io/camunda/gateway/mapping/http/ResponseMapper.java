@@ -248,7 +248,8 @@ public final class ResponseMapper {
     final var headers = job.getCustomHeaders();
     final var props = new UserTaskProperties();
 
-    props.setAction(requireNonNull(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME), "action"));
+    props.setAction(
+        Objects.requireNonNullElse(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME), ""));
     props.setAssignee(headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME));
     props.setCandidateGroups(
         mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)));

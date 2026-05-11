@@ -155,7 +155,7 @@ class ResponseMapperTest {
               "TASK_LISTENER job with invalid or empty header values",
               JobKind.TASK_LISTENER,
               Map.of(
-                  // action is always set by the engine for all user task lifecycle transitions
+                  // action is set by the engine for creating, assigning, and canceling transitions
                   Protocol.USER_TASK_ACTION_HEADER_NAME, "complete",
                   Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "",
                   Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "invalid_string",
@@ -181,6 +181,20 @@ class ResponseMapperTest {
                 assertThat(props.getFormKey()).as("Form key should be null").isNull();
                 assertThat(props.getPriority()).as("Priority should be null").isNull();
                 assertThat(props.getUserTaskKey()).as("User task key should be null").isNull();
+              }),
+          new ActivatedJobWithUserTaskPropsCase(
+              "TASK_LISTENER job without action header (pre-fix broker-internal path)",
+              JobKind.TASK_LISTENER,
+              Map.of(
+                  Protocol.USER_TASK_KEY_HEADER_NAME, "100",
+                  Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "demo"),
+              props -> {
+                assertThat(props).as("Should not throw on missing action header").isNotNull();
+                assertThat(props.getAction())
+                    .as("Action should default to empty string for pre-fix records")
+                    .isEmpty();
+                assertThat(props.getAssignee()).isEqualTo("demo");
+                assertThat(props.getUserTaskKey()).isEqualTo("100");
               }),
           new ActivatedJobWithUserTaskPropsCase(
               "TASK_LISTENER job with empty headers map",
