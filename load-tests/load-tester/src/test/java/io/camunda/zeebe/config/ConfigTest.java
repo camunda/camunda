@@ -61,6 +61,27 @@ class ConfigTest {
     assertThat(workerCfg.getMessageName()).isEqualTo("messageName");
     assertThat(workerCfg.isSendMessage()).isFalse();
     assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("correlationKey-var");
+
+    // optimize - POJO default `enabled=true`; production deployments override to false
+    // via application.yaml ${LOAD_TESTER_OPTIMIZE_ENABLED:false} since the test does not
+    // bind application.yaml (no @SpringBootTest).
+    final var optimizeCfg = properties.getOptimize();
+    assertThat(optimizeCfg).isNotNull();
+    assertThat(optimizeCfg.isEnabled()).isTrue();
+    assertThat(optimizeCfg.getBaseUrl()).isEqualTo("http://optimize:8090");
+    assertThat(optimizeCfg.getKeycloakUrl()).isEqualTo("http://camunda-platform-keycloak:18080");
+    assertThat(optimizeCfg.getRealm()).isEqualTo("camunda-platform");
+    assertThat(optimizeCfg.getClientId()).isEqualTo("optimize");
+    assertThat(optimizeCfg.getClientSecret()).isEmpty();
+    assertThat(optimizeCfg.getUsername()).isEqualTo("demo");
+    assertThat(optimizeCfg.getPassword()).isEqualTo("demo");
+    assertThat(optimizeCfg.getProcessDefinitionKey()).isEmpty();
+    assertThat(optimizeCfg.getEvaluationInterval()).hasSeconds(60);
+    assertThat(optimizeCfg.getInitialDelay()).hasSeconds(10);
+    assertThat(optimizeCfg.getAuthRetryMaxAttempts()).isEqualTo(30);
+    assertThat(optimizeCfg.getAuthRetryDelay()).hasSeconds(10);
+    assertThat(optimizeCfg.getTokenRefreshSkew()).hasSeconds(30);
+    assertThat(optimizeCfg.getRequestTimeout()).hasSeconds(30);
   }
 
   @Nested
@@ -105,6 +126,24 @@ class ConfigTest {
       assertThat(workerCfg.getMessageName()).isEqualTo("msg");
       assertThat(workerCfg.isSendMessage()).isTrue();
       assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("var");
+
+      // optimize overrides
+      final var optimizeCfg = properties.getOptimize();
+      assertThat(optimizeCfg.isEnabled()).isTrue();
+      assertThat(optimizeCfg.getBaseUrl()).isEqualTo("http://optimize.svc:8090");
+      assertThat(optimizeCfg.getKeycloakUrl()).isEqualTo("http://kc.svc:18080");
+      assertThat(optimizeCfg.getRealm()).isEqualTo("custom-realm");
+      assertThat(optimizeCfg.getClientId()).isEqualTo("custom-optimize");
+      assertThat(optimizeCfg.getClientSecret()).isEqualTo("s3cr3t");
+      assertThat(optimizeCfg.getUsername()).isEqualTo("user-x");
+      assertThat(optimizeCfg.getPassword()).isEqualTo("pass-x");
+      assertThat(optimizeCfg.getProcessDefinitionKey()).isEqualTo("pd-override");
+      assertThat(optimizeCfg.getEvaluationInterval()).hasSeconds(30);
+      assertThat(optimizeCfg.getInitialDelay()).hasSeconds(5);
+      assertThat(optimizeCfg.getAuthRetryMaxAttempts()).isEqualTo(5);
+      assertThat(optimizeCfg.getAuthRetryDelay()).hasSeconds(2);
+      assertThat(optimizeCfg.getTokenRefreshSkew()).hasSeconds(15);
+      assertThat(optimizeCfg.getRequestTimeout()).hasSeconds(20);
     }
   }
 }

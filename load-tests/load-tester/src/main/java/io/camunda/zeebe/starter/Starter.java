@@ -23,6 +23,8 @@ import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
+import io.camunda.zeebe.optimize.OptimizeApiClient;
+import io.camunda.zeebe.optimize.OptimizeReportEvaluator;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.read.DataReadMeter;
 import io.camunda.zeebe.read.DataReadMeterQueryProvider;
@@ -60,6 +62,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Component
 @Profile("starter")
@@ -79,6 +82,8 @@ public class Starter implements CommandLineRunner {
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
   private final ConnectionMonitor connectionMonitor;
+  private final WebClient.Builder webClientBuilder;
+  private final ObjectMapper objectMapper;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
@@ -90,19 +95,24 @@ public class Starter implements CommandLineRunner {
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
+  private OptimizeReportEvaluator optimizeReportEvaluator;
 
   public Starter(
       final CamundaClient client,
       final LoadTesterProperties properties,
       final MeterRegistry registry,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final ConnectionMonitor connectionMonitor,
+      final WebClient.Builder webClientBuilder,
+      final ObjectMapper objectMapper) {
     this.client = client;
     this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
+    this.webClientBuilder = webClientBuilder;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -129,10 +139,18 @@ public class Starter implements CommandLineRunner {
       setupDataReadMeter();
     }
 
+    if (properties.getOptimize().isEnabled()) {
+      setupOptimizeReportEvaluator();
+    }
+
     deployProcess();
 
     if (properties.isPerformReadBenchmarks()) {
       dataReadMeter.start();
+    }
+
+    if (optimizeReportEvaluator != null) {
+      optimizeReportEvaluator.start();
     }
 
     final CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -170,6 +188,9 @@ public class Starter implements CommandLineRunner {
     if (dataReadMeter != null) {
       dataReadMeter.close();
     }
+    if (optimizeReportEvaluator != null) {
+      optimizeReportEvaluator.close();
+    }
   }
 
   private void setupDataAvailabilityMeter() {
@@ -196,6 +217,15 @@ public class Starter implements CommandLineRunner {
                           .toList());
             });
     processInstanceStartMeter.start();
+  }
+
+  private void setupOptimizeReportEvaluator() {
+    LOG.info("Starting Optimize report evaluation meter");
+    final OptimizeApiClient apiClient =
+        new OptimizeApiClient(properties.getOptimize(), webClientBuilder, objectMapper);
+    optimizeReportEvaluator =
+        new OptimizeReportEvaluator(
+            properties.getOptimize(), apiClient, registry, Executors.newScheduledThreadPool(1));
   }
 
   private void setupDataReadMeter() {
