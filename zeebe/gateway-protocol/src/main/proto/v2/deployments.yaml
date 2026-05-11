@@ -114,7 +114,13 @@ paths:
                 type: object
                 additionalProperties: true
         "404":
-          description: An RPA resource with the given key was not found.
+          description: A resource with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "406":
+          description: The resource exists but is not an RPA resource.
           content:
             application/problem+json:
               schema:

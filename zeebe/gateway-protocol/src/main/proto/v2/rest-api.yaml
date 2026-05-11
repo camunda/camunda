@@ -357,6 +357,8 @@ paths:
     $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}'
   /resources/{resourceKey}/content:
     $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1content'
+  /resources/{resourceKey}/content/binary:
+    $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1content~1binary'
   /resources/{resourceKey}/deletion:
     $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1deletion'
 
