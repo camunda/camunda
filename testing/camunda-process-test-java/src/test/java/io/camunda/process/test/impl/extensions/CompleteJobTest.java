@@ -643,6 +643,8 @@ public class CompleteJobTest {
               .join()
               .items())
           .thenReturn(Collections.emptyList());
+
+      when(camundaClient.getConfiguration().getJsonMapper()).thenReturn(jsonMapper);
     }
 
     private Variable variable(

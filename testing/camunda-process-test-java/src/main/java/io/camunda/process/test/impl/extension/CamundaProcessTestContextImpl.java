@@ -862,13 +862,17 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             filter -> filter.processInstanceKey(processInstanceKey).scopeKey(elementInstanceKey));
 
     final Map<String, Object> result = new HashMap<>();
-    result.putAll(toVariableMap(globalVariables, selectorDescription, operation));
-    result.putAll(toVariableMap(localVariables, selectorDescription, operation));
+    result.putAll(toVariableMap(client, globalVariables, selectorDescription, operation));
+    result.putAll(toVariableMap(client, localVariables, selectorDescription, operation));
     return result;
   }
 
   private Map<String, Object> toVariableMap(
-      final List<Variable> variables, final String selectorDescription, final String operation) {
+      final CamundaClient client,
+      final List<Variable> variables,
+      final String selectorDescription,
+      final String operation) {
+    final JsonMapper clientJsonMapper = client.getConfiguration().getJsonMapper();
     final Map<String, Object> result = new HashMap<>();
     for (final Variable variable : variables) {
       if (Boolean.TRUE.equals(variable.isTruncated())) {
@@ -877,7 +881,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                 "Expected to %s [%s] but variable '%s' is truncated.",
                 operation, selectorDescription, variable.getName()));
       }
-      result.put(variable.getName(), jsonMapper.fromJson(variable.getValue(), Object.class));
+      result.put(variable.getName(), clientJsonMapper.fromJson(variable.getValue(), Object.class));
     }
     return result;
   }
