@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -130,6 +131,10 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   public BrokerInfo setNodeId(final int nodeId) {
     this.nodeId = nodeId;
     return this;
+  }
+
+  public String memberIdString() {
+    return MemberIdUtil.memberIdString(zone, getNodeId());
   }
 
   public int getPartitionsCount() {

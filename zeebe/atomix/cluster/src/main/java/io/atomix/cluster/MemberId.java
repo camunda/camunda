@@ -16,6 +16,7 @@
  */
 package io.atomix.cluster;
 
+import io.camunda.zeebe.util.MemberIdUtil;
 import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.NullMarked;
@@ -121,11 +122,7 @@ public class MemberId extends NodeId {
   }
 
   private static String buildMemberIdString(final @Nullable String zone, final int nodeIdx) {
-    if (zone == null) {
-      return Integer.toString(nodeIdx);
-    } else {
-      return validateZone(zone) + "/" + nodeIdx;
-    }
+    return MemberIdUtil.memberIdString(zone, nodeIdx);
   }
 
   private static @Nullable Integer tryParseInt(final String s) {
