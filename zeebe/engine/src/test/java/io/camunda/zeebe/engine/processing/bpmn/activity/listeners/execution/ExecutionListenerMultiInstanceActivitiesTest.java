@@ -796,16 +796,4 @@ public class ExecutionListenerMultiInstanceActivitiesTest {
                 .exists())
         .isTrue();
   }
-
-  private static long countJobRecords(
-      final long processInstanceKey, final String jobType, final JobIntent intent) {
-    return RecordingExporter.records()
-        .betweenProcessInstance(processInstanceKey)
-        .withValueType(ValueType.JOB)
-        .withIntent(intent)
-        .map(Record::getValue)
-        .map(JobRecordValue.class::cast)
-        .filter(v -> jobType.equals(v.getType()))
-        .count();
-  }
 }
