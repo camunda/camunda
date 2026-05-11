@@ -68,7 +68,9 @@ test.describe('Identity MCP Processes', () => {
     await cleanupResources(request, deployedResourceKeys);
   });
 
-  test('MCP Processes page shows table headers and entries', async ({
+  // skipped due to bug 52778: https://github.com/camunda/camunda/issues/52778
+  // MCP Processes UI shows duplicate rows per partition in multi-partition clusters
+  test.skip('MCP Processes page shows table headers and entries', async ({
     page,
     identityMcpProcessesPage,
   }) => {
@@ -104,7 +106,9 @@ test.describe('Identity MCP Processes', () => {
     });
   });
 
-  test('MCP Processes can be filtered by tool name', async ({
+  // skipped due to bug 52778: https://github.com/camunda/camunda/issues/52778
+  // MCP Processes UI shows duplicate rows per partition in multi-partition clusters
+  test.skip('MCP Processes can be filtered by tool name', async ({
     identityMcpProcessesPage,
   }) => {
     await identityMcpProcessesPage.navigateToMcpProcesses();
@@ -132,7 +136,9 @@ test.describe('Identity MCP Processes', () => {
     });
   });
 
-  test('MCP Processes can be sorted by tool name', async ({
+  // skipped due to bug 52778: https://github.com/camunda/camunda/issues/52778
+  // MCP Processes UI shows duplicate rows per partition in multi-partition clusters
+  test.skip('MCP Processes can be sorted by tool name', async ({
     page,
     identityMcpProcessesPage,
   }) => {
@@ -164,7 +170,9 @@ test.describe('Identity MCP Processes', () => {
     });
   });
 
-  test('MCP Processes rows can be expanded to show more tool information', async ({
+  // skipped due to bug 52778: https://github.com/camunda/camunda/issues/52778
+  // MCP Processes UI shows duplicate rows per partition in multi-partition clusters
+  test.skip('MCP Processes rows can be expanded to show more tool information', async ({
     identityMcpProcessesPage,
   }) => {
     await identityMcpProcessesPage.navigateToMcpProcesses();

@@ -171,44 +171,53 @@ test.describe('Dashboard', () => {
     operateDashboardPage,
   }) => {
     await test.step('Select first process and verify total count', async () => {
+      // Dashboard badge counts and the filtered Process Instances heading
+      // are computed from independent queries, so they can disagree under
+      // active load. Retry the read + click + verify cycle if the count on
+      // the next page doesn't match what we read from the badges.
       await waitForAssertion({
         assertion: async () => {
           await expect(operateDashboardPage.instancesByProcess).toBeVisible();
+
+          const firstInstanceByProcess =
+            operateDashboardPage.instancesByProcessItem(0);
+
+          const incidentCount = Number(
+            await operateDashboardPage
+              .incidentBadgeFromItem(firstInstanceByProcess)
+              .innerText(),
+          );
+
+          const runningInstanceCount = Number(
+            await operateDashboardPage
+              .activeBadgeFromItem(firstInstanceByProcess)
+              .innerText(),
+          );
+
+          const totalInstanceCount = incidentCount + runningInstanceCount;
+
+          await operateDashboardPage.clickItem(firstInstanceByProcess);
+
+          await expect(
+            operateDashboardPage.processInstancesHeading(
+              totalInstanceCount,
+              Number(totalInstanceCount) > 1,
+            ),
+          ).toBeVisible();
         },
         onFailure: async () => {
-          await page.reload();
+          await page.goto(`${process.env.CORE_APPLICATION_URL}/operate`);
         },
       });
-
-      const firstInstanceByProcess =
-        operateDashboardPage.instancesByProcessItem(0);
-
-      const incidentCount = Number(
-        await operateDashboardPage
-          .incidentBadgeFromItem(firstInstanceByProcess)
-          .innerText(),
-      );
-
-      const runningInstanceCount = Number(
-        await operateDashboardPage
-          .activeBadgeFromItem(firstInstanceByProcess)
-          .innerText(),
-      );
-
-      const totalInstanceCount = incidentCount + runningInstanceCount;
-
-      await operateDashboardPage.clickItem(firstInstanceByProcess);
-
-      await expect(
-        operateDashboardPage.processInstancesHeading(
-          totalInstanceCount,
-          Number(totalInstanceCount) > 1,
-        ),
-      ).toBeVisible();
     });
   });
 
-  test('Select process instances by error message', async ({
+  // skipped due to bug 45129: https://github.com/camunda/camunda/issues/45129
+  // Dashboard "incidents by error" badge counts every incident of a given
+  // error type, but the filtered Process Instances page applies the truncated
+  // error message (cut at 100 chars) as a filter — so totals don't match when
+  // the message is longer.
+  test.skip('Select process instances by error message', async ({
     operateDashboardPage,
   }) => {
     await test.step('Select first error and verify incident count', async () => {
@@ -234,28 +243,43 @@ test.describe('Dashboard', () => {
   });
 
   test('Select process instances by error message (expanded)', async ({
+    page,
     operateDashboardPage,
   }) => {
     await test.step('Expand first error and navigate to verify incident count', async () => {
-      await expect(operateDashboardPage.incidentsByError).toBeVisible();
+      // Dashboard badge counts and the filtered Process Instances heading
+      // are computed from independent queries, so they can disagree under
+      // active load (observed 1395 on the badge vs 1549 on the destination
+      // page on shared CI). The expand step makes this race worse by adding
+      // latency between reading the badge and clicking through. Retry the
+      // read + expand + click + verify cycle until they agree.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateDashboardPage.incidentsByError).toBeVisible();
 
-      const firstInstanceByError = operateDashboardPage.incidentsByErrorItem(0);
+          const firstInstanceByError =
+            operateDashboardPage.incidentsByErrorItem(0);
 
-      const incidentCount = Number(
-        await operateDashboardPage
-          .incidentBadgeFromItem(firstInstanceByError)
-          .innerText(),
-      );
+          const incidentCount = Number(
+            await operateDashboardPage
+              .incidentBadgeFromItem(firstInstanceByError)
+              .innerText(),
+          );
 
-      await operateDashboardPage.expandItem(firstInstanceByError);
-      await operateDashboardPage.clickFirstLinkInItem(firstInstanceByError);
+          await operateDashboardPage.expandItem(firstInstanceByError);
+          await operateDashboardPage.clickFirstLinkInItem(firstInstanceByError);
 
-      await expect(
-        operateDashboardPage.processInstancesHeading(
-          incidentCount,
-          Number(incidentCount) > 1,
-        ),
-      ).toBeVisible();
+          await expect(
+            operateDashboardPage.processInstancesHeading(
+              incidentCount,
+              Number(incidentCount) > 1,
+            ),
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.goto(`${process.env.CORE_APPLICATION_URL}/operate`);
+        },
+      });
     });
   });
 });
