@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!--suppress LiquibaseXmlUnresolvedProperty -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!-- Safe: create a new table with nullable non-PK columns -->
+  <changeSet id="create_new_table" author="camunda">
+    <createTable tableName="NEW_ENTITY">
+      <column name="ENTITY_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="NAME" type="NVARCHAR(256)"/>
+      <column name="STATE" type="VARCHAR(50)"/>
+    </createTable>
+  </changeSet>
+
+  <!-- Safe: add a nullable column to an existing table -->
+  <changeSet id="add_nullable_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="PROCESS_INSTANCE" columnName="NEW_NULLABLE_COL"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="PROCESS_INSTANCE">
+      <column name="NEW_NULLABLE_COL" type="VARCHAR(100)"/>
+    </addColumn>
+  </changeSet>
+
+  <!-- Safe: create an index -->
+  <changeSet id="create_new_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="IDX_NEW_ENTITY_NAME" tableName="NEW_ENTITY"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="NEW_ENTITY" indexName="IDX_NEW_ENTITY_NAME">
+      <column name="NAME"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>
