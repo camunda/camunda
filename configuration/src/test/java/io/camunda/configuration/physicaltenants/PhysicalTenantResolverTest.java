@@ -9,6 +9,7 @@ package io.camunda.configuration.physicaltenants;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
@@ -40,9 +41,7 @@ class PhysicalTenantResolverTest {
   private PhysicalTenantResolver newResolver() {
     final Camunda camunda = new Camunda();
     Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(camunda));
-    final PhysicalTenantResolver resolver = new PhysicalTenantResolver(environment, camunda);
-    resolver.init();
-    return resolver;
+    return PhysicalTenantResolver.of(environment, camunda);
   }
 
   private void setProperties(final Map<String, Object> properties) {
@@ -58,7 +57,7 @@ class PhysicalTenantResolverTest {
             "camunda.physical-tenants.tenantb.cluster.size", 4));
 
     // when
-    final Map<String, Camunda> resolved = newResolver().resolved();
+    final Map<String, Camunda> resolved = newResolver().getAll();
 
     // then both declared tenants are present (alongside the synthesized 'default')
     assertThat(resolved.get("tenanta").getCluster().getSize()).isEqualTo(2);
@@ -109,7 +108,7 @@ class PhysicalTenantResolverTest {
     final PhysicalTenantResolver resolver = newResolver();
 
     // then a default tenant is synthesized from the root so consumers can always look it up
-    assertThat(resolver.resolved())
+    assertThat(resolver.getAll())
         .containsOnlyKeys(PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(
             resolver
@@ -117,7 +116,17 @@ class PhysicalTenantResolverTest {
                 .getCluster()
                 .getSize())
         .isEqualTo(5);
-    assertThat(resolver.forPhysicalTenant("missing")).isNull();
+  }
+
+  @Test
+  void shouldThrowIllegalArgumentExceptionWhenPhysicalTenantIdIsNotFound() {
+    // when
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then
+    assertThatThrownBy(() -> resolver.forPhysicalTenant("missing"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Unknown physical tenant id 'missing'");
   }
 
   @Test
@@ -132,7 +141,7 @@ class PhysicalTenantResolverTest {
     final PhysicalTenantResolver resolver = newResolver();
 
     // then a default tenant is added alongside the declared one, carrying the root values
-    assertThat(resolver.resolved())
+    assertThat(resolver.getAll())
         .containsOnlyKeys("tenanta", PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID);
     assertThat(
             resolver
@@ -168,13 +177,13 @@ class PhysicalTenantResolverTest {
     // tenant ids must be lowercase alphanumeric — no underscores, no uppercase, no dashes
     // (dashes would make yaml and env-var forms address two different tenants).
     assertThatExceptionOfType(UnifiedConfigurationException.class)
-        .isThrownBy(() -> PhysicalTenantDiscovery.validateTenantId("Tenant_A"))
+        .isThrownBy(() -> PhysicalTenantResolver.validateTenantId("Tenant_A"))
         .withMessageContaining("Invalid physical tenant id");
     assertThatExceptionOfType(UnifiedConfigurationException.class)
-        .isThrownBy(() -> PhysicalTenantDiscovery.validateTenantId("-leading-dash"))
+        .isThrownBy(() -> PhysicalTenantResolver.validateTenantId("-leading-dash"))
         .withMessageContaining("Invalid physical tenant id");
     assertThatExceptionOfType(UnifiedConfigurationException.class)
-        .isThrownBy(() -> PhysicalTenantDiscovery.validateTenantId("tenant-a"))
+        .isThrownBy(() -> PhysicalTenantResolver.validateTenantId("tenant-a"))
         .withMessageContaining("Invalid physical tenant id");
   }
 }

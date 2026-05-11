@@ -41,7 +41,8 @@ public class PhysicalTenantSearchClientReadersConfiguration {
   public SearchClients searchClients(final PhysicalTenantResolver physicalTenantResolver) {
     return SearchClients.from(
         physicalTenantResolver.mapValues(
-            camunda -> new SearchEngineConnectPropertiesOverride.Converter(camunda).convert()));
+            physicalTenantCfg ->
+                new SearchEngineConnectPropertiesOverride.Converter(physicalTenantCfg).convert()));
   }
 
   @Bean

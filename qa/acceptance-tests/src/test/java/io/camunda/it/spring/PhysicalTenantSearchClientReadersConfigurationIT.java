@@ -141,7 +141,7 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
     @Bean
     @Primary
     PhysicalTenantResolver physicalTenantResolverOverride(final MockEnvironment environment) {
-      return new PhysicalTenantResolver(environment, new Camunda());
+      return PhysicalTenantResolver.of(environment, new Camunda());
     }
 
     /** {@link GatewayRestConfiguration} is a plain POJO; register it as a bean for injection. */

@@ -38,8 +38,8 @@ public class SearchClientReaderConfiguration {
   public Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors(
       final PhysicalTenantResolver physicalTenantResolver) {
     return physicalTenantResolver.mapValues(
-        camunda -> {
-          final var secondaryStorage = camunda.getData().getSecondaryStorage();
+        physicalTenantCfg -> {
+          final var secondaryStorage = physicalTenantCfg.getData().getSecondaryStorage();
           return new IndexDescriptors(
               secondaryStorage
                   .getElasticsearchOrOpensearch()

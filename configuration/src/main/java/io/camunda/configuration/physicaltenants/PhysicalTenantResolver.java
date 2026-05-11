@@ -8,15 +8,23 @@
 package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Camunda;
-import jakarta.annotation.PostConstruct;
+import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName.Form;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
+import org.springframework.boot.context.properties.source.IterableConfigurationPropertySource;
+import org.springframework.core.env.Environment;
 
 /**
  * Eagerly resolves a {@link Camunda} configuration per discovered physical tenant.
@@ -41,50 +49,96 @@ import org.springframework.stereotype.Component;
  * so that consumers can always address the root configuration as a tenant. An explicit {@code
  * default} declaration is honored as-is.
  */
-@Component
-public class PhysicalTenantResolver {
+public final class PhysicalTenantResolver {
 
   public static final String DEFAULT_PHYSICAL_TENANT_ID = "default";
+  private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
+  static final ConfigurationPropertyName PREFIX_NAME =
+      ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
+  private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
 
-  private final ConfigurableEnvironment environment;
-  private final PhysicalTenantDiscovery discovery = new PhysicalTenantDiscovery();
-  private Map<String, Camunda> resolved = Collections.emptyMap();
-  private final Camunda camunda;
+  private final Map<String, Camunda> resolved;
 
-  public PhysicalTenantResolver(final ConfigurableEnvironment environment, final Camunda camunda) {
-    this.environment = environment;
-    this.camunda = camunda;
+  private PhysicalTenantResolver(final Map<String, Camunda> resolved) {
+    this.resolved = Collections.unmodifiableMap(resolved);
   }
 
-  @PostConstruct
-  public void init() {
-    final Map<String, Camunda> out = new LinkedHashMap<>();
+  public static PhysicalTenantResolver of(final Environment environment, final Camunda camunda) {
+    final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
     final Binder binder = Binder.get(environment);
-    for (final String tenantId : discovery.discover(environment)) {
-      final Camunda tenant = new Camunda();
-      binder.bind(Camunda.PREFIX, Bindable.ofInstance(tenant));
+    for (final String physicalTenantId : discover(environment)) {
+      final Camunda physicalTenant = new Camunda();
+      binder.bind(Camunda.PREFIX, Bindable.ofInstance(physicalTenant));
       binder.bind(
-          PhysicalTenantDiscovery.PHYSICAL_TENANTS_PREFIX + "." + tenantId,
-          Bindable.ofInstance(tenant));
-      out.put(tenantId, tenant);
+          PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId, Bindable.ofInstance(physicalTenant));
+      resolvedPhysicalTenants.put(physicalTenantId, physicalTenant);
     }
-    if (!out.containsKey(DEFAULT_PHYSICAL_TENANT_ID)) {
-      out.put(DEFAULT_PHYSICAL_TENANT_ID, camunda);
+    if (!resolvedPhysicalTenants.containsKey(DEFAULT_PHYSICAL_TENANT_ID)) {
+      resolvedPhysicalTenants.put(DEFAULT_PHYSICAL_TENANT_ID, camunda);
     }
-    resolved = Collections.unmodifiableMap(out);
+    return new PhysicalTenantResolver(resolvedPhysicalTenants);
   }
 
-  public Map<String, Camunda> resolved() {
+  public Map<String, Camunda> getAll() {
     return resolved;
   }
 
   public <T> Map<String, T> mapValues(final Function<Camunda, T> mapper) {
     final Map<String, T> out = new LinkedHashMap<>();
-    resolved.forEach((tenantId, camunda) -> out.put(tenantId, mapper.apply(camunda)));
+    resolved.forEach(
+        (physicalTenantId, camunda) -> out.put(physicalTenantId, mapper.apply(camunda)));
     return Collections.unmodifiableMap(out);
   }
 
   public Camunda forPhysicalTenant(final String physicalTenantId) {
+    if (!resolved.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
+    }
     return resolved.get(physicalTenantId);
+  }
+
+  /**
+   * Walks the {@link Environment} and returns the set of physical-tenant ids by collecting the
+   * distinct id segments from keys matching {@code camunda.physical-tenants.<id>.*}. Pure key
+   * inspection — no binding takes place.
+   *
+   * <p>Tenant ids must be lowercase alphanumeric ({@code [a-z0-9]+}) — no dashes. This keeps yaml
+   * and environment-variable forms addressing the same tenant: Spring strips dashes when matching
+   * env var names to property names, so {@code camunda.physical-tenants.tenant-a.*} (yaml) and
+   * {@code CAMUNDA_PHYSICALTENANTS_TENANTA_*} (env) would resolve to two different ids ({@code
+   * tenant-a} vs. {@code tenanta}). Forbidding dashes makes the two forms collapse into one id.
+   */
+  private static Set<String> discover(final Environment environment) {
+    final Set<String> tenants = new LinkedHashSet<>();
+    for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
+      if (source instanceof final IterableConfigurationPropertySource iter) {
+        iter.stream()
+            .filter(PREFIX_NAME::isAncestorOf)
+            .forEach(
+                name -> {
+                  if (name.getNumberOfElements() > PREFIX_NAME.getNumberOfElements()) {
+                    final String tenantId =
+                        name.getElement(PREFIX_NAME.getNumberOfElements(), Form.UNIFORM);
+                    if (tenantId != null && !tenantId.isEmpty()) {
+                      tenants.add(tenantId);
+                    }
+                  }
+                });
+      }
+    }
+    tenants.forEach(PhysicalTenantResolver::validateTenantId);
+    return tenants;
+  }
+
+  @VisibleForTesting
+  static void validateTenantId(final String tenantId) {
+    if (!VALID_TENANT_ID.matcher(tenantId).matches()) {
+      throw new UnifiedConfigurationException(
+          String.format(
+              "Invalid physical tenant id '%s' under '%s.*'. "
+                  + "Tenant ids must be lowercase alphanumeric (matching %s) — no dashes, so "
+                  + "yaml and environment-variable forms resolve to the same tenant.",
+              tenantId, PHYSICAL_TENANTS_PREFIX, VALID_TENANT_ID.pattern()));
+    }
   }
 }

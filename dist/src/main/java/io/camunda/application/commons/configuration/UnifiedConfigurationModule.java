@@ -7,8 +7,12 @@
  */
 package io.camunda.application.commons.configuration;
 
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 /**
  * Aggregator for the unified configuration module. Importing this single class registers {@code
@@ -19,4 +23,11 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan("io.camunda.configuration")
-public class UnifiedConfigurationModule {}
+public class UnifiedConfigurationModule {
+
+  @Bean
+  public PhysicalTenantResolver physicalTenantResolver(
+      final Environment environment, final Camunda camunda) {
+    return PhysicalTenantResolver.of(environment, camunda);
+  }
+}
