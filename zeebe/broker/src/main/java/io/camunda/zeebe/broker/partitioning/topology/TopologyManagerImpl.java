@@ -117,7 +117,7 @@ public final class TopologyManagerImpl extends Actor
 
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
 
-    if (brokerInfo != null && brokerInfo.getNodeId() != localBroker.getNodeId()) {
+    if (brokerInfo != null && !brokerInfo.memberIdString().equals(localBroker.memberIdString())) {
       actor.run(
           () -> {
             switch (clusterMembershipEvent.type()) {
@@ -135,7 +135,7 @@ public final class TopologyManagerImpl extends Actor
                 LOG.debug(
                     "Received {} from member {}, was not handled.",
                     clusterMembershipEvent.type(),
-                    brokerInfo.getNodeId());
+                    brokerInfo.memberIdString());
                 break;
             }
           });
@@ -154,7 +154,8 @@ public final class TopologyManagerImpl extends Actor
 
   private void removeIfLeader(final BrokerInfo brokerInfo, final Integer partition) {
     final BrokerInfo currentLeader = partitionLeaders.get(partition);
-    if (currentLeader != null && currentLeader.getNodeId() == brokerInfo.getNodeId()) {
+    if (currentLeader != null
+        && currentLeader.memberIdString().equals(brokerInfo.memberIdString())) {
       partitionLeaders.remove(partition);
     }
   }
@@ -163,7 +164,7 @@ public final class TopologyManagerImpl extends Actor
   private void onMetadataChanged(final BrokerInfo brokerInfo) {
     LOG.debug(
         "Received metadata change for {}, partitions {} terms {}",
-        brokerInfo.getNodeId(),
+        brokerInfo.memberIdString(),
         brokerInfo.getPartitionRoles(),
         brokerInfo.getPartitionLeaderTerms());
     brokerInfo.consumePartitions(
@@ -180,7 +181,7 @@ public final class TopologyManagerImpl extends Actor
             .filter(
                 entry -> {
                   final var broker = entry.getValue();
-                  return broker.getNodeId() == brokerInfo.getNodeId();
+                  return broker.memberIdString().equals(brokerInfo.memberIdString());
                 })
             .map(Entry::getKey)
             .toList();
@@ -199,7 +200,7 @@ public final class TopologyManagerImpl extends Actor
         LOG.debug(
             "Expected to have a non-null value for current leader term, but found null. Partition {} is likely removed from broker {}. Updating the leader anyway.",
             leaderPartitionId,
-            currentLeader.getNodeId());
+            currentLeader.memberIdString());
       } else if (currentLeaderTerm >= term) {
         return false;
       }
@@ -232,7 +233,7 @@ public final class TopologyManagerImpl extends Actor
                       LOG,
                       () ->
                           listener.onPartitionLeaderUpdated(
-                              partitionId, resolveMemberIdInZone(leader.getNodeId()))));
+                              partitionId, MemberId.from(leader.zone(), leader.getNodeId()))));
         });
   }
 
@@ -261,30 +262,9 @@ public final class TopologyManagerImpl extends Actor
   }
 
   private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
-    final var leaderId = resolveMemberIdInZone(member.getNodeId());
+    final var leaderId = MemberId.from(member.zone(), member.getNodeId());
     for (final TopologyPartitionListener listener : topologyPartitionListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, leaderId));
     }
-  }
-
-  private MemberId resolveMemberIdInZone(final int nodeId) {
-    return membershipService.getMembers().stream()
-        .map(Member::id)
-        .filter(
-            id -> {
-              try {
-                return id.isInZone(localBroker.getZone()) && id.nodeIdx() == nodeId;
-              } catch (final IllegalStateException e) {
-                return false;
-              }
-            })
-        .findFirst()
-        .orElseGet(
-            () -> {
-              LOG.warn(
-                  "No cluster member found for nodeId {}; falling back to bare MemberId — zone-aware routing will not work for this member",
-                  nodeId);
-              return MemberId.from(Integer.toString(nodeId));
-            });
   }
 }

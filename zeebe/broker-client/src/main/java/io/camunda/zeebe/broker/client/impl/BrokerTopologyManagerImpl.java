@@ -177,7 +177,7 @@ public final class BrokerTopologyManagerImpl extends Actor
       case METADATA_CHANGED -> {
         LOG.debug(
             "Received metadata change from Broker {}, partitions {}, terms {} and health {}.",
-            brokerInfo.getNodeId(),
+            brokerInfo.memberIdString(),
             brokerInfo.getPartitionRoles(),
             brokerInfo.getPartitionLeaderTerms(),
             brokerInfo.getPartitionHealthStatuses());
@@ -188,7 +188,8 @@ public final class BrokerTopologyManagerImpl extends Actor
         removeBroker(subject);
       }
       default ->
-          LOG.debug("Received {} for broker {}, do nothing.", eventType, brokerInfo.getNodeId());
+          LOG.debug(
+              "Received {} for broker {}, do nothing.", eventType, brokerInfo.memberIdString());
     }
   }
 
