@@ -7,18 +7,28 @@
  */
 
 import {observer} from 'mobx-react';
-import {Container, PanelHeader, ErrorMessage} from './styled';
+import {useEffect} from 'react';
+import {
+  Container,
+  PanelHeader,
+  ErrorMessage,
+  PanelBody,
+  HiddenTreeWrapper,
+} from './styled';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Stack} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 import {ExecutionCountToggle} from './ExecutionCountToggle';
 import {ElementInstancesTree} from './ElementInstancesTree';
+import {SearchInput} from './SearchInput';
+import {FilteredElementInstancesList} from './FilteredElementInstancesList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {getForbiddenPermissionsError} from 'modules/constants/permissions';
+import {elementInstanceHistorySearchStore} from 'modules/stores/elementInstanceHistorySearch';
 
 const Layout: React.FC<{children: React.ReactNode; isPanel: boolean}> =
   observer(({children, isPanel}) => {
@@ -36,6 +46,7 @@ const Layout: React.FC<{children: React.ReactNode; isPanel: boolean}> =
             </Stack>
           )}
         </PanelHeader>
+        {!modificationsStore.isModificationModeEnabled && <SearchInput />}
         {children}
       </Container>
     );
@@ -58,6 +69,33 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
       status: businessObjectsStatus,
       error: businessObjectsError,
     } = useBusinessObjects();
+
+    // Keep the search store's processInstanceKey in sync with the URL.
+    // Changing the key resets all search state (text, items, polling).
+    const processInstanceKey = processInstance?.processInstanceKey ?? null;
+    useEffect(() => {
+      elementInstanceHistorySearchStore.setProcessInstanceKey(
+        processInstanceKey,
+      );
+      return () => {
+        elementInstanceHistorySearchStore.reset();
+      };
+    }, [processInstanceKey]);
+
+    // Modification mode is incompatible with search — drop active search
+    // immediately so toggling the mode doesn't leave a stale flat list.
+    const isModificationModeEnabled =
+      modificationsStore.isModificationModeEnabled;
+    useEffect(() => {
+      if (isModificationModeEnabled) {
+        elementInstanceHistorySearchStore.reset();
+        if (processInstanceKey !== null) {
+          elementInstanceHistorySearchStore.setProcessInstanceKey(
+            processInstanceKey,
+          );
+        }
+      }
+    }, [isModificationModeEnabled, processInstanceKey]);
 
     if ([processInstanceStatus, businessObjectsStatus].includes('pending')) {
       return (
@@ -92,15 +130,24 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
       );
     }
 
+    const isFiltered = elementInstanceHistorySearchStore.hasActiveSearch;
+
     return (
       <Layout isPanel={isPanel}>
-        <ElementInstancesTree
-          processInstance={processInstance!}
-          businessObjects={businessObjects!}
-          errorMessage={
-            <ErrorMessage message="Instance History could not be fetched" />
-          }
-        />
+        <PanelBody>
+          <HiddenTreeWrapper $hidden={isFiltered}>
+            <ElementInstancesTree
+              processInstance={processInstance!}
+              businessObjects={businessObjects!}
+              errorMessage={
+                <ErrorMessage message="Instance History could not be fetched" />
+              }
+            />
+          </HiddenTreeWrapper>
+          {isFiltered && (
+            <FilteredElementInstancesList businessObjects={businessObjects!} />
+          )}
+        </PanelBody>
       </Layout>
     );
   },
