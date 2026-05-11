@@ -15,48 +15,40 @@
  */
 package io.camunda.process.test.api.judge;
 
+import io.camunda.client.api.response.DocumentReferenceResponse;
+
 /**
- * A Camunda document reference resolved into its binary content, used to enrich the judge LLM
- * context.
+ * A Camunda document reference paired with the outcome of resolving its binary content, passed to
+ * {@link MultimodalChatModelAdapter#generate(String, java.util.List)} so a custom {@link
+ * ChatModelAdapter} preset can attach the content as structured blocks for its target LLM API.
  *
- * <p>Implementations are passed to {@link MultimodalChatModelAdapter#generate(String,
- * java.util.List)} so a custom {@link ChatModelAdapter} preset can attach the binary content as
- * structured content blocks for its target LLM API.
+ * <p>{@link #getReference()} is the first-class Camunda primitive — read document id, store id,
+ * content hash, and metadata (file name, mime type, …) from it directly.
  *
- * <p>If {@link #getData()} is {@code null} and {@link #getErrorMessage()} is set, the reference
+ * <p>If {@link #getContent()} is {@code null} and {@link #getErrorMessage()} is set, the reference
  * could not be resolved. Consumers should still surface the metadata so the judge can reason about
  * the gap.
  */
 public interface ResolvedDocument {
 
   /**
-   * @return the Camunda document id, or {@code null} if the reference itself was missing the id
+   * @return the original Camunda document reference; never {@code null} except when the reference
+   *     node itself could not be parsed
    */
-  String getDocumentId();
+  DocumentReferenceResponse getReference();
 
   /**
-   * @return the original file name from the document metadata, or {@code null} if not present
+   * @return the downloaded binary content, or {@code null} if resolution failed
    */
-  String getFileName();
+  byte[] getContent();
 
   /**
-   * @return the MIME type from the document metadata, or {@code null} if not present
-   */
-  String getContentType();
-
-  /**
-   * @return the raw binary content of the document, or {@code null} if resolution failed
-   */
-  byte[] getData();
-
-  /**
-   * @return the error message describing why resolution failed, or {@code null} if the document was
-   *     resolved successfully
+   * @return the failure reason, or {@code null} when resolution succeeded
    */
   String getErrorMessage();
 
   /**
-   * @return {@code true} if the document was resolved successfully and {@link #getData()} is
+   * @return {@code true} if the document was resolved successfully and {@link #getContent()} is
    *     available
    */
   boolean isResolved();

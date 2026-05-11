@@ -18,16 +18,21 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.UnaryOperator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Reusable component that provides LLM judge evaluation capabilities. Intended to be composed into
  * assertion classes that need judge-based evaluation.
  */
 class JudgeAssertj {
+
+  private static final Logger LOG = LoggerFactory.getLogger(JudgeAssertj.class);
 
   private JudgeConfig judgeConfig;
 
@@ -54,11 +59,25 @@ class JudgeAssertj {
   }
 
   /**
-   * @return the current judge config (never {@code null} once {@link
-   *     #assertJudgeHasAllRequiredSettings()} has passed).
+   * Returns whether judge document resolution should run for the next evaluation. True when the
+   * caller has opted in via {@link JudgeConfig#withResolveDocuments(boolean)} and the configured
+   * chat model can accept structured document content (i.e. implements {@link
+   * MultimodalChatModelAdapter}). Logs a one-line warning when the toggle is on but the adapter
+   * cannot consume documents, so the misconfiguration is visible.
    */
-  JudgeConfig getJudgeConfig() {
-    return judgeConfig;
+  boolean isMultimodalDocumentResolutionEnabled() {
+    if (judgeConfig == null || !judgeConfig.isResolveDocuments()) {
+      return false;
+    }
+    if (!(judgeConfig.getChatModel() instanceof MultimodalChatModelAdapter)) {
+      LOG.warn(
+          "Judge document resolution is enabled but the configured ChatModelAdapter does not "
+              + "implement MultimodalChatModelAdapter. Skipping document resolution. Implement "
+              + "MultimodalChatModelAdapter or use one of the built-in LangChain4j providers to "
+              + "enable multimodal evaluation.");
+      return false;
+    }
+    return true;
   }
 
   /**

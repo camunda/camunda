@@ -113,10 +113,12 @@ public interface JudgeConfig {
    * <p>Disabled by default to avoid unnecessary token cost. Enable on demand for assertions that
    * need to reason about document content.
    *
-   * <p>True multimodal evaluation (binary content sent as structured content blocks) is only
-   * available when using one of the built-in LangChain4j {@link ChatModelAdapter} providers. When a
-   * custom adapter is configured, documents are appended to the prompt as text where possible
-   * (text-mime types) and binaries are referenced by metadata only.
+   * <p>Document resolution requires the configured {@link ChatModelAdapter} to also implement
+   * {@link MultimodalChatModelAdapter} so the resolved content can be attached as structured
+   * content blocks. The built-in LangChain4j providers already do this; custom presets can opt in
+   * by implementing {@link MultimodalChatModelAdapter} directly. If the toggle is enabled but the
+   * adapter does not implement {@link MultimodalChatModelAdapter}, document resolution is skipped
+   * with a warning and the judge sees only the raw variable JSON.
    *
    * @param resolveDocuments {@code true} to resolve and include document content
    * @return a new JudgeConfig instance with the updated toggle
