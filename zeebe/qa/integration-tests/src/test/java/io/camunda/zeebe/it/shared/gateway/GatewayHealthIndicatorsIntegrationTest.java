@@ -12,6 +12,7 @@ import static org.assertj.core.data.Offset.offset;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
@@ -89,7 +90,7 @@ public class GatewayHealthIndicatorsIntegrationTest {
 
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getBrokers()).thenReturn(List.of(MemberId.from(1)));
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);
@@ -118,7 +119,7 @@ public class GatewayHealthIndicatorsIntegrationTest {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getPartitions()).thenReturn(List.of(1));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(42);
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(MemberId.from(42));
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);

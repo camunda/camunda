@@ -30,7 +30,7 @@ final class MemberIdTest {
   @Test
   void shouldFormatIdWithoutZoneWhenZoneIsNull() {
     // given / when
-    final var memberId = MemberId.from(null, 7);
+    final var memberId = MemberId.from(7);
 
     // then
 

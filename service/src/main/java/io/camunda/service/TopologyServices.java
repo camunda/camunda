@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.TopologyServices.Topology.Builder;
@@ -65,8 +66,8 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
         .anyMatch(
             partition -> {
               final var leader = topology.getLeaderForPartition(partition);
-              return topology.getPartitionHealth(leader, partition)
-                  == PartitionHealthStatus.HEALTHY;
+              return leader != null
+                  && topology.getPartitionHealth(leader, partition) == PartitionHealthStatus.HEALTHY;
             });
   }
 
@@ -112,19 +113,19 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   private void addBrokerInfo(
-      final Broker.Builder broker, final Integer brokerId, final BrokerClusterState topology) {
+      final Broker.Builder broker, final MemberId brokerId, final BrokerClusterState topology) {
     final var brokerAddress = topology.getBrokerAddress(brokerId);
     final var address = Address.from(brokerAddress);
 
     broker
-        .nodeId(brokerId)
+        .nodeId(brokerId.nodeIdx())
         .host(address.host())
         .port(address.port())
         .version(topology.getBrokerVersion(brokerId));
   }
 
   private void addPartitionInfoToBrokerInfo(
-      final Broker.Builder broker, final Integer brokerId, final BrokerClusterState topology) {
+      final Broker.Builder broker, final MemberId brokerId, final BrokerClusterState topology) {
     topology
         .getPartitions()
         .forEach(
@@ -138,6 +139,11 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
               }
 
               final var status = topology.getPartitionHealth(brokerId, partitionId);
+              if (status == null) {
+                LOGGER.debug("Unsupported null partition broker health status");
+                return;
+              }
+
               switch (status) {
                 case HEALTHY -> partition.health(Health.HEALTHY);
                 case UNHEALTHY -> partition.health(Health.UNHEALTHY);
@@ -150,7 +156,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   private boolean setRole(
-      final Integer brokerId,
+      final MemberId brokerId,
       final Integer partitionId,
       final BrokerClusterState topology,
       final Partition.Builder partition) {
@@ -158,7 +164,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
     final var partitionFollowers = topology.getFollowersForPartition(partitionId);
     final var partitionInactives = topology.getInactiveNodesForPartition(partitionId);
 
-    if (partitionLeader == brokerId) {
+    if (brokerId.equals(partitionLeader)) {
       partition.role(Role.LEADER);
     } else if (partitionFollowers != null && partitionFollowers.contains(brokerId)) {
       partition.role(Role.FOLLOWER);
