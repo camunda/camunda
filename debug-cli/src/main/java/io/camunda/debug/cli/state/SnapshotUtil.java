@@ -14,9 +14,9 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbSnapshotFileInfoProvider;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
@@ -61,7 +61,7 @@ public class SnapshotUtil {
         new FileBasedSnapshotStoreImpl(
             0,
             rootDirectory,
-            new ChecksumProviderRocksDBImpl(),
+            new RocksDbSnapshotFileInfoProvider(),
             new CurrentThreadConcurrencyControl(),
             new SnapshotMetrics(new SimpleMeterRegistry()));
 
