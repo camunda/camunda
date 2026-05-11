@@ -16,6 +16,7 @@
 		"paths": {
 			"#/modules/*": ["./src/modules/*"],
 			"#/assets/*": ["./src/assets/*"],
+			"#/pages/*": ["./src/pages/*"],
 			"#/vitest-modules/*": ["./src/vitest-modules/*"],
 			"#/shared-test-modules/*": ["./shared-test-modules/*"]
 		}
