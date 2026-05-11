@@ -723,6 +723,7 @@ public class CompleteJobTest {
       // given - same name 'id' at both scopes; local must win
       final Variable globalId = variable("id", "1");
       final Variable localId = variable("id", "2");
+      // first call fetches global-scope variables, second call fetches element-local variables
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
@@ -730,7 +731,9 @@ public class CompleteJobTest {
               .send()
               .join()
               .items())
-          .thenReturn(Arrays.asList(globalId, localId));
+          .thenReturn(Collections.singletonList(globalId))
+          .thenReturn(Collections.singletonList(localId));
+      when(jsonMapper.fromJson("1", Object.class)).thenReturn(1);
       when(jsonMapper.fromJson("2", Object.class)).thenReturn(2);
 
       final Map<String, Object> capturedInput = new HashMap<>();
