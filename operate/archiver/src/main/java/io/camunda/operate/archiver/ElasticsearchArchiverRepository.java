@@ -223,10 +223,15 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
               final var timer = getArchiverDeleteQueryTimer();
               startTimer.stop(timer);
               final var result = handleResponse(response, e, sourceIndexName, "delete");
-              result.ifLeft(
-                  throwable -> trackMetricForDeleteFailures(processInstanceKeys, throwable));
               result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
             });
+
+    deleteFuture.exceptionally(
+        throwable -> {
+          trackMetricForDeleteFailures(processInstanceKeys, throwable);
+          return null;
+        });
+
     return deleteFuture.thenApply(ok -> null);
   }
 
@@ -236,7 +241,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
       final String destinationIndexName,
       final String idFieldName,
       final List<Object> processInstanceKeys) {
-    final var reindexFuture = new CompletableFuture<Void>();
+    final var reindexFuture = new CompletableFuture<Long>();
     final var reindexRequest =
         createReindexRequestWithDefaults()
             .setSourceIndices(sourceIndexName)
@@ -246,19 +251,21 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     final var startTimer = Timer.start();
 
     ElasticsearchUtil.reindexAsync(archiverExecutor, reindexRequest, esClient)
-        .thenAccept(
-            ignore -> {
+        .whenComplete(
+            (response, e) -> {
               final var reindexTimer = getArchiverReindexQueryTimer();
               startTimer.stop(reindexTimer);
-              reindexFuture.complete(null);
-            })
-        .exceptionally(
-            (e) -> {
-              trackMetricForReindexFailures(processInstanceKeys, e);
-              reindexFuture.completeExceptionally(e);
-              return null;
+              final var result = handleResponse(response, e, sourceIndexName, "reindex");
+              result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
             });
-    return reindexFuture;
+
+    reindexFuture.exceptionally(
+        e -> {
+          trackMetricForReindexFailures(processInstanceKeys, e);
+          return null;
+        });
+
+    return reindexFuture.thenApply(ok -> null);
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest(final AggregationBuilder agg) {
@@ -455,11 +462,9 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
         "Failed while trying to reindex documents during the archival process for the following process instance keys [{}]",
         processInstanceKeys);
 
+    final Throwable cause = e.getCause() != null ? e.getCause() : e;
     metrics.recordCounts(
-        Metrics.COUNTER_NAME_REINDEX_FAILURES,
-        1,
-        "exception",
-        e.getCause().getClass().getSimpleName());
+        Metrics.COUNTER_NAME_REINDEX_FAILURES, 1, "exception", cause.getClass().getSimpleName());
   }
 
   private void trackMetricForDeleteFailures(
@@ -469,11 +474,9 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
         "Failed while trying to delete documents during the archival process for the following process instance keys [{}]",
         processInstanceKeys);
 
+    final Throwable cause = e.getCause() != null ? e.getCause() : e;
     metrics.recordCounts(
-        Metrics.COUNTER_NAME_DELETE_FAILURES,
-        1,
-        "exception",
-        e.getCause().getClass().getSimpleName());
+        Metrics.COUNTER_NAME_DELETE_FAILURES, 1, "exception", cause.getClass().getSimpleName());
   }
 
   private Either<Throwable, Long> handleResponse(

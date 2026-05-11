@@ -10,8 +10,10 @@ package io.camunda.operate.archiver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
@@ -32,6 +34,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -170,8 +175,9 @@ public class ElasticsearchArchiveRepositoryTest {
       try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
         final Timer.Sample timer = mock(Timer.Sample.class);
         mockedTimer.when(Timer::start).thenReturn(timer);
-        final CompletableFuture<Void> failedFuture = new CompletableFuture<>();
-        failedFuture.completeExceptionally(new Exception("test error"));
+        final CompletableFuture<BulkByScrollResponse> failedFuture = new CompletableFuture<>();
+        final String errorMsg = "test error";
+        failedFuture.completeExceptionally(new Exception(errorMsg));
         mockedStatic
             .when(() -> ElasticsearchUtil.reindexAsync(any(), any(), any()))
             .thenReturn(failedFuture);
@@ -180,9 +186,134 @@ public class ElasticsearchArchiveRepositoryTest {
         try {
           res.join();
         } catch (final Exception e) {
-          assertThat(e.getMessage()).isEqualTo("java.lang.Exception: test error");
+          assertThat(e.getMessage()).contains(errorMsg);
         }
       }
+    }
+  }
+
+  @Test
+  public void testReindexDocumentsErrorWithNullCauseCompletesFuture() throws Exception {
+    try (final MockedStatic<ElasticsearchUtil> mockedStatic = mockStatic(ElasticsearchUtil.class)) {
+      try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+        final Timer.Sample timer = mock(Timer.Sample.class);
+        mockedTimer.when(Timer::start).thenReturn(timer);
+        final CompletableFuture<Void> failedFuture = new CompletableFuture<>();
+        final RuntimeException noCauseException = new RuntimeException("no-cause failure");
+        assertThat(noCauseException.getCause()).isNull();
+        failedFuture.completeExceptionally(noCauseException);
+        mockedStatic
+            .when(() -> ElasticsearchUtil.reindexAsync(any(), any(), any()))
+            .thenReturn(failedFuture);
+
+        final CompletableFuture<Void> res =
+            underTest.reindexDocuments("sourceIndex", "destinationIndex", "id", List.of());
+
+        assertThatFutureCompletesWithin(res, 5, TimeUnit.SECONDS);
+        assertThat(res).isCompletedExceptionally();
+        verify(metrics)
+            .recordCounts(
+                eq(Metrics.COUNTER_NAME_REINDEX_FAILURES),
+                anyLong(),
+                eq("exception"),
+                eq("RuntimeException"));
+      }
+    }
+  }
+
+  @Test
+  public void testReindexDocumentsMetricFailureDoesNotHangFuture() throws Exception {
+    try (final MockedStatic<ElasticsearchUtil> mockedStatic = mockStatic(ElasticsearchUtil.class)) {
+      try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+        final Timer.Sample timer = mock(Timer.Sample.class);
+        mockedTimer.when(Timer::start).thenReturn(timer);
+        final CompletableFuture<Void> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new RuntimeException("no-cause failure"));
+        mockedStatic
+            .when(() -> ElasticsearchUtil.reindexAsync(any(), any(), any()))
+            .thenReturn(failedFuture);
+        doThrow(new RuntimeException("metric registry exploded"))
+            .when(metrics)
+            .recordCounts(
+                eq(Metrics.COUNTER_NAME_REINDEX_FAILURES),
+                anyLong(),
+                eq("exception"),
+                eq("RuntimeException"));
+
+        final CompletableFuture<Void> res =
+            underTest.reindexDocuments("sourceIndex", "destinationIndex", "id", List.of());
+
+        assertThatFutureCompletesWithin(res, 5, TimeUnit.SECONDS);
+        assertThat(res).isCompletedExceptionally();
+      }
+    }
+  }
+
+  @Test
+  public void testDeleteDocumentsErrorWithNullCauseCompletesFuture() throws Exception {
+    try (final MockedStatic<ElasticsearchUtil> mockedStatic = mockStatic(ElasticsearchUtil.class)) {
+      try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+        final Timer.Sample timer = mock(Timer.Sample.class);
+        mockedTimer.when(Timer::start).thenReturn(timer);
+        final CompletableFuture<BulkByScrollResponse> failedFuture = new CompletableFuture<>();
+        final RuntimeException noCauseException = new RuntimeException("no-cause delete failure");
+        assertThat(noCauseException.getCause()).isNull();
+        failedFuture.completeExceptionally(noCauseException);
+        mockedStatic
+            .when(() -> ElasticsearchUtil.deleteAsync(any(), any(), any()))
+            .thenReturn(failedFuture);
+
+        final CompletableFuture<Void> res = underTest.deleteDocuments("index", "id", List.of());
+
+        assertThatFutureCompletesWithin(res, 5, TimeUnit.SECONDS);
+        assertThat(res).isCompletedExceptionally();
+        verify(metrics)
+            .recordCounts(
+                eq(Metrics.COUNTER_NAME_DELETE_FAILURES),
+                anyLong(),
+                eq("exception"),
+                eq("RuntimeException"));
+      }
+    }
+  }
+
+  @Test
+  public void testDeleteDocumentsMetricFailureDoesNotHangFuture() throws Exception {
+    try (final MockedStatic<ElasticsearchUtil> mockedStatic = mockStatic(ElasticsearchUtil.class)) {
+      try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+        final Timer.Sample timer = mock(Timer.Sample.class);
+        mockedTimer.when(Timer::start).thenReturn(timer);
+        final CompletableFuture<BulkByScrollResponse> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new RuntimeException("no-cause delete failure"));
+        mockedStatic
+            .when(() -> ElasticsearchUtil.deleteAsync(any(), any(), any()))
+            .thenReturn(failedFuture);
+        doThrow(new RuntimeException("metric registry exploded"))
+            .when(metrics)
+            .recordCounts(
+                eq(Metrics.COUNTER_NAME_DELETE_FAILURES),
+                anyLong(),
+                eq("exception"),
+                eq("RuntimeException"));
+
+        final CompletableFuture<Void> res = underTest.deleteDocuments("index", "id", List.of());
+
+        assertThatFutureCompletesWithin(res, 5, TimeUnit.SECONDS);
+        assertThat(res).isCompletedExceptionally();
+      }
+    }
+  }
+
+  private static void assertThatFutureCompletesWithin(
+      final CompletableFuture<?> future, final long timeout, final TimeUnit unit) throws Exception {
+    try {
+      future.get(timeout, unit);
+    } catch (final TimeoutException timeoutException) {
+      throw new AssertionError(
+          "Future did not complete within " + timeout + " " + unit + " — archiver would hang",
+          timeoutException);
+    } catch (final CompletionException | java.util.concurrent.ExecutionException ignored) {
+      // expected — caller asserts the future is completedExceptionally
     }
   }
 
