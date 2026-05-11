@@ -73,6 +73,7 @@ import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
 import io.camunda.service.cache.ProcessCache;
+import io.camunda.service.cache.ResourceCache;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.spring.utils.DatabaseTypeUtils;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
