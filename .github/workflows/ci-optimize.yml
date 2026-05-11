@@ -211,7 +211,7 @@ jobs:
     name: "E2E Cloud"
     if: inputs.runFeTests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       TEST_OWNER: Core Features
@@ -222,7 +222,7 @@ jobs:
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Import secrets
-        id: secrets
+        id: vault_secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -231,9 +231,22 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
-            secret/data/products/optimize/ci/camunda-optimize AUTH0_CLIENTSECRET;
-            secret/data/products/optimize/ci/camunda-optimize AUTH0_USEREMAIL;
-            secret/data/products/optimize/ci/camunda-optimize AUTH0_USERPASSWORD;
+            secret/data/products/optimize/ci/camunda-optimize AUTH0_CLIENTSECRET | AUTH0_CLIENTSECRET;
+            secret/data/products/optimize/ci/camunda-optimize AUTH0_USEREMAIL | AUTH0_USEREMAIL;
+            secret/data/products/optimize/ci/camunda-optimize AUTH0_USERPASSWORD | AUTH0_USERPASSWORD;
+      - name: Validate Auth0 secrets
+        env:
+          AUTH0_CLIENTSECRET: "${{ steps.vault_secrets.outputs.AUTH0_CLIENTSECRET }}"
+          AUTH0_USEREMAIL: "${{ steps.vault_secrets.outputs.AUTH0_USEREMAIL }}"
+          AUTH0_USERPASSWORD: "${{ steps.vault_secrets.outputs.AUTH0_USERPASSWORD }}"
+        run: |
+          set -euo pipefail
+          for var in AUTH0_CLIENTSECRET AUTH0_USEREMAIL AUTH0_USERPASSWORD; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Missing required Auth0 secret: ${var}"
+              exit 1
+            fi
+          done
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
@@ -248,13 +261,18 @@ jobs:
         uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
         with:
           work-dir: ./optimize
+
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
       - name: Start Elasticsearch
         uses: ./.github/actions/compose
         with:
           compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
           project_name: elasticsearch
         env:
-          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
       - name: Build frontend
@@ -280,9 +298,9 @@ jobs:
       - name: Run E2E tests
         working-directory: ./optimize/client
         env:
-          AUTH0_CLIENTSECRET: "${{ steps.secrets.outputs.AUTH0_CLIENTSECRET }}"
-          AUTH0_USEREMAIL: "${{ steps.secrets.outputs.AUTH0_USEREMAIL }}"
-          AUTH0_USERPASSWORD: "${{ steps.secrets.outputs.AUTH0_USERPASSWORD }}"
+          AUTH0_CLIENTSECRET: "${{ steps.vault_secrets.outputs.AUTH0_CLIENTSECRET }}"
+          AUTH0_USEREMAIL: "${{ steps.vault_secrets.outputs.AUTH0_USEREMAIL }}"
+          AUTH0_USERPASSWORD: "${{ steps.vault_secrets.outputs.AUTH0_USERPASSWORD }}"
         run: yarn run e2e:ci:cloud:headless
       - name: Upload logs
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
