@@ -43,7 +43,8 @@ public final class SbeJsonDecoder {
       throws Exception {
     final var resource = resourceOwner.getClassLoader().getResource(resourceName);
     if (resource == null) {
-      throw new NoSuchFileException(resourceName, null, "Schema was not found on the classpath");
+      throw new NoSuchFileException(
+          resourceName, null, ".xml or .sbeir schema was not found on the classpath");
     }
 
     try (final var resourceStream = resource.openStream()) {
