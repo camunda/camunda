@@ -1,0 +1,20 @@
+---
+# Source: camunda-platform/templates/common/configmap-documentstore.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: c8-ck-test-realistic-camunda-platform-documentstore-env-vars
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-ck-test-realistic
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: ck-claude-test
+    camunda.io/purpose: load-test
+    helm.sh/chart: camunda-platform-15.0.0-alpha0
+  annotations:
+    {}
+data:
+  DOCUMENT_DEFAULT_STORE_ID: "inmemory"
+  DOCUMENT_STORE_INMEMORY_CLASS: "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider"
