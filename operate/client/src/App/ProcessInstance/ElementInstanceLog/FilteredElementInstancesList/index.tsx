@@ -16,6 +16,7 @@ import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {Skeleton} from '../Skeleton';
 import {Bar} from '../ElementInstancesTree/Bar';
+import {ElementInstanceIcon} from 'modules/components/ElementInstanceIcon';
 import {elementInstanceHistorySearchStore} from 'modules/stores/elementInstanceHistorySearch';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
@@ -25,6 +26,7 @@ import {
   ScrollContainer,
   List,
   RowButton,
+  IconSlot,
   StatusRegion,
   EmptyStateContainer,
 } from './styled';
@@ -67,6 +69,12 @@ const Row: React.FC<RowProps> = observer(({item, businessObjects}) => {
           });
         }}
       >
+        <IconSlot>
+          <ElementInstanceIcon
+            diagramBusinessObject={businessObject}
+            isRootProcess={item.type === 'PROCESS'}
+          />
+        </IconSlot>
         <Bar
           ref={rowRef}
           elementInstanceKey={item.elementInstanceKey}
