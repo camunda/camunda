@@ -8,6 +8,7 @@
 package io.camunda.tasklist.webapp.security;
 
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
+import static io.camunda.security.api.model.config.AuthenticationConfiguration.DEFAULT_METHOD;
 
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import java.util.List;
@@ -33,7 +34,7 @@ public class TasklistProfileService {
 
   public boolean isLoginDelegated() {
     final var consolidatedAuthVariation =
-        AuthenticationMethod.parse(environment.getProperty(METHOD));
+        AuthenticationMethod.parse(environment.getProperty(METHOD, DEFAULT_METHOD.name()));
     return AuthenticationMethod.OIDC.equals(consolidatedAuthVariation);
   }
 
