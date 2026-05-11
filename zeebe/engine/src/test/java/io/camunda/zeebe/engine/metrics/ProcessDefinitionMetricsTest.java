@@ -11,17 +11,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.micrometer.core.instrument.search.MeterNotFoundException;
+import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProcessDefinitionMetricsTest {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessDefinitionMetricsTest.class);
   private static final String PROCESS_ID_A = "processA";
   private static final String PROCESS_ID_B = "processB";
 
@@ -241,6 +246,43 @@ public class ProcessDefinitionMetricsTest {
     assertThat(resourceSizeGauge(PROCESS_ID_A))
         .describedAs("resource size gauge should be re-registered after restart with same value")
         .isEqualTo(sizeBeforeRestart);
+  }
+
+  @Test
+  public void shouldInitializeMetricsForManyDeployedProcesses() {
+    // given - many distinct process definitions deployed in batched deployments
+    final int processCount = 1000;
+    final int batchSize = 100;
+    for (int batch = 0; batch < processCount; batch += batchSize) {
+      DeploymentClient deployment = engine.deployment();
+      for (int i = batch; i < batch + batchSize; i++) {
+        deployment =
+            deployment.withXmlResource(
+                "process-" + i + ".xml",
+                Bpmn.createExecutableProcess("process-" + i).startEvent().endEvent().done());
+      }
+      deployment.deploy();
+    }
+    assertThat(definitionsCountGauge())
+        .describedAs("definitions count before restart")
+        .isEqualTo(processCount);
+
+    // when - snapshot and restart triggers the metric initialization scan
+    engine.snapshot();
+    engine.stop();
+    final long startNanos = System.nanoTime();
+    engine.start();
+    final Duration restartDuration = Duration.ofNanos(System.nanoTime() - startNanos);
+
+    LOG.info(
+        "Engine restart with {} deployed process definitions took {}",
+        processCount,
+        restartDuration);
+
+    // then - all definitions are recovered into the gauge
+    assertThat(definitionsCountGauge())
+        .describedAs("definitions count after restart with %d processes", processCount)
+        .isEqualTo(processCount);
   }
 
   private long deploySimpleProcess(final String processId) {

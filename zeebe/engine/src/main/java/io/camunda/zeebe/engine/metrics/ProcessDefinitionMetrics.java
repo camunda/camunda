@@ -13,14 +13,19 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ProcessDefinitionMetrics {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessDefinitionMetrics.class);
 
   private final MeterRegistry registry;
   private final AtomicLong totalUniqueProcessIds = new AtomicLong(0);
@@ -37,6 +42,7 @@ public final class ProcessDefinitionMetrics {
   public ProcessDefinitionMetrics(final MeterRegistry registry, final ProcessState processState) {
     this.registry = Objects.requireNonNull(registry);
 
+    final long startNanos = System.nanoTime();
     processState.forEachProcess(
         null,
         process -> {
@@ -46,6 +52,10 @@ public final class ProcessDefinitionMetrics {
           }
           return true;
         });
+    LOG.debug(
+        "Initialized process definition metrics by scanning {} process definitions in {}",
+        entriesByKey.size(),
+        Duration.ofNanos(System.nanoTime() - startNanos));
 
     totalUniqueProcessIds.set(keysByProcessId.size());
 
