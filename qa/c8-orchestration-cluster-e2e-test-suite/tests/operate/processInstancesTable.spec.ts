@@ -192,6 +192,11 @@ test.describe('Process Instances Table', () => {
 
     await test.step('Check sorting of processes by process version DESC', async () => {
       await operateProcessesPage.clickVersionSortButton();
+      // The two v1 instances tie on version, and Operate's tie-break is
+      // environment-dependent (start date DESC when timestamps differ;
+      // process-instance-key when they don't). Only assert what the test
+      // is actually verifying — the primary sort: v2 at the top, both v1
+      // instances below in any order.
       await expect
         .poll(
           () => operateProcessesPage.processInstancesTable.nth(0).innerText(),
@@ -199,33 +204,41 @@ test.describe('Process Instances Table', () => {
         )
         .toContain(instanceIds[2].toString());
       await expect
-        .poll(
-          () => operateProcessesPage.processInstancesTable.nth(1).innerText(),
-          defaultAssertionOptions,
-        )
-        .toContain(instanceIds[0].toString());
-      await expect
-        .poll(
-          () => operateProcessesPage.processInstancesTable.nth(2).innerText(),
-          defaultAssertionOptions,
-        )
-        .toContain(instanceIds[1].toString());
+        .poll(async () => {
+          const row1 = await operateProcessesPage.processInstancesTable
+            .nth(1)
+            .innerText();
+          const row2 = await operateProcessesPage.processInstancesTable
+            .nth(2)
+            .innerText();
+          const combined = `${row1}||${row2}`;
+          return (
+            combined.includes(instanceIds[0].toString()) &&
+            combined.includes(instanceIds[1].toString())
+          );
+        }, defaultAssertionOptions)
+        .toBe(true);
     });
 
     await test.step('Check sorting of processes by process version ASC', async () => {
       await operateProcessesPage.clickVersionSortButton();
+      // Mirror of the DESC check: both v1 instances at the top in any
+      // order, v2 at the bottom.
       await expect
-        .poll(
-          () => operateProcessesPage.processInstancesTable.nth(0).innerText(),
-          defaultAssertionOptions,
-        )
-        .toContain(instanceIds[0].toString());
-      await expect
-        .poll(
-          () => operateProcessesPage.processInstancesTable.nth(1).innerText(),
-          defaultAssertionOptions,
-        )
-        .toContain(instanceIds[1].toString());
+        .poll(async () => {
+          const row0 = await operateProcessesPage.processInstancesTable
+            .nth(0)
+            .innerText();
+          const row1 = await operateProcessesPage.processInstancesTable
+            .nth(1)
+            .innerText();
+          const combined = `${row0}||${row1}`;
+          return (
+            combined.includes(instanceIds[0].toString()) &&
+            combined.includes(instanceIds[1].toString())
+          );
+        }, defaultAssertionOptions)
+        .toBe(true);
       await expect
         .poll(
           () => operateProcessesPage.processInstancesTable.nth(2).innerText(),
