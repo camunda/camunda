@@ -168,6 +168,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private ExporterEntityCacheImpl<String, CachedFormEntity> formCache;
   private ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache;
+  private IndexLocatorProvider indexLocatorProvider;
 
   @Override
   public void init(
@@ -423,6 +424,16 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
             indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
+
+    final Set<String> ordinalBasedIndexes = new HashSet<>();
+    final var listViewName = indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName();
+    ordinalBasedIndexes.add(listViewName);
+    for (final var indexDescriptor : indexDescriptors.templates()) {
+      if (indexDescriptor instanceof ProcessInstanceDependant) {
+        ordinalBasedIndexes.add(indexDescriptor.getFullQualifiedName());
+      }
+    }
+    indexLocatorProvider = new FakeOrdinalIndexLocatorProvider(ordinalBasedIndexes);
   }
 
   @Override
@@ -449,6 +460,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       decisionRequirementsCache.clear();
       decisionRequirementsCache = null;
     }
+    indexLocatorProvider = null;
   }
 
   @Override
@@ -508,15 +520,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
   @Override
   public IndexLocatorProvider getIndexLocatorProvider() {
-    final Set<String> ordinalBasedIndexes = new HashSet<>();
-    final var listViewName = indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName();
-    ordinalBasedIndexes.add(listViewName);
-    for (final var indexDescriptor : indexDescriptors.templates()) {
-      if (indexDescriptor instanceof ProcessInstanceDependant) {
-        ordinalBasedIndexes.add(indexDescriptor.getFullQualifiedName());
-      }
-    }
-    return new FakeOrdinalIndexLocatorProvider(ordinalBasedIndexes);
+    return indexLocatorProvider;
   }
 
   private void addAuditLogHandlers(final AuditLogConfiguration auditLog, final int partitionId) {
