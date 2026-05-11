@@ -33,7 +33,6 @@ const ValueFieldContainer = styled.div`
   ${IconContainer} {
     top: 0;
     bottom: auto;
-    right: var(--cds-spacing-08);
 
     ${IconButton} {
       margin-top: 0;
