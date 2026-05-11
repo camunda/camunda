@@ -7,7 +7,7 @@
  */
 package io.camunda.debug.cli.sbe;
 
-import java.nio.file.NoSuchFileException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
@@ -51,12 +51,7 @@ public class SbeCommand implements Callable<Integer> {
   public Integer call() {
     try {
       final var inputFile = resolveInputFile();
-      Ir ir;
-      try {
-        ir = SbeJsonDecoder.loadIr(schema);
-      } catch (final NoSuchFileException e) {
-        ir = SbeJsonDecoder.loadIrFromResource(getClass(), schema.toString());
-      }
+      final var ir = resolveSchema();
       final var json = SbeJsonDecoder.toJson(inputFile, ir, offset);
 
       spec.commandLine().getOut().println(json);
@@ -81,10 +76,22 @@ public class SbeCommand implements Callable<Integer> {
 
     if (verbose) {
       spec.commandLine().getErr().println("Reading file: " + resolvedFile);
-      spec.commandLine().getErr().println("Schema used: " + schema);
       spec.commandLine().getErr().println("Offset used: " + offset);
     }
 
     return resolvedFile;
+  }
+
+  private Ir resolveSchema() throws Exception {
+    if (Files.exists(schema)) {
+      final var normalizedSchema = schema.toAbsolutePath().normalize();
+      final var ir = SbeJsonDecoder.loadIr(schema);
+      spec.commandLine().getErr().println("Schema used: filesystem path " + normalizedSchema);
+      return ir;
+    }
+
+    final var ir = SbeJsonDecoder.loadIrFromResource(getClass(), schema.toString());
+    spec.commandLine().getErr().println("Schema used: classpath resource " + schema);
+    return ir;
   }
 }
