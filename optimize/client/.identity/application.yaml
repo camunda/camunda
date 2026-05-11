@@ -1,0 +1,133 @@
+identity:
+  url: "http://localhost:8081"
+  flags:
+    multi-tenancy: "false"
+
+  authProvider:
+    issuer-url: "http://${HOST}:18080/auth/realms/camunda-platform"
+    backend-url: "http://${KEYCLOAK_HOST}:18080/auth/realms/camunda-platform"
+
+  component-presets:
+    identity:
+      apis:
+        - name: "Camunda Identity Resource Server"
+          audience: "camunda-identity-resource-server"
+          permissions:
+            - definition: read
+              description: "Read permission"
+            - definition: "read:users"
+              description: "Read users permission"
+            - definition: write
+              description: "Write permission"
+      roles:
+        - name: "ManagementIdentity"
+          description: "Provides full access to Identity"
+          permissions:
+            - audience: "camunda-identity-resource-server"
+              definition: read
+            - audience: "camunda-identity-resource-server"
+              definition: write
+    optimize:
+      applications:
+        - name: Optimize
+          id: optimize
+          type: confidential
+          secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:demo-optimize-secret}
+          root-url: "http://localhost:3000"
+          redirect-uris:
+            - "/api/authentication/callback"
+      apis:
+        - name: Optimize API
+          audience: "optimize-api"
+          permissions:
+            - definition: write:*
+              description: "Write permission"
+      roles:
+        - name: "Optimize"
+          description: "Grants full access to Optimize"
+          permissions:
+            - audience: "optimize-api"
+              definition: write:*
+            - audience: "camunda-identity-resource-server"
+              definition: read:users
+
+keycloak:
+  url: "http://${KEYCLOAK_HOST}:18080/auth"
+  setup:
+    user: "${KEYCLOAK_ADMIN_USER:admin}"
+    password: "${KEYCLOAK_ADMIN_PASSWORD:admin}"
+  init:
+    optimize:
+      secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:demo-optimize-secret}
+  environment:
+    clients:
+      - name: Identity
+        id: "camunda-identity"
+        type: CONFIDENTIAL
+        secret: ${CAMUNDA_IDENTITY_CLIENT_SECRET:demo-identity-secret}
+        root-url: "http://localhost:8081"
+        redirect-uris:
+          - "/auth/login-callback"
+  users:
+    - username: "demo"
+      password: "demo"
+      firstName: "demo"
+      lastName: "user"
+      email: "demo@example.com"
+      roles:
+        - ManagementIdentity
+        - Optimize
+    - username: "ourief"
+      password: "ourief"
+      firstName: "ourief"
+      lastName: "user"
+      email: "ourief@example.com"
+      roles:
+        - ManagementIdentity
+        - Optimize
+    - username: "comentse"
+      password: "comentse"
+      firstName: "comentse"
+      lastName: "user"
+      email: "comentse@example.com"
+      roles:
+        - Optimize
+    - username: "abook1998"
+      password: "abook1998"
+      firstName: "abook1998"
+      lastName: "user"
+      email: "abook1998@example.com"
+      roles:
+        - Optimize
+    - username: "aboys1960"
+      password: "aboys1960"
+      firstName: "aboys1960"
+      lastName: "user"
+      email: "aboys1960@example.com"
+      roles:
+        - Optimize
+    - username: "abrount"
+      password: "abrount"
+      firstName: "abrount"
+      lastName: "user"
+      email: "abrount@example.com"
+      roles:
+        - Optimize
+    - username: "abse1978"
+      password: "abse1978"
+      firstName: "abse1978"
+      lastName: "user"
+      email: "abse1978@example.com"
+      roles:
+        - Optimize
+
+server:
+  port: 8081
+
+spring:
+  profiles:
+    active: keycloak
+
+camunda:
+  identity:
+    audience: "camunda-identity-resource-server"

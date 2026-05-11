@@ -208,9 +208,27 @@ function startDocker() {
     process.on('SIGINT', stopDocker);
     process.on('SIGTERM', stopDocker);
 
-    // wait for the zeebe rest endpoint to be up before resolving the promise
-    serverCheck('http://localhost:9600/ready', resolve);
+    // wait for the zeebe rest endpoint to be up, then seed the e2e data
+    serverCheck('http://localhost:9600/ready', () => {
+      seedE2eData();
+      resolve();
+    });
   });
+}
+
+function seedE2eData() {
+  // The legacy optimize/qa/data-generation module was removed in Jul 2024
+  // (commit 90e86547846), so Zeebe now starts empty. Run a lightweight seeder
+  // to deploy the BPMNs the sm-tests expect ("Order process", "Only Incidents
+  // Process", "Big variable process", "bigProcess", "complexProcess") and
+  // start a handful of instances. Failures are logged but non-fatal.
+  const seedProcess = spawnWithArgs('node scripts/seed-e2e-data.js', {
+    cwd: _resolve(__dirname, '..'),
+    shell: true,
+    env: process.env,
+  });
+  seedProcess.stdout.on('data', (data) => server.addLog(data, 'docker'));
+  seedProcess.stderr.on('data', (data) => server.addLog(data, 'docker', true));
 }
 
 function setVersionInfo() {
@@ -225,8 +243,10 @@ function setVersionInfo() {
         const properties = data.project.properties;
         elasticSearchVersion = properties['elasticsearch.test.version'];
         opensearchVersion = properties['opensearch.test.version'];
-        zeebeVersion = properties['zeebe.version'];
-        identityVersion = properties['identity.version'];
+        // Pin to a published Docker Hub tag instead of the Maven
+        // project.version (e.g. 8.10.0-SNAPSHOT), which is not published.
+        zeebeVersion = '8.9.0';
+        identityVersion = '8.9.0';
         resolve();
       });
     });
