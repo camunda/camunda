@@ -113,7 +113,7 @@ class ResourceDeployWithoutSecondaryStorageIT {
   }
 
   @Test
-  void shouldReturnNotFoundForGetContentOnNonRpaResource() {
+  void shouldReturnNotAcceptableForGetContentOnNonRpaResource() {
     // given - /content endpoint only serves resources with type "rpa"
 
     // when
@@ -123,7 +123,7 @@ class ResourceDeployWithoutSecondaryStorageIT {
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(execute).actual();
-    assertThat(problemException.code()).isEqualTo(404);
+    assertThat(problemException.code()).isEqualTo(406);
   }
 
   @Test
