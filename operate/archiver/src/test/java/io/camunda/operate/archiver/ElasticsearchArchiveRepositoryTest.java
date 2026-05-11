@@ -198,7 +198,7 @@ public class ElasticsearchArchiveRepositoryTest {
       try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
         final Timer.Sample timer = mock(Timer.Sample.class);
         mockedTimer.when(Timer::start).thenReturn(timer);
-        final CompletableFuture<Void> failedFuture = new CompletableFuture<>();
+        final CompletableFuture<BulkByScrollResponse> failedFuture = new CompletableFuture<>();
         final RuntimeException noCauseException = new RuntimeException("no-cause failure");
         assertThat(noCauseException.getCause()).isNull();
         failedFuture.completeExceptionally(noCauseException);
@@ -227,7 +227,7 @@ public class ElasticsearchArchiveRepositoryTest {
       try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
         final Timer.Sample timer = mock(Timer.Sample.class);
         mockedTimer.when(Timer::start).thenReturn(timer);
-        final CompletableFuture<Void> failedFuture = new CompletableFuture<>();
+        final CompletableFuture<BulkByScrollResponse> failedFuture = new CompletableFuture<>();
         failedFuture.completeExceptionally(new RuntimeException("no-cause failure"));
         mockedStatic
             .when(() -> ElasticsearchUtil.reindexAsync(any(), any(), any()))
