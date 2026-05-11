@@ -9,7 +9,7 @@ package io.camunda.security.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import org.junit.jupiter.api.Test;
 
 class AuthenticationConfigurationTest {
