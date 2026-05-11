@@ -19,7 +19,8 @@ if [ -z "$1" ]; then
 fi
 node=$1
 
-valid_databases=("elasticsearch" "opensearch" "postgresql" "oracle" "mysql" "mssql" "mariadb" "none")
+# Following databases are not yet supported in 8.9: "oracle" "mysql" "mssql" "mariadb"
+valid_databases=("elasticsearch" "opensearch" "postgresql" "none")
 is_database() { [[ -n "${1:-}" ]] && [[ " ${valid_databases[*]} " =~ " ${1} " ]]; }
 
 if is_database "${2:-}"; then

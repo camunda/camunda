@@ -58,11 +58,13 @@ jobs:
             [benchmark]=elasticsearch
             [benchmark-opensearch]=opensearch
             [benchmark-postgresql]=postgresql
-            [benchmark-mysql]=mysql
-            [benchmark-mariadb]=mariadb
-            [benchmark-mssql]=mssql
-            [benchmark-oracle]=oracle
             [benchmark-none]=none
+
+            # Following RDBMS dbs are not yet supported in 8.9
+            #[benchmark-mysql]=mysql
+            #[benchmark-mariadb]=mariadb
+            #[benchmark-mssql]=mssql
+            #[benchmark-oracle]=oracle
           )
 
           entries=()
