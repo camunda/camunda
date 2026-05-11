@@ -26,6 +26,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
+import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.ServletContext;
@@ -50,12 +51,8 @@ public class SystemController {
   private final SecurityConfiguration securityConfiguration;
   private final ServletContext servletContext;
   private final Environment environment;
-  private final boolean enterprise;
-  private final boolean loginDelegated;
+  private final WebappConfiguration webappConfiguration;
   private final Long maxRequestSizeBytes;
-  private final String cloudStage;
-  private final String cloudMixpanelToken;
-  private final String cloudMixpanelApiHost;
 
   public SystemController(
       final UsageMetricsServices usageMetricsServices,
@@ -64,6 +61,7 @@ public class SystemController {
       @Autowired(required = false) final SecurityConfiguration securityConfiguration,
       @Autowired(required = false) final ServletContext servletContext,
       @Autowired(required = false) final Environment environment,
+      @Autowired(required = false) final WebappConfiguration webappConfiguration,
       @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize) {
     this.usageMetricsServices = usageMetricsServices;
     this.authenticationProvider = authenticationProvider;
@@ -71,58 +69,9 @@ public class SystemController {
     this.securityConfiguration = securityConfiguration;
     this.servletContext = servletContext;
     this.environment = environment;
-    this.enterprise =
-        resolveBooleanProperty(
-            environment,
-            false,
-            "camunda.webapp.enterprise",
-            "camunda.operate.enterprise",
-            "camunda.tasklist.enterprise");
-    this.loginDelegated =
-        resolveBooleanProperty(environment, false, "camunda.webapps.login-delegated");
+    this.webappConfiguration =
+        webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     this.maxRequestSizeBytes = maxRequestSize != null ? maxRequestSize.toBytes() : null;
-    this.cloudStage =
-        resolveStringProperty(
-            environment, "camunda.webapp.cloud.stage", "camunda.tasklist.cloud.stage");
-    this.cloudMixpanelToken =
-        resolveStringProperty(
-            environment,
-            "camunda.webapp.cloud.mixpanel-token",
-            "camunda.operate.cloud.mixpanelToken",
-            "camunda.tasklist.cloud.mixpanelToken");
-    this.cloudMixpanelApiHost =
-        resolveStringProperty(
-            environment,
-            "camunda.webapp.cloud.mixpanel-api-host",
-            "camunda.operate.cloud.mixpanelAPIHost",
-            "camunda.tasklist.cloud.mixpanelAPIHost");
-  }
-
-  private static boolean resolveBooleanProperty(
-      final Environment env, final boolean defaultValue, final String... keys) {
-    if (env == null) {
-      return defaultValue;
-    }
-    for (final String key : keys) {
-      final Boolean value = env.getProperty(key, Boolean.class);
-      if (value != null) {
-        return value;
-      }
-    }
-    return defaultValue;
-  }
-
-  private static String resolveStringProperty(final Environment env, final String... keys) {
-    if (env == null) {
-      return null;
-    }
-    for (final String key : keys) {
-      final String value = env.getProperty(key);
-      if (value != null) {
-        return value;
-      }
-    }
-    return null;
   }
 
   @RequiresSecondaryStorage
@@ -191,7 +140,7 @@ public class SystemController {
     final String contextPath = servletContext != null ? servletContext.getContextPath() : "";
 
     return DeploymentConfigurationResponse.Builder.create()
-        .isEnterprise(enterprise)
+        .isEnterprise(webappConfiguration.isEnterprise())
         .isMultiTenancyEnabled(isMultiTenancyEnabled)
         .contextPath(contextPath != null ? contextPath : "")
         .maxRequestSize(maxRequestSizeBytes)
@@ -206,7 +155,7 @@ public class SystemController {
 
     return AuthenticationConfigurationResponse.Builder.create()
         .canLogout(canLogout)
-        .isLoginDelegated(loginDelegated)
+        .isLoginDelegated(webappConfiguration.isLoginDelegated())
         .build();
   }
 
@@ -223,9 +172,9 @@ public class SystemController {
     return CloudConfigurationResponse.Builder.create()
         .organizationId(organizationId)
         .clusterId(clusterId)
-        .stage(cloudStage)
-        .mixpanelToken(cloudMixpanelToken)
-        .mixpanelAPIHost(cloudMixpanelApiHost)
+        .stage(webappConfiguration.getCloud().getStage())
+        .mixpanelToken(webappConfiguration.getCloud().getMixpanelToken())
+        .mixpanelAPIHost(webappConfiguration.getCloud().getMixpanelApiHost())
         .build();
   }
 
