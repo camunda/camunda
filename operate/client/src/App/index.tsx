@@ -67,6 +67,13 @@ const routes = createRoutesFromElements(
     />
     <Route path={Paths.forbidden()} element={<ForbiddenPage />} />
     <Route
+      path={Paths.playground()}
+      lazy={async () => {
+        const {Playground} = await import('./Playground/index');
+        return {Component: Playground};
+      }}
+    />
+    <Route
       path={Paths.dashboard()}
       lazy={async () => {
         const {Layout} = await import('./Layout/index');

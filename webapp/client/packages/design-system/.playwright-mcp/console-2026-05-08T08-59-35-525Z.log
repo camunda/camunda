@@ -1,0 +1,4 @@
+[    1693ms] [WARNING] The 'ariaLabel' prop on 'PopoverProvider' will become mandatory in Storybook 11. Provide a concise, accessible label describing the popover's purpose. @ http://localhost:6006/sb-manager/globals-runtime.js:5810
+[   23444ms] [WARNING] Blocked aria-hidden on an element because its descendant retained focus. The focus must not be hidden from assistive technology users. Avoid using aria-hidden on a focused element or its ancestor. Consider using the inert attribute instead, which will also prevent focus. For more details, see the aria-hidden section of the WAI-ARIA specification at https://w3c.github.io/aria/#aria-hidden.
+Element with focus: <button.css-12sbm0b>
+Ancestor with aria-hidden: <div.css-10klw3m> @ http://localhost:6006/?path=/story/ui-button--variants&globals=theme:dark:0

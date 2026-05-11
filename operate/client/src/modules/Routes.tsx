@@ -62,6 +62,9 @@ const Paths = {
   batchOperation(batchOperationKey: string | null = ':batchOperationKey') {
     return `/batch-operations/${batchOperationKey}`;
   },
+  playground() {
+    return '/playground';
+  },
 } as const;
 
 function getRelativeProcessInstancePathHandler(path: string) {

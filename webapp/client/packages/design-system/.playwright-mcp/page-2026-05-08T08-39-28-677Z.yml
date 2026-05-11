@@ -1,0 +1,235 @@
+- application [ref=e1]:
+  - iframe [ref=e2]:
+    
+  - iframe [ref=e3]:
+    
+  - iframe [ref=e4]:
+    - img [ref=f14e2]
+  - banner "Menu bar" [ref=e5]:
+    - generic [ref=e8]:
+      - link "Slides home" [ref=e10] [cursor=pointer]:
+        - /url: https://docs.google.com/presentation/u/0/?authuser=0&usp=slides_web
+      - generic [ref=e17]:
+        - generic "Hackdays Spring 2026" [ref=e19]:
+          - generic [ref=e20]:
+            - generic: Hackdays Spring 2026
+            - textbox "Rename" [ref=e22]: Hackdays Spring 2026
+          - 'button "Document status: Saved to Drive." [ref=e25]':
+            - generic [ref=e30] [cursor=pointer]: Saved to Drive
+        - generic [ref=e33]:
+          - button "Last edit was made seconds ago by Stephan Epping" [disabled] [ref=e35]
+          - button [disabled] [ref=e39]
+          - button "Join a call here or present this tab to the call" [ref=e43] [cursor=pointer]
+          - generic [ref=e48]:
+            - button "Start slideshow (⌘+Enter)" [ref=e49]: Slideshow
+            - button "Presentation options" [ref=e50] [cursor=pointer]
+          - generic [ref=e52]:
+            - button "Share. Camunda. Anyone in this group with the link can open" [ref=e53] [cursor=pointer]: Share
+            - button "Quick sharing actions" [ref=e55] [cursor=pointer]
+          - 'button "Google Account: luca.arienti@camunda.com" [ref=e59] [cursor=pointer]':
+            - img [ref=e60]
+    - generic [ref=e61]:
+      - menubar [ref=e63]:
+        - menuitem "File" [ref=e64] [cursor=pointer]
+        - menuitem "Edit" [ref=e65] [cursor=pointer]
+        - menuitem "View" [ref=e66] [cursor=pointer]
+        - menuitem "Insert" [ref=e67] [cursor=pointer]
+        - menuitem "Format" [ref=e68] [cursor=pointer]
+        - menuitem "Slide" [ref=e69] [cursor=pointer]
+        - menuitem "Arrange" [ref=e70] [cursor=pointer]
+        - menuitem "Tools" [ref=e71] [cursor=pointer]
+        - menuitem "Extensions" [ref=e72] [cursor=pointer]
+        - menuitem "Help" [ref=e73] [cursor=pointer]
+      - generic [ref=e74]:
+        - generic [ref=e75]:
+          - toolbar "Search the menus (Option+/)" [ref=e76]:
+            - combobox "Menus" [ref=e78]
+          - toolbar "Main" [ref=e79]:
+            - button "New slide (Ctrl+M)" [disabled] [ref=e80]
+            - button "Undo (⌘Z)" [ref=e85] [cursor=pointer]
+            - button "Redo (⌘Y)" [ref=e90] [cursor=pointer]
+            - button "Print (⌘P)" [ref=e95] [cursor=pointer]
+            - button "Paint format" [disabled] [ref=e100]
+            - button "Zoom in" [ref=e105] [cursor=pointer]
+            - combobox "Zoom" [ref=e110] [cursor=pointer]:
+              - option "Zoom list. Fit selected." [selected] [ref=e113]:
+                - textbox "Zoom" [ref=e114]: Fit
+            - separator [disabled] [ref=e118]
+            - button "Select (Esc)" [pressed] [ref=e119] [cursor=pointer]
+            - button "Text box" [ref=e124] [cursor=pointer]
+            - button "Shape" [ref=e129] [cursor=pointer]
+            - button "Line" [ref=e135] [cursor=pointer]
+            - button "Select line" [ref=e140] [cursor=pointer]
+            - separator [disabled] [ref=e146]
+            - button "Add comment (⌘+Option+M)" [ref=e147] [cursor=pointer]
+            - separator [disabled] [ref=e152]
+            - button "Change background" [ref=e153] [cursor=pointer]:
+              - generic [ref=e155]: Background
+            - separator [disabled] [ref=e156]
+            - button "Apply layout" [ref=e157] [cursor=pointer]:
+              - generic [ref=e160]: Layout
+            - separator [disabled] [ref=e161]
+            - button "Change theme" [disabled] [ref=e162]:
+              - generic [ref=e164]: Theme
+            - separator [disabled] [ref=e165]
+            - button "Change transition" [ref=e166] [cursor=pointer]:
+              - generic [ref=e168]: Transition
+        - toolbar "Mode and view" [ref=e169]:
+          - heading
+          - button "Previous edit (Ctrl+Option+J)" [disabled] [ref=e170]
+          - button "Next edit (Ctrl+Option+K)" [disabled] [ref=e175]
+          - button "Hide the menus (Ctrl+Shift+F)" [ref=e180] [cursor=pointer]
+    - generic:
+      - generic:
+        - button "Show side panel":
+          - img [ref=e186] [cursor=pointer]
+  - generic [ref=e190]:
+    - generic [ref=e191]:
+      - navigation [ref=e192]:
+        - img [ref=e195]:
+          - generic [ref=e199]: "1"
+          - generic [ref=e205]: "2"
+          - generic [ref=e211]: "3"
+          - generic [ref=e217]: "4"
+          - generic [ref=e223]: "5"
+          - generic [ref=e229]: "6"
+          - generic [ref=e235]: "7"
+          - generic [ref=e241]: "8"
+          - generic [ref=e247]: "9"
+          - generic [ref=e253]: "10"
+          - generic [ref=e259]: "11"
+        - generic [ref=e264]:
+          - button "Grid view" [ref=e266]:
+            - img [ref=e269]
+          - button "Hide filmstrip" [ref=e272]:
+            - img [ref=e276]
+      - generic [ref=e278]:
+        - generic [ref=e283]:
+          - generic [ref=e284]: "10"
+          - generic [ref=e293]: "9"
+          - generic [ref=e302]: "8"
+          - generic [ref=e311]: "7"
+          - generic [ref=e320]: "6"
+          - generic [ref=e329]: "5"
+          - generic [ref=e338]: "4"
+          - generic [ref=e347]: "3"
+          - generic [ref=e356]: "2"
+          - generic [ref=e365]: "1"
+          - generic [ref=e382]: "1"
+          - generic [ref=e391]: "2"
+          - generic [ref=e400]: "3"
+          - generic [ref=e409]: "4"
+          - generic [ref=e418]: "5"
+          - generic [ref=e427]: "6"
+          - generic [ref=e436]: "7"
+          - generic [ref=e445]: "8"
+          - generic [ref=e454]: "9"
+        - generic [ref=e466]:
+          - generic [ref=e471]:
+            - generic [ref=e472]: "6"
+            - generic [ref=e481]: "5"
+            - generic [ref=e490]: "4"
+            - generic [ref=e499]: "3"
+            - generic [ref=e508]: "2"
+            - generic [ref=e517]: "1"
+            - generic [ref=e534]: "1"
+            - generic [ref=e543]: "2"
+            - generic [ref=e552]: "3"
+            - generic [ref=e561]: "4"
+            - generic [ref=e570]: "5"
+          - generic [ref=e583]:
+            - generic:
+              - list
+            - img [ref=e586]:
+              - generic [ref=e589]:
+                - generic [ref=e619]:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: Hackdays
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: Spring
+                            - generic: "2026"
+                            - generic: 🍃
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: May
+                            - generic: 5th
+                            - generic: to
+                            - generic: May
+                            - generic: 8th
+                - generic [ref=e630]:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: List
+                            - generic: of
+                            - generic: Project
+                            - generic: Ideas
+                            - generic: and
+                            - generic: Teams
+                - generic [ref=e641]:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: Final
+                            - generic: "presentation:"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: Friday,
+                            - generic: May
+                            - generic: 8th
+                            - generic: at
+                            - generic: 4pm
+                            - generic: CEST
+                            - generic: (7am
+                            - generic: PT)
+            - img
+        - complementary "Speaker notes" [ref=e648]:
+          - img [ref=e650]:
+            - generic [ref=e652]:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Click
+                        - generic: to
+                        - generic: add
+                        - generic: speaker
+                        - generic: notes
+      - generic [ref=e657]:
+        - toolbar "Insertion"
+        - toolbar "Insertion" [ref=e658]:
+          - button "Templates" [ref=e659] [cursor=pointer]
+          - button "Building blocks" [ref=e666] [cursor=pointer]
+          - button "Stock & web" [ref=e673] [cursor=pointer]
+          - button "Drive & Photos" [ref=e680] [cursor=pointer]
+        - toolbar "Insertion" [ref=e687]:
+          - button "View and create recorded slideshows" [ref=e688] [cursor=pointer]
+          - button "Speaker spotlight" [ref=e694] [cursor=pointer]
+          - button "Convert to video" [ref=e701] [cursor=pointer]
+    - link "HTML view of the presentation" [ref=e708] [cursor=pointer]:
+      - /url: https://docs.google.com/presentation/u/0/d/1XnlX-MnHLdLAYW332FTa9YLyp2GKhuh6NGdSVzY30n0/htmlpresent
+  - iframe [ref=e709]:
+    
+  - iframe [active] [ref=e710]:
+    - textbox "Document content" [active] [ref=f16e1]
+    - group
+  - link "Turn on screen reader support" [ref=e711] [cursor=pointer]:
+    - /url: "#"
+  - generic [ref=e712]: Banner hidden
+  - region

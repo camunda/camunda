@@ -1,0 +1,44 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - progressbar [ref=e6]
+      - main [ref=e14]:
+        - generic [ref=e15]:
+          - img [ref=e18]
+          - generic [ref=e23]:
+            - heading "Sign in" [level=1] [ref=e24]
+            - generic [ref=e25]: with your Google Account to continue to Google Slides. This account will be available to other Google apps in the browser.
+        - generic [ref=e28]:
+          - generic [ref=e33]:
+            - generic [ref=e38]:
+              - textbox "Email or phone" [active] [ref=e39]
+              - generic: Email or phone
+            - button "Forgot email?" [ref=e43] [cursor=pointer]
+          - generic [ref=e46]:
+            - text: Not your computer? Use Guest mode to sign in privately.
+            - link "Learn more about using Guest mode (external, opens in a new window)" [ref=e47] [cursor=pointer]:
+              - /url: https://support.google.com/chrome/answer/6130773?hl=en-US
+              - text: Learn more about using Guest mode
+        - generic [ref=e49]:
+          - button "Next" [ref=e53]:
+            - generic [ref=e56]: Next
+          - button "Create account" [ref=e62]:
+            - generic [ref=e65]: Create account
+    - contentinfo [ref=e69]:
+      - combobox "Change language English (United States)" [ref=e73] [cursor=pointer]:
+        - generic:
+          - generic: English (United States)
+        - generic:
+          - img
+      - list [ref=e75]:
+        - listitem [ref=e76]:
+          - link "Help" [ref=e77] [cursor=pointer]:
+            - /url: https://support.google.com/accounts?hl=en-US&p=account_iph
+        - listitem [ref=e78]:
+          - link "Privacy" [ref=e79] [cursor=pointer]:
+            - /url: https://accounts.google.com/TOS?loc=IT&hl=en-US&privacy=true
+        - listitem [ref=e80]:
+          - link "Terms" [ref=e81] [cursor=pointer]:
+            - /url: https://accounts.google.com/TOS?loc=IT&hl=en-US
+  - iframe [ref=e82]:
+    

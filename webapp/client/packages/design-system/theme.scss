@@ -16,7 +16,9 @@
 @use '@carbon/react/scss/config' with (
   $font-path: '@ibm/plex'
 );
+
 @use '@carbon/react/scss/fonts';
+
 @use '@carbon/react/scss/themes';
 @use '@carbon/react/scss/theme';
 

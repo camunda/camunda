@@ -20,6 +20,7 @@
     "@tanstack/react-virtual": "3.13.23",
     "bpmn-js": "18.14.0",
     "bpmn-moddle": "10.0.0",
+    "class-variance-authority": "^0.7.1",
     "date-fns": "4.1.0",
     "diagram-js-minimap": "5.3.0",
     "dmn-js": "17.7.0",
@@ -34,6 +35,7 @@
     "mobx": "6.15.0",
     "mobx-react": "9.2.1",
     "mobx-react-lite": "4.1.1",
+    "radix-ui": "^1.4.3",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-error-boundary": "6.1.1",
@@ -63,8 +65,8 @@
     "knip": "knip --tsConfig tsconfig.app.json"
   },
   "devDependencies": {
-    "@camunda/lint-config": "file:../../webapp/client/packages/lint-config",
     "@camunda/c8-mocks": "file:../../webapp/client/packages/c8-mocks",
+    "@camunda/lint-config": "file:../../webapp/client/packages/lint-config",
     "@eslint/js": "9.39.4",
     "@playwright/test": "1.58.2",
     "@tailwindcss/vite": "4.2.4",
@@ -106,6 +108,7 @@
     "resize-observer-polyfill": "1.5.1",
     "rollup-plugin-sbom": "3.1.0",
     "sass": "1.98.0",
+    "shadcn": "^4.6.0",
     "typescript": "5.9.3",
     "typescript-eslint": "8.58.1",
     "vite": "8.0.7",
