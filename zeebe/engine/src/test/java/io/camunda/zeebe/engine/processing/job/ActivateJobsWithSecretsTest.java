@@ -43,7 +43,7 @@ public class ActivateJobsWithSecretsTest {
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldMaterializeSecretWhenWorkerExplicitlyFetchesIt() {
+  public void shouldMaskResolvedSecretValueOnPersistedActivationEvent() {
     // given — service task with no special configuration; the secret reference will be added
     // by the worker's fetchVariables list, not by the BPMN model.
     final String jobType = "secret-job-A";
@@ -66,12 +66,14 @@ public class ActivateJobsWithSecretsTest {
             .withMaxJobsToActivate(1)
             .activate();
 
-    // then — the activation response carries the real secret value at the same key the worker
-    // asked for. The variable store itself was never touched.
+    // then — the persisted ACTIVATED event (what exporters see) carries the masked sentinel
+    // at the secret's reference key. The presence of the key itself proves the resolution ran
+    // — without it, fetchVariables would not have produced an entry. The unmasked value
+    // travels separately to the worker via the gateway response path.
     assertThat(batch.getIntent()).isEqualTo(JobBatchIntent.ACTIVATED);
     assertThat(batch.getValue().getJobs()).hasSize(1);
     assertThat(batch.getValue().getJobs().getFirst().getVariables())
-        .containsExactly(entry("camunda.secret.SLACK_BOT_TOKEN", "xoxb-real-token"));
+        .containsExactly(entry("camunda.secret.SLACK_BOT_TOKEN", "***"));
   }
 
   @Test

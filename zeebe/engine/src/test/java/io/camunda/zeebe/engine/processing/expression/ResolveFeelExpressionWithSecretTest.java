@@ -48,21 +48,28 @@ public class ResolveFeelExpressionWithSecretTest {
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldResolveSecretToRealValue() {
+  public void shouldMaskResolvedSecretValueOnPersistedEvent() {
     // when
     final var record =
         ENGINE.expression().withExpression("=camunda.secret.SLACK_BOT_TOKEN").resolve();
 
-    // then — the synchronous endpoint response carries the underlying secret value, not the
-    // literal reference string that the engine-wide context would produce.
+    // then — the persisted EVALUATED event (which is what exporters see) carries the masked
+    // sentinel rather than the real secret value. The HTTP response received by the caller is
+    // written from a separate copy of the record before masking — we verify the on-disk
+    // behaviour here because that's what's observable via the recording exporter; the
+    // response-side real-value flow is exercised by the integration tests at the gateway
+    // layer.
     Assertions.assertThat(record)
         .hasIntent(ExpressionIntent.EVALUATED)
         .hasRecordType(RecordType.EVENT);
-    assertThat(record.getValue().getResultValue()).isEqualTo("xoxb-real-token");
+    assertThat(record.getValue().getResultValue()).isEqualTo("***");
+    // Warnings stay empty — proving the resolution actually succeeded against the store, and
+    // the masked value is the post-resolution sentinel, not a "not found" symptom.
+    assertThat(record.getValue().getWarnings()).isEmpty();
   }
 
   @Test
-  public void shouldResolveCompoundExpressionWithSecret() {
+  public void shouldMaskCompoundExpressionResultOnPersistedEvent() {
     // when — the canonical "Bearer <secret>" connector idiom evaluated at the endpoint
     final var record =
         ENGINE
@@ -70,11 +77,14 @@ public class ResolveFeelExpressionWithSecretTest {
             .withExpression("=\"Bearer \" + camunda.secret.STRIPE_API_KEY")
             .resolve();
 
-    // then — concatenation runs against the resolved value, not the reference string
+    // then — even though the response sees "Bearer sk_test_real", the on-disk event carries
+    // the masked sentinel. The full result is replaced, not just the secret slot, since the
+    // PoC mask is the whole resultValue when the expression touches the namespace.
     Assertions.assertThat(record)
         .hasIntent(ExpressionIntent.EVALUATED)
         .hasRecordType(RecordType.EVENT);
-    assertThat(record.getValue().getResultValue()).isEqualTo("Bearer sk_test_real");
+    assertThat(record.getValue().getResultValue()).isEqualTo("***");
+    assertThat(record.getValue().getWarnings()).isEmpty();
   }
 
   @Test

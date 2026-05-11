@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.Resolve
 import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.ValidatedCommand;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.secret.SecretMasker;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -144,7 +145,22 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
   private void acceptCommand(
       final TypedRecord<ExpressionRecord> command, final ExpressionRecord resolvedValue) {
     final var key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, ExpressionIntent.EVALUATED, resolvedValue);
-    responseWriter.writeEventOnCommand(key, ExpressionIntent.EVALUATED, resolvedValue, command);
+    // Two-step write when the expression touched the camunda.secret.* namespace: the
+    // synchronous HTTP response carries the real result, but the persisted EVALUATED event
+    // stores the masked sentinel so the resolved secret never reaches the logstream or any
+    // exporter. RecordBatchEntry.createEntry copies value bytes on each write, so swapping
+    // the result buffer in between is safe.
+    // Only mask when the resolution actually produced a value — a missing secret yields a
+    // FEEL-null result with a warning, which is harmless and useful for the caller to see on
+    // the exported event.
+    if (SecretMasker.expressionReferencesSecret(resolvedValue.getExpression())
+        && resolvedValue.getResultValue() != null) {
+      responseWriter.writeEventOnCommand(key, ExpressionIntent.EVALUATED, resolvedValue, command);
+      resolvedValue.setResultValue(SecretMasker.maskedAsMsgPackString());
+      stateWriter.appendFollowUpEvent(key, ExpressionIntent.EVALUATED, resolvedValue);
+    } else {
+      stateWriter.appendFollowUpEvent(key, ExpressionIntent.EVALUATED, resolvedValue);
+      responseWriter.writeEventOnCommand(key, ExpressionIntent.EVALUATED, resolvedValue, command);
+    }
   }
 }

@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.JobWithMissingSecret;
+import io.camunda.zeebe.engine.processing.secret.SecretMasker;
 import io.camunda.zeebe.engine.processing.secret.SecretStore;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -195,11 +196,31 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobBatchRecord value,
       final long jobBatchKey,
       final Map<JobKind, Integer> activatedJobsCountPerJobKind) {
-    stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
+    // Two-step write: the gateway response carries the real (resolved) secret values bound
+    // for the worker, while the durable state event carries a masked copy so the on-disk log
+    // never holds plain-text secret material. RecordBatchEntry.createEntry copies the value
+    // bytes synchronously on each write, so we can safely mutate `value` in between.
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
+    maskResolvedSecretsInBatch(value);
+    stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     activatedJobsCountPerJobKind.forEach(
         (jobKind, count) ->
             jobMetrics.countJobEvent(JobAction.ACTIVATED, jobKind, value.getType(), count));
+  }
+
+  /**
+   * Replaces resolved {@code camunda.secret.X} values inside every activated job's variables
+   * payload with the masked sentinel, in place. Cheap no-op when no job carries a resolved secret
+   * entry (the common case — workers rarely request secrets).
+   */
+  private static void maskResolvedSecretsInBatch(final JobBatchRecord value) {
+    for (final JobRecord job : value.jobs()) {
+      final DirectBuffer original = job.getVariablesBuffer();
+      final DirectBuffer masked = SecretMasker.maskSecretsInDocument(original);
+      if (masked != original) {
+        job.setVariables(masked);
+      }
+    }
   }
 
   private void raiseIncidentJobTooLargeForMessageSize(
