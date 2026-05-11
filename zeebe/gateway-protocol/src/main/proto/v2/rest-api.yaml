@@ -81,6 +81,8 @@ tags:
 
 paths:
   # Agent instance endpoints
+  /agent-instances:
+    $ref: 'agent-instances.yaml#/paths/~1agent-instances'
   /agent-instances/{agentInstanceKey}:
     $ref: 'agent-instances.yaml#/paths/~1agent-instances~1{agentInstanceKey}'
   /agent-instances/search:
