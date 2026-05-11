@@ -13,7 +13,7 @@ import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from 'modules/stores/networkReconnectionHandler';
 import type {RequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
-import {escapeLikePattern} from 'modules/utils/escapeLikePattern';
+import {escapeLikePatternsForCaseInsensitive} from 'modules/utils/escapeLikePattern';
 
 const PAGE_SIZE = 50;
 const POLLING_INTERVAL = 5000;
@@ -346,11 +346,20 @@ class ElementInstanceHistorySearch extends NetworkReconnectionHandler {
   };
 
   private buildPayload = (processInstanceKey: string, from: number) => {
-    const pattern = escapeLikePattern(this.state.searchText);
+    // The v2 API's $like operator is case-sensitive and there is no $ilike.
+    // Emit substring patterns for the canonical case styles (as-typed,
+    // lowercase, UPPERCASE, Title-case) and OR them across both fields so the
+    // typical BPMN naming conventions (Title Case names, snake_case /
+    // camelCase ids) match regardless of the user's casing.
+    const patterns = escapeLikePatternsForCaseInsensitive(this.state.searchText);
+    const orClauses = patterns.flatMap((pattern) => [
+      {elementName: {$like: pattern}},
+      {elementId: {$like: pattern}},
+    ]);
     return {
       filter: {
         processInstanceKey,
-        $or: [{elementName: {$like: pattern}}, {elementId: {$like: pattern}}],
+        $or: orClauses,
       },
       page: {limit: PAGE_SIZE * 2, from},
       sort: [{field: 'startDate' as const, order: 'asc' as const}],
