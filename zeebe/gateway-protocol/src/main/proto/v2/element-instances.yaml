@@ -414,6 +414,7 @@ components:
         - rootProcessInstanceKey
         - endDate
         - incidentKey
+        - agentInstanceKey
       properties:
         processDefinitionId:
           description: The process definition ID associated to this element instance.
@@ -501,6 +502,11 @@ components:
           allOf:
             - $ref: "keys.yaml#/components/schemas/IncidentKey"
           description: Incident key associated with this element instance.
+          nullable: true
+        agentInstanceKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/AgentInstanceKey"
+          description: The agent instance key associated with this element instance.
           nullable: true
 
     ElementInstanceStateEnum:
