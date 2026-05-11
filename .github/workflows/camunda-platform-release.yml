@@ -89,6 +89,7 @@ jobs:
     outputs:
       releaseTagRevision: ${{ steps.maven-perform-release.outputs.tagRevision }}
       releaseBranch: ${{ env.RELEASE_BRANCH }}
+      deploymentId: ${{ steps.extract-deployment-id.outputs.deploymentId }}
     env:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
       PUSH_CHANGES: ${{ !inputs.dryRun }}
@@ -228,6 +229,47 @@ jobs:
           echo "tagRevision=${TAG_REVISION}" >> $GITHUB_OUTPUT
           popd
 
+      - name: Extract Maven Central deployment ID
+        id: extract-deployment-id
+        if: always() && steps.maven-perform-release.conclusion != 'skipped'
+        # Never block the release on extraction failure — the deployment ID is
+        # for downstream automation only; manual recovery is always possible.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SKIP_CENTRAL_RELEASE: ${{ inputs.dryRun }}
+        run: |
+          # The central-publishing-maven-plugin only emits the deployment ID via a log line:
+          #   "Uploaded bundle successfully, deployment name: ..., deploymentId: <uuid>..."
+          # It is not persisted to disk by the plugin. So we fetch this job's log from the GHA API after the maven step has run and grep it.
+          # Using curl directly because gh CLI is not installed on the release runner image.
+          api="https://api.github.com/repos/${{ github.repository }}"
+
+          job_id=$(curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs?per_page=100" \
+            | jq -r ".jobs[] | select(.runner_name == \"$RUNNER_NAME\") | .id")
+
+          deployment_id=$(curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/actions/jobs/${job_id}/logs" \
+            | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+            | tail -1 \
+            | awk '{print $2}' || true)
+
+          if [[ -n "${deployment_id}" ]]; then
+            echo "deploymentId=${deployment_id}" >> "$GITHUB_OUTPUT"
+            echo "::notice::Maven Central deployment ID: ${deployment_id}"
+          elif [[ "${SKIP_CENTRAL_RELEASE}" == "true" ]]; then
+            echo "deploymentId=dry-run-${RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ Dry run — emitting placeholder deployment ID"
+          else
+            echo "deploymentId=not-found" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ No Maven Central deployment ID found in build output" >&2
+          fi
+          
       - name: Validate flattened POM metadata
         if: ${{ inputs.dryRun }}
         uses: ./.github/actions/validate-pom-metadata
@@ -941,6 +983,7 @@ jobs:
             {
               "is_camunda_release_successful": "true",
               "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_maven_central_deployment_id": "${{ needs.release.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
       - name: Send success Slack notification
@@ -1033,6 +1076,7 @@ jobs:
             {
               "is_camunda_release_successful": "false",
               "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "camunda_maven_central_deployment_id": "${{ needs.release.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
       - name: Send failure Slack notification
