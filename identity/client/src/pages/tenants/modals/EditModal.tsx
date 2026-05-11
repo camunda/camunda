@@ -65,7 +65,12 @@ const EditModal: FC<UseEntityModalProps<Tenant>> = ({
       confirmLabel={t("editTenant")}
       submitDisabled={!tenantName}
     >
-      <TextField label={t("tenantId")} value={tenant.tenantId} readOnly />
+      <TextField
+        label={t("tenantId")}
+        value={tenant.tenantId}
+        helperText={t("tenantIdHelperText")}
+        readOnly
+      />
       <TextField
         label={t("tenantName")}
         value={tenantName}
