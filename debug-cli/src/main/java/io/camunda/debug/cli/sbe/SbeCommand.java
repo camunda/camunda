@@ -85,11 +85,15 @@ public class SbeCommand implements Callable<Integer> {
   private Ir resolveSchema() throws Exception {
     if (Files.exists(schema)) {
       final var normalizedSchema = schema.toAbsolutePath().normalize();
-      spec.commandLine().getErr().println("Schema used: filesystem path " + normalizedSchema);
+      if (verbose) {
+        spec.commandLine().getErr().println("Schema used: filesystem path " + normalizedSchema);
+      }
       return SbeJsonDecoder.loadIr(schema);
     }
 
-    spec.commandLine().getErr().println("Schema used: classpath resource " + schema);
+    if (verbose) {
+      spec.commandLine().getErr().println("Schema used: classpath resource " + schema);
+    }
     return SbeJsonDecoder.loadIrFromResource(getClass(), schema.toString());
   }
 }
