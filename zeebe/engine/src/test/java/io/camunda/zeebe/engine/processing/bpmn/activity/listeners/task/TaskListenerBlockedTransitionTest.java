@@ -220,7 +220,6 @@ public class TaskListenerBlockedTransitionTest {
       shouldTriggerAssigningListenersAfterCreationWithDefinedAssigneeAndCreatingListeners() {
     // given
     final var assignee = "initial_assignee";
-    final var action = StringUtils.EMPTY;
 
     // when: process instance is created with a UT having an `assignee` and `assignment` listeners
     final long processInstanceKey =
@@ -267,19 +266,19 @@ public class TaskListenerBlockedTransitionTest {
             r -> r.getValue().getChangedAttributes())
         .containsExactly(
             // assignee should be present in the CREATING
-            tuple(UserTaskIntent.CREATING, assignee, action, List.of()),
+            tuple(UserTaskIntent.CREATING, assignee, "create", List.of()),
             // creating first task listener completion
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, "create", List.of()),
             // creating second task listener completion
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, "create", List.of()),
             // assignee should NOT be present in the CREATED
-            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
+            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, "create", List.of()),
             // assignee should be present in the ASSIGNING
-            tuple(UserTaskIntent.ASSIGNING, assignee, action, List.of(UserTaskRecord.ASSIGNEE)),
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
-            tuple(UserTaskIntent.ASSIGNED, assignee, action, List.of(UserTaskRecord.ASSIGNEE)));
+            tuple(UserTaskIntent.ASSIGNING, assignee, "assign", List.of(UserTaskRecord.ASSIGNEE)),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, "assign", List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, "assign", List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, "assign", List.of()),
+            tuple(UserTaskIntent.ASSIGNED, assignee, "assign", List.of(UserTaskRecord.ASSIGNEE)));
   }
 
   @Test
@@ -507,7 +506,7 @@ public class TaskListenerBlockedTransitionTest {
             Assertions.assertThat(userTask)
                 .hasVariables(Map.of("status", "APPROVED"))
                 .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES)
-                .hasAction(""));
+                .hasAction("create"));
   }
 
   private static void verifyVariableCreated(
@@ -663,7 +662,7 @@ public class TaskListenerBlockedTransitionTest {
     helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.CANCELED,
-        userTask -> assertThat(userTask.getAction()).isEmpty());
+        userTask -> assertThat(userTask.getAction()).isEqualTo("cancel"));
 
     final Predicate<Record<?>> isUserTaskOrProcessInstanceRecordWithUserTaskInstanceKey =
         r ->
@@ -818,7 +817,6 @@ public class TaskListenerBlockedTransitionTest {
   public void shouldTriggerAssignmentListenersAfterUserTaskCreationWithDefinedAssigneeProperty() {
     // given
     final var assignee = "peregrin";
-    final var action = StringUtils.EMPTY;
 
     // when: process instance is created with a UT having an `assignee` and `assignment` listeners
     final long processInstanceKey =
@@ -859,13 +857,13 @@ public class TaskListenerBlockedTransitionTest {
             r -> r.getValue().getAction(),
             r -> r.getValue().getChangedAttributes())
         .containsExactly(
-            tuple(UserTaskIntent.CREATING, assignee, action, List.of()),
-            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
-            tuple(UserTaskIntent.ASSIGNING, assignee, action, List.of(UserTaskRecord.ASSIGNEE)),
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
-            tuple(UserTaskIntent.ASSIGNED, assignee, action, List.of(UserTaskRecord.ASSIGNEE)));
+            tuple(UserTaskIntent.CREATING, assignee, "create", List.of()),
+            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, "create", List.of()),
+            tuple(UserTaskIntent.ASSIGNING, assignee, "assign", List.of(UserTaskRecord.ASSIGNEE)),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, "assign", List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, "assign", List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, "assign", List.of()),
+            tuple(UserTaskIntent.ASSIGNED, assignee, "assign", List.of(UserTaskRecord.ASSIGNEE)));
   }
 
   @Test

@@ -929,7 +929,7 @@ public class UserTaskListenersTest {
           assertThat(userTask.getDueDate()).isEmpty();
           assertThat(userTask.getFollowUpDate()).isEmpty();
           assertThat(userTask.getVariables()).isEmpty();
-          assertThat(userTask.getAction()).isEmpty();
+          assertThat(userTask.getAction()).isEqualTo("cancel");
           // updated attributes
           assertThat(userTask.getAssignee()).isEqualTo("corrected_assignee");
           assertThat(userTask.getPriority()).isEqualTo(3);

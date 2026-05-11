@@ -194,7 +194,6 @@ public class TaskListenerDataAccessTest {
     assertThat(assigningListenerJob.getCustomHeaders())
         .describedAs("Headers should not contain empty or non-configured properties")
         .doesNotContainKeys(
-            Protocol.USER_TASK_ACTION_HEADER_NAME,
             Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME,
             Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME,
             Protocol.USER_TASK_DUE_DATE_HEADER_NAME,
@@ -208,6 +207,8 @@ public class TaskListenerDataAccessTest {
             entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee"),
             // Default priority is propagated
             entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "50"),
+            // Action is set to "assign" for broker-internal assignment
+            entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "assign"),
             // Value for `assignee` was explicitly set on task creation
             entry(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"assignee\"]"));
 

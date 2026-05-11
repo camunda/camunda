@@ -155,8 +155,7 @@ class ResponseMapperTest {
               "TASK_LISTENER job with invalid or empty header values",
               JobKind.TASK_LISTENER,
               Map.of(
-                  // action is required by the OpenAPI contract; headers must carry it for
-                  // TASK_LISTENER jobs
+                  // action is always set by the engine for all user task lifecycle transitions
                   Protocol.USER_TASK_ACTION_HEADER_NAME, "complete",
                   Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "",
                   Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "invalid_string",
