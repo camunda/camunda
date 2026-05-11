@@ -118,10 +118,9 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
               final String bucketSortField =
                   switch (ordering.field()) {
                     case AGGREGATION_FIELD_KEY -> AGGREGATION_FIELD_KEY;
-                    case AGGREGATION_NAME_TOTAL_WITH_INCIDENT ->
-                        AGGREGATION_NAME_TOTAL_WITH_INCIDENT + "._count";
-                    case AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT ->
-                        AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT + "._count";
+                    case AGGREGATION_NAME_TOTAL_WITH_INCIDENT,
+                        AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT ->
+                        ordering.field() + "._count";
                     case AGGREGATION_FIELD_PROCESS_DEFINITION_KEY ->
                         AGG_MAX_PROCESS_DEFINITION_KEY + ".value";
                     case AGGREGATION_NAME_PROCESS_DEFINITION_VERSION ->
@@ -129,7 +128,10 @@ public class ProcessDefinitionInstanceVersionStatisticsAggregationTransformer
                     // processDefinitionName is embedded as the first segment of the terms bucket
                     // key (processName::processVersion::tenantId), so _key sorts by name.
                     case AGGREGATION_FIELD_PROCESS_DEFINITION_NAME -> AGGREGATION_FIELD_KEY;
-                    default -> ordering.field() + "._count";
+                    default ->
+                        throw new IllegalArgumentException(
+                            "Unsupported sort field for version-statistics bucket_sort mapping: "
+                                + ordering.field());
                   };
               return new FieldSorting(bucketSortField, ordering.order());
             })
