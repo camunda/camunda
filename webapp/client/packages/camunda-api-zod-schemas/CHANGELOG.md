@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.0.63
+
+### 🚀 Enhancements
+
+- Add Agent Instance schemas and endpoints for 8.10 ([#51919](https://github.com/camunda/camunda/issues/51919))
+  - `agentInstanceSchema` with status, definition, metrics, limits, and timestamps
+  - `agentInstanceFilterSchema` for search filtering
+  - `GET /v2/agent-instances/{agentInstanceKey}` endpoint
+  - `POST /v2/agent-instances/search` endpoint
+
+### ❤️ Contributors
+
+- Omran Abazid ([@OmranAbazid](https://github.com/OmranAbazid))
+
 ## v0.0.62
 
 ### 🚀 Enhancements
