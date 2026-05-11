@@ -9,10 +9,10 @@
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import {TextInput, PasswordInput, Column, Grid, Stack, InlineNotification, Button} from '@carbon/react';
-import {LoadingSpinner} from '#/modules/login/components/LoadingSpinner';
-import {CamundaLogo} from '#/modules/login/components/CamundaLogo';
-import {getCurrentCopyrightNoticeText} from '#/modules/login/getCurrentCopyrightNoticeText';
-import {Disclaimer} from '#/modules/login/components/Disclaimer';
+import {LoadingSpinner} from '../modules/login/components/LoadingSpinner';
+import {CamundaLogo} from '#/modules/components/CamundaLogo';
+import {getCurrentCopyrightNoticeText} from '../modules/login/getCurrentCopyrightNoticeText';
+import {Disclaimer} from '../modules/login/components/Disclaimer';
 import styles from './login.module.scss';
 
 type FormValues = {
