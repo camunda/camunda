@@ -11,7 +11,7 @@ import { ApiCall, ApiDefinition, ErrorResponse } from "../request";
 import useTranslate from "../../localization";
 import { useNotifications } from "src/components/notifications";
 import { isLoggedIn } from "src/utility/auth";
-import { urlConfig } from "../../../configuration/urlConfig";
+import { getApiBaseUrl } from "../../../configuration/urlConfig";
 
 type ResetApiCall = () => void;
 
@@ -75,7 +75,7 @@ const useApiCall: UseApiCall = <R, P>(
         status: apiStatus,
         error: apiError,
         success: apiSuccess,
-      } = await apiDefinition(params as P)(urlConfig());
+      } = await apiDefinition(params as P)(getApiBaseUrl());
 
       if (apiStatus >= 400 && !options.suppressErrorNotification) {
         switch (apiStatus) {

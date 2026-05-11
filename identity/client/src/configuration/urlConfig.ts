@@ -11,7 +11,7 @@ const apiBaseUrl = "/v2";
 const loginApiUrl = "/login";
 const logoutApiUrl = "/logout";
 
-export function urlConfig() {
+export function getApiBaseUrl() {
   return getBasePathBeforeAdmin() + apiBaseUrl;
 }
 

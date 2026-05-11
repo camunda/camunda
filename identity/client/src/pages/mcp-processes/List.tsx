@@ -40,7 +40,7 @@ const List: FC<ListProps> = ({ isTenantsApiEnabled }) => {
     }
 
     return columns;
-  }, [t]);
+  }, [isTenantsApiEnabled, t]);
 
   return (
     <Page>

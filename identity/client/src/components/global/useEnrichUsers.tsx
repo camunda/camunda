@@ -90,7 +90,7 @@ export function useEnrichedUsers<P>(
     } finally {
       setLoading(false);
     }
-  }, [callSearchMembers, callSearchUser, JSON.stringify(params)]);
+  }, [callSearchMembers, callSearchUser, isOIDC, params]);
 
   useEffect(() => {
     void fetch();

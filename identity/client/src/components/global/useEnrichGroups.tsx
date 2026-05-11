@@ -90,7 +90,7 @@ export function useEnrichedGroups<P>(
     } finally {
       setLoading(false);
     }
-  }, [callSearchMembers, callSearchGroups, JSON.stringify(params)]);
+  }, [callSearchMembers, params, isCamundaGroupsEnabled, callSearchGroups]);
 
   useEffect(() => {
     void fetch();
