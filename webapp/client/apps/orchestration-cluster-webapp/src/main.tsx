@@ -11,7 +11,7 @@ import {RouterProvider, createRouter} from '@tanstack/react-router';
 import {routeTree} from './routeTree.gen';
 import {QueryClientProvider} from '@tanstack/react-query';
 import './index.scss';
-import {ThemeProvider} from './modules/theme/ThemeProvider';
+import {ThemeProvider} from '#/modules/theme/ThemeProvider';
 import {tracking} from '#/modules/tracking';
 import {reactQueryClient} from '#/modules/http/reactQueryClient';
 
