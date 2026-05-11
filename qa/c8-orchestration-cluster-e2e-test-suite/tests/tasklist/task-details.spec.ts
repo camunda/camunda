@@ -130,10 +130,20 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    await taskPanelPage.openTask('usertask_to_be_completed');
-
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible({
-      timeout: 60000,
+    // The task list refreshes while other specs run in parallel, so the
+    // first .nth(0) click can land on a stale card whose details panel
+    // never updates. Retry the open + assert until the right panel shows
+    // the unassigned task ready for action.
+    await waitForAssertion({
+      assertion: async () => {
+        await taskPanelPage.openTask('usertask_to_be_completed');
+        await expect(taskDetailsPage.assignToMeButton).toBeVisible({
+          timeout: 20000,
+        });
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
     });
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
     await taskDetailsPage.clickAssignToMeButton();
