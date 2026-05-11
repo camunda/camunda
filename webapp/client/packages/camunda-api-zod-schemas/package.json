@@ -582,6 +582,12 @@
 				"default": "./dist/8.10/global-task-listener.js"
 			}
 		},
+		"./8.10/agent-instance": {
+			"import": {
+				"types": "./dist/8.10/agent-instance.d.ts",
+				"default": "./dist/8.10/agent-instance.js"
+			}
+		},
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
