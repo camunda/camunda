@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.secret.SecretStore;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
@@ -66,6 +67,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnConditionalBehavior conditionalBehavior;
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
+  private final SecretStore secretStore;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -81,7 +83,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionMetrics,
       final EngineConfiguration config,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final SecretStore secretStore) {
+    this.secretStore = secretStore;
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -404,5 +408,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
   public ExpressionLanguage expressionLanguage() {
     return expressionLanguage;
+  }
+
+  public SecretStore secretStore() {
+    return secretStore;
   }
 }

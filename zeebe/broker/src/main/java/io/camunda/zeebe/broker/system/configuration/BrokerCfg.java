@@ -28,6 +28,7 @@ public class BrokerCfg {
   private FlowControlCfg flowControl = new FlowControlCfg();
   private LimitCfg backpressure = new LimitCfg();
   private ProcessingCfg processingCfg = new ProcessingCfg();
+  private SecretsCfg secrets = new SecretsCfg();
 
   private ExperimentalCfg experimental = new ExperimentalCfg();
 
@@ -53,6 +54,7 @@ public class BrokerCfg {
     flowControl.init(this, brokerBase);
     backpressure.init(this, brokerBase);
     processingCfg.init(this, brokerBase);
+    secrets.init(this, brokerBase);
     experimental.init(this, brokerBase);
   }
 
@@ -160,6 +162,14 @@ public class BrokerCfg {
     this.experimental = experimental;
   }
 
+  public SecretsCfg getSecrets() {
+    return secrets;
+  }
+
+  public void setSecrets(final SecretsCfg secrets) {
+    this.secrets = secrets;
+  }
+
   @Override
   public String toString() {
     return "BrokerCfg{"
@@ -185,6 +195,8 @@ public class BrokerCfg {
         + processingCfg
         + ", experimental="
         + experimental
+        + ", secrets="
+        + secrets
         + ", executionMetricsExporterEnabled="
         + executionMetricsExporterEnabled
         + '}';

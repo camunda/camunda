@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.SecretsCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
@@ -63,6 +64,8 @@ import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.secret.EnvVarSecretStore;
+import io.camunda.zeebe.engine.processing.secret.SecretStore;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -334,6 +337,7 @@ public final class ZeebePartitionFactory implements Closeable {
 
   private TypedRecordProcessorsFactory createFactory(
       final BrokerInfo localBroker, final FeatureFlags featureFlags) {
+    final SecretStore secretStore = createSecretStore(brokerCfg.getSecrets());
     return recordProcessorContext -> {
       final InterPartitionCommandSender partitionCommandSender =
           recordProcessorContext.getPartitionCommandSender();
@@ -349,8 +353,25 @@ public final class ZeebePartitionFactory implements Closeable {
           featureFlags,
           jobStreamer,
           searchClientsProxy,
-          brokerRequestAuthorizationConverter);
+          brokerRequestAuthorizationConverter,
+          secretStore);
     };
+  }
+
+  private static SecretStore createSecretStore(final SecretsCfg cfg) {
+    if (cfg == null || !cfg.isEnabled()) {
+      return SecretStore.EMPTY;
+    }
+    final String provider = cfg.getProvider();
+    if (SecretsCfg.PROVIDER_ENV.equalsIgnoreCase(provider)) {
+      return new EnvVarSecretStore();
+    }
+    LOGGER.warn(
+        "Unknown secret store provider '{}' configured; falling back to no-op store. "
+            + "Only '{}' is supported in this PoC.",
+        provider,
+        SecretsCfg.PROVIDER_ENV);
+    return SecretStore.EMPTY;
   }
 
   @Override

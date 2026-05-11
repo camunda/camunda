@@ -60,6 +60,7 @@ import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProce
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.RpaReexportMigrator;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
+import io.camunda.zeebe.engine.processing.secret.SecretStore;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -106,7 +107,8 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final SecretStore secretStore) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -168,7 +170,8 @@ public final class EngineProcessors {
             transientProcessMessageSubscriptionState,
             expressionLanguageMetrics,
             config,
-            incidentMetrics);
+            incidentMetrics,
+            secretStore);
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -450,7 +453,8 @@ public final class EngineProcessors {
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final EngineConfiguration config,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final SecretStore secretStore) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -465,7 +469,8 @@ public final class EngineProcessors {
         transientProcessMessageSubscriptionState,
         expressionLanguageMetrics,
         config,
-        incidentMetrics);
+        incidentMetrics,
+        secretStore);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
