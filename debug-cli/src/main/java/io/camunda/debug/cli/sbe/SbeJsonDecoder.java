@@ -7,8 +7,10 @@
  */
 package io.camunda.debug.cli.sbe;
 
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -26,32 +28,30 @@ public final class SbeJsonDecoder {
 
   public static Ir loadIr(final Path schema) throws Exception {
     final var schemaFileName = schema.getFileName().toString();
-    if (schemaFileName.endsWith(".sbeir")) {
-      try (final var irDecoder = new IrDecoder(ByteBuffer.wrap(Files.readAllBytes(schema)))) {
-        return irDecoder.decode();
+    if (isIrSchema(schemaFileName)) {
+      try (final var inputStream = Files.newInputStream(schema)) {
+        return decodeIr(inputStream.readAllBytes());
       }
     }
 
-    final var parserOptions = ParserOptions.builder().stopOnError(true).xIncludeAware(true).build();
     try (final var inputStream = Files.newInputStream(schema)) {
-      final var inputSource = new InputSource(inputStream);
-      inputSource.setSystemId(schema.toUri().toString());
-      final var messageSchema = XmlSchemaParser.parse(inputSource, parserOptions);
-      return new IrGenerator().generate(messageSchema, schemaFileName);
+      return generateIr(inputStream, schema.toUri().toString(), schemaFileName);
     }
   }
 
   public static Ir loadIrFromResource(final Class<?> resourceOwner, final String resourceName)
       throws Exception {
-    try (final var irFileResource =
-        resourceOwner.getClassLoader().getResourceAsStream(resourceName)) {
-      if (irFileResource == null) {
-        throw new IllegalArgumentException("Failed to get resource " + resourceName);
+    final var resource = resourceOwner.getClassLoader().getResource(resourceName);
+    if (resource == null) {
+      throw new NoSuchFileException(resourceName, null, "Schema was not found on the classpath");
+    }
+
+    try (final var resourceStream = resource.openStream()) {
+      if (isIrSchema(resourceName)) {
+        return decodeIr(resourceStream.readAllBytes());
       }
 
-      try (final var irDecoder = new IrDecoder(ByteBuffer.wrap(irFileResource.readAllBytes()))) {
-        return irDecoder.decode();
-      }
+      return generateIr(resourceStream, resource.toExternalForm(), resourceName);
     }
   }
 
@@ -73,6 +73,26 @@ public final class SbeJsonDecoder {
     final var output = new StringBuilder();
     new JsonPrinter(ir).print(output, buffer, validateOffset(offset, buffer.capacity()));
     return output.toString();
+  }
+
+  private static Ir generateIr(
+      final InputStream inputStream, final String systemId, final String schemaName)
+      throws Exception {
+    final var parserOptions = ParserOptions.builder().stopOnError(true).xIncludeAware(true).build();
+    final var inputSource = new InputSource(inputStream);
+    inputSource.setSystemId(systemId);
+    final var messageSchema = XmlSchemaParser.parse(inputSource, parserOptions);
+    return new IrGenerator().generate(messageSchema, schemaName);
+  }
+
+  private static Ir decodeIr(final byte[] irBytes) throws Exception {
+    try (final var irDecoder = new IrDecoder(ByteBuffer.wrap(irBytes))) {
+      return irDecoder.decode();
+    }
+  }
+
+  private static boolean isIrSchema(final String schemaName) {
+    return schemaName.endsWith(".sbeir");
   }
 
   private static int validateOffset(final long offset, final int length) {

@@ -47,12 +47,15 @@ public class SbeCommandTest {
 """;
 
   private CommandLine commandLine;
+  private StringWriter err;
   private StringWriter out;
 
   @BeforeEach
   public void setup() {
+    err = new StringWriter();
     out = new StringWriter();
-    commandLine = new CommandLine(new Main()).setOut(new PrintWriter(out));
+    commandLine =
+        new CommandLine(new Main()).setErr(new PrintWriter(err)).setOut(new PrintWriter(out));
   }
 
   @Test
@@ -83,11 +86,11 @@ public class SbeCommandTest {
   }
 
   @Test
-  public void shouldDecodeSbeFileProvidedAsPositionalParameter() {
+  public void shouldDecodeSbeFileProvidedAsPositionalParameter() throws Exception {
     // given
     final var resourceUrl = getClass().getClassLoader().getResource("default-partition-1.conf");
     assertThat(resourceUrl).isNotNull();
-    final var filePath = Path.of(resourceUrl.getPath());
+    final var filePath = Path.of(resourceUrl.toURI());
 
     // when
     final int exitCode =
@@ -97,6 +100,25 @@ public class SbeCommandTest {
     // then
     assertThat(exitCode).isZero();
     assertThat(out.toString().trim()).isEqualTo(EXPECTED_CONFIGURATION.trim());
+  }
+
+  @Test
+  public void shouldDecodeUsingClasspathXmlSchemaWhenFilesystemPathDoesNotExist() throws Exception {
+    // given
+    final var resourceUrl = getClass().getClassLoader().getResource("default-partition-1.conf");
+    assertThat(resourceUrl).isNotNull();
+    final var filePath = Path.of(resourceUrl.toURI());
+
+    // when
+    final int exitCode =
+        commandLine.execute(
+            "sbe", "--schema", "raft-entry-schema.xml", "--offset", "1", filePath.toString());
+
+    // then
+    assertThat(exitCode).isZero();
+    assertThat(out.toString().trim()).isEqualTo(EXPECTED_CONFIGURATION.trim());
+    assertThat(err.toString().trim())
+        .isEqualTo("Schema used: classpath resource raft-entry-schema.xml");
   }
 
   private Path schemaPath() {
