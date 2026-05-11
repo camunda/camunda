@@ -20,6 +20,7 @@ import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStat
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGG_MAX_PROCESS_DEFINITION_KEY;
 import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation.AGG_MAX_PROCESS_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
@@ -152,5 +153,29 @@ final class ProcessDefinitionInstanceVersionStatisticsAggregationTransformerTest
                         new FieldSorting(
                             // activeInstancesWithoutIncidentCount
                             AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT + "._count", SortOrder.DESC)));
+  }
+
+  @Test
+  void shouldThrowOnUnsupportedSortField() {
+    // given
+    final var transformers = ServiceTransformers.newInstance(new IndexDescriptors("", true));
+    final var aggregationTransformer =
+        transformers.getAggregationTransformer(
+            ProcessDefinitionInstanceVersionStatisticsAggregation.class);
+
+    final var filter = new ProcessDefinitionInstanceVersionStatisticsFilter("order_process", null);
+    final var sort =
+        new ProcessDefinitionInstanceVersionStatisticsSort(
+            List.of(new FieldSorting("unsupportedField", SortOrder.ASC)));
+    final var page = SearchQueryPage.of(p -> p.from(0).size(10));
+
+    final var aggregation =
+        new ProcessDefinitionInstanceVersionStatisticsAggregation(filter, sort, page);
+
+    // when / then
+    assertThatThrownBy(() -> aggregationTransformer.apply(Tuple.of(aggregation, transformers)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Unsupported sort field for version-statistics bucket_sort mapping: unsupportedField");
   }
 }
