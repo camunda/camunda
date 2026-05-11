@@ -49,10 +49,6 @@ public class CamundaDataSource {
     this.client = client;
   }
 
-  /**
-   * @return the underlying Camunda client used by this data source. Intended for internal use by
-   *     features that need direct client access (e.g. judge document resolution).
-   */
   public CamundaClient getClient() {
     return client;
   }

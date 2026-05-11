@@ -85,21 +85,21 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
       return parts;
     }
 
-    final String contentType = d.getContentType();
+    final String contentType = contentTypeOf(d);
     if (contentType != null && contentType.toLowerCase().startsWith("image/")) {
-      final String base64 = Base64.getEncoder().encodeToString(d.getData());
+      final String base64 = Base64.getEncoder().encodeToString(d.getContent());
       parts.add(ImageContent.from(base64, contentType));
     } else if ("application/pdf".equalsIgnoreCase(contentType)) {
-      final String base64 = Base64.getEncoder().encodeToString(d.getData());
+      final String base64 = Base64.getEncoder().encodeToString(d.getContent());
       parts.add(
           PdfFileContent.from(PdfFile.builder().base64Data(base64).mimeType(contentType).build()));
     } else if (isTextLike(contentType)) {
-      parts.add(TextContent.from(new String(d.getData(), StandardCharsets.UTF_8)));
+      parts.add(TextContent.from(new String(d.getContent(), StandardCharsets.UTF_8)));
     } else {
       LOG.debug(
           "Document '{}' has content type '{}' which is not natively supported as a content "
               + "block; including a placeholder text marker only",
-          d.getDocumentId(),
+          documentIdOf(d),
           contentType);
       parts.add(
           TextContent.from(
@@ -114,22 +114,42 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
     final StringBuilder header = new StringBuilder();
     header
         .append("--- documentId=\"")
-        .append(d.getDocumentId() == null ? "" : d.getDocumentId())
+        .append(nullToEmpty(documentIdOf(d)))
         .append("\"")
         .append(" fileName=\"")
-        .append(d.getFileName() == null ? "" : d.getFileName())
+        .append(nullToEmpty(fileNameOf(d)))
         .append("\"")
         .append(" contentType=\"")
-        .append(d.getContentType() == null ? "" : d.getContentType())
+        .append(nullToEmpty(contentTypeOf(d)))
         .append("\"");
     if (!d.isResolved()) {
       header
           .append(" status=\"unresolved\" error=\"")
-          .append(d.getErrorMessage() == null ? "" : d.getErrorMessage())
+          .append(nullToEmpty(d.getErrorMessage()))
           .append("\"");
     }
     header.append(" ---");
     return header.toString();
+  }
+
+  private static String documentIdOf(final ResolvedDocument d) {
+    return d.getReference() == null ? null : d.getReference().getDocumentId();
+  }
+
+  private static String fileNameOf(final ResolvedDocument d) {
+    return d.getReference() == null || d.getReference().getMetadata() == null
+        ? null
+        : d.getReference().getMetadata().getFileName();
+  }
+
+  private static String contentTypeOf(final ResolvedDocument d) {
+    return d.getReference() == null || d.getReference().getMetadata() == null
+        ? null
+        : d.getReference().getMetadata().getContentType();
+  }
+
+  private static String nullToEmpty(final String s) {
+    return s == null ? "" : s;
   }
 
   private static boolean isTextLike(final String contentType) {

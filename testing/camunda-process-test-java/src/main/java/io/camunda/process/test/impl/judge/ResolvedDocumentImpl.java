@@ -15,60 +15,40 @@
  */
 package io.camunda.process.test.impl.judge;
 
+import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 
 public final class ResolvedDocumentImpl implements ResolvedDocument {
 
-  private final String documentId;
-  private final String fileName;
-  private final String contentType;
-  private final byte[] data;
+  private final DocumentReferenceResponse reference;
+  private final byte[] content;
   private final String errorMessage;
 
   public ResolvedDocumentImpl(
-      final String documentId,
-      final String fileName,
-      final String contentType,
-      final byte[] data,
-      final String errorMessage) {
-    this.documentId = documentId;
-    this.fileName = fileName;
-    this.contentType = contentType;
-    this.data = data;
+      final DocumentReferenceResponse reference, final byte[] content, final String errorMessage) {
+    this.reference = reference;
+    this.content = content;
     this.errorMessage = errorMessage;
   }
 
   public static ResolvedDocument resolved(
-      final String documentId, final String fileName, final String contentType, final byte[] data) {
-    return new ResolvedDocumentImpl(documentId, fileName, contentType, data, null);
+      final DocumentReferenceResponse reference, final byte[] content) {
+    return new ResolvedDocumentImpl(reference, content, null);
   }
 
   public static ResolvedDocument failed(
-      final String documentId,
-      final String fileName,
-      final String contentType,
-      final String errorMessage) {
-    return new ResolvedDocumentImpl(documentId, fileName, contentType, null, errorMessage);
+      final DocumentReferenceResponse reference, final String errorMessage) {
+    return new ResolvedDocumentImpl(reference, null, errorMessage);
   }
 
   @Override
-  public String getDocumentId() {
-    return documentId;
+  public DocumentReferenceResponse getReference() {
+    return reference;
   }
 
   @Override
-  public String getFileName() {
-    return fileName;
-  }
-
-  @Override
-  public String getContentType() {
-    return contentType;
-  }
-
-  @Override
-  public byte[] getData() {
-    return data;
+  public byte[] getContent() {
+    return content;
   }
 
   @Override
@@ -78,6 +58,6 @@ public final class ResolvedDocumentImpl implements ResolvedDocument {
 
   @Override
   public boolean isResolved() {
-    return errorMessage == null && data != null;
+    return errorMessage == null && content != null;
   }
 }

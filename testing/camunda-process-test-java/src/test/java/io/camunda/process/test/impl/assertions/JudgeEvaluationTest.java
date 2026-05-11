@@ -17,7 +17,11 @@ package io.camunda.process.test.impl.assertions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
+import io.camunda.client.api.response.DocumentMetadata;
+import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
 import io.camunda.process.test.api.judge.ResolvedDocument;
@@ -186,7 +190,8 @@ class JudgeEvaluationTest {
         new JudgeEvaluation(adapter, "expectation", Optional.empty());
 
     final ResolvedDocument doc =
-        ResolvedDocumentImpl.resolved("doc-1", "image.png", "image/png", new byte[] {1, 2, 3});
+        ResolvedDocumentImpl.resolved(
+            refOf("doc-1", "image.png", "image/png"), new byte[] {1, 2, 3});
 
     // when
     final JudgeEvaluation.Result result =
@@ -214,7 +219,8 @@ class JudgeEvaluationTest {
         new JudgeEvaluation(adapter, "expectation", Optional.empty());
 
     final ResolvedDocument failed =
-        ResolvedDocumentImpl.failed("doc-3", "missing.pdf", "application/pdf", "404 not found");
+        ResolvedDocumentImpl.failed(
+            refOf("doc-3", "missing.pdf", "application/pdf"), "404 not found");
 
     // when
     evaluation.evaluate("value", Collections.singletonList(failed));
@@ -243,6 +249,17 @@ class JudgeEvaluationTest {
 
     // then
     assertThat(capturedPrompt.get()).doesNotContain("<resolved_documents>");
+  }
+
+  private static DocumentReferenceResponse refOf(
+      final String documentId, final String fileName, final String contentType) {
+    final DocumentMetadata metadata = mock(DocumentMetadata.class);
+    lenient().when(metadata.getFileName()).thenReturn(fileName);
+    lenient().when(metadata.getContentType()).thenReturn(contentType);
+    final DocumentReferenceResponse reference = mock(DocumentReferenceResponse.class);
+    lenient().when(reference.getDocumentId()).thenReturn(documentId);
+    lenient().when(reference.getMetadata()).thenReturn(metadata);
+    return reference;
   }
 
   /** Test double that implements MultimodalChatModelAdapter. */

@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.impl.judge;
 
+import io.camunda.client.api.response.DocumentMetadata;
+import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import java.util.List;
 
@@ -57,11 +59,13 @@ public final class ResolvedDocumentPromptSection {
   }
 
   private static String describe(final ResolvedDocument doc) {
+    final DocumentReferenceResponse ref = doc.getReference();
+    final DocumentMetadata md = ref == null ? null : ref.getMetadata();
     final StringBuilder line = new StringBuilder();
     line.append("- ");
-    appendAttribute(line, "documentId", doc.getDocumentId());
-    appendAttribute(line, " fileName", doc.getFileName());
-    appendAttribute(line, " contentType", doc.getContentType());
+    appendAttribute(line, "documentId", ref == null ? null : ref.getDocumentId());
+    appendAttribute(line, " fileName", md == null ? null : md.getFileName());
+    appendAttribute(line, " contentType", md == null ? null : md.getContentType());
     if (!doc.isResolved()) {
       appendAttribute(line, " status", "unresolved");
       appendAttribute(line, " error", doc.getErrorMessage());

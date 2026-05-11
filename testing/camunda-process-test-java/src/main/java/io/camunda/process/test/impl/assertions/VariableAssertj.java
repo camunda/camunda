@@ -26,7 +26,6 @@ import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.VariableSelector;
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.api.judge.MultimodalChatModelAdapter;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
@@ -410,16 +409,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   }
 
   private List<ResolvedDocument> resolveDocumentsIfEnabled(final String rawValue) {
-    final JudgeConfig config = judgeAssertj.getJudgeConfig();
-    if (config == null || !config.isResolveDocuments()) {
-      return Collections.emptyList();
-    }
-    if (!(config.getChatModel() instanceof MultimodalChatModelAdapter)) {
-      LOG.warn(
-          "Judge document resolution is enabled but the configured ChatModelAdapter does not "
-              + "implement MultimodalChatModelAdapter. Skipping document resolution. Implement "
-              + "MultimodalChatModelAdapter or use one of the built-in LangChain4j providers to "
-              + "enable multimodal evaluation.");
+    if (!judgeAssertj.isMultimodalDocumentResolutionEnabled()) {
       return Collections.emptyList();
     }
     return new DocumentReferenceResolver(dataSource.getClient()).resolve(rawValue);
