@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -120,19 +121,20 @@ public final class EndpointManager {
   }
 
   private void addBrokerInfo(
-      final Builder brokerInfo, final Integer brokerId, final BrokerClusterState topology) {
+      final Builder brokerInfo, final MemberId brokerId, final BrokerClusterState topology) {
     final String brokerAddress = topology.getBrokerAddress(brokerId);
     final Address address = Address.from(brokerAddress);
 
-    brokerInfo
-        .setNodeId(brokerId)
-        .setHost(address.host())
-        .setPort(address.port())
-        .setVersion(topology.getBrokerVersion(brokerId));
+    brokerInfo.setNodeId(brokerId.nodeIdx()).setHost(address.host()).setPort(address.port());
+
+    final var brokerVersion = topology.getBrokerVersion(brokerId);
+    if (brokerVersion != null) {
+      brokerInfo.setVersion(brokerVersion);
+    }
   }
 
   private void addPartitionInfoToBrokerInfo(
-      final Builder brokerInfo, final Integer brokerId, final BrokerClusterState topology) {
+      final Builder brokerInfo, final MemberId brokerId, final BrokerClusterState topology) {
     topology
         .getPartitions()
         .forEach(
@@ -145,6 +147,11 @@ public final class EndpointManager {
               }
 
               final var status = topology.getPartitionHealth(brokerId, partitionId);
+              if (status == null) {
+                Loggers.GATEWAY_LOGGER.debug("Unsupported null partition broker health status");
+                return;
+              }
+
               switch (status) {
                 case HEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.HEALTHY);
                 case UNHEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.UNHEALTHY);
@@ -163,15 +170,15 @@ public final class EndpointManager {
    * @return true if it could set the role. False if no role was could be found.
    */
   private boolean setRole(
-      final Integer brokerId,
+      final MemberId brokerId,
       final Integer partitionId,
       final BrokerClusterState topology,
       final Partition.Builder partitionBuilder) {
-    final int partitionLeader = topology.getLeaderForPartition(partitionId);
-    final Set<Integer> partitionFollowers = topology.getFollowersForPartition(partitionId);
-    final Set<Integer> partitionInactives = topology.getInactiveNodesForPartition(partitionId);
+    final MemberId partitionLeader = topology.getLeaderForPartition(partitionId);
+    final Set<MemberId> partitionFollowers = topology.getFollowersForPartition(partitionId);
+    final Set<MemberId> partitionInactives = topology.getInactiveNodesForPartition(partitionId);
 
-    if (partitionLeader == brokerId) {
+    if (brokerId.equals(partitionLeader)) {
       partitionBuilder.setRole(PartitionBrokerRole.LEADER);
     } else if (partitionFollowers != null && partitionFollowers.contains(brokerId)) {
       partitionBuilder.setRole(PartitionBrokerRole.FOLLOWER);

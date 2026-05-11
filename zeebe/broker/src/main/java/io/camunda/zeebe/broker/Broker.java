@@ -228,10 +228,7 @@ public final class Broker implements AutoCloseable {
 
     private final BrokerStartupProcess brokerStartupProcess;
 
-    private final int nodeId;
-
     private BrokerStartupActor(final BrokerStartupContextImpl startupContext) {
-      nodeId = startupContext.getBrokerInfo().getNodeId();
       startupContext.setConcurrencyControl(actor);
       brokerStartupProcess = new BrokerStartupProcess(startupContext);
     }

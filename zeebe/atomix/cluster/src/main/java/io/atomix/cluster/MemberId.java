@@ -17,6 +17,7 @@
 package io.atomix.cluster;
 
 import io.camunda.zeebe.util.MemberIdUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.NullMarked;
@@ -87,6 +88,11 @@ public class MemberId extends NodeId {
    */
   public static MemberId from(final @Nullable String zone, final int nodeId) {
     return new MemberId(zone, nodeId, buildMemberIdString(zone, nodeId));
+  }
+
+  @VisibleForTesting
+  public static MemberId from(final int nodeId) {
+    return from(null, nodeId);
   }
 
   public int nodeIdx() {

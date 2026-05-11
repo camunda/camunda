@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
@@ -478,8 +479,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public int getNodeId() {
-    return 0;
+  public MemberId getMemberId() {
+    return MemberId.from(0);
   }
 
   @Override

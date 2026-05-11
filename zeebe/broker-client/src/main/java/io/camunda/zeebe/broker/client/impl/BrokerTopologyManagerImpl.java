@@ -198,7 +198,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     partitions.forEach(
         partition -> {
           final var leader = topology.getLeaderForPartition(partition);
-          if (leader != BrokerClusterState.NODE_ID_NULL) {
+          if (leader != null) {
             topologyMetrics.setRoleForPartition(partition, leader, PartitionRoleValues.LEADER);
           }
 

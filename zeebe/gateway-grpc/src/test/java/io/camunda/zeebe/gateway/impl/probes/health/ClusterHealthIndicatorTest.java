@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.gateway.impl.probes.health;
 
-import static io.camunda.zeebe.broker.client.api.BrokerClusterState.PARTITION_ID_NULL;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.List;
@@ -49,7 +49,7 @@ public class ClusterHealthIndicatorTest {
   public void shouldReportDownIfListOfBrokersAnIsNotEmptyAndPartitionsIsEmpty() {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getBrokers()).thenReturn(List.of(MemberId.from(1)));
     when(mockClusterState.getPartitions()).thenReturn(List.of());
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
@@ -68,10 +68,11 @@ public class ClusterHealthIndicatorTest {
   public void shouldReportUpIfHasHealthyPartition() {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getBrokers()).thenReturn(List.of(MemberId.from(1)));
     when(mockClusterState.getPartitions()).thenReturn(List.of(1));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(1);
-    when(mockClusterState.getPartitionHealth(1, 1)).thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(MemberId.from(1));
+    when(mockClusterState.getPartitionHealth(MemberId.from(1), 1))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);
@@ -88,14 +89,17 @@ public class ClusterHealthIndicatorTest {
   @Test
   public void shouldReportDegradedIfMissingPartitions() {
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getBrokers()).thenReturn(List.of(MemberId.from(1)));
     when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2, 3));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(1);
-    when(mockClusterState.getLeaderForPartition(2)).thenReturn(2);
-    when(mockClusterState.getLeaderForPartition(3)).thenReturn(3);
-    when(mockClusterState.getPartitionHealth(1, 1)).thenReturn(PartitionHealthStatus.HEALTHY);
-    when(mockClusterState.getPartitionHealth(2, 2)).thenReturn(PartitionHealthStatus.HEALTHY);
-    when(mockClusterState.getPartitionHealth(3, 3)).thenReturn(PartitionHealthStatus.DEAD);
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(MemberId.from(1));
+    when(mockClusterState.getLeaderForPartition(2)).thenReturn(MemberId.from(2));
+    when(mockClusterState.getLeaderForPartition(3)).thenReturn(MemberId.from(3));
+    when(mockClusterState.getPartitionHealth(MemberId.from(1), 1))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(MemberId.from(2), 2))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(MemberId.from(3), 3))
+        .thenReturn(PartitionHealthStatus.DEAD);
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);
@@ -112,14 +116,17 @@ public class ClusterHealthIndicatorTest {
   @Test
   public void shouldReportUnhealthyIfMissingPartitionsAndTheOthersDegraded() {
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getBrokers()).thenReturn(List.of(MemberId.from(1)));
     when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2, 3));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(1);
-    when(mockClusterState.getLeaderForPartition(2)).thenReturn(2);
-    when(mockClusterState.getLeaderForPartition(3)).thenReturn(3);
-    when(mockClusterState.getPartitionHealth(1, 1)).thenReturn(PartitionHealthStatus.UNHEALTHY);
-    when(mockClusterState.getPartitionHealth(2, 2)).thenReturn(PartitionHealthStatus.UNHEALTHY);
-    when(mockClusterState.getPartitionHealth(3, 3)).thenReturn(PartitionHealthStatus.DEAD);
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(MemberId.from(1));
+    when(mockClusterState.getLeaderForPartition(2)).thenReturn(MemberId.from(2));
+    when(mockClusterState.getLeaderForPartition(3)).thenReturn(MemberId.from(3));
+    when(mockClusterState.getPartitionHealth(MemberId.from(1), 1))
+        .thenReturn(PartitionHealthStatus.UNHEALTHY);
+    when(mockClusterState.getPartitionHealth(MemberId.from(2), 2))
+        .thenReturn(PartitionHealthStatus.UNHEALTHY);
+    when(mockClusterState.getPartitionHealth(MemberId.from(3), 3))
+        .thenReturn(PartitionHealthStatus.DEAD);
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);
@@ -136,14 +143,17 @@ public class ClusterHealthIndicatorTest {
   @Test
   public void shouldReportDegradedIfSomePartitionsDontHaveLeader() {
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(List.of(1));
+    when(mockClusterState.getBrokers()).thenReturn(List.of(MemberId.from(1)));
     when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2, 3));
-    when(mockClusterState.getLeaderForPartition(1)).thenReturn(1);
-    when(mockClusterState.getLeaderForPartition(2)).thenReturn(2);
-    when(mockClusterState.getLeaderForPartition(3)).thenReturn(PARTITION_ID_NULL);
-    when(mockClusterState.getPartitionHealth(1, 1)).thenReturn(PartitionHealthStatus.HEALTHY);
-    when(mockClusterState.getPartitionHealth(2, 2)).thenReturn(PartitionHealthStatus.HEALTHY);
-    when(mockClusterState.getPartitionHealth(3, 3)).thenReturn(PartitionHealthStatus.UNHEALTHY);
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(MemberId.from(1));
+    when(mockClusterState.getLeaderForPartition(2)).thenReturn(MemberId.from(2));
+    when(mockClusterState.getLeaderForPartition(3)).thenReturn(null);
+    when(mockClusterState.getPartitionHealth(MemberId.from(1), 1))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(MemberId.from(2), 2))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
+    when(mockClusterState.getPartitionHealth(MemberId.from(3), 3))
+        .thenReturn(PartitionHealthStatus.UNHEALTHY);
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);

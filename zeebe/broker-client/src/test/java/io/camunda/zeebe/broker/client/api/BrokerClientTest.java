@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.fail;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -61,8 +62,8 @@ import org.junit.jupiter.api.TestInfo;
 
 public final class BrokerClientTest {
 
+  private static final MemberId ONE = MemberId.from("1");
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
-
   private final StubBroker broker = new StubBroker().start();
   private BrokerClient client;
   private AtomixCluster atomixCluster;
@@ -420,7 +421,7 @@ public final class BrokerClientTest {
           .untilAsserted(
               () ->
                   assertThat(topologyManager.getTopology().getLeaderForPartition(1))
-                      .isEqualTo(leaderBrokerId));
+                      .isEqualTo(MemberId.from(leaderBrokerId)));
 
       response = client.sendRequest(request).join();
     }
@@ -533,7 +534,9 @@ public final class BrokerClientTest {
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isOne());
+                () ->
+                    assertThat(topologyManager.getTopology().getLeaderForPartition(1))
+                        .isEqualTo(ONE));
 
         // when
         response = client.sendRequest(request).join();
@@ -562,7 +565,9 @@ public final class BrokerClientTest {
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+                () ->
+                    assertThat(topologyManager.getTopology().getLeaderForPartition(2))
+                        .isEqualTo(ONE));
 
         // when
         response = client.sendRequest(request).join();
@@ -583,7 +588,9 @@ public final class BrokerClientTest {
         topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
         Awaitility.await("Topology is updated")
             .untilAsserted(
-                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+                () ->
+                    assertThat(topologyManager.getTopology().getLeaderForPartition(2))
+                        .isEqualTo(ONE));
 
         // when
         response = client.sendRequest(request).join();

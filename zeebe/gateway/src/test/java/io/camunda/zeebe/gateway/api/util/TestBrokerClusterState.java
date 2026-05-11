@@ -9,17 +9,20 @@ package io.camunda.zeebe.gateway.api.util;
 
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.collection.Tuple;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class TestBrokerClusterState implements BrokerClusterState {
 
   private final Map<Integer, String> brokerAddresses = new HashMap<>();
@@ -67,25 +70,30 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   @Override
-  public int getLeaderForPartition(final int partition) {
+  public MemberId getLeaderForPartition(final int partition) {
     if (!partitionLeaders.containsKey(partition)) {
-      return NODE_ID_NULL;
+      return null;
     }
-    return partitionLeaders.get(partition).getLeft();
+    final int leaderId = partitionLeaders.get(partition).getLeft();
+    return leaderId == NODE_ID_NULL ? null : MemberId.from(null, leaderId);
   }
 
   @Override
-  public Set<Integer> getFollowersForPartition(final int partition) {
-    return followerPartitionToNodeIds.getOrDefault(partition, Set.of());
+  public Set<MemberId> getFollowersForPartition(final int partition) {
+    return followerPartitionToNodeIds.getOrDefault(partition, Set.of()).stream()
+        .map(id -> MemberId.from(null, id))
+        .collect(Collectors.toSet());
   }
 
   @Override
-  public Set<Integer> getInactiveNodesForPartition(final int partition) {
-    return inactivePartitionsToNodeIds.getOrDefault(partition, Set.of());
+  public Set<MemberId> getInactiveNodesForPartition(final int partition) {
+    return inactivePartitionsToNodeIds.getOrDefault(partition, Set.of()).stream()
+        .map(id -> MemberId.from(null, id))
+        .collect(Collectors.toSet());
   }
 
   @Override
-  public int getRandomBroker() {
+  public MemberId getRandomBroker() {
     throw new UnsupportedOperationException();
   }
 
@@ -95,22 +103,22 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   @Override
-  public List<Integer> getBrokers() {
-    return new ArrayList<>(brokerAddresses.keySet());
+  public List<MemberId> getBrokers() {
+    return brokerAddresses.keySet().stream().map(id -> MemberId.from(null, id)).toList();
   }
 
   @Override
-  public String getBrokerAddress(final int brokerId) {
-    return brokerAddresses.get(brokerId);
+  public String getBrokerAddress(final MemberId brokerId) {
+    return brokerAddresses.get(brokerId.nodeIdx());
   }
 
   @Override
-  public String getBrokerVersion(final int brokerId) {
+  public String getBrokerVersion(final MemberId brokerId) {
     return "1.0.0"; // Default version for testing purposes;
   }
 
   @Override
-  public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+  public PartitionHealthStatus getPartitionHealth(final MemberId brokerId, final int partition) {
     return brokerPartitionHealthStatus.getOrDefault(
         Tuple.of(brokerId, partition), PartitionHealthStatus.UNHEALTHY);
   }

@@ -178,7 +178,7 @@ public final class ZeebePartitionFactory {
     final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory);
     final var context =
         new PartitionStartupAndTransitionContextImpl(
-            localBroker.getNodeId(),
+            MemberId.from(localBroker.memberIdString()),
             localBroker.getPartitionsCount(),
             communicationService,
             raftPartition,

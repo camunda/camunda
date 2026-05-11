@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -17,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 final class TestTopologyManager implements BrokerTopologyManager {
   private final TestBrokerClusterState topology;
@@ -70,10 +73,11 @@ final class TestTopologyManager implements BrokerTopologyManager {
     throw new UnsupportedOperationException();
   }
 
+  @NullMarked
   private static final class TestBrokerClusterState implements BrokerClusterState {
 
-    private final List<Integer> brokers = new ArrayList<>();
-    private final Map<Integer, Integer> partitionLeaders = new HashMap<>();
+    private final List<MemberId> brokers = new ArrayList<>();
+    private final Map<Integer, MemberId> partitionLeaders = new HashMap<>();
     private final List<Integer> partitions = new ArrayList<>();
 
     @Override
@@ -97,23 +101,23 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     @Override
-    public int getLeaderForPartition(final int partition) {
-      return partitionLeaders.getOrDefault(partition, BrokerClusterState.NODE_ID_NULL);
+    public MemberId getLeaderForPartition(final int partition) {
+      return partitionLeaders.get(partition);
     }
 
     @Override
-    public Set<Integer> getFollowersForPartition(final int partition) {
+    public Set<MemberId> getFollowersForPartition(final int partition) {
       return Set.of();
     }
 
     @Override
-    public Set<Integer> getInactiveNodesForPartition(final int partition) {
+    public Set<MemberId> getInactiveNodesForPartition(final int partition) {
       return Set.of();
     }
 
     @Override
-    public int getRandomBroker() {
-      return 0;
+    public @Nullable MemberId getRandomBroker() {
+      return brokers.isEmpty() ? null : brokers.get(0);
     }
 
     @Override
@@ -122,22 +126,23 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     @Override
-    public List<Integer> getBrokers() {
+    public List<MemberId> getBrokers() {
       return brokers;
     }
 
     @Override
-    public String getBrokerAddress(final int brokerId) {
+    public String getBrokerAddress(final MemberId brokerId) {
       return "";
     }
 
     @Override
-    public String getBrokerVersion(final int brokerId) {
+    public String getBrokerVersion(final MemberId brokerId) {
       return "";
     }
 
     @Override
-    public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+    public @Nullable PartitionHealthStatus getPartitionHealth(
+        final MemberId brokerId, final int partition) {
       return null;
     }
 
@@ -152,11 +157,11 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     public void addBrokerIfAbsent(final int leaderId) {
-      brokers.add(leaderId);
+      brokers.add(MemberId.from(null, leaderId));
     }
 
     public void setPartitionLeader(final int id, final int leaderId) {
-      partitionLeaders.put(id, leaderId);
+      partitionLeaders.put(id, MemberId.from(null, leaderId));
     }
 
     public void addPartitionIfAbsent(final int id) {

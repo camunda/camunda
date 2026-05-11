@@ -233,7 +233,7 @@ public final class TopologyManagerImpl extends Actor
                       LOG,
                       () ->
                           listener.onPartitionLeaderUpdated(
-                              partitionId, MemberId.from(leader.zone(), leader.getNodeId()))));
+                              partitionId, MemberId.from(leader.getZone(), leader.getNodeId()))));
         });
   }
 
@@ -262,7 +262,7 @@ public final class TopologyManagerImpl extends Actor
   }
 
   private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
-    final var leaderId = MemberId.from(member.zone(), member.getNodeId());
+    final var leaderId = MemberId.from(member.getZone(), member.getNodeId());
     for (final TopologyPartitionListener listener : topologyPartitionListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, leaderId));
     }
