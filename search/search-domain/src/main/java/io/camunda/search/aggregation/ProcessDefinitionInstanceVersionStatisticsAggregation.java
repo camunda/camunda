@@ -30,6 +30,10 @@ public record ProcessDefinitionInstanceVersionStatisticsAggregation(
   public static final String AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT =
       "activeInstancesWithoutIncidentCount";
   public static final String AGGREGATION_NAME_VERSION_CARDINALITY = "versionCardinality";
+  public static final String AGG_MAX_PROCESS_DEFINITION_KEY = "maxProcessDefinitionKey";
+  public static final String AGG_MAX_PROCESS_VERSION = "maxProcessVersion";
+  public static final String AGGREGATION_FIELD_PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String AGGREGATION_FIELD_PROCESS_DEFINITION_NAME = "processDefinitionName";
   public static final String PROCESS_DEFINITION_AND_TENANT_KEY =
-      "doc['processVersion'].value + '::' + doc['tenantId'].value";
+      "doc['processName'].value + '::' + doc['processVersion'].value + '::' + doc['tenantId'].value";
 }
