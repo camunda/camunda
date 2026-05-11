@@ -17,6 +17,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.micrometer.core.instrument.search.MeterNotFoundException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
@@ -249,17 +253,26 @@ public class ProcessDefinitionMetricsTest {
   }
 
   @Test
-  public void shouldInitializeMetricsForManyDeployedProcesses() {
-    // given - many distinct process definitions deployed in batched deployments
+  public void shouldInitializeMetricsForManyDeployedProcesses() throws IOException {
+    // given - many distinct process definitions derived from a real BPMN file,
+    // deployed in batched deployments to keep test setup fast.
+    final byte[] baseBpmn =
+        Files.readAllBytes(
+            Path.of(
+                "../../load-tests/load-tester/src/main/resources/bpmn/realistic/"
+                    + "bankCustomerComplaintDisputeHandling.bpmn"));
+    final String baseXml = new String(baseBpmn, StandardCharsets.UTF_8);
+    final String originalProcessId = "bankDisputeHandling";
+
     final int processCount = 1000;
-    final int batchSize = 100;
+    final int batchSize = 10;
     for (int batch = 0; batch < processCount; batch += batchSize) {
       DeploymentClient deployment = engine.deployment();
       for (int i = batch; i < batch + batchSize; i++) {
-        deployment =
-            deployment.withXmlResource(
-                "process-" + i + ".xml",
-                Bpmn.createExecutableProcess("process-" + i).startEvent().endEvent().done());
+        final String processId = "process-" + i;
+        final byte[] resource =
+            baseXml.replace(originalProcessId, processId).getBytes(StandardCharsets.UTF_8);
+        deployment = deployment.withXmlResource(resource, processId + ".bpmn");
       }
       deployment.deploy();
     }
@@ -275,8 +288,9 @@ public class ProcessDefinitionMetricsTest {
     final Duration restartDuration = Duration.ofNanos(System.nanoTime() - startNanos);
 
     LOG.info(
-        "Engine restart with {} deployed process definitions took {}",
+        "Engine restart with {} deployed process definitions (~{} bytes each) took {}",
         processCount,
+        baseBpmn.length,
         restartDuration);
 
     // then - all definitions are recovered into the gauge
