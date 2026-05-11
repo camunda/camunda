@@ -108,6 +108,22 @@ paths:
                       maxJobTypeLength: 100
                       maxTenantIdLength: 30
                       maxUniqueKeys: 9500
+                    components:
+                      active: ["operate", "tasklist"]
+                    deployment:
+                      isEnterprise: false
+                      isMultiTenancyEnabled: false
+                      contextPath: ""
+                      maxRequestSize: 4194304
+                    authentication:
+                      canLogout: true
+                      isLoginDelegated: false
+                    cloud:
+                      organizationId: null
+                      clusterId: null
+                      stage: null
+                      mixpanelToken: null
+                      mixpanelAPIHost: null
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "500":
@@ -168,9 +184,21 @@ components:
       type: object
       required:
         - jobMetrics
+        - components
+        - deployment
+        - authentication
+        - cloud
       properties:
         jobMetrics:
           $ref: '#/components/schemas/JobMetricsConfigurationResponse'
+        components:
+          $ref: '#/components/schemas/ComponentsConfigurationResponse'
+        deployment:
+          $ref: '#/components/schemas/DeploymentConfigurationResponse'
+        authentication:
+          $ref: '#/components/schemas/AuthenticationConfigurationResponse'
+        cloud:
+          $ref: '#/components/schemas/CloudConfigurationResponse'
 
     JobMetricsConfigurationResponse:
       description: Configuration for job metrics collection and export.
@@ -211,4 +239,96 @@ components:
           type: integer
           format: int32
           example: 9500
+
+    ComponentsConfigurationResponse:
+      description: Configuration for active Camunda components in the deployment.
+      type: object
+      required:
+        - active
+      properties:
+        active:
+          description: List of webapp components whose UI is enabled in this deployment.
+          type: array
+          items:
+            type: string
+          example: ["operate", "tasklist"]
+
+    DeploymentConfigurationResponse:
+      description: Configuration for deployment characteristics.
+      type: object
+      required:
+        - isEnterprise
+        - isMultiTenancyEnabled
+        - contextPath
+        - maxRequestSize
+      properties:
+        isEnterprise:
+          description: Whether this is an enterprise deployment.
+          type: boolean
+          example: false
+        isMultiTenancyEnabled:
+          description: Whether multi-tenancy is enabled.
+          type: boolean
+          example: false
+        contextPath:
+          description: The servlet context path for the deployment.
+          type: string
+          example: ""
+        maxRequestSize:
+          description: The maximum HTTP request size in bytes.
+          type: integer
+          format: int64
+          example: 4194304
+
+    AuthenticationConfigurationResponse:
+      description: Configuration for authentication and session management.
+      type: object
+      required:
+        - canLogout
+        - isLoginDelegated
+      properties:
+        canLogout:
+          description: Whether users can log out (false for SaaS deployments).
+          type: boolean
+          example: true
+        isLoginDelegated:
+          description: Whether login is delegated to an external identity provider.
+          type: boolean
+          example: false
+
+    CloudConfigurationResponse:
+      description: Configuration for SaaS/cloud-specific settings.
+      type: object
+      required:
+        - organizationId
+        - clusterId
+        - stage
+        - mixpanelToken
+        - mixpanelAPIHost
+      properties:
+        organizationId:
+          description: The SaaS organization ID, if applicable.
+          type: string
+          nullable: true
+          example: null
+        clusterId:
+          description: The SaaS cluster ID, if applicable.
+          type: string
+          nullable: true
+          example: null
+        stage:
+          description: The cloud deployment stage (e.g., prod, int).
+          type: string
+          nullable: true
+          example: null
+        mixpanelToken:
+          description: The Mixpanel analytics token for the cloud UI.
+          type: string
+          nullable: true
+          example: null
+        mixpanelAPIHost:
+          description: The Mixpanel API host URL.
+          type: string
+          nullable: true
+          example: null
 
