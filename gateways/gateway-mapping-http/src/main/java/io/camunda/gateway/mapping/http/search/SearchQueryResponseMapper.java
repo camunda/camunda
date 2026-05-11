@@ -1053,6 +1053,7 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(instance.rootProcessInstanceKey()))
         .endDate(formatDateOrNull(instance.endDate()))
         .incidentKey(keyToStringOrNull(instance.incidentKey()))
+        .agentInstanceKey(null) // TODO: this will be filled in #51513
         .build();
   }
 
