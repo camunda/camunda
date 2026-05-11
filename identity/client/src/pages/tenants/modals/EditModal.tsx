@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
@@ -30,6 +30,11 @@ const EditModal: FC<UseEntityModalProps<Tenant>> = ({
 
   const [tenantName, setTenantName] = useState(tenant.name ?? "");
   const [description, setDescription] = useState(tenant.description ?? "");
+
+  useEffect(() => {
+    setTenantName(tenant.name ?? "");
+    setDescription(tenant.description ?? "");
+  }, [tenant.name, tenant.description]);
 
   const handleSubmit = async () => {
     const { success } = await callUpdateTenant({

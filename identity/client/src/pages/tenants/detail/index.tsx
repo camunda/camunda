@@ -67,9 +67,7 @@ const Details: FC = () => {
                     <OverflowMenu ariaLabel={t("openTenantContextMenu")}>
                       <OverflowMenuItem
                         itemText={t("edit")}
-                        onClick={() => {
-                          editTenant(tenant);
-                        }}
+                        onClick={() => editTenant(tenant)}
                       />
                       <OverflowMenuItem
                         itemText={t("delete")}
