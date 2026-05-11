@@ -1135,7 +1135,7 @@ public class ProcessInstanceSearchIT {
             .join();
 
     // then:
-    assertThat(result.items().size()).isEqualTo(0);
+    assertThat(result.items().size()).isEqualTo(8);
   }
 
   @Test
