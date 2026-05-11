@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.test.util.testcontainers;
 
+import io.camunda.webapps.schema.SupportedVersions;
 import java.time.Duration;
 import java.util.Objects;
 import org.opensearch.testcontainers.OpenSearchContainer;
@@ -28,7 +29,7 @@ public final class TestSearchContainers {
           .withTag(
               Objects.requireNonNullElse(
                   org.opensearch.client.RestClient.class.getPackage().getImplementationVersion(),
-                  "2.19.0"));
+                  SupportedVersions.SUPPORTED_OPENSEARCH_VERSION));
 
   private TestSearchContainers() {}
 
