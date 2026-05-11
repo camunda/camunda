@@ -36,13 +36,16 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.agrona.CloseHelper;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
@@ -68,12 +71,14 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   protected Context context;
 
   private final List<AutoCloseable> resourcesToClose = new ArrayList<>();
+  private LifecyclePolicyNameVerifier lifecyclePolicyNameVerifier;
 
   @BeforeEach
   void setup() {
     context = new ExporterTestContext().setPartitionId(PARTITION_ID);
     exporterMetrics = new CamundaExporterMetrics(context.getMeterRegistry());
     executor = Executors.newSingleThreadExecutor();
+    lifecyclePolicyNameVerifier = new LifecyclePolicyNameVerifier();
   }
 
   @AfterEach
@@ -189,6 +194,9 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
     assertThat(newIndexEntity)
         .describedAs("Expected %s to have been moved to %s", entity, dateIndex)
         .isEqualTo(entity);
+
+    lifecyclePolicyNameVerifier.verifyIndexHasLifecyclePolicy(
+        client, dateIndex, getExpectedLifecyclePolicyName());
   }
 
   protected void verifyNotMoved(
@@ -221,6 +229,10 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
         .describedAs(
             "Expected %s to still be in %s", entity, templateDescriptor.getFullQualifiedName())
         .isEqualTo(entity);
+  }
+
+  protected String getExpectedLifecyclePolicyName() {
+    return "camunda-retention-policy";
   }
 
   private ExporterResourceProvider exporterResourceProvider(final ExporterConfiguration config) {
@@ -289,6 +301,26 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository);
+
+  static class LifecyclePolicyNameVerifier {
+    private final Set<String> alreadyVerifiedIndexes = new HashSet<>();
+
+    void verifyIndexHasLifecyclePolicy(
+        final SearchClientAdapter client, final String indexName, final String expectedPolicy) {
+      // no need to check the same index over and over (as we're checking per-doc)
+      if (alreadyVerifiedIndexes.contains(indexName)) {
+        return;
+      }
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(10L))
+          .untilAsserted(
+              () -> {
+                final var policy = client.getLifecyclePolicyNameForIndex(indexName);
+                assertThat(policy).isEqualTo(expectedPolicy);
+              });
+      alreadyVerifiedIndexes.add(indexName);
+    }
+  }
 
   interface ArchiveJobConsumer<T> {
     void accept(T job, ExporterResourceProvider resourceProvider) throws Exception;
