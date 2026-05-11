@@ -20,6 +20,7 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -149,6 +150,41 @@ public class SearchClientAdapter {
           Requests.builder().method("GET").endpoint("_plugins/_ism/policies/" + policyName).build();
 
       return objectMapper.readTree(osClient.generic().execute(request).getBody().get().body());
+    }
+    return null;
+  }
+
+  public String getLifecyclePolicyNameForIndex(final String indexName) throws IOException {
+    if (elsClient != null) {
+      final var response = elsClient.indices().getSettings(req -> req.index(indexName));
+
+      final var state = response.result().get(indexName);
+      return Optional.ofNullable(state)
+          .map(co.elastic.clients.elasticsearch.indices.IndexState::settings)
+          .map(co.elastic.clients.elasticsearch.indices.IndexSettings::index)
+          .map(co.elastic.clients.elasticsearch.indices.IndexSettings::lifecycle)
+          .map(co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle::name)
+          .orElse(null);
+    } else if (osClient != null) {
+      final var request =
+          Requests.builder()
+              .method("GET")
+              .endpoint("_plugins/_ism/explain/" + indexName)
+              .query(Map.of("show_policy", "true"))
+              .build();
+
+      try (final var response = osClient.generic().execute(request)) {
+        final var json = objectMapper.readTree(response.getBody().get().body());
+        return Optional.ofNullable(json.get(indexName))
+            .filter(
+                explain -> {
+                  final var enabled = explain.get("enabled");
+                  return enabled != null && enabled.asBoolean();
+                })
+            .map(explain -> explain.get("policy_id"))
+            .map(JsonNode::asText)
+            .orElse(null);
+      }
     }
     return null;
   }
