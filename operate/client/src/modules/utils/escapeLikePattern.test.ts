@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {escapeLikePattern} from './escapeLikePattern';
+import {
+  escapeLikePattern,
+  escapeLikePatternsForCaseInsensitive,
+} from './escapeLikePattern';
 
 describe('escapeLikePattern', () => {
   it('wraps plain ASCII input in substring wildcards', () => {
@@ -35,5 +38,33 @@ describe('escapeLikePattern', () => {
 
   it('handles an empty string', () => {
     expect(escapeLikePattern('')).toBe('**');
+  });
+});
+
+describe('escapeLikePatternsForCaseInsensitive', () => {
+  it('emits as-typed, lowercase, UPPERCASE, and Title case variants for an all-lowercase input', () => {
+    expect(escapeLikePatternsForCaseInsensitive('order').sort()).toEqual(
+      ['*order*', '*Order*', '*ORDER*'].sort(),
+    );
+  });
+
+  it('emits the same set regardless of input casing', () => {
+    const fromLower = escapeLikePatternsForCaseInsensitive('order').sort();
+    const fromUpper = escapeLikePatternsForCaseInsensitive('ORDER').sort();
+    const fromTitle = escapeLikePatternsForCaseInsensitive('Order').sort();
+    expect(fromLower).toEqual(fromUpper);
+    expect(fromLower).toEqual(fromTitle);
+  });
+
+  it('deduplicates trivial inputs', () => {
+    // A single non-letter character has no case variant
+    expect(escapeLikePatternsForCaseInsensitive('1').sort()).toEqual(['*1*']);
+  });
+
+  it('escapes wildcards inside each variant', () => {
+    // as-typed "a*b", lower "a*b", upper "A*B", title-case "A*b" -> 3 unique
+    expect(escapeLikePatternsForCaseInsensitive('a*b').sort()).toEqual(
+      ['*a\\*b*', '*A\\*B*', '*A\\*b*'].sort(),
+    );
   });
 });

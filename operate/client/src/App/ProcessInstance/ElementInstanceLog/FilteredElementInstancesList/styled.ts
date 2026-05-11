@@ -21,14 +21,22 @@ const List = styled.ul`
 `;
 
 const RowButton = styled.button<{$selected: boolean}>`
-  display: block;
+  display: flex;
   width: 100%;
   border: none;
   background: transparent;
   text-align: left;
   cursor: pointer;
-  padding: 0;
+  // Bar's StateIcon is position: absolute at left: var(--cds-spacing-05).
+  // The row needs position: relative so the icon anchors here, plus enough
+  // left padding to clear the icon column (16px offset + 16px icon + gap).
+  position: relative;
+  padding: 0 var(--cds-spacing-05) 0
+    calc(var(--cds-spacing-05) + var(--cds-spacing-07));
+  min-height: 2rem;
+  align-items: center;
   color: inherit;
+  font: inherit;
 
   &:hover {
     background-color: var(--cds-layer-hover-01);
