@@ -61,11 +61,16 @@ services:
       timeout: 10s
       retries: 5
   zeebe:
-    image: camunda/zeebe:${ZEEBE_VERSION:-8.5.0}
+    image: camunda/zeebe:${ZEEBE_VERSION:-8.9.0}
     profiles: ['cloud', 'self-managed', 'cloud:elasticsearch', 'self-managed:elasticsearch']
     container_name: zeebe
     environment:
       - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m'
+      # Zeebe 8.9 enables gRPC + REST authentication by default; the legacy
+      # Optimize backend + e2e seeder talk to it unauthenticated, so opt out.
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE=none
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true
+      - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false
     ports:
       - '26500:26500'
       - '9600:9600'
@@ -81,7 +86,7 @@ services:
     depends_on:
       - elasticsearch
   zeebe-opensearch:
-    image: camunda/zeebe:${ZEEBE_VERSION:-8.5.0}
+    image: camunda/zeebe:${ZEEBE_VERSION:-8.9.0}
     profiles: ['cloud:opensearch', 'self-managed:opensearch']
     container_name: zeebe-opensearch
     environment:
@@ -103,39 +108,77 @@ services:
       - ../zeebe-application.yml:/usr/local/zeebe/config/application.yaml
     depends_on:
       - opensearch
+  postgres:
+    container_name: postgres
+    image: postgres:${POSTGRES_VERSION:-15-alpine}
+    profiles: ['self-managed', 'self-managed:opensearch', 'self-managed:elasticsearch']
+    environment:
+      POSTGRES_DB: bitnami_keycloak
+      POSTGRES_USER: bn_keycloak
+      POSTGRES_PASSWORD: bn_keycloak
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
   keycloak:
     container_name: keycloak
-    image: camunda/keycloak:quay-26@sha256:72f3630dfb4cee43107327ab4ce6fe812be06fea7f5f4b047c3aba09c7017390
+    # camunda/keycloak:26.3.3 is a bitnami-style image — uses KEYCLOAK_* env vars,
+    # not Quarkus KC_* CLI flags. Pinned to 26.3.x because camunda/identity:8.9.0
+    # uses an admin REST contract that 26.5.x has since changed.
+    image: camunda/keycloak:${KEYCLOAK_VERSION:-26.3.3}
     profiles: ['self-managed', 'self-managed:opensearch', 'self-managed:elasticsearch']
-    command: [start]
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
-      - '18080:8080'
+      - '18080:18080'
     healthcheck:
-      test: bash -c "echo -e 'GET /auth HTTP/1.0\r\n\r\n' >/dev/tcp/127.0.0.1/8080 || exit 1"
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/127.0.0.1/18080' || exit 1"]
       interval: 30s
       timeout: 15s
       retries: 5
       start_period: 30s
     environment:
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_HTTP_PORT: 18080
+      # bitnami's KEYCLOAK_HTTP_RELATIVE_PATH is silently ignored by the
+      # camunda/keycloak:26.3.x build, so we set the underlying Quarkus option
+      # directly to keep Keycloak rooted at /auth (matches what Identity and
+      # the legacy Optimize compose expect).
+      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
+      KC_HTTP_RELATIVE_PATH: /auth
+      KEYCLOAK_ENABLE_HEALTH_ENDPOINTS: "true"
+      KEYCLOAK_DATABASE_HOST: postgres
+      KEYCLOAK_DATABASE_PORT: 5432
+      KEYCLOAK_DATABASE_NAME: bitnami_keycloak
+      KEYCLOAK_DATABASE_USER: bn_keycloak
+      KEYCLOAK_DATABASE_PASSWORD: bn_keycloak
+      # The bitnami wrapper for Keycloak 26.3 maps KEYCLOAK_ADMIN_USER to
+      # --bootstrap-admin-username but does not pair the password, causing
+      # "bootstrap-admin-username available only when bootstrap admin password
+      # is set" on startup. Pass the Quarkus vars explicitly to compensate.
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_DB: dev-file
-      KC_CACHE: ispn
-      KC_HTTP_ENABLED: 'true'
-      KC_HTTP_RELATIVE_PATH: /auth
-      KC_HEALTH_ENABLED: 'true'
-      KC_HOSTNAME_STRICT: 'false'
   identity:
     depends_on:
-      - keycloak
+      keycloak:
+        condition: service_healthy
     restart: on-failure
     container_name: identity
-    image: camunda/identity:${IDENTITY_VERSION:-8.5.0}
+    image: camunda/identity:${IDENTITY_VERSION:-8.9.0}
     profiles: ['self-managed', 'self-managed:opensearch', 'self-managed:elasticsearch']
     ports:
       - '8081:8081'
+    volumes:
+      # Identity 8.9 reads its component / client / role / user bootstrap from a
+      # mounted application.yaml. Without this file it creates users but cannot
+      # find the realm roles to assign them, producing a 404 on
+      # KeycloakUserInitializer.assignRolesToUser. The legacy KEYCLOAK_USERS_*
+      # env-var seeding from earlier Identity versions is no longer supported.
+      - ./.identity/application.yaml:/app/application.yaml
     healthcheck:
       test: ['CMD', 'wget', '-q', '--tries=1', '--spider', 'http://localhost:8082/actuator/health']
       interval: 5s
@@ -143,45 +186,15 @@ services:
       retries: 30
       start_period: 60s
     environment:
-      SERVER_PORT: 8081
-      KEYCLOAK_URL: http://keycloak:8080/auth
-      IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
-      KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
-      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:3000
-      KEYCLOAK_USERS_0_USERNAME: 'ourief'
-      KEYCLOAK_USERS_0_PASSWORD: 'ourief'
-      KEYCLOAK_USERS_0_FIRST_NAME: 'ourief'
-      KEYCLOAK_USERS_0_ROLES_0: 'Identity'
-      KEYCLOAK_USERS_0_ROLES_1: 'Optimize'
-      KEYCLOAK_USERS_1_USERNAME: 'comentse'
-      KEYCLOAK_USERS_1_PASSWORD: 'comentse'
-      KEYCLOAK_USERS_1_FIRST_NAME: 'comentse'
-      KEYCLOAK_USERS_1_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_2_USERNAME: 'abook1998'
-      KEYCLOAK_USERS_2_PASSWORD: 'abook1998'
-      KEYCLOAK_USERS_2_FIRST_NAME: 'abook1998'
-      KEYCLOAK_USERS_2_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_3_USERNAME: 'aboys1960'
-      KEYCLOAK_USERS_3_PASSWORD: 'aboys1960'
-      KEYCLOAK_USERS_3_FIRST_NAME: 'aboys1960'
-      KEYCLOAK_USERS_3_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_4_USERNAME: 'abrount'
-      KEYCLOAK_USERS_4_PASSWORD: 'abrount'
-      KEYCLOAK_USERS_4_FIRST_NAME: 'abrount'
-      KEYCLOAK_USERS_4_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_5_USERNAME: 'abse1978'
-      KEYCLOAK_USERS_5_PASSWORD: 'abse1978'
-      KEYCLOAK_USERS_5_FIRST_NAME: 'abse1978'
-      KEYCLOAK_USERS_5_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_6_USERNAME: 'demo'
-      KEYCLOAK_USERS_6_PASSWORD: 'demo'
-      KEYCLOAK_USERS_6_EMAIL: 'demo@example.com'
-      KEYCLOAK_USERS_6_FIRST_NAME: 'demo'
-      KEYCLOAK_USERS_6_ROLES_0: 'Optimize'
-      KEYCLOAK_USERS_6_ROLES_1: 'Identity'
+      HOST: localhost
+      KEYCLOAK_HOST: keycloak
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      CAMUNDA_IDENTITY_CLIENT_SECRET: demo-identity-secret
   operate:
     profiles: ['self-managed', 'self-managed:elasticsearch']
-    image: camunda/operate:${OPERATE_VERSION:-8.5.0}
+    image: camunda/operate:${OPERATE_VERSION:-8.9.0}
     container_name: operate
     environment:
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
@@ -211,7 +224,7 @@ services:
     restart: always
   operate-opensearch:
     profiles: ['self-managed:opensearch']
-    image: camunda/operate:${OPERATE_VERSION:-8.5.0}
+    image: camunda/operate:${OPERATE_VERSION:-8.9.0}
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080
