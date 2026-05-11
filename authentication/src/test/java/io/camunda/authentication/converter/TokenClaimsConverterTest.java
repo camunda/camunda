@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.converter;
 
-import static io.camunda.security.auth.OidcGroupsLoader.DERIVED_GROUPS_ARE_NOT_STRING_ARRAY;
+import static io.camunda.security.core.oidc.OidcGroupsExtractor.DERIVED_GROUPS_ARE_NOT_STRING_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;

@@ -193,7 +193,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-library-core</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>

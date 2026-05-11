@@ -11,9 +11,9 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
-import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.auth.OidcPrincipalLoader.OidcPrincipals;
+import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.util.Either;
@@ -58,7 +58,7 @@ public sealed interface AuthenticationHandler {
     private final OidcClaimsProvider claimsProvider;
     private final OidcConfiguration oidcAuthenticationConfiguration;
     private final OidcPrincipalLoader oidcPrincipalLoader;
-    private final OidcGroupsLoader oidcGroupsLoader;
+    private final OidcGroupsExtractor oidcGroupsExtractor;
 
     public Oidc(
         final JwtDecoder jwtDecoder,
@@ -72,7 +72,7 @@ public sealed interface AuthenticationHandler {
           new OidcPrincipalLoader(
               oidcAuthenticationConfiguration.getUsernameClaim(),
               oidcAuthenticationConfiguration.getClientIdClaim());
-      oidcGroupsLoader = new OidcGroupsLoader(oidcAuthenticationConfiguration.getGroupsClaim());
+      oidcGroupsExtractor = new OidcGroupsExtractor(oidcAuthenticationConfiguration.getGroupsClaim());
     }
 
     @Override
@@ -111,7 +111,7 @@ public sealed interface AuthenticationHandler {
               !oidcAuthenticationConfiguration.isGroupsClaimConfigured());
       if (oidcAuthenticationConfiguration.isGroupsClaimConfigured()) {
         try {
-          context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(claims));
+          context = context.withValue(GROUPS_CLAIMS, oidcGroupsExtractor.extract(claims));
         } catch (final Exception e) {
           LOG.warn("Rejecting bearer token: OIDC groups loader failed", e);
           return Either.left(
