@@ -58,6 +58,7 @@ public final class AuthFailureHandler
     final var principal = request.getUserPrincipal();
     if (principal instanceof final Authentication auth && auth.isAuthenticated()) {
       handleFailure(request, response, HttpStatus.FORBIDDEN, error);
+      return;
     }
 
     handleFailure(request, response, HttpStatus.UNAUTHORIZED, error);
