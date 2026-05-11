@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -179,6 +180,67 @@ public class UsageMetricRpiTest {
     final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
     assertThat(bucket).isNotNull();
     assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
+  }
+
+  @Test
+  public void shouldTrackRpiMetricWhenProcessStartedViaMessageCorrelationCommand() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .message("startMessage")
+            .endEvent()
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    // when
+    engine.messageCorrelation().withName("startMessage").withCorrelationKey("key-1").correlate();
+
+    // then
+    engine.awaitProcessingOf(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .filterRootScope()
+            .getFirst());
+
+    final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
+    assertThat(bucket).isNotNull();
+    assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L);
+  }
+
+  @Test
+  public void shouldTrackRpiMetricWhenProcessStartedViaBufferedMessageCorrelation() {
+    // given - a process with a message start event and a service task to keep the instance alive
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .message("startMessage")
+            .serviceTask("task", t -> t.zeebeJobType("task"))
+            .endEvent()
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    // start the first process instance via message publication
+    engine.message().withName("startMessage").withCorrelationKey("key-1").publish();
+    final var firstJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType("task").getFirst();
+
+    // publish a second message with the same correlation key — it will be buffered because the
+    // first instance holds the correlation key lock
+    engine.message().withName("startMessage").withCorrelationKey("key-1").publish();
+
+    // when - completing the first instance triggers buffered message correlation
+    engine.job().withKey(firstJob.getKey()).complete();
+
+    // then - wait for the second root instance to be activated and verify two RPIs are counted
+    engine.awaitProcessingOf(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .filterRootScope()
+            .skip(1)
+            .getFirst());
+
+    final var bucket = engine.getProcessingState().getUsageMetricState().getActiveBucket();
+    assertThat(bucket).isNotNull();
+    assertThat(bucket.getTenantRPIMap()).containsEntry(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L);
   }
 
   @Test
