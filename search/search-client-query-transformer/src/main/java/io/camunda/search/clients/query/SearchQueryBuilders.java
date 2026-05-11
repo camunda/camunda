@@ -501,8 +501,7 @@ public final class SearchQueryBuilders {
                       case EXISTS -> bool(b -> b.must(List.of(exists(field)))).toSearchQuery();
 
                       case NOT_EXISTS ->
-                          bool(b -> b.must(List.of(exists(field))).mustNot(List.of(exists(field))))
-                              .toSearchQuery();
+                          bool(b -> b.mustNot(List.of(exists(field)))).toSearchQuery();
 
                       case IN ->
                           or(op.values().stream().map(value -> matchPhrase(field, value)).toList());
