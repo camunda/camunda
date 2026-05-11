@@ -187,6 +187,20 @@
       <artifactId>spring-security-oauth2-jose</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>

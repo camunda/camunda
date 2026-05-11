@@ -17,24 +17,14 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
-import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -72,28 +62,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     super(
         BrokerModuleConfiguration.class,
         CommonsModuleConfiguration.class,
-        UnifiedConfigurationHelper.class,
-        UnifiedConfiguration.class,
-        PrimaryStorageBackupPropertiesOverride.class,
-        NodeIdProviderConfiguration.class,
-        BrokerBasedPropertiesOverride.class,
-        GatewayBasedPropertiesOverride.class,
-        GatewayRestPropertiesOverride.class,
-        SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class,
-        SearchEngineSchemaManagerPropertiesOverride.class);
+        NodeIdProviderConfiguration.class);
 
     unifiedConfig = new Camunda();
 
     // Initialize unified config with test-friendly defaults
     initializeUnifiedConfigDefaults();
 
-    StandaloneCamunda.getDefaultProperties(false)
-        .forEach(
-            (key, value) -> {
-              withProperty(key, value);
-            });
+    StandaloneCamunda.getDefaultProperties(false).forEach(this::withProperty);
 
     // this is required to prevent default spring boot 4.0 security setup to kick in
     withProperty(

@@ -11,11 +11,9 @@ import java.time.Duration;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.LongSupplier;
 import net.jcip.annotations.ThreadSafe;
-import org.jspecify.annotations.NullMarked;
 
 /** Measures the rate of change for monotonically increasing values. */
 @ThreadSafe
-@NullMarked
 public final class RateMeasurement {
   private final LongSupplier clock;
   private final LinkedBlockingDeque<Observation> observations;

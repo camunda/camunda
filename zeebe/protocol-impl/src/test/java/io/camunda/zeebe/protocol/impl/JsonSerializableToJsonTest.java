@@ -20,6 +20,8 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
@@ -41,6 +43,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequiremen
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceReexportRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
@@ -96,6 +99,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -652,6 +656,8 @@ final class JsonSerializableToJsonTest {
               record
                   .setExpression("=10 + 5")
                   .setResultValue(wrapString("15"))
+                  .setProcessInstanceKey(1)
+                  .setElementInstanceKey(2)
                   .setTenantId("test-tenant")
                   .setWarnings(List.of("warning1", "warning2"))
                   .setVariables(VARIABLES_MSGPACK);
@@ -662,6 +668,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId":"test-tenant",
                   "expression":"=10 + 5",
                   "resultValue":49,
+                  "processInstanceKey":1,
+                  "elementInstanceKey":2,
                   "warnings":["warning1","warning2"],
                   "variables":{
                     "foo":"bar"
@@ -4624,6 +4632,117 @@ final class JsonSerializableToJsonTest {
       "configKey": -1
     }
     """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// ResourceReexportRecord /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ResourceReexportRecord",
+        (Supplier<ResourceReexportRecord>)
+            () -> new ResourceReexportRecord().setResourceKey(123L).setTenantId("tenant-1"),
+        """
+        {
+          "resourceKey": 123,
+          "tenantId": "tenant-1"
+        }
+        """
+      },
+      {
+        "Empty ResourceReexportRecord",
+        (Supplier<ResourceReexportRecord>) ResourceReexportRecord::new,
+        """
+        {
+          "resourceKey": -1,
+          "tenantId": ""
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// AgentInstanceRecord //////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AgentInstanceRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final AgentInstanceRecord record =
+                  new AgentInstanceRecord()
+                      .setAgentInstanceKey(2251799813685251L)
+                      .setElementInstanceKey(2251799813685249L)
+                      .setElementId("invoice-data-extraction-agent")
+                      .setProcessInstanceKey(2251799813685248L)
+                      .setProcessDefinitionKey(2251799813685100L)
+                      .setProcessDefinitionVersion(3)
+                      .setVersionTag("v1.2")
+                      .setTenantId("<default>")
+                      .setStatus(AgentInstanceStatus.TOOL_CALLING)
+                      .setTools(
+                          List.of(
+                              new AgentInstanceTool()
+                                  .setName("extract_line_items")
+                                  .setElementId("extract-line-items-task"),
+                              new AgentInstanceTool()
+                                  .setName("MCP_ocr___scan_document")
+                                  .setElementId("MCP_ocr")));
+              record
+                  .getDefinition()
+                  .setModel("gpt-4o")
+                  .setProvider("openai")
+                  .setSystemPrompt(
+                      "Extract vendor, amount, date, and line items from the invoice.");
+              record.getLimits().setMaxTokens(8000L).setMaxModelCalls(10).setMaxToolCalls(20);
+              record
+                  .getMetrics()
+                  .setInputTokens(512L)
+                  .setOutputTokens(148L)
+                  .setModelCalls(1)
+                  .setToolCalls(1);
+              return record;
+            },
+        """
+        {
+          "agentInstanceKey": 2251799813685251,
+          "elementInstanceKey": 2251799813685249,
+          "elementId": "invoice-data-extraction-agent",
+          "processInstanceKey": 2251799813685248,
+          "processDefinitionKey": 2251799813685100,
+          "processDefinitionVersion": 3,
+          "versionTag": "v1.2",
+          "tenantId": "<default>",
+          "status": "TOOL_CALLING",
+          "definition": {
+            "model": "gpt-4o",
+            "provider": "openai",
+            "systemPrompt": "Extract vendor, amount, date, and line items from the invoice."
+          },
+          "limits": { "maxTokens": 8000, "maxModelCalls": 10, "maxToolCalls": 20 },
+          "metrics": { "inputTokens": 512, "outputTokens": 148, "modelCalls": 1, "toolCalls": 1 },
+          "tools": [
+            { "name": "extract_line_items", "description": "", "elementId": "extract-line-items-task" },
+            { "name": "MCP_ocr___scan_document", "description": "", "elementId": "MCP_ocr" }
+          ]
+        }
+        """
+      },
+      {
+        "Empty AgentInstanceRecord",
+        (Supplier<UnifiedRecordValue>) AgentInstanceRecord::new,
+        """
+        {
+          "agentInstanceKey": -1,
+          "elementInstanceKey": -1,
+          "elementId": "",
+          "processInstanceKey": -1,
+          "processDefinitionKey": -1,
+          "processDefinitionVersion": -1,
+          "versionTag": "",
+          "tenantId": "<default>",
+          "status": "INITIALIZING",
+          "definition": { "model": "", "provider": "", "systemPrompt": "" },
+          "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
+          "metrics": { "inputTokens": 0, "outputTokens": 0, "modelCalls": 0, "toolCalls": 0 },
+          "tools": []
+        }
+        """
       }
     };
   }

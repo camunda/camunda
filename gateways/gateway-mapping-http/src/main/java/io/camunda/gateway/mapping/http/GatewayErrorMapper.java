@@ -10,9 +10,11 @@ package io.camunda.gateway.mapping.http;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -37,22 +39,29 @@ public class GatewayErrorMapper {
    * @param error the {@link ServiceException}, can be wrapped in a Java concurrent exception
    * @return the problem detail mapping the service exception content respectively
    */
-  public static ProblemDetail mapErrorToProblem(final Throwable error) {
+  public static @Nullable ProblemDetail mapErrorToProblem(final @Nullable Throwable error) {
     if (error == null) {
       return null;
     }
     // ServiceExceptions can be wrapped in Java exceptions because they are handled in Java futures
     final var exception = unwrapError(error);
     if (exception instanceof final ServiceException se) {
-      return createProblemDetail(mapStatus(se.getStatus()), se.getMessage(), se.getStatus().name());
+      return createProblemDetail(
+          mapStatus(se.getStatus()),
+          Objects.requireNonNullElse(se.getMessage(), ""),
+          se.getStatus().name());
     } else if (exception instanceof final AuthenticationException ae) {
       LOG.warn("Expected to handle REST request, but an authentication error occurred", error);
       return createProblemDetail(
-          HttpStatus.UNAUTHORIZED, ae.getMessage(), HttpStatus.UNAUTHORIZED.name());
+          HttpStatus.UNAUTHORIZED,
+          Objects.requireNonNullElse(ae.getMessage(), ""),
+          HttpStatus.UNAUTHORIZED.name());
     } else if (exception instanceof final AccessDeniedException ade) {
       LOG.warn("Expected to handle REST request, but access was denied", error);
       return createProblemDetail(
-          HttpStatus.FORBIDDEN, ade.getMessage(), HttpStatus.FORBIDDEN.name());
+          HttpStatus.FORBIDDEN,
+          Objects.requireNonNullElse(ade.getMessage(), ""),
+          HttpStatus.FORBIDDEN.name());
     } else {
       LOG.error("Expected to handle REST request, but an unexpected error occurred", error);
       return createProblemDetail(
@@ -71,7 +80,10 @@ public class GatewayErrorMapper {
   public static Throwable unwrapError(final Throwable throwable) {
     // ServiceExceptions can be wrapped in Java exceptions because they are handled in Java futures
     if (throwable instanceof CompletionException || throwable instanceof ExecutionException) {
-      return throwable.getCause();
+      final var cause = throwable.getCause();
+      if (cause != null) {
+        return cause;
+      }
     }
     return throwable;
   }

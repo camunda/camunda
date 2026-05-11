@@ -229,6 +229,10 @@ jobs:
         with:
           work-dir: ./optimize
 
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
+
       - name: Clean release
         run: |
           ./mvnw release:clean
@@ -334,7 +338,8 @@ jobs:
           DATE="$(date +%FT%TZ)"
           export DATE
           export REVISION="${REVISION}"
-          export BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+          export BASE_IMAGE="reg.mini.dev/1212/openjre-base:25-dev"
+          export BASE_DIGEST="sha256:e2772c8469b0b3cfc792708153d075fcf17778444d6d57792e4ba83d49bf82e6"
 
           # if CI (GHA) export the variables for pushing in a later step
           if [ "${CI}" = "true" ]; then
@@ -349,6 +354,7 @@ jobs:
               --build-arg DATE="${DATE}" \
               --build-arg REVISION="${REVISION}" \
               --build-arg BASE_IMAGE="${BASE_IMAGE}" \
+              --build-arg BASE_DIGEST="${BASE_DIGEST}" \
               --provenance false \
               --load \
               -f optimize.Dockerfile \
@@ -367,7 +373,7 @@ jobs:
           project_name: smoketest
         env:
           OPTIMIZE_IMAGE_TAG: ${{ env.RELEASE_VERSION }}
-          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
           ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_docker_version }}
           IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
 

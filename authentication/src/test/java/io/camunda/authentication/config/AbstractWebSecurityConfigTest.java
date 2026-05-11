@@ -23,7 +23,7 @@ import static com.google.common.net.HttpHeaders.X_FRAME_OPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.config.controllers.TestApiController;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
 import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
 import org.springframework.beans.factory.annotation.Autowired;

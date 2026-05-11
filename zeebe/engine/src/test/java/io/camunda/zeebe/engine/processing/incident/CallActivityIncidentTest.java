@@ -16,10 +16,12 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -351,6 +353,138 @@ public final class CallActivityIncidentTest {
                 .limit(2))
         .extracting(Record::getIntent)
         .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+  }
+
+  // Regression test for https://github.com/camunda/camunda/issues/50014.
+  @Test
+  public void shouldExposeWrappingSubprocessInElementInstancePathWhenCallActivityIsNested() {
+    // given
+    final var wrappedParentProcessId = Strings.newRandomValidBpmnId();
+    final var wrapperSubprocessId = "wrapper-subprocess";
+    final var wrappedCallActivityId = "call";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent-wrapped.bpmn",
+            Bpmn.createExecutableProcess(wrappedParentProcessId)
+                .startEvent()
+                .subProcess(
+                    wrapperSubprocessId,
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .callActivity(
+                                wrappedCallActivityId, c -> c.zeebeProcessId(childProcessId))
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var failingJobType = "failing-" + Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-child.bpmn",
+            Bpmn.createExecutableProcess(childProcessId)
+                .startEvent()
+                .serviceTask("failing", t -> t.zeebeJobType(failingJobType))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long parentProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(wrappedParentProcessId).create();
+
+    final long wrapperSubprocessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(parentProcessInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    final long callActivityInstanceKey = getCallActivityInstance(parentProcessInstanceKey).getKey();
+
+    final long childProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(parentProcessInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getKey();
+
+    final Record<JobRecordValue> failingJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(childProcessInstanceKey)
+            .withType(failingJobType)
+            .getFirst();
+    final long failingElementInstanceKey = failingJob.getValue().getElementInstanceKey();
+
+    // when
+    ENGINE.job().ofInstance(childProcessInstanceKey).withType(failingJobType).withRetries(0).fail();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(childProcessInstanceKey)
+            .getFirst();
+
+    assertThat(incident.getValue().getElementInstancePath())
+        .containsExactly(
+            List.of(
+                parentProcessInstanceKey, wrapperSubprocessInstanceKey, callActivityInstanceKey),
+            List.of(childProcessInstanceKey, failingElementInstanceKey));
+  }
+
+  // Regression test for https://github.com/camunda/camunda/issues/50014.
+  @Test
+  public void shouldExposeFullCallHierarchyWhenIncidentOccursAfterChildHasProgressed() {
+    // given
+    final var firstJobType = "first-" + Strings.newRandomValidBpmnId();
+    final var failingJobType = "failing-" + Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-child.bpmn",
+            Bpmn.createExecutableProcess(childProcessId)
+                .startEvent()
+                .serviceTask("first", t -> t.zeebeJobType(firstJobType))
+                .serviceTask("failing", t -> t.zeebeJobType(failingJobType))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long parentProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+    final long callActivityInstanceKey = getCallActivityInstance(parentProcessInstanceKey).getKey();
+    final long childProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(parentProcessInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getKey();
+
+    ENGINE.job().ofInstance(childProcessInstanceKey).withType(firstJobType).complete();
+
+    final long failingElementInstanceKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(childProcessInstanceKey)
+            .withType(failingJobType)
+            .getFirst()
+            .getValue()
+            .getElementInstanceKey();
+
+    // when
+    ENGINE.job().ofInstance(childProcessInstanceKey).withType(failingJobType).withRetries(0).fail();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(childProcessInstanceKey)
+            .getFirst();
+
+    assertThat(incident.getValue().getElementInstancePath())
+        .containsExactly(
+            List.of(parentProcessInstanceKey, callActivityInstanceKey),
+            List.of(childProcessInstanceKey, failingElementInstanceKey));
   }
 
   private Record<ProcessInstanceRecordValue> getCallActivityInstance(

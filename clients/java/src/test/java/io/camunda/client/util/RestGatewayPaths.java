@@ -120,6 +120,7 @@ public class RestGatewayPaths {
       REST_API_PATH + "/incidents/statistics/process-instances-by-definition";
   private static final String URL_RESOURCE = REST_API_PATH + "/resources/%s";
   private static final String URL_RESOURCE_CONTENT = URL_RESOURCE + "/content";
+  private static final String URL_RESOURCE_CONTENT_BINARY = URL_RESOURCE + "/content/binary";
   private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR =
       REST_API_PATH + "/incidents/statistics/process-instances-by-error";
   private static final String URL_GLOBAL_JOB_STATISTICS = REST_API_PATH + "/jobs/statistics/global";
@@ -459,6 +460,10 @@ public class RestGatewayPaths {
 
   public static String getResourceContentUrl(final String resourceKey) {
     return String.format(URL_RESOURCE_CONTENT, resourceKey);
+  }
+
+  public static String getResourceContentBinaryUrl(final String resourceKey) {
+    return String.format(URL_RESOURCE_CONTENT_BINARY, resourceKey);
   }
 
   public static String getGlobalJobStatisticsUrl() {

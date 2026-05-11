@@ -95,6 +95,8 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getCoverageReportProperties().getCoverageReportDirectory();
   public static final List<String> COVERAGE_EXCLUDED_PROCESSES =
       PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedProcesses();
+  public static final List<String> COVERAGE_EXCLUDED_DECISIONS =
+      PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedDecisions();
 
   public static final AssertionProperties ASSERTION_PROPERTIES =
       PROPERTIES_UTIL.getAssertionProperties();

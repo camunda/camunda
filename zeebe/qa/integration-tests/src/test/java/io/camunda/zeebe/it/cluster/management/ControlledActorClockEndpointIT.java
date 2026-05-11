@@ -94,21 +94,25 @@ final class ControlledActorClockEndpointIT {
     RecordingExporter.records().limit(1).await();
 
     // then - records are exported with a timestamp matching the offset time
+    // Snapshot records before sampling the upper bound so every record in the snapshot was
+    // produced before `Instant.now()` is read; otherwise async records (e.g. from the periodic
+    // job/usage metrics schedulers) can land between the sample and the assertion.
+    final var snapshot = RecordingExporter.getRecords().stream().toList();
     final var expectedUpperBound = Instant.now().plus(offset);
     final var expectedLowerBound = beforeRecords.plus(offset);
     assertThat(response.statusCode()).as("/add request was successful").isEqualTo(200);
     assertThat(response.body().instant())
         .as("returned instant is close to expected bound")
         .isCloseTo(expectedUpperBound, within(30, ChronoUnit.SECONDS));
-    assertThat(RecordingExporter.getRecords())
+    assertThat(snapshot)
         .as("all exported records after the /add request have an offset of 5 hours")
         .isNotEmpty()
         .allSatisfy(
             record ->
                 assertThat(Instant.ofEpochMilli(record.getTimestamp()))
                     .as("record has offset timestamp")
-                    .isBefore(expectedUpperBound)
-                    .isAfter(expectedLowerBound));
+                    .isBeforeOrEqualTo(expectedUpperBound)
+                    .isAfterOrEqualTo(expectedLowerBound));
   }
 
   private Builder buildRequest(final String operation) {

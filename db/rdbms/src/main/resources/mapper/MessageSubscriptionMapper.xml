@@ -43,7 +43,7 @@
     PARTITION_ID,
     PROCESS_DEFINITION_NAME,
     PROCESS_DEFINITION_VERSION,
-    EXTENSION_PROPERTIES,
+    TOOL_PROPERTIES,
     TOOL_NAME,
     INBOUND_CONNECTOR_TYPE
     FROM ${prefix}MESSAGE_SUBSCRIPTION
@@ -194,7 +194,7 @@
     <result column="PARTITION_ID" property="partitionId" javaType="java.lang.Integer" />
     <result column="PROCESS_DEFINITION_NAME" property="processDefinitionName" javaType="java.lang.String" />
     <result column="PROCESS_DEFINITION_VERSION" property="processDefinitionVersion" javaType="java.lang.Integer" />
-    <result column="EXTENSION_PROPERTIES" property="serializedExtensionProperties" javaType="java.lang.String" />
+    <result column="TOOL_PROPERTIES" property="serializedToolProperties" javaType="java.lang.String" />
     <result column="TOOL_NAME" property="toolName" javaType="java.lang.String" />
     <result column="INBOUND_CONNECTOR_TYPE" property="inboundConnectorType" javaType="java.lang.String" />
   </resultMap>
@@ -218,7 +218,7 @@
                                                PARTITION_ID,
                                                PROCESS_DEFINITION_NAME,
                                                PROCESS_DEFINITION_VERSION,
-                                               EXTENSION_PROPERTIES,
+                                               TOOL_PROPERTIES,
                                                TOOL_NAME,
                                                INBOUND_CONNECTOR_TYPE
     )
@@ -239,7 +239,7 @@
             #{partitionId},
             #{processDefinitionName},
             #{processDefinitionVersion},
-            #{serializedExtensionProperties},
+            #{serializedToolProperties},
             #{toolName},
             #{inboundConnectorType}
     )
@@ -260,7 +260,7 @@
         TENANT_ID = #{tenantId},
         PROCESS_DEFINITION_NAME = #{processDefinitionName},
         PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
-        EXTENSION_PROPERTIES = #{serializedExtensionProperties},
+        TOOL_PROPERTIES = #{serializedToolProperties},
         TOOL_NAME = #{toolName},
         INBOUND_CONNECTOR_TYPE = #{inboundConnectorType}
     WHERE MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey}

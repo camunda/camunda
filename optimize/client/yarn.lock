@@ -1426,11 +1426,6 @@
     react-markdown "10.1.0"
     semver "7.7.4"
 
-"@camunda/camunda-optimize-composite-components@^0.0.17":
-  version "0.0.17"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-optimize-composite-components/-/camunda-optimize-composite-components-0.0.17.tgz#c58b91bf66ae754df5b2998503deb5b7c3dead07"
-  integrity sha512-Kpj0a+GZxqrq+LaPLDqXtkWpYexeCzSmthpxN+QojMv5l1ykicvtAQ9LCkYr68EuZoUH77hbeixu77paua0mAg==
-
 "@carbon/colors@^11.30.0":
   version "11.30.0"
   resolved "https://registry.yarnpkg.com/@carbon/colors/-/colors-11.30.0.tgz#a4dfd1372558338618fd04f2b36318d5b1d9e95e"

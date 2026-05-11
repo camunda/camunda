@@ -18,16 +18,11 @@ package io.camunda.process.test.impl.runtime;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.api.response.PartitionBrokerHealth;
-import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Optional;
 import java.util.function.Supplier;
-import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,17 +71,10 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
 
     // check connection to remote runtime
     try {
-      Awaitility.await()
-          .atMost(runtimeConnectionTimeout)
-          .pollInterval(Duration.ofSeconds(1))
-          .pollDelay(Duration.ZERO)
-          .ignoreExceptions()
-          .untilAsserted(this::checkConnectionToRemoteRuntime);
-    } catch (final ConditionTimeoutException timeout) {
-      throw new RuntimeException(
-          Optional.ofNullable(timeout.getCause())
-              .map(Throwable::getMessage)
-              .orElse("Failed to connect to remote Camunda runtime."));
+      final Topology topology = waitUntilClusterReady(runtimeConnectionTimeout);
+      LOGGER.info("Remote Camunda runtime connected. [version: {}]", topology.getGatewayVersion());
+    } catch (final RuntimeException e) {
+      throw new RuntimeException("Failed to connect to remote Camunda runtime.", e);
     }
   }
 
@@ -115,40 +103,9 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
     return camundaClientBuilderFactory;
   }
 
-  private void checkConnectionToRemoteRuntime() {
-    final Topology topology = queryRemoteRuntimeHealth();
-
-    final boolean isHealthy =
-        topology.getBrokers().stream()
-            .flatMap(brokerInfo -> brokerInfo.getPartitions().stream())
-            .map(PartitionInfo::getHealth)
-            .allMatch(PartitionBrokerHealth.HEALTHY::equals);
-    final boolean hasAtLeastOnePartition =
-        topology.getBrokers().stream()
-            .anyMatch(brokerInfo -> !brokerInfo.getPartitions().isEmpty());
-
-    if (isHealthy && hasAtLeastOnePartition) {
-      LOGGER.info("Remote Camunda runtime connected. [version: {}]", topology.getGatewayVersion());
-    } else if (!isHealthy) {
-      final String errorMessage =
-          String.format("Remote Camunda runtime is unhealthy. [topology: %s]", topology);
-      throw new RemoteRuntimeUnhealthyException(errorMessage);
-    } else {
-      final String errorMessage =
-          String.format(
-              "Remote Camunda runtime has zero available partitions. Please check the remote runtime logs for errors. [topology: %s]",
-              topology);
-      throw new RemoteRuntimeHasNoAvailablePartitionsException(errorMessage);
-    }
-  }
-
-  private Topology queryRemoteRuntimeHealth() {
-    try (final CamundaClient camundaClient = getCamundaClientBuilderFactory().get().build()) {
-
-      return camundaClient.newTopologyRequest().send().join();
-    } catch (final Exception e) {
-      throw new RuntimeException("Failed to connect to remote Camunda runtime.", e);
-    }
+  @Override
+  public Topology waitUntilClusterReady(final Duration timeout) {
+    return CamundaRuntimeHealthChecker.waitUntilClusterReady(camundaClientBuilderFactory, timeout);
   }
 
   private CamundaClientConfiguration getClientConfiguration(
@@ -162,19 +119,5 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
   @Override
   public void close() throws Exception {
     // nothing to close. the runtime is managed remotely.
-  }
-
-  public static class RemoteRuntimeUnhealthyException extends IllegalStateException {
-
-    public RemoteRuntimeUnhealthyException(final String message) {
-      super(message);
-    }
-  }
-
-  public static class RemoteRuntimeHasNoAvailablePartitionsException extends IllegalStateException {
-
-    public RemoteRuntimeHasNoAvailablePartitionsException(final String message) {
-      super(message);
-    }
   }
 }

@@ -31,6 +31,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
+import static io.camunda.zeebe.protocol.record.ValueType.RESOURCE_REEXPORT;
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
 import static io.camunda.zeebe.protocol.record.ValueType.RUNTIME_INSTRUCTION;
 import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL;
@@ -73,6 +74,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -143,6 +145,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
+import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.time.Instant;
@@ -226,7 +229,8 @@ public class CompactRecordLogger {
           entry(EXPRESSION.name(), "EXPR"),
           entry(IDENTITY_SETUP.name(), "ID"),
           entry(CHECKPOINT.name(), "CHK"),
-          entry(GLOBAL_LISTENER.name(), "GL"));
+          entry(GLOBAL_LISTENER.name(), "GL"),
+          entry(RESOURCE_REEXPORT.name(), "RES_REEX"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -322,6 +326,8 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GLOBAL_LISTENER_BATCH, this::summarizeGlobalListenerBatch);
     valueLoggers.put(ValueType.JOB_METRICS_BATCH, this::summarizeJobMetricsBatch);
     valueLoggers.put(ValueType.GLOBAL_LISTENER, this::summarizeGlobalListener);
+    valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
+    valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -502,6 +508,29 @@ public class CompactRecordLogger {
 
   private String summarizeMiscValue(final Record<?> record) {
     return record.getValue().getClass().getSimpleName() + " " + record.getValue().toJson();
+  }
+
+  private String summarizeAgentInstance(final Record<?> record) {
+    final var value = (AgentInstanceRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result.append(shortenKey(value.getAgentInstanceKey()));
+    result.append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
+    result.append(
+        summarizeProcessInformation(
+            value.getProcessDefinitionKey(), value.getProcessInstanceKey()));
+
+    final var definition = value.getDefinition();
+    if (definition != null && !StringUtils.isEmpty(definition.getModel())) {
+      result.append(" model:").append(definition.getModel());
+      if (!StringUtils.isEmpty(definition.getProvider())) {
+        result.append("/").append(definition.getProvider());
+      }
+    }
+
+    result.append(" status:").append(value.getStatus());
+
+    return result.toString();
   }
 
   private String summarizeDeployment(final Record<?> record) {
@@ -1920,6 +1949,18 @@ public class CompactRecordLogger {
     }
 
     return result.append(formatTenant(value));
+  }
+
+  private String summarizeResourceReexport(final Record<?> record) {
+    final var value = (ResourceReexportRecordValue) record.getValue();
+    final var resourceKey = value.getResourceKey();
+    final var tenantId = value.getTenantId();
+    final var result = new StringBuilder();
+
+    result.append("resourceKey:").append(shortenKey(resourceKey));
+    result.append("tenantId:").append(tenantId);
+
+    return result.toString();
   }
 
   private String formatPinnedTime(final long time) {

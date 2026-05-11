@@ -9,14 +9,11 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
+import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
-import io.camunda.configuration.beanoverrides.RestorePropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
@@ -47,11 +44,7 @@ import org.springframework.context.annotation.Import;
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.restore"})
 @Import(
     value = {
-      // Unified Configuration classes
-      UnifiedConfigurationHelper.class,
-      UnifiedConfiguration.class,
-      BrokerBasedPropertiesOverride.class,
-      RestorePropertiesOverride.class,
+      UnifiedConfigurationModule.class,
       WorkingDirectoryConfiguration.class,
       // RDBMS Configuration - conditional on secondary storage type being RDBMS.
       // When active, provides ExporterPositionMapper for RDBMS-aware restore.

@@ -8,18 +8,18 @@
 package io.camunda.authentication.config.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
-import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
 import io.camunda.authentication.handler.AuthFailureHandler;
-import io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder;
 import io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationConverter;
-import io.camunda.security.auth.CamundaAuthenticationHolder;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.context.CamundaAuthenticationHolder;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.core.context.holder.CamundaAuthenticationDelegatingHolder;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.security.spring.context.DefaultCamundaAuthenticationProvider;
+import io.camunda.security.spring.converter.CamundaSpringAuthenticationDelegatingConverter;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
@@ -109,7 +109,7 @@ public class WebSecurityConfigTestContext {
       final List<CamundaAuthenticationConverter<Authentication>> converters) {
     return new DefaultCamundaAuthenticationProvider(
         new CamundaAuthenticationDelegatingHolder(holders),
-        new CamundaAuthenticationDelegatingConverter(converters));
+        new CamundaSpringAuthenticationDelegatingConverter(converters));
   }
 
   @Bean

@@ -14,10 +14,8 @@ import io.camunda.zeebe.util.CloseableSilently;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import net.jcip.annotations.ThreadSafe;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-@NullMarked
 @ThreadSafe
 public final class InFlightEntry {
   final LogStreamMetrics metrics;

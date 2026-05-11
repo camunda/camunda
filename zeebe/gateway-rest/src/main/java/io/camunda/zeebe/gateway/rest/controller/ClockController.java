@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;

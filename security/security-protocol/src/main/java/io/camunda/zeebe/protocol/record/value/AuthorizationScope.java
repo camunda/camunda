@@ -30,10 +30,12 @@ public class AuthorizationScope {
       final String resourceId,
       final String resourcePropertyName) {
     this.matcher = matcher;
-    this.resourceId = resourceId;
 
-    // Since this class is used for comparisons, normalize null to empty string for this field
-    // (introduced in 8.9.0) to handle cases where null is provided while empty string is expected.
+    // Since this class is used for comparisons, normalize null to empty string for these fields
+    // to handle cases where null is provided while empty string is expected. resourceId may be
+    // null for PROPERTY-matcher authorizations (see #40079); resourcePropertyName was introduced
+    // in 8.9.0 with the same normalization convention.
+    this.resourceId = resourceId != null ? resourceId : "";
     this.resourcePropertyName = resourcePropertyName != null ? resourcePropertyName : "";
   }
 

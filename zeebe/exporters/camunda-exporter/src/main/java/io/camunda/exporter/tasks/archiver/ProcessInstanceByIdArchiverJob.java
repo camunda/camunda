@@ -57,7 +57,7 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
     // 1. First archive docs from dependent indices and `joinRelation={variable OR activity}`
     // from operate-list-view index
     // 2. Then archive all docs except `joinRelation=processInstance` from operate-list-view index
-    // 3. Then archive remaining docs from operate-list-view index (catch-all without filters)
+    // 3. Then archive all `joinRelation=processInstance` docs from operate-list-view index
     return archiveProcessDependants(batch)
         .thenComposeAsync(
             v ->
@@ -69,7 +69,16 @@ public class ProcessInstanceByIdArchiverJob extends ProcessInstanceArchiverJob {
                         ListViewTemplate.JOIN_RELATION,
                         ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION)),
             getExecutor())
-        .thenComposeAsync(ignored -> archive(templateDescriptor, batch, Map.of()), getExecutor())
+        .thenComposeAsync(
+            ignored ->
+                archive(
+                    templateDescriptor,
+                    batch,
+                    Map.of(
+                        ListViewTemplate.JOIN_RELATION,
+                        ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
+                    Map.of()),
+            getExecutor())
         .thenApply(FunctionUtil.peek(archived -> markBatchRecentlyArchived(batch)));
   }
 

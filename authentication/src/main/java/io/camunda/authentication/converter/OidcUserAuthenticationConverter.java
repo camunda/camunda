@@ -8,8 +8,8 @@
 package io.camunda.authentication.converter;
 
 import io.camunda.authentication.config.OidcAccessTokenDecoderFactory;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationConverter;
+import io.camunda.security.api.context.CamundaAuthenticationConverter;
+import io.camunda.security.api.model.CamundaAuthentication;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import java.util.List;

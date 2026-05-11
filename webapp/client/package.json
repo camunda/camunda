@@ -1,5 +1,5 @@
 {
-	"name": "@camunda/client-components",
+	"name": "@camunda/webapp-client",
 	"description": "Camunda JS/TS monorepo",
 	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
 	"type": "module",
@@ -27,8 +27,8 @@
 		"@eslint/js": "9.39.4",
 		"eslint": "9.39.4",
 		"eslint-plugin-license-header": "0.9.0",
-		"globals": "17.4.0",
-		"prettier": "3.8.2",
-		"typescript-eslint": "8.58.1"
+		"globals": "17.5.0",
+		"prettier": "3.8.3",
+		"typescript-eslint": "8.59.0"
 	}
 }

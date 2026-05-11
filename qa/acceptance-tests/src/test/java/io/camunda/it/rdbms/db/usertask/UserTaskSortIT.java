@@ -127,7 +127,7 @@ public class UserTaskSortIT {
         reader
             .search(
                 new UserTaskQuery(
-                    new UserTaskFilter.Builder().bpmnProcessIds(processDefinitionId).build(),
+                    new UserTaskFilter.Builder().processDefinitionIds(processDefinitionId).build(),
                     UserTaskSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b)))
             .items();

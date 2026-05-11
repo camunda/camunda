@@ -17,7 +17,7 @@ import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;

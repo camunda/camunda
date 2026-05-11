@@ -10,8 +10,8 @@ package io.camunda.search.clients.auth;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.exception.TenantAccessDeniedException;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.auth.condition.AnyOfAuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;
@@ -27,8 +27,12 @@ import io.camunda.security.reader.TenantCheck;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractResourceAccessController implements ResourceAccessController {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractResourceAccessController.class);
 
   protected abstract ResourceAccessProvider getResourceAccessProvider();
 
@@ -63,7 +67,11 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
     final var authentication = securityContext.authentication();
     final var tenantCheck = determineTenantCheck(authentication);
 
-    // read with resource access checks
+    LOG.debug(
+        "Applying resource access checks - authorization: [{}], tenants: [{}]",
+        authorizationCheck,
+        tenantCheck);
+
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, tenantCheck, authentication);
     return applier.apply(resourceAccessChecks);

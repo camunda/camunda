@@ -14,11 +14,11 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.container.cluster.BrokerNode;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
-import io.zeebe.containers.ZeebeNode;
 
 public interface ExportingActuator {
-  static ExportingActuator of(final ZeebeNode<?> node) {
+  static ExportingActuator of(final BrokerNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/exporting", node.getExternalMonitoringAddress());
     return of(endpoint);

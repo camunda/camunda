@@ -21,7 +21,8 @@
     </constructor>
   </resultMap>
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel">
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="postgresql">
     INSERT INTO ${prefix}HISTORY_DELETION (
       RESOURCE_KEY,
       BATCH_OPERATION_KEY,
@@ -33,6 +34,92 @@
       #{resourceType},
       #{partitionId}
     )
+    ON CONFLICT (RESOURCE_KEY, BATCH_OPERATION_KEY) DO NOTHING
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="mariadb">
+    INSERT INTO ${prefix}HISTORY_DELETION (
+      RESOURCE_KEY,
+      BATCH_OPERATION_KEY,
+      RESOURCE_TYPE,
+      PARTITION_ID
+    ) VALUES (
+      #{resourceKey},
+      #{batchOperationKey},
+      #{resourceType},
+      #{partitionId}
+    )
+    ON DUPLICATE KEY UPDATE RESOURCE_KEY = RESOURCE_KEY
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="mysql">
+    INSERT INTO ${prefix}HISTORY_DELETION (
+      RESOURCE_KEY,
+      BATCH_OPERATION_KEY,
+      RESOURCE_TYPE,
+      PARTITION_ID
+    ) VALUES (
+      #{resourceKey},
+      #{batchOperationKey},
+      #{resourceType},
+      #{partitionId}
+    )
+    ON DUPLICATE KEY UPDATE RESOURCE_KEY = RESOURCE_KEY
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="h2">
+    MERGE INTO ${prefix}HISTORY_DELETION hd
+      USING dual
+      ON (hd.RESOURCE_KEY = #{resourceKey} AND hd.BATCH_OPERATION_KEY = #{batchOperationKey})
+    WHEN NOT MATCHED THEN
+    INSERT (RESOURCE_KEY,
+            BATCH_OPERATION_KEY,
+            RESOURCE_TYPE,
+            PARTITION_ID)
+    VALUES (#{resourceKey},
+            #{batchOperationKey},
+            #{resourceType},
+            #{partitionId})
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="oracle">
+    MERGE INTO ${prefix}HISTORY_DELETION hd
+      USING (SELECT #{resourceKey} AS RESOURCE_KEY,
+                    #{batchOperationKey} AS BATCH_OPERATION_KEY
+             FROM dual) src
+      ON (hd.RESOURCE_KEY = src.RESOURCE_KEY AND hd.BATCH_OPERATION_KEY = src.BATCH_OPERATION_KEY)
+    WHEN NOT MATCHED THEN
+    INSERT (RESOURCE_KEY,
+            BATCH_OPERATION_KEY,
+            RESOURCE_TYPE,
+            PARTITION_ID)
+    VALUES (#{resourceKey},
+            #{batchOperationKey},
+            #{resourceType},
+            #{partitionId})
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel"
+    databaseId="mssql">
+    MERGE ${prefix}HISTORY_DELETION AS target
+    USING (SELECT #{resourceKey} AS RESOURCE_KEY,
+                  #{batchOperationKey} AS BATCH_OPERATION_KEY,
+                  #{resourceType} AS RESOURCE_TYPE,
+                  #{partitionId} AS PARTITION_ID) AS source
+    ON (target.RESOURCE_KEY = source.RESOURCE_KEY AND target.BATCH_OPERATION_KEY = source.BATCH_OPERATION_KEY)
+    WHEN NOT MATCHED THEN
+      INSERT (RESOURCE_KEY,
+              BATCH_OPERATION_KEY,
+              RESOURCE_TYPE,
+              PARTITION_ID)
+      VALUES (source.RESOURCE_KEY,
+              source.BATCH_OPERATION_KEY,
+              source.RESOURCE_TYPE,
+              source.PARTITION_ID);
   </insert>
 
   <select id="getHistoryDeletionBatch" resultMap="historyDeletionResultMap">

@@ -144,23 +144,4 @@ class BatchOperationEntityTransformerTest {
     assertThat(searchEntity.operationsTotalCount()).isEqualTo(42);
     assertThat(searchEntity.operationsCompletedCount()).isEqualTo(42);
   }
-
-  @Test
-  void shouldTransformEntityWithNullTypeToSearchEntity() {
-    // given
-    final BatchOperationEntity entity = new BatchOperationEntity();
-    entity.setId("1");
-    entity.setType(null);
-    entity.setState(BatchOperationState.ACTIVE);
-    entity.setOperationsTotalCount(42);
-
-    // when
-    final var searchEntity = transformer.apply(entity);
-
-    // then
-    assertThat(searchEntity).isNotNull();
-    assertThat(searchEntity.batchOperationKey()).isEqualTo("1");
-    assertThat(searchEntity.operationType()).isNull();
-    assertThat(searchEntity.state().name()).isEqualTo(BatchOperationState.ACTIVE.name());
-  }
 }

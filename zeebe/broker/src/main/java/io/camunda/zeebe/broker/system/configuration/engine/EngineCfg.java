@@ -25,6 +25,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
+  private StartupCfg startup = new StartupCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -39,6 +40,7 @@ public final class EngineCfg implements ConfigurationEntry {
     globalListeners.init(globalConfig, brokerBase);
     expression.init(globalConfig, brokerBase);
     processInstanceCreation.init(globalConfig, brokerBase);
+    startup.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -137,6 +139,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.processInstanceCreation = processInstanceCreation;
   }
 
+  public StartupCfg getStartup() {
+    return startup;
+  }
+
+  public void setStartup(final StartupCfg startupCfg) {
+    startup = startupCfg;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -164,6 +174,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + expression
         + ", processInstanceCreation="
         + processInstanceCreation
+        + ", startup="
+        + startup
         + '}';
   }
 
@@ -205,6 +217,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setGlobalListeners(globalListeners.createGlobalListenersConfiguration())
         .setExpressionEvaluationTimeout(expression.getTimeout())
         .setBusinessIdUniquenessEnabled(processInstanceCreation.isBusinessIdUniquenessEnabled())
-        .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent());
+        .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
+        .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled());
   }
 }

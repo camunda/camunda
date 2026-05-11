@@ -147,10 +147,20 @@ public final class StreamProcessorBuilder {
           "Batch processing limit must be >= 1 but was %s"
               .formatted(streamProcessorContext.getMaxCommandsInBatch()));
     }
+    if (streamProcessorContext.getMaxRecoverableRetries() < 1) {
+      throw new IllegalArgumentException(
+          "maxRecoverableRetries must be >= 1 but was %s"
+              .formatted(streamProcessorContext.getMaxRecoverableRetries()));
+    }
   }
 
   public StreamProcessorBuilder maxCommandsInBatch(final int maxCommandsInBatch) {
     streamProcessorContext.maxCommandsInBatch(maxCommandsInBatch);
+    return this;
+  }
+
+  public StreamProcessorBuilder maxRecoverableRetries(final int maxRecoverableRetries) {
+    streamProcessorContext.maxRecoverableRetries(maxRecoverableRetries);
     return this;
   }
 

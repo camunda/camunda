@@ -19,12 +19,12 @@ interface ExporterReplayControl {
   /**
    * Called when an exporter requests a replay after resetting to the given position.
    *
-   * @param resetPosition the exclusive lower bound for the replay, i.e. the log position that was
-   *     reset and after which replay should resume ({@code fromPosition - 1} in terms of the {@link
-   *     io.camunda.zeebe.exporter.api.context.Controller#requestReplay} API)
+   * @param lastExportedPosition the exclusive lower bound for the replay, i.e. the log position
+   *     that was reset and after which replay should resume ({@code lastExportedPosition} in terms
+   *     of the {@link io.camunda.zeebe.exporter.api.context.Controller#requestReplay} API)
    * @return {@code true} if the replay request was accepted and the log reader was successfully
    *     seeked, {@code false} if it was rejected (e.g. because the log segment is no longer
    *     available)
    */
-  boolean requestReplay(long resetPosition);
+  boolean requestReplay(long lastExportedPosition);
 }

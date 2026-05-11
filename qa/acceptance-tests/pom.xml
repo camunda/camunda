@@ -334,6 +334,11 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-protocol</artifactId>
       <scope>test</scope>
     </dependency>
@@ -509,13 +514,33 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-testcontainer</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-query-transformer</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-rest</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -557,11 +582,6 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup-store-azure</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -632,6 +652,11 @@
       <artifactId>testcontainers-toxiproxy</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <repositories>
@@ -668,7 +693,7 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
-          <excludedGroups>rdbms, multi-db-test, compatibility-test</excludedGroups>
+          <excludedGroups>rdbms, multi-db-test, compatibility-test, dl-nightly</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
@@ -694,6 +719,25 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>dl-nightly</id>
+      <properties>
+        <failsafe.excluded.nightly/>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration combine.self="override">
+              <groups>dl-nightly</groups>
+              <excludedGroups/>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>rdbms</id>
       <build>

@@ -158,10 +158,12 @@ public final class CamundaExporterConfigurationApplier {
     target.setRolloverBatchSize(source.getHistory().getRolloverBatchSize());
     target.setReindexBatchSize(source.getHistory().getReindexBatchSize());
     target.setWaitPeriodBeforeArchiving(source.getHistory().getWaitPeriodBeforeArchiving());
+    target.setArchiveByIdRetryDelayMs(source.getHistory().getArchiveByIdRetryDelayMs());
     target.setDelayBetweenRuns(
         Math.toIntExact(source.getHistory().getDelayBetweenRuns().toMillis()));
     target.setMaxDelayBetweenRuns(
         Math.toIntExact(source.getHistory().getMaxDelayBetweenRuns().toMillis()));
+    target.setArchiveByIdMaxRetryAttempts(source.getHistory().getArchiveByIdMaxRetryAttempts());
   }
 
   public static void applyPostExportConfiguration(

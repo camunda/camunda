@@ -9,7 +9,6 @@ package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -19,7 +18,6 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>To read events, the {@link LogStream#newLogStreamReader()} ()} can be used.
  */
-@NullMarked
 public interface LogStream extends AutoCloseable {
 
   @Override

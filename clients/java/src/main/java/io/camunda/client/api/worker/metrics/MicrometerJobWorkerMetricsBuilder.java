@@ -32,6 +32,7 @@ import io.micrometer.core.instrument.Tag;
  * <ul>
  *   <li>A counter for the jobs activated count
  *   <li>A counter for the jobs handled count
+ *   <li>A counter for the streaming-worker inactivity-triggered stream recreations
  * </ul>
  *
  * From these counters you can derive the rate of jobs activated, the rate of jobs handled, and
@@ -78,6 +79,18 @@ public interface MicrometerJobWorkerMetricsBuilder {
       @Override
       public String asString() {
         return "camunda.client.worker.job.handled";
+      }
+    },
+
+    /**
+     * Counter name backing {@link JobWorkerMetrics#streamInactivityRecreated()}. Incremented every
+     * time the streaming worker recreates its stream because the configured inactivity timeout
+     * elapsed without any activity.
+     */
+    STREAM_INACTIVITY_RECREATED {
+      @Override
+      public String asString() {
+        return "camunda.client.worker.stream.inactivity.recreated";
       }
     }
   }

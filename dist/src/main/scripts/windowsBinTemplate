@@ -1,0 +1,116 @@
+#LICENSE_HEADER#
+@REM -----------------------------------------------------------------------------
+@REM This is a verbatim copy of the windowsBinTemplate from
+@REM appassembler-maven-plugin 2.1.0 (org/codehaus/mojo/appassembler/daemon/
+@REM script/windowsBinTemplate inside the plugin jar). The plugin has not been
+@REM updated since 2015 and is effectively frozen, so this copy should not
+@REM require maintenance.
+@REM
+@REM The only change we made is the "CAMUNDA ADDITION" block below, which loads
+@REM an optional config\jvm.options @argfile before the exec call so that
+@REM runtime-specific JVM flags (e.g. flags only available on JDK 23+) can be
+@REM applied in Docker images without breaking the general distribution.
+@REM -----------------------------------------------------------------------------
+@echo off
+
+set ERROR_CODE=0
+
+:init
+@REM Decide how to startup depending on the version of windows
+
+@REM -- Win98ME
+if NOT "%OS%"=="Windows_NT" goto Win9xArg
+
+@REM set local scope for the variables with windows NT shell
+if "%OS%"=="Windows_NT" @setlocal
+
+@REM -- 4NT shell
+if "%eval[2+2]" == "4" goto 4NTArgs
+
+@REM -- Regular WinNT shell
+set CMD_LINE_ARGS=%*
+goto WinNTGetScriptDir
+
+@REM The 4NT Shell from jp software
+:4NTArgs
+set CMD_LINE_ARGS=%$
+goto WinNTGetScriptDir
+
+:Win9xArg
+@REM Slurp the command line arguments.  This loop allows for an unlimited number
+@REM of arguments (up to the command line limit, anyway).
+set CMD_LINE_ARGS=
+:Win9xApp
+if %1a==a goto Win9xGetScriptDir
+set CMD_LINE_ARGS=%CMD_LINE_ARGS% %1
+shift
+goto Win9xApp
+
+:Win9xGetScriptDir
+set SAVEDIR=%CD%
+%0\
+cd %0\..\..
+set BASEDIR=%CD%
+cd %SAVEDIR%
+set SAVE_DIR=
+goto repoSetup
+
+:WinNTGetScriptDir
+for %%i in ("%~dp0..") do set "BASEDIR=%%~fi"
+
+:repoSetup
+set REPO=
+#ENV_SETUP#
+
+if "%JAVACMD%"=="" set JAVACMD=#JAVA_BINARY#
+
+if "%REPO%"=="" set REPO=%BASEDIR%\#REPO#
+
+set CLASSPATH=#CLASSPATH#
+
+set ENDORSED_DIR=#ENDORSED_DIR#
+if NOT "%ENDORSED_DIR%" == "" set CLASSPATH="%BASEDIR%"\%ENDORSED_DIR%\*;%CLASSPATH%
+
+if NOT "%CLASSPATH_PREFIX%" == "" set CLASSPATH=%CLASSPATH_PREFIX%;%CLASSPATH%
+
+@REM --- CAMUNDA ADDITION --------------------------------------------------------
+@REM Load an optional JVM options file as a @argfile. This allows runtime-specific
+@REM flags (e.g. --sun-misc-unsafe-memory-access=allow, only available on JDK 23+)
+@REM to be supplied by Docker images without baking them into the general
+@REM distribution tarball, where they would break older JDK versions.
+set EXTRA_JVM_OPTS=
+if exist "%BASEDIR%\config\jvm.options" set EXTRA_JVM_OPTS=@%BASEDIR%\config\jvm.options
+@REM --- END CAMUNDA ADDITION ---------------------------------------------------
+
+@REM Reaching here means variables are defined and arguments have been captured
+:endInit
+
+%JAVACMD% %JAVA_OPTS% #EXTRA_JVM_ARGUMENTS# %EXTRA_JVM_OPTS% -classpath %CLASSPATH% -Dapp.name="#APP_NAME#" -Dapp.repo="%REPO%" -Dapp.home="%BASEDIR%" -Dbasedir="%BASEDIR%" #MAINCLASS# #APP_ARGUMENTS#%CMD_LINE_ARGS%
+if %ERRORLEVEL% NEQ 0 goto error
+goto end
+
+:error
+if "%OS%"=="Windows_NT" @endlocal
+set ERROR_CODE=%ERRORLEVEL%
+
+:end
+@REM set local scope for the variables with windows NT shell
+if "%OS%"=="Windows_NT" goto endNT
+
+@REM For old DOS remove the set variables from ENV - we assume they were not set
+@REM before we started - at least we don't leave any baggage around
+set CMD_LINE_ARGS=
+goto postExec
+
+:endNT
+@REM If error code is set to 1 then the endlocal was done already in :error.
+if %ERROR_CODE% EQU 0 @endlocal
+
+
+:postExec
+
+if "%FORCE_EXIT_ON_ERROR%" == "on" (
+  if %ERROR_CODE% NEQ 0 exit %ERROR_CODE%
+)
+
+exit /B %ERROR_CODE%

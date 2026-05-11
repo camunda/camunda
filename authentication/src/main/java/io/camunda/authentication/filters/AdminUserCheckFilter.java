@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.filters;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;

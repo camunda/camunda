@@ -49,6 +49,7 @@ jobs:
     secrets: inherit
     with:
       app-name: smoke89-${{ github.run_number }}
+      ref: stable/8.9
       labels: |
         preview=smoke-test
         repo=camunda_camunda
@@ -58,7 +59,11 @@ jobs:
 
   deploy-8-10:
     name: Deploy 8.10 Preview Environment
-    if: contains(fromJSON('["all", "8.10", ""]'), inputs.version)
+    # TODO(2026-05-11): Re-enable for scheduled/all runs once 8.10 helm chart (>=14.0.1) is released.
+    # if: contains(fromJSON('["all", "8.10", ""]'), inputs.version)
+    # Currently disabled because there is no 8.10 helm chart yet; deploy always fails.
+    # To test manually, use workflow_dispatch with version='8.10'.
+    if: inputs.version == '8.10'
     uses: ./.github/workflows/preview-env-build-and-deploy.yml
     secrets: inherit
     with:
@@ -232,10 +237,11 @@ jobs:
     needs:
     - deploy-8-9
     - test
-    uses: ./.github/workflows/preview-env-teardown.yml
+    uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.9
     secrets: inherit
     with:
       app-name: smoke89-${{ github.run_number }}
+      ref: stable/8.9
 
   teardown-8-10:
     name: Teardown 8.10 Preview Environment

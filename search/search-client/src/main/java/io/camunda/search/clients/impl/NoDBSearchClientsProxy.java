@@ -62,6 +62,7 @@ import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
@@ -364,6 +365,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public MessageSubscriptionEntity getMessageSubscription(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public AuditLogEntity getAuditLog(final String id) {
     throw new NoSecondaryStorageException();
   }
@@ -387,6 +393,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   public SearchQueryResult<ClusterVariableEntity> searchClusterVariables(
       final ClusterVariableQuery query) {
     throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public SearchClientsProxy withPhysicalTenant(final String physicalTenantId) {
+    return this;
   }
 
   @Override
@@ -457,6 +468,12 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public DeployedResourceEntity getDeployedResourceMetadata(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public SearchQueryResult<DeployedResourceEntity> searchDeployedResources(
+      final DeployedResourceQuery query) {
     throw new NoSecondaryStorageException();
   }
 }

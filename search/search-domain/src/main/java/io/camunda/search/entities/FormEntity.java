@@ -8,7 +8,17 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record FormEntity(Long formKey, String tenantId, String formId, String schema, Long version)
-    implements TenantOwnedEntity {}
+    implements TenantOwnedEntity {
+
+  public FormEntity {
+    Objects.requireNonNull(formKey, "formKey");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(formId, "formId");
+    Objects.requireNonNull(schema, "schema");
+    Objects.requireNonNull(version, "version");
+  }
+}

@@ -140,7 +140,9 @@ final class TestSupport {
             ValueType.CONDITIONAL_SUBSCRIPTION,
             ValueType.CONDITIONAL_EVALUATION,
             ValueType.EXPRESSION,
-            ValueType.JOB_METRICS_BATCH);
+            ValueType.JOB_METRICS_BATCH,
+            ValueType.RESOURCE_REEXPORT,
+            ValueType.AGENT_INSTANCE);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

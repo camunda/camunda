@@ -266,6 +266,7 @@ runs:
           - 'parent/**'
           - '**/pom.xml'
           - '.mvn/**'
+          - '.ci/db-versions.yml'
 
         validate-pom-metadata-extra-change:
           - 'mvnw'
@@ -399,7 +400,6 @@ runs:
 
         optimize-frontend-change:
           - optimize/client/**
-          - optimize/c4/**
           - optimize/backend/src/main/resources/localization/**
 
   - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1

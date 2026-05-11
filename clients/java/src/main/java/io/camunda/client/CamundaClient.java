@@ -116,6 +116,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.FormGetRequest;
 import io.camunda.client.api.fetch.GlobalTaskListenerGetRequest;
 import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
@@ -166,6 +167,7 @@ import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
+import io.camunda.client.api.search.request.ResourceSearchRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
@@ -915,6 +917,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   ProcessDefinitionGetFormRequest newProcessDefinitionGetFormRequest(long processDefinitionKey);
 
   /**
+   * Gets a Form by key.
+   *
+   * <pre>
+   * long formKey = ...;
+   *
+   * camundaClient
+   *  .newFormGetRequest(formKey)
+   *  .send();
+   * </pre>
+   *
+   * @param formKey the key of the form
+   * @return a builder for the request to get a form
+   */
+  FormGetRequest newFormGetRequest(long formKey);
+
+  /**
    * Executes a search request to query process definitions.
    *
    * <pre>
@@ -931,6 +949,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the process definition search request
    */
   ProcessDefinitionSearchRequest newProcessDefinitionSearchRequest();
+
+  /**
+   * Executes a search request to query deployed resources.
+   *
+   * <pre>
+   * long resourceKey = ...;
+   *
+   * camundaClient
+   *  .newResourceSearchRequest()
+   *  .filter((f) -> f.resourceKey(resourceKey))
+   *  .sort((s) -> s.resourceName().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the resource search request
+   */
+  ResourceSearchRequest newResourceSearchRequest();
 
   /**
    * Executes a search request to query process definition element statistics.
@@ -3375,9 +3411,26 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the request to get a resource content
+   * @deprecated since 8.10, use {@link #newResourceContentBinaryGetRequest(long)} instead.
+   * @return a builder for the request to get an RPA resource content as JSON
    */
+  @Deprecated
   ResourceContentGetRequest newResourceContentGetRequest(long resourceKey);
+
+  /**
+   * Retrieves a resource content as binary by key.
+   *
+   * <pre>
+   * long resourceKey = ...;
+   *
+   * camundaClient
+   *  .newResourceContentBinaryGetRequest(resourceKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the request to get a resource content as binary
+   */
+  ResourceContentGetRequest newResourceContentBinaryGetRequest(long resourceKey);
 
   /**
    * Creates a request to create a new global task listener.

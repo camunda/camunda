@@ -12,6 +12,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
@@ -44,6 +45,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
@@ -56,6 +58,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
@@ -114,6 +117,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRec
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
+import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.time.Duration;
 import java.util.Collection;
@@ -303,6 +307,15 @@ public final class RecordingExporter implements Exporter {
   public static DeploymentDistributionRecordStream deploymentDistributionRecords() {
     return new DeploymentDistributionRecordStream(
         records(ValueType.DEPLOYMENT_DISTRIBUTION, DeploymentDistributionRecordValue.class));
+  }
+
+  public static AgentInstanceRecordStream agentInstanceRecords() {
+    return new AgentInstanceRecordStream(
+        records(ValueType.AGENT_INSTANCE, AgentInstanceRecordValue.class));
+  }
+
+  public static AgentInstanceRecordStream agentInstanceRecords(final AgentInstanceIntent intent) {
+    return agentInstanceRecords().withIntent(intent);
   }
 
   public static JobRecordStream jobRecords() {
@@ -534,6 +547,16 @@ public final class RecordingExporter implements Exporter {
 
   public static ResourceRecordStream resourceRecords() {
     return new ResourceRecordStream(records(ValueType.RESOURCE, Resource.class));
+  }
+
+  public static ResourceReexportRecordStream resourceReexportRecords() {
+    return new ResourceReexportRecordStream(
+        records(ValueType.RESOURCE_REEXPORT, ResourceReexportRecordValue.class));
+  }
+
+  public static ResourceReexportRecordStream resourceReexportRecords(
+      final ResourceReexportIntent intent) {
+    return resourceReexportRecords().withIntent(intent);
   }
 
   public static ErrorRecordStream errorRecords() {

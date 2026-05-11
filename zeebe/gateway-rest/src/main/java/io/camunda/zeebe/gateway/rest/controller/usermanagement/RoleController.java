@@ -29,7 +29,7 @@ import io.camunda.gateway.protocol.model.RoleUserSearchResult;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.RoleValidator;
 import io.camunda.service.MappingRuleServices;

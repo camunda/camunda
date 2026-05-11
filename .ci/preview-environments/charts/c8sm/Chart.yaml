@@ -14,4 +14,4 @@ dependencies:
   version: 1.8.7
 - name: camunda-platform
   repository: https://helm.camunda.io
-  version: 14.0.0-alpha5
+  version: 14.0.0-alpha5 #TODO: Update helm version once 8.10.0-alpha1 released, and re-enable 8.10 smoke tests in preview-env-smoke-test.yml

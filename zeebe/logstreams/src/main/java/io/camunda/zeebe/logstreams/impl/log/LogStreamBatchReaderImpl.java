@@ -92,7 +92,11 @@ public class LogStreamBatchReaderImpl implements LogStreamBatchReader {
 
     private final LoggedEventImpl event = new LoggedEventImpl();
 
+    // wrap() must be called before any use; fields start null but are never null after wrapping
+    @SuppressWarnings("NullAway.Init")
     private DirectBuffer buffer;
+
+    @SuppressWarnings("NullAway.Init")
     private IntArrayList offsets;
 
     private int currentIndex = 0;

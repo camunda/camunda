@@ -9,7 +9,12 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {formatters, getReportResult, processResult as processSingleReportResult} from 'services';
+import {
+  formatters,
+  getReportResult,
+  processResult as processSingleReportResult,
+  applyMissingVariableLabel,
+} from 'services';
 
 import {Table, Chart} from './visualizations';
 import ProcessReportRenderer from './ProcessReportRenderer';
@@ -93,6 +98,10 @@ function formatResult(data, result) {
     distributedBy,
     configuration: {distributeByDateVariableUnit},
   } = data;
+
+  if (distributedBy.type === 'variable') {
+    result = applyMissingVariableLabel(result);
+  }
 
   const distributedByDateVar =
     distributedBy.type === 'variable' && distributedBy.value.type === 'Date';

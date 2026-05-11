@@ -85,6 +85,7 @@ final class ExporterContainer implements Controller {
   private void initPosition() {
     position = exportersState.getPosition(getId());
     lastUnacknowledgedPosition = position;
+    lastAcknowledgedPosition = position;
     if (position == ExportersState.VALUE_NOT_FOUND) {
       exportersState.setPosition(getId(), -1L);
     }
@@ -203,20 +204,22 @@ final class ExporterContainer implements Controller {
   }
 
   @Override
-  public boolean requestReplay(final long fromPosition) {
-    final long replayPosition = fromPosition - 1;
+  public boolean requestReplay(final long lastExportedPosition) {
     LOG.info(
-        "Replay requested for exporter '{}': resetting position from {} to {} and replaying from {}",
+        "Replay requested for exporter '{}': resetting position from {} to {}",
         getId(),
         position,
-        replayPosition,
-        fromPosition);
-    position = replayPosition;
-    lastUnacknowledgedPosition = replayPosition;
-    lastAcknowledgedPosition = replayPosition;
-    lastExportedMetadata = null;
-    exportersState.setPosition(getId(), replayPosition);
-    return replayControl.requestReplay(replayPosition);
+        lastExportedPosition);
+
+    final boolean replayResult = replayControl.requestReplay(lastExportedPosition);
+    if (replayResult) {
+      position = lastExportedPosition;
+      lastUnacknowledgedPosition = lastExportedPosition;
+      lastAcknowledgedPosition = lastExportedPosition;
+      lastExportedMetadata = null;
+      exportersState.setPosition(getId(), lastExportedPosition);
+    }
+    return replayResult;
   }
 
   public String getId() {

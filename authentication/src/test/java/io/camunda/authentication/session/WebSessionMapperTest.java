@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
 import io.camunda.search.entities.PersistentWebSessionEntity;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;

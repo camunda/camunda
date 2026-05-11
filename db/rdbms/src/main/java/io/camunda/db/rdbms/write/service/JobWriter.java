@@ -63,34 +63,58 @@ public class JobWriter extends ProcessInstanceDependant implements RdbmsWriter {
     final boolean wasMerged =
         mergeToQueue(
             job.jobKey(),
-            b ->
-                b.type(job.type())
-                    .worker(job.worker())
-                    .state(job.state())
-                    .kind(job.kind())
-                    .listenerEventType(job.listenerEventType())
-                    .retries(job.retries())
-                    .isDenied(job.isDenied())
-                    .deniedReason(job.deniedReason())
-                    .hasFailedWithRetriesLeft(job.hasFailedWithRetriesLeft())
-                    .errorCode(job.errorCode())
-                    .errorMessage(job.errorMessage())
-                    .truncateErrorMessage(
-                        vendorDatabaseProperties.errorMessageSize(),
-                        vendorDatabaseProperties.charColumnMaxBytes())
-                    .customHeaders(job.customHeaders())
-                    .deadline(job.deadline())
-                    .endTime(job.endTime())
-                    .processDefinitionId(job.processDefinitionId())
-                    .processDefinitionKey(job.processDefinitionKey())
-                    .processInstanceKey(job.processInstanceKey())
-                    .rootProcessInstanceKey(job.rootProcessInstanceKey())
-                    .elementId(job.elementId())
-                    .elementInstanceKey(job.elementInstanceKey())
-                    .tenantId(job.tenantId())
-                    .partitionId(job.partitionId())
-                    .creationTime(job.creationTime())
-                    .lastUpdateTime(job.lastUpdateTime()));
+            b -> {
+              b.type(job.type())
+                  .worker(job.worker())
+                  .state(job.state())
+                  .kind(job.kind())
+                  .listenerEventType(job.listenerEventType())
+                  .retries(job.retries())
+                  .hasFailedWithRetriesLeft(job.hasFailedWithRetriesLeft())
+                  .customHeaders(job.customHeaders())
+                  .processDefinitionId(job.processDefinitionId())
+                  .processDefinitionKey(job.processDefinitionKey())
+                  .processInstanceKey(job.processInstanceKey())
+                  .elementInstanceKey(job.elementInstanceKey())
+                  .tenantId(job.tenantId())
+                  .partitionId(job.partitionId())
+                  .lastUpdateTime(job.lastUpdateTime());
+              // Only update fields when the new value is non-null to avoid overriding existing
+              // values with NULL. This covers both @Nullable fields (per JobEntity) and fields
+              // that are not always present in update events (e.g. creationTime is only set on
+              // CREATED; elementId is explicitly nulled for FAILED/ERROR_THROWN).
+              if (job.elementId() != null) {
+                b.elementId(job.elementId());
+              }
+              if (job.creationTime() != null) {
+                b.creationTime(job.creationTime());
+              }
+              if (job.isDenied() != null) {
+                b.isDenied(job.isDenied());
+              }
+              if (job.deniedReason() != null) {
+                b.deniedReason(job.deniedReason());
+              }
+              if (job.errorCode() != null) {
+                b.errorCode(job.errorCode());
+              }
+              if (job.errorMessage() != null) {
+                b.errorMessage(job.errorMessage());
+              }
+              if (job.deadline() != null) {
+                b.deadline(job.deadline());
+              }
+              if (job.endTime() != null) {
+                b.endTime(job.endTime());
+              }
+              if (job.rootProcessInstanceKey() != null) {
+                b.rootProcessInstanceKey(job.rootProcessInstanceKey());
+              }
+              b.truncateErrorMessage(
+                  vendorDatabaseProperties.errorMessageSize(),
+                  vendorDatabaseProperties.charColumnMaxBytes());
+              return b;
+            });
 
     if (!wasMerged) {
       executionQueue.executeInQueue(

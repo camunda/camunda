@@ -12,6 +12,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,12 +22,13 @@ import org.slf4j.LoggerFactory;
  * enabled. All members will initialize the same routing state (as long as their statically
  * configured partition counts match).
  */
+@NullMarked
 public class ClusterIdInitializer implements ClusterConfigurationModifier {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterIdInitializer.class);
   private final String clusterId;
 
-  public ClusterIdInitializer(final String clusterId) {
+  public ClusterIdInitializer(@Nullable final String clusterId) {
     // if not cluster id is configured a new one is generated.
     this.clusterId = Optional.ofNullable(clusterId).orElse(UUID.randomUUID().toString());
   }
@@ -50,7 +53,7 @@ public class ClusterIdInitializer implements ClusterConfigurationModifier {
             configuration.lastChange(),
             configuration.pendingChanges(),
             configuration.routingState(),
-            Optional.ofNullable(clusterId),
+            Optional.of(clusterId),
             configuration.incarnationNumber());
     return CompletableActorFuture.completed(withClusterId);
   }

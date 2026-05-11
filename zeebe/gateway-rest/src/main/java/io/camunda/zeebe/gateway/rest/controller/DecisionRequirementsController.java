@@ -14,7 +14,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.DecisionRequirementsResult;
 import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;

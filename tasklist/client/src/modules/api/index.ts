@@ -125,7 +125,12 @@ const api = {
       },
     });
   },
-  assignTask: (params: Pick<UserTask, 'userTaskKey'> & {assignee: string}) => {
+  assignTask: (
+    params: Pick<UserTask, 'userTaskKey'> & {
+      assignee: string;
+      allowOverride: boolean;
+    },
+  ) => {
     const {userTaskKey, ...body} = params;
     return new Request(getFullURL(endpoints.assignTask.getUrl({userTaskKey})), {
       ...BASE_REQUEST_OPTIONS,

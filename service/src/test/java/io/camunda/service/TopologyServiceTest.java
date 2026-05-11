@@ -234,17 +234,22 @@ public class TopologyServiceTest {
   }
 
   @Test
-  void shouldReturnEmptyTopology() {
+  void shouldFailWithUnavailableWhenClusterStateNotYetReceived() {
     // given
-    final var version = VersionUtil.getVersion();
-    final var expectedTopology = new Topology(List.of(), null, null, null, null, version, null);
     Mockito.when(topologyManager.getTopology()).thenReturn(null);
 
-    // when
-    final var topology = services.getTopology().join();
-
-    // then
-    Assertions.assertThat(topology).isEqualTo(expectedTopology);
+    // when / then
+    Assertions.assertThatThrownBy(() -> services.getTopology().join())
+        .hasCauseInstanceOf(io.camunda.service.exception.ServiceException.class)
+        .cause()
+        .satisfies(
+            ex -> {
+              final var se = (io.camunda.service.exception.ServiceException) ex;
+              Assertions.assertThat(se.getStatus())
+                  .isEqualTo(io.camunda.service.exception.ServiceException.Status.UNAVAILABLE);
+              Assertions.assertThat(se.getMessage())
+                  .contains("Cluster topology is not yet available");
+            });
   }
 
   /**

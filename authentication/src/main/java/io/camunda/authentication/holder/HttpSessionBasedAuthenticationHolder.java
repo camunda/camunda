@@ -9,8 +9,8 @@ package io.camunda.authentication.holder;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
 
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationHolder;
+import io.camunda.security.api.context.CamundaAuthenticationHolder;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -55,6 +55,11 @@ public class HttpSessionBasedAuthenticationHolder implements CamundaAuthenticati
     return Optional.ofNullable(getHttpSession())
         .map(this::getCamundaAuthenticationFromSessionIfExists)
         .orElse(null);
+  }
+
+  @Override
+  public void clear() {
+    Optional.ofNullable(getHttpSession()).ifPresent(this::removeCamundaAuthenticationInSession);
   }
 
   protected HttpSession getHttpSession() {

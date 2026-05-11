@@ -23,6 +23,10 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
+/**
+ * @deprecated since 8.10, use {@link ResourceContentBinaryGetRequestImpl} instead.
+ */
+@Deprecated
 public class ResourceContentGetRequestImpl implements ResourceContentGetRequest {
 
   private final HttpClient httpClient;

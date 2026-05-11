@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
@@ -19,9 +21,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class BrokerShutdownHelper {
 
+  private static final Logger LOG = LoggerFactory.getLogger(BrokerShutdownHelper.class);
+
   @Autowired private ApplicationContext appContext;
 
-  public void initiateShutdown(final int returnCode) {
+  public void initiateShutdown(final int returnCode, final String reason) {
+    LOG.warn("Initiating broker shutdown with return code {}: {}", returnCode, reason);
     // This can be called from an Actor. We should ensure that any blocking operation is not run on
     // the actor. Hence, schedule it on a common thread pool.
     Thread.ofVirtual().start(() -> shutdown(returnCode));

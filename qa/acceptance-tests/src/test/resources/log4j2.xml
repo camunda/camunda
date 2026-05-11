@@ -18,7 +18,7 @@
     <Logger name="io.camunda.zeebe" level="debug"/>
     <Logger name="io.camunda.it" level="debug"/>
     <Logger name="io.atomix" level="debug"/>
-    <Logger name="io.zeebe.containers.ZeebeTopologyWaitStrategy" level="trace"/>
+    <Logger name="io.camunda.container.ZeebeTopologyWaitStrategy" level="trace"/>
 
     <Logger name="io.atomix.cluster.messaging" level="info"/>
     <Logger name="io.atomix.cluster.protocol" level="debug"/>
@@ -28,9 +28,9 @@
     <Logger name="io.camunda.db.rdbms" level="debug"/>
     <Logger name="io.camunda.exporter.rdbms" level="info"/>
     <Logger name="io.camunda.zeebe.engine.processing.batchoperation" level="debug"/>
-    <Logger name="io.camunda.exporter.tasks.batchoperations" level="trace"/>
-    <Logger name="io.camunda.exporter.handlers.batchoperation" level="trace"/>
-    <Logger name="io.camunda.zeebe.broker.exporter" level="trace"/>
+    <Logger name="io.camunda.exporter.tasks.batchoperations" level="debug"/>
+    <Logger name="io.camunda.exporter.handlers.batchoperation" level="debug"/>
+    <Logger name="io.camunda.zeebe.broker.exporter" level="debug"/>
     <Logger name="io.camunda.zeebe.gateway.rest" level="debug"/>
 
     <Root level="${sys:root.logging.level:-INFO}">

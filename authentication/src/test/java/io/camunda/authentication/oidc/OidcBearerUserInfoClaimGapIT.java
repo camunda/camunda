@@ -23,7 +23,7 @@ import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.oidc.CachingOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import java.time.Instant;

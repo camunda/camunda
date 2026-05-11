@@ -8,9 +8,17 @@
 package io.camunda.search.entities;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public record GlobalJobStatisticsEntity(
     StatusMetric created, StatusMetric completed, StatusMetric failed, boolean isIncomplete) {
 
-  public record StatusMetric(long count, OffsetDateTime lastUpdatedAt) {}
+  public GlobalJobStatisticsEntity {
+    Objects.requireNonNull(created, "created");
+    Objects.requireNonNull(completed, "completed");
+    Objects.requireNonNull(failed, "failed");
+  }
+
+  public record StatusMetric(long count, @Nullable OffsetDateTime lastUpdatedAt) {}
 }

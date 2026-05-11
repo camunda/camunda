@@ -25,7 +25,6 @@ import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
@@ -170,7 +169,7 @@ public class CamundaProcessTestExtension
     runtime = runtimeBuilder.build();
     runtime.start();
 
-    camundaManagementClient = createManagementClient(runtimeBuilder);
+    camundaManagementClient = createManagementClient();
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
@@ -188,6 +187,7 @@ public class CamundaProcessTestExtension
             .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
             .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
             .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
+            .excludeDecisionDefinitionIds(runtimeBuilder.getCoverageExcludedDecisions())
             .build();
 
     // put in store
@@ -202,17 +202,8 @@ public class CamundaProcessTestExtension
     initializeSemanticSimilarityConfig();
   }
 
-  private CamundaManagementClient createManagementClient(
-      final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
-    if (runtimeBuilder.isMultiTenancyEnabled()) {
-      return CamundaManagementClient.createAuthenticatedClient(
-          runtime.getCamundaMonitoringApiAddress(),
-          runtime.getCamundaRestApiAddress(),
-          MultiTenancyConfiguration.getBasicAuthCredentials());
-    } else {
-      return CamundaManagementClient.createClient(
-          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
-    }
+  private CamundaManagementClient createManagementClient() {
+    return CamundaManagementClient.createClient(runtime.getCamundaMonitoringApiAddress());
   }
 
   private void initializeJsonMapper(final JsonMapper jsonMapper) {
@@ -327,6 +318,9 @@ public class CamundaProcessTestExtension
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
     // deploy resources if present
     testDeploymentService.deployTestResources(
@@ -705,6 +699,18 @@ public class CamundaProcessTestExtension
   public CamundaProcessTestExtension withCoverageExcludedProcesses(
       final String... processDefinitionIds) {
     runtimeBuilder.withCoverageExcludedProcesses(Arrays.asList(processDefinitionIds));
+    return this;
+  }
+
+  /**
+   * Configures the coverage report to exclude the given decisions.
+   *
+   * @param decisionDefinitionIds the IDs of the decision definitions to exclude
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCoverageExcludedDecisions(
+      final String... decisionDefinitionIds) {
+    runtimeBuilder.withCoverageExcludedDecisions(Arrays.asList(decisionDefinitionIds));
     return this;
   }
 

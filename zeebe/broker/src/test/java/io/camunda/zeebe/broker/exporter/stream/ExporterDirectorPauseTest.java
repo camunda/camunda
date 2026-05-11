@@ -87,7 +87,7 @@ public final class ExporterDirectorPauseTest {
 
     // then
     verify(exporter, timeout(TIMEOUT).times(1)).export(any());
-    assertThat(exporter.getController().getLastExportedRecordPosition()).isZero();
+    assertThat(exporter.getController().getLastExportedRecordPosition()).isEqualTo(-1L);
   }
 
   @Test

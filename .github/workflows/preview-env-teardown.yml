@@ -13,6 +13,13 @@ on:
           ArgoCD app name to tear down
         required: true
         type: string
+      ref:
+        description: |
+          Git ref for checkout and ArgoCD revision.
+          Required for cross-branch calls since reusable workflows inherit the caller's ref.
+        required: false
+        type: string
+        default: ''
 
 jobs:
   teardown-preview:
@@ -67,17 +74,19 @@ jobs:
         vault-url: ${{ secrets.VAULT_ADDR }}
 
     #########################################################################
-    # Setup: checkout code. This is required because we are using
-    # composite actions and deployment manifests.
+    # Checkout the specified workflow_call ref when provided; for pull_request
+    # runs, an empty inputs.ref lets checkout fall back to the event ref
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        ref: ${{ inputs.ref }}
 
     #########################################################################
     # Tear down preview environment
     - name: Tear down Preview Environment
       uses: camunda/infra-global-github-actions/preview-env/destroy@main
       with:
-        revision: ${{ github.head_ref || github.ref_name }}
+        revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
         app_name: camunda-${{ inputs.app-name || steps.sanitize.outputs.branch_name }}
         argocd_server: argocd.int.camunda.com

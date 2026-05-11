@@ -171,6 +171,7 @@ public class BrokerBasedPropertiesOverride {
 
     // processing
     override.getProcessing().setMaxCommandsInBatch(processing.getMaxCommandsInBatch());
+    override.getProcessing().setMaxRecoverableRetries(processing.getMaxRecoverableRetries());
     override.getProcessing().setEnableAsyncScheduledTasks(processing.isEnableAsyncScheduledTasks());
     override
         .getProcessing()
@@ -964,6 +965,21 @@ public class BrokerBasedPropertiesOverride {
                         .getInsertBatching()
                         .setMaxFlowNodeInsertBatchSize(
                             database.getInsertBatching().getMaxFlowNodeInsertBatchSize());
+                  }
+
+                  if (database.getAsyncReplication() != null) {
+                    final var asyncReplication = database.getAsyncReplication();
+                    config.getAsyncReplication().setEnabled(asyncReplication.isEnabled());
+                    config
+                        .getAsyncReplication()
+                        .setPollingInterval(asyncReplication.getPollingInterval());
+                    config
+                        .getAsyncReplication()
+                        .setMinSyncReplicas(asyncReplication.getMinSyncReplicas());
+                    config.getAsyncReplication().setMaxLag(asyncReplication.getMaxLag());
+                    config
+                        .getAsyncReplication()
+                        .setPauseOnMaxLagExceeded(asyncReplication.isPauseOnMaxLagExceeded());
                   }
                 })
             .toArgs());

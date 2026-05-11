@@ -135,26 +135,14 @@ public class TopologyControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"/v1/topology", "/v2/topology"})
-  void shouldReturnEmptyTopology(final String baseUrl) {
+  void shouldReturn503WhenTopologyNotYetAvailable(final String baseUrl) {
     // given
-    final var version = VersionUtil.getVersion();
-    final var expectedResponse =
-        """
-        {
-          "clusterId": null,
-          "clusterSize": null,
-          "partitionsCount": null,
-          "replicationFactor": null,
-          "lastCompletedChangeId": null,
-          "brokers":[],
-          "gatewayVersion": "%s"
-        }
-        """
-            .formatted(version);
     Mockito.when(topologyServices.getTopology())
         .thenReturn(
-            CompletableFuture.completedFuture(
-                new Topology(List.of(), null, null, null, null, version, null)));
+            CompletableFuture.failedFuture(
+                new io.camunda.service.exception.ServiceException(
+                    "Cluster topology is not yet available. The gateway has not received cluster state from any broker.",
+                    io.camunda.service.exception.ServiceException.Status.UNAVAILABLE)));
 
     // when / then
     webClient
@@ -163,10 +151,6 @@ public class TopologyControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
+        .isEqualTo(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
   }
 }

@@ -30,6 +30,7 @@ import java.util.function.BooleanSupplier;
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
   public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
+  public static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
   private ActorControl actor;
   private LogStream logStream;
@@ -52,6 +53,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
   private boolean enableAsyncScheduledTasks = true;
   private EventFilter processingFilter = e -> true;
   private ControllableStreamClock clock;
@@ -221,6 +223,15 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public int getMaxCommandsInBatch() {
     return maxCommandsInBatch;
+  }
+
+  public StreamProcessorContext maxRecoverableRetries(final int maxRecoverableRetries) {
+    this.maxRecoverableRetries = maxRecoverableRetries;
+    return this;
+  }
+
+  public int getMaxRecoverableRetries() {
+    return maxRecoverableRetries;
   }
 
   public StreamProcessorContext setEnableAsyncScheduledTasks(final boolean enabled) {

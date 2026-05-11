@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.http.HttpClient;
@@ -45,6 +46,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -71,6 +74,18 @@ final class JobStreamImplTest {
 
   private final Service service = new Service();
   private final DeterministicScheduler scheduler = new DeterministicScheduler();
+  // Virtual clock kept in lock-step with the DeterministicScheduler via advanceTime(). The
+  // production code compares elapsed nanos against streamInactivityTimeout, so tests need a
+  // nanoTime source that moves with scheduled ticks rather than wall clock.
+  private final AtomicLong virtualNanos = new AtomicLong();
+  private final AtomicInteger streamInactivityRecreatedCount = new AtomicInteger();
+  private final JobWorkerMetrics metrics =
+      new JobWorkerMetrics() {
+        @Override
+        public void streamInactivityRecreated() {
+          streamInactivityRecreatedCount.incrementAndGet();
+        }
+      };
   private JobClient client;
   private JobStreamerImpl jobStreamer;
   private ListAppender logCapture;
@@ -174,7 +189,7 @@ final class JobStreamImplTest {
 
     // when - expire exactly the amount of time the stream would back off before opening
     lastStream.onError(new StatusRuntimeException(Status.ABORTED));
-    scheduler.tick(10, TimeUnit.SECONDS);
+    advanceTime(10, TimeUnit.SECONDS);
     scheduler.runUntilIdle();
 
     // then
@@ -196,7 +211,7 @@ final class JobStreamImplTest {
     lastStream.onError(new StatusRuntimeException(Status.ABORTED));
 
     // avoid non-determinism by running all pending tasks
-    scheduler.tick(1, TimeUnit.DAYS);
+    advanceTime(1, TimeUnit.DAYS);
     scheduler.runUntilIdle();
 
     // then
@@ -214,7 +229,7 @@ final class JobStreamImplTest {
         service.lastStream();
 
     // when
-    scheduler.tick(streamingTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    advanceTime(streamingTimeout.toMillis(), TimeUnit.MILLISECONDS);
     scheduler.runUntilIdle();
 
     // then
@@ -254,7 +269,7 @@ final class JobStreamImplTest {
               assertThat(e.getMessage().getFormattedMessage())
                   .contains("upstream proxy")
                   .contains("504")
-                  .contains("streamTimeout");
+                  .contains("streamInactivityTimeout");
               assertThat(e.getThrown()).isInstanceOf(StatusRuntimeException.class);
             });
   }
@@ -288,7 +303,150 @@ final class JobStreamImplTest {
         .collect(Collectors.toList());
   }
 
+  @Test
+  void shouldReopenStreamOnInactivityTimeout() {
+    // given
+    final Duration inactivityTimeout = Duration.ofSeconds(30);
+    jobStreamer = createStreamer(Duration.ofHours(8), inactivityTimeout);
+
+    jobStreamer.openStreamer(ignored -> {});
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> initialStream =
+        service.lastStream();
+
+    // when - no jobs arrive, inactivity window expires
+    advanceTime(inactivityTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    scheduler.runUntilIdle();
+
+    // then
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> recreatedStream =
+        service.lastStream();
+    assertThat(recreatedStream).isNotNull().isNotEqualTo(initialStream);
+    assertThat(initialStream.isCancelled()).isTrue();
+    assertThat(recreatedStream.isCancelled()).isFalse();
+  }
+
+  @Test
+  void shouldRecordMetricWhenInactivityWatchdogFires() {
+    // given
+    final Duration inactivityTimeout = Duration.ofSeconds(30);
+    jobStreamer = createStreamer(Duration.ofHours(8), inactivityTimeout);
+    jobStreamer.openStreamer(ignored -> {});
+
+    // when - inactivity window elapses twice, triggering two recreations
+    advanceTime(inactivityTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    scheduler.runUntilIdle();
+    advanceTime(inactivityTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    scheduler.runUntilIdle();
+
+    // then
+    assertThat(streamInactivityRecreatedCount.get()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldNotRecordMetricWhenJobsArriveWithinInactivityWindow() {
+    // given
+    final Duration inactivityTimeout = Duration.ofSeconds(30);
+    jobStreamer = createStreamer(Duration.ofHours(8), inactivityTimeout);
+    jobStreamer.openStreamer(ignored -> {});
+
+    // when - activity keeps the watchdog from firing
+    advanceTime(inactivityTimeout.toMillis() - 1, TimeUnit.MILLISECONDS);
+    service.pushJob();
+    scheduler.runUntilIdle();
+
+    // then
+    assertThat(streamInactivityRecreatedCount.get()).isZero();
+  }
+
+  @Test
+  void shouldNotRecreateStreamWhenJobsArriveWithinInactivityWindow() {
+    // given
+    final Duration inactivityTimeout = Duration.ofSeconds(30);
+    jobStreamer = createStreamer(Duration.ofHours(8), inactivityTimeout);
+
+    final List<ActivatedJob> jobs = new ArrayList<>();
+    jobStreamer.openStreamer(jobs::add);
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> initialStream =
+        service.lastStream();
+
+    // when - push a job just before the inactivity window closes, twice
+    advanceTime(inactivityTimeout.toMillis() - 1, TimeUnit.MILLISECONDS);
+    service.pushJob();
+    scheduler.runUntilIdle();
+    advanceTime(inactivityTimeout.toMillis() - 1, TimeUnit.MILLISECONDS);
+    service.pushJob();
+    scheduler.runUntilIdle();
+
+    // then - stream was not cancelled, jobs were forwarded
+    assertThat(initialStream.isCancelled()).isFalse();
+    assertThat(service.lastStream()).isSameAs(initialStream);
+    assertThat(jobs).hasSize(2);
+  }
+
+  @Test
+  void shouldNotTriggerInactivityRecreationAfterClose() {
+    // given
+    final Duration inactivityTimeout = Duration.ofSeconds(30);
+    jobStreamer = createStreamer(Duration.ofHours(8), inactivityTimeout);
+    jobStreamer.openStreamer(ignored -> {});
+
+    // when
+    jobStreamer.close();
+    advanceTime(inactivityTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    scheduler.runUntilIdle();
+
+    // then - no new stream after the inactivity window elapsed post-close
+    assertThat(service.streams).isEmpty();
+  }
+
+  @Test
+  void shouldStallWhenBothTimeoutsDisabled() {
+    // given - user has explicitly disabled both watchdogs
+    jobStreamer = createStreamer(null, null);
+    final List<ActivatedJob> jobs = new ArrayList<>();
+    jobStreamer.openStreamer(jobs::add);
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> initialStream =
+        service.lastStream();
+
+    // when - server never sends or closes, huge amount of virtual time elapses
+    advanceTime(30, TimeUnit.DAYS);
+    scheduler.runUntilIdle();
+
+    // then - no recreation, no jobs, streamer still reports open (documented opt-out)
+    assertThat(service.streams).hasSize(1);
+    assertThat(service.lastStream()).isSameAs(initialStream);
+    assertThat(initialStream.isCancelled()).isFalse();
+    assertThat(jobs).isEmpty();
+    assertThat(jobStreamer.isOpen()).isTrue();
+  }
+
+  @Test
+  void shouldRecoverViaInactivityTimeoutWhenStreamTimeoutDisabled() {
+    // given - the issue #44264 scenario: streamTimeout disabled, inactivity set
+    final Duration inactivityTimeout = Duration.ofMinutes(10);
+    jobStreamer = createStreamer(null, inactivityTimeout);
+    jobStreamer.openStreamer(ignored -> {});
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> initialStream =
+        service.lastStream();
+
+    // when
+    advanceTime(inactivityTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    scheduler.runUntilIdle();
+
+    // then - inactivity watchdog recovers the stream
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> recreatedStream =
+        service.lastStream();
+    assertThat(recreatedStream).isNotNull().isNotEqualTo(initialStream);
+    assertThat(initialStream.isCancelled()).isTrue();
+    assertThat(recreatedStream.isCancelled()).isFalse();
+  }
+
   private JobStreamerImpl createStreamer(final Duration streamingTimeout) {
+    return createStreamer(streamingTimeout, null);
+  }
+
+  private JobStreamerImpl createStreamer(
+      final Duration streamingTimeout, final Duration streamInactivityTimeout) {
     return new JobStreamerImpl(
         client,
         "type",
@@ -298,8 +456,16 @@ final class JobStreamImplTest {
         Arrays.asList("test-tenant"),
         TenantFilter.PROVIDED,
         streamingTimeout,
+        streamInactivityTimeout,
         ignored -> 10_000L,
-        scheduler);
+        scheduler,
+        virtualNanos::get,
+        metrics);
+  }
+
+  private void advanceTime(final long amount, final TimeUnit unit) {
+    virtualNanos.addAndGet(unit.toNanos(amount));
+    scheduler.tick(amount, unit);
   }
 
   private static final class Service extends GatewayImplBase {

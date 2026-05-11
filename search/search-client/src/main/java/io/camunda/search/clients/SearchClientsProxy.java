@@ -8,6 +8,7 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.clients.impl.NoopSearchClientsProxy;
+import io.camunda.search.clients.tenant.PhysicalTenantScoped;
 import io.camunda.security.auth.SecurityContext;
 
 public interface SearchClientsProxy
@@ -35,7 +36,11 @@ public interface SearchClientsProxy
         VariableSearchClient,
         ClusterVariableSearchClient,
         GlobalListenerSearchClient,
-        DeployedResourceSearchClient {
+        DeployedResourceSearchClient,
+        PhysicalTenantScoped<SearchClientsProxy> {
+
+  @Override
+  SearchClientsProxy withPhysicalTenant(final String physicalTenantId);
 
   @Override
   SearchClientsProxy withSecurityContext(SecurityContext securityContext);

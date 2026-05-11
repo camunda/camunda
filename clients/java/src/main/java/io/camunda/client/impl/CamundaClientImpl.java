@@ -127,6 +127,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.FormGetRequest;
 import io.camunda.client.api.fetch.GlobalTaskListenerGetRequest;
 import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
@@ -177,6 +178,7 @@ import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
+import io.camunda.client.api.search.request.ResourceSearchRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
@@ -304,6 +306,7 @@ import io.camunda.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DocumentContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ElementInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.FormGetRequestImpl;
 import io.camunda.client.impl.fetch.GlobalTaskListenerGetRequestImpl;
 import io.camunda.client.impl.fetch.GloballyScopedClusterVariableGetRequestImpl;
 import io.camunda.client.impl.fetch.GroupGetRequestImpl;
@@ -314,6 +317,7 @@ import io.camunda.client.impl.fetch.ProcessDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetCallHierarchyRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.ResourceContentBinaryGetRequestImpl;
 import io.camunda.client.impl.fetch.ResourceContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ResourceGetRequestImpl;
 import io.camunda.client.impl.fetch.RoleGetRequestImpl;
@@ -354,6 +358,7 @@ import io.camunda.client.impl.search.request.MessageSubscriptionSearchRequestImp
 import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSequenceFlowsRequestImpl;
+import io.camunda.client.impl.search.request.ResourceSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesSearchRequestImpl;
@@ -918,8 +923,18 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public FormGetRequest newFormGetRequest(final long formKey) {
+    return new FormGetRequestImpl(httpClient, formKey);
+  }
+
+  @Override
   public ProcessDefinitionSearchRequest newProcessDefinitionSearchRequest() {
     return new ProcessDefinitionSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public ResourceSearchRequest newResourceSearchRequest() {
+    return new ResourceSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
@@ -1688,6 +1703,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ResourceContentGetRequest newResourceContentGetRequest(final long resourceKey) {
     return new ResourceContentGetRequestImpl(httpClient, resourceKey);
+  }
+
+  @Override
+  public ResourceContentGetRequest newResourceContentBinaryGetRequest(final long resourceKey) {
+    return new ResourceContentBinaryGetRequestImpl(httpClient, resourceKey);
   }
 
   @Override

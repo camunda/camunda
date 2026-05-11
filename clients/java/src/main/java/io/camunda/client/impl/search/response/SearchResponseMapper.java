@@ -457,4 +457,21 @@ public final class SearchResponseMapper {
         toSearchResponseInstances(response.getItems(), GlobalTaskListenerImpl::new);
     return new SearchResponseImpl<>(instances, page);
   }
+
+  public static SearchResponse<Resource> toResourceSearchResponse(
+      final ResourceSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Resource> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toResource);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  private static Resource toResource(final io.camunda.client.protocol.rest.ResourceResult result) {
+    return new ResourceImpl(
+        result.getResourceId(),
+        Long.parseLong(result.getResourceKey()),
+        result.getVersion(),
+        result.getResourceName(),
+        result.getTenantId());
+  }
 }

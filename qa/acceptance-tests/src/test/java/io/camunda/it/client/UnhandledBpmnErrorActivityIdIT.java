@@ -15,7 +15,7 @@ import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.util.HashMap;
 import java.util.Map;

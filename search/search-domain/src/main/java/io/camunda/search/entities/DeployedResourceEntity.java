@@ -9,30 +9,43 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record DeployedResourceEntity(
     Long resourceKey,
     String resourceId,
     String resourceName,
-    String resourceType,
+    // null when ResourceUtils.deriveResourceType() cannot derive a type from the
+    // resource name (no extension / empty name).
+    @Nullable String resourceType,
     Integer version,
-    String versionTag,
+    @Nullable String versionTag,
     Long deploymentKey,
     String tenantId,
-    String resourceContent)
+    @Nullable String resourceContent)
     implements TenantOwnedEntity {
 
+  public DeployedResourceEntity {
+    Objects.requireNonNull(resourceKey, "resourceKey");
+    Objects.requireNonNull(resourceId, "resourceId");
+    Objects.requireNonNull(resourceName, "resourceName");
+    Objects.requireNonNull(version, "version");
+    Objects.requireNonNull(deploymentKey, "deploymentKey");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
+
   public static class Builder implements ObjectBuilder<DeployedResourceEntity> {
-    private Long resourceKey;
-    private String resourceId;
-    private String resourceName;
-    private String resourceType;
-    private Integer version;
-    private String versionTag;
-    private Long deploymentKey;
-    private String tenantId;
-    private String resourceContent;
+    private @Nullable Long resourceKey;
+    private @Nullable String resourceId;
+    private @Nullable String resourceName;
+    private @Nullable String resourceType;
+    private @Nullable Integer version;
+    private @Nullable String versionTag;
+    private @Nullable Long deploymentKey;
+    private @Nullable String tenantId;
+    private @Nullable String resourceContent;
 
     public Builder resourceKey(final Long resourceKey) {
       this.resourceKey = resourceKey;
@@ -79,6 +92,7 @@ public record DeployedResourceEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public DeployedResourceEntity build() {
       return new DeployedResourceEntity(

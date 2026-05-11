@@ -300,7 +300,7 @@ public class ScaleUpPartitionsTest {
                 partition1Leader.unifiedConfig().getData().getPrimaryStorage().getDirectory(),
                 partition1Leader.getWorkingDirectory().toString()));
     final var bootstrapSnapshotDirectory =
-        directory.resolve("raft-partition/partitions/1/bootstrap-snapshots/1-1-0-0-0");
+        directory.resolve("default/partitions/1/bootstrap-snapshots/1-1-0-0-0");
     scaleToPartitions(targetPartitionCount);
     Awaitility.await("until snapshot is created")
         // to limit flakyness, the folder is checked every millisecond

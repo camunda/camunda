@@ -9,23 +9,35 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessDefinitionInstanceStatisticsEntity(
     String processDefinitionId,
     String tenantId,
-    String latestProcessDefinitionName,
+    // cache-enriched; null on cache miss.
+    @Nullable String latestProcessDefinitionName,
     Boolean hasMultipleVersions,
     Long activeInstancesWithoutIncidentCount,
     Long activeInstancesWithIncidentCount) {
 
+  public ProcessDefinitionInstanceStatisticsEntity {
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(tenantId, "tenantId");
+    Objects.requireNonNull(hasMultipleVersions, "hasMultipleVersions");
+    Objects.requireNonNull(
+        activeInstancesWithoutIncidentCount, "activeInstancesWithoutIncidentCount");
+    Objects.requireNonNull(activeInstancesWithIncidentCount, "activeInstancesWithIncidentCount");
+  }
+
   public static class Builder implements ObjectBuilder<ProcessDefinitionInstanceStatisticsEntity> {
-    private String processDefinitionId;
-    private String tenantId;
-    private String latestProcessDefinitionName;
-    private Boolean hasMultipleVersions;
-    private Long activeInstancesWithoutIncidentCount;
-    private Long activeInstancesWithIncidentCount;
+    private @Nullable String processDefinitionId;
+    private @Nullable String tenantId;
+    private @Nullable String latestProcessDefinitionName;
+    private @Nullable Boolean hasMultipleVersions;
+    private @Nullable Long activeInstancesWithoutIncidentCount;
+    private @Nullable Long activeInstancesWithIncidentCount;
 
     public Builder processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
@@ -57,6 +69,7 @@ public record ProcessDefinitionInstanceStatisticsEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public ProcessDefinitionInstanceStatisticsEntity build() {
       return new ProcessDefinitionInstanceStatisticsEntity(

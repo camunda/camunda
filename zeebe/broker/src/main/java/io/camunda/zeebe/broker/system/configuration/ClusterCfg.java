@@ -225,7 +225,7 @@ public final class ClusterCfg implements ConfigurationEntry {
     return zone;
   }
 
-  public void setZone(@Nullable final String zone) {
+  public void setZone(final @Nullable String zone) {
     this.zone = zone;
   }
 

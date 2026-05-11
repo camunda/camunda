@@ -8,8 +8,8 @@
 package io.camunda.security.impl;
 
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -916,7 +916,7 @@ public class AuthorizationCheckerTest {
                         a.groupIds(groupIds);
                       }
                       if (!mappingRuleIds.isEmpty()) {
-                        a.mappingRule(mappingRuleIds);
+                        a.mappingRules(mappingRuleIds);
                       }
                       if (!roleIds.isEmpty()) {
                         a.roleIds(roleIds);
@@ -1294,7 +1294,7 @@ public class AuthorizationCheckerTest {
                         a.groupIds(groupIds);
                       }
                       if (!mappingRuleIds.isEmpty()) {
-                        a.mappingRule(mappingRuleIds);
+                        a.mappingRules(mappingRuleIds);
                       }
                       if (!roleIds.isEmpty()) {
                         a.roleIds(roleIds);

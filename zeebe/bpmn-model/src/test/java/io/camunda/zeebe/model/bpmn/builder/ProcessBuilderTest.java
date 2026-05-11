@@ -51,6 +51,7 @@ import io.camunda.zeebe.model.bpmn.instance.Escalation;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Event;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Gateway;
@@ -75,6 +76,7 @@ import io.camunda.zeebe.model.bpmn.instance.TimeDuration;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Transaction;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import java.util.Collection;
@@ -2137,6 +2139,46 @@ public class ProcessBuilderTest {
                 properties.stream()
                     .collect(Collectors.toMap(ZeebeProperty::getName, ZeebeProperty::getValue)))
         .orElseGet(Collections::emptyMap);
+  }
+
+  @Test
+  public void shouldSetJobPriorityAsLiteralOnProcess() {
+    // given / when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .zeebeJobPriority("10")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("type"))
+            .done();
+
+    // then
+    final Process process = instance.getModelElementById("process");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) process.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class))
+        .singleElement()
+        .extracting(ZeebeJobPriorityDefinition::getPriority)
+        .isEqualTo("10");
+  }
+
+  @Test
+  public void shouldSetJobPriorityAsExpressionOnProcess() {
+    // given / when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .zeebeJobPriorityExpression("processPriority")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("type"))
+            .done();
+
+    // then
+    final Process process = instance.getModelElementById("process");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) process.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class))
+        .singleElement()
+        .extracting(ZeebeJobPriorityDefinition::getPriority)
+        .isEqualTo("=processPriority");
   }
 
   @Test

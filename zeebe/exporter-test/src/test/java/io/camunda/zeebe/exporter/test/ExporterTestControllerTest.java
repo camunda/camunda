@@ -53,10 +53,10 @@ final class ExporterTestControllerTest {
     // when - request replay from position 5
     final boolean result = controller.requestReplay(5);
 
-    // then - position should be reset to fromPosition - 1 = 4, and result indicates success
+    // then - position should be reset to lastExportedPosition = 5, and result indicates success
     assertThat(result).isTrue();
-    assertThat(controller.getPosition()).isEqualTo(4);
-    assertThat(controller.getLastExportedRecordPosition()).isEqualTo(4);
+    assertThat(controller.getPosition()).isEqualTo(5);
+    assertThat(controller.getLastExportedRecordPosition()).isEqualTo(5);
   }
 
   @Test

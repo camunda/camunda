@@ -387,6 +387,12 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
                 CamundaClientJobWorkerProperties::setStreamTimeout,
                 j -> j.getStreamTimeout().value(),
                 Duration.ofSeconds(30)),
+            //    private Duration streamInactivityTimeout;
+            new Input<>(
+                "streamInactivityTimeout",
+                CamundaClientJobWorkerProperties::setStreamInactivityTimeout,
+                j -> j.getStreamInactivityTimeout().value(),
+                Duration.ofMinutes(5)),
             //    private Integer maxRetries;
             new Input<>(
                 "maxRetries",

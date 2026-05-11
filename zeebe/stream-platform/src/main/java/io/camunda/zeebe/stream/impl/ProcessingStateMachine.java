@@ -186,7 +186,8 @@ public final class ProcessingStateMachine {
 
     writeRetryStrategy = new AbortableRetryStrategy(actor);
     sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
-    updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
+    updateStateRetryStrategy =
+        new RecoverableRetryStrategy(actor, context.getMaxRecoverableRetries());
     this.shouldProcessNext = shouldProcessNext;
 
     final int partitionId = context.getLogStream().getPartitionId();

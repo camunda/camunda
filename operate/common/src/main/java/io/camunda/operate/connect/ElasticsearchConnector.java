@@ -111,10 +111,8 @@ public class ElasticsearchConnector {
                 httpClientBuilder ->
                     configureHttpClient(
                         httpClientBuilder, elsConfig, pluginRepository.asRequestInterceptor()));
-    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, elsConfig));
-    }
+    restClientBuilder.setRequestConfigCallback(
+        configCallback -> setTimeouts(configCallback, elsConfig));
 
     final RestClientTransport transport =
         new RestClientTransport(restClientBuilder.build(), new JacksonJsonpMapper(objectMapper));
@@ -243,9 +241,7 @@ public class ElasticsearchConnector {
   }
 
   private Builder setTimeouts(final Builder builder, final ElasticsearchProperties elsConfig) {
-    if (elsConfig.getSocketTimeout() != null) {
-      builder.setSocketTimeout(elsConfig.getSocketTimeout());
-    }
+    builder.setSocketTimeout(elsConfig.getSocketTimeout());
     if (elsConfig.getConnectTimeout() != null) {
       builder.setConnectTimeout(elsConfig.getConnectTimeout());
     }

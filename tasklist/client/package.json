@@ -42,7 +42,7 @@
   },
   "scripts": {
     "start": "vite",
-    "build": "npm run ts-check && vite build && node ./renameProdIndex.mjs",
+    "build": "vite build && node ./renameProdIndex.mjs",
     "build:visual-regression": "VITE_VERSION=0.0.0-SNAPSHOT vite build --mode visual-regression",
     "test": "TZ=utc vitest run",
     "test:ci": "CI=true npm run test",

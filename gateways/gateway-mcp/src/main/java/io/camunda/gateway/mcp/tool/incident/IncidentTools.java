@@ -20,8 +20,8 @@ import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.gateway.protocol.model.simple.IncidentSearchQuery;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.UpdateJobChangeset;
@@ -57,7 +57,8 @@ public class IncidentTools {
 
   @CamundaMcpTool(
       description = "Search for incidents. " + EVENTUAL_CONSISTENCY_NOTE,
-      annotations = @McpAnnotations(readOnlyHint = true))
+      annotations = @McpAnnotations(readOnlyHint = true),
+      processesServer = true)
   public CallToolResult searchIncidents(
       @McpToolParamsUnwrapped @Valid final IncidentSearchQuery query) {
     try {

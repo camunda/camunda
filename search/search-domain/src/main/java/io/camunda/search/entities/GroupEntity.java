@@ -8,6 +8,16 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record GroupEntity(Long groupKey, String groupId, String name, String description) {}
+public record GroupEntity(
+    Long groupKey, String groupId, String name, @Nullable String description) {
+
+  public GroupEntity {
+    Objects.requireNonNull(groupKey, "groupKey");
+    Objects.requireNonNull(groupId, "groupId");
+    Objects.requireNonNull(name, "name");
+  }
+}

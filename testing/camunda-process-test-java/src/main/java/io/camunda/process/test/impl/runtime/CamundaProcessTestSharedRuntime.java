@@ -15,8 +15,10 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import java.net.URI;
+import java.time.Duration;
 import java.util.function.Supplier;
 
 public class CamundaProcessTestSharedRuntime implements CamundaProcessTestRuntime {
@@ -79,6 +81,11 @@ public class CamundaProcessTestSharedRuntime implements CamundaProcessTestRuntim
   @Override
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
     return getSharedRuntime().getCamundaClientBuilderFactory();
+  }
+
+  @Override
+  public Topology waitUntilClusterReady(final Duration timeout) {
+    return getSharedRuntime().waitUntilClusterReady(timeout);
   }
 
   private synchronized void startSharedRuntime() {

@@ -28,9 +28,9 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
@@ -514,7 +514,7 @@ public final class ProcessInstanceServices
             b ->
                 b.filter(
                         query.filter().toBuilder()
-                            .treePathOperations(Operation.like("*" + treePath + "*"))
+                            .treePathOperations(Operation.like(treePath + "*"))
                             .build())
                     .page(query.page())
                     .sort(query.sort())),

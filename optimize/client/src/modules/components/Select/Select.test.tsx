@@ -8,10 +8,10 @@
 
 import {UIEvent} from 'react';
 import {shallow} from 'enzyme';
-import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 import {MenuItem} from '@carbon/react';
 
 import {ignoreFragments} from 'services';
+import {MenuDropdown} from '../MenuDropdown';
 
 import Select, {SelectProps} from './Select';
 

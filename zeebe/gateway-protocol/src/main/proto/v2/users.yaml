@@ -9,6 +9,10 @@ paths:
       operationId: createUser
       summary: Create user
       description: Create a new user.
+      x-semantic-establishes:
+        kind: User
+        identifiedBy:
+          - { in: body, name: username, semanticType: Username }
       requestBody:
         content:
           application/json:
@@ -78,6 +82,10 @@ paths:
       operationId: getUser
       summary: Get user
       description: Get a user by its username.
+      x-semantic-requires:
+        kind: User
+        bind:
+          username: { from: path, name: username }
       parameters:
         - name: username
           in: path
@@ -113,6 +121,10 @@ paths:
       operationId: updateUser
       summary: Update user
       description: Updates a user.
+      x-semantic-requires:
+        kind: User
+        bind:
+          username: { from: path, name: username }
       parameters:
         - name: username
           in: path
@@ -156,6 +168,10 @@ paths:
       operationId: deleteUser
       summary: Delete user
       description: Deletes a user.
+      x-semantic-requires:
+        kind: User
+        bind:
+          username: { from: path, name: username }
       parameters:
         - name: username
           in: path
@@ -192,8 +208,9 @@ components:
           description: The password of the user.
           type: string
         username:
-          description: The username of the user.
-          type: string
+          description: The username of the new user.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
           type: string
@@ -210,7 +227,9 @@ components:
         - username
       properties:
         username:
-          $ref: 'identifiers.yaml#/components/schemas/Username'
+          description: The username of the created user.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
           nullable: true
@@ -241,7 +260,9 @@ components:
       type: object
       properties:
         username:
-          $ref: 'identifiers.yaml#/components/schemas/Username'
+          description: The username of the updated user.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
           nullable: true
@@ -259,7 +280,9 @@ components:
       type: object
       properties:
         username:
-          $ref: 'identifiers.yaml#/components/schemas/Username'
+          description: The username of the user.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
           nullable: true

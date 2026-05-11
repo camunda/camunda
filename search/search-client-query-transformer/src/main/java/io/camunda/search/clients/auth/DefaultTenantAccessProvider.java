@@ -8,7 +8,7 @@
 package io.camunda.search.clients.auth;
 
 import io.camunda.search.entities.TenantOwnedEntity;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.reader.TenantAccess;
 import io.camunda.security.reader.TenantAccessProvider;
 import java.util.List;

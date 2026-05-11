@@ -1,5 +1,8 @@
 fullnameOverride: "prom-els-exporter"
 
+es:
+  uri: http://elastic:9200
+
 commonLabels:
   camunda.io/created-by: __AUTHOR__
   camunda.io/purpose: load-test

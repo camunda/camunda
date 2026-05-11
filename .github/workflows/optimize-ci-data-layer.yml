@@ -77,16 +77,19 @@ jobs:
       - name: Read Java/version info
         id: "pom-info"
         uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
+      - name: Read DB versions
+        id: db-versions
+        uses: ./.github/actions/read-db-versions
       - name: Start Database
         uses: ./.github/actions/compose
         with:
           compose_file: .github/actions/compose/docker-compose.${{ matrix.database }}.yml
           project_name: ${{ matrix.database }}
         env:
-          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
-          OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
+          OPENSEARCH_VERSION: ${{ steps.db-versions.outputs.opensearch-2 }}
           OPENSEARCH_JVM_MEMORY: 1
           OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
 

@@ -199,6 +199,10 @@ public class AnnotationUtil {
                       ? new Empty<>()
                       : new FromAnnotation<>(
                           Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS)),
+                  annotation.streamInactivityTimeout() == -1
+                      ? new Empty<>()
+                      : new FromAnnotation<>(
+                          Duration.of(annotation.streamInactivityTimeout(), ChronoUnit.MILLIS)),
                   annotation.maxRetries() == -1
                       ? new Empty<>()
                       : new FromAnnotation<>(annotation.maxRetries()),

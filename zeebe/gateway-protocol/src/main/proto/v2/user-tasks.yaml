@@ -521,7 +521,7 @@ components:
           description: Tenant ID of this user task.
         processDefinitionId:
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionIdFilterProperty'
           description: The ID of the process definition.
         creationDate:
           allOf:
@@ -555,11 +555,11 @@ components:
           description: The key for this user task.
         processDefinitionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
           description: The key of the process definition.
         processInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
           description: The key of the process instance.
         elementInstanceKey:
           allOf:

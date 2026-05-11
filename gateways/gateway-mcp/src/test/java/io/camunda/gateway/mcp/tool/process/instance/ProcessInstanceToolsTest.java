@@ -929,7 +929,7 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("tenantId: must match \"^(<default>|[A-Za-z0-9_@.+-]+)$\""));
+                      .contains("tenantId: must match \"^(<default>|[\\w\\.\\-]{1,31})$\""));
     }
 
     @Test

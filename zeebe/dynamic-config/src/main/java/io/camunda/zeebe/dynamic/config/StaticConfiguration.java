@@ -15,7 +15,10 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public record StaticConfiguration(
     PartitionDistributor partitionDistributor,
     Set<MemberId> clusterMembers,
@@ -23,7 +26,7 @@ public record StaticConfiguration(
     List<PartitionId> partitionIds,
     int replicationFactor,
     DynamicPartitionConfig partitionConfig,
-    String clusterId) {
+    @Nullable String clusterId) {
 
   public int partitionCount() {
     return partitionIds.size();

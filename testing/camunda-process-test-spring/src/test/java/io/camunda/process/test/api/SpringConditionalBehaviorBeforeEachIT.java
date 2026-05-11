@@ -22,6 +22,7 @@ import static io.camunda.process.test.api.ConditionalBehaviorTestProcess.*;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,10 @@ public class SpringConditionalBehaviorBeforeEachIT {
 
   @BeforeEach
   void setupBehaviors() {
+    // increase assertion timeout because the immediate loop-back occasionally activates the reset
+    // gate timeout of 5 seconds
+    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(30));
+
     client.newDeployResourceCommand().addProcessModel(MODEL, PROCESS_ID + ".bpmn").send().join();
 
     processTestContext

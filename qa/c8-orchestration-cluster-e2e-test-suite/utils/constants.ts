@@ -204,3 +204,20 @@ export const NEW_AUTH_ROLE = {
   id: 'authrole',
   name: 'Auth role',
 };
+
+export const createUniqueGlobalTaskListener = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    id: `test-gl-${id}`,
+    type: `io.camunda.test.listener.${id}`,
+    eventType: 'creating',
+  };
+};
+
+export const createEditedGlobalTaskListener = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    type: `io.camunda.test.edited.${id}`,
+    eventType: 'completing',
+  };
+};

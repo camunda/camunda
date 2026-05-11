@@ -65,7 +65,8 @@ public final class Broker implements AutoCloseable {
 
     final ActorScheduler scheduler = this.systemContext.getScheduler();
     final BrokerInfo localBroker = createBrokerInfo(getConfig());
-    final var nodeId = MemberId.from(String.valueOf(getConfig().getCluster().getNodeId()));
+    final var cluster = getConfig().getCluster();
+    final var nodeId = MemberId.from(cluster.getZone(), cluster.getNodeId());
 
     healthCheckService =
         new BrokerHealthCheckService(

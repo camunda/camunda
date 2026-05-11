@@ -183,6 +183,8 @@ components:
       description: |
         The message key of the correlated message, as well as the first process instance key it
         correlated with.
+      x-semantic-provider:
+        - messageKey
       type: object
       required:
         - tenantId
@@ -237,6 +239,8 @@ components:
 
     MessagePublicationResult:
       description: The message key of the published message.
+      x-semantic-provider:
+        - messageKey
       type: object
       required:
         - tenantId
@@ -271,7 +275,7 @@ components:
         - correlationKey
         - elementId
         - elementInstanceKey
-        - extensionProperties
+        - toolProperties
         - inboundConnectorType
         - lastUpdatedDate
         - messageName
@@ -340,13 +344,14 @@ components:
           description: The correlation key of the message subscription.
         messageSubscriptionType:
           $ref: '#/components/schemas/MessageSubscriptionTypeEnum'
-        extensionProperties:
+        toolProperties:
           type: object
           additionalProperties:
             type: string
           description: |
-            The `zeebe:properties` extension properties extracted from the BPMN element associated
-            with this subscription. Empty object when no properties are defined.
+            The subset of `zeebe:properties` extension properties whose keys start with the
+            `io.camunda.tool:` prefix, extracted from the BPMN element associated with this
+            subscription. Empty object when no matching properties are defined.
         processDefinitionName:
           type: string
           nullable: true

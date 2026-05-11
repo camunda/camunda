@@ -8,8 +8,9 @@
 package io.camunda.operate;
 
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
+import static io.camunda.security.api.model.config.AuthenticationConfiguration.DEFAULT_METHOD;
 
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -34,10 +35,8 @@ public class OperateProfileService {
 
   public boolean isConsolidatedAuthOidc() {
     final var consolidatedAuthVariation =
-        AuthenticationMethod.parse(environment.getProperty(METHOD));
-
-    return consolidatedAuthVariation.isPresent()
-        && AuthenticationMethod.OIDC.equals(consolidatedAuthVariation.get());
+        AuthenticationMethod.parse(environment.getProperty(METHOD, DEFAULT_METHOD.name()));
+    return AuthenticationMethod.OIDC.equals(consolidatedAuthVariation);
   }
 
   public boolean isLoginDelegated() {

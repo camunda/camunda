@@ -69,7 +69,12 @@ public class NodeIdProviderConfiguration {
       final Optional<NodeIdRepository> nodeIdRepository,
       final BrokerShutdownHelper shutdownHelper) {
     return getNodeIdProvider(
-        LOG, cluster, nodeIdRepository, () -> shutdownHelper.initiateShutdown(1));
+        LOG,
+        cluster,
+        nodeIdRepository,
+        () ->
+            shutdownHelper.initiateShutdown(
+                1, "NodeIdProvider requested shutdown due to lease loss or failure"));
   }
 
   @Bean

@@ -7,8 +7,8 @@
  */
 package io.camunda.security.reader;
 
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 
 public interface ResourceAccessProvider {
 

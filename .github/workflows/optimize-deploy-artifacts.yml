@@ -41,6 +41,9 @@ jobs:
       uses: YunaBraska/java-info-action@575e99f42f2915cc62410c7917fef5558257042c # 3.0.1
       with:
         work-dir: ./optimize
+    - name: Read DB versions
+      id: db-versions
+      uses: ./.github/actions/read-db-versions
     - name: Expose common variables as Env
       run: |
         {
@@ -99,7 +102,7 @@ jobs:
         project_name: smoketest
       env:
         OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
-        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+        ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-8 }}
         ZEEBE_VERSION: ${{ env.ZEEBE_VERSION }}
         IDENTITY_VERSION: ${{ env.IDENTITY_VERSION }}
 

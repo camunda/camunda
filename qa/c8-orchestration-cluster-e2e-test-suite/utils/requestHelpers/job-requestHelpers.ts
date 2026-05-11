@@ -75,6 +75,38 @@ export async function searchJobKey(
   return result.jobKey;
 }
 
+export interface ActivatedJob {
+  jobKey: number;
+  customHeaders: JSONDoc;
+}
+
+export async function activateJobAndGetHeaders(
+  request: APIRequestContext,
+  jobType: string,
+): Promise<ActivatedJob> {
+  const result: ActivatedJob = {jobKey: 0, customHeaders: {}};
+  await expect(async () => {
+    const res = await request.post(buildUrl('/jobs/activation'), {
+      headers: jsonHeaders(),
+      data: {type: jobType, timeout: 5000, maxJobsToActivate: 1},
+    });
+    await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/jobs/activation',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
+    const json = await res.json();
+    expect(json.jobs).toHaveLength(1);
+    result.jobKey = json.jobs[0].jobKey;
+    result.customHeaders = json.jobs[0].customHeaders;
+  }).toPass(defaultAssertionOptions);
+  return result;
+}
+
 export async function completeJob(
   request: APIRequestContext,
   jobKey: number,

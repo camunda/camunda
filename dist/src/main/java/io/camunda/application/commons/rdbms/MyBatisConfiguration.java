@@ -45,6 +45,7 @@ import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
@@ -63,11 +64,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
-@Import(DataSourceAutoConfiguration.class)
+@Import({DataSourceAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class})
 public class MyBatisConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
@@ -105,6 +107,10 @@ public class MyBatisConfiguration {
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
     moduleConfig.setDdlLockWaitTimeout(lockWaitTimeout);
+    // Inject the current application version for schema upgrade-path validation.
+    // When the version is not a valid semantic version (e.g. during local development),
+    // the version check is skipped inside LiquibaseSchemaManager.
+    moduleConfig.setApplicationVersion(VersionUtil.getVersion());
 
     return moduleConfig;
   }

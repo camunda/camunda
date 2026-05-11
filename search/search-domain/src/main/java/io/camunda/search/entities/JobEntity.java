@@ -14,6 +14,7 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record JobEntity(
@@ -24,18 +25,18 @@ public record JobEntity(
     JobKind kind,
     ListenerEventType listenerEventType,
     Integer retries,
-    Boolean isDenied,
-    String deniedReason,
+    @Nullable Boolean isDenied,
+    @Nullable String deniedReason,
     Boolean hasFailedWithRetriesLeft,
-    String errorCode,
-    String errorMessage,
+    @Nullable String errorCode,
+    @Nullable String errorMessage,
     Map<String, String> customHeaders,
-    OffsetDateTime deadline,
-    OffsetDateTime endTime,
+    @Nullable OffsetDateTime deadline,
+    @Nullable OffsetDateTime endTime,
     String processDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
     String elementId,
     Long elementInstanceKey,
     String tenantId,
@@ -44,6 +45,22 @@ public record JobEntity(
     implements TenantOwnedEntity {
 
   public JobEntity {
+    requireNonNull(jobKey, "jobKey");
+    requireNonNull(type, "type");
+    requireNonNull(worker, "worker");
+    requireNonNull(state, "state");
+    requireNonNull(kind, "kind");
+    requireNonNull(listenerEventType, "listenerEventType");
+    requireNonNull(retries, "retries");
+    requireNonNull(hasFailedWithRetriesLeft, "hasFailedWithRetriesLeft");
+    requireNonNull(processDefinitionId, "processDefinitionId");
+    requireNonNull(processDefinitionKey, "processDefinitionKey");
+    requireNonNull(processInstanceKey, "processInstanceKey");
+    requireNonNull(elementId, "elementId");
+    requireNonNull(elementInstanceKey, "elementInstanceKey");
+    requireNonNull(tenantId, "tenantId");
+    requireNonNull(creationTime, "creationTime");
+    requireNonNull(lastUpdateTime, "lastUpdateTime");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
@@ -51,30 +68,30 @@ public record JobEntity(
   }
 
   public static class Builder implements ObjectBuilder<JobEntity> {
-    private Long jobKey;
-    private String type;
-    private String worker;
-    private JobState state;
-    private JobKind kind;
-    private ListenerEventType listenerEventType;
-    private Integer retries;
-    private Boolean isDenied;
-    private String deniedReason;
-    private Boolean hasFailedWithRetriesLeft;
-    private String errorCode;
-    private String errorMessage;
-    private Map<String, String> customHeaders;
-    private OffsetDateTime deadline;
-    private OffsetDateTime endTime;
-    private String processDefinitionId;
-    private Long processDefinitionKey;
-    private Long processInstanceKey;
-    private Long rootProcessInstanceKey;
-    private String elementId;
-    private Long elementInstanceKey;
-    private String tenantId;
-    private OffsetDateTime creationTime;
-    private OffsetDateTime lastUpdateTime;
+    private @Nullable Long jobKey;
+    private @Nullable String type;
+    private @Nullable String worker;
+    private @Nullable JobState state;
+    private @Nullable JobKind kind;
+    private @Nullable ListenerEventType listenerEventType;
+    private @Nullable Integer retries;
+    private @Nullable Boolean isDenied;
+    private @Nullable String deniedReason;
+    private @Nullable Boolean hasFailedWithRetriesLeft;
+    private @Nullable String errorCode;
+    private @Nullable String errorMessage;
+    private @Nullable Map<String, String> customHeaders;
+    private @Nullable OffsetDateTime deadline;
+    private @Nullable OffsetDateTime endTime;
+    private @Nullable String processDefinitionId;
+    private @Nullable Long processDefinitionKey;
+    private @Nullable Long processInstanceKey;
+    private @Nullable Long rootProcessInstanceKey;
+    private @Nullable String elementId;
+    private @Nullable Long elementInstanceKey;
+    private @Nullable String tenantId;
+    private @Nullable OffsetDateTime creationTime;
+    private @Nullable OffsetDateTime lastUpdateTime;
 
     public Builder jobKey(final Long jobKey) {
       this.jobKey = jobKey;
@@ -196,15 +213,16 @@ public record JobEntity(
       return this;
     }
 
+    @SuppressWarnings("NullAway")
     @Override
     public JobEntity build() {
       return new JobEntity(
-          requireNonNull(jobKey, "Expected non-null field for jobKey."),
+          jobKey,
           type,
           worker,
-          requireNonNull(state, "Expected non-null field for state"),
-          requireNonNull(kind, "Expected non-null field for kind."),
-          requireNonNull(listenerEventType, "Expected non-null field for listenerEventType."),
+          state,
+          kind,
+          listenerEventType,
           retries,
           isDenied,
           deniedReason,

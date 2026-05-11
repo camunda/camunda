@@ -50,7 +50,7 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
     final var model =
         new CorrelatedMessageSubscriptionDbModel.Builder()
             .correlationKey(null)
-            .correlationTime(null)
+            .correlationTime(OffsetDateTime.now())
             .messageKey(123L)
             .messageName(null)
             .flowNodeId(null)
@@ -71,7 +71,6 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
     // Then
     assertThat(entity.correlationKey())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
-    assertThat(entity.correlationTime()).isNull();
     assertThat(entity.messageKey()).isNotNull();
     assertThat(entity.messageName())
         .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""

@@ -11,6 +11,7 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.CAMUNDA;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import java.util.Optional;
 
 public class DeployedResourceIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
@@ -25,6 +26,7 @@ public class DeployedResourceIndex extends AbstractIndexDescriptor implements Pr
   public static final String VERSION_TAG = "versionTag";
   public static final String DEPLOYMENT_KEY = "deploymentKey";
   public static final String TENANT_ID = "tenantId";
+  public static final String RESOURCE_TYPE = "resourceType";
   public static final String RESOURCE_CONTENT = "resourceContent";
 
   public DeployedResourceIndex(final String indexPrefix, final boolean isElasticsearch) {
@@ -34,6 +36,11 @@ public class DeployedResourceIndex extends AbstractIndexDescriptor implements Pr
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 
   @Override

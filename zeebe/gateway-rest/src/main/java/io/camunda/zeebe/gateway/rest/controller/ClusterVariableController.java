@@ -18,7 +18,7 @@ import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryRequest;
 import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
 import io.camunda.gateway.protocol.model.UpdateClusterVariableRequest;
 import io.camunda.search.query.ClusterVariableQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.validation.ClusterVariableValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.ClusterVariableServices;

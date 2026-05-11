@@ -25,7 +25,7 @@ import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
@@ -1399,7 +1399,9 @@ public class JobControllerTest extends RestControllerTest {
         .thenAnswer(
             invocation -> {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
-              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              future.complete(
+                  ResponseEntity.ok()
+                      .body(JobActivationResult.Builder.create().jobs(List.of()).build()));
               return mockObserver;
             });
 
@@ -1447,7 +1449,9 @@ public class JobControllerTest extends RestControllerTest {
         .thenAnswer(
             invocation -> {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
-              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              future.complete(
+                  ResponseEntity.ok()
+                      .body(JobActivationResult.Builder.create().jobs(List.of()).build()));
               return mockObserver;
             });
 
@@ -1497,7 +1501,9 @@ public class JobControllerTest extends RestControllerTest {
         .thenAnswer(
             invocation -> {
               final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
-              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              future.complete(
+                  ResponseEntity.ok()
+                      .body(JobActivationResult.Builder.create().jobs(List.of()).build()));
               return mockObserver;
             });
 

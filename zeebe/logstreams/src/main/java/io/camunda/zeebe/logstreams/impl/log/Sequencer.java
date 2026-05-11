@@ -24,7 +24,6 @@ import java.time.InstantSource;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
-import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +32,6 @@ import org.slf4j.LoggerFactory;
  * serializes them, assigning positions to all entries. Writes that are accepted are written
  * directly to the {@link LogStorage}.
  */
-@NullMarked
 final class Sequencer implements LogStreamWriter, Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
   private final int maxFragmentSize;

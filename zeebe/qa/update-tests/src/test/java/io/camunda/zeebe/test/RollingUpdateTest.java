@@ -9,12 +9,17 @@ package io.camunda.zeebe.test;
 
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobHandler;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.cluster.BrokerNode;
+import io.camunda.container.cluster.CamundaCluster;
+import io.camunda.container.cluster.CamundaClusterBuilder;
+import io.camunda.container.cluster.GatewayNode;
+import io.camunda.container.volume.CamundaVolume;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
@@ -22,11 +27,8 @@ import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.junit.CachedTestResultsExtension;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
-import io.zeebe.containers.ZeebeBrokerNode;
-import io.zeebe.containers.ZeebeGatewayNode;
-import io.zeebe.containers.ZeebeVolume;
-import io.zeebe.containers.cluster.ZeebeCluster;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
@@ -78,26 +80,28 @@ final class RollingUpdateTest {
               .map(Path::of)
               .orElse(null));
 
-  private final ZeebeCluster cluster =
-      ZeebeCluster.builder()
+  private final CamundaCluster cluster =
+      CamundaCluster.builder()
           .withEmbeddedGateway(true)
           .withBrokersCount(3)
           .withPartitionsCount(1)
           .withReplicationFactor(3)
           .withNodeConfig(
               node ->
-                  node.withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+                  node.withUnifiedConfig(
+                          cfg -> {
+                            cfg.getSystem().getUpgrade().setEnableVersionCheck(false);
+                            cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                          })
                       .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-                      .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
-                      .withEnv(
-                          "CAMUNDA_DATA_SECONDARYSTORAGE_AUTOCONFIGURECAMUNDAEXPORTER", "false"))
+                      .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false"))
           .build();
 
   @SuppressWarnings("unused")
   @RegisterExtension
   private final ContainerLogsDumper logsPrinter = new ContainerLogsDumper(cluster::getNodes);
 
-  private final Collection<ZeebeVolume> volumes = new LinkedList<>();
+  private final Collection<CamundaVolume> volumes = new LinkedList<>();
 
   static Stream<Arguments> versionMatrix() {
     if (cachedVersionMatrix == null) {
@@ -108,7 +112,9 @@ final class RollingUpdateTest {
 
   @BeforeEach
   public void setup() {
-    cluster.getBrokers().values().forEach(this::configureBroker);
+    final var initialContactPoints =
+        cluster.getBrokers().values().stream().map(BrokerNode::getInternalClusterAddress).toList();
+    cluster.getBrokers().values().forEach(broker -> configureBroker(broker, initialContactPoints));
   }
 
   @AfterEach
@@ -125,15 +131,15 @@ final class RollingUpdateTest {
     updateAllBrokers(from);
 
     final var index = 0;
-    final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(index);
+    final BrokerNode<?> broker = cluster.getBrokers().get(index);
     cluster.start();
 
     // when
     broker.stop();
-    updateBroker(broker, to);
+    updateBroker(broker, index, to);
 
     // then
-    final ZeebeGatewayNode<?> availableGateway = cluster.getAvailableGateway();
+    final GatewayNode<?> availableGateway = cluster.getAvailableGateway();
     try (final var client = newClient(availableGateway)) {
       Awaitility.await()
           .atMost(Duration.ofSeconds(120))
@@ -157,7 +163,7 @@ final class RollingUpdateTest {
     cluster.start();
 
     // when
-    final ZeebeGatewayNode<?> availableGateway = cluster.getAvailableGateway();
+    final GatewayNode<?> availableGateway = cluster.getAvailableGateway();
     try (final var client = newClient(availableGateway)) {
       deployProcess(client);
 
@@ -171,7 +177,7 @@ final class RollingUpdateTest {
     }
 
     final var brokerId = 1;
-    final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(brokerId);
+    final BrokerNode<?> broker = cluster.getBrokers().get(brokerId);
     broker.stop();
 
     try (final var client = newClient(availableGateway)) {
@@ -202,7 +208,7 @@ final class RollingUpdateTest {
           .pollInterval(Duration.ofMillis(500))
           .untilAsserted(() -> assertBrokerHasAtLeastOneSnapshot(0));
 
-      updateBroker(broker, to);
+      updateBroker(broker, brokerId, to);
       broker.start();
       Awaitility.await("updated broker is added to topology")
           .atMost(Duration.ofSeconds(120))
@@ -225,7 +231,7 @@ final class RollingUpdateTest {
 
     // when
     final long firstProcessInstanceKey;
-    ZeebeGatewayNode<?> availableGateway = cluster.getGateways().get("0");
+    GatewayNode<?> availableGateway = cluster.getGateways().get("0");
     try (final var client = newClient(availableGateway)) {
       deployProcess(client);
 
@@ -242,7 +248,7 @@ final class RollingUpdateTest {
     for (int i = cluster.getBrokers().size() - 1; i >= 0; i--) {
       try (final CamundaClient client = newClient(availableGateway)) {
         final var brokerId = i;
-        final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(i);
+        final BrokerNode<?> broker = cluster.getBrokers().get(i);
         broker.stop();
 
         Awaitility.await("broker is removed from topology")
@@ -250,7 +256,7 @@ final class RollingUpdateTest {
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, brokerId));
 
-        updateBroker(broker, to);
+        updateBroker(broker, brokerId, to);
         broker.start();
         Awaitility.await("updated broker is added to topology")
             .atMost(Duration.ofSeconds(120))
@@ -298,22 +304,47 @@ final class RollingUpdateTest {
     }
   }
 
-  private void takeSnapshot(final ZeebeBrokerNode<?> node) {
+  private void takeSnapshot(final BrokerNode<?> node) {
     PartitionsActuator.of(node).takeSnapshot();
   }
 
   private void updateAllBrokers(final String version) {
-    cluster.getBrokers().forEach((id, broker) -> updateBroker(broker, version));
+    cluster.getBrokers().forEach((id, broker) -> updateBroker(broker, id, version));
   }
 
-  private void updateBroker(final ZeebeBrokerNode<?> broker, final String version) {
+  private void updateBroker(final BrokerNode<?> broker, final int id, final String version) {
     if ("CURRENT".equals(version)) {
       broker.setDockerImageName(
           ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
       broker.withEnv(VersionUtil.VERSION_OVERRIDE_ENV_NAME, currentVersion());
     } else {
       broker.setDockerImageName(
-          DockerImageName.parse("camunda/zeebe").withTag(version).asCanonicalNameString());
+          DockerImageName.parse("camunda/camunda").withTag(version).asCanonicalNameString());
+    }
+
+    final var semVer = SemanticVersion.parse(version);
+
+    // For versions < 8.8 Unified configuration is not supported.
+    // Clustering parameters have to be passed using the ENV vars in the containers
+
+    if (semVer.isPresent() && semVer.get().minor() < 8) {
+      broker.setDockerImageName(
+          DockerImageName.parse("camunda/camunda").withTag(version).asCanonicalNameString());
+      broker
+          .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+          .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT", "1")
+          .withEnv("ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR", "3")
+          .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE", "3")
+          .withEnv("ZEEBE_BROKER_CLUSTER_NODE_ID", String.valueOf(id))
+          .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTER_NAME", CamundaClusterBuilder.DEFAULT_CLUSTER_NAME)
+          .withEnv(
+              "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
+              String.join(",", broker.getConfiguration().getCluster().getInitialContactPoints()))
+          .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+          .withEnv("ZEEBE_BROKER_NETWORK_HOST", "0.0.0.0")
+          .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", broker.getInternalHost())
+          .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+          .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
     }
   }
 
@@ -372,7 +403,7 @@ final class RollingUpdateTest {
         .hasExpectedReplicasCount(cluster.getPartitionsCount(), cluster.getBrokers().size() - 1);
   }
 
-  private CamundaClient newClient(final ZeebeGatewayNode<?> gateway) {
+  private CamundaClient newClient(final GatewayNode<?> gateway) {
     return CamundaClient.newClientBuilder()
         .preferRestOverGrpc(false)
         .grpcAddress(gateway.getGrpcAddress())
@@ -380,7 +411,7 @@ final class RollingUpdateTest {
   }
 
   private void assertBrokerHasAtLeastOneSnapshot(final int index) {
-    final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(index);
+    final BrokerNode<?> broker = cluster.getBrokers().get(index);
     final PartitionsActuator partitionsActuator = PartitionsActuator.of(broker);
     assertThat(partitionsActuator.query())
         .hasEntrySatisfying(
@@ -391,9 +422,10 @@ final class RollingUpdateTest {
                     .isNotBlank());
   }
 
-  private void configureBroker(final ZeebeBrokerNode<?> broker) {
+  private void configureBroker(
+      final BrokerNode<?> broker, final List<String> initialContactPoints) {
     final var volume =
-        ZeebeVolume.newVolume(
+        CamundaVolume.newVolume(
             cfg -> {
               // Workaround for
               // https://github.com/camunda-community-hub/zeebe-test-container/issues/656
@@ -405,13 +437,29 @@ final class RollingUpdateTest {
             });
     volumes.add(volume);
     broker
-        .withZeebeData(volume)
+        .withCamundaData(volume)
+        .withUnifiedConfig(
+            cfg -> {
+              cfg.getCluster().getMembership().setBroadcastUpdates(true);
+              cfg.getCluster().getMembership().setSyncInterval(Duration.ofMillis(250));
+              cfg.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
+              cfg.getCluster().getMembership().setProbeTimeout(Duration.ofSeconds(1));
+              cfg.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(2));
+              cfg.getCluster().getMembership().setSuspectProbes(2);
+            })
+
+        // Pass the old env vars for the old version broker
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES", "true")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL", "250ms")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL", "100ms")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT", "1s")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_FAILURETIMEOUT", "2s")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES", "2")
+        .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", broker.getInternalHost())
+        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+        .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERNAME", CamundaClusterBuilder.DEFAULT_CLUSTER_NAME)
+        .withEnv(
+            "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS", String.join(",", initialContactPoints))
         // ensure we have an exporter present to test sharing exporter state across nodes
         .withEnv("ZEEBE_BROKER_EXECUTIONMETRICSEXPORTERENABLED", "true")
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")

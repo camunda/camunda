@@ -9,10 +9,8 @@ package io.camunda.zeebe.it.util;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
-import io.camunda.client.impl.util.AddressUtil;
-import io.zeebe.containers.ZeebeGatewayNode;
-import io.zeebe.containers.cluster.ZeebeCluster;
-import io.zeebe.containers.engine.ContainerEngine;
+import io.camunda.container.cluster.CamundaCluster;
+import io.camunda.container.cluster.GatewayNode;
 
 public final class ZeebeContainerUtil {
 
@@ -20,17 +18,17 @@ public final class ZeebeContainerUtil {
     // utility class
   }
 
-  public static CamundaClientBuilder newClientBuilder(final ZeebeCluster cluster) {
-    final ZeebeGatewayNode<?> gateway = cluster.getAvailableGateway();
+  public static CamundaClientBuilder newClientBuilder(final CamundaCluster cluster) {
+    final GatewayNode<?> gateway = cluster.getAvailableGateway();
 
     return CamundaClient.newClientBuilder()
         .preferRestOverGrpc(false)
         .grpcAddress(gateway.getGrpcAddress());
   }
 
-  public static CamundaClientBuilder newClientBuilder(final ContainerEngine containerEngine) {
+  public static CamundaClientBuilder newClientBuilder(final GatewayNode gateway) {
     return CamundaClient.newClientBuilder()
         .preferRestOverGrpc(false)
-        .grpcAddress(AddressUtil.composeGrpcAddress(containerEngine.getGatewayAddress(), true));
+        .grpcAddress(gateway.getGrpcAddress());
   }
 }

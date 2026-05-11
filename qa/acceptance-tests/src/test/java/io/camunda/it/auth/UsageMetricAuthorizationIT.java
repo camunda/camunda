@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsImpl;
@@ -34,6 +35,7 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -100,7 +102,7 @@ public class UsageMetricAuthorizationIT {
   private static void waitForUsageMetrics(
       final CamundaClient camundaClient, final Consumer<UsageMetricsStatistics> fnRequirements) {
     Awaitility.await("should export metrics to secondary storage")
-        .atMost(EXPORT_INTERVAL.multipliedBy(2))
+        .atMost(Duration.ofSeconds(30))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
@@ -112,6 +114,27 @@ public class UsageMetricAuthorizationIT {
                     .satisfies(fnRequirements));
   }
 
+  // Tenant assignments are exported asynchronously to secondary storage and used at request time
+  // to resolve a user's authenticated tenants. Without this wait, basic-auth requests can race
+  // and see an empty tenant list, causing tenant-scoped queries to return 0 results.
+  private static void waitForUsersAssignedToTenant(
+      final CamundaClient camundaClient, final String tenant, final String... usernames) {
+    Awaitility.await("users " + Arrays.asList(usernames) + " assigned to tenant " + tenant)
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newUsersByTenantSearchRequest(tenant)
+                            .send()
+                            .join()
+                            .items()
+                            .stream()
+                            .map(TenantUser::getUsername))
+                    .contains(usernames));
+  }
+
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     createTenant(adminClient, TENANT_A);
@@ -119,6 +142,8 @@ public class UsageMetricAuthorizationIT {
     assignUserToTenant(adminClient, ADMIN, TENANT_A);
     assignUserToTenant(adminClient, ADMIN, TENANT_B);
     assignUserToTenant(adminClient, RESTRICTED, TENANT_A);
+    waitForUsersAssignedToTenant(adminClient, TENANT_A, ADMIN, RESTRICTED);
+    waitForUsersAssignedToTenant(adminClient, TENANT_B, ADMIN);
 
     // Create PIs & wait for metrics to be exported
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);

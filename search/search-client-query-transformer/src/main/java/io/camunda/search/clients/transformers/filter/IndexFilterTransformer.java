@@ -21,8 +21,8 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBase;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.condition.AnyOfAuthorizationCondition;
 import io.camunda.security.auth.condition.SingleAuthorizationCondition;
 import io.camunda.security.reader.AuthorizationCheck;
@@ -77,6 +77,11 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
                   LOG.error(message);
                   return new CamundaSearchException(message);
                 });
+
+    LOG.trace(
+        "Search query filters - authorization: [{}], tenant: [{}]",
+        authorizationSearchQuery,
+        tenantSearchQuery);
 
     return rewriteSearchQueries(
         List.of(filterSearchQuery, authorizationSearchQuery, tenantSearchQuery));

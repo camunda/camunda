@@ -15,7 +15,7 @@ import io.camunda.gateway.protocol.model.JobMetricsConfigurationResponse;
 import io.camunda.gateway.protocol.model.SystemConfigurationResponse;
 import io.camunda.gateway.protocol.model.UsageMetricsResponse;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
@@ -60,15 +60,16 @@ public class SystemController {
   public ResponseEntity<SystemConfigurationResponse> getSystemConfiguration() {
     final JobMetricsConfiguration jobMetricsCfg = gatewayRestConfiguration.getJobMetrics();
     final var jobMetricsResponse =
-        new JobMetricsConfigurationResponse()
+        JobMetricsConfigurationResponse.Builder.create()
             .enabled(jobMetricsCfg.isEnabled())
             .exportInterval(jobMetricsCfg.getExportInterval().toString())
             .maxWorkerNameLength(jobMetricsCfg.getMaxWorkerNameLength())
             .maxJobTypeLength(jobMetricsCfg.getMaxJobTypeLength())
             .maxTenantIdLength(jobMetricsCfg.getMaxTenantIdLength())
-            .maxUniqueKeys(jobMetricsCfg.getMaxUniqueKeys());
-    final var response = new SystemConfigurationResponse().jobMetrics(jobMetricsResponse);
-    return ResponseEntity.ok(response);
+            .maxUniqueKeys(jobMetricsCfg.getMaxUniqueKeys())
+            .build();
+    return ResponseEntity.ok(
+        SystemConfigurationResponse.Builder.create().jobMetrics(jobMetricsResponse).build());
   }
 
   private ResponseEntity<UsageMetricsResponse> getMetrics(final UsageMetricsQuery query) {

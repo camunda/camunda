@@ -9,8 +9,8 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.util.ResourceUtils;
 import io.camunda.webapps.schema.entities.resource.DeployedResourceEntity;
-import io.camunda.zeebe.exporter.common.utils.ResourceUtils;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -19,7 +19,8 @@ import java.util.List;
 
 public class ResourceCreatedHandler implements ExportHandler<DeployedResourceEntity, Resource> {
 
-  private static final ResourceIntent SUPPORTED_INTENT = ResourceIntent.CREATED;
+  private static final List<ResourceIntent> SUPPORTED_INTENTS =
+      List.of(ResourceIntent.CREATED, ResourceIntent.REEXPORTED);
   private final String indexName;
 
   public ResourceCreatedHandler(final String indexName) {
@@ -39,7 +40,7 @@ public class ResourceCreatedHandler implements ExportHandler<DeployedResourceEnt
   @Override
   public boolean handlesRecord(final Record<Resource> record) {
     return getHandledValueType().equals(record.getValueType())
-        && SUPPORTED_INTENT.equals(record.getIntent());
+        && SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override

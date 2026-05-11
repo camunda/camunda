@@ -736,6 +736,36 @@
           "code": "java.method.removed",
           "old": "method io.camunda.process.test.api.CamundaProcessTestExtension io.camunda.process.test.api.CamundaProcessTestExtension::withJsonMapper(io.camunda.zeebe.client.api.JsonMapper)",
           "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.parameter.DefaultParameterResolverStrategy::<init>(io.camunda.client.api.JsonMapper, io.camunda.zeebe.client.api.worker.JobClient)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.parameter.ParameterResolverStrategy io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::parameterResolverStrategy(io.camunda.client.api.JsonMapper, io.camunda.zeebe.client.ZeebeClient)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::jobWorkerPostProcessor(io.camunda.client.jobhandling.JobWorkerManager, io.camunda.client.jobhandling.CommandExceptionHandlingStrategy, io.camunda.client.metrics.MetricsRecorder, io.camunda.client.jobhandling.parameter.ParameterResolverStrategy, io.camunda.client.jobhandling.result.ResultProcessorStrategy)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.CommandExceptionHandlingStrategy io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::commandExceptionHandlingStrategy(io.camunda.client.api.worker.BackoffSupplier, io.camunda.client.jobhandling.CamundaClientExecutorService)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.JobExceptionHandlerSupplier io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::jobExceptionHandlingSupplier(io.camunda.client.jobhandling.CommandExceptionHandlingStrategy, io.camunda.client.metrics.MetricsRecorder)",
+          "justification": "Removal of V1 APIs in 8.10+; compatibility impact accepted for this release."
         }
       ]
     }

@@ -14,6 +14,7 @@ import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
@@ -225,8 +226,7 @@ public class MessageSubscriptionSearchIT {
   }
 
   @Test
-  @Disabled("Will be re-eavaluated once we start exporting extensionProperties again")
-  void shouldReturnExtensionPropertiesForStartEventSubscription() {
+  void shouldReturnToolPropertiesForStartEventSubscription() {
     // when
     final var result =
         camundaClient
@@ -238,9 +238,47 @@ public class MessageSubscriptionSearchIT {
     // then
     assertThat(result.items()).hasSize(1);
     final var sub = result.items().getFirst();
-    assertThat(sub.getExtensionProperties())
-        .containsEntry("customKey", "customValue")
-        .containsEntry("env", "test");
+    // toolProperties only includes keys prefixed with "io.camunda.tool:"; "inbound.type" is
+    // excluded
+    assertThat(sub.getToolProperties())
+        .containsExactly(entry("io.camunda.tool:name", "myWebhookTool"));
+    assertThat(sub.getToolName()).isEqualTo("myWebhookTool");
+    assertThat(sub.getInboundConnectorType()).isEqualTo("io.camunda:http-webhook:1");
+  }
+
+  @Test
+  void shouldFilterByToolName() {
+    // when
+    final var result =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.toolName("myWebhookTool"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getMessageSubscriptionType())
+        .isEqualTo(MessageSubscriptionType.START_EVENT);
+    assertThat(result.items().getFirst().getToolName()).isEqualTo("myWebhookTool");
+  }
+
+  @Test
+  void shouldFilterByInboundConnectorType() {
+    // when
+    final var result =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.inboundConnectorType("io.camunda:http-webhook:1"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getMessageSubscriptionType())
+        .isEqualTo(MessageSubscriptionType.START_EVENT);
+    assertThat(result.items().getFirst().getInboundConnectorType())
+        .isEqualTo("io.camunda:http-webhook:1");
   }
 
   @Test

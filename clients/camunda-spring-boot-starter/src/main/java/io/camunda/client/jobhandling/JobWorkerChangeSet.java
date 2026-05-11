@@ -150,6 +150,9 @@ public sealed interface JobWorkerChangeSet {
                   jobWorkerValue::setForceFetchAllVariables),
               reset(jobWorkerValue.getStreamEnabled(), jobWorkerValue::setStreamEnabled),
               reset(jobWorkerValue.getStreamTimeout(), jobWorkerValue::setStreamTimeout),
+              reset(
+                  jobWorkerValue.getStreamInactivityTimeout(),
+                  jobWorkerValue::setStreamInactivityTimeout),
               reset(jobWorkerValue.getMaxRetries(), jobWorkerValue::setMaxRetries),
               reset(jobWorkerValue.getRetryBackoff(), jobWorkerValue::setRetryBackoff),
               reset(jobWorkerValue.getTenantFilter(), jobWorkerValue::setTenantFilter))
@@ -281,6 +284,17 @@ public sealed interface JobWorkerChangeSet {
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
       return updateIfChanged(
           jobWorkerValue.getStreamTimeout(), streamTimeout, jobWorkerValue::setStreamTimeout);
+    }
+  }
+
+  record StreamInactivityTimeoutChangeSet(Duration streamInactivityTimeout)
+      implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(
+          jobWorkerValue.getStreamInactivityTimeout(),
+          streamInactivityTimeout,
+          jobWorkerValue::setStreamInactivityTimeout);
     }
   }
 

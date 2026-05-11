@@ -143,7 +143,15 @@ public class RestoreNodeIdProviderConfiguration {
   @Bean
   public NodeIdProvider nodeIdProvider(final Optional<NodeIdRepository> nodeIdRepository) {
     return getNodeIdProvider(
-        LOG, cluster, nodeIdRepository, () -> SpringApplication.exit(appContext, () -> 1));
+        LOG,
+        cluster,
+        nodeIdRepository,
+        () -> {
+          LOG.warn(
+              "Initiating restore application shutdown: NodeIdProvider requested shutdown due to"
+                  + " lease loss or failure");
+          SpringApplication.exit(appContext, () -> 1);
+        });
   }
 
   @Bean

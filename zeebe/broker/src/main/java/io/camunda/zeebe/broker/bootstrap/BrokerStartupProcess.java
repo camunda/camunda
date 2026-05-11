@@ -65,6 +65,7 @@ public final class BrokerStartupProcess {
 
     result.add(new JobStreamServiceStep());
     result.add(new SnapshotApiServiceStep());
+    result.add(new PartitionGroupMigrationStep());
     result.add(new PartitionManagerStep());
     result.add(new BrokerAdminServiceStep());
     result.add(new CheckpointSchedulerServiceStep());

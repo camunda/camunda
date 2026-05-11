@@ -9,28 +9,44 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record FlowNodeInstanceEntity(
     Long flowNodeInstanceKey,
     Long processInstanceKey,
-    Long rootProcessInstanceKey,
+    @Nullable Long rootProcessInstanceKey,
     Long processDefinitionKey,
-    OffsetDateTime startDate,
-    OffsetDateTime endDate,
+    // only written on AI_START_STATES intents; absent on docs first created by a later intent.
+    @Nullable OffsetDateTime startDate,
+    @Nullable OffsetDateTime endDate,
     String flowNodeId,
-    String flowNodeName,
-    String treePath,
+    // null on exporter cache miss.
+    @Nullable String flowNodeName,
+    @Nullable String treePath,
     FlowNodeType type,
     FlowNodeState state,
-    Boolean hasIncident,
-    Long incidentKey,
+    // not set by the primary handler; populated asynchronously by IncidentUpdateTask.
+    @Nullable Boolean hasIncident,
+    @Nullable Long incidentKey,
     String processDefinitionId,
     String tenantId,
-    Integer level)
+    @Nullable Integer level)
     implements TenantOwnedEntity {
 
-  public FlowNodeInstanceEntity withFlowNodeName(final String name) {
+  public FlowNodeInstanceEntity {
+    Objects.requireNonNull(flowNodeInstanceKey, "flowNodeInstanceKey");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(flowNodeId, "flowNodeId");
+    Objects.requireNonNull(type, "type");
+    Objects.requireNonNull(state, "state");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
+
+  public FlowNodeInstanceEntity withFlowNodeName(@Nullable final String name) {
     return new FlowNodeInstanceEntity(
         flowNodeInstanceKey,
         processInstanceKey,

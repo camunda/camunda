@@ -291,11 +291,11 @@ public final class ExporterDirectorDistributionTest {
           .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
           .withDistributionInterval(DISTRIBUTION_INTERVAL)
           .withExporterDirectorContextConfigurator(
-              c -> c.sendOnLegacySubject(false).receiveOnLegacySubject(false).engineName("foo")),
+              c -> c.sendOnLegacySubject(false).receiveOnLegacySubject(false).tenantName("foo")),
       ExporterRule.passiveExporter()
           .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
           .withExporterDirectorContextConfigurator(
-              c -> c.sendOnLegacySubject(false).receiveOnLegacySubject(false).engineName("foo"))
+              c -> c.sendOnLegacySubject(false).receiveOnLegacySubject(false).tenantName("foo"))
     };
   }
 

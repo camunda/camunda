@@ -78,8 +78,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     final var rootDirectory = tempDir.resolve("root");
 
     final var previous = rootDirectory.resolve("node-2").resolve("v3");
-    final var previousPartition =
-        previous.resolve("raft-partition").resolve("partitions").resolve("1");
+    final var previousPartition = previous.resolve("default").resolve("partitions").resolve("1");
 
     Files.createDirectories(previousPartition);
     Files.writeString(previousPartition.resolve("atomix-partition-1.meta"), "meta");
@@ -99,8 +98,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     // then
     assertThat(newDirectory).isEqualTo(rootDirectory.resolve("node-2").resolve("v4"));
 
-    final var copiedPartition =
-        newDirectory.resolve("raft-partition").resolve("partitions").resolve("1");
+    final var copiedPartition = newDirectory.resolve("default").resolve("partitions").resolve("1");
 
     assertThat(copiedPartition.resolve("atomix-partition-1.meta")).exists();
     assertThat(copiedPartition.resolve("atomix-partition-1.conf")).exists();

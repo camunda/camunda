@@ -20,11 +20,11 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.container.cluster.BrokerNode;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import io.zeebe.containers.ZeebeNode;
 import java.util.List;
 
 public interface ExportersActuator {
@@ -35,7 +35,7 @@ public interface ExportersActuator {
    * @param node the node to connect to
    * @return a new instance of {@link ExportersActuator}
    */
-  static ExportersActuator of(final ZeebeNode<?> node) {
+  static ExportersActuator of(final BrokerNode<?> node) {
     return ofAddress(node.getExternalMonitoringAddress());
   }
 

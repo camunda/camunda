@@ -8,5 +8,6 @@
 package io.camunda.gateway.mapping.http.search;
 
 import io.camunda.gateway.protocol.model.SortOrderEnum;
+import org.jspecify.annotations.Nullable;
 
-public record SearchQuerySortRequest<T>(T field, SortOrderEnum order) {}
+public record SearchQuerySortRequest<T>(@Nullable T field, @Nullable SortOrderEnum order) {}

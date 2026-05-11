@@ -48,7 +48,7 @@ final class GatewayBrokerTransportStep extends AbstractBrokerStartupStep {
 
     final var config = brokerStartupContext.getBrokerConfiguration().getExperimental();
     final TopicSupplier legacyTopicSupplier = TopicSupplier.withLegacyTopicName();
-    final TopicSupplier topicSupplier = TopicSupplier.withPrefix(config.getDefaultEngineName());
+    final TopicSupplier topicSupplier = TopicSupplier.withPrefix(config.getDefaultTenantName());
 
     final var receiveOnTopicSuppliers =
         config.isReceiveOnLegacySubject()

@@ -60,7 +60,7 @@ public class InternalApi implements Cloneable {
   private Integer advertisedPort;
 
   public String getHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".host",
         host,
         String.class,
@@ -73,7 +73,7 @@ public class InternalApi implements Cloneable {
   }
 
   public Integer getPort() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".port",
         port,
         Integer.class,
@@ -86,7 +86,7 @@ public class InternalApi implements Cloneable {
   }
 
   public String getAdvertisedHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".advertised-host",
         advertisedHost,
         String.class,
@@ -99,7 +99,7 @@ public class InternalApi implements Cloneable {
   }
 
   public Integer getAdvertisedPort() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".advertised-port",
         advertisedPort,
         Integer.class,

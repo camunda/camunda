@@ -24,7 +24,7 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuery;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;

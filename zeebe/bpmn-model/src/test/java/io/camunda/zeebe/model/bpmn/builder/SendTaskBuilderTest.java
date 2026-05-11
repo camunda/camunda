@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeJobPriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePublishMessage;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
@@ -151,6 +152,46 @@ public class SendTaskBuilderTest {
         .hasSize(1)
         .extracting(ZeebePublishMessage::getTimeToLive)
         .containsExactly("=timeToLiveExpr");
+  }
+
+  @Test
+  void shouldSetJobPriorityAsLiteralOnSendTask() {
+    // given / when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .sendTask("task", t -> t.zeebeJobType("type").zeebeJobPriority("42"))
+            .endEvent()
+            .done();
+
+    // then
+    final ModelElementInstance sendTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) sendTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class))
+        .singleElement()
+        .extracting(ZeebeJobPriorityDefinition::getPriority)
+        .isEqualTo("42");
+  }
+
+  @Test
+  void shouldSetJobPriorityAsExpressionOnSendTask() {
+    // given / when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .sendTask("task", t -> t.zeebeJobType("type").zeebeJobPriorityExpression("priority"))
+            .endEvent()
+            .done();
+
+    // then
+    final ModelElementInstance sendTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) sendTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeJobPriorityDefinition.class))
+        .singleElement()
+        .extracting(ZeebeJobPriorityDefinition::getPriority)
+        .isEqualTo("=priority");
   }
 
   @Test

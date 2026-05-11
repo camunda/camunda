@@ -23,18 +23,21 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.StreamJobsResponse;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.impl.Loggers;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
@@ -51,9 +54,17 @@ final class JobStreamerImpl implements JobStreamer {
   private final List<String> tenantIds;
   private final TenantFilter tenantFilter;
   private final Duration streamTimeout;
+  private final Duration streamInactivityTimeout;
   private final BackoffSupplier backoffSupplier;
   private final ScheduledExecutorService executor;
+  private final LongSupplier nanoClock;
+  private final JobWorkerMetrics metrics;
   private final Lock streamLock;
+
+  // Updated lock-free on every onNext. The scheduled inactivity task reads it when firing and
+  // re-arms itself for the remainder if activity occurred after it was scheduled. This keeps the
+  // gRPC callback hot path down to a single volatile write per job.
+  private volatile long lastActivityNanos;
 
   @GuardedBy("streamLock")
   private CamundaFuture<StreamJobsResponse> streamControl;
@@ -70,6 +81,9 @@ final class JobStreamerImpl implements JobStreamer {
   @GuardedBy("streamLock")
   private ScheduledFuture<?> scheduledRecreationTriggerTask;
 
+  @GuardedBy("streamLock")
+  private ScheduledFuture<?> scheduledInactivityTask;
+
   public JobStreamerImpl(
       final JobClient jobClient,
       final String jobType,
@@ -79,8 +93,11 @@ final class JobStreamerImpl implements JobStreamer {
       final List<String> tenantIds,
       final TenantFilter tenantFilter,
       final Duration streamTimeout,
+      final Duration streamInactivityTimeout,
       final BackoffSupplier backoffSupplier,
-      final ScheduledExecutorService executor) {
+      final ScheduledExecutorService executor,
+      final LongSupplier nanoClock,
+      final JobWorkerMetrics metrics) {
     this.jobClient = jobClient;
     this.jobType = jobType;
     this.workerName = workerName;
@@ -89,8 +106,11 @@ final class JobStreamerImpl implements JobStreamer {
     this.tenantIds = tenantIds;
     this.tenantFilter = tenantFilter;
     this.streamTimeout = streamTimeout;
+    this.streamInactivityTimeout = streamInactivityTimeout;
     this.backoffSupplier = backoffSupplier;
     this.executor = executor;
+    this.nanoClock = nanoClock;
+    this.metrics = metrics == null ? JobWorkerMetrics.noop() : metrics;
 
     streamLock = new ReentrantLock();
   }
@@ -118,7 +138,12 @@ final class JobStreamerImpl implements JobStreamer {
 
   @Override
   public void openStreamer(final Consumer<ActivatedJob> jobConsumer) {
-    final FinalCommandStep<StreamJobsResponse> command = buildCommand(jobConsumer);
+    final Consumer<ActivatedJob> activityAwareConsumer =
+        job -> {
+          lastActivityNanos = nanoClock.getAsLong();
+          jobConsumer.accept(job);
+        };
+    final FinalCommandStep<StreamJobsResponse> command = buildCommand(activityAwareConsumer);
     open(command);
   }
 
@@ -185,6 +210,9 @@ final class JobStreamerImpl implements JobStreamer {
     if (scheduledRecreationTriggerTask != null) {
       scheduledRecreationTriggerTask.cancel(true);
     }
+    if (scheduledInactivityTask != null) {
+      scheduledInactivityTask.cancel(true);
+    }
     if (streamControl != null) {
       streamControl.cancel(true);
     }
@@ -218,6 +246,18 @@ final class JobStreamerImpl implements JobStreamer {
               streamTimeout.toMillis(),
               TimeUnit.MILLISECONDS);
     }
+
+    if (streamInactivityTimeout != null) {
+      lastActivityNanos = nanoClock.getAsLong();
+      if (scheduledInactivityTask != null && !scheduledInactivityTask.isDone()) {
+        scheduledInactivityTask.cancel(true);
+      }
+      scheduledInactivityTask =
+          executor.schedule(
+              () -> triggerInactivityRecreation(streamControl),
+              streamInactivityTimeout.toNanos(),
+              TimeUnit.NANOSECONDS);
+    }
   }
 
   private void triggerRecreation(final CamundaFuture<StreamJobsResponse> streamControl) {
@@ -229,25 +269,80 @@ final class JobStreamerImpl implements JobStreamer {
     }
 
     try {
-      if (!isClosed) {
-        if (this.streamControl == streamControl) {
-          LOGGER.debug(
-              "Job streaming timeout reached for type '{}' and worker '{}'. Closing existing stream.",
-              jobType,
-              workerName);
-          // cancellation will trigger lockedHandleStreamComplete, which will reopen the stream
-          this.streamControl.cancel(
-              true, Status.CANCELLED.withCause(new StreamingTimeoutException()).asException());
-          this.streamControl = null;
-        } else if (!streamControl.isDone()) {
-          LOGGER.error(
-              "Job stream for type '{}' and worker '{}' is a different instance than for which the streaming timeout hit",
-              jobType,
-              workerName);
-        }
-      }
+      lockedTriggerRecreation(streamControl);
     } finally {
       streamLock.unlock();
+    }
+  }
+
+  @GuardedBy("streamLock")
+  private void lockedTriggerRecreation(final CamundaFuture<StreamJobsResponse> streamControl) {
+    if (isClosed) {
+      return;
+    }
+    if (this.streamControl == streamControl) {
+      LOGGER.trace(
+          "Job streaming timeout reached for type '{}' and worker '{}'. Closing existing stream.",
+          jobType,
+          workerName);
+      // cancellation will trigger lockedHandleStreamComplete, which will reopen the stream
+      this.streamControl.cancel(
+          true, Status.CANCELLED.withCause(new StreamingTimeoutException()).asException());
+      this.streamControl = null;
+    } else if (!streamControl.isDone()) {
+      LOGGER.error(
+          "Job stream for type '{}' and worker '{}' is a different instance than for which the streaming timeout hit",
+          jobType,
+          workerName);
+    }
+  }
+
+  private void triggerInactivityRecreation(final CamundaFuture<StreamJobsResponse> streamControl) {
+    try {
+      streamLock.lockInterruptibly();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return;
+    }
+
+    try {
+      lockedTriggerInactivityRecreation(streamControl);
+    } finally {
+      streamLock.unlock();
+    }
+  }
+
+  @GuardedBy("streamLock")
+  private void lockedTriggerInactivityRecreation(
+      final CamundaFuture<StreamJobsResponse> streamControl) {
+    if (isClosed || this.streamControl != streamControl) {
+      return;
+    }
+    final long idleNanos = nanoClock.getAsLong() - lastActivityNanos;
+    final long timeoutNanos = streamInactivityTimeout.toNanos();
+    if (idleNanos >= timeoutNanos) {
+      LOGGER.trace(
+          "No activity on job stream for type '{}' and worker '{}' within '{}'. Closing existing stream.",
+          jobType,
+          workerName,
+          streamInactivityTimeout);
+      this.streamControl.cancel(
+          true, Status.CANCELLED.withCause(new StreamInactivityException()).asException());
+      this.streamControl = null;
+      metrics.streamInactivityRecreated();
+      return;
+    }
+    // Activity happened after this task was scheduled; re-arm for the remaining window so the
+    // gRPC callback hot path only pays a volatile write, not a cancel + reschedule.
+    try {
+      scheduledInactivityTask =
+          executor.schedule(
+              () -> triggerInactivityRecreation(streamControl),
+              timeoutNanos - idleNanos,
+              TimeUnit.NANOSECONDS);
+    } catch (final RejectedExecutionException e) {
+      // Executor may be shutting down ahead of the worker; the worker's own
+      // RejectedExecutionException handling in JobWorkerImpl#handleActivatedJob will close it.
     }
   }
 
@@ -258,20 +353,11 @@ final class JobStreamerImpl implements JobStreamer {
       return;
     }
 
+    if (error != null && handleSentinelException(error)) {
+      return;
+    }
+
     if (error != null) {
-      if (error instanceof StatusRuntimeException) {
-        final StatusRuntimeException statusError = (StatusRuntimeException) error;
-        if (statusError.getStatus().getCode() == Status.CANCELLED.getCode()
-            && statusError.getCause() instanceof StatusException
-            && statusError.getCause().getCause() instanceof StreamingTimeoutException) {
-          LOGGER.debug(
-              "Recreating job stream for type '{}' and worker '{}' after timeout",
-              jobType,
-              workerName);
-          lockedOpen();
-          return;
-        }
-      }
       logStreamError(error);
       retryDelay = backoffSupplier.supplyRetryDelay(retryDelay);
       LOGGER
@@ -283,6 +369,34 @@ final class JobStreamerImpl implements JobStreamer {
           .log();
       executor.schedule(() -> open(command), retryDelay, TimeUnit.MILLISECONDS);
     }
+  }
+
+  private boolean handleSentinelException(final Throwable error) {
+    if (!(error instanceof StatusRuntimeException)) {
+      return false;
+    }
+    final StatusRuntimeException statusError = (StatusRuntimeException) error;
+    if (statusError.getStatus().getCode() != Status.CANCELLED.getCode()
+        || !(statusError.getCause() instanceof StatusException)) {
+      return false;
+    }
+    final Throwable rootCause = statusError.getCause().getCause();
+    if (rootCause instanceof StreamingTimeoutException) {
+      LOGGER.debug(
+          "Recreating job stream for type '{}' and worker '{}' after timeout", jobType, workerName);
+      lockedOpen();
+      return true;
+    }
+    if (rootCause instanceof StreamInactivityException) {
+      LOGGER.debug(
+          "Recreating job stream for type '{}' and worker '{}' after inactivity period of {}",
+          jobType,
+          workerName,
+          streamInactivityTimeout);
+      lockedOpen();
+      return true;
+    }
+    return false;
   }
 
   private void logStreamError(final Throwable error) {
@@ -298,8 +412,8 @@ final class JobStreamerImpl implements JobStreamer {
         // The stream is transparently reopened, so only log at DEBUG.
         LOGGER.debug(
             "Job stream for type '{}' to worker '{}' was closed by an upstream proxy (HTTP 504 Gateway Timeout). "
-                + "The stream will be reopened. To avoid this, configure a shorter stream timeout "
-                + "(JobWorkerBuilder#streamTimeout) below your ingress/proxy idle timeout.",
+                + "The stream will be reopened. To avoid this, configure JobWorkerBuilder#streamInactivityTimeout "
+                + "below your ingress/proxy idle timeout so the client recycles an idle stream before the proxy times it out.",
             jobType,
             workerName,
             error);
@@ -319,4 +433,6 @@ final class JobStreamerImpl implements JobStreamer {
   }
 
   private static final class StreamingTimeoutException extends RuntimeException {}
+
+  private static final class StreamInactivityException extends RuntimeException {}
 }

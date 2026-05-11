@@ -108,6 +108,24 @@ final class ElasticsearchExporterTest {
     verify(client).close();
   }
 
+  @Test
+  void shouldCancelScheduledFlushTaskOnClose() {
+    // given
+    final var exporter = new ElasticsearchExporter();
+    exporter.configure(context);
+    exporter.open(controller);
+
+    final var tasks = controller.getScheduledTasks();
+    final var flushTask = tasks.getLast();
+    assertThat(flushTask.isCanceled()).isEqualTo(false);
+
+    // when
+    exporter.close();
+
+    // then
+    assertThat(flushTask.isCanceled()).isEqualTo(true);
+  }
+
   @Nested
   final class RecordFilterTest {
 

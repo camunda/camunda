@@ -30,7 +30,7 @@ import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.AuditLogSort;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;

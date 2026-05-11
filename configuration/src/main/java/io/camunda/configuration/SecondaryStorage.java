@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -63,7 +64,7 @@ public class SecondaryStorage {
   }
 
   public SecondaryStorageType getType() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".type",
         type,
         SecondaryStorageType.class,
@@ -99,6 +100,7 @@ public class SecondaryStorage {
     this.rdbms = rdbms;
   }
 
+  @JsonIgnore
   public DocumentBasedSecondaryStorageDatabase getDocumentBasedDatabase() {
     switch (getType()) {
       case elasticsearch -> {

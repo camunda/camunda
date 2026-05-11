@@ -79,55 +79,42 @@ public class RawTransactionalColumnFamily {
   public void put(
       final ZeebeTransaction transaction,
       final byte[] key,
-      final int keyOffset,
       final int keyLen,
       final byte[] value,
-      final int valueOffset,
       final int valueLen)
       throws Exception {
     final var dbBytes = new DbBytes();
-    final var buffer = new UnsafeBuffer(key, keyOffset, keyLen);
+    final var buffer = new UnsafeBuffer(key, 0, keyLen);
     dbBytes.wrap(buffer, 0, buffer.capacity());
     columnFamilyContext.withPrefixKey(
         dbBytes,
         (wrappedKey, wrappedLength) -> {
           try {
-            rawPut(transaction, wrappedKey, 0, wrappedLength, value, valueOffset, valueLen);
+            rawPut(transaction, wrappedKey, wrappedLength, value, valueLen);
           } catch (final Exception e) {
             throw new RuntimeException(e);
           }
         });
   }
 
-  /** Raw put into the DB ignoring the prefix key and "virtual" column family. */
-  public void rawPut(
-      final ZeebeTransaction transaction,
-      final byte[] key,
-      final int keyOffset,
-      final int keyLen,
-      final byte[] value,
-      final int valueOffset,
-      final int valueLen)
-      throws Exception {
-    transaction.put(
-        transactionDb.getDefaultNativeHandle(),
-        key,
-        keyOffset,
-        keyLen,
-        value,
-        valueOffset,
-        valueLen);
-  }
-
-  public byte[] get(
-      final ZeebeTransaction transaction, final byte[] key, final int keyOffset, final int keyLen)
+  public byte[] get(final ZeebeTransaction transaction, final byte[] key, final int keyLen)
       throws Exception {
     return transaction.get(
         transactionDb.getDefaultNativeHandle(),
         transactionDb.getReadOptionsNativeHandle(),
         key,
-        keyOffset,
         keyLen);
+  }
+
+  /** Raw put into the DB ignoring the prefix key and "virtual" column family. */
+  public void rawPut(
+      final ZeebeTransaction transaction,
+      final byte[] key,
+      final int keyLen,
+      final byte[] value,
+      final int valueLen)
+      throws Exception {
+    transaction.put(transactionDb.getDefaultNativeHandle(), key, keyLen, value, valueLen);
   }
 
   /**

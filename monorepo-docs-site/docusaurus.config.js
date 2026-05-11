@@ -62,8 +62,8 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/camunda/camunda/tree/main/docs/monorepo-docs/',
+          editUrl: (/** @type {{docPath: string}} */ {docPath}) =>
+            `https://github.com/camunda/camunda/edit/main/docs/monorepo-docs/${docPath}`,
         },
         blog: false,
         theme: {

@@ -13,9 +13,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.CloseableSilently;
-import org.jspecify.annotations.NullMarked;
 
-@NullMarked
 public interface LogStreamMetrics {
 
   void increaseInflightAppends();

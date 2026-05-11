@@ -39,6 +39,6 @@ abstract class RestApiConfigurationTest extends RestControllerTest {
     when(topologyServices.getTopology())
         .thenReturn(
             CompletableFuture.completedFuture(
-                new Topology(List.of(), "cluster-id", null, null, null, null, null)));
+                new Topology(List.of(), "cluster-id", 1, 1, 1, "8.8.0", 0L)));
   }
 }

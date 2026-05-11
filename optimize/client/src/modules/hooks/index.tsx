@@ -11,3 +11,5 @@ export {default as useUser} from './useUser';
 export {default as useDocs} from './useDocs';
 export {default as useUiConfig} from './useUiConfig';
 export {default as useChangedState} from './useChangedState';
+export {useId} from './useId';
+export {useAttachedMenu} from './useAttachedMenu';

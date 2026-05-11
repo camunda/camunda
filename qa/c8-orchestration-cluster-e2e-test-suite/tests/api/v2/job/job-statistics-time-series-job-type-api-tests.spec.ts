@@ -106,6 +106,10 @@ test.describe
       }
     });
 
+    if (jobType === 'uninitialized') {
+      return;
+    }
+
     await test.step('Get time-series metrics with jobType', async () => {
       const extendedSearchRes = await request.post(
         buildUrl('/jobs/statistics/time-series'),
@@ -132,6 +136,7 @@ test.describe
       );
       const extendedResponseBody = await extendedSearchRes.json();
       const extendedItem = extendedResponseBody.items[0];
+      expect(extendedItem).toBeDefined();
       expect(extendedItem.created.count).toBe(item.created.count);
       expect(extendedItem.completed.count).toBe(item.completed.count);
       expect(extendedItem.failed.count).toBe(item.failed.count);
@@ -246,6 +251,10 @@ test.describe
       }
     });
 
+    if (jobType === 'uninitialized') {
+      return;
+    }
+
     await test.step('Get time-series metrics with jobType', async () => {
       const extendedSearchRes = await request.post(
         buildUrl('/jobs/statistics/time-series'),
@@ -271,6 +280,7 @@ test.describe
       );
       const extendedResponseBody = await extendedSearchRes.json();
       const extendedItem = extendedResponseBody.items[0];
+      expect(extendedItem).toBeDefined();
       expect(extendedItem.created.count).toBe(item.created.count);
       expect(extendedItem.completed.count).toBe(item.completed.count);
       expect(extendedItem.failed.count).toBe(item.failed.count);

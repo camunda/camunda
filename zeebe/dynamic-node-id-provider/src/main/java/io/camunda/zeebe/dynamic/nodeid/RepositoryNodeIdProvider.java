@@ -324,7 +324,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     final var nodeInstances =
         currentMembers.stream()
             .filter(m -> isBroker(m.id()))
-            .map(m -> Map.entry(Integer.parseInt(m.id().id()), Version.of(m.nodeVersion())))
+            .map(m -> Map.entry(m.id().nodeIdx(), Version.of(m.nodeVersion())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     knownVersionMappings = new VersionMappings(nodeInstances);
     LOG.trace("Updating known version mappings to {}", knownVersionMappings);
@@ -333,9 +333,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private boolean isBroker(final MemberId memberId) {
     // TODO improve the way we identify brokers vs gateways
     try {
-      final var id = Integer.parseInt(memberId.id());
-      return id >= 0;
-    } catch (final NumberFormatException e) {
+      return memberId.nodeIdx() >= 0;
+    } catch (final Exception e) {
       return false;
     }
   }

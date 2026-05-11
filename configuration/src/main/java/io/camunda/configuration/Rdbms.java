@@ -76,6 +76,9 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   @NestedConfigurationProperty
   private RdbmsInsertBatching insertBatching = new RdbmsInsertBatching();
 
+  @NestedConfigurationProperty
+  private RdbmsAsyncReplication asyncReplication = new RdbmsAsyncReplication();
+
   @NestedConfigurationProperty private RdbmsQuery query = new RdbmsQuery();
 
   public Boolean getAutoDdl() {
@@ -180,6 +183,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setInsertBatching(final RdbmsInsertBatching insertBatching) {
     this.insertBatching = insertBatching;
+  }
+
+  public RdbmsAsyncReplication getAsyncReplication() {
+    return asyncReplication;
+  }
+
+  public void setAsyncReplication(final RdbmsAsyncReplication asyncReplication) {
+    this.asyncReplication = asyncReplication;
   }
 
   public RdbmsQuery getQuery() {

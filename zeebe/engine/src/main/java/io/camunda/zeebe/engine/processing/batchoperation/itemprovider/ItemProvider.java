@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import java.util.List;
 
