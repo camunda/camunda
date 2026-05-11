@@ -43,7 +43,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
-        isDeleteHidden={true}
+        isDeleteHidden
       />,
       {wrapper: getWrapper()},
     );
@@ -61,7 +61,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
-        isDeleteHidden={true}
+        isDeleteHidden
       />,
       {wrapper: getWrapper({operator: 'exists'})},
     );
@@ -77,14 +77,11 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
-        isDeleteHidden={true}
+        isDeleteHidden
       />,
       {wrapper: getWrapper()},
     );
-
-    expect(screen.getByTestId('delete-variable-filter-0')).toHaveStyle({
-      visibility: 'hidden',
-    });
+    expect(screen.getByTestId('delete-variable-filter-0')).not.toBeVisible();
   });
 
   it('should show delete button when isDeleteHidden is false', () => {
@@ -98,9 +95,7 @@ describe('<VariableFilterRow />', () => {
       {wrapper: getWrapper()},
     );
 
-    expect(screen.getByTestId('delete-variable-filter-0')).toHaveStyle({
-      visibility: 'visible',
-    });
+    expect(screen.getByTestId('delete-variable-filter-0')).toBeVisible();
   });
 
   it('should update name input when user types', async () => {
@@ -109,7 +104,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
-        isDeleteHidden={true}
+        isDeleteHidden
       />,
       {wrapper: getWrapper()},
     );
@@ -125,7 +120,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
-        isDeleteHidden={true}
+        isDeleteHidden
       />,
       {wrapper: getWrapper({name: 'status'})},
     );
@@ -158,7 +153,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
-        isDeleteHidden={true}
+        isDeleteHidden
       />,
       {wrapper: getWrapper()},
     );
@@ -177,7 +172,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
-        isDeleteHidden={true}
+        isDeleteHidden
       />,
       {wrapper: getWrapper({operator: 'exists'})},
     );
