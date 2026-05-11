@@ -69,7 +69,8 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
                 vendorDatabaseProperties.charColumnMaxBytes())));
   }
 
-  public void migrateToProcess(final long variableKey, final String processDefinitionId) {
+  public void migrateToProcess(
+      final long variableKey, final String processDefinitionId, final long processDefinitionKey) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.VARIABLE,
@@ -78,6 +79,7 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
             "io.camunda.db.rdbms.sql.VariableMapper.migrateToProcess",
             new VariableMapper.MigrateToProcessDto.Builder()
                 .variableKey(variableKey)
-                .processDefinitionId(processDefinitionId)));
+                .processDefinitionId(processDefinitionId)
+                .processDefinitionKey(processDefinitionKey)));
   }
 }

@@ -52,6 +52,7 @@ class BatchInsertMergerTest {
             200L,
             200L,
             "process1",
+            null,
             "tenant1",
             1,
             -1L);
@@ -70,6 +71,7 @@ class BatchInsertMergerTest {
             201L,
             201L,
             "process1",
+            null,
             "tenant1",
             1,
             -1L);
@@ -209,6 +211,7 @@ class BatchInsertMergerTest {
             200L,
             200L,
             "process1",
+            null,
             "tenant1",
             1,
             -1L);
@@ -239,6 +242,7 @@ class BatchInsertMergerTest {
             200L,
             200L,
             "process1",
+            null,
             "tenant1",
             1,
             -1L);

@@ -26,12 +26,14 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
 
   List<VariableEntity> search(VariableDbQuery filter);
 
-  record MigrateToProcessDto(Long variableKey, String processDefinitionId) {
+  record MigrateToProcessDto(
+      Long variableKey, String processDefinitionId, Long processDefinitionKey) {
 
     public static class Builder implements ObjectBuilder<MigrateToProcessDto> {
 
       private Long variableKey;
       private String processDefinitionId;
+      private Long processDefinitionKey;
 
       public Builder variableKey(final Long variableKey) {
         this.variableKey = variableKey;
@@ -43,9 +45,14 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
         return this;
       }
 
+      public Builder processDefinitionKey(final Long processDefinitionKey) {
+        this.processDefinitionKey = processDefinitionKey;
+        return this;
+      }
+
       @Override
       public MigrateToProcessDto build() {
-        return new MigrateToProcessDto(variableKey, processDefinitionId);
+        return new MigrateToProcessDto(variableKey, processDefinitionId, processDefinitionKey);
       }
     }
   }

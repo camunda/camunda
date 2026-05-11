@@ -30,6 +30,7 @@ public record VariableDbModel(
     Long processInstanceKey,
     Long rootProcessInstanceKey,
     String processDefinitionId,
+    Long processDefinitionKey,
     String tenantId,
     int partitionId,
     Long elementInstanceKey)
@@ -49,6 +50,7 @@ public record VariableDbModel(
                 .processInstanceKey(processInstanceKey)
                 .rootProcessInstanceKey(rootProcessInstanceKey)
                 .processDefinitionId(processDefinitionId)
+                .processDefinitionKey(processDefinitionKey)
                 .tenantId(tenantId)
                 .partitionId(partitionId))
         .build();
@@ -90,6 +92,7 @@ public record VariableDbModel(
         processInstanceKey,
         rootProcessInstanceKey,
         processDefinitionId,
+        processDefinitionKey,
         tenantId,
         partitionId,
         elementInstanceKey);
@@ -104,6 +107,7 @@ public record VariableDbModel(
     private Long processInstanceKey;
     private Long rootProcessInstanceKey;
     private String processDefinitionId;
+    private Long processDefinitionKey;
     private String tenantId;
     private int partitionId;
     private Long elementInstanceKey;
@@ -142,6 +146,11 @@ public record VariableDbModel(
 
     public VariableDbModelBuilder processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
+      return this;
+    }
+
+    public VariableDbModelBuilder processDefinitionKey(final Long processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
@@ -186,6 +195,7 @@ public record VariableDbModel(
           processInstanceKey,
           rootProcessInstanceKey,
           processDefinitionId,
+          processDefinitionKey,
           tenantId,
           partitionId,
           elementInstanceKey);
@@ -205,6 +215,7 @@ public record VariableDbModel(
           processInstanceKey,
           rootProcessInstanceKey,
           processDefinitionId,
+          processDefinitionKey,
           tenantId,
           partitionId,
           elementInstanceKey);
@@ -224,6 +235,7 @@ public record VariableDbModel(
           processInstanceKey,
           rootProcessInstanceKey,
           processDefinitionId,
+          processDefinitionKey,
           tenantId,
           partitionId,
           elementInstanceKey);

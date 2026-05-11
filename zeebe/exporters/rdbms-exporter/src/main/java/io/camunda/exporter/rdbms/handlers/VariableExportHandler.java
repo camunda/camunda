@@ -37,7 +37,8 @@ public class VariableExportHandler implements RdbmsExportHandler<VariableRecordV
     } else if (record.getIntent() == VariableIntent.UPDATED) {
       variableWriter.update(map(record.getKey(), record));
     } else if (record.getIntent() == VariableIntent.MIGRATED) {
-      variableWriter.migrateToProcess(record.getKey(), value.getBpmnProcessId());
+      variableWriter.migrateToProcess(
+          record.getKey(), value.getBpmnProcessId(), value.getProcessDefinitionKey());
     }
   }
 
@@ -51,6 +52,7 @@ public class VariableExportHandler implements RdbmsExportHandler<VariableRecordV
         .processInstanceKey(value.getProcessInstanceKey())
         .rootProcessInstanceKey(value.getRootProcessInstanceKey())
         .processDefinitionId(value.getBpmnProcessId())
+        .processDefinitionKey(value.getProcessDefinitionKey())
         .tenantId(value.getTenantId())
         .elementInstanceKey(value.getElementInstanceKey())
         .partitionId(record.getPartitionId())

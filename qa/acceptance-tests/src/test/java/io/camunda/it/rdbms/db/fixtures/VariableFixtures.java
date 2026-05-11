@@ -37,6 +37,7 @@ public final class VariableFixtures extends CommonFixtures {
             .processInstanceKey(nextKey())
             .rootProcessInstanceKey(nextKey())
             .processDefinitionId("process-definition-id-" + key)
+            .processDefinitionKey(nextKey())
             .tenantId("tenant-id-" + key)
             .scopeKey(nextKey())
             .name(

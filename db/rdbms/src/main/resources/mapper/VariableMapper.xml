@@ -146,12 +146,12 @@
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto">
-    INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
+    INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
                                    LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW,
                                    PARTITION_ID, ELEMENT_INSTANCE_KEY)
     VALUES
     <foreach collection="dbModels" item="variable" separator=",">
-      (#{variable.variableKey}, #{variable.processInstanceKey}, #{variable.rootProcessInstanceKey}, #{variable.processDefinitionId}, #{variable.scopeKey}, #{variable.type}, #{variable.name}, #{variable.doubleValue, jdbcType=DOUBLE},
+      (#{variable.variableKey}, #{variable.processInstanceKey}, #{variable.rootProcessInstanceKey}, #{variable.processDefinitionId}, #{variable.processDefinitionKey, jdbcType=BIGINT}, #{variable.scopeKey}, #{variable.type}, #{variable.name}, #{variable.doubleValue, jdbcType=DOUBLE},
        #{variable.longValue, jdbcType=NUMERIC}, #{variable.value}, #{variable.fullValue}, #{variable.tenantId}, #{variable.isPreview}, #{variable.partitionId}, #{variable.elementInstanceKey})
     </foreach>
   </insert>
@@ -159,10 +159,10 @@
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto" databaseId="oracle">
     INSERT ALL
     <foreach collection="dbModels" item="variable">
-      INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
+      INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
                               LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW,
                               PARTITION_ID, ELEMENT_INSTANCE_KEY)
-      VALUES (#{variable.variableKey}, #{variable.processInstanceKey}, #{variable.rootProcessInstanceKey}, #{variable.processDefinitionId}, #{variable.scopeKey}, #{variable.type}, #{variable.name}, #{variable.doubleValue, jdbcType=DOUBLE},
+      VALUES (#{variable.variableKey}, #{variable.processInstanceKey}, #{variable.rootProcessInstanceKey}, #{variable.processDefinitionId}, #{variable.processDefinitionKey, jdbcType=BIGINT}, #{variable.scopeKey}, #{variable.type}, #{variable.name}, #{variable.doubleValue, jdbcType=DOUBLE},
               #{variable.longValue, jdbcType=NUMERIC}, #{variable.value}, #{variable.fullValue}, #{variable.tenantId}, #{variable.isPreview}, #{variable.partitionId}, #{variable.elementInstanceKey})
     </foreach>
     SELECT * FROM dual
@@ -193,7 +193,8 @@
 
   <update id="migrateToProcess" parameterType="java.util.Map">
       UPDATE ${prefix}VARIABLE
-      SET PROCESS_DEFINITION_ID = #{processDefinitionId}
+      SET PROCESS_DEFINITION_ID = #{processDefinitionId},
+          PROCESS_DEFINITION_KEY = #{processDefinitionKey, jdbcType=BIGINT}
       WHERE VAR_KEY = #{variableKey}
   </update>
 </mapper>
