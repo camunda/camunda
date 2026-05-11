@@ -22,23 +22,10 @@ public final class ResolvedDocumentImpl implements ResolvedDocument {
 
   private final DocumentReferenceResponse reference;
   private final byte[] content;
-  private final String errorMessage;
 
-  public ResolvedDocumentImpl(
-      final DocumentReferenceResponse reference, final byte[] content, final String errorMessage) {
+  public ResolvedDocumentImpl(final DocumentReferenceResponse reference, final byte[] content) {
     this.reference = reference;
     this.content = content;
-    this.errorMessage = errorMessage;
-  }
-
-  public static ResolvedDocument resolved(
-      final DocumentReferenceResponse reference, final byte[] content) {
-    return new ResolvedDocumentImpl(reference, content, null);
-  }
-
-  public static ResolvedDocument failed(
-      final DocumentReferenceResponse reference, final String errorMessage) {
-    return new ResolvedDocumentImpl(reference, null, errorMessage);
   }
 
   @Override
@@ -49,15 +36,5 @@ public final class ResolvedDocumentImpl implements ResolvedDocument {
   @Override
   public byte[] getContent() {
     return content;
-  }
-
-  @Override
-  public String getErrorMessage() {
-    return errorMessage;
-  }
-
-  @Override
-  public boolean isResolved() {
-    return errorMessage == null && content != null;
   }
 }

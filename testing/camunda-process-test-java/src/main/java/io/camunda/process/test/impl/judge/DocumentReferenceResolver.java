@@ -27,8 +27,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,9 +38,9 @@ import org.slf4j.LoggerFactory;
  * "camunda.document.type": "camunda"}. References are detected at any depth (top-level, nested
  * objects, arrays).
  *
- * <p>Per-document download failures are recorded in the returned {@link ResolvedDocument} list with
- * an error message set, so the judge can be told about the gap rather than silently dropping the
- * reference.
+ * <p>Resolution is fail-fast: any download or parse error throws an {@link IllegalStateException}
+ * so the surrounding assertion surfaces the problem immediately instead of letting the judge
+ * silently reason without the document content.
  */
 public final class DocumentReferenceResolver {
 
@@ -60,11 +58,13 @@ public final class DocumentReferenceResolver {
 
   /**
    * Parses the given variable JSON, locates Camunda document references, and downloads their
-   * content in parallel.
+   * content sequentially.
    *
    * @param variableJson the raw JSON value of the asserted variable, may be any JSON shape
    * @return the resolved documents in encounter order; may be empty if no references are found or
    *     the JSON cannot be parsed
+   * @throws IllegalStateException if any reference cannot be parsed or its content cannot be
+   *     downloaded
    */
   public List<ResolvedDocument> resolve(final String variableJson) {
     final List<JsonNode> referenceNodes = findReferences(variableJson);
@@ -72,10 +72,12 @@ public final class DocumentReferenceResolver {
       return Collections.emptyList();
     }
     LOG.debug("Found {} Camunda document reference(s) in variable", referenceNodes.size());
-    return downloadAll(referenceNodes);
+    final List<ResolvedDocument> resolved = new ArrayList<>(referenceNodes.size());
+    for (final JsonNode node : referenceNodes) {
+      resolved.add(download(parseReference(node)));
+    }
+    return resolved;
   }
-
-  // --- reference detection ---
 
   private static List<JsonNode> findReferences(final String variableJson) {
     final JsonNode root = parseJsonOrNull(variableJson);
@@ -111,7 +113,7 @@ public final class DocumentReferenceResolver {
     if (node.isArray()) {
       node.forEach(element -> collectReferences(element, out));
     } else if (node.isObject()) {
-      node.fields().forEachRemaining(entry -> collectReferences(entry.getValue(), out));
+      node.fieldNames().forEachRemaining(fieldName -> collectReferences(node.get(fieldName), out));
     }
   }
 
@@ -125,44 +127,31 @@ public final class DocumentReferenceResolver {
         && DOCUMENT_TYPE_VALUE.equals(typeNode.asText());
   }
 
-  // --- parallel download ---
-
-  // Each download is dispatched to the common ForkJoinPool and blocks that worker on
-  // request.send().join() plus the stream read. This is acceptable for the test-scope
-  // fan-out expected here (a handful of documents per asserted variable); revisit if
-  // we ever need to resolve large batches.
-  private List<ResolvedDocument> downloadAll(final List<JsonNode> referenceNodes) {
-    final List<CompletableFuture<ResolvedDocument>> futures =
-        referenceNodes.stream().map(this::downloadAsync).collect(Collectors.toList());
-    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-    return futures.stream().map(CompletableFuture::join).collect(Collectors.toList());
-  }
-
-  private CompletableFuture<ResolvedDocument> downloadAsync(final JsonNode referenceNode) {
+  private static DocumentReferenceResponse parseReference(final JsonNode referenceNode) {
     final DocumentReferenceResponse reference;
     try {
       reference = OBJECT_MAPPER.treeToValue(referenceNode, DocumentReferenceResponseImpl.class);
     } catch (final IOException e) {
-      LOG.warn("Skipping unparseable Camunda document reference: {}", e.getMessage());
-      return CompletableFuture.completedFuture(ResolvedDocumentImpl.failed(null, e.getMessage()));
+      throw new IllegalStateException(
+          "Failed to parse Camunda document reference: " + e.getMessage(), e);
     }
     if (reference.getDocumentId() == null || reference.getDocumentId().isEmpty()) {
-      LOG.warn("Skipping Camunda document reference without documentId");
-      return CompletableFuture.completedFuture(
-          ResolvedDocumentImpl.failed(reference, "missing documentId"));
+      throw new IllegalStateException(
+          "Camunda document reference is missing documentId; cannot resolve content for judge");
     }
-    return CompletableFuture.supplyAsync(() -> download(reference));
+    return reference;
   }
 
   private ResolvedDocument download(final DocumentReferenceResponse reference) {
     try (final InputStream stream = client.newDocumentContentGetRequest(reference).send().join()) {
-      return ResolvedDocumentImpl.resolved(reference, readAllBytes(stream));
+      return new ResolvedDocumentImpl(reference, readAllBytes(stream));
     } catch (final Exception e) {
-      LOG.warn(
-          "Failed to download Camunda document '{}' for judge enrichment: {}",
-          reference.getDocumentId(),
-          e.getMessage());
-      return ResolvedDocumentImpl.failed(reference, e.getMessage());
+      throw new IllegalStateException(
+          "Failed to download Camunda document '"
+              + reference.getDocumentId()
+              + "' for judge enrichment: "
+              + e.getMessage(),
+          e);
     }
   }
 

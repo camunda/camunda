@@ -81,10 +81,6 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
     final List<Content> parts = new ArrayList<>();
     parts.add(TextContent.from(buildHeader(d)));
 
-    if (!d.isResolved()) {
-      return parts;
-    }
-
     final String contentType = contentTypeOf(d);
     if (contentType != null && contentType.toLowerCase().startsWith("image/")) {
       final String base64 = Base64.getEncoder().encodeToString(d.getContent());
@@ -99,7 +95,7 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
       LOG.debug(
           "Document '{}' has content type '{}' which is not natively supported as a content "
               + "block; including a placeholder text marker only",
-          documentIdOf(d),
+          d.getReference().getDocumentId(),
           contentType);
       parts.add(
           TextContent.from(
@@ -111,39 +107,23 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
   }
 
   private static String buildHeader(final ResolvedDocument d) {
-    final StringBuilder header = new StringBuilder();
-    header
-        .append("--- documentId=\"")
-        .append(nullToEmpty(documentIdOf(d)))
-        .append("\"")
-        .append(" fileName=\"")
-        .append(nullToEmpty(fileNameOf(d)))
-        .append("\"")
-        .append(" contentType=\"")
-        .append(nullToEmpty(contentTypeOf(d)))
-        .append("\"");
-    if (!d.isResolved()) {
-      header
-          .append(" status=\"unresolved\" error=\"")
-          .append(nullToEmpty(d.getErrorMessage()))
-          .append("\"");
-    }
-    header.append(" ---");
-    return header.toString();
-  }
-
-  private static String documentIdOf(final ResolvedDocument d) {
-    return d.getReference() == null ? null : d.getReference().getDocumentId();
+    return "--- documentId=\""
+        + nullToEmpty(d.getReference().getDocumentId())
+        + "\" fileName=\""
+        + nullToEmpty(fileNameOf(d))
+        + "\" contentType=\""
+        + nullToEmpty(contentTypeOf(d))
+        + "\" ---";
   }
 
   private static String fileNameOf(final ResolvedDocument d) {
-    return d.getReference() == null || d.getReference().getMetadata() == null
+    return d.getReference().getMetadata() == null
         ? null
         : d.getReference().getMetadata().getFileName();
   }
 
   private static String contentTypeOf(final ResolvedDocument d) {
-    return d.getReference() == null || d.getReference().getMetadata() == null
+    return d.getReference().getMetadata() == null
         ? null
         : d.getReference().getMetadata().getContentType();
   }

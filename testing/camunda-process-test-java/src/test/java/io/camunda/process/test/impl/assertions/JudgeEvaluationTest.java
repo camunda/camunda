@@ -190,8 +190,7 @@ class JudgeEvaluationTest {
         new JudgeEvaluation(adapter, "expectation", Optional.empty());
 
     final ResolvedDocument doc =
-        ResolvedDocumentImpl.resolved(
-            refOf("doc-1", "image.png", "image/png"), new byte[] {1, 2, 3});
+        new ResolvedDocumentImpl(refOf("doc-1", "image.png", "image/png"), new byte[] {1, 2, 3});
 
     // when
     final JudgeEvaluation.Result result =
@@ -202,33 +201,6 @@ class JudgeEvaluationTest {
     assertThat(capturedDocs.get()).containsExactly(doc);
     assertThat(capturedPrompt.get()).contains("<resolved_documents>");
     assertThat(capturedPrompt.get()).contains("documentId=\"doc-1\"");
-  }
-
-  @Test
-  void shouldIncludeUnresolvedDocumentMarkerInPrompt() {
-    // given
-    final AtomicReference<String> capturedPrompt = new AtomicReference<>();
-    final MultimodalChatModelAdapter adapter =
-        new TestMultimodalAdapter(
-            (prompt, docs) -> {
-              capturedPrompt.set(prompt);
-              return "{\"score\": 0.5, \"reasoning\": \"ok\"}";
-            });
-
-    final JudgeEvaluation evaluation =
-        new JudgeEvaluation(adapter, "expectation", Optional.empty());
-
-    final ResolvedDocument failed =
-        ResolvedDocumentImpl.failed(
-            refOf("doc-3", "missing.pdf", "application/pdf"), "404 not found");
-
-    // when
-    evaluation.evaluate("value", Collections.singletonList(failed));
-
-    // then
-    assertThat(capturedPrompt.get()).contains("documentId=\"doc-3\"");
-    assertThat(capturedPrompt.get()).contains("status=\"unresolved\"");
-    assertThat(capturedPrompt.get()).contains("404 not found");
   }
 
   @Test

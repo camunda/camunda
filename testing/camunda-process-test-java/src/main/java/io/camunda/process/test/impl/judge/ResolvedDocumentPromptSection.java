@@ -60,16 +60,12 @@ public final class ResolvedDocumentPromptSection {
 
   private static String describe(final ResolvedDocument doc) {
     final DocumentReferenceResponse ref = doc.getReference();
-    final DocumentMetadata md = ref == null ? null : ref.getMetadata();
+    final DocumentMetadata md = ref.getMetadata();
     final StringBuilder line = new StringBuilder();
     line.append("- ");
-    appendAttribute(line, "documentId", ref == null ? null : ref.getDocumentId());
+    appendAttribute(line, "documentId", ref.getDocumentId());
     appendAttribute(line, " fileName", md == null ? null : md.getFileName());
     appendAttribute(line, " contentType", md == null ? null : md.getContentType());
-    if (!doc.isResolved()) {
-      appendAttribute(line, " status", "unresolved");
-      appendAttribute(line, " error", doc.getErrorMessage());
-    }
     return line.toString();
   }
 

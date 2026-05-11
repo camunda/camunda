@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.judge;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -89,7 +90,6 @@ class DocumentReferenceResolverTest {
     // then
     assertThat(resolved).hasSize(1);
     final ResolvedDocument doc = resolved.get(0);
-    assertThat(doc.isResolved()).isTrue();
     assertThat(doc.getReference().getDocumentId()).isEqualTo("doc-1");
     assertThat(doc.getReference().getStoreId()).isEqualTo("store-1");
     assertThat(doc.getReference().getContentHash()).isEqualTo("hash-1");
@@ -132,7 +132,7 @@ class DocumentReferenceResolverTest {
   }
 
   @Test
-  void shouldRecordFailureWhenDownloadThrows() {
+  void shouldThrowWhenDownloadFails() {
     // given
     when(client.newDocumentContentGetRequest(any(DocumentReferenceResponse.class)))
         .thenReturn(request);
@@ -143,31 +143,24 @@ class DocumentReferenceResolverTest {
         "{\"camunda.document.type\": \"camunda\", \"documentId\": \"doc-x\","
             + " \"metadata\": {\"fileName\": \"x.bin\", \"contentType\": \"application/octet-stream\"}}";
 
-    // when
-    final List<ResolvedDocument> resolved = resolver.resolve(json);
-
-    // then
-    assertThat(resolved).hasSize(1);
-    final ResolvedDocument doc = resolved.get(0);
-    assertThat(doc.isResolved()).isFalse();
-    assertThat(doc.getReference().getDocumentId()).isEqualTo("doc-x");
-    assertThat(doc.getErrorMessage()).contains("boom");
+    // when / then
+    assertThatThrownBy(() -> resolver.resolve(json))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("doc-x")
+        .hasMessageContaining("boom");
   }
 
   @Test
-  void shouldSkipReferencesWithoutDocumentId() {
+  void shouldThrowForReferenceWithoutDocumentId() {
     // given
     final String json =
         "{\"camunda.document.type\": \"camunda\","
             + " \"metadata\": {\"contentType\": \"image/png\"}}";
 
-    // when
-    final List<ResolvedDocument> resolved = resolver.resolve(json);
-
-    // then
-    assertThat(resolved).hasSize(1);
-    assertThat(resolved.get(0).isResolved()).isFalse();
-    assertThat(resolved.get(0).getErrorMessage()).contains("missing documentId");
+    // when / then
+    assertThatThrownBy(() -> resolver.resolve(json))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("missing documentId");
     verify(client, never()).newDocumentContentGetRequest(anyString());
     verify(client, never()).newDocumentContentGetRequest(any(DocumentReferenceResponse.class));
   }
