@@ -30,6 +30,7 @@ import io.github.classgraph.ClassInfoList;
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.Objects;
@@ -67,6 +68,8 @@ import org.slf4j.LoggerFactory;
 public final class ProtocolFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolFactory.class);
   private static final String PROTOCOL_PACKAGE_NAME = Record.class.getPackage().getName() + "*";
+  private static final long DATE_RANGE_MIN = Instant.parse("2000-01-01T00:00:00Z").getEpochSecond();
+  private static final long DATE_RANGE_MAX = Instant.parse("2099-12-31T23:59:59Z").getEpochSecond();
 
   private final CustomRandomizerRegistry randomizerRegistry;
   private final EasyRandomParameters parameters;
@@ -422,17 +425,14 @@ public final class ProtocolFactory {
         });
 
     // A randomizer for any String property whose name ends with the "Date" suffix,
-    // generating a random date between now - 2 years and now + 2 years
+    // generating a random date between 2000-01-01 and 2099-12-31
+    final var epochRandomizer = new LongRangeRandomizer(DATE_RANGE_MIN, DATE_RANGE_MAX, getSeed());
     randomizerRegistry.registerRandomizer(
         field -> field.getType() == String.class && field.getName().endsWith("Date"),
-        () -> {
-          final var now = OffsetDateTime.now();
-          final var min = now.minusYears(2).toEpochSecond();
-          final var max = now.plusYears(2).toEpochSecond();
-          final var randomEpoch = min + Math.abs(random.nextLong()) % (max - min + 1);
-          return OffsetDateTime.ofInstant(Instant.ofEpochSecond(randomEpoch), now.getOffset())
-              .format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
-        });
+        () ->
+            OffsetDateTime.ofInstant(
+                    Instant.ofEpochSecond(epochRandomizer.getRandomValue()), ZoneOffset.UTC)
+                .format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
   }
 
   /**
