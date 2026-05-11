@@ -36,7 +36,13 @@ const RowButton = styled.button<{$selected: boolean}>`
   min-height: 2rem;
   align-items: center;
   color: inherit;
-  font: inherit;
+  // Match the typography Carbon's TreeNode applies to its label
+  // (body-compact-01) so rows look identical between tree and flat views.
+  font-family: var(--cds-body-compact-01-font-family);
+  font-size: var(--cds-body-compact-01-font-size);
+  font-weight: var(--cds-body-compact-01-font-weight);
+  line-height: var(--cds-body-compact-01-line-height);
+  letter-spacing: var(--cds-body-compact-01-letter-spacing);
 
   &:hover {
     background-color: var(--cds-layer-hover-01);
