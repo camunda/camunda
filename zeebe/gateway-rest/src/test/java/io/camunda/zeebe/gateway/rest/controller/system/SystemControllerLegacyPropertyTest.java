@@ -15,6 +15,7 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
+import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import jakarta.servlet.ServletContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -29,11 +30,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 /**
- * Tests that verify backward-compatible property resolution: the unified key takes precedence over
- * legacy per-app keys, and when the unified key is absent the legacy keys are used as fallbacks.
+ * Tests that the controller correctly reads enterprise and cloud config from the injected
+ * WebappConfiguration bean. Legacy property fallback (camunda.operate.* / camunda.tasklist.*) is
+ * now handled by WebappPropertiesOverride in the configuration module; the controller itself simply
+ * reads the already-resolved WebappConfiguration.
  */
 @WebMvcTest(SystemController.class)
-@Import(SystemControllerLegacyPropertyTest.LegacyPropertyTestConfig.class)
+@Import(SystemControllerLegacyPropertyTest.WebappConfigTestConfig.class)
 public class SystemControllerLegacyPropertyTest extends RestControllerTest {
 
   static final String SYSTEM_CONFIGURATION_URL = "/v2/system/configuration";
@@ -45,8 +48,9 @@ public class SystemControllerLegacyPropertyTest extends RestControllerTest {
   @MockitoBean ServletContext servletContext;
 
   @Test
-  void shouldFallbackToOperateEnterpriseWhenUnifiedKeyNotSet() {
-    // given: legacy Operate/Tasklist keys set, unified key absent
+  void shouldUseEnterpriseAndCloudValuesFromWebappConfiguration() {
+    // given: WebappConfiguration already resolved (translation from legacy keys done by
+    // WebappPropertiesOverride at runtime; here we supply the resolved values directly)
     when(gatewayRestConfiguration.getJobMetrics()).thenReturn(new JobMetricsConfiguration());
     when(servletContext.getContextPath()).thenReturn("");
 
@@ -76,26 +80,27 @@ public class SystemControllerLegacyPropertyTest extends RestControllerTest {
   }
 
   @TestConfiguration
-  static class LegacyPropertyTestConfig {
+  static class WebappConfigTestConfig {
+
+    @Bean
+    @Primary
+    public WebappConfiguration testWebappConfiguration() {
+      final WebappConfiguration config = new WebappConfiguration();
+      config.setEnterprise(true);
+      final WebappConfiguration.Cloud cloud = config.getCloud();
+      cloud.setStage("test-stage");
+      cloud.setMixpanelToken("test-token");
+      cloud.setMixpanelApiHost("test-host");
+      return config;
+    }
 
     @Bean
     @Primary
     public Environment testEnvironment() {
       final MockEnvironment env = new MockEnvironment();
 
-      // camunda.webapp.enterprise deliberately absent — triggers fallback to Operate key
-      env.setProperty("camunda.operate.enterprise", "true");
-
-      // Unified cloud keys absent — fallback to Operate / Tasklist legacy keys
-      env.setProperty("camunda.tasklist.cloud.stage", "test-stage");
-      env.setProperty("camunda.operate.cloud.mixpanelToken", "test-token");
-      env.setProperty("camunda.operate.cloud.mixpanelAPIHost", "test-host");
-
-      // Required configuration
-      env.setProperty("camunda.webapps.login-delegated", "false");
       env.setProperty("spring.servlet.multipart.max-request-size", "4MB");
 
-      // Components all enabled
       env.setProperty("camunda.admin.webapp-enabled", "true");
       env.setProperty("camunda.webapps.admin.enabled", "true");
       env.setProperty("camunda.webapps.admin.ui-enabled", "true");
