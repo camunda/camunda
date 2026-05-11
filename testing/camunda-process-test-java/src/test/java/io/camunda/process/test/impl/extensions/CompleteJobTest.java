@@ -635,10 +635,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
-              .page(
-                  ArgumentMatchers
-                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
-                          any())
+              .withFullValues()
               .send()
               .join()
               .items())
@@ -647,28 +644,22 @@ public class CompleteJobTest {
       when(camundaClient.getConfiguration().getJsonMapper()).thenReturn(jsonMapper);
     }
 
-    private Variable variable(
-        final String name, final String value, final long scopeKey, final boolean truncated) {
+    private Variable variable(final String name, final String value) {
       final Variable variable = mock(Variable.class);
       when(variable.getName()).thenReturn(name);
       when(variable.getValue()).thenReturn(value);
-      when(variable.getScopeKey()).thenReturn(scopeKey);
-      when(variable.isTruncated()).thenReturn(truncated);
       return variable;
     }
 
     @Test
     void shouldCompleteJobWithVariableMapper() {
       // given
-      final Variable idVariable = variable("id", "1", PROCESS_INSTANCE_KEY, false);
-      final Variable localVariable = variable("local", "\"hello\"", ELEMENT_INSTANCE_KEY, false);
+      final Variable idVariable = variable("id", "1");
+      final Variable localVariable = variable("local", "\"hello\"");
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
-              .page(
-                  ArgumentMatchers
-                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
-                          any())
+              .withFullValues()
               .send()
               .join()
               .items())
@@ -730,15 +721,12 @@ public class CompleteJobTest {
     @Test
     void shouldPreferLocalOverGlobalVariable() {
       // given - same name 'id' at both scopes; local must win
-      final Variable globalId = variable("id", "1", PROCESS_INSTANCE_KEY, false);
-      final Variable localId = variable("id", "2", ELEMENT_INSTANCE_KEY, false);
+      final Variable globalId = variable("id", "1");
+      final Variable localId = variable("id", "2");
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
-              .page(
-                  ArgumentMatchers
-                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
-                          any())
+              .withFullValues()
               .send()
               .join()
               .items())
@@ -837,13 +825,10 @@ public class CompleteJobTest {
               new ConditionalBehaviorEngine());
     }
 
-    private Variable variable(
-        final String name, final String value, final long scopeKey, final boolean truncated) {
+    private Variable variable(final String name, final String value) {
       final Variable variable = mock(Variable.class);
       when(variable.getName()).thenReturn(name);
       when(variable.getValue()).thenReturn(value);
-      when(variable.getScopeKey()).thenReturn(scopeKey);
-      when(variable.isTruncated()).thenReturn(truncated);
       return variable;
     }
 
@@ -899,10 +884,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
-              .page(
-                  ArgumentMatchers
-                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
-                          any())
+              .withFullValues()
               .send()
               .join()
               .items())
@@ -926,10 +908,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
-              .page(
-                  ArgumentMatchers
-                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
-                          any())
+              .withFullValues()
               .send()
               .join()
               .items())
@@ -945,35 +924,6 @@ public class CompleteJobTest {
                       }))
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("boom");
-
-      // and: completion command was never sent
-      verify(camundaClient, org.mockito.Mockito.never()).newCompleteCommand(JOB_KEY);
-    }
-
-    @Test
-    void shouldFailIfInputVariableIsTruncated() {
-      // given
-      mockJobFound();
-      final Variable truncated = variable("big", "\"...\"", PROCESS_INSTANCE_KEY, true);
-      when(camundaClient
-              .newVariableSearchRequest()
-              .filter(variableFilterCaptor.capture())
-              .page(
-                  ArgumentMatchers
-                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
-                          any())
-              .send()
-              .join()
-              .items())
-          .thenReturn(Collections.singletonList(truncated));
-
-      // when/then
-      assertThatThrownBy(
-              () ->
-                  camundaProcessTestContext.completeJob(
-                      JOB_TYPE, inputVars -> Collections.emptyMap()))
-          .isInstanceOf(AssertionError.class)
-          .hasMessageContaining("variable 'big' is truncated");
 
       // and: completion command was never sent
       verify(camundaClient, org.mockito.Mockito.never()).newCompleteCommand(JOB_KEY);

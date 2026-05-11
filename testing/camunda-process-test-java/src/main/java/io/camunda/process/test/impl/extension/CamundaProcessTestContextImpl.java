@@ -51,7 +51,6 @@ import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.behavior.BehaviorCondition;
 import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
-import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
@@ -829,8 +828,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       return cached;
     }
     final Map<String, Object> inputVariables =
-        readInputVariables(
-            client, selectorDescription, operation, processInstanceKey, elementInstanceKey);
+        readInputVariables(client, processInstanceKey, elementInstanceKey);
     final Map<String, Object> outputVariables = variableMapper.apply(inputVariables);
     if (outputVariables == null) {
       throw new AssertionError(
@@ -845,43 +843,39 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   /**
    * Reads the variables visible to an element by querying the process-instance-global and
    * element-local scopes via the Search API and merging them, with local values shadowing global
-   * ones. Truncated values are rejected because they cannot be reliably deserialized.
+   * ones. Variables are requested with full values so that they can always be deserialized.
    */
   private Map<String, Object> readInputVariables(
-      final CamundaClient client,
-      final String selectorDescription,
-      final String operation,
-      final long processInstanceKey,
-      final long elementInstanceKey) {
+      final CamundaClient client, final long processInstanceKey, final long elementInstanceKey) {
 
-    final CamundaDataSource dataSource = new CamundaDataSource(client);
     final List<Variable> globalVariables =
-        dataSource.findGlobalVariablesByProcessInstanceKey(processInstanceKey);
+        fetchVariables(client, processInstanceKey, processInstanceKey);
     final List<Variable> localVariables =
-        dataSource.findVariables(
-            filter -> filter.processInstanceKey(processInstanceKey).scopeKey(elementInstanceKey));
+        fetchVariables(client, processInstanceKey, elementInstanceKey);
 
+    final JsonMapper clientJsonMapper = client.getConfiguration().getJsonMapper();
     final Map<String, Object> result = new HashMap<>();
-    result.putAll(toVariableMap(client, globalVariables, selectorDescription, operation));
-    result.putAll(toVariableMap(client, localVariables, selectorDescription, operation));
+    result.putAll(toVariableMap(clientJsonMapper, globalVariables));
+    result.putAll(toVariableMap(clientJsonMapper, localVariables));
     return result;
   }
 
-  private Map<String, Object> toVariableMap(
-      final CamundaClient client,
-      final List<Variable> variables,
-      final String selectorDescription,
-      final String operation) {
-    final JsonMapper clientJsonMapper = client.getConfiguration().getJsonMapper();
+  private static List<Variable> fetchVariables(
+      final CamundaClient client, final long processInstanceKey, final long scopeKey) {
+    return client
+        .newVariableSearchRequest()
+        .filter(filter -> filter.processInstanceKey(processInstanceKey).scopeKey(scopeKey))
+        .withFullValues()
+        .send()
+        .join()
+        .items();
+  }
+
+  private static Map<String, Object> toVariableMap(
+      final JsonMapper jsonMapper, final List<Variable> variables) {
     final Map<String, Object> result = new HashMap<>();
     for (final Variable variable : variables) {
-      if (Boolean.TRUE.equals(variable.isTruncated())) {
-        throw new AssertionError(
-            String.format(
-                "Expected to %s [%s] but variable '%s' is truncated.",
-                operation, selectorDescription, variable.getName()));
-      }
-      result.put(variable.getName(), clientJsonMapper.fromJson(variable.getValue(), Object.class));
+      result.put(variable.getName(), jsonMapper.fromJson(variable.getValue(), Object.class));
     }
     return result;
   }
