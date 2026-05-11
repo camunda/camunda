@@ -80,6 +80,11 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   }
 
   @Override
+  public DeploymentResourceCategory category() {
+    return DeploymentResourceCategory.DMN;
+  }
+
+  @Override
   public Either<Failure, DeploymentResourceContext> createMetadata(
       final DeploymentResource resource, final DeploymentRecord deployment) {
 

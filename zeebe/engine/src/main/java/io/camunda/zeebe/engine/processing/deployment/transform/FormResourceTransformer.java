@@ -57,6 +57,11 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
+  public DeploymentResourceCategory category() {
+    return DeploymentResourceCategory.FORM;
+  }
+
+  @Override
   public Either<Failure, DeploymentResourceContext> createMetadata(
       final DeploymentResource resource, final DeploymentRecord deployment) {
     return parseForm(resource)
