@@ -73,15 +73,16 @@ public class JudgePropertiesTest {
   }
 
   @Test
-  void shouldDefaultResolveDocumentsToFalseForInvalidValue() {
-    // given
+  void shouldTreatNonTrueResolveDocumentsValueAsFalse() {
+    // given: Boolean.parseBoolean returns false for any non-"true" string, so non-boolean input
+    // is silently coerced to false rather than rejected.
     final Properties properties = new Properties();
     properties.setProperty("judge.resolveDocuments", "not-a-boolean");
 
     // when
     final JudgeProperties judgeProperties = new JudgeProperties(properties);
 
-    // then: Boolean.parseBoolean returns false for any non-"true" string
+    // then
     assertThat(judgeProperties.isResolveDocuments()).isFalse();
   }
 

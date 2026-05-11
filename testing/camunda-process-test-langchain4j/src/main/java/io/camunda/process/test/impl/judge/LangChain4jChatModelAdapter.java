@@ -58,9 +58,8 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
       return delegate.chat(prompt);
     }
 
-    final UserMessage primary = UserMessage.from(prompt);
-
     final List<Content> parts = new ArrayList<>();
+    parts.add(TextContent.from(prompt));
     parts.add(
         TextContent.from(
             "Below are the Camunda document references found inside <actual_value>, resolved to "
@@ -71,11 +70,8 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
       parts.addAll(toContentParts(d));
     }
 
-    final UserMessage enrichment = UserMessage.from(parts);
-
     final List<ChatMessage> messages = new ArrayList<>();
-    messages.add(primary);
-    messages.add(enrichment);
+    messages.add(UserMessage.from(parts));
 
     final ChatResponse response = delegate.chat(messages);
     return response.aiMessage().text();
