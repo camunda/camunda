@@ -100,20 +100,23 @@ public final class UserTaskDurationScriptUtil {
             // Consecutive CLAIMs (with no UNCLAIM between them) occur e.g. when the same user is
             // re-assigned without unclaiming first. Only the first CLAIM opens a new work period;
             // subsequent consecutive CLAIMs are redundant for duration calculation.
+            // Both lists are sorted ascending and the last effective claim is monotonically
+            // non-decreasing, so a single pointer over the unclaim list gives O(N + M).
             "   def effectiveClaimTimestamps = new ArrayList();\n"
+            + "   int unclaimIdx = 0;\n"
             + "   for (def claimTs : allClaimTimestamps) {\n"
             + "     if (effectiveClaimTimestamps.isEmpty()) {\n"
             + "       effectiveClaimTimestamps.add(claimTs);\n"
-            + "     } else {\n"
-            + "       def lastEffectiveClaim = effectiveClaimTimestamps.get(effectiveClaimTimestamps.size() - 1);\n"
-            + "       boolean hasUnclaimBetween = false;\n"
-            + "       for (def ut : allUnclaimTimestamps) {\n"
-            + "         if (ut.getTime() > lastEffectiveClaim.getTime() && ut.getTime() < claimTs.getTime()) {\n"
-            + "           hasUnclaimBetween = true;\n"
-            + "           break;\n"
-            + "         }\n"
-            + "       }\n"
-            + "       if (hasUnclaimBetween) { effectiveClaimTimestamps.add(claimTs); }\n"
+            + "       continue;\n"
+            + "     }\n"
+            + "     def lastEffectiveClaim = effectiveClaimTimestamps.get(effectiveClaimTimestamps.size() - 1);\n"
+            + "     while (unclaimIdx < allUnclaimTimestamps.size()"
+            + "         && allUnclaimTimestamps.get(unclaimIdx).getTime() <= lastEffectiveClaim.getTime()) {\n"
+            + "       unclaimIdx++;\n"
+            + "     }\n"
+            + "     if (unclaimIdx < allUnclaimTimestamps.size()"
+            + "         && allUnclaimTimestamps.get(unclaimIdx).getTime() < claimTs.getTime()) {\n"
+            + "       effectiveClaimTimestamps.add(claimTs);\n"
             + "     }\n"
             + "   }\n"
             +

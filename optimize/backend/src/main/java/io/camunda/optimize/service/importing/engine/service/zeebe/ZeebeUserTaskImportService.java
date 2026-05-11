@@ -259,22 +259,30 @@ public class ZeebeUserTaskImportService
   private List<OffsetDateTime> getEffectiveClaimTimestamps(
       final List<OffsetDateTime> allClaimTimestamps,
       final List<OffsetDateTime> allUnclaimTimestamps) {
+    // Both input lists are sorted ascending. As we iterate claims in order, the last effective
+    // claim is monotonically non-decreasing, so a single pointer over the unclaim list is
+    // sufficient — yielding O(N + M) instead of O(N * M).
     final List<OffsetDateTime> effectiveClaimTimestamps = new ArrayList<>();
+    int unclaimIdx = 0;
     for (final OffsetDateTime claimTs : allClaimTimestamps) {
-      if (effectiveClaimTimestamps.isEmpty()
-          || hasUnclaimTimestampBetween(allUnclaimTimestamps, claimTs, effectiveClaimTimestamps)) {
+      if (effectiveClaimTimestamps.isEmpty()) {
+        effectiveClaimTimestamps.add(claimTs);
+        continue;
+      }
+      final OffsetDateTime lastEffectiveClaim = effectiveClaimTimestamps.getLast();
+      // Advance past any unclaim that is not strictly after the last effective claim.
+      while (unclaimIdx < allUnclaimTimestamps.size()
+          && !allUnclaimTimestamps.get(unclaimIdx).isAfter(lastEffectiveClaim)) {
+        unclaimIdx++;
+      }
+      // If the next unclaim falls strictly between the last effective claim and this claim,
+      // this claim opens a new work period.
+      if (unclaimIdx < allUnclaimTimestamps.size()
+          && allUnclaimTimestamps.get(unclaimIdx).isBefore(claimTs)) {
         effectiveClaimTimestamps.add(claimTs);
       }
     }
     return effectiveClaimTimestamps;
-  }
-
-  private boolean hasUnclaimTimestampBetween(
-      final List<OffsetDateTime> allUnclaimTimestamps,
-      final OffsetDateTime claimTs,
-      final List<OffsetDateTime> effectiveClaimTimestamps) {
-    return allUnclaimTimestamps.stream()
-        .anyMatch(ut -> ut.isAfter(effectiveClaimTimestamps.getLast()) && ut.isBefore(claimTs));
   }
 
   private void updateUserTaskAssigneeOperations(
