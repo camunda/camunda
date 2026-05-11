@@ -95,11 +95,21 @@ public class SbeCommandTest {
     // when
     final int exitCode =
         commandLine.execute(
-            "sbe", "--schema", schemaPath().toString(), "--offset", "1", filePath.toString());
+            "sbe",
+            "--schema",
+            schemaPath().toString(),
+            "--offset",
+            "1",
+            "--verbose",
+            filePath.toString());
 
     // then
     assertThat(exitCode).isZero();
     assertThat(out.toString().trim()).isEqualTo(EXPECTED_CONFIGURATION.trim());
+    assertThat(err.toString())
+        .contains("Reading file: " + filePath)
+        .contains("Schema used: filesystem path " + schemaPath())
+        .contains("Offset used: 1");
   }
 
   @Test
@@ -112,13 +122,21 @@ public class SbeCommandTest {
     // when
     final int exitCode =
         commandLine.execute(
-            "sbe", "--schema", "raft-entry-schema.xml", "--offset", "1", filePath.toString());
+            "sbe",
+            "--schema",
+            "raft-entry-schema.xml",
+            "--offset",
+            "1",
+            "--verbose",
+            filePath.toString());
 
     // then
     assertThat(exitCode).isZero();
     assertThat(out.toString().trim()).isEqualTo(EXPECTED_CONFIGURATION.trim());
-    assertThat(err.toString().trim())
-        .isEqualTo("Schema used: classpath resource raft-entry-schema.xml");
+    assertThat(err.toString())
+        .contains("Reading file: " + filePath)
+        .contains("Schema used: classpath resource raft-entry-schema.xml")
+        .contains("Offset used: 1");
   }
 
   private Path schemaPath() {
