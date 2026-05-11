@@ -67,13 +67,13 @@ public class TaskListenerCorrectionsTest {
         ZeebeTaskListenerEventType.assigning,
         u -> u.zeebeAssignee("initial_assignee"),
         userTask -> {},
-        "");
+        "assign");
   }
 
   @Test
   public void shouldAppendUserTaskCorrectedWhenCreatingTaskListenerCompletesWithCorrections() {
     testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
-        ZeebeTaskListenerEventType.creating, u -> u, userTask -> {}, "");
+        ZeebeTaskListenerEventType.creating, u -> u, userTask -> {}, "create");
   }
 
   @Test
@@ -117,7 +117,7 @@ public class TaskListenerCorrectionsTest {
                 .withLocalSemantic()
                 .expectUpdating()
                 .update(),
-        ""); // action is empty as update transition was triggered by Zeebe
+        "create"); // action persists from the broker-internal CREATING transition
   }
 
   @Test
@@ -135,7 +135,7 @@ public class TaskListenerCorrectionsTest {
         ZeebeTaskListenerEventType.canceling,
         u -> u,
         pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel(),
-        "");
+        "cancel");
   }
 
   private void testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
@@ -1114,7 +1114,7 @@ public class TaskListenerCorrectionsTest {
                 .hasVariables(Map.of("status", "APPROVED"))
                 .hasDueDate("corrected_due")
                 .hasOnlyChangedAttributes(UserTaskRecord.DUE_DATE, UserTaskRecord.VARIABLES)
-                .hasAction(""));
+                .hasAction("create"));
   }
 
   @Test

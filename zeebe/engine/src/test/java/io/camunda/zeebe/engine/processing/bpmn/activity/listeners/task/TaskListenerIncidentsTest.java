@@ -241,7 +241,7 @@ public class TaskListenerIncidentsTest {
         "expression_creating_listener_2",
         ignored -> {},
         UserTaskIntent.CREATED,
-        userTask -> Assertions.assertThat(userTask).hasAction(""));
+        userTask -> Assertions.assertThat(userTask).hasAction("create"));
   }
 
   @Test
@@ -307,7 +307,7 @@ public class TaskListenerIncidentsTest {
             UserTaskIntent.UPDATED,
             userTask ->
                 Assertions.assertThat(userTask)
-                    .hasAction("")
+                    .hasAction("create")
                     .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
 
     Assertions.assertThat(
@@ -442,7 +442,7 @@ public class TaskListenerIncidentsTest {
     helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.ASSIGNED,
-        userTask -> Assertions.assertThat(userTask).hasAssignee(assignee).hasAction(""));
+        userTask -> Assertions.assertThat(userTask).hasAssignee(assignee).hasAction("assign"));
   }
 
   @Test
@@ -514,7 +514,7 @@ public class TaskListenerIncidentsTest {
     helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.CANCELED,
-        userTask -> assertThat(userTask.getAction()).isEmpty());
+        userTask -> assertThat(userTask.getAction()).isEqualTo("cancel"));
   }
 
   @Test

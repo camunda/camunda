@@ -193,6 +193,7 @@ public final class BpmnUserTaskBehavior {
             .setTags(getTagsFromProcessInstance(context))
             .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
 
+    userTaskRecord.setAction("create");
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
   }
@@ -390,6 +391,7 @@ public final class BpmnUserTaskBehavior {
 
     rejectOngoingRequestsForUserTaskBeforeCancellation(userTask);
 
+    userTask.setAction("cancel");
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
     return Optional.of(userTask);
   }
@@ -458,6 +460,7 @@ public final class BpmnUserTaskBehavior {
       userTaskRecord.setAssignee(assignee);
       userTaskRecord.setAssigneeChanged();
     }
+    userTaskRecord.setAction("assign");
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
   }
 
