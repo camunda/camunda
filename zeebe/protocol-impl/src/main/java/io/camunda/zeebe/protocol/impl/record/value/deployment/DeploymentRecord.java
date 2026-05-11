@@ -222,30 +222,6 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     return this;
   }
 
-  public boolean hasBpmnResources() {
-    return getResources().stream()
-        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
-        .anyMatch(x -> x.endsWith(".bpmn") || x.endsWith(".xml"));
-  }
-
-  public boolean hasDmnResources() {
-    return getResources().stream()
-        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
-        .anyMatch(x -> x.endsWith(".dmn"));
-  }
-
-  public boolean hasForms() {
-    return getResources().stream()
-        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
-        .anyMatch(x -> x.endsWith(".form"));
-  }
-
-  public boolean hasResources() {
-    return getResources().stream()
-        .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
-        .anyMatch(x -> x.endsWith(".rpa"));
-  }
-
   /**
    * Returns {@code true} if every metadata entry in this deployment record has its {@code
    * duplicate} flag set, {@code false} if at least one entry is marked as new or changed. The

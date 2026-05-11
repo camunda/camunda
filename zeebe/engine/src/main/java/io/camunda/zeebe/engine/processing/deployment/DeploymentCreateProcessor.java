@@ -21,6 +21,8 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationE
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentResourceCategory;
+import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformationFailure;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -67,7 +69,9 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public final class DeploymentCreateProcessor
@@ -182,35 +186,66 @@ public final class DeploymentCreateProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<DeploymentRecord> command, final Throwable error) {
-    // Make sure the cache does not contain any leftovers from this run (by hard resetting)
-    if (command.getValue().hasBpmnResources()) {
-      processState.clearCache();
-    }
-    if (command.getValue().hasDmnResources()) {
-      decisionState.clearCache();
-    }
-    if (command.getValue().hasForms()) {
-      formState.clearCache();
-    }
-    if (command.getValue().hasResources()) {
-      resourceState.clearCache();
-    }
-
     if (error instanceof final ResourceTransformationFailedException exception) {
+      // Make sure the cache does not contain any leftovers from this run (by hard resetting)
+      invalidateCache(exception.touchedCategories());
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     } else if (error instanceof final TimerCreationFailedException exception) {
+      // the transformation has already completed, so the record itself would have metadata
+      invalidateCache(getDeploymentResourceCategories(command.getValue()));
       rejectionWriter.appendRejection(
           command, RejectionType.PROCESSING_ERROR, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.PROCESSING_ERROR, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
-
+    // otherwise, invalidate all caches as we don't know which category caused the error
+    invalidateCache();
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private Set<DeploymentResourceCategory> getDeploymentResourceCategories(
+      final DeploymentRecord value) {
+    final var categories = EnumSet.noneOf(DeploymentResourceCategory.class);
+    if (value.processesMetadata().stream().findAny().isPresent()) {
+      categories.add(DeploymentResourceCategory.BPMN);
+    }
+    if (value.decisionsMetadata().stream().findAny().isPresent()) {
+      categories.add(DeploymentResourceCategory.DMN);
+    }
+    if (value.formMetadata().stream().findAny().isPresent()) {
+      categories.add(DeploymentResourceCategory.FORM);
+    }
+    if (value.resourceMetadata().stream().findAny().isPresent()) {
+      categories.add(DeploymentResourceCategory.RESOURCE);
+    }
+    return categories;
+  }
+
+  private void invalidateCache() {
+    invalidateCache(null);
+  }
+
+  private void invalidateCache(final Set<DeploymentResourceCategory> categories) {
+    if (categories == null || categories.isEmpty()) {
+      processState.clearCache();
+      decisionState.clearCache();
+      formState.clearCache();
+      resourceState.clearCache();
+      return;
+    }
+    for (final var category : categories) {
+      switch (category) {
+        case BPMN -> processState.clearCache();
+        case DMN -> decisionState.clearCache();
+        case FORM -> formState.clearCache();
+        case RESOURCE -> resourceState.clearCache();
+      }
+    }
   }
 
   private void transformAndDistributeDeployment(final TypedRecord<DeploymentRecord> command) {
@@ -219,17 +254,17 @@ public final class DeploymentCreateProcessor
     deploymentEvent.setDeploymentKey(key);
 
     // Note: transforming a resource will also write the CREATE events for said resource
-    final Either<Failure, Void> result = deploymentTransformer.transform(deploymentEvent);
+    final var result = deploymentTransformer.transform(deploymentEvent);
 
     if (result.isLeft()) {
-      throw new ResourceTransformationFailedException(result.getLeft().getMessage());
+      throw new ResourceTransformationFailedException(result.getLeft());
     }
 
     try {
       createTimerIfTimerStartEvent(command);
     } catch (final RuntimeException e) {
       final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-      throw new TimerCreationFailedException(reason);
+      throw new TimerCreationFailedException(reason, result.getLeft());
     }
 
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
@@ -432,8 +467,15 @@ public final class DeploymentCreateProcessor
    */
   private static final class ResourceTransformationFailedException extends RuntimeException {
 
-    private ResourceTransformationFailedException(final String message) {
-      super(message);
+    private final Set<DeploymentResourceCategory> touchedCategories;
+
+    private ResourceTransformationFailedException(final DeploymentTransformationFailure failure) {
+      super(failure.message());
+      touchedCategories = failure.touchedCategories();
+    }
+
+    Set<DeploymentResourceCategory> touchedCategories() {
+      return touchedCategories;
     }
   }
 
@@ -444,7 +486,8 @@ public final class DeploymentCreateProcessor
    */
   private static final class TimerCreationFailedException extends RuntimeException {
 
-    public TimerCreationFailedException(final String message) {
+    public TimerCreationFailedException(
+        final String message, final DeploymentTransformationFailure left) {
       super(message);
     }
   }

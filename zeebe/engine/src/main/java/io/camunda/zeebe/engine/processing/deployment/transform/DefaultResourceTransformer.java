@@ -79,6 +79,11 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
     return true;
   }
 
+  @Override
+  public DeploymentResourceCategory category() {
+    return DeploymentResourceCategory.RESOURCE;
+  }
+
   /**
    * Parses the deployment resource to extract the resource identity (ID and optional version tag).
    *
