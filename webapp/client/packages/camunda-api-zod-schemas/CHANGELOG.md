@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.64
+
+### 🚀 Enhancements
+
+- Add System Configuration schemas and endpoint for 8.10 ([#51313](https://github.com/camunda/camunda/issues/51313))
+  - `systemConfigurationSchema` with `jobMetrics`, `components`, `deployment`, `authentication`, and `cloud` sections
+  - `GET /v2/system/configuration` endpoint
+
+### ❤️ Contributors
+
+- Yedidiah Tsedeke ([@tsedekey](https://github.com/tsedekey))
+
 ## v0.0.63
 
 ### 🚀 Enhancements
