@@ -15,7 +15,6 @@
  */
 package io.camunda.client.spring.configurationMetadata;
 
-import static io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder.DEFAULT_CREDENTIALS_CACHE_PATH;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -80,10 +79,6 @@ public class AlignmentTest {
               "camunda.client.request-timeout-offset",
               new Getter(CamundaClientProperties::getRequestTimeoutOffset, DURATION_MAPPER)),
           entry("camunda.client.tenant-id", new Getter(CamundaClientProperties::getTenantId)),
-          entry(
-              "camunda.client.auth.credentials-cache-path",
-              new Getter(
-                  p -> p.getAuth().getCredentialsCachePath(), p -> DEFAULT_CREDENTIALS_CACHE_PATH)),
           entry(
               "camunda.client.auth.connect-timeout",
               new Getter(p -> p.getAuth().getConnectTimeout(), DURATION_MAPPER)),
