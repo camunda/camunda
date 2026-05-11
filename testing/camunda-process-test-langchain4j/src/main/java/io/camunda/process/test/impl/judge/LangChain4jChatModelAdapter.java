@@ -82,28 +82,43 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
     parts.add(TextContent.from(buildHeader(d)));
 
     final String contentType = contentTypeOf(d);
-    if (contentType != null && contentType.toLowerCase().startsWith("image/")) {
+
+    if (isImage(contentType)) {
       final String base64 = Base64.getEncoder().encodeToString(d.getContent());
       parts.add(ImageContent.from(base64, contentType));
-    } else if ("application/pdf".equalsIgnoreCase(contentType)) {
+
+      return parts;
+    }
+
+    if (isPDF(contentType)) {
       final String base64 = Base64.getEncoder().encodeToString(d.getContent());
       parts.add(
           PdfFileContent.from(PdfFile.builder().base64Data(base64).mimeType(contentType).build()));
-    } else if (isTextLike(contentType)) {
-      parts.add(TextContent.from(new String(d.getContent(), StandardCharsets.UTF_8)));
-    } else {
-      LOG.debug(
-          "Document '{}' has content type '{}' which is not natively supported as a content "
-              + "block; including a placeholder text marker only",
-          d.getReference().getDocumentId(),
-          contentType);
-      parts.add(
-          TextContent.from(
-              "[binary content of type "
-                  + (contentType == null ? "unknown" : contentType)
-                  + " omitted; the LLM provider does not support this content type as a block]"));
+
+      return parts;
     }
+    if (isTextLike(contentType)) {
+      parts.add(TextContent.from(new String(d.getContent(), StandardCharsets.UTF_8)));
+
+      return parts;
+    }
+
+    LOG.debug(
+        "Document '{}' has content type '{}' which is not natively supported as a content "
+            + "block; including a placeholder text marker only",
+        d.getReference().getDocumentId(),
+        contentType);
+
+    parts.add(
+        TextContent.from(
+            "[binary content of type "
+                + (contentType == null ? "unknown" : contentType)
+                + " omitted; the LLM provider does not support this content type as a block]"));
     return parts;
+  }
+
+  private static boolean isPDF(final String contentType) {
+    return "application/pdf".equalsIgnoreCase(contentType);
   }
 
   private static String buildHeader(final ResolvedDocument d) {
@@ -130,6 +145,10 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
 
   private static String nullToEmpty(final String s) {
     return s == null ? "" : s;
+  }
+
+  private static boolean isImage(final String contentType) {
+    return contentType != null && contentType.toLowerCase().startsWith("image/");
   }
 
   private static boolean isTextLike(final String contentType) {
