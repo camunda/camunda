@@ -22,6 +22,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.util.ResourceUtils;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.service.cache.ResourceCache;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.security.SecurityContextProvider;
@@ -41,6 +42,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   private final DecisionRequirementSearchClient decisionRequirementSearchClient;
   private final DeployedResourceSearchClient deployedResourceSearchClient;
   private final boolean secondaryStorageEnabled;
+  private final ResourceCache resourceCache;
 
   public ResourceServices(
       final BrokerClient brokerClient,
@@ -50,7 +52,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
       final DeployedResourceSearchClient deployedResourceSearchClient,
-      final boolean secondaryStorageEnabled) {
+      final boolean secondaryStorageEnabled,
+      final ResourceCache resourceCache) {
     super(
         brokerClient,
         securityContextProvider,
@@ -60,6 +63,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
     this.deployedResourceSearchClient = deployedResourceSearchClient;
     this.secondaryStorageEnabled = secondaryStorageEnabled;
+    this.resourceCache = resourceCache;
   }
 
   public CompletableFuture<DeploymentRecord> deployResources(
@@ -166,11 +170,40 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final CamundaAuthentication authentication,
       final boolean includeContent,
       final String resourceTypeFilter) {
-    if (secondaryStorageEnabled) {
-      return fetchFromSecondaryStorage(
-          resourceKey, authentication, includeContent, resourceTypeFilter);
+    // Use cache for content requests to optimize file retrieval time
+    if (includeContent && resourceCache != null) {
+      final DeployedResourceEntity cachedEntity = resourceCache.get(resourceKey);
+      if (cachedEntity != null) {
+        return CompletableFuture.supplyAsync(
+            () -> {
+              validateResourceType(cachedEntity.resourceType(), resourceTypeFilter, resourceKey);
+              return cachedEntity;
+            },
+            executorProvider.getExecutor());
+      }
     }
-    return fetchFromBroker(resourceKey, authentication, includeContent, resourceTypeFilter);
+
+    // Cache miss or cache not enabled - fetch from storage
+    final CompletableFuture<DeployedResourceEntity> fetchFuture;
+    if (secondaryStorageEnabled) {
+      fetchFuture =
+          fetchFromSecondaryStorage(
+              resourceKey, authentication, includeContent, resourceTypeFilter);
+    } else {
+      fetchFuture =
+          fetchFromBroker(resourceKey, authentication, includeContent, resourceTypeFilter);
+    }
+
+    // If fetching with content and cache is enabled, populate cache on successful fetch
+    if (includeContent && resourceCache != null) {
+      return fetchFuture.thenApply(
+          entity -> {
+            resourceCache.put(resourceKey, entity);
+            return entity;
+          });
+    }
+
+    return fetchFuture;
   }
 
   private CompletableFuture<DeployedResourceEntity> fetchFromSecondaryStorage(

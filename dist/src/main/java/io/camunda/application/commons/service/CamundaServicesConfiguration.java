@@ -478,7 +478,8 @@ public class CamundaServicesConfiguration {
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
       final DeployedResourceSearchClient deployedResourceSearchClient,
-      final Environment environment) {
+      final Environment environment,
+      final ResourceCache resourceCache) {
     return new ResourceServices(
         brokerClient,
         securityContextProvider,
@@ -487,7 +488,8 @@ public class CamundaServicesConfiguration {
         processDefinitionSearchClient,
         decisionRequirementSearchClient,
         deployedResourceSearchClient,
-        DatabaseTypeUtils.isSecondaryStorageEnabled(environment));
+        DatabaseTypeUtils.isSecondaryStorageEnabled(environment),
+        resourceCache);
   }
 
   @Bean
@@ -623,6 +625,21 @@ public class CamundaServicesConfiguration {
 
     return new ProcessCache(
         cacheConfiguration, processDefinitionServices, brokerTopologyManager, meterRegistry);
+  }
+
+  @Bean
+  public ResourceCache resourceCache(
+      final GatewayRestConfiguration configuration,
+      final BrokerTopologyManager brokerTopologyManager,
+      final MeterRegistry meterRegistry) {
+
+    final var cacheConfiguration =
+        new io.camunda.service.cache.ResourceCache.Configuration(
+            configuration.getResourceCache().getMaxSize(),
+            configuration.getResourceCache().getExpirationIdleMillis());
+
+    return new io.camunda.service.cache.ResourceCache(
+        cacheConfiguration, brokerTopologyManager, meterRegistry);
   }
 
   @Bean

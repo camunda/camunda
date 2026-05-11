@@ -1258,6 +1258,10 @@ camunda: # Type: io.camunda.configuration.Camunda
       expiration-idle-millis: null # Type: Long, Env: CAMUNDA_REST_PROCESSCACHE_EXPIRATIONIDLEMILLIS
       max-size: null # Type: Integer, Env: CAMUNDA_REST_PROCESSCACHE_MAXSIZE
 
+    resource-cache: # Type: io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration$ResourceCacheConfiguration
+      expiration-idle-millis: null # Type: Long, Env: CAMUNDA_REST_RESOURCECACHE_EXPIRATIONIDLEMILLIS
+      max-size: null # Type: Integer, Env: CAMUNDA_REST_RESOURCECACHE_MAXSIZE
+
     # Maximum allowed length for message names in REST requests.
     max-name-field-length: 32768 # Type: Integer, Env: CAMUNDA_REST_MAXNAMEFIELDLENGTH
 
