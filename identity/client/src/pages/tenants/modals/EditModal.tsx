@@ -15,6 +15,11 @@ import { updateTenant } from "src/utility/api/tenants";
 import TextField from "src/components/form/TextField";
 import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
+const getTenantFormValues = (tenant: Tenant) => ({
+  name: tenant.name ?? "",
+  description: tenant.description ?? "",
+});
+
 const EditModal: FC<UseEntityModalProps<Tenant>> = ({
   entity: tenant,
   open,
@@ -28,13 +33,17 @@ const EditModal: FC<UseEntityModalProps<Tenant>> = ({
     suppressErrorNotification: true,
   });
 
-  const [tenantName, setTenantName] = useState(tenant.name ?? "");
-  const [description, setDescription] = useState(tenant.description ?? "");
+  const initialTenantFormValues = getTenantFormValues(tenant);
+  const [tenantName, setTenantName] = useState(initialTenantFormValues.name);
+  const [description, setDescription] = useState(
+    initialTenantFormValues.description,
+  );
 
   useEffect(() => {
-    setTenantName(tenant.name ?? "");
-    setDescription(tenant.description ?? "");
-  }, [tenant.name, tenant.description]);
+    const newTenantFormValues = getTenantFormValues(tenant);
+    setTenantName(newTenantFormValues.name);
+    setDescription(newTenantFormValues.description);
+  }, [tenant.tenantId]);
 
   const handleSubmit = async () => {
     const { success } = await callUpdateTenant({
