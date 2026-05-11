@@ -39,12 +39,6 @@ jobs:
       - name: Read DB versions
         id: read-versions
         uses: ./.github/actions/read-db-versions
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
 
   search-integration-tests:
     name: "Search ${{ matrix.database-name }}"
