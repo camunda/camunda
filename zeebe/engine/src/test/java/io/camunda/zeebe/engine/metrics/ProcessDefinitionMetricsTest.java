@@ -19,8 +19,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.micrometer.core.instrument.search.MeterNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
@@ -256,11 +254,11 @@ public class ProcessDefinitionMetricsTest {
   public void shouldInitializeMetricsForManyDeployedProcesses() throws IOException {
     // given - many distinct process definitions derived from a real BPMN file,
     // deployed in batched deployments to keep test setup fast.
-    final byte[] baseBpmn =
-        Files.readAllBytes(
-            Path.of(
-                "../../load-tests/load-tester/src/main/resources/bpmn/realistic/"
-                    + "bankCustomerComplaintDisputeHandling.bpmn"));
+    final byte[] baseBpmn;
+    try (var in =
+        getClass().getResourceAsStream("/processes/bankCustomerComplaintDisputeHandling.bpmn")) {
+      baseBpmn = in.readAllBytes();
+    }
     final String baseXml = new String(baseBpmn, StandardCharsets.UTF_8);
     final String originalProcessId = "bankDisputeHandling";
 
