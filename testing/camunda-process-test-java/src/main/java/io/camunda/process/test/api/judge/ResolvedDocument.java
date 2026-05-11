@@ -18,38 +18,25 @@ package io.camunda.process.test.api.judge;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 
 /**
- * A Camunda document reference paired with the outcome of resolving its binary content, passed to
- * {@link MultimodalChatModelAdapter#generate(String, java.util.List)} so a custom {@link
- * ChatModelAdapter} preset can attach the content as structured blocks for its target LLM API.
+ * A Camunda document reference paired with its downloaded binary content, passed to {@link
+ * MultimodalChatModelAdapter#generate(String, java.util.List)} so a custom {@link ChatModelAdapter}
+ * preset can attach the content as structured blocks for its target LLM API.
  *
  * <p>{@link #getReference()} is the first-class Camunda primitive — read document id, store id,
  * content hash, and metadata (file name, mime type, …) from it directly.
  *
- * <p>If {@link #getContent()} is {@code null} and {@link #getErrorMessage()} is set, the reference
- * could not be resolved. Consumers should still surface the metadata so the judge can reason about
- * the gap.
+ * <p>If a document cannot be downloaded the judge evaluation fails fast; a {@code ResolvedDocument}
+ * therefore always carries both a reference and its content.
  */
 public interface ResolvedDocument {
 
   /**
-   * @return the original Camunda document reference; never {@code null} except when the reference
-   *     node itself could not be parsed
+   * @return the original Camunda document reference
    */
   DocumentReferenceResponse getReference();
 
   /**
-   * @return the downloaded binary content, or {@code null} if resolution failed
+   * @return the downloaded binary content
    */
   byte[] getContent();
-
-  /**
-   * @return the failure reason, or {@code null} when resolution succeeded
-   */
-  String getErrorMessage();
-
-  /**
-   * @return {@code true} if the document was resolved successfully and {@link #getContent()} is
-   *     available
-   */
-  boolean isResolved();
 }
