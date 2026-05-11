@@ -38,7 +38,11 @@ import io.camunda.search.sort.SortOrder;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 final class ProcessDefinitionInstanceVersionStatisticsAggregationTransformerTest {
 
@@ -97,8 +101,29 @@ final class ProcessDefinitionInstanceVersionStatisticsAggregationTransformerTest
             });
   }
 
-  @Test
-  void shouldMapAllSortFieldsToCorrectBucketSortPaths() {
+  private static Stream<Arguments> sortFieldToBucketSortPath() {
+    // Note: the document reader converts "processDefinitionId" → "_key" via
+    // withConvertedSortingField before the transformer is called, so we use "_key" directly here.
+    return Stream.of(
+        Arguments.of(AGGREGATION_FIELD_KEY, AGGREGATION_FIELD_KEY),
+        Arguments.of(
+            AGGREGATION_FIELD_PROCESS_DEFINITION_KEY, AGG_MAX_PROCESS_DEFINITION_KEY + ".value"),
+        // processDefinitionName is embedded as the first segment of the terms bucket key,
+        // so sorting by it is equivalent to sorting by _key.
+        Arguments.of(AGGREGATION_FIELD_PROCESS_DEFINITION_NAME, AGGREGATION_FIELD_KEY),
+        Arguments.of(
+            AGGREGATION_NAME_PROCESS_DEFINITION_VERSION, AGG_MAX_PROCESS_VERSION + ".value"),
+        Arguments.of(
+            AGGREGATION_NAME_TOTAL_WITH_INCIDENT, AGGREGATION_NAME_TOTAL_WITH_INCIDENT + "._count"),
+        Arguments.of(
+            AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT,
+            AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT + "._count"));
+  }
+
+  @ParameterizedTest(name = "sort field {0} → bucket_sort path {1}")
+  @MethodSource("sortFieldToBucketSortPath")
+  void shouldMapSortFieldToBucketSortPath(
+      final String sortField, final String expectedBucketSortPath) {
     // given
     final var transformers = ServiceTransformers.newInstance(new IndexDescriptors("", true));
     final var aggregationTransformer =
@@ -106,16 +131,9 @@ final class ProcessDefinitionInstanceVersionStatisticsAggregationTransformerTest
             ProcessDefinitionInstanceVersionStatisticsAggregation.class);
 
     final var filter = new ProcessDefinitionInstanceVersionStatisticsFilter("order_process", null);
-    // Note: the document reader converts "processDefinitionId" → "_key" via
-    // withConvertedSortingField before the transformer is called, so we use "_key" directly here.
-    final ProcessDefinitionInstanceVersionStatisticsSort sort =
+    final var sort =
         new ProcessDefinitionInstanceVersionStatisticsSort(
-            List.of(
-                new FieldSorting(AGGREGATION_FIELD_PROCESS_DEFINITION_KEY, SortOrder.ASC),
-                new FieldSorting(AGGREGATION_FIELD_PROCESS_DEFINITION_NAME, SortOrder.ASC),
-                new FieldSorting(AGGREGATION_NAME_PROCESS_DEFINITION_VERSION, SortOrder.ASC),
-                new FieldSorting(AGGREGATION_NAME_TOTAL_WITH_INCIDENT, SortOrder.DESC),
-                new FieldSorting(AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT, SortOrder.DESC)));
+            List.of(new FieldSorting(sortField, SortOrder.ASC)));
     final var page = SearchQueryPage.of(p -> p.from(0).size(10));
 
     final var aggregation =
@@ -125,7 +143,7 @@ final class ProcessDefinitionInstanceVersionStatisticsAggregationTransformerTest
     final List<SearchAggregator> aggregators =
         aggregationTransformer.apply(Tuple.of(aggregation, transformers));
 
-    // then — inspect the bucket_sort sub-aggregation for correct path mapping
+    // then
     final var bucketSortAgg =
         aggregators.get(1).getAggregations().stream()
             .filter(a -> AGGREGATION_NAME_PAGE.equals(a.getName()))
@@ -137,22 +155,7 @@ final class ProcessDefinitionInstanceVersionStatisticsAggregationTransformerTest
             SearchBucketSortAggregator.class,
             bucketSort ->
                 assertThat(bucketSort.sorting())
-                    .containsExactly(
-                        new FieldSorting(
-                            // processDefinitionKey
-                            AGG_MAX_PROCESS_DEFINITION_KEY + ".value", SortOrder.ASC),
-                        new FieldSorting(
-                            // processDefinitionName (embedded in _key)
-                            AGGREGATION_FIELD_KEY, SortOrder.ASC),
-                        new FieldSorting(
-                            // processDefinitionVersion
-                            AGG_MAX_PROCESS_VERSION + ".value", SortOrder.ASC),
-                        new FieldSorting(
-                            // activeInstancesWithIncidentCount
-                            AGGREGATION_NAME_TOTAL_WITH_INCIDENT + "._count", SortOrder.DESC),
-                        new FieldSorting(
-                            // activeInstancesWithoutIncidentCount
-                            AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT + "._count", SortOrder.DESC)));
+                    .containsExactly(new FieldSorting(expectedBucketSortPath, SortOrder.ASC)));
   }
 
   @Test
