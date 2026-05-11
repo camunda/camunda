@@ -865,4 +865,72 @@ public class ProcessDefinitionInstanceVersionStatisticsIT {
         .isEqualTo("Capybara Paged Process");
     assertThat(page3.page().totalItems()).isEqualTo(3);
   }
+
+  @Test
+  void shouldSortByAllFieldsCombined() {
+    // given — deploy three versions with distinct names so every sort field produces
+    // meaningful values. processDefinitionVersion is auto-incremented per
+    // processDefinitionId, so the three deployments below end up with versions 1/2/3
+    // — unique across the three rows this query returns. That makes the version DESC
+    // sort fully deterministic and the remaining fields act as never-invoked
+    // tie-breakers — exactly what we need to prove that the pipeline accepts all six
+    // bucket_sort entries without rejection.
+    final var processDefinitionId = "combined_sort_proc";
+
+    final var v1 =
+        deployServiceTaskProcess(camundaClient, processDefinitionId, "Aardvark Combined", "3");
+    final var v1Key = v1.getProcesses().getFirst().getProcessDefinitionKey();
+
+    final var v2 =
+        deployServiceTaskProcess(camundaClient, processDefinitionId, "Badger Combined", "3");
+    final var v2Key = v2.getProcesses().getFirst().getProcessDefinitionKey();
+
+    final var v3 =
+        deployServiceTaskProcess(camundaClient, processDefinitionId, "Capybara Combined", "3");
+    final var v3Key = v3.getProcesses().getFirst().getProcessDefinitionKey();
+
+    startProcessInstance(camundaClient, v1Key);
+    startProcessInstance(camundaClient, v2Key);
+    startProcessInstance(camundaClient, v3Key);
+
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionId(processDefinitionId).state(ProcessInstanceState.ACTIVE),
+        3);
+
+    // when — chain all six sortable fields in a single request.
+    final var result =
+        camundaClient
+            .newProcessDefinitionInstanceVersionStatisticsRequest(processDefinitionId)
+            .sort(
+                s ->
+                    s.processDefinitionVersion()
+                        .desc()
+                        .processDefinitionId()
+                        .asc()
+                        .processDefinitionKey()
+                        .asc()
+                        .processDefinitionName()
+                        .asc()
+                        .activeInstancesWithIncidentCount()
+                        .desc()
+                        .activeInstancesWithoutIncidentCount()
+                        .asc())
+            .send()
+            .join();
+
+    // then — order is determined by the primary sort (version DESC): v3, v2, v1.
+    assertThat(result.items())
+        .extracting(
+            ProcessDefinitionInstanceVersionStatistics::getProcessDefinitionName,
+            ProcessDefinitionInstanceVersionStatistics::getProcessDefinitionVersion,
+            ProcessDefinitionInstanceVersionStatistics::getProcessDefinitionKey)
+        .containsExactly(
+            tuple("Capybara Combined", v3.getProcesses().getFirst().getVersion(), v3Key),
+            tuple("Badger Combined", v2.getProcesses().getFirst().getVersion(), v2Key),
+            tuple("Aardvark Combined", v1.getProcesses().getFirst().getVersion(), v1Key));
+
+    assertThat(result.page().totalItems()).isEqualTo(3);
+    assertThat(result.page().hasMoreTotalItems()).isFalse();
+  }
 }
