@@ -635,6 +635,10 @@ public class CompleteJobTest {
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
+              .page(
+                  ArgumentMatchers
+                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
+                          any())
               .send()
               .join()
               .items())
@@ -659,6 +663,10 @@ public class CompleteJobTest {
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
+              .page(
+                  ArgumentMatchers
+                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
+                          any())
               .send()
               .join()
               .items())
@@ -725,6 +733,10 @@ public class CompleteJobTest {
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
+              .page(
+                  ArgumentMatchers
+                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
+                          any())
               .send()
               .join()
               .items())
@@ -885,6 +897,10 @@ public class CompleteJobTest {
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
+              .page(
+                  ArgumentMatchers
+                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
+                          any())
               .send()
               .join()
               .items())
@@ -908,6 +924,10 @@ public class CompleteJobTest {
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
+              .page(
+                  ArgumentMatchers
+                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
+                          any())
               .send()
               .join()
               .items())
@@ -936,6 +956,10 @@ public class CompleteJobTest {
       when(camundaClient
               .newVariableSearchRequest()
               .filter(variableFilterCaptor.capture())
+              .page(
+                  ArgumentMatchers
+                      .<java.util.function.Consumer<io.camunda.client.api.search.page.AnyPage>>
+                          any())
               .send()
               .join()
               .items())
