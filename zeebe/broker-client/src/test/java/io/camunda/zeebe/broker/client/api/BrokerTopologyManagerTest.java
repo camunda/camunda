@@ -599,15 +599,14 @@ final class BrokerTopologyManagerTest {
   }
 
   private Member createMemberFromBrokerInfo(final BrokerInfo broker) {
-    final Member member =
-        new Member(new MemberConfig().setId(Integer.toString(broker.getNodeId())));
+    final Member member = new Member(new MemberConfig().setId(broker.memberIdString()));
     broker.writeIntoProperties(member.properties());
     members.add(member);
     return member;
   }
 
   private ClusterMembershipEvent createMemberRemoveEvent(final BrokerInfo broker) {
-    final Member member = new Member(new MemberConfig().setId(String.valueOf(broker.getNodeId())));
+    final Member member = new Member(new MemberConfig().setId(broker.memberIdString()));
     broker.writeIntoProperties(member.properties());
     return new ClusterMembershipEvent(Type.MEMBER_REMOVED, member);
   }
