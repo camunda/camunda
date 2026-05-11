@@ -485,35 +485,35 @@ public final class SearchQueryBuilders {
       return null;
     }
 
-    final List<SearchQuery> innerClauses =
-        operations.stream()
-            .map(
-                op ->
-                    switch (op.operator()) {
-                      case EQUALS -> matchPhrase(field, op.value());
+    final List<SearchQuery> innerClauses = new ArrayList<>();
+    final List<SearchQuery> allClauses = new ArrayList<>();
 
-                      case NOT_EQUALS ->
-                          bool(b ->
-                                  b.must(List.of(exists(field)))
-                                      .mustNot(List.of(matchPhrase(field, op.value()))))
-                              .toSearchQuery();
+    for (final var op : operations) {
+      switch (op.operator()) {
+        case EQUALS -> innerClauses.add(matchPhrase(field, op.value()));
+        case NOT_EQUALS ->
+            innerClauses.add(
+                bool(b ->
+                        b.must(List.of(exists(field)))
+                            .mustNot(List.of(matchPhrase(field, op.value()))))
+                    .toSearchQuery());
+        case EXISTS -> innerClauses.add(bool(b -> b.must(List.of(exists(field)))).toSearchQuery());
+        case NOT_EXISTS -> allClauses.add(not(hasChildQuery(childType, exists(field))));
+        case IN ->
+            innerClauses.add(
+                or(op.values().stream().map(value -> matchPhrase(field, value)).toList()));
+        case LIKE ->
+            innerClauses.add(
+                wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase()));
+        default -> throw unexpectedOperation("String", op.operator());
+      }
+    }
 
-                      case EXISTS -> bool(b -> b.must(List.of(exists(field)))).toSearchQuery();
+    if (!innerClauses.isEmpty()) {
+      allClauses.add(hasChildQuery(childType, bool(b -> b.must(innerClauses)).toSearchQuery()));
+    }
 
-                      case NOT_EXISTS ->
-                          bool(b -> b.mustNot(List.of(exists(field)))).toSearchQuery();
-
-                      case IN ->
-                          or(op.values().stream().map(value -> matchPhrase(field, value)).toList());
-
-                      case LIKE ->
-                          wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase());
-
-                      default -> throw unexpectedOperation("String", op.operator());
-                    })
-            .toList();
-
-    return hasChildQuery(childType, bool(b -> b.must(innerClauses)).toSearchQuery());
+    return and(allClauses);
   }
 
   private static String formatDate(final OffsetDateTime dateTime) {
