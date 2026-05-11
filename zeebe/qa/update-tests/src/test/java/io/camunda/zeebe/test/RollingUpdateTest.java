@@ -27,6 +27,7 @@ import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.junit.CachedTestResultsExtension;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -135,7 +136,7 @@ final class RollingUpdateTest {
 
     // when
     broker.stop();
-    updateBroker(broker, to);
+    updateBroker(broker, index, to);
 
     // then
     final GatewayNode<?> availableGateway = cluster.getAvailableGateway();
@@ -207,7 +208,7 @@ final class RollingUpdateTest {
           .pollInterval(Duration.ofMillis(500))
           .untilAsserted(() -> assertBrokerHasAtLeastOneSnapshot(0));
 
-      updateBroker(broker, to);
+      updateBroker(broker, brokerId, to);
       broker.start();
       Awaitility.await("updated broker is added to topology")
           .atMost(Duration.ofSeconds(120))
@@ -255,7 +256,7 @@ final class RollingUpdateTest {
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, brokerId));
 
-        updateBroker(broker, to);
+        updateBroker(broker, brokerId, to);
         broker.start();
         Awaitility.await("updated broker is added to topology")
             .atMost(Duration.ofSeconds(120))
@@ -308,10 +309,10 @@ final class RollingUpdateTest {
   }
 
   private void updateAllBrokers(final String version) {
-    cluster.getBrokers().forEach((id, broker) -> updateBroker(broker, version));
+    cluster.getBrokers().forEach((id, broker) -> updateBroker(broker, id, version));
   }
 
-  private void updateBroker(final BrokerNode<?> broker, final String version) {
+  private void updateBroker(final BrokerNode<?> broker, final int id, final String version) {
     if ("CURRENT".equals(version)) {
       broker.setDockerImageName(
           ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
@@ -319,6 +320,31 @@ final class RollingUpdateTest {
     } else {
       broker.setDockerImageName(
           DockerImageName.parse("camunda/camunda").withTag(version).asCanonicalNameString());
+    }
+
+    final var semVer = SemanticVersion.parse(version);
+
+    // For versions < 8.8 Unified configuration is not supported.
+    // Clustering parameters have to be passed using the ENV vars in the containers
+
+    if (semVer.isPresent() && semVer.get().minor() < 8) {
+      broker.setDockerImageName(
+          DockerImageName.parse("camunda/camunda").withTag(version).asCanonicalNameString());
+      broker
+          .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+          .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT", "1")
+          .withEnv("ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR", "3")
+          .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE", "3")
+          .withEnv("ZEEBE_BROKER_CLUSTER_NODE_ID", String.valueOf(id))
+          .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTER_NAME", CamundaClusterBuilder.DEFAULT_CLUSTER_NAME)
+          .withEnv(
+              "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
+              String.join(",", broker.getConfiguration().getCluster().getInitialContactPoints()))
+          .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+          .withEnv("ZEEBE_BROKER_NETWORK_HOST", "0.0.0.0")
+          .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", broker.getInternalHost())
+          .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+          .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
     }
   }
 

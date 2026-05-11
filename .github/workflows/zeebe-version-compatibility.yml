@@ -117,11 +117,17 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
       - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
         with:
           maven-extra-args: -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         with:
           version: current-test
+          repository: 'camunda/camunda'
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+          platforms: linux/amd64
+          push: false
+          dockerfile: 'camunda.Dockerfile'
       - name: Test snapshot
         timeout-minutes: 300
         run: >
