@@ -39,10 +39,15 @@ public final class SecretEvaluationContext implements ScopedEvaluationContext {
     if (variableName == null || variableName.isEmpty()) {
       return Either.left(null);
     }
-    return Either.left(encodeReferenceString(SecretStore.FEEL_NAMESPACE + variableName));
+    return Either.left(encodeAsMsgPackString(SecretStore.FEEL_NAMESPACE + variableName));
   }
 
-  private static DirectBuffer encodeReferenceString(final String value) {
+  /**
+   * Encodes {@code value} as a MessagePack string in a fresh {@link DirectBuffer}. Shared with
+   * {@link ResolvingSecretEvaluationContext} so the two leaf encodings stay byte-for-byte
+   * compatible.
+   */
+  static DirectBuffer encodeAsMsgPackString(final String value) {
     final MsgPackWriter writer = new MsgPackWriter();
     final MutableDirectBuffer writeBuffer = new ExpandableArrayBuffer();
     writer.wrap(writeBuffer, 0);

@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ExpressionBehavior;
 import io.camunda.zeebe.engine.processing.expression.GlobalScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.ResolvingSecretEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.SecretEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
@@ -102,18 +103,30 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     final var namespacedMergedClusterScope =
         NamespacedEvaluationContext.create().register("env", mergedClusterScope);
 
+    // The varsSubtree is identical for both the engine-wide and endpoint-only namespace chains;
+    // only the camunda.secret leaf differs between them — literal-reference for engine-wide use,
+    // resolving for the standalone FEEL evaluation endpoint.
+    final var varsSubtree =
+        CombinedEvaluationContext.withContexts(
+            namespacedMergedClusterScope,
+            namespacedTenantClusterScope,
+            namespacedGlobalClusterScope);
+
     final var namespaceFullClusterContext =
         NamespacedEvaluationContext.create()
             .register(
                 "camunda",
                 NamespacedEvaluationContext.create()
-                    .register(
-                        "vars",
-                        CombinedEvaluationContext.withContexts(
-                            namespacedMergedClusterScope,
-                            namespacedTenantClusterScope,
-                            namespacedGlobalClusterScope))
+                    .register("vars", varsSubtree)
                     .register("secret", new SecretEvaluationContext()));
+
+    final var namespaceFullClusterContextForEndpoint =
+        NamespacedEvaluationContext.create()
+            .register(
+                "camunda",
+                NamespacedEvaluationContext.create()
+                    .register("vars", varsSubtree)
+                    .register("secret", new ResolvingSecretEvaluationContext(secretStore)));
 
     final var processVariableContext =
         new VariableEvaluationContext(processingState.getVariableState());
@@ -131,7 +144,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     expressionBehavior =
         new ExpressionBehavior(
-            namespaceFullClusterContext,
+            namespaceFullClusterContextForEndpoint,
             expressionLanguage,
             config.getExpressionEvaluationTimeout(),
             processingState.getVariableState());
