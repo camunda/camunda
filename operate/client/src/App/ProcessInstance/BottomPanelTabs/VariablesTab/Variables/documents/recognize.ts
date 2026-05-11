@@ -10,6 +10,8 @@ import type {DocumentReference, DocumentRecognition} from './types';
 
 const DISCRIMINATOR_KEY = 'camunda.document.type';
 const DISCRIMINATOR_VALUE = 'camunda';
+const DISCRIMINATOR_PATTERN =
+  /"camunda\.document\.type"\s*:\s*"camunda"/g;
 
 function isDocumentReference(value: unknown): value is DocumentReference {
   return (
@@ -21,30 +23,17 @@ function isDocumentReference(value: unknown): value is DocumentReference {
   );
 }
 
-function collectEmbeddedDocuments(
-  value: unknown,
-  out: DocumentReference[],
-): void {
-  if (Array.isArray(value)) {
-    value.forEach((item) => collectEmbeddedDocuments(item, out));
-    return;
-  }
-  if (typeof value === 'object' && value !== null) {
-    if (isDocumentReference(value)) {
-      out.push(value);
-      return;
-    }
-    Object.values(value).forEach((nested) =>
-      collectEmbeddedDocuments(nested, out),
-    );
-  }
-}
-
-function recognizeDocumentValue(rawValue: string): DocumentRecognition {
+function recognizeDocumentValue(
+  rawValue: string,
+  isTruncated = false,
+): DocumentRecognition {
   let parsed: unknown;
   try {
     parsed = JSON.parse(rawValue);
   } catch {
+    if (isTruncated) {
+      return recognizeTruncatedList(rawValue);
+    }
     return {kind: 'none'};
   }
 
@@ -59,13 +48,21 @@ function recognizeDocumentValue(rawValue: string): DocumentRecognition {
     }
   }
 
-  const embedded: DocumentReference[] = [];
-  collectEmbeddedDocuments(parsed, embedded);
-  if (embedded.length > 0) {
-    return {kind: 'embedded', documents: embedded};
-  }
-
   return {kind: 'none'};
+}
+
+// Truncated values can't be JSON-parsed. Match the discriminator key as a
+// string heuristic to surface a lower-bound count. False positives are
+// possible but unlikely in practice.
+function recognizeTruncatedList(rawValue: string): DocumentRecognition {
+  if (!rawValue.trimStart().startsWith('[')) {
+    return {kind: 'none'};
+  }
+  const matches = rawValue.match(DISCRIMINATOR_PATTERN);
+  if (matches === null || matches.length === 0) {
+    return {kind: 'none'};
+  }
+  return {kind: 'truncated-list', partialCount: matches.length};
 }
 
 export {recognizeDocumentValue, isDocumentReference};

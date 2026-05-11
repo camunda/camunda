@@ -32,19 +32,12 @@ const VariableValueCell: React.FC<Props> = ({
   const {refetch} = useVariable(variableKey, {enabled: false});
 
   // Per-variable document detection via the camunda.document.type discriminator.
-  // Truncated values are skipped — recognition needs the full payload.
-  const recognition = isTruncated
-    ? {kind: 'none' as const}
-    : recognizeDocumentValue(value);
+  // For truncated values we fall back to a string-pattern match so an array of
+  // document references can still surface a lower-bound count.
+  const recognition = recognizeDocumentValue(value, Boolean(isTruncated));
 
   if (recognition.kind !== 'none') {
-    return (
-      <DocumentValueCell
-        variableName={variableName}
-        variableValue={value}
-        recognition={recognition}
-      />
-    );
+    return <DocumentValueCell recognition={recognition} />;
   }
 
   return (

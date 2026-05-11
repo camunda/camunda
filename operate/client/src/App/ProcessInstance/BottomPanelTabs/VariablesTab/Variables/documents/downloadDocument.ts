@@ -24,23 +24,4 @@ function downloadDocument(document: DocumentReference): void {
   window.document.body.removeChild(link);
 }
 
-function downloadVariableAsJson(variableName: string, value: string): void {
-  const pretty = (() => {
-    try {
-      return JSON.stringify(JSON.parse(value), null, 2);
-    } catch {
-      return value;
-    }
-  })();
-  const blob = new Blob([pretty], {type: 'application/json'});
-  const url = URL.createObjectURL(blob);
-  const link = window.document.createElement('a');
-  link.href = url;
-  link.download = `${variableName}.json`;
-  window.document.body.appendChild(link);
-  link.click();
-  window.document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-export {downloadDocument, downloadVariableAsJson};
+export {downloadDocument};

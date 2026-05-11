@@ -6,8 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ContentSwitcher, Search, Switch} from '@carbon/react';
-import {Toolbar, ToolbarSearch, ToolbarTypeFilter} from './styled';
+import {Search} from '@carbon/react';
+import {
+  Toolbar,
+  ToolbarSearch,
+  TypeStrip,
+  TypeStripButton,
+  TypeStripDivider,
+} from './styled';
 
 type VariableTypeFilter = 'all' | 'documents';
 
@@ -37,17 +43,27 @@ const VariablesToolbar: React.FC<Props> = ({
           data-testid="search-variables-input"
         />
       </ToolbarSearch>
-      <ToolbarTypeFilter>
-        <ContentSwitcher
-          size="sm"
-          selectedIndex={typeFilter === 'all' ? 0 : 1}
-          onChange={({name}) => onTypeFilterChange(name as VariableTypeFilter)}
-          data-testid="variable-type-filter"
+      <TypeStrip role="group" aria-label="Variable type filter">
+        <TypeStripButton
+          type="button"
+          $active={typeFilter === 'all'}
+          aria-pressed={typeFilter === 'all'}
+          onClick={() => onTypeFilterChange('all')}
+          data-testid="filter-variables-all"
         >
-          <Switch name="all" text="All" />
-          <Switch name="documents" text="Documents" />
-        </ContentSwitcher>
-      </ToolbarTypeFilter>
+          All
+        </TypeStripButton>
+        <TypeStripDivider aria-hidden>·</TypeStripDivider>
+        <TypeStripButton
+          type="button"
+          $active={typeFilter === 'documents'}
+          aria-pressed={typeFilter === 'documents'}
+          onClick={() => onTypeFilterChange('documents')}
+          data-testid="filter-variables-documents"
+        >
+          Documents
+        </TypeStripButton>
+      </TypeStrip>
     </Toolbar>
   );
 };

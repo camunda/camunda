@@ -32,44 +32,6 @@ const DocumentFileName = styled.span`
   white-space: nowrap;
 `;
 
-const EmbeddedSummary = styled.div`
-  ${styles.bodyShort01};
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-03);
-  min-height: 2rem;
-  margin-bottom: var(--cds-spacing-03);
-  color: var(--cds-text-secondary);
-`;
-
-const EmbeddedContainer = styled.div`
-  width: 100%;
-`;
-
-/* Operations cell layout for the embedded (Case B) variable: top row aligns
-   with EmbeddedSummary, bottom row aligns with the JSON viewer below it. */
-const EmbeddedOps = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-`;
-
-const EmbeddedOpsTopRow = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  min-height: 2rem;
-  margin-bottom: var(--cds-spacing-03);
-`;
-
-const EmbeddedOpsBottomRow = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-start;
-  flex: 1 1 auto;
-`;
-
 const ListSummary = styled.div`
   ${styles.bodyShort01};
   display: flex;
@@ -147,27 +109,44 @@ const ToolbarSearch = styled.div`
   min-width: 0;
 `;
 
-const ToolbarTypeFilter = styled.div`
+const TypeStrip = styled.div`
+  ${styles.bodyShort01};
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-02);
   flex: 0 0 auto;
-  width: 220px;
+`;
 
-  /* Carbon's ContentSwitcher distributes children with flex; pin them to
-     equal width so "All" and "Documents" share the row evenly. */
-  .cds--content-switcher button {
-    flex: 1 1 0;
-    min-width: 0;
+const TypeStripButton = styled.button<{$active: boolean}>`
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: var(--cds-spacing-01) var(--cds-spacing-02);
+  cursor: pointer;
+  color: ${({$active}) =>
+    $active ? 'var(--cds-text-primary)' : 'var(--cds-text-secondary)'};
+  font-weight: ${({$active}) => ($active ? 600 : 400)};
+  border-radius: 2px;
+
+  &:hover {
+    color: var(--cds-text-primary);
   }
+
+  &:focus-visible {
+    outline: 2px solid var(--cds-focus);
+    outline-offset: 1px;
+  }
+`;
+
+const TypeStripDivider = styled.span`
+  color: var(--cds-text-placeholder);
+  user-select: none;
 `;
 
 export {
   DocumentRow,
   DocumentLabel,
   DocumentFileName,
-  EmbeddedSummary,
-  EmbeddedContainer,
-  EmbeddedOps,
-  EmbeddedOpsTopRow,
-  EmbeddedOpsBottomRow,
   ListSummary,
   ModalListItem,
   ModalListItemLabel,
@@ -177,5 +156,7 @@ export {
   PreviewImageContainer,
   Toolbar,
   ToolbarSearch,
-  ToolbarTypeFilter,
+  TypeStrip,
+  TypeStripButton,
+  TypeStripDivider,
 };

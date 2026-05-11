@@ -22,8 +22,7 @@ const baseFields = {
   rootProcessInstanceKey: null,
 } as const;
 
-// Case A — Simple reference
-// A variable holding a single document reference object.
+// Simple reference — variable holding a single document reference object.
 const claimPhotoVariable: Variable = {
   ...baseFields,
   variableKey: 'mock-doc-claim-photo',
@@ -73,8 +72,8 @@ const processDataVariable: Variable = {
   }),
 };
 
-// Case B — Embedded reference (agent memory / complex object)
-// Variable is a complex object where document references live nested inside other fields.
+// Mixed object with nested document references (e.g. agent memory). Out of
+// scope for the document UI — renders as a plain JSON variable.
 const agentMemoryVariable: Variable = {
   ...baseFields,
   variableKey: 'mock-doc-agent-memory',
@@ -105,8 +104,7 @@ const agentMemoryVariable: Variable = {
   }),
 };
 
-// Case C — List of references (forms file picker)
-// Variable holding an array of document references — always an array, even for one file.
+// List of references (forms file picker) — always an array, even for one file.
 const idDocumentsVariable: Variable = {
   ...baseFields,
   variableKey: 'mock-doc-id-documents',
@@ -145,6 +143,30 @@ const idDocumentsVariable: Variable = {
   ]),
 };
 
+// Truncated list of references — backend chops the variable at the truncation
+// threshold, so the UI can only surface a lower-bound count until the user
+// expands the variable.
+const caseFilesFullDocuments = Array.from({length: 12}).map((_, index) => ({
+  'camunda.document.type': 'camunda',
+  documentId: `doc-case-file-${(index + 1).toString().padStart(2, '0')}`,
+  storeId: 'in-memory',
+  metadata: {
+    fileName: `case-file-${(index + 1).toString().padStart(2, '0')}.pdf`,
+    contentType: 'application/pdf',
+    size: 200000 + index * 1024,
+  },
+}));
+const caseFilesFullValue = JSON.stringify(caseFilesFullDocuments);
+const caseFilesVariable: Variable = {
+  ...baseFields,
+  isTruncated: true,
+  variableKey: 'mock-doc-case-files',
+  name: 'caseFiles',
+  // Slice mid-array so the truncation discards the tail of the list and lands
+  // somewhere inside an unfinished document reference.
+  value: caseFilesFullValue.slice(0, 760),
+};
+
 // Regular non-document variables — keep the type filter meaningful.
 const regularVariables: Variable[] = [
   {
@@ -173,6 +195,7 @@ const MOCK_DOCUMENT_VARIABLES: Variable[] = [
   processDataVariable,
   agentMemoryVariable,
   idDocumentsVariable,
+  caseFilesVariable,
   ...regularVariables,
 ];
 

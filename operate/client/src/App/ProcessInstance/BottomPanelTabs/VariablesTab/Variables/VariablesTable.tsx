@@ -28,11 +28,6 @@ import {VariableValueCell} from './VariableValueCell';
 import {recognizeDocumentValue} from './documents/recognize';
 import {MOCK_DOCUMENT_VARIABLES} from './documents/mockDocumentVariables';
 import {DocumentActions} from './documents/DocumentActions';
-import {
-  EmbeddedOps,
-  EmbeddedOpsBottomRow,
-  EmbeddedOpsTopRow,
-} from './documents/styled';
 import type {VariableTypeFilter} from './documents/VariablesToolbar';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 
@@ -106,10 +101,9 @@ const VariablesTable: React.FC<Props> = ({
         return false;
       }
       if (typeFilter === 'documents') {
-        if (isTruncated) {
-          return false;
-        }
-        return recognizeDocumentValue(value).kind !== 'none';
+        return (
+          recognizeDocumentValue(value, Boolean(isTruncated)).kind !== 'none'
+        );
       }
       return true;
     });
@@ -117,10 +111,12 @@ const VariablesTable: React.FC<Props> = ({
 
   const rows = filteredVariables.map(
     ({name, value, variableKey, isTruncated}) => {
-      const recognition = isTruncated
-        ? {kind: 'none' as const}
-        : recognizeDocumentValue(value);
-      const isDocument = recognition.kind !== 'none';
+      const recognition = recognizeDocumentValue(value, Boolean(isTruncated));
+      // truncated-list still needs the regular variable actions (so the user
+      // can "Show all" to load the full payload). single and list fully
+      // replace the action column with document-specific buttons.
+      const hasDocumentActions =
+        recognition.kind === 'single' || recognition.kind === 'list';
 
       return {
         key: name,
@@ -202,31 +198,11 @@ const VariablesTable: React.FC<Props> = ({
                 </>
               );
 
-              // Embedded variables (Case B) split the operations cell into
-              // two stacked rows so doc-related buttons line up with the
-              // "Contains N documents" summary and variable-related buttons
-              // line up with the JSON viewer below it.
-              if (recognition.kind === 'embedded') {
-                return (
-                  <EmbeddedOps>
-                    <EmbeddedOpsTopRow>
-                      <DocumentActions
-                        variableName={name}
-                        variableValue={value}
-                        recognition={recognition}
-                      />
-                    </EmbeddedOpsTopRow>
-                    <EmbeddedOpsBottomRow>{variableOps}</EmbeddedOpsBottomRow>
-                  </EmbeddedOps>
-                );
-              }
-
               return (
                 <Operations>
-                  {isDocument ? (
+                  {hasDocumentActions ? (
                     <DocumentActions
                       variableName={name}
-                      variableValue={value}
                       recognition={recognition}
                     />
                   ) : (

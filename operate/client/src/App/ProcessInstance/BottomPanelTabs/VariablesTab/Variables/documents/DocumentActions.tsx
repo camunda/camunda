@@ -11,20 +11,15 @@ import {Button} from '@carbon/react';
 import {Download, View as ViewIcon} from '@carbon/react/icons';
 import {DocumentPreviewModal} from './DocumentPreviewModal';
 import {DocumentListModal} from './DocumentListModal';
-import {downloadDocument, downloadVariableAsJson} from './downloadDocument';
+import {downloadDocument} from './downloadDocument';
 import type {DocumentRecognition} from './types';
 
 type Props = {
   variableName: string;
-  variableValue: string;
   recognition: DocumentRecognition;
 };
 
-const DocumentActions: React.FC<Props> = ({
-  variableName,
-  variableValue,
-  recognition,
-}) => {
+const DocumentActions: React.FC<Props> = ({variableName, recognition}) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isListOpen, setIsListOpen] = useState(false);
 
@@ -63,42 +58,6 @@ const DocumentActions: React.FC<Props> = ({
     );
   }
 
-  if (recognition.kind === 'embedded') {
-    const {documents} = recognition;
-    return (
-      <>
-        <Button
-          kind="ghost"
-          size="sm"
-          hasIconOnly
-          iconDescription="View documents"
-          tooltipPosition="top"
-          renderIcon={ViewIcon}
-          onClick={() => setIsListOpen(true)}
-          data-testid={`view-documents-${variableName}-button`}
-        />
-        <Button
-          kind="ghost"
-          size="sm"
-          hasIconOnly
-          iconDescription="Download"
-          tooltipPosition="top"
-          renderIcon={Download}
-          onClick={() => downloadVariableAsJson(variableName, variableValue)}
-          data-testid={`download-document-${variableName}-button`}
-        />
-        {isListOpen && (
-          <DocumentListModal
-            variableName={variableName}
-            documents={documents}
-            isOpen
-            onClose={() => setIsListOpen(false)}
-          />
-        )}
-      </>
-    );
-  }
-
   if (recognition.kind === 'list') {
     const {documents} = recognition;
     return (
@@ -125,6 +84,9 @@ const DocumentActions: React.FC<Props> = ({
     );
   }
 
+  // truncated-list: full document list isn't available without re-fetching the
+  // variable, so the row falls back to the standard variable actions ("Show
+  // all") rendered alongside this component.
   return null;
 };
 

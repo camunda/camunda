@@ -27,6 +27,6 @@ type DocumentRecognition =
   | {kind: 'none'}
   | {kind: 'single'; document: DocumentReference}
   | {kind: 'list'; documents: DocumentReference[]}
-  | {kind: 'embedded'; documents: DocumentReference[]};
+  | {kind: 'truncated-list'; partialCount: number};
 
 export type {DocumentReference, DocumentRecognition};

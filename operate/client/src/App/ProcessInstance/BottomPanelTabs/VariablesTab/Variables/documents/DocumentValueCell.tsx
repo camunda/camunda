@@ -7,28 +7,19 @@
  */
 
 import {Document} from '@carbon/react/icons';
-import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 import type {DocumentRecognition} from './types';
 import {
   DocumentLabel,
   DocumentFileName,
   DocumentRow,
-  EmbeddedContainer,
-  EmbeddedSummary,
   ListSummary,
 } from './styled';
 
 type Props = {
-  variableName: string;
-  variableValue: string;
   recognition: DocumentRecognition;
 };
 
-const DocumentValueCell: React.FC<Props> = ({
-  variableName,
-  variableValue,
-  recognition,
-}) => {
+const DocumentValueCell: React.FC<Props> = ({recognition}) => {
   if (recognition.kind === 'single') {
     const {document} = recognition;
     return (
@@ -57,17 +48,19 @@ const DocumentValueCell: React.FC<Props> = ({
     );
   }
 
-  if (recognition.kind === 'embedded') {
-    const {documents} = recognition;
+  if (recognition.kind === 'truncated-list') {
+    const {partialCount} = recognition;
     return (
-      <EmbeddedContainer>
-        <EmbeddedSummary>
+      <DocumentRow>
+        <DocumentLabel>
           <Document size={16} aria-hidden />
-          Contains {documents.length} document
-          {documents.length === 1 ? '' : 's'}
-        </EmbeddedSummary>
-        <InlineJsonEditor value={variableValue} label={variableName} readOnly />
-      </EmbeddedContainer>
+          <ListSummary
+            title="More documents may exist beyond the truncation threshold"
+          >
+            {partialCount}+ documents
+          </ListSummary>
+        </DocumentLabel>
+      </DocumentRow>
     );
   }
 
