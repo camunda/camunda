@@ -22,6 +22,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.util.ResourceUtils;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.reader.TenantAccessProvider;
 import io.camunda.service.cache.ResourceCache;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
@@ -43,6 +44,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   private final DeployedResourceSearchClient deployedResourceSearchClient;
   private final boolean secondaryStorageEnabled;
   private final ResourceCache resourceCache;
+  private final TenantAccessProvider tenantAccessProvider;
 
   public ResourceServices(
       final BrokerClient brokerClient,
@@ -53,7 +55,8 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
       final DeployedResourceSearchClient deployedResourceSearchClient,
       final boolean secondaryStorageEnabled,
-      final ResourceCache resourceCache) {
+      final ResourceCache resourceCache,
+      final TenantAccessProvider tenantAccessProvider) {
     super(
         brokerClient,
         securityContextProvider,
@@ -64,6 +67,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     this.deployedResourceSearchClient = deployedResourceSearchClient;
     this.secondaryStorageEnabled = secondaryStorageEnabled;
     this.resourceCache = resourceCache;
+    this.tenantAccessProvider = tenantAccessProvider;
   }
 
   public CompletableFuture<DeploymentRecord> deployResources(
@@ -174,6 +178,14 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     if (includeContent && resourceCache != null) {
       final DeployedResourceEntity cachedEntity = resourceCache.get(resourceKey);
       if (cachedEntity != null) {
+        // Validate tenant access for cached entity
+        final var tenantAccess =
+            tenantAccessProvider.hasTenantAccessByTenantId(authentication, cachedEntity.tenantId());
+        if (tenantAccess.denied()) {
+          // If tenant access is denied, treat as not found (same as storage layer would do)
+          return CompletableFuture.failedFuture(resourceNotFoundException(resourceKey));
+        }
+
         return CompletableFuture.supplyAsync(
             () -> {
               validateResourceType(cachedEntity.resourceType(), resourceTypeFilter, resourceKey);

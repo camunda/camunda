@@ -39,6 +39,7 @@ import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.reader.TenantAccessProvider;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.AuditLogServices;
@@ -480,7 +481,8 @@ public class CamundaServicesConfiguration {
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
       final DeployedResourceSearchClient deployedResourceSearchClient,
       final Environment environment,
-      final ResourceCache resourceCache) {
+      final ResourceCache resourceCache,
+      final TenantAccessProvider tenantAccessProvider) {
     return new ResourceServices(
         brokerClient,
         securityContextProvider,
@@ -490,7 +492,8 @@ public class CamundaServicesConfiguration {
         decisionRequirementSearchClient,
         deployedResourceSearchClient,
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment),
-        resourceCache);
+        resourceCache,
+        tenantAccessProvider);
   }
 
   @Bean
