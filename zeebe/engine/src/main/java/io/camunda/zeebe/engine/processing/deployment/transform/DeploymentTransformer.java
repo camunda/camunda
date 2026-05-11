@@ -25,7 +25,6 @@ import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class DeploymentTransformer {
