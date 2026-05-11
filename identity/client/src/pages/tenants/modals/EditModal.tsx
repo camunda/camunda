@@ -33,17 +33,18 @@ const EditModal: FC<UseEntityModalProps<Tenant>> = ({
     suppressErrorNotification: true,
   });
 
-  const initialTenantFormValues = getTenantFormValues(tenant);
-  const [tenantName, setTenantName] = useState(initialTenantFormValues.name);
+  const [tenantName, setTenantName] = useState(
+    () => getTenantFormValues(tenant).name,
+  );
   const [description, setDescription] = useState(
-    initialTenantFormValues.description,
+    () => getTenantFormValues(tenant).description,
   );
 
   useEffect(() => {
     const newTenantFormValues = getTenantFormValues(tenant);
     setTenantName(newTenantFormValues.name);
     setDescription(newTenantFormValues.description);
-  }, [tenant]);
+  }, [tenant.tenantId, tenant.name, tenant.description]);
 
   const handleSubmit = async () => {
     const { success } = await callUpdateTenant({
