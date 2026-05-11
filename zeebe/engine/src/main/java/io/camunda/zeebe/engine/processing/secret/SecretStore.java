@@ -26,10 +26,20 @@ import java.util.Optional;
 public interface SecretStore {
 
   /**
+   * FEEL namespace prefix for secret references, including the trailing dot.
+   *
+   * <p>A FEEL path expression {@code camunda.secret.X} is rendered as the literal string {@code
+   * "camunda.secret.X"} whenever it is evaluated outside the two materializing paths (job
+   * activation {@code fetchVariables} and the standalone FEEL evaluation endpoint). The export
+   * masker (later stage) recognises the same prefix to redact reference substrings on the way out.
+   */
+  String FEEL_NAMESPACE = "camunda.secret.";
+
+  /**
    * Returns the secret value for {@code secretName}, or {@link Optional#empty()} if no secret by
    * that name is defined.
    *
-   * @param secretName the bare secret name (the suffix after {@code camunda.secret.}); never {@code
+   * @param secretName the bare secret name (the suffix after {@link #FEEL_NAMESPACE}); never {@code
    *     null}
    */
   Optional<String> resolve(String secretName);
