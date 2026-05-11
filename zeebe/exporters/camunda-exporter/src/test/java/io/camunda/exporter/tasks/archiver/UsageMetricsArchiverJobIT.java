@@ -26,6 +26,11 @@ import org.junit.jupiter.api.TestTemplate;
 @TestInstance(Lifecycle.PER_CLASS)
 public class UsageMetricsArchiverJobIT extends ArchiverJobIT<UsageMetricsArchiverJob> {
   @Override
+  protected String getExpectedLifecyclePolicyName() {
+    return "camunda-usage-metrics-retention-policy";
+  }
+
+  @Override
   UsageMetricsArchiverJob createArchiveJob(
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
