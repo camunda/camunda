@@ -261,6 +261,7 @@ jobs:
         uses: ./.github/actions/build-frontend
         with:
           directory: ./optimize/client
+          node-version: ${{ steps.pom-info.outputs.x_version_node }}
       - name: Build backend
         run: ./mvnw -T1C clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
       - name: Create backend logs file
