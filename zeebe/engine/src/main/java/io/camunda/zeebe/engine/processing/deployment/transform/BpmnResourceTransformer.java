@@ -30,9 +30,12 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -50,6 +53,12 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private final BpmnValidator validator;
   private final ProcessState processState;
   private final boolean enableStraightThroughProcessingLoopDetector;
+<<<<<<< HEAD
+=======
+  private final BpmnElementOrderErrorTransformer elementOrderErrorTransformer;
+  private final ProcessDefinitionMetrics processDefinitionMetrics;
+  private final Map<DeploymentResource, BpmnModelInstance> parsedModels = new IdentityHashMap<>();
+>>>>>>> 2bb80e34 (perf: optimize resource parsing on deployment)
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
@@ -72,19 +81,52 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
+<<<<<<< HEAD
   public Either<Failure, Void> createMetadata(
+=======
+  public boolean canTransform(final DeploymentResource resource) {
+    final var resourceName = resource.getResourceName();
+    // .bpmn files must always be handled by this transformer (even if invalid)
+    if (resourceName.endsWith(".bpmn")) {
+      return true;
+    }
+    // .xml files: try to parse as BPMN and only handle if it's valid BPMN.
+    // Non-BPMN .xml files fall through to the default transformer (generic resource).
+    if (resourceName.endsWith(".xml")) {
+      final var parsed = readProcessDefinition(resource);
+      final var isValid = parsed.isRight();
+      if (isValid) {
+        parsedModels.put(resource, parsed.get());
+      }
+      return isValid;
+    }
+    return false;
+  }
+
+  @Override
+  public void reset() {
+    parsedModels.clear();
+  }
+
+  @VisibleForTesting
+  boolean hasParsedModelFor(final DeploymentResource resource) {
+    return parsedModels.containsKey(resource);
+  }
+
+  @Override
+  public Either<Failure, DeploymentResourceContext> createMetadata(
+>>>>>>> 2bb80e34 (perf: optimize resource parsing on deployment)
       final DeploymentResource resource, final DeploymentRecord deployment) {
 
-    return readProcessDefinition(resource)
-        .flatMap(
-            definition -> {
-              final String validationError = validator.validate(definition);
+    final var parsedModel = parsedModels.remove(resource);
+    final Either<Failure, BpmnModelInstance> definitionResult =
+        parsedModel != null ? Either.right(parsedModel) : readProcessDefinition(resource);
 
-              if (validationError == null) {
-                // transform the model to avoid unexpected failures that are not covered by the
-                // validator
-                final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
+    return definitionResult.flatMap(
+        definition -> {
+          final String validationError = validator.validate(definition);
 
+<<<<<<< HEAD
                 return checkForDuplicateBpmnId(definition, resource, deployment)
                     .flatMap(
                         ok ->
@@ -103,13 +145,37 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                           createProcessMetadata(deployment, resource, definition);
                           return null;
                         });
+=======
+          if (validationError == null) {
+            // transform the model to avoid unexpected failures that are not covered by the
+            // validator
+            final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
+>>>>>>> 2bb80e34 (perf: optimize resource parsing on deployment)
 
-              } else {
-                final var failureMessage =
-                    String.format("'%s': %s", resource.getResourceName(), validationError);
-                return Either.left(new Failure(failureMessage));
-              }
-            });
+            return UnsupportedMultiTenantFeaturesValidator.validate(
+                    resource, executableProcesses, deployment.getTenantId())
+                .flatMap(
+                    ok -> {
+                      if (enableStraightThroughProcessingLoopDetector) {
+                        return StraightThroughProcessingLoopValidator.validate(
+                            resource, executableProcesses);
+                      }
+                      return Either.right(null);
+                    })
+                .map(
+                    ok -> {
+                      final var elements =
+                          new BpmnElementsWithDeploymentBinding(resource.getResourceName());
+                      createProcessMetadata(deployment, resource, definition, elements);
+                      return (DeploymentResourceContext) elements;
+                    });
+
+          } else {
+            final var failureMessage =
+                String.format("'%s': %s", resource.getResourceName(), validationError);
+            return Either.left(new Failure(failureMessage));
+          }
+        });
   }
 
   @Override

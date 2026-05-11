@@ -37,5 +37,19 @@ interface DeploymentResourceTransformer {
    * @return either {@link Either.Right} if the resource is transformed successfully, or {@link
    *     Either.Left} if the transformation failed
    */
+<<<<<<< HEAD
   Either<Failure, Void> writeRecords(DeploymentResource resource, DeploymentRecord deployment);
+=======
+  void writeRecords(DeploymentResource resource, DeploymentRecord deployment);
+
+  /**
+   * Optional hook invoked by the {@link DeploymentTransformer} at the beginning of each deployment
+   * transformation.
+   *
+   * <p>The default implementation does nothing.
+   */
+  default void reset() {
+    // no-op
+  }
+>>>>>>> 2bb80e34 (perf: optimize resource parsing on deployment)
 }
