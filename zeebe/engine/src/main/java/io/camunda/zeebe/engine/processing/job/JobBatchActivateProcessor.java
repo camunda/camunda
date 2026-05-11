@@ -17,7 +17,8 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
+import io.camunda.zeebe.engine.processing.job.JobBatchCollector.JobWithMissingSecret;
+import io.camunda.zeebe.engine.processing.secret.SecretStore;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -41,7 +42,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -67,14 +67,16 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobProcessingMetrics jobMetrics,
       final AuthorizationCheckBehavior authCheckBehavior,
       final InstantSource clock,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final SecretStore secretStore) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     authorizationCheckBehavior = authCheckBehavior;
     jobBatchCollector =
-        new JobBatchCollector(state, stateWriter::canWriteEventOfLength, authCheckBehavior, clock);
+        new JobBatchCollector(
+            state, stateWriter::canWriteEventOfLength, authCheckBehavior, clock, secretStore);
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -169,15 +171,18 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final JobBatchRecord value = record.getValue();
     final long jobBatchKey = keyGenerator.nextKey();
 
-    final Either<TooLargeJob, Map<JobKind, Integer>> result =
-        jobBatchCollector.collectJobs(record, tenantIds);
-    final var activatedJobCountPerJobKind = result.getOrElse(Collections.emptyMap());
-    result.ifLeft(
-        largeJob ->
-            raiseIncidentJobTooLargeForMessageSize(
-                largeJob.key(), largeJob.jobRecord(), largeJob.expectedEventLength()));
+    final var result = jobBatchCollector.collectJobs(record, tenantIds);
 
-    activateJobBatch(record, value, jobBatchKey, activatedJobCountPerJobKind);
+    if (result.tooLargeJob() != null) {
+      final var tooLarge = result.tooLargeJob();
+      raiseIncidentJobTooLargeForMessageSize(
+          tooLarge.key(), tooLarge.jobRecord(), tooLarge.expectedEventLength());
+    }
+    for (final JobWithMissingSecret failure : result.secretFailures()) {
+      raiseIncidentSecretNotFound(failure);
+    }
+
+    activateJobBatch(record, value, jobBatchKey, result.activatedJobCountPerJobKind());
   }
 
   private void rejectCommand(final TypedRecord<JobBatchRecord> record, final Rejection rejection) {
@@ -224,6 +229,43 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             .setElementId(job.getElementIdBuffer())
             .setElementInstanceKey(job.getElementInstanceKey())
             .setJobKey(jobKey)
+            .setTenantId(job.getTenantId())
+            .setVariableScopeKey(job.getElementInstanceKey())
+            .setElementInstancePath(treePathProperties.elementInstancePath())
+            .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
+            .setCallingElementPath(treePathProperties.callingElementPath());
+
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+    incidentMetrics.incidentCreated();
+  }
+
+  private void raiseIncidentSecretNotFound(final JobWithMissingSecret failure) {
+    final var job = failure.jobRecord();
+    final DirectBuffer incidentMessage =
+        wrapString(
+            String.format(
+                "Failed to activate job with key '%d': referenced secret '%s' is not defined "
+                    + "in the configured secret store. Define the secret and resolve the "
+                    + "incident to re-enable activation.",
+                failure.key(), failure.missingSecretName()));
+
+    final var treePathProperties =
+        new ElementTreePathBuilder()
+            .withElementInstanceProvider(elementInstanceState::getInstance)
+            .withCallActivityIndexProvider(processState::getFlowElement)
+            .withElementInstanceKey(job.getElementInstanceKey())
+            .build();
+
+    final var incidentEvent =
+        new IncidentRecord()
+            .setErrorType(ErrorType.SECRET_NOT_FOUND)
+            .setErrorMessage(incidentMessage)
+            .setBpmnProcessId(job.getBpmnProcessIdBuffer())
+            .setProcessDefinitionKey(job.getProcessDefinitionKey())
+            .setProcessInstanceKey(job.getProcessInstanceKey())
+            .setElementId(job.getElementIdBuffer())
+            .setElementInstanceKey(job.getElementInstanceKey())
+            .setJobKey(failure.key())
             .setTenantId(job.getTenantId())
             .setVariableScopeKey(job.getElementInstanceKey())
             .setElementInstancePath(treePathProperties.elementInstancePath())

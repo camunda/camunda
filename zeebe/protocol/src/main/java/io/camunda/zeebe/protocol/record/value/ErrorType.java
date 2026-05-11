@@ -80,5 +80,7 @@ public enum ErrorType {
 
   FORM_NOT_FOUND,
 
-  RESOURCE_NOT_FOUND
+  RESOURCE_NOT_FOUND,
+
+  SECRET_NOT_FOUND
 }

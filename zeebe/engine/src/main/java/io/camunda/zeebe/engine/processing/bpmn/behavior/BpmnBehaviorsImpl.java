@@ -236,7 +236,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             jobMetrics,
             clock,
-            authCheckBehavior);
+            authCheckBehavior,
+            secretStore);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(

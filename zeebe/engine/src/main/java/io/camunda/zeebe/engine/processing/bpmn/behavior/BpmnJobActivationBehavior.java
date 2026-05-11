@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
+import io.camunda.zeebe.engine.processing.secret.SecretStore;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -63,11 +64,12 @@ public class BpmnJobActivationBehavior {
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final SecretStore secretStore) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
-    jobVariablesCollector = new JobVariablesCollector(state);
+    jobVariablesCollector = new JobVariablesCollector(state, secretStore);
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     this.clock = clock;
