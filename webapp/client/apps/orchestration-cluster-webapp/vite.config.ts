@@ -46,7 +46,7 @@ const config = defineConfig(({mode}) => ({
 	base: mode === 'production' ? './' : undefined,
 	resolve: {
 		tsconfigPaths: true,
-		// remove the explict alias config when this is fixed: https://github.com/vitejs/vite/issues/21889
+		// remove the explicit alias config when this is fixed: https://github.com/vitejs/vite/issues/21889
 		alias: {
 			'#/modules': path.resolve(__dirname, './src/modules'),
 			'#/assets': path.resolve(__dirname, './src/assets'),
