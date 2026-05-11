@@ -20,7 +20,8 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.HashMap;
+import java.util.EnumMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,44 +53,82 @@ public class UsernamePasswordAuthenticationTokenConverter
 
   @Override
   public CamundaAuthentication convert(final Authentication authentication) {
-    final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
     final var username = authentication.getName();
-    ownerTypeToIds.put(USER, Set.of(username));
-
-    final var groups =
-        groupServices
-            .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
-            .stream()
-            .map(GroupEntity::groupId)
-            .collect(Collectors.toSet());
-
-    if (!groups.isEmpty()) {
-      ownerTypeToIds.put(GROUP, groups);
-    }
-
-    final var roles =
-        roleServices
-            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
-            .stream()
-            .map(RoleEntity::roleId)
-            .collect(Collectors.toSet());
-
-    if (!roles.isEmpty()) {
-      ownerTypeToIds.put(ROLE, roles);
-    }
-
-    final var tenants =
-        tenantServices
-            .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
-            .stream()
-            .map(TenantEntity::tenantId)
-            .toList();
+    final var resolver = new Resolver(username);
 
     return CamundaAuthentication.of(
         a ->
             a.user(username)
-                .roleIds(roles.stream().toList())
-                .groupIds(groups.stream().toList())
-                .tenants(tenants));
+                .groupIdsSupplier(resolver::groups)
+                .roleIdsSupplier(resolver::roles)
+                .tenantsSupplier(resolver::tenants));
+  }
+
+  /**
+   * Per-authentication resolver that memoizes prerequisite lookups so that reads of multiple
+   * membership fields on the same {@link CamundaAuthentication} share the groups→roles→tenants
+   * chain. Synchronized so concurrent reads on different lazy fields don't double-fetch.
+   */
+  private final class Resolver {
+    private final EnumMap<EntityType, Set<String>> ownerTypeToIds = new EnumMap<>(EntityType.class);
+
+    private List<String> groups;
+    private List<String> roles;
+    private List<String> tenants;
+
+    Resolver(final String username) {
+      ownerTypeToIds.put(USER, Set.of(username));
+    }
+
+    synchronized List<String> groups() {
+      if (groups == null) {
+        final var ids =
+            groupServices
+                .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
+                .stream()
+                .map(GroupEntity::groupId)
+                .collect(Collectors.toSet());
+
+        if (!ids.isEmpty()) {
+          ownerTypeToIds.put(GROUP, ids);
+        }
+        groups = List.copyOf(ids);
+      }
+      return groups;
+    }
+
+    synchronized List<String> roles() {
+      if (roles == null) {
+        groups();
+
+        final var ids =
+            roleServices
+                .getRolesByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
+                .stream()
+                .map(RoleEntity::roleId)
+                .collect(Collectors.toSet());
+
+        if (!ids.isEmpty()) {
+          ownerTypeToIds.put(ROLE, ids);
+        }
+        roles = List.copyOf(ids);
+      }
+      return roles;
+    }
+
+    synchronized List<String> tenants() {
+      if (tenants == null) {
+        roles();
+
+        tenants =
+            tenantServices
+                .getTenantsByMemberTypeAndMemberIds(
+                    ownerTypeToIds, CamundaAuthentication.anonymous())
+                .stream()
+                .map(TenantEntity::tenantId)
+                .toList();
+      }
+      return tenants;
+    }
   }
 }
