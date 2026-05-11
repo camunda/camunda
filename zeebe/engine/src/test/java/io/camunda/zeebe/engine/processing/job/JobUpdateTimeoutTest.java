@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.List;
@@ -236,6 +237,40 @@ public class JobUpdateTimeoutTest {
         .extracting(Record::getIntent)
         .containsExactly(
             JobIntent.CREATED, JobIntent.TIMEOUT_UPDATED, JobIntent.TIME_OUT, JobIntent.TIMED_OUT);
+  }
+
+  @Test
+  public void shouldRejectJobUpdateTimeoutForBannedProcessInstance() {
+    // given
+    final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
+    final long processInstanceKey = jobCreated.getValue().getProcessInstanceKey();
+    final var batchRecord =
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // ban the process instance
+    ENGINE.banInstanceInNewTransaction(1, processInstanceKey);
+    RecordingExporter.errorRecords().withRecordKey(processInstanceKey).await();
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTimeout(Duration.ofMinutes(10).toMillis())
+            .expectRejection()
+            .updateTimeout();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled."
+                .formatted(processInstanceKey));
   }
 
   private static void assertJobDeadline(

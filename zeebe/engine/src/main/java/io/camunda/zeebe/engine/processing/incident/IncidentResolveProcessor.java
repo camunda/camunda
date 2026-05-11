@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.incident;
 
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -63,6 +64,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private final JobState jobState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final IncidentMetrics incidentMetrics;
+  private final BannedInstanceCommandCheck bannedInstanceCheck;
 
   public IncidentResolveProcessor(
       final ProcessingState processingState,
@@ -84,6 +86,8 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     jobState = processingState.getJobState();
     this.authCheckBehavior = authCheckBehavior;
     this.incidentMetrics = incidentMetrics;
+    this.bannedInstanceCheck =
+        new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
   }
 
   @Override
@@ -94,6 +98,15 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
       rejectResolveCommand(command, errorMessage, RejectionType.NOT_FOUND);
+      return;
+    }
+
+    // Check if the process instance is banned
+    final var bannedInstanceCheckResult = bannedInstanceCheck.check(incident);
+    if (bannedInstanceCheckResult.isLeft()) {
+      final var rejection = bannedInstanceCheckResult.getLeft();
+      enrichRejectionCommand(command, incident);
+      rejectResolveCommand(command, rejection.reason(), rejection.type());
       return;
     }
 
