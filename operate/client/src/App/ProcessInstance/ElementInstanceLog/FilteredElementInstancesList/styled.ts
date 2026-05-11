@@ -64,6 +64,13 @@ const RowButton = styled.button<{$selected: boolean}>`
     `}
 `;
 
+const IconSlot = styled.span`
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-right: var(--cds-spacing-03);
+`;
+
 const StatusRegion = styled.output`
   position: absolute;
   width: 1px;
@@ -84,4 +91,11 @@ const EmptyStateContainer = styled.div`
   padding: var(--cds-spacing-06);
 `;
 
-export {ScrollContainer, List, RowButton, StatusRegion, EmptyStateContainer};
+export {
+  ScrollContainer,
+  List,
+  RowButton,
+  IconSlot,
+  StatusRegion,
+  EmptyStateContainer,
+};
