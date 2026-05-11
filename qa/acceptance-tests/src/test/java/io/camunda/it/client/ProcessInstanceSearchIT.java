@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @CompatibilityTest
@@ -1389,6 +1390,49 @@ public class ProcessInstanceSearchIT {
             .join();
 
     assertThat(result.items()).isNotEmpty();
+  }
+
+  @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+  void shouldNarrowByHashCodeWhenErrorMessageInContainsSharedPrefix() {
+    // given
+    final var sharedPrefix = "Expected result of the expression";
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
+                        .errorMessage(f2 -> f2.in(List.of(sharedPrefix))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items())
+        .hasSize(1)
+        .allSatisfy(
+            instance ->
+                assertThat(instance.getProcessDefinitionId()).isEqualTo("incident_process_v2"));
+  }
+
+  @Test
+  void shouldReturnNoResultWhenInListConflictsWithResolvedHashCode() {
+    // given
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
+                        .errorMessage(f2 -> f2.in(List.of(INCIDENT_ERROR_MESSAGE_V1))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
   }
 
   @Test

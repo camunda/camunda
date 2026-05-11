@@ -13,7 +13,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchPhraseWithHasChildOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchPhraseInSingleHasChild;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -127,10 +127,10 @@ public class ProcessDefinitionStatisticsFilterTransformer
     ofNullable(filter.hasIncident()).ifPresent(value -> queries.add(term(INCIDENT, value)));
     Optional.of(stringOperations(TENANT_ID, filter.tenantIdOperations()))
         .ifPresent(queries::addAll);
-    Optional.of(
-            stringMatchPhraseWithHasChildOperations(
+    Optional.ofNullable(
+            stringMatchPhraseInSingleHasChild(
                 ERROR_MSG, filter.errorMessageOperations(), ACTIVITIES_JOIN_RELATION))
-        .ifPresent(queries::addAll);
+        .ifPresent(queries::add);
     ofNullable(getProcessVariablesQuery(filter.variableFilters())).ifPresent(queries::add);
     queries.addAll(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()));
     ofNullable(filter.hasRetriesLeft()).ifPresent(value -> queries.add(hasRetriesLeftQuery(value)));

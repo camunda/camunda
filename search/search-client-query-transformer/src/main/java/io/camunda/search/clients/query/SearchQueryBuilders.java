@@ -478,56 +478,6 @@ public final class SearchQueryBuilders {
         .toList();
   }
 
-  public static <C extends List<Operation<String>>>
-      List<SearchQuery> stringMatchPhraseWithHasChildOperations(
-          final String field, final C operations, final String childType) {
-
-    if (operations == null || operations.isEmpty()) {
-      return List.of();
-    }
-
-    return operations.stream()
-        .map(
-            op ->
-                switch (op.operator()) {
-                  case EQUALS -> hasChildQuery(childType, matchPhrase(field, op.value()));
-
-                  case NOT_EQUALS ->
-                      hasChildQuery(
-                          childType,
-                          bool(b ->
-                                  b.must(List.of(exists(field)))
-                                      .mustNot(List.of(matchPhrase(field, op.value()))))
-                              .toSearchQuery());
-
-                  case EXISTS ->
-                      hasChildQuery(
-                          childType, bool(b -> b.must(List.of(exists(field)))).toSearchQuery());
-
-                  case NOT_EXISTS ->
-                      hasChildQuery(
-                          childType,
-                          bool(b -> b.must(List.of(exists(field))).mustNot(List.of(exists(field))))
-                              .toSearchQuery());
-
-                  case IN ->
-                      hasChildQuery(
-                          childType,
-                          or(
-                              op.values().stream()
-                                  .map(value -> matchPhrase(field, value))
-                                  .toList()));
-
-                  case LIKE ->
-                      hasChildQuery(
-                          childType,
-                          wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase()));
-
-                  default -> throw unexpectedOperation("String", op.operator());
-                })
-        .toList();
-  }
-
   public static <C extends List<Operation<String>>> SearchQuery stringMatchPhraseInSingleHasChild(
       final String field, final C operations, final String childType) {
 
