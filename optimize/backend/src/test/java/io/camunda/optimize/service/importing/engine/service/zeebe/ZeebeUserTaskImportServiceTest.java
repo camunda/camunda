@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.importing.engine.service.zeebe;
 
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATING;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -130,6 +131,46 @@ class ZeebeUserTaskImportServiceTest {
     assertThat(userTask.getWorkDurationInMs())
         .as("Work duration must be non-negative")
         .isEqualTo(98_000L);
+    assertThat(userTask.getTotalDurationInMs())
+        .as("Total duration must be non-negative")
+        .isEqualTo(100_000L);
+  }
+
+  @Test
+  void shouldProduceCorrectDurationForCanceledTaskWithUnassignedRecord() {
+    // given
+    // Task is claimed twice (deduplicated), unclaimed, then canceled without re-claim.
+    final long startTime = 0L;
+    final long firstAssignTime = 1_000L;
+    final long secondAssignTime = 1_500L;
+    final long unassignTime = 2_000L;
+    final long completeTime = 100_000L;
+
+    final List<ZeebeUserTaskRecordDto> records =
+        List.of(
+            createRecord(CREATING, startTime, null),
+            createRecord(ASSIGNED, firstAssignTime, USER_1),
+            createRecord(ASSIGNED, secondAssignTime, USER_1),
+            createRecord(ASSIGNED, unassignTime, null),
+            createRecord(CANCELED, completeTime, USER_1));
+
+    // when
+    final List<ProcessInstanceDto> result =
+        underTest.filterAndMapZeebeRecordsToOptimizeEntities(records);
+
+    // then
+    assertThat(result).hasSize(1);
+    final List<FlowNodeInstanceDto> flowNodes = result.getFirst().getFlowNodeInstances();
+    assertThat(flowNodes).hasSize(1);
+    final FlowNodeInstanceDto userTask = flowNodes.getFirst();
+    assertThat(userTask.getCanceled()).as("Task must be marked as canceled").isTrue();
+    assertThat(userTask.getIdleDurationInMs())
+        .as(
+            "Idle duration includes the initial unassigned period and the period between unassign and cancellation")
+        .isEqualTo(99_000L);
+    assertThat(userTask.getWorkDurationInMs())
+        .as("Work duration spans the first claim to the unassignment")
+        .isEqualTo(1_000L);
     assertThat(userTask.getTotalDurationInMs())
         .as("Total duration must be non-negative")
         .isEqualTo(100_000L);
