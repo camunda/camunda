@@ -875,6 +875,18 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final JsonMapper jsonMapper, final List<Variable> variables) {
     final Map<String, Object> result = new HashMap<>();
     for (final Variable variable : variables) {
+      if (variable.isTruncated()) {
+        throw new AssertionError(
+            "Expected variable '"
+                + variable.getName()
+                + "' to have a full value, but the Search API returned a truncated value.");
+      }
+
+      if (variable.getValue() == null) {
+        result.put(variable.getName(), null);
+        continue;
+      }
+
       result.put(variable.getName(), jsonMapper.fromJson(variable.getValue(), Object.class));
     }
     return result;
