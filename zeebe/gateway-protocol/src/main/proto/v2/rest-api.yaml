@@ -173,6 +173,10 @@ paths:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1incidents~1search'
   /element-instances/{elementInstanceKey}/variables:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1variables'
+  /element-instances/{elementInstanceKey}/inspection:
+    $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1inspection'
+  /element-instances/inspection/search:
+    $ref: 'element-instances.yaml#/paths/~1element-instances~1inspection~1search'
 
   # Expression endpoints
   /expression/evaluation:

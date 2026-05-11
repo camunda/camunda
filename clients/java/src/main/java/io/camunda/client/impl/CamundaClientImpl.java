@@ -127,6 +127,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.ElementInstanceInspectionGetRequest;
 import io.camunda.client.api.fetch.GlobalTaskListenerGetRequest;
 import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
@@ -305,6 +306,7 @@ import io.camunda.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DocumentContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ElementInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.ElementInstanceInspectionGetRequestImpl;
 import io.camunda.client.impl.fetch.GlobalTaskListenerGetRequestImpl;
 import io.camunda.client.impl.fetch.GloballyScopedClusterVariableGetRequestImpl;
 import io.camunda.client.impl.fetch.GroupGetRequestImpl;
@@ -1010,6 +1012,12 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ElementInstanceGetRequest newElementInstanceGetRequest(final long elementInstanceKey) {
     return new ElementInstanceGetRequestImpl(httpClient, elementInstanceKey);
+  }
+
+  @Override
+  public ElementInstanceInspectionGetRequest newElementInstanceInspectionGetRequest(
+      final long elementInstanceKey) {
+    return new ElementInstanceInspectionGetRequestImpl(httpClient, elementInstanceKey);
   }
 
   @Override

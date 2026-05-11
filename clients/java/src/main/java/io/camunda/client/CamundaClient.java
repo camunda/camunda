@@ -116,6 +116,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.ElementInstanceInspectionGetRequest;
 import io.camunda.client.api.fetch.GlobalTaskListenerGetRequest;
 import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
@@ -1183,6 +1184,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a element instance
    */
   ElementInstanceGetRequest newElementInstanceGetRequest(long elementInstanceKey);
+
+  /**
+   * Gets element instance inspection with wait state information by element instance key.
+   *
+   * <pre>
+   *   long elementInstanceKey = ...;
+   *
+   *   camundaClient
+   *   .newElementInstanceInspectionGetRequest(elementInstanceKey)
+   *   .send();
+   *   </pre>
+   *
+   * @param elementInstanceKey the key of the element instance
+   * @return a builder for the request to get element instance inspection
+   */
+  ElementInstanceInspectionGetRequest newElementInstanceInspectionGetRequest(
+      long elementInstanceKey);
 
   /**
    * Command to activate activities within an activated ad-hoc sub-process.
