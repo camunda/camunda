@@ -14,8 +14,10 @@ import static java.util.stream.Collectors.toMap;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
+import io.camunda.authentication.authorization.PhysicalTenantAuthorizationManager;
 import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
+import io.camunda.authentication.converter.PhysicalTenantJwtAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.converter.UsernamePasswordAuthenticationTokenConverter;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
@@ -32,6 +34,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.PhysicalTenantConfiguration;
 import io.camunda.security.configuration.ProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
@@ -420,6 +423,12 @@ public class WebSecurityConfig {
     return repository;
   }
 
+  @Bean
+  @ConditionalOnPhysicalTenantsConfigured
+  public PhysicalTenantAuthorizationManager physicalTenantAuthorizationManager() {
+    return new PhysicalTenantAuthorizationManager();
+  }
+
   private static void configureCsrf(
       final CookieCsrfTokenRepository repository, final CsrfConfigurer<HttpSecurity> csrf) {
     csrf.csrfTokenRepository(repository)
@@ -525,19 +534,25 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final SecurityConfiguration securityConfiguration,
-        final CookieCsrfTokenRepository csrfTokenRepository)
+        final CookieCsrfTokenRepository csrfTokenRepository,
+        final Optional<PhysicalTenantAuthorizationManager> physicalTenantAuthorizationManager)
         throws Exception {
       LOG.info("The API is protected by HTTP Basic authentication.");
       final var filterChainBuilder =
           httpSecurity
               .securityMatcher(API_PATHS.toArray(String[]::new))
               .authorizeHttpRequests(
-                  (authorizeHttpRequests) ->
-                      authorizeHttpRequests
-                          .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
-                          .permitAll()
-                          .anyRequest()
-                          .authenticated())
+                  authorizeHttpRequests -> {
+                    authorizeHttpRequests
+                        .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
+                        .permitAll();
+                    physicalTenantAuthorizationManager.ifPresent(
+                        manager ->
+                            authorizeHttpRequests
+                                .requestMatchers("/v2/physical-tenants/{ptId}/**")
+                                .access(manager));
+                    authorizeHttpRequests.anyRequest().authenticated();
+                  })
               .headers(
                   headers ->
                       setupSecureHeaders(
@@ -1006,6 +1021,14 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnPhysicalTenantsConfigured
+    public PhysicalTenantJwtAuthenticationConverter physicalTenantJwtAuthenticationConverter(
+        final OidcAuthenticationConfigurationRepository providers,
+        final List<PhysicalTenantConfiguration> physicalTenants) {
+      return new PhysicalTenantJwtAuthenticationConverter(providers, physicalTenants);
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
     public SecurityFilterChain oidcApiSecurity(
@@ -1016,18 +1039,26 @@ public class WebSecurityConfig {
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final OAuth2AuthorizedClientManager authorizedClientManager)
+        final OAuth2AuthorizedClientManager authorizedClientManager,
+        final Optional<PhysicalTenantJwtAuthenticationConverter>
+            physicalTenantJwtAuthenticationConverter,
+        final Optional<PhysicalTenantAuthorizationManager> physicalTenantAuthorizationManager)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
               .securityMatcher(API_PATHS.toArray(new String[0]))
               .authorizeHttpRequests(
-                  (authorizeHttpRequests) ->
-                      authorizeHttpRequests
-                          .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
-                          .permitAll()
-                          .anyRequest()
-                          .authenticated())
+                  authorizeHttpRequests -> {
+                    authorizeHttpRequests
+                        .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
+                        .permitAll();
+                    physicalTenantAuthorizationManager.ifPresent(
+                        manager ->
+                            authorizeHttpRequests
+                                .requestMatchers("/v2/physical-tenants/{ptId}/**")
+                                .access(manager));
+                    authorizeHttpRequests.anyRequest().authenticated();
+                  })
               .headers(
                   headers ->
                       setupSecureHeaders(
@@ -1050,7 +1081,12 @@ public class WebSecurityConfig {
               .oauth2ResourceServer(
                   oauth2 ->
                       oauth2
-                          .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .jwt(
+                              jwtConfigurer -> {
+                                jwtConfigurer.decoder(jwtDecoder);
+                                physicalTenantJwtAuthenticationConverter.ifPresent(
+                                    jwtConfigurer::jwtAuthenticationConverter);
+                              })
                           .protectedResourceMetadata(
                               oauthProtectedResourceMetadataCustomizer(
                                   clientRegistrationRepository))
