@@ -31,9 +31,12 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
@@ -52,6 +55,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   private final boolean enableStraightThroughProcessingLoopDetector;
   private final BpmnElementOrderErrorTransformer elementOrderErrorTransformer;
   private final ProcessDefinitionMetrics processDefinitionMetrics;
+  private final Map<DeploymentResource, BpmnModelInstance> parsedModels = new IdentityHashMap<>();
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
@@ -88,49 +92,67 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     // .xml files: try to parse as BPMN and only handle if it's valid BPMN.
     // Non-BPMN .xml files fall through to the default transformer (generic resource).
     if (resourceName.endsWith(".xml")) {
-      return readProcessDefinition(resource).isRight();
+      final var parsed = readProcessDefinition(resource);
+      final var isValid = parsed.isRight();
+      if (isValid) {
+        parsedModels.put(resource, parsed.get());
+      }
+      return isValid;
     }
     return false;
+  }
+
+  @Override
+  public void reset() {
+    parsedModels.clear();
+  }
+
+  @VisibleForTesting
+  boolean hasParsedModelFor(final DeploymentResource resource) {
+    return parsedModels.containsKey(resource);
   }
 
   @Override
   public Either<Failure, DeploymentResourceContext> createMetadata(
       final DeploymentResource resource, final DeploymentRecord deployment) {
 
-    return readProcessDefinition(resource)
-        .flatMap(
-            definition -> {
-              final String validationError = validator.validate(definition);
+    final var parsedModel = parsedModels.remove(resource);
+    final Either<Failure, BpmnModelInstance> definitionResult =
+        parsedModel != null ? Either.right(parsedModel) : readProcessDefinition(resource);
 
-              if (validationError == null) {
-                // transform the model to avoid unexpected failures that are not covered by the
-                // validator
-                final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
+    return definitionResult.flatMap(
+        definition -> {
+          final String validationError = validator.validate(definition);
 
-                return UnsupportedMultiTenantFeaturesValidator.validate(
-                        resource, executableProcesses, deployment.getTenantId())
-                    .flatMap(
-                        ok -> {
-                          if (enableStraightThroughProcessingLoopDetector) {
-                            return StraightThroughProcessingLoopValidator.validate(
-                                resource, executableProcesses);
-                          }
-                          return Either.right(null);
-                        })
-                    .map(
-                        ok -> {
-                          final var elements =
-                              new BpmnElementsWithDeploymentBinding(resource.getResourceName());
-                          createProcessMetadata(deployment, resource, definition, elements);
-                          return (DeploymentResourceContext) elements;
-                        });
+          if (validationError == null) {
+            // transform the model to avoid unexpected failures that are not covered by the
+            // validator
+            final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
 
-              } else {
-                final var failureMessage =
-                    String.format("'%s': %s", resource.getResourceName(), validationError);
-                return Either.left(new Failure(failureMessage));
-              }
-            });
+            return UnsupportedMultiTenantFeaturesValidator.validate(
+                    resource, executableProcesses, deployment.getTenantId())
+                .flatMap(
+                    ok -> {
+                      if (enableStraightThroughProcessingLoopDetector) {
+                        return StraightThroughProcessingLoopValidator.validate(
+                            resource, executableProcesses);
+                      }
+                      return Either.right(null);
+                    })
+                .map(
+                    ok -> {
+                      final var elements =
+                          new BpmnElementsWithDeploymentBinding(resource.getResourceName());
+                      createProcessMetadata(deployment, resource, definition, elements);
+                      return (DeploymentResourceContext) elements;
+                    });
+
+          } else {
+            final var failureMessage =
+                String.format("'%s': %s", resource.getResourceName(), validationError);
+            return Either.left(new Failure(failureMessage));
+          }
+        });
   }
 
   @Override

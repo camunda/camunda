@@ -97,11 +97,26 @@ public final class DeploymentTransformer {
   }
 
   public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
+    resourceTransformers.forEach(DeploymentResourceTransformer::reset);
+
     return validator
         .validateResources(deploymentEvent)
-        .flatMap(ok -> buildMetadata(deploymentEvent))
-        .flatMap(contexts -> validator.validateMetadata(deploymentEvent, contexts))
-        .flatMap(ok -> writeResourceRecords(deploymentEvent));
+        .map(ok -> resolveTransformers(deploymentEvent))
+        .flatMap(
+            rwt ->
+                buildMetadata(deploymentEvent, rwt)
+                    .flatMap(contexts -> validator.validateMetadata(deploymentEvent, contexts))
+                    .flatMap(ok -> writeResourceRecords(deploymentEvent, rwt)));
+  }
+
+  private List<ResourceWithTransformer> resolveTransformers(
+      final DeploymentRecord deploymentEvent) {
+    final List<ResourceWithTransformer> result = new ArrayList<>();
+    for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
+      final var transformer = getResourceTransformer(deploymentResource);
+      result.add(new ResourceWithTransformer(deploymentResource, transformer));
+    }
+    return result;
   }
 
   /**
@@ -109,16 +124,19 @@ public final class DeploymentTransformer {
    * and adds its metadata to the deployment record.
    *
    * @param deploymentEvent the deployment record
+   * @param resourcesWithTransformers resources paired with their resolved transformers
    * @return Either.right with the list of contexts produced by each transformer, or Either.left
    *     with error details
    */
   private Either<Failure, List<DeploymentResourceContext>> buildMetadata(
-      final DeploymentRecord deploymentEvent) {
+      final DeploymentRecord deploymentEvent,
+      final List<ResourceWithTransformer> resourcesWithTransformers) {
     final var errors = new DeploymentErrorCollector();
     final List<DeploymentResourceContext> contexts = new ArrayList<>();
 
-    for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
-      final var transformer = getResourceTransformer(deploymentResource);
+    for (final ResourceWithTransformer resourceWithTransformer : resourcesWithTransformers) {
+      final var deploymentResource = resourceWithTransformer.resource;
+      final var transformer = resourceWithTransformer.transformer;
       try {
         final var result = transformer.createMetadata(deploymentResource, deploymentEvent);
 
@@ -138,16 +156,22 @@ public final class DeploymentTransformer {
   /**
    * Writes the actual resource records to state. This is called after all validation has passed.
    * Skips writing if the deployment contains only duplicates (versioning invariant).
+   *
+   * @param deploymentEvent the deployment record
+   * @param resourcesWithTransformers resources paired with their resolved transformers
    */
-  private Either<Failure, Void> writeResourceRecords(final DeploymentRecord deploymentEvent) {
+  private Either<Failure, Void> writeResourceRecords(
+      final DeploymentRecord deploymentEvent,
+      final List<ResourceWithTransformer> resourcesWithTransformers) {
     if (deploymentEvent.hasDuplicatesOnly()) {
       return Either.right(null);
     }
 
     final var errors = new DeploymentErrorCollector();
 
-    for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
-      final var transformer = getResourceTransformer(deploymentResource);
+    for (final ResourceWithTransformer resourceWithTransformer : resourcesWithTransformers) {
+      final var deploymentResource = resourceWithTransformer.resource;
+      final var transformer = resourceWithTransformer.transformer;
       try {
         transformer.writeRecords(deploymentResource, deploymentEvent);
       } catch (final RuntimeException e) {
@@ -175,4 +199,7 @@ public final class DeploymentTransformer {
     LOG.error("Unexpected error while processing resource '{}'", resourceName, exception);
     errors.add("'%s': %s", resourceName, exception.getMessage());
   }
+
+  private record ResourceWithTransformer(
+      DeploymentResource resource, DeploymentResourceTransformer transformer) {}
 }
