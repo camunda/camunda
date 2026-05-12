@@ -68,7 +68,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@v3
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -106,7 +106,7 @@ jobs:
           name: "Operate ${{ inputs.test-type }}"
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.27.1
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.OPERATE_CI_ALERT_WEBHOOK_URL }}
         with:
