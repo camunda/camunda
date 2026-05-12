@@ -7,7 +7,8 @@
  */
 
 import {createContext, useContext, useMemo} from 'react';
-import {useAgentInstanceHistory} from 'modules/queries/agentInstances/useAgentInstanceHistory';
+import {useQueries} from '@tanstack/react-query';
+import {searchAgentInstanceHistory} from 'modules/api/v2/agentInstances/searchAgentInstanceHistory';
 import {useSearchAgentInstances} from 'modules/queries/agentInstances/useSearchAgentInstances';
 import {historyToAgentElementData} from 'modules/queries/agentInstances/historyToAgentElementData';
 import {getScenarioByInstanceKey} from 'modules/mock-server/scenarioRegistry';
@@ -33,7 +34,8 @@ interface AgentDataContextValue {
     elementInstanceKey: string,
   ) => AgentElementData | null;
   isAgentElement: (elementId: string | null | undefined) => boolean;
-  agentSubprocessKey: string | null;
+  agentElementInstanceKeys: string[];
+  primaryAgentElementInstanceKey: string | null;
   agentElementId: string | null;
   getIterationSummary: (elementId: string) => string | null;
   getIterationForElement: (elementId: string) => AgentIteration | null;
@@ -53,7 +55,8 @@ const EMPTY_VALUE: AgentDataContextValue = {
   agentData: null,
   getAgentDataForElement: () => null,
   isAgentElement: () => false,
-  agentSubprocessKey: null,
+  agentElementInstanceKeys: [],
+  primaryAgentElementInstanceKey: null,
   agentElementId: null,
   getIterationSummary: () => null,
   getIterationForElement: () => null,
@@ -81,32 +84,68 @@ const AgentDataProvider: React.FC<{
     {filter: {processInstanceKey: processInstanceKey ?? ''}},
     {enabled: !!processInstanceKey},
   );
-  const agentInstance = agentInstancesResult?.items[0];
+  const allAgentInstances = agentInstancesResult?.items ?? [];
 
-  const {data: historyResult} = useAgentInstanceHistory(
-    agentInstance?.agentInstanceKey,
-    {filter: {committed: true}},
-  );
+  const historyResults = useQueries({
+    queries: allAgentInstances.map((instance) => ({
+      queryKey: [
+        'agentInstanceHistory',
+        instance.agentInstanceKey,
+        {committed: true},
+      ],
+      queryFn: async () => {
+        const {response, error} = await searchAgentInstanceHistory(
+          instance.agentInstanceKey,
+          {filter: {committed: true}},
+        );
+        if (error) throw error;
+        return response;
+      },
+    })),
+  });
 
   const value = useMemo<AgentDataContextValue>(() => {
-    if (!agentInstance || !historyResult || !scenario) {
+    if (!scenario || allAgentInstances.length === 0) {
       return EMPTY_VALUE;
     }
 
-    const agentEntry = scenario.agentInstances.find(
-      (e) => e.instance.agentInstanceKey === agentInstance.agentInstanceKey,
-    );
-    if (!agentEntry) {
+    const data: Record<string, AgentElementData> = {};
+    for (let i = 0; i < allAgentInstances.length; i++) {
+      const instance = allAgentInstances[i]!;
+      const historyItems = historyResults[i]?.data?.items;
+      if (!historyItems) continue;
+      const scenarioEntry = scenario.agentInstances.find(
+        (e) => e.instance.agentInstanceKey === instance.agentInstanceKey,
+      );
+      if (!scenarioEntry) continue;
+      data[scenarioEntry.elementInstanceKey] = historyToAgentElementData(
+        instance,
+        historyItems,
+      );
+    }
+
+    if (Object.keys(data).length === 0) {
       return EMPTY_VALUE;
     }
 
-    const elementData = historyToAgentElementData(
-      agentInstance,
-      historyResult.items,
+    const agentElementInstanceKeys = scenario.agentInstances.map(
+      (e) => e.elementInstanceKey,
     );
-    const data: Record<string, AgentElementData> = {
-      [agentEntry.elementInstanceKey]: elementData,
-    };
+    // Prefer an active run, else the last entry.
+    const activeEntry = scenario.agentInstances.find(
+      (e) =>
+        e.instance.status !== 'COMPLETED' && e.instance.status !== 'FAILED',
+    );
+    const primaryAgentElementInstanceKey =
+      activeEntry?.elementInstanceKey ??
+      scenario.agentInstances[scenario.agentInstances.length - 1]
+        ?.elementInstanceKey ??
+      null;
+
+    const activeAgentData =
+      primaryAgentElementInstanceKey !== null
+        ? (data[primaryAgentElementInstanceKey] ?? null)
+        : null;
 
     return {
       isAgentInstance: true,
@@ -115,16 +154,19 @@ const AgentDataProvider: React.FC<{
         data[elementInstanceKey] ?? null,
       isAgentElement: (elementId) =>
         !!elementId && scenario.agentElementIds.has(elementId),
-      agentSubprocessKey: agentEntry.elementInstanceKey,
+      agentElementInstanceKeys,
+      primaryAgentElementInstanceKey,
       agentElementId: scenario.agentElementId,
       getIterationSummary: (elementId) => {
-        const iteration = matchIteration(elementData, elementId);
+        if (!activeAgentData) return null;
+        const iteration = matchIteration(activeAgentData, elementId);
         return iteration?.reasoning ?? null;
       },
       getIterationForElement: (elementId) =>
-        matchIteration(elementData, elementId),
+        activeAgentData ? matchIteration(activeAgentData, elementId) : null,
       getToolCallForElement: (elementId) => {
-        for (const iteration of elementData.iterations) {
+        if (!activeAgentData) return null;
+        for (const iteration of activeAgentData.iterations) {
           const tool = iteration.toolCalls.find(
             (t) => t.toolElementId === elementId,
           );
@@ -135,20 +177,21 @@ const AgentDataProvider: React.FC<{
         return null;
       },
       getAgentStatusLabel: () => {
+        if (!activeAgentData) return null;
         if (
-          elementData.status === 'COMPLETED' ||
-          elementData.status === 'FAILED'
+          activeAgentData.status === 'COMPLETED' ||
+          activeAgentData.status === 'FAILED'
         ) {
           return null;
         }
         return 'Calling tools...';
       },
-      activeAgentStatuses: buildActiveAgentStatuses(
-        elementData,
-        scenario.agentElementId,
-      ),
+      activeAgentStatuses: activeAgentData
+        ? buildActiveAgentStatuses(activeAgentData, scenario.agentElementId)
+        : [],
     };
-  }, [agentInstance, historyResult, scenario]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentInstancesResult, historyResults, scenario]);
 
   return (
     <AgentDataContext.Provider value={value}>
@@ -168,20 +211,21 @@ function buildActiveAgentStatuses(
   elementData: AgentElementData,
   agentElementId: string,
 ): ActiveAgentStatus[] {
-  const statuses: ActiveAgentStatus[] = [];
-  if (elementData.status !== 'COMPLETED' && elementData.status !== 'FAILED') {
-    statuses.push({
+  const isLive =
+    elementData.status !== 'COMPLETED' && elementData.status !== 'FAILED';
+  if (!isLive) return [];
+  return [
+    {
       elementId: agentElementId,
       label: 'Calling tools...',
       showShine: true,
-    });
-  }
-  statuses.push({
-    elementId: NESTED_TASK_AGENT_ELEMENT_ID,
-    label: NESTED_TASK_AGENT_LABEL,
-    showShine: false,
-  });
-  return statuses;
+    },
+    {
+      elementId: NESTED_TASK_AGENT_ELEMENT_ID,
+      label: NESTED_TASK_AGENT_LABEL,
+      showShine: false,
+    },
+  ];
 }
 
 function matchIteration(
