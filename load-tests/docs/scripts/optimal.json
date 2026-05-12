@@ -1,6 +1,5 @@
 {
   "scenario": "max",
-  "duration-seconds": 600,
   "metrics": {
     "process-instances-started": {
       "per-second": 300,
