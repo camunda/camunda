@@ -551,7 +551,7 @@ export const MOCK_AGENT_JOBS_ACTIVE: Job[] = [
     processInstanceKey: MOCK_AGENT_INSTANCE_KEY_ACTIVE,
     rootProcessInstanceKey: null,
     elementId: 'AI_Agent',
-    elementInstanceKey: '4451799813685010',
+    elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_ACTIVE,
     creationTime: '2026-03-26T14:30:00.300Z',
     lastUpdateTime: null,
     tags: [],
@@ -631,13 +631,13 @@ export const MOCK_AGENT_ELEMENT_INSTANCES_NOT_ACTIVE: MockElementInstance[] = [
     elementId: 'Gateway_0z6ctwk',
     elementName: null,
     type: 'EXCLUSIVE_GATEWAY',
-    state: 'COMPLETED',
+    state: 'ACTIVE',
     hasIncident: false,
     flowScopeKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
     rootProcessInstanceKey: null,
     tenantId: '<default>',
     startDate: '2026-03-26T14:30:00.250Z',
-    endDate: '2026-03-26T14:30:00.280Z',
+    endDate: null,
     incidentKey: null,
   },
 ];
@@ -653,10 +653,10 @@ export const MOCK_AGENT_ELEMENT_STATISTICS_NOT_ACTIVE = {
     },
     {
       elementId: 'Gateway_0z6ctwk',
-      active: 0,
+      active: 1,
       canceled: 0,
       incidents: 0,
-      completed: 1,
+      completed: 0,
     },
   ],
 };
@@ -962,6 +962,24 @@ export const MOCK_AGENT_ELEMENT_INSTANCES_COMPLETED: MockElementInstance[] = [
     endDate: '2026-03-26T14:30:05.100Z',
     incidentKey: null,
   },
+  // User_Feedback — the now-ACTIVE element after the agent finished.
+  {
+    elementInstanceKey: '6451799813685050',
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_COMPLETED,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_COMPLETED,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_COMPLETED,
+    elementId: 'User_Feedback',
+    elementName: 'User Feedback',
+    type: 'USER_TASK',
+    state: 'ACTIVE',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_COMPLETED,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:05.600Z',
+    endDate: null,
+    incidentKey: null,
+  },
 ];
 
 export const MOCK_AGENT_ELEMENT_STATISTICS_COMPLETED = {
@@ -1016,6 +1034,13 @@ export const MOCK_AGENT_ELEMENT_STATISTICS_COMPLETED = {
       incidents: 0,
       completed: 1,
     },
+    {
+      elementId: 'User_Feedback',
+      active: 1,
+      canceled: 0,
+      incidents: 0,
+      completed: 0,
+    },
   ],
 };
 
@@ -1050,7 +1075,35 @@ export const MOCK_AGENT_VARIABLES_COMPLETED: Variable[] = [
   },
 ];
 
-export const MOCK_AGENT_JOBS_COMPLETED: Job[] = [];
+export const MOCK_AGENT_JOBS_COMPLETED: Job[] = [
+  {
+    jobKey: '6451799813685011',
+    type: 'io.camunda.agenticai:aiagent-job-worker:1',
+    worker: 'ai-agent-worker-1',
+    state: 'COMPLETED',
+    kind: 'BPMN_ELEMENT',
+    listenerEventType: 'UNSPECIFIED',
+    retries: 3,
+    isDenied: null,
+    deniedReason: null,
+    hasFailedWithRetriesLeft: false,
+    errorMessage: null,
+    errorCode: null,
+    customHeaders: {},
+    deadline: null,
+    endTime: '2026-03-26T14:30:05.500Z',
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_COMPLETED,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_COMPLETED,
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_COMPLETED,
+    rootProcessInstanceKey: null,
+    elementId: 'AI_Agent',
+    elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_COMPLETED,
+    creationTime: '2026-03-26T14:30:00.300Z',
+    lastUpdateTime: null,
+    tags: [],
+    tenantId: '<default>',
+  },
+];
 
 // State 4 — Multiple element instances. Two AI_Agent runs separated by a
 // User_Feedback step that returned userSatisfied = false.
@@ -1146,7 +1199,15 @@ const RUN_2_REBINDS: RebindMap = {
 
 const run1Cloned = rebindElementInstances(
   MOCK_AGENT_ELEMENT_INSTANCES_COMPLETED.filter(
-    (el) => el.elementId !== MOCK_AGENT_DEFINITION_ID_COMPLETED, // drop the PROCESS row; handled at top
+    (el) =>
+      // drop the PROCESS row; handled at top
+      el.elementId !== MOCK_AGENT_DEFINITION_ID_COMPLETED &&
+      // drop StartEvent_1 + Gateway_0z6ctwk; MULTIPLE adds its own pass-1 rows above
+      el.elementId !== 'StartEvent_1' &&
+      el.elementId !== 'Gateway_0z6ctwk' &&
+      // drop User_Feedback ACTIVE row from COMPLETED (Fix 2); MULTIPLE manages its
+      // own User_Feedback row (COMPLETED) added inline below.
+      el.elementId !== 'User_Feedback',
   ),
   MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
   MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
@@ -1242,6 +1303,24 @@ export const MOCK_AGENT_ELEMENT_INSTANCES_MULTIPLE: MockElementInstance[] = [
     endDate: '2026-03-26T14:30:14.000Z',
     incidentKey: null,
   },
+  // Gateway_1dcg4ha — "User satisfied?" gateway, COMPLETED (token routed back to AI_Agent)
+  {
+    elementInstanceKey: '7451799813685085',
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+    elementId: 'Gateway_1dcg4ha',
+    elementName: 'User satisfied?',
+    type: 'EXCLUSIVE_GATEWAY',
+    state: 'COMPLETED',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:14.050Z',
+    endDate: '2026-03-26T14:30:14.080Z',
+    incidentKey: null,
+  },
   // Gateway pass 2 (after user-feedback loopback)
   {
     elementInstanceKey: '7451799813685006',
@@ -1323,6 +1402,13 @@ export const MOCK_AGENT_ELEMENT_STATISTICS_MULTIPLE = {
       incidents: 0,
       completed: 1,
     },
+    {
+      elementId: 'Gateway_1dcg4ha',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
   ],
 };
 
@@ -1375,4 +1461,32 @@ export const MOCK_AGENT_VARIABLES_MULTIPLE: Variable[] = [
   },
 ];
 
-export const MOCK_AGENT_JOBS_MULTIPLE: Job[] = [];
+export const MOCK_AGENT_JOBS_MULTIPLE: Job[] = [
+  {
+    jobKey: '7451799813685011',
+    type: 'io.camunda.agenticai:aiagent-job-worker:1',
+    worker: 'ai-agent-worker-1',
+    state: 'CREATED',
+    kind: 'BPMN_ELEMENT',
+    listenerEventType: 'UNSPECIFIED',
+    retries: 3,
+    isDenied: null,
+    deniedReason: null,
+    hasFailedWithRetriesLeft: false,
+    errorMessage: null,
+    errorCode: null,
+    customHeaders: {},
+    deadline: null,
+    endTime: null,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    rootProcessInstanceKey: null,
+    elementId: 'AI_Agent',
+    elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
+    creationTime: '2026-03-26T14:30:14.200Z',
+    lastUpdateTime: null,
+    tags: [],
+    tenantId: '<default>',
+  },
+];
