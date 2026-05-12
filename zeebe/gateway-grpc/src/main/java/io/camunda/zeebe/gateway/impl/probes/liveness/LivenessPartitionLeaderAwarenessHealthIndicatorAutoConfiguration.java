@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.impl.probes.liveness;
 
-import io.camunda.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealthIndicator;
 import io.camunda.zeebe.gateway.impl.probes.health.MemoryHealthIndicator;
+import io.camunda.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
