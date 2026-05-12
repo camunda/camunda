@@ -29,6 +29,27 @@ const STATUS_MAP: Record<AgentInstanceStatus, AgentStatus> = {
   FAILED: 'FAILED',
 };
 
+// TODO(API): once the agent-instance API exposes per-tool descriptions, source
+// these from the definition instead of hardcoding. Today the BPMN carries them
+// in <bpmn:documentation> on each tool element, but they're not surfaced through
+// any API field the frontend reads.
+const TOOL_DESCRIPTIONS: Record<string, string> = {
+  ListUsers: 'Lists all available users in the directory.',
+  LoadUserByID: "Fetches a single user's full profile by their ID.",
+  GetDateAndTime:
+    'Returns the current date and time, including the timezone offset.',
+  DraftEmailTemplate:
+    'Produces a formatted email draft from a recipient, subject, tone, and body outline.',
+  AskHumanToSendEmail:
+    'Routes a prepared email through a human operator who reviews the recipient and copy before sending.',
+  AI_Task_Agent:
+    'A nested AI task agent that the orchestrating agent can delegate a subtask to.',
+  Search_Recipe: 'Searches a recipe given a free-text search query.',
+  SuperfluxProduct: 'Calculates the superflux product of two input numbers.',
+  Jokes_API: 'Fetches a random joke from the public Jokes REST API.',
+  Fetch_URL: 'Fetches the contents of a given URL.',
+};
+
 const textOf = (element: HistoryElement): string =>
   element.content
     .filter((c) => c.contentType === 'text')
@@ -123,7 +144,7 @@ function historyToAgentElementData(
       const toolCall: AgentToolCall = {
         toolName: payload.name,
         toolElementId: payload.name,
-        toolDescription: '',
+        toolDescription: TOOL_DESCRIPTIONS[payload.name] ?? '',
         // Surface the iteration's reasoning so the status accordion has copy
         // to show while the tool call is in-flight.
         rationale: current.reasoning,
