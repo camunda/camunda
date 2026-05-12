@@ -126,8 +126,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/distribution/ci NEXUS_USERNAME;
-            secret/data/products/distribution/ci NEXUS_PASSWORD;
+            secret/data/products/distribution/ci/nexus USER | NEXUS_USERNAME;
+            secret/data/products/distribution/ci/nexus PASSWORD | NEXUS_PASSWORD;
             secret/data/products/distribution/ci APPLE_CERTIFICATE;
             secret/data/products/distribution/ci APPLE_CERTIFICATE_PASSWORD;
             secret/data/products/distribution/ci APPLE_DEVELOPER_ID;
