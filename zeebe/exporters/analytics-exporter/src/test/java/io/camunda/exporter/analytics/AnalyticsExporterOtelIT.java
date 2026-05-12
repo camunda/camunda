@@ -35,16 +35,17 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 class AnalyticsExporterOtelIT {
 
+  private static final int OTLP_PORT = 4318;
   private static final List<String> COLLECTOR_LOGS = new CopyOnWriteArrayList<>();
 
   @Container
   private static final GenericContainer<?> OTEL_COLLECTOR =
       new GenericContainer<>(
-              DockerImageName.parse("otel/opentelemetry-collector-contrib").withTag("0.119.0"))
+              DockerImageName.parse("otel/opentelemetry-collector-contrib").withTag("latest"))
           .withClasspathResourceMapping(
               "otel-collector-config.yaml", "/etc/otelcol-contrib/config.yaml", BindMode.READ_ONLY)
           .withLogConsumer(frame -> COLLECTOR_LOGS.add(frame.getUtf8String()))
-          .withExposedPorts(4318);
+          .withExposedPorts(OTLP_PORT);
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
@@ -60,9 +61,7 @@ class AnalyticsExporterOtelIT {
     final var exporter = createExporter();
 
     // when
-    for (int i = 0; i < 5; i++) {
-      exporter.export(piCreatedEvent());
-    }
+    exporter.export(piCreatedEvent());
     exporter.close();
 
     // then
@@ -74,9 +73,8 @@ class AnalyticsExporterOtelIT {
   }
 
   /**
-   * Events are delivered in batches, not individually. Sends more events than one batch can hold
-   * (2000 with maxBatchSize=512), then asserts the collector received multiple batch exports
-   * containing multiple records each.
+   * Events are delivered in batches, not individually. Sends 500 events with maxBatchSize=100, then
+   * asserts the collector received multiple batch exports containing multiple records each.
    *
    * <p>The collector's debug exporter logs each export as a "ResourceLog" block containing
    * "LogRecord #N" entries. Multiple LogRecord entries in a single export prove batching.
@@ -87,8 +85,7 @@ class AnalyticsExporterOtelIT {
     final var exporter =
         createExporter(
             new AnalyticsExporterConfig()
-                .setEnabled(true)
-                .setEndpoint("http://localhost:" + OTEL_COLLECTOR.getMappedPort(4318))
+                .setEndpoint("http://localhost:" + OTEL_COLLECTOR.getMappedPort(OTLP_PORT))
                 .setMaxBatchSize(100)
                 .setPushInterval("PT0.1S"));
 
@@ -113,7 +110,7 @@ class AnalyticsExporterOtelIT {
                   COLLECTOR_LOGS.stream().filter(l -> l.contains("ScopeLogs #")).count();
 
               // With batchSize=100 and 500 events, we expect ~5 exports (not 500)
-              assertThat(exportCount).isGreaterThan(1).isLessThan(500);
+              assertThat(exportCount).isGreaterThan(1).isLessThanOrEqualTo(10);
             });
   }
 
@@ -122,8 +119,7 @@ class AnalyticsExporterOtelIT {
   private AnalyticsExporter createExporter() {
     return createExporter(
         new AnalyticsExporterConfig()
-            .setEnabled(true)
-            .setEndpoint("http://localhost:" + OTEL_COLLECTOR.getMappedPort(4318)));
+            .setEndpoint("http://localhost:" + OTEL_COLLECTOR.getMappedPort(OTLP_PORT)));
   }
 
   private AnalyticsExporter createExporter(final AnalyticsExporterConfig config) {

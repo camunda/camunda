@@ -104,6 +104,7 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Needed on the classpath for runtime classloading in AnalyticsExporterIT -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>analytics-exporter</artifactId>

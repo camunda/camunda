@@ -79,9 +79,7 @@ class OtelSdkManagerTest {
     final var manager =
         new OtelSdkManager()
             .initialize(
-                new AnalyticsExporterConfig().setEnabled(true).setEndpoint("http://localhost:1"),
-                "test-cluster",
-                1);
+                new AnalyticsExporterConfig().setEndpoint("http://localhost:1"), "test-cluster", 1);
 
     // when — @Timeout is the assertion: if logEvent blocks, we die
     for (int i = 0; i < 10; i++) {
@@ -217,7 +215,6 @@ class OtelSdkManagerTest {
       }
     }.initialize(
         new AnalyticsExporterConfig()
-            .setEnabled(true)
             .setMaxQueueSize(maxQueueSize)
             .setMaxBatchSize(maxBatchSize)
             .setPushInterval("PT0.1S"),

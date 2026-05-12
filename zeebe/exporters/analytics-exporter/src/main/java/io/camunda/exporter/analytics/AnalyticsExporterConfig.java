@@ -13,7 +13,6 @@ import java.time.Duration;
 public class AnalyticsExporterConfig {
 
   private String endpoint = "https://analytics.cloud.camunda.io";
-  private boolean enabled = false;
   private int maxQueueSize = 2048;
   private int maxBatchSize = 512;
   private String pushInterval = "PT5S";
@@ -24,15 +23,6 @@ public class AnalyticsExporterConfig {
 
   public AnalyticsExporterConfig setEndpoint(final String endpoint) {
     this.endpoint = endpoint;
-    return this;
-  }
-
-  public boolean isEnabled() {
-    return enabled;
-  }
-
-  public AnalyticsExporterConfig setEnabled(final boolean enabled) {
-    this.enabled = enabled;
     return this;
   }
 
@@ -63,10 +53,9 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
-  public void validate() {
-    if (enabled && (endpoint == null || endpoint.isBlank())) {
-      throw new IllegalArgumentException(
-          "Analytics exporter is enabled but no endpoint is configured");
+  public AnalyticsExporterConfig validate() {
+    if (endpoint == null || endpoint.isBlank()) {
+      throw new IllegalArgumentException("Analytics exporter endpoint is not configured");
     }
     try {
       Duration.parse(pushInterval);
@@ -87,5 +76,6 @@ public class AnalyticsExporterConfig {
               + maxQueueSize
               + ")");
     }
+    return this;
   }
 }

@@ -35,6 +35,7 @@ import org.testcontainers.utility.DockerImageName;
 @ZeebeIntegration
 final class AnalyticsExporterIT {
 
+  private static final int OTLP_PORT = 4318;
   private static final String PROCESS_ID = "analytics-e2e-test";
   private static final List<String> COLLECTOR_LOGS = new CopyOnWriteArrayList<>();
 
@@ -42,7 +43,7 @@ final class AnalyticsExporterIT {
   @Container
   private static final GenericContainer<?> OTEL_COLLECTOR =
       new GenericContainer<>(
-              DockerImageName.parse("otel/opentelemetry-collector-contrib").withTag("0.119.0"))
+              DockerImageName.parse("otel/opentelemetry-collector-contrib").withTag("latest"))
           .withCopyToContainer(
               Transferable.of(
                   """
@@ -62,7 +63,7 @@ final class AnalyticsExporterIT {
                       """),
               "/etc/otelcol-contrib/config.yaml")
           .withLogConsumer(frame -> COLLECTOR_LOGS.add(frame.getUtf8String()))
-          .withExposedPorts(4318);
+          .withExposedPorts(OTLP_PORT);
 
   @TestZeebe(autoStart = false)
   private final TestStandaloneBroker broker =
@@ -85,9 +86,7 @@ final class AnalyticsExporterIT {
               cfg.setArgs(
                   Map.of(
                       "endpoint",
-                      "http://localhost:" + OTEL_COLLECTOR.getMappedPort(4318),
-                      "enabled",
-                      true,
+                      "http://localhost:" + OTEL_COLLECTOR.getMappedPort(OTLP_PORT),
                       "pushInterval",
                       "PT1S",
                       "maxBatchSize",

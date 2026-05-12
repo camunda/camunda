@@ -19,22 +19,6 @@
   <packaging>jar</packaging>
   <name>Camunda Analytics Exporter</name>
 
-  <properties>
-    <version.opentelemetry>1.49.0</version.opentelemetry>
-  </properties>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>io.opentelemetry</groupId>
-        <artifactId>opentelemetry-bom</artifactId>
-        <version>${version.opentelemetry}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
   <dependencies>
     <!-- Exporter API + Protocol -->
     <dependency>
@@ -44,6 +28,10 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
     </dependency>
     <!-- Logging -->
     <dependency>

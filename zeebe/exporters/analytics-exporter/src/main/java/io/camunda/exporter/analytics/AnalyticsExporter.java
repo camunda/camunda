@@ -14,7 +14,6 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.PROCESS_VERSION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.ROOT_PROCESS_INSTANCE_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.TENANT_ID;
 
-import io.camunda.exporter.analytics.utils.SampledLogger;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -23,6 +22,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.util.EnumMap;
 import java.util.concurrent.TimeUnit;
@@ -36,10 +36,10 @@ public class AnalyticsExporter implements Exporter {
   private static final Logger LOG =
       LoggerFactory.getLogger(AnalyticsExporter.class.getPackageName());
 
-  private static final SampledLogger SAMPLED_LOG =
-      new SampledLogger(LOG, Duration.ofMinutes(1).toMillis());
-  private static final SampledLogger SAMPLED_ERROR_LOG =
-      new SampledLogger(LOG, Duration.ofMinutes(1).toMillis());
+  private static final ThrottledLogger SAMPLED_LOG =
+      new ThrottledLogger(LOG, Duration.ofMinutes(1));
+  private static final ThrottledLogger SAMPLED_WARN_LOG =
+      new ThrottledLogger(LOG, Duration.ofMinutes(1));
 
   private final OtelSdkManager otelSdkManager;
 
@@ -59,18 +59,15 @@ public class AnalyticsExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class);
+    config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class).validate();
     partitionId = context.getPartitionId();
     clusterId = context.getClusterId();
-
-    config.validate();
 
     handlers = new EnumMap<>(ValueType.class);
     registerHandler(ValueType.PROCESS_INSTANCE_CREATION, this::handleProcessInstanceCreation);
 
     LOG.info(
-        "Analytics exporter configured: enabled={}, endpoint={}, clusterId={}",
-        config.isEnabled(),
+        "Analytics exporter configured: endpoint={}, clusterId={}",
         config.getEndpoint(),
         clusterId);
   }
@@ -92,17 +89,13 @@ public class AnalyticsExporter implements Exporter {
   public void export(final Record<?> record) {
     controller.updateLastExportedRecordPosition(record.getPosition());
 
-    if (!config.isEnabled()) {
-      return;
-    }
-
     try {
       final var handler = handlers.get(record.getValueType());
       if (handler != null) {
         handler.accept(record);
       }
     } catch (final Exception e) {
-      SAMPLED_ERROR_LOG.warn("Failed to handle record at position {}", record.getPosition(), e);
+      SAMPLED_WARN_LOG.warn("Failed to handle record at position {}", record.getPosition(), e);
     }
   }
 

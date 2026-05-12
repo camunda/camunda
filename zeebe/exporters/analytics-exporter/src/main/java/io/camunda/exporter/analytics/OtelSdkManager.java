@@ -11,8 +11,8 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.CLUSTER_ID;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.EVENT_NAME;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.LOG_POSITION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.PARTITION_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Logger;
 import io.opentelemetry.api.logs.Severity;
@@ -30,33 +30,26 @@ class OtelSdkManager {
 
   private static final String INSTRUMENTATION_SCOPE = "io.camunda.analytics";
   private static final String SCHEMA_URL = "https://camunda.io/schemas/analytics/v1";
-  private static final AttributeKey<String> SERVICE_NAME = AttributeKey.stringKey("service.name");
+  private static final String OTLP_LOGS_PATH = "/v1/logs";
 
   private OpenTelemetrySdk sdk;
-  private Logger logger;
+  private Logger otelLogger;
 
   OtelSdkManager initialize(
       final AnalyticsExporterConfig config, final String clusterId, final int partitionId) {
-    if (!config.isEnabled() || sdk != null) {
-      return this;
-    }
-
     final var resource = buildResource(clusterId, partitionId);
     final var loggerProvider = createLoggerProvider(config, resource);
 
     sdk = OpenTelemetrySdk.builder().setLoggerProvider(loggerProvider).build();
-    logger =
+    otelLogger =
         sdk.getLogsBridge().loggerBuilder(INSTRUMENTATION_SCOPE).setSchemaUrl(SCHEMA_URL).build();
     return this;
   }
 
   void logEvent(
       final String eventName, final long logPosition, final Consumer<LogRecordBuilder> builder) {
-    if (logger == null) {
-      return;
-    }
     final var record =
-        logger
+        otelLogger
             .logRecordBuilder()
             .setSeverity(Severity.INFO)
             .setSeverityText("INFO")
@@ -70,7 +63,6 @@ class OtelSdkManager {
     if (sdk != null) {
       sdk.shutdown().join(10, TimeUnit.SECONDS);
     }
-    logger = null;
   }
 
   /**
@@ -92,7 +84,7 @@ class OtelSdkManager {
   /** Override in tests to swap the OTLP transport for an in-memory exporter. */
   protected LogRecordExporter createLogExporter(final AnalyticsExporterConfig config) {
     return OtlpHttpLogRecordExporter.builder()
-        .setEndpoint(config.getEndpoint() + "/v1/logs")
+        .setEndpoint(config.getEndpoint() + OTLP_LOGS_PATH)
         .build();
   }
 

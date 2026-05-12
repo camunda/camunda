@@ -79,19 +79,17 @@ zeebe:
         className: io.camunda.exporter.analytics.AnalyticsExporter
         args:
           endpoint: "https://analytics.cloud.camunda.io"
-          enabled: true
           pushInterval: "PT5S"
           maxQueueSize: 2048
           maxBatchSize: 512
 ```
 
-|    Property    |               Default                |                                Description                                |
-|----------------|--------------------------------------|---------------------------------------------------------------------------|
-| `endpoint`     | `https://analytics.cloud.camunda.io` | OTLP/HTTP base URL. The SDK appends `/v1/logs`.                           |
-| `enabled`      | `false`                              | Opt-in. When false, the exporter updates positions but does nothing else. |
-| `pushInterval` | `PT5S`                               | Batch push interval (ISO 8601 duration).                                  |
-| `maxQueueSize` | `2048`                               | Maximum log records queued in-memory before dropping.                     |
-| `maxBatchSize` | `512`                                | Maximum records per export batch.                                         |
+|    Property    |               Default                |                      Description                      |
+|----------------|--------------------------------------|-------------------------------------------------------|
+| `endpoint`     | `https://analytics.cloud.camunda.io` | OTLP/HTTP base URL. The SDK appends `/v1/logs`.       |
+| `pushInterval` | `PT5S`                               | Batch push interval (ISO 8601 duration).              |
+| `maxQueueSize` | `2048`                               | Maximum log records queued in-memory before dropping. |
+| `maxBatchSize` | `512`                                | Maximum records per export batch.                     |
 
 ## Architecture
 
@@ -114,7 +112,6 @@ Key components:
   Provides `logEvent(eventName, logPosition, builder)` — sets `event.name`, severity,
   and log position automatically; the builder lambda adds event-specific attributes.
 - **`AnalyticsAttributes`** — Shared OTel attribute key constants following naming conventions.
-- **`SampledLogger`** — Time-based log sampling for operator visibility without log spam.
 
 ## Building
 

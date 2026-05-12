@@ -18,6 +18,7 @@ import io.opentelemetry.api.common.AttributeKey;
 final class AnalyticsAttributes {
 
   // Resource-level
+  static final AttributeKey<String> SERVICE_NAME = AttributeKey.stringKey("service.name");
   static final AttributeKey<String> CLUSTER_ID = AttributeKey.stringKey("camunda.cluster.id");
   static final AttributeKey<Long> PARTITION_ID = AttributeKey.longKey("camunda.partition.id");
 

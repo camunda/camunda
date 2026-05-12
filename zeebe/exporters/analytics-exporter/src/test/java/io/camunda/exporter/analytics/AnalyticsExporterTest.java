@@ -52,24 +52,11 @@ class AnalyticsExporterTest {
         new ExporterTestContext()
             .setConfiguration(
                 new ExporterTestConfiguration<>(
-                    "analytics", new AnalyticsExporterConfig().setEnabled(true).setEndpoint("")));
+                    "analytics", new AnalyticsExporterConfig().setEndpoint("")));
 
     // when / then
     assertThatThrownBy(() -> new AnalyticsExporter().configure(context))
         .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void shouldAcceptMissingEndpointWhenDisabled() {
-    // given
-    final var context =
-        new ExporterTestContext()
-            .setConfiguration(
-                new ExporterTestConfiguration<>(
-                    "analytics", new AnalyticsExporterConfig().setEndpoint("")));
-
-    // when / then
-    assertThatCode(() -> new AnalyticsExporter().configure(context)).doesNotThrowAnyException();
   }
 
   @Test
@@ -145,24 +132,16 @@ class AnalyticsExporterTest {
   }
 
   @Test
-  void shouldUpdatePositionWhenDisabled() {
+  void shouldUpdatePositionForAllRecords() {
     // given
-    final var disabledController = new ExporterTestController();
-    final var context =
-        new ExporterTestContext()
-            .setConfiguration(
-                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()));
-    final var disabledExporter = new AnalyticsExporter();
-    disabledExporter.configure(context);
-    disabledExporter.open(disabledController);
-
     final var record = FACTORY.generateRecord(ValueType.JOB);
 
     // when
-    disabledExporter.export(record);
+    exporter.export(record);
 
     // then
-    assertThat(disabledController.getPosition()).isEqualTo(record.getPosition());
+    assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+    assertThat(memoryExporter.getFinishedLogRecordItems()).isEmpty();
   }
 
   // -- helpers --
@@ -209,8 +188,7 @@ class AnalyticsExporterTest {
     final var context =
         new ExporterTestContext()
             .setConfiguration(
-                new ExporterTestConfiguration<>(
-                    "analytics", new AnalyticsExporterConfig().setEnabled(true)))
+                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
             .setClusterId("test-cluster")
             .setPartitionId(1);
     final var exporter = new AnalyticsExporter(otelSdkManager);

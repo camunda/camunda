@@ -71,7 +71,6 @@ public class AnalyticsExporterBenchmark {
       };
 
   private AnalyticsExporter exporterWithHandler;
-  private AnalyticsExporter exporterDisabled;
   private ExporterTestController controller;
   private Record<?> piCreatedRecord;
   private Record<?> jobRecord;
@@ -103,26 +102,15 @@ public class AnalyticsExporterBenchmark {
                 .build();
           }
         };
-    final var enabledConfig = new AnalyticsExporterConfig().setEnabled(true);
-    final var enabledContext =
+    final var context =
         new ExporterTestContext()
-            .setConfiguration(new ExporterTestConfiguration<>("analytics-bench", enabledConfig))
+            .setConfiguration(
+                new ExporterTestConfiguration<>("analytics-bench", new AnalyticsExporterConfig()))
             .setClusterId("bench-cluster")
             .setPartitionId(1);
     exporterWithHandler = new AnalyticsExporter(noopManager);
-    exporterWithHandler.configure(enabledContext);
+    exporterWithHandler.configure(context);
     exporterWithHandler.open(controller);
-
-    // Disabled exporter — position-update only path
-    final var disabledConfig = new AnalyticsExporterConfig();
-    disabledConfig.setEnabled(false);
-    final var disabledContext =
-        new ExporterTestContext()
-            .setConfiguration(
-                new ExporterTestConfiguration<>("analytics-bench-disabled", disabledConfig));
-    exporterDisabled = new AnalyticsExporter();
-    exporterDisabled.configure(disabledContext);
-    exporterDisabled.open(new ExporterTestController());
   }
 
   /**
@@ -140,16 +128,9 @@ public class AnalyticsExporterBenchmark {
     exporterWithHandler.export(piCreatedRecord);
   }
 
-  /** Disabled exporter path: only position update, no OTel involvement. */
-  @Benchmark
-  public void exportWhenDisabled() {
-    exporterDisabled.export(jobRecord);
-  }
-
   @TearDown
   public void tearDown() {
     exporterWithHandler.close();
-    exporterDisabled.close();
   }
 
   /**
