@@ -88,7 +88,11 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     this.authCheckBehavior = authCheckBehavior;
     preconditionChecker =
         new JobCommandPreconditionValidator(
-            jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED), authCheckBehavior);
+            jobState,
+            state.getBannedInstanceState(),
+            "fail",
+            List.of(State.ACTIVATABLE, State.ACTIVATED),
+            authCheckBehavior);
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     this.jobMetrics = jobMetrics;
@@ -97,11 +101,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
   @Override
   public void processRecord(final TypedRecord<JobRecord> record) {
-    final long jobKey = record.getKey();
-    final JobState.State state = jobState.getState(jobKey);
-
     preconditionChecker
-        .check(state, record)
+        .check(record)
         .flatMap(job -> checkAuthorization(record, job))
         .ifRightOrLeft(
             failedJob -> failJob(record, failedJob),

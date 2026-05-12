@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -29,17 +31,20 @@ public class JobCommandPreconditionValidator {
   private final String intent;
   private final List<JobCommandCheck> customChecks;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final BannedInstanceCommandCheck bannedInstanceCheck;
 
   public JobCommandPreconditionValidator(
       final JobState jobState,
+      final BannedInstanceState bannedInstanceState,
       final String intent,
       final List<State> validStates,
       final AuthorizationCheckBehavior authorizationCheckBehavior) {
-    this(jobState, intent, validStates, List.of(), authorizationCheckBehavior);
+    this(jobState, bannedInstanceState, intent, validStates, List.of(), authorizationCheckBehavior);
   }
 
   public JobCommandPreconditionValidator(
       final JobState jobState,
+      final BannedInstanceState bannedInstanceState,
       final String intent,
       final List<State> validStates,
       final List<JobCommandCheck> customChecks,
@@ -49,15 +54,36 @@ public class JobCommandPreconditionValidator {
     this.validStates = validStates;
     this.customChecks = customChecks;
     this.authorizationCheckBehavior = authorizationCheckBehavior;
+    bannedInstanceCheck = new BannedInstanceCommandCheck(bannedInstanceState);
   }
 
-  protected Either<Rejection, JobRecord> check(
-      final State state, final TypedRecord<JobRecord> command) {
-    final long jobKey = command.getKey();
-    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
-    final var storedJob = jobState.getJob(jobKey, authorizedTenantIds);
+  public Either<Rejection, JobRecord> check(final TypedRecord<JobRecord> command) {
 
-    if (state == State.NOT_FOUND || storedJob == null) {
+    // resolve the job record and check the job state
+    final Either<Rejection, JobRecord> result =
+        checkJobState(command).flatMap(this::checkJobExists).flatMap(bannedInstanceCheck::check);
+
+    if (result.isLeft()) {
+      return result;
+    }
+    // Evaluate custom checks on the job `command` and the `job` retrieved from `jobState`.
+    // Return the first `failure` encountered, or if all checks pass, return the `job` from
+    // `jobState` for further processing.
+    final var storedJob = result.get();
+    return customChecks.stream()
+        .map(check -> check.check(command, storedJob))
+        .filter(Either::isLeft)
+        .findFirst()
+        .orElse(Either.right(storedJob));
+  }
+
+  private Either<Rejection, TypedRecord<JobRecord>> checkJobState(
+      final TypedRecord<JobRecord> command) {
+
+    final long jobKey = command.getKey();
+    final JobState.State state = jobState.getState(jobKey);
+
+    if (state == State.NOT_FOUND) {
       return Either.left(
           new Rejection(RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(intent, jobKey)));
     }
@@ -69,13 +95,21 @@ public class JobCommandPreconditionValidator {
               INVALID_JOB_STATE_MESSAGE.formatted(intent, jobKey, state)));
     }
 
-    // Evaluate custom checks on the job `command` and the `job` retrieved from `jobState`.
-    // Return the first `failure` encountered, or if all checks pass, return the `job` from
-    // `jobState` for further processing.
-    return customChecks.stream()
-        .map(check -> check.check(command, storedJob))
-        .filter(Either::isLeft)
-        .findFirst()
-        .orElse(Either.right(storedJob));
+    return Either.right(command);
+  }
+
+  private Either<Rejection, JobRecord> checkJobExists(final TypedRecord<JobRecord> command) {
+    final long jobKey = command.getKey();
+    final var storedJob =
+        authorizationCheckBehavior.shouldSkipAllChecks()
+            ? jobState.getJob(jobKey)
+            : jobState.getJob(jobKey, authorizationCheckBehavior.getAuthorizedTenantIds(command));
+
+    if (storedJob == null) {
+      return Either.left(
+          new Rejection(RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(intent, jobKey)));
+    }
+
+    return Either.right(storedJob);
   }
 }

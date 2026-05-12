@@ -15,6 +15,7 @@ import {tanstackRouter} from '@tanstack/router-plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import sbom from 'rollup-plugin-sbom';
 import {playwright} from '@vitest/browser-playwright';
+import path from 'node:path';
 
 const injectCustomCss: PluginOption = {
 	name: 'inject-custom-css',
@@ -43,7 +44,15 @@ const basePlugins: PluginOption[] = [
 
 const config = defineConfig(({mode}) => ({
 	base: mode === 'production' ? './' : undefined,
-	resolve: {tsconfigPaths: true},
+	resolve: {
+		tsconfigPaths: true,
+		// remove the explicit alias config when this is fixed: https://github.com/vitejs/vite/issues/21889
+		alias: {
+			'#/modules': path.resolve(__dirname, './src/modules'),
+			'#/assets': path.resolve(__dirname, './src/assets'),
+			'#/pages': path.resolve(__dirname, './src/pages'),
+		},
+	},
 	plugins: mode === 'sbom' ? [...basePlugins, sbom()] : basePlugins,
 	server: {
 		port: 3000,

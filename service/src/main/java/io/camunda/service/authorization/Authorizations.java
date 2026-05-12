@@ -20,6 +20,7 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
@@ -59,6 +60,9 @@ public abstract class Authorizations {
 
   public static final Authorization<FlowNodeInstanceEntity> ELEMENT_INSTANCE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
+
+  public static final Authorization<FormEntity> FORM_READ_AUTHORIZATION =
+      Authorization.of(a -> a.resource().read());
 
   public static final Authorization<GroupEntity> GROUP_READ_AUTHORIZATION =
       Authorization.of(a -> a.group().read());

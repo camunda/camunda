@@ -16,7 +16,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;

@@ -41,8 +41,8 @@ public enum AuthenticationMetricsDoc implements ExtendedMeterDocumentation {
   public enum LatencyKeyNames implements KeyName {
     /**
      * Indicates what authentication protocol was used. Possible values are {@link
-     * io.camunda.security.entity.AuthenticationMethod}, using {@link
-     * io.camunda.security.entity.AuthenticationMethod#name()}.
+     * io.camunda.security.api.model.config.AuthenticationMethod}, using {@link
+     * io.camunda.security.api.model.config.AuthenticationMethod#name()}.
      */
     AUTH_METHOD {
       @Override

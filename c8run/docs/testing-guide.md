@@ -45,7 +45,7 @@ API and Playwright-based E2E tests live in `e2e_tests/`. These are run by C8Run 
 ### Layer 1 — In-repo smoke tests (`camunda/camunda`)
 
 **Workflow:** `.github/workflows/c8run-build.yaml`
-**Triggers:** PRs touching `c8run/**` and nightly at 23:30 UTC
+**Triggers:** PRs touching `c8run/**`, nightly at 23:30 UTC, and `workflow_dispatch` (can be triggered manually on any branch from the [Actions UI](https://github.com/camunda/camunda/actions/workflows/c8run-build.yaml) — uploads `camunda8-run-build-<os>` artifacts to the run summary)
 
 What runs:
 - Playwright tests (`c8run/e2e_tests/`) on Linux, macOS ARM, macOS Intel

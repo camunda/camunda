@@ -196,15 +196,22 @@ test.describe('variables page', () => {
         .first(),
     ).toBeVisible({timeout: 30000});
 
-    const scrollContainer = taskDetailsPage.variablesTable.locator('..');
+    // Use mouse-wheel scroll (the pattern used in operateProcessesPage's
+    // scrollUntilElementIsVisible). Setting `scrollTop = scrollHeight` on
+    // `variablesTable.locator('..')` works locally but doesn't reliably
+    // trigger the lazy loader on slow CI runners — only ~13 of 60 cells end
+    // up rendered. Wheel events dispatch real scroll events, which the
+    // virtual list's intersection observer responds to consistently.
+    const targetCell = taskDetailsPage.variablesTable.getByRole('cell', {
+      name: 'variable_59',
+    });
+    await taskDetailsPage.variablesTable.hover();
     await expect(async () => {
-      await scrollContainer.evaluate((el) => {
-        el.scrollTop = el.scrollHeight;
-      });
-      await expect(
-        taskDetailsPage.variablesTable.getByRole('cell', {name: 'variable_59'}),
-      ).toBeVisible();
-    }).toPass({timeout: 30000});
+      if (!(await targetCell.isVisible())) {
+        await taskDetailsPage.variablesTable.page().mouse.wheel(0, 600);
+      }
+      await expect(targetCell).toBeVisible();
+    }).toPass({timeout: 60000});
   });
 
   test('new variable still exists after refresh if task is completed', async ({

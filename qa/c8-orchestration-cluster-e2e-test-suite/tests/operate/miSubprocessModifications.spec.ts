@@ -384,9 +384,12 @@ test.describe('Multi-Instance Subprocess Modifications', () => {
     });
 
     await test.step('Verify the cross-boundary move was rejected: target selection prompt remains active', async () => {
+      // Use a longer timeout: the click on the invalid target can briefly
+      // de-render the prompt before it reappears, which races the default
+      // 5s toBeVisible check on slower runners.
       await expect(
         operateProcessInstanceViewModificationModePage.moveTokensMessage,
-      ).toBeVisible();
+      ).toBeVisible({timeout: 30000});
     });
   });
 

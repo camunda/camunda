@@ -228,9 +228,7 @@ test.describe('process instance modification', () => {
 
     await processInstancePage.newVariableNameField.fill('test');
 
-    await processInstancePage.variablesEditor
-      .getEditor('Value')
-      .click();
+    await processInstancePage.variablesEditor.getEditor('Value').click();
     await processInstancePage.variablesEditor.waitForEditorToLoad();
     await processInstancePage.variablesEditor.fill('"some value"');
 

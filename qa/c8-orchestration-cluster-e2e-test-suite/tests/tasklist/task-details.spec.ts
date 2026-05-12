@@ -162,6 +162,11 @@ test.describe('task details page', () => {
   test('complete task', async ({page, taskPanelPage, taskDetailsPage}) => {
     await taskPanelPage.openTask('usertask_to_be_completed');
 
+    // Wait for the details panel to finish loading before interacting.
+    // openTask only clicks the row — without this, the Assign button query
+    // can race the panel render on slow runners and time out at 60s.
+    await expect(taskDetailsPage.detailsHeader).toBeVisible({timeout: 30000});
+
     const taskUrl = page.url();
     await taskDetailsPage.clickAssignToMeButton();
     await taskDetailsPage.completeTaskButton.click();

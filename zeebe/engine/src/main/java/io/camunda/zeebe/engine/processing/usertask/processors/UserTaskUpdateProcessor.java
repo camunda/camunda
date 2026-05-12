@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.usertask.processors;
 
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionRequest;
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandHelper.enrichCommandForRejection;
 
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -65,17 +64,17 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
     responseWriter = writers.response();
     commandChecker =
         new UserTaskCommandPreconditionValidator(
-            List.of(LifecycleState.CREATED), "update", state.getUserTaskState(), authCheckBehavior);
+            List.of(LifecycleState.CREATED),
+            "update",
+            state.getUserTaskState(),
+            authCheckBehavior,
+            state.getBannedInstanceState());
   }
 
   @Override
   public Either<Rejection, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
-    return commandChecker
-        .checkUserTaskExists(command)
-        .flatMap(userTask -> enrichCommandForRejection(command, userTask))
-        .flatMap(userTask -> checkAuthorization(command, userTask))
-        .flatMap(userTask -> commandChecker.checkLifecycleState(command, userTask));
+    return commandChecker.validate(command, userTask -> checkAuthorization(command, userTask));
   }
 
   @Override

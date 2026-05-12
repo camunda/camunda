@@ -101,6 +101,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
     preconditionChecker =
         new JobCommandPreconditionValidator(
             jobState,
+            state.getBannedInstanceState(),
             "throw an error for",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
             authCheckBehavior);
@@ -117,11 +118,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
 
   @Override
   public void processRecord(final TypedRecord<JobRecord> record) {
-    final long jobKey = record.getKey();
-    final JobState.State state = jobState.getState(jobKey);
-
     preconditionChecker
-        .check(state, record)
+        .check(record)
         .flatMap(job -> checkAuthorization(record, job))
         .ifRightOrLeft(
             job -> throwError(record, job),

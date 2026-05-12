@@ -15,7 +15,7 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -224,9 +224,12 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     if (property(AuthenticationProperties.API_UNPROTECTED, Boolean.class, true)) {
       return Optional.empty();
     } else {
-      return AuthenticationMethod.parse(
-          property(
-              AuthenticationProperties.METHOD, String.class, AuthenticationMethod.BASIC.name()));
+      return Optional.of(
+          AuthenticationMethod.parse(
+              property(
+                  AuthenticationProperties.METHOD,
+                  String.class,
+                  AuthenticationMethod.BASIC.name())));
     }
   }
 

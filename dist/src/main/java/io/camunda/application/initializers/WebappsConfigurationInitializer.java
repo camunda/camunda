@@ -17,7 +17,7 @@ import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.configuration.helpers.WebappsHelper;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -134,7 +134,6 @@ public class WebappsConfigurationInitializer
   private boolean isLoginDelegated(final ConfigurableApplicationContext context) {
     final var authenticationMethodProperty = context.getEnvironment().getProperty(METHOD);
     final var authenticationMethod = AuthenticationMethod.parse(authenticationMethodProperty);
-    return authenticationMethod.isPresent()
-        && AuthenticationMethod.OIDC.equals(authenticationMethod.get());
+    return AuthenticationMethod.OIDC.equals(authenticationMethod);
   }
 }

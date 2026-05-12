@@ -8,10 +8,13 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
+import io.camunda.db.rdbms.schema.RollingUpgradeCompatibilityValidator;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import liquibase.Liquibase;
@@ -50,6 +53,18 @@ public class LiquibaseScriptGenerator {
 
     final var prefix = args.length >= 3 ? args[2] : "";
 
+    // Identify upgrade changesets once (8.9.0 pre-dates rolling-upgrade guardrails and is exempt)
+    final var upgradeChangesets =
+        Arrays.stream(
+                new PathMatchingResourcePatternResolver()
+                    .getResources("classpath*:" + CHANGESET_PATH + "*.xml"))
+            .filter(resource -> !Objects.equals(resource.getFilename(), "8.9.0.xml"))
+            .map(it -> CHANGESET_PATH + it.getFilename())
+            .collect(Collectors.toSet());
+
+    // Validate rolling-upgrade compatibility once, before generating any scripts.
+    validateRollingUpgradeCompatibility(upgradeChangesets.stream().toList());
+
     for (final var database : DATABASES) {
       // We generate create scripts for the latest version from the changelog-master.xml
       generateLiquibaseScript(
@@ -62,13 +77,6 @@ public class LiquibaseScriptGenerator {
       // We generate upgrade scripts for each version (except 8.9.0) from the changesets, so that
       // customers, who created their schema with an older version can upgrade to the latest
       // version step by step
-      final var upgradeChangesets =
-          Arrays.stream(
-                  new PathMatchingResourcePatternResolver()
-                      .getResources("classpath*:" + CHANGESET_PATH + "*.xml"))
-              .filter(resource -> !Objects.equals(resource.getFilename(), "8.9.0.xml"))
-              .map(it -> CHANGESET_PATH + it.getFilename())
-              .collect(Collectors.toSet());
 
       // 8.9.0 is the initial version of the RDBMS schema, so we start upgrades from there
       String previousVersion = "8.9.0";
@@ -193,5 +201,38 @@ public class LiquibaseScriptGenerator {
   private static boolean isSupported(final String dbms, final Database database) {
     return StringUtils.isEmpty(dbms)
         || Arrays.stream(dbms.split(",")).anyMatch(d -> d.equals(database.getShortName()));
+  }
+
+  /**
+   * Validates the given changeset files for rolling-upgrade compatibility.
+   *
+   * <p>Loads each file from the classpath using an in-memory H2 database (changelog parsing is
+   * database-agnostic), runs {@link RollingUpgradeCompatibilityValidator}, and throws an {@link
+   * IllegalStateException} if any violations are found. This causes the build to fail fast before
+   * any SQL scripts are written.
+   */
+  private static void validateRollingUpgradeCompatibility(final List<String> changesetFiles)
+      throws LiquibaseException {
+    final var allViolations = new ArrayList<String>();
+
+    for (final var changesetFile : changesetFiles) {
+      final var database = DatabaseFactory.getInstance().getDatabase(H2);
+      final var liquibase =
+          new Liquibase(changesetFile, new ClassLoaderResourceAccessor(), database);
+      liquibase.setChangeLogParameter("prefix", "");
+      liquibase.setChangeLogParameter("userCharColumnSize", 256);
+      liquibase.setChangeLogParameter("errorMessageSize", 4000);
+      liquibase.setChangeLogParameter("treePathSize", 4000);
+
+      final var changeSets = liquibase.getDatabaseChangeLog().getChangeSets();
+      allViolations.addAll(RollingUpgradeCompatibilityValidator.validate(changeSets));
+    }
+
+    if (!allViolations.isEmpty()) {
+      final var message =
+          "Rolling-upgrade compatibility violations found in RDBMS schema changesets:\n"
+              + String.join("\n", allViolations);
+      throw new IllegalStateException(message);
+    }
   }
 }

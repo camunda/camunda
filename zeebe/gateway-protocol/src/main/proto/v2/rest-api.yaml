@@ -57,6 +57,7 @@ tags:
   - name: Document
   - name: Element instance
   - name: Expression
+  - name: Form
   - name: Global listener
   - name: Group
   - name: Incident
@@ -80,6 +81,8 @@ tags:
 
 paths:
   # Agent instance endpoints
+  /agent-instances:
+    $ref: 'agent-instances.yaml#/paths/~1agent-instances'
   /agent-instances/{agentInstanceKey}:
     $ref: 'agent-instances.yaml#/paths/~1agent-instances~1{agentInstanceKey}'
   /agent-instances/search:
@@ -200,6 +203,10 @@ paths:
   # Expression endpoints
   /expression/evaluation:
     $ref: 'expression.yaml#/paths/~1expression~1evaluation'
+
+  # Form endpoints
+  /forms/{formKey}:
+    $ref: 'forms.yaml#/paths/~1forms~1{formKey}'
 
   # Global listeners endpoints
   /global-task-listeners:

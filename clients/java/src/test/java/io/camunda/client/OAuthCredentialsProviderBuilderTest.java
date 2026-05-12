@@ -319,6 +319,86 @@ public final class OAuthCredentialsProviderBuilderTest {
   }
 
   @Test
+  void shouldDefaultToNoCredentialsCacheFile() {
+    // given — no credentialsCachePath set, env overrides disabled to keep the assertion hermetic
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder()
+            .applyEnvironmentOverrides(false)
+            .audience("a")
+            .clientId("b")
+            .clientSecret("c")
+            .authorizationServerUrl("http://some.url");
+
+    // when
+    builder.build();
+
+    // then — no file is configured; the provider falls back to the in-memory cache only
+    assertThat(builder.getCredentialsCache()).isNull();
+  }
+
+  @Test
+  void shouldTreatEmptyCredentialsCachePathAsUnset() {
+    // given
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder()
+            .applyEnvironmentOverrides(false)
+            .audience("a")
+            .clientId("b")
+            .clientSecret("c")
+            .credentialsCachePath("")
+            .authorizationServerUrl("http://some.url");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getCredentialsCache()).isNull();
+  }
+
+  @Test
+  void shouldUseCredentialsCacheFileWhenPathIsSet(@TempDir final Path tmpDir) {
+    // given
+    final Path cachePath = tmpDir.resolve("credentials");
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder()
+            .applyEnvironmentOverrides(false)
+            .audience("a")
+            .clientId("b")
+            .clientSecret("c")
+            .credentialsCachePath(cachePath.toString())
+            .authorizationServerUrl("http://some.url");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getCredentialsCache()).isNotNull();
+    assertThat(builder.getCredentialsCache().getAbsolutePath()).isEqualTo(cachePath.toString());
+  }
+
+  @Test
+  void shouldClearCredentialsCacheWhenPathIsUnsetOnRebuild(@TempDir final Path tmpDir) {
+    // given — a builder first built with an explicit cache path
+    final Path cachePath = tmpDir.resolve("credentials");
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder()
+            .applyEnvironmentOverrides(false)
+            .audience("a")
+            .clientId("b")
+            .clientSecret("c")
+            .credentialsCachePath(cachePath.toString())
+            .authorizationServerUrl("http://some.url");
+    builder.build();
+    assertThat(builder.getCredentialsCache()).isNotNull();
+
+    // when — the same builder is reconfigured to clear the path and built again
+    builder.credentialsCachePath(null).build();
+
+    // then — the stale cache file from the first build is gone
+    assertThat(builder.getCredentialsCache()).isNull();
+  }
+
+  @Test
   void shouldUseDefaultAuthorizationServerUrl() {
     // given
     final OAuthCredentialsProviderBuilder builder =

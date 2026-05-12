@@ -45,7 +45,7 @@
     <version.bouncycastle>1.84</version.bouncycastle>
     <version.camunda>7.24.0</version.camunda>
     <version.camunda-license-check>2.11.2</version.camunda-license-check>
-    <version.camunda-security-library>0.1.0-alpha2</version.camunda-security-library>
+    <version.camunda-security-library>0.1.0-alpha5</version.camunda-security-library>
     <version.checkstyle>13.4.0</version.checkstyle>
     <version.commons-beanutils>1.11.0</version.commons-beanutils>
     <version.commons-lang>3.20.0</version.commons-lang>
@@ -71,7 +71,7 @@
     <version.httpclient5>5.6</version.httpclient5>
     <version.httpcore5>5.4.2</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.9.0</version.identity>
+    <version.identity>8.10.0-alpha1</version.identity>
     <version.instancio>5.5.1</version.instancio>
     <version.jackson>2.21.2</version.jackson>
     <version.jackson3>3.1.2</version.jackson3>
@@ -85,7 +85,7 @@
     <version.mockito>5.23.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.11</version.msgpack>
-    <version.netty>4.2.12.Final</version.netty>
+    <version.netty>4.2.13.Final</version.netty>
     <version.objenesis>3.5</version.objenesis>
     <version.opensearch>2.17.0</version.opensearch>
     <version.opensearch-java>3.5.0</version.opensearch-java>
@@ -654,10 +654,19 @@
         <version>${project.version}</version>
       </dependency>
 
-      <!-- External Libs -->
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-security-library-api</artifactId>
+        <version>${version.camunda-security-library}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-security-library-core</artifactId>
+        <version>${version.camunda-security-library}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-security-library-spring-boot-starter</artifactId>
         <version>${version.camunda-security-library}</version>
       </dependency>
 

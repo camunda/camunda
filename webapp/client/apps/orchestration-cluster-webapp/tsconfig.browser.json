@@ -11,7 +11,8 @@
 		"types": ["vite/client"],
 		"paths": {
 			"#/modules/*": ["./src/modules/*"],
-			"#/assets/*": ["./src/assets/*"]
+			"#/assets/*": ["./src/assets/*"],
+			"#/pages/*": ["./src/pages/*"]
 		}
 	}
 }

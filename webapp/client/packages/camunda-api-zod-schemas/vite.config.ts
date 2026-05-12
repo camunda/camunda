@@ -117,6 +117,7 @@ export default defineConfig({
 				'8.10/variable': resolve(__dirname, 'lib/8.10/variable.ts'),
 				'8.10/cluster-variable': resolve(__dirname, 'lib/8.10/cluster-variable.ts'),
 				'8.10/global-task-listener': resolve(__dirname, 'lib/8.10/global-task-listener.ts'),
+				'8.10/agent-instance': resolve(__dirname, 'lib/8.10/agent-instance.ts'),
 			},
 			formats: ['es'],
 		},
