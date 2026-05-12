@@ -24,6 +24,7 @@ import {
   notFoundDetail,
   resumeBatchOperation,
   suspendBatchOperation,
+  postMigrationAssertionOptions,
 } from '@requestHelpers';
 import {defaultAssertionOptions} from 'utils/constants';
 
@@ -65,7 +66,7 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
       });
 
     await test.step('Suspend batch operation once', async () => {
-      const res = await suspendBatchOperation(request, key);
+      const res = await suspendBatchOperation(request, key, 204, postMigrationAssertionOptions);
       await assertStatusCode(res, 204);
     });
 
@@ -74,7 +75,7 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     });
 
     await test.step('Suspend already suspended batch operation', async () => {
-      const doubleRes = await suspendBatchOperation(request, key, 409);
+      const doubleRes = await suspendBatchOperation(request, key, 409, postMigrationAssertionOptions);
       await assertInvalidState(doubleRes);
     });
 
