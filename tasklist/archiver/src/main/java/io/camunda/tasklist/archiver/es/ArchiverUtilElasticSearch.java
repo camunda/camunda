@@ -55,28 +55,29 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
       final String sourceIndexName,
       final String idFieldName,
       final List<String> processInstanceKeys) {
-    final var deleteFuture = new CompletableFuture<Long>();
     final var deleteRequest =
         createDeleteByQueryRequestWithDefaults(sourceIndexName)
             .setQuery(termsQuery(idFieldName, processInstanceKeys))
             .setMaxRetries(UPDATE_RETRY_COUNT);
     final var startTimer = Timer.start();
 
-    sendDeleteRequest(deleteRequest)
-        .whenComplete(
-            (response, e) -> {
-              final var timer = getArchiverDeleteQueryTimer();
-              startTimer.stop(timer);
-
-              if (e != null) {
-                trackMetricForDeleteFailures(processInstanceKeys, e);
+    return sendDeleteRequest(deleteRequest)
+        .handle((response, e) -> handleResponse(response, e, sourceIndexName, "delete"))
+        .thenCompose(
+            result -> {
+              try {
+                startTimer.stop(getArchiverDeleteQueryTimer());
+                if (result.isLeft()) {
+                  trackMetricForDeleteFailures(processInstanceKeys, result.getLeft());
+                }
+              } catch (final Exception ex) {
+                LOGGER.warn("Failed to record metric", ex);
               }
-
-              final var result = handleResponse(response, e, sourceIndexName, "delete");
-              result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
+              if (result.isLeft()) {
+                return CompletableFuture.failedFuture(result.getLeft());
+              }
+              return CompletableFuture.completedFuture(result.get());
             });
-
-    return deleteFuture;
   }
 
   @Override
@@ -85,7 +86,6 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
       final String destinationIndexName,
       final String idFieldName,
       final List<String> processInstanceKeys) {
-    final var reindexFuture = new CompletableFuture<Long>();
     final var reindexRequest =
         createReindexRequestWithDefaults()
             .setSourceIndices(sourceIndexName)
@@ -93,21 +93,23 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
             .setSourceQuery(termsQuery(idFieldName, processInstanceKeys));
 
     final var startTimer = Timer.start();
-    sendReindexRequest(reindexRequest)
-        .whenComplete(
-            (response, e) -> {
-              final var reindexTimer = getArchiverReindexQueryTimer();
-              startTimer.stop(reindexTimer);
-
-              if (e != null) {
-                trackMetricForReindexFailures(processInstanceKeys, e);
+    return sendReindexRequest(reindexRequest)
+        .handle((response, e) -> handleResponse(response, e, sourceIndexName, "reindex"))
+        .thenCompose(
+            result -> {
+              try {
+                startTimer.stop(getArchiverReindexQueryTimer());
+                if (result.isLeft()) {
+                  trackMetricForReindexFailures(processInstanceKeys, result.getLeft());
+                }
+              } catch (final Exception ex) {
+                LOGGER.warn("Failed to record metric", ex);
               }
-
-              final var result = handleResponse(response, e, sourceIndexName, "reindex");
-              result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
+              if (result.isLeft()) {
+                return CompletableFuture.failedFuture(result.getLeft());
+              }
+              return CompletableFuture.completedFuture(result.get());
             });
-
-    return reindexFuture;
   }
 
   @Override
@@ -201,11 +203,9 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
         "Failed reindex while trying to reindex the following process instance keys [{}]",
         processInstanceKeys);
 
+    final Throwable cause = e.getCause() != null ? e.getCause() : e;
     metrics.recordCounts(
-        Metrics.COUNTER_NAME_REINDEX_FAILURES,
-        1,
-        "exception",
-        e.getCause().getClass().getSimpleName());
+        Metrics.COUNTER_NAME_REINDEX_FAILURES, 1, "exception", cause.getClass().getSimpleName());
   }
 
   private void trackMetricForDeleteFailures(
@@ -214,11 +214,9 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
         "Failed deletion while trying to archive the following process instance keys [{}]",
         processInstanceKeys);
 
+    final Throwable cause = e.getCause() != null ? e.getCause() : e;
     metrics.recordCounts(
-        Metrics.COUNTER_NAME_DELETE_FAILURES,
-        1,
-        "exception",
-        e.getCause().getClass().getSimpleName());
+        Metrics.COUNTER_NAME_DELETE_FAILURES, 1, "exception", cause.getClass().getSimpleName());
   }
 
   private Timer getArchiverDeleteQueryTimer() {
