@@ -81,6 +81,7 @@ const getWrapper = (
 describe('Footer', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
