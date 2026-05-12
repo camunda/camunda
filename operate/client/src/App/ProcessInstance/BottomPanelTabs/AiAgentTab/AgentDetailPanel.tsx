@@ -7,6 +7,7 @@
  */
 
 import {lazy, Suspense, useState} from 'react';
+import styled from 'styled-components';
 import {
   Accordion,
   AccordionItem,
@@ -45,6 +46,26 @@ const MonacoEditor = lazy(async () => {
   loadMonaco();
   return Editor;
 });
+
+const SegmentRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cds-spacing-03);
+
+  & > .segment-actions {
+    opacity: 0;
+    transition: opacity 120ms ease-out;
+    flex-shrink: 0;
+    align-self: flex-start;
+    display: flex;
+    flex-direction: row;
+  }
+
+  &:hover > .segment-actions,
+  &:focus-within > .segment-actions {
+    opacity: 1;
+  }
+`;
 
 const statCardStyle: React.CSSProperties = {
   padding: 'var(--cds-spacing-05)',
@@ -327,7 +348,6 @@ function StatusAccordion({agentData}: {agentData: AgentElementData}) {
           (agentData.status !== 'COMPLETED' && activeTools.length > 0)) && (
           <ExpandableMessageBlock
             role="Assistant"
-            roleColor="#8a3ffc"
             borderColor="#8a3ffc"
             contents={currentMessage ? [currentMessage] : []}
           >
@@ -645,14 +665,7 @@ function ExpandableSegment({
 
   return (
     <>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 'var(--cds-spacing-03)',
-          marginTop: isFirst ? 0 : 'var(--cds-spacing-04)',
-        }}
-      >
+      <SegmentRow style={{marginTop: isFirst ? 0 : 'var(--cds-spacing-04)'}}>
         <div
           style={{
             flex: 1,
@@ -668,14 +681,7 @@ function ExpandableSegment({
         >
           {content}
         </div>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            flexShrink: 0,
-            alignSelf: 'flex-start',
-          }}
-        >
+        <div className="segment-actions">
           <Button
             kind="ghost"
             size="sm"
@@ -699,7 +705,7 @@ function ExpandableSegment({
             aria-label="Copy"
           />
         </div>
-      </div>
+      </SegmentRow>
       <Modal
         open={isModalOpen}
         modalHeading={modalHeading}
@@ -759,13 +765,11 @@ function ExpandableSegment({
 
 function ExpandableMessageBlock({
   role,
-  roleColor,
   borderColor,
   contents,
   children,
 }: {
   role: string;
-  roleColor: string;
   borderColor: string;
   contents: string[];
   children?: React.ReactNode;
@@ -775,10 +779,10 @@ function ExpandableMessageBlock({
   return (
     <div
       style={{
-        padding: 'var(--cds-spacing-04)',
-        background: 'var(--cds-layer-02)',
+        padding: 'var(--cds-spacing-03) var(--cds-spacing-04)',
+        background: 'var(--cds-layer-01)',
         borderRadius: 4,
-        borderLeft: `3px solid ${borderColor}`,
+        borderLeft: `2px solid ${borderColor}`,
       }}
     >
       <div
@@ -795,7 +799,7 @@ function ExpandableMessageBlock({
             textTransform: 'uppercase' as const,
             letterSpacing: '0.32px',
             fontSize: 10,
-            color: roleColor,
+            color: 'var(--cds-text-secondary)',
           }}
         >
           {role}
@@ -876,7 +880,6 @@ function ConversationHistory({
             <ExpandableMessageBlock
               key={i}
               role="User"
-              roleColor="var(--cds-interactive)"
               borderColor="var(--cds-interactive)"
               contents={msg.content}
             >
@@ -908,7 +911,6 @@ function ConversationHistory({
             <ExpandableMessageBlock
               key={i}
               role="Assistant"
-              roleColor="#8a3ffc"
               borderColor="#8a3ffc"
               contents={msg.content}
             >
@@ -1039,7 +1041,6 @@ function DefaultAgentDetail({agentData}: {agentData: AgentElementData}) {
           <div style={{width: '100%'}}>
             <ExpandableMessageBlock
               role="System"
-              roleColor="var(--cds-text-secondary)"
               borderColor="var(--cds-border-subtle-01)"
               contents={[agentData.systemPrompt]}
             />
