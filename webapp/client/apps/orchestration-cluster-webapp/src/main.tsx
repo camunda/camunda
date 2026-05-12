@@ -14,6 +14,9 @@ import './index.scss';
 import {ThemeProvider} from '#/modules/theme/ThemeProvider';
 import {tracking} from '#/modules/tracking';
 import {reactQueryClient} from '#/modules/http/reactQueryClient';
+import {initI18next} from '#/modules/i18n/i18next';
+
+initI18next();
 
 const router = createRouter({
 	routeTree,
