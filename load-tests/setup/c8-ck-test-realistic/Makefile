@@ -7,7 +7,7 @@ enable_optimize ?= true
 # recreates the namespace with the same zone pinning and ownership labels.
 availability_zone ?= europe-west1-d
 git_author ?= Christopher-Kujawa
-ttl_days ?= 1
+ttl_days ?= 3
 enable_single_zone ?= true
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
