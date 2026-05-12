@@ -779,9 +779,11 @@ function ExpandableMessageBlock({
   return (
     <div
       style={{
-        padding: 'var(--cds-spacing-03) var(--cds-spacing-04)',
-        background: 'var(--cds-layer-01)',
-        borderRadius: 4,
+        // Blockquote-style — no bubble, no radius. The role-colored left
+        // border acts as a spine running down the message; text indents
+        // beside it. Vertical spacing between messages comes from the
+        // parent stack's gap.
+        padding: '0 0 0 var(--cds-spacing-05)',
         borderLeft: `2px solid ${borderColor}`,
       }}
     >
