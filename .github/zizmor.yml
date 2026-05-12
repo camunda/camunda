@@ -1,0 +1,97 @@
+# =============================================================================
+# zizmor.yml — pinning policy for the check-action-pins workflow
+#
+# Consumed by `zizmor --config .github/zizmor.yml`.
+#
+# Audit scope:
+#   The default zizmor audit set is enabled. The workflow that consumes this
+#   config (`.github/workflows/check-action-pins.yml`) does the gating logic:
+#   it runs zizmor once, then post-processes the GitHub annotations so that
+#   only `unpinned-uses` findings fail the PR. All other audits surface as
+#   `::warning::` annotations — visible to reviewers but non-blocking.
+#
+#   The split is enforced by the workflow, not this file, because zizmor has
+#   no built-in "only this audit gates" mode. Keeping all audits enabled here
+#   means future PRs touching legacy files get advisory feedback (template
+#   injection, cache poisoning, excessive permissions, etc.) without being
+#   blocked by them.
+# =============================================================================
+
+rules:
+  unpinned-uses:
+    config:
+      # `policies` maps action-owner globs to one of three pinning levels.
+      # Globs are matched in declared order; the FIRST match wins, so put
+      # specific patterns above general ones.
+      #
+      #   any       — no constraint; any ref (SHA, tag, branch) accepted.
+      #               Use for orgs you trust as much as your own source code.
+      #
+      #   ref-pin   — must have ANY explicit ref (SHA, tag, OR branch).
+      #               This is more permissive than it sounds: `@main` is
+      #               accepted because a branch is a "symbolic reference".
+      #               The only thing it rejects is a `uses:` with no `@ref`
+      #               at all (which is rare and usually a mistake anyway).
+      #
+      #   hash-pin  — must be a 40-char commit SHA. Tags AND branches both
+      #               fail. This is the strict, supply-chain-safe setting
+      #               and is what GitHub recommends for 3rd-party actions.
+      #
+      # Note: zizmor automatically skips local references (`uses: ./...`)
+      # for this rule — they're same-repo and outside the supply-chain
+      # threat model. So lines like `uses: ./.github/workflows/foo.yml`
+      # need no policy entry and never trigger this rule.
+      policies:
+        # GitHub-owned actions. Owned by GitHub, treated as platform.
+        # Tag refs (`@v6`) are accepted; tighten to `hash-pin` later
+        # once the rest of the repo is clean.
+        actions/*: ref-pin
+        github/*: ref-pin
+
+        # Camunda-owned actions and reusable workflows. Includes:
+        #   - camunda/infra-global-github-actions/* (maintained by infra
+        #     team; intentionally consumed at @main)
+        #   - camunda/camunda/.github/workflows/* (cross-branch reusable
+        #     workflow refs from this repo to itself)
+        #   - any other camunda/* repo
+        # `ref-pin` permits both `@main` and `@v1.2.3` here, which is
+        # what the infra team's contract requires. No exception entry
+        # needed for `camunda/infra-global-github-actions/setup-yarn-cache@main`
+        # — it's already covered.
+        camunda/*: ref-pin
+
+        # Catch-all: every external 3rd-party action MUST be SHA-pinned.
+        # This is the rule that issue #25934 is about. Any PR adding
+        # `geekyeggo/delete-artifact@v6` or `YunaBraska/java-info-action@main`
+        # will fail the check on the line that introduced it.
+        "*": hash-pin
+
+      # ---------------------------------------------------------------------
+      # Per-file ignores — escape hatch #1
+      # ---------------------------------------------------------------------
+      # If a *whole file* needs to be exempted (e.g. a vendor-provided
+      # workflow that we can't touch), list it here. Format:
+      #   - "path/to/workflow.yml"           # ignore every finding in file
+      #   - "path/to/workflow.yml:42"        # ignore line 42 only
+      #   - "path/to/workflow.yml:42:10"     # ignore line 42 col 10 only
+      # Paths are relative to the repo root. Composite-action files
+      # (`.github/actions/*/action.yml`) are NOT supported here — use
+      # the inline-comment escape hatch (#2 below) for those.
+    ignore: []
+
+# =============================================================================
+# Escape hatch #2 — inline comment on a single `uses:` line:
+#
+#   - uses: peter-evans/create-or-update-comment@v4 # zizmor: ignore[unpinned-uses]
+#
+# Optional trailing explanation is encouraged so reviewers know WHY:
+#
+#   - uses: vendor/action@v3 # zizmor: ignore[unpinned-uses] vendor only ships tags
+#
+# Multiple rules can be ignored with one comment by comma-separating:
+#
+#   - uses: foo/bar@v1 # zizmor: ignore[unpinned-uses,artipacked]
+#
+# Use sparingly — the inline form survives review better than a config
+# entry because the justification sits next to the offending line.
+# =============================================================================

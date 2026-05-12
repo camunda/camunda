@@ -109,6 +109,21 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  pin-check:
+    # Only on pull_request events: the reusable workflow uses
+    # github.event.pull_request.{base,head}.sha for its diff scope.
+    # On push/merge_group/schedule the job is skipped, which check-results
+    # treats as success — so the gate doesn't run there but also doesn't
+    # break those builds.
+    if: github.event_name == 'pull_request' && needs.detect-changes.outputs.actionlint == 'true'
+    name: "Lint / Action Pinning"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/check-action-pins.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      pull-requests: write
+
   commitlint:
     if: needs.detect-changes.outputs.commitlint == 'true'
     name: "Lint / Commitlint"
@@ -1468,7 +1483,7 @@ jobs:
 
       - name: Delete matrix job generated artifacts
         if: always()
-        uses: geekyeggo/delete-artifact@v6
+        uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
         with:
           name: |
             zeebe-unit-tests-*
@@ -1832,6 +1847,7 @@ jobs:
       - openapi-lint
       - operate-ci
       - optimize-ci
+      - pin-check
       - protobuf-checks
       - rdbms-integration-tests
       - renovatelint
