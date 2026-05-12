@@ -7,6 +7,7 @@
 		"moduleResolution": "bundler",
 		"paths": {
 			"#/pw-modules/*": ["./test/pw-modules/*"],
+			"#/pages/*": ["./test/pages/*"],
 			"#/shared-test-modules/*": ["./shared-test-modules/*"]
 		}
 	},

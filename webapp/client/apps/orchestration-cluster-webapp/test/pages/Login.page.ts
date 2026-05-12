@@ -15,12 +15,25 @@ class LoginPage {
 		this.page = page;
 	}
 
-	async goto() {
-		await this.page.goto('/login');
+	async goto(search?: string) {
+		await this.page.goto('/login' + (search ? `?${search}` : ''));
 	}
 
 	get submitButton() {
 		return this.page.getByRole('button', {name: /login/i});
+	}
+
+	get usernameInput() {
+		return this.page.getByLabel(/username/i);
+	}
+
+	get passwordInput() {
+		return this.page.getByLabel(/^password$/i);
+	}
+
+	async fillCredentials(username: string, password: string) {
+		await this.usernameInput.fill(username);
+		await this.passwordInput.fill(password);
 	}
 }
 
