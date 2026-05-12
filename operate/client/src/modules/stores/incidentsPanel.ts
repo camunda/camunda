@@ -81,6 +81,10 @@ class IncidentsPanel {
     this.state.selectedElementId = null;
     this.state.selectedErrorTypes = [];
   }
+
+  reset() {
+    this.state = {...DEFAULT_STATE};
+  }
 }
 
 export const incidentsPanelStore = new IncidentsPanel();

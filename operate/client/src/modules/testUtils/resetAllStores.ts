@@ -24,29 +24,34 @@ import {variableFilterStore} from 'modules/stores/variableFilter';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {notificationsStore} from 'modules/stores/notifications';
+import {licenseTagStore} from 'modules/stores/licenseTag';
+import {act} from 'react';
 
 /**
  * This utility exists only for testing purposes.
  */
 function resetAllStores() {
-  elementInstancesTreeStore.reset();
-  modificationsStore.reset();
-  instanceHistoryModificationStore.reset();
-  processInstanceMigrationStore.reset();
-  processInstanceMigrationMappingStore.reset();
-  batchModificationStore.reset();
-  panelStatesStore.reset();
-  diagramOverlaysStore.reset();
-  processInstancesSelectionStore.reset();
-  authenticationStore.reset();
-  incidentsPanelStore.clearSelection();
-  elementTimeStampStore.reset();
-  executionCountToggleStore.reset();
-  dateRangePopoverStore.reset();
-  variableFilterStore.reset();
-  decisionDefinitionStore.reset();
-  currentTheme.reset();
-  notificationsStore.reset();
+  act(() => {
+    elementInstancesTreeStore.reset();
+    modificationsStore.reset();
+    instanceHistoryModificationStore.reset();
+    processInstanceMigrationStore.reset();
+    processInstanceMigrationMappingStore.reset();
+    batchModificationStore.reset();
+    panelStatesStore.reset();
+    diagramOverlaysStore.reset();
+    processInstancesSelectionStore.reset();
+    authenticationStore.reset();
+    incidentsPanelStore.reset();
+    elementTimeStampStore.reset();
+    executionCountToggleStore.reset();
+    dateRangePopoverStore.reset();
+    variableFilterStore.reset();
+    decisionDefinitionStore.reset();
+    currentTheme.reset();
+    notificationsStore.reset();
+    licenseTagStore.reset();
+  });
 }
 
 export {resetAllStores};

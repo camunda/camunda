@@ -22,7 +22,7 @@ import MockBpmnIoElementTemplateIconRenderer from '__mocks__/@bpmn-io/element-te
 import MockReactMarkdown from '__mocks__/react-markdown';
 import ResizeObserverPolyfill from 'resize-observer-polyfill';
 
-import {resetAllStores} from 'modules/stores/resetAllStores';
+import {resetAllStores} from 'modules/testUtils/resetAllStores';
 
 vi.mock('dmn-js-shared/lib/base/Manager', () => ({
   default: MockDmnJsSharedManager,
@@ -156,6 +156,7 @@ vi.mock('modules/stores/licenseTag', () => ({
   licenseTagStore: {
     fetchLicense: vi.fn(),
     state: {isTagVisible: false},
+    reset: vi.fn(),
   },
 }));
 
