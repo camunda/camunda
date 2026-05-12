@@ -137,8 +137,9 @@ class FlowNodeEmitter {
     {"gpt-4o-mini", "openai"},
   };
 
-  // Representative tool pool: some BPMN-modelled (elementId present), some MCP/A2A (no elementId)
-  private static final List<AgentTool> TOOL_POOL =
+  // AD_HOC tools are modelled in BPMN (elementId present); they become available after the agent
+  // reads the BPMN schema during INITIALIZING — i.e. before the first THINKING update.
+  private static final List<AgentTool> ADHOC_TOOLS =
       List.of(
           new AgentTool(
               "extract_data", "Extract structured data from a document", "extract-data-task"),
@@ -146,7 +147,12 @@ class FlowNodeEmitter {
               "validate_fields", "Validate fields against business rules", "validate-fields-task"),
           new AgentTool("lookup_record", "Look up a record by key", "lookup-record-task"),
           new AgentTool(
-              "submit_decision", "Submit decision to downstream system", "submit-decision-task"),
+              "submit_decision", "Submit decision to downstream system", "submit-decision-task"));
+
+  // MCP/A2A tools have no BPMN element; they are discovered during the TOOL_DISCOVERY phase and
+  // therefore only appear in events after a TOOL_DISCOVERY UPDATED event.
+  private static final List<AgentTool> MCP_TOOLS =
+      List.of(
           new AgentTool("MCP_ocr___scan_document", "Scan document with OCR"),
           new AgentTool("MCP_crm___get_customer", "Retrieve customer data from CRM"),
           new AgentTool("MCP_slack___post_message", "Post update to a Slack channel"),
@@ -188,8 +194,20 @@ class FlowNodeEmitter {
     final int maxModelCalls = 5 + rng.nextInt(15);
     final int maxToolCalls = 10 + rng.nextInt(20);
 
-    // Select a random subset of 2–5 tools from the pool
-    final List<AgentTool> selectedTools = selectTools(2 + rng.nextInt(4));
+    // AD_HOC tools (from BPMN schema) are always available from the first THINKING update.
+    // MCP/A2A tools require a TOOL_DISCOVERY phase (~40 % of instances).
+    final List<AgentTool> adhocTools = selectFromPool(ADHOC_TOOLS, 1 + rng.nextInt(3));
+    final boolean doToolDiscovery = rng.nextDouble() < 0.4;
+    final List<AgentTool> mcpTools =
+        doToolDiscovery ? selectFromPool(MCP_TOOLS, 1 + rng.nextInt(3)) : List.of();
+    final List<AgentTool> fullTools;
+    if (doToolDiscovery) {
+      final List<AgentTool> combined = new ArrayList<>(adhocTools);
+      combined.addAll(mcpTools);
+      fullTools = List.copyOf(combined);
+    } else {
+      fullTools = adhocTools;
+    }
 
     final List<BulkOperation> ops = new ArrayList<>();
 
@@ -217,6 +235,30 @@ class FlowNodeEmitter {
                 startMs)));
 
     if (window.isActive()) {
+      // TOOL_DISCOVERY phase before the first THINKING (40 % of instances)
+      if (doToolDiscovery) {
+        ops.add(
+            factory.agentInstanceOp(
+                ctx,
+                new AgentInstanceEvent(
+                    agentInstanceKey,
+                    elemInstKey,
+                    AGENT_ELEMENT_ID,
+                    "UPDATED",
+                    AgentInstanceStatus.TOOL_DISCOVERY,
+                    model,
+                    provider,
+                    systemPrompt,
+                    maxTokens,
+                    maxModelCalls,
+                    maxToolCalls,
+                    0L,
+                    0L,
+                    0,
+                    0,
+                    fullTools,
+                    startMs + duration / 4)));
+      }
       // Agent is still running — emit a partial THINKING update
       final long thinkingMs = startMs + duration / 2;
       final long inputTokens = 200L + rng.nextInt(600);
@@ -240,7 +282,7 @@ class FlowNodeEmitter {
                   outputTokens,
                   1,
                   0,
-                  selectedTools,
+                  fullTools,
                   thinkingMs)));
       return List.copyOf(ops);
     }
@@ -252,7 +294,30 @@ class FlowNodeEmitter {
     int totalToolCalls = 0;
 
     if (window.isTerminated()) {
-      // Short lifecycle: one THINKING update then COMPLETED
+      // Short lifecycle: optional TOOL_DISCOVERY, one THINKING update, then COMPLETED
+      if (doToolDiscovery) {
+        ops.add(
+            factory.agentInstanceOp(
+                ctx,
+                new AgentInstanceEvent(
+                    agentInstanceKey,
+                    elemInstKey,
+                    AGENT_ELEMENT_ID,
+                    "UPDATED",
+                    AgentInstanceStatus.TOOL_DISCOVERY,
+                    model,
+                    provider,
+                    systemPrompt,
+                    maxTokens,
+                    maxModelCalls,
+                    maxToolCalls,
+                    0L,
+                    0L,
+                    0,
+                    0,
+                    fullTools,
+                    startMs + duration / 6)));
+      }
       final long thinkingMs = startMs + duration / 3;
       totalInputTokens += 200L + rng.nextInt(600);
       totalOutputTokens += 50L + rng.nextInt(200);
@@ -276,11 +341,36 @@ class FlowNodeEmitter {
                   totalOutputTokens,
                   totalModelCalls,
                   totalToolCalls,
-                  selectedTools,
+                  fullTools,
                   thinkingMs)));
     } else {
-      // Full lifecycle: THINKING → TOOL_CALLING → (optional second THINKING) → IDLE
+      // Full lifecycle: optional TOOL_DISCOVERY → THINKING → TOOL_CALLING → (THINKING) → IDLE
       final long phase = duration / 6;
+
+      // Optional TOOL_DISCOVERY before first THINKING
+      if (doToolDiscovery) {
+        ops.add(
+            factory.agentInstanceOp(
+                ctx,
+                new AgentInstanceEvent(
+                    agentInstanceKey,
+                    elemInstKey,
+                    AGENT_ELEMENT_ID,
+                    "UPDATED",
+                    AgentInstanceStatus.TOOL_DISCOVERY,
+                    model,
+                    provider,
+                    systemPrompt,
+                    maxTokens,
+                    maxModelCalls,
+                    maxToolCalls,
+                    0L,
+                    0L,
+                    0,
+                    0,
+                    fullTools,
+                    startMs + phase / 2)));
+      }
 
       // Phase 1: THINKING (first model call, tools now available)
       final long thinking1Ms = startMs + phase;
@@ -306,7 +396,7 @@ class FlowNodeEmitter {
                   totalOutputTokens,
                   totalModelCalls,
                   totalToolCalls,
-                  selectedTools,
+                  fullTools,
                   thinking1Ms)));
 
       // Phase 2: TOOL_CALLING
@@ -332,7 +422,7 @@ class FlowNodeEmitter {
                   totalOutputTokens,
                   totalModelCalls,
                   totalToolCalls,
-                  selectedTools,
+                  fullTools,
                   toolCallingMs)));
 
       // Phase 3: second THINKING (60 % of instances do a second model call)
@@ -360,7 +450,7 @@ class FlowNodeEmitter {
                     totalOutputTokens,
                     totalModelCalls,
                     totalToolCalls,
-                    selectedTools,
+                    fullTools,
                     thinking2Ms)));
       }
 
@@ -385,7 +475,7 @@ class FlowNodeEmitter {
                   totalOutputTokens,
                   totalModelCalls,
                   totalToolCalls,
-                  selectedTools,
+                  fullTools,
                   idleMs)));
     }
 
@@ -409,15 +499,15 @@ class FlowNodeEmitter {
                 totalOutputTokens,
                 totalModelCalls,
                 totalToolCalls,
-                selectedTools,
+                fullTools,
                 window.endMs())));
 
     return List.copyOf(ops);
   }
 
-  /** Selects {@code count} distinct tools at random from {@link #TOOL_POOL}. */
-  private List<AgentTool> selectTools(final int count) {
-    final List<AgentTool> shuffled = new ArrayList<>(TOOL_POOL);
+  /** Selects {@code count} distinct tools at random from the given {@code pool}. */
+  private List<AgentTool> selectFromPool(final List<AgentTool> pool, final int count) {
+    final List<AgentTool> shuffled = new ArrayList<>(pool);
     Collections.shuffle(shuffled, rng);
     return List.copyOf(shuffled.subList(0, Math.min(count, shuffled.size())));
   }
