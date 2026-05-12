@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,11 +124,11 @@ public final class LangChain4jChatModelAdapter implements MultimodalChatModelAda
 
   private static String buildHeader(final ResolvedDocument d) {
     return "--- documentId=\""
-        + nullToEmpty(d.getReference().getDocumentId())
+        + StringEscapeUtils.escapeJava(nullToEmpty(d.getReference().getDocumentId()))
         + "\" fileName=\""
-        + nullToEmpty(fileNameOf(d))
+        + StringEscapeUtils.escapeJava(nullToEmpty(fileNameOf(d)))
         + "\" contentType=\""
-        + nullToEmpty(contentTypeOf(d))
+        + StringEscapeUtils.escapeJava(nullToEmpty(contentTypeOf(d)))
         + "\" ---";
   }
 
