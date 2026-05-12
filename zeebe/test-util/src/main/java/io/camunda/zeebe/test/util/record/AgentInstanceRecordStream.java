@@ -37,6 +37,10 @@ public final class AgentInstanceRecordStream
     return valueFilter(v -> elementId.equals(v.getElementId()));
   }
 
+  public AgentInstanceRecordStream withBpmnProcessId(final String bpmnProcessId) {
+    return valueFilter(v -> bpmnProcessId.equals(v.getBpmnProcessId()));
+  }
+
   public AgentInstanceRecordStream withStatus(final AgentInstanceStatus status) {
     return valueFilter(v -> v.getStatus() == status);
   }

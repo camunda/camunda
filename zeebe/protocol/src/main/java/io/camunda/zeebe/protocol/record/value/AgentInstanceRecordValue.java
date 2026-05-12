@@ -46,6 +46,11 @@ public interface AgentInstanceRecordValue extends RecordValue, ProcessInstanceRe
   long getProcessInstanceKey();
 
   /**
+   * @return the BPMN process ID of the process definition containing this agent
+   */
+  String getBpmnProcessId();
+
+  /**
    * @return the key of the process definition
    */
   @Override
