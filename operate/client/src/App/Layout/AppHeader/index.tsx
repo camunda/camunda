@@ -293,15 +293,22 @@ const AppHeader: React.FC = observer(() => {
                       },
                     },
                   ]),
-              ...(import.meta.env.DEV
-                ? SCENARIOS.map((scenario) => ({
-                    key: `demo-${scenario.instanceKey}`,
-                    label: `Demo: ${scenario.name}`,
-                    isCurrentPage: false,
-                    routeProps: {
-                      to: Paths.processInstance(scenario.instanceKey),
+              ...(import.meta.env.DEV && SCENARIOS.length > 0
+                ? [
+                    {
+                      key: 'demos',
+                      label: 'Demos',
+                      isCurrentPage: false,
+                      subElements: SCENARIOS.map((scenario) => ({
+                        key: `demo-${scenario.instanceKey}`,
+                        label: scenario.name,
+                        isCurrentPage: false,
+                        routeProps: {
+                          to: Paths.processInstance(scenario.instanceKey),
+                        },
+                      })),
                     },
-                  }))
+                  ]
                 : []),
             ],
         licenseTag: {
