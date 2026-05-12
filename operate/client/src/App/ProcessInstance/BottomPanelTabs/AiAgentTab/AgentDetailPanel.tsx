@@ -763,100 +763,26 @@ function ExpandableSegment({
   );
 }
 
-const TIMELINE_COLUMN_WIDTH = 28;
-const TIMELINE_LINE_WIDTH = 1;
-const TIMELINE_DOT_SIZE = 10;
-// Dot top offset is half of (role-label line-height - dot height) so the dot
-// center vertically aligns with the role label's center. Label-01 line-height
-// is 16; dot height is 10; offset = (16 - 10) / 2 = 3.
-const TIMELINE_DOT_TOP_OFFSET = 3;
-const TIMELINE_LINE_COLOR = 'var(--cds-border-strong-01)';
-
-function TimelineColumn({
-  dotColor,
-  isFirst,
-  isLast,
-}: {
-  dotColor: string;
-  isFirst: boolean;
-  isLast: boolean;
-}) {
-  return (
-    <div
-      style={{
-        width: TIMELINE_COLUMN_WIDTH,
-        flexShrink: 0,
-        position: 'relative',
-      }}
-    >
-      {!isFirst && (
-        <div
-          style={{
-            position: 'absolute',
-            left: (TIMELINE_COLUMN_WIDTH - TIMELINE_LINE_WIDTH) / 2,
-            width: TIMELINE_LINE_WIDTH,
-            backgroundColor: TIMELINE_LINE_COLOR,
-            top: 0,
-            height: TIMELINE_DOT_TOP_OFFSET + TIMELINE_DOT_SIZE / 2,
-          }}
-        />
-      )}
-      {!isLast && (
-        <div
-          style={{
-            position: 'absolute',
-            left: (TIMELINE_COLUMN_WIDTH - TIMELINE_LINE_WIDTH) / 2,
-            width: TIMELINE_LINE_WIDTH,
-            backgroundColor: TIMELINE_LINE_COLOR,
-            top: TIMELINE_DOT_TOP_OFFSET + TIMELINE_DOT_SIZE / 2,
-            bottom: 0,
-          }}
-        />
-      )}
-      <div
-        style={{
-          position: 'absolute',
-          top: TIMELINE_DOT_TOP_OFFSET,
-          left: (TIMELINE_COLUMN_WIDTH - TIMELINE_DOT_SIZE) / 2,
-          width: TIMELINE_DOT_SIZE,
-          height: TIMELINE_DOT_SIZE,
-          borderRadius: '50%',
-          backgroundColor: dotColor,
-          boxShadow: `0 0 0 3px var(--cds-layer)`,
-        }}
-      />
-    </div>
-  );
-}
-
 function ExpandableMessageBlock({
   role,
   borderColor,
   contents,
   children,
-  variant = 'standalone',
-  isFirst = false,
-  isLast = false,
 }: {
   role: string;
   borderColor: string;
   contents: string[];
   children?: React.ReactNode;
-  variant?: 'timeline' | 'standalone';
-  isFirst?: boolean;
-  isLast?: boolean;
 }) {
   const segments = contents.filter((c) => c.length > 0);
 
-  const block = (
+  return (
     <div
       style={{
-        flex: 1,
-        minWidth: 0,
-        padding:
-          variant === 'timeline'
-            ? 0
-            : 'var(--cds-spacing-03) 0 var(--cds-spacing-03) 0',
+        padding: 'var(--cds-spacing-04)',
+        background: 'var(--cds-layer-02)',
+        borderRadius: 4,
+        borderLeft: `3px solid ${borderColor}`,
       }}
     >
       <div
@@ -892,31 +818,6 @@ function ExpandableMessageBlock({
       {children}
     </div>
   );
-
-  if (variant === 'timeline') {
-    return (
-      // Inter-message space is paddingBottom on the wrapper (instead of a
-      // parent flex-gap), so the absolutely-positioned line in the timeline
-      // column extends through it — the spine reads as one continuous line
-      // running from the first dot to the last dot.
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'stretch',
-          paddingBottom: isLast ? 0 : 'var(--cds-spacing-06)',
-        }}
-      >
-        <TimelineColumn
-          dotColor={borderColor}
-          isFirst={isFirst}
-          isLast={isLast}
-        />
-        {block}
-      </div>
-    );
-  }
-
-  return block;
 }
 
 function ConversationHistory({
@@ -951,8 +852,7 @@ function ConversationHistory({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        // Inter-message spacing comes from each message's paddingBottom so
-        // the timeline line continues through the gap. No parent gap here.
+        gap: 'var(--cds-spacing-04)',
         width: '100%',
       }}
     >
@@ -975,8 +875,6 @@ function ConversationHistory({
         <SortIcon size={12} />
       </button>
       {filtered.map((msg, i) => {
-        const isFirst = i === 0;
-        const isLast = i === filtered.length - 1;
         if (msg.role === 'user') {
           return (
             <ExpandableMessageBlock
@@ -984,9 +882,6 @@ function ConversationHistory({
               role="User"
               borderColor="var(--cds-interactive)"
               contents={msg.content}
-              variant="timeline"
-              isFirst={isFirst}
-              isLast={isLast}
             >
               {msg.documents && msg.documents.length > 0 && (
                 <div
@@ -1018,9 +913,6 @@ function ConversationHistory({
               role="Assistant"
               borderColor="#8a3ffc"
               contents={msg.content}
-              variant="timeline"
-              isFirst={isFirst}
-              isLast={isLast}
             >
               {msg.toolCalls && msg.toolCalls.length > 0 && (
                 <div
