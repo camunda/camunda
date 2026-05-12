@@ -214,17 +214,23 @@ orchestration:
   # Resources of the orchestration cluster
   resources:
     requests:
-      cpu: 3000m
+      cpu: 5000m
       memory: 2Gi
     limits:
-      cpu: 3000m
+      cpu: 5000m
       memory: 2Gi
 
   tolerations:
     - key: nodepool
       operator: Equal
-      value: n2-standard-4
+      value: n2-standard-8
       effect: NoSchedule
+
+  # Default node configuration for all the components, unless specific
+  # reconfigured.
+  nodeSelector:
+    component: benchmark-n2-standard-8
+    topology.kubernetes.io/zone: europe-west1-d
 
   ## @param core.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
   pvcSize: "64Gi"
