@@ -781,9 +781,11 @@ function ExpandableMessageBlock({
       style={{
         // Blockquote-style — no bubble, no radius. The role-colored left
         // border acts as a spine running down the message; text indents
-        // beside it. Vertical spacing between messages comes from the
-        // parent stack's gap.
-        padding: '0 0 0 var(--cds-spacing-05)',
+        // beside it. Small vertical padding gives the text breathing room
+        // off the spine's top/bottom; the parent stack's gap separates
+        // adjacent messages.
+        padding:
+          'var(--cds-spacing-03) 0 var(--cds-spacing-03) var(--cds-spacing-05)',
         borderLeft: `2px solid ${borderColor}`,
       }}
     >
@@ -854,7 +856,7 @@ function ConversationHistory({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 'var(--cds-spacing-04)',
+        gap: 'var(--cds-spacing-06)',
         width: '100%',
       }}
     >
