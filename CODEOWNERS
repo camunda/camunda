@@ -141,6 +141,9 @@
 ## Agentic AI  ##
 #################
 
+# Engine-expert skill
+/.claude/skills/engine-expert/  @korthout @camunda/core-features
+
 # MCP gateway
 /gateways/gateway-mcp @camunda/connectors-agentic-ai
 
