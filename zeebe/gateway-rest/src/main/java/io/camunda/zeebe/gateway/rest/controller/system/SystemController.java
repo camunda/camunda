@@ -47,7 +47,7 @@ public class SystemController {
   private final SecurityConfiguration securityConfiguration;
   private final ServletContext servletContext;
   private final WebappConfiguration webappConfiguration;
-  private final Long maxRequestSizeBytes;
+  private final long maxRequestSizeBytes;
 
   public SystemController(
       final UsageMetricsServices usageMetricsServices,
@@ -64,7 +64,7 @@ public class SystemController {
     this.servletContext = servletContext;
     this.webappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
-    this.maxRequestSizeBytes = maxRequestSize != null ? maxRequestSize.toBytes() : null;
+    this.maxRequestSizeBytes = maxRequestSize.toBytes();
   }
 
   @RequiresSecondaryStorage
