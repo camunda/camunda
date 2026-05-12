@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.agentinstance;
 
+import static io.camunda.zeebe.engine.util.client.AgentInstanceClient.tool;
+import static io.camunda.zeebe.engine.util.client.AgentInstanceClient.tools;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -61,14 +61,10 @@ public class AgentInstanceUpdateTest {
             .withElementId(SERVICE_TASK_ID)
             .getFirst();
 
-    final var createCommand =
-        new AgentInstanceRecord().setElementInstanceKey(serviceTaskInstance.getKey());
-    ENGINE.writeRecords(
-        RecordToWrite.command().agentInstance(AgentInstanceIntent.CREATE, createCommand));
-
-    return RecordingExporter.agentInstanceRecords(AgentInstanceIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .getFirst()
+    return ENGINE
+        .agentInstances()
+        .withElementInstanceKey(serviceTaskInstance.getKey())
+        .create()
         .getValue()
         .getAgentInstanceKey();
   }
@@ -79,22 +75,14 @@ public class AgentInstanceUpdateTest {
     final var agentInstanceKey = createAgentInstance();
 
     // when
-    final var updateCommand =
-        new AgentInstanceRecord()
-            .setAgentInstanceKey(agentInstanceKey)
-            .setStatus(AgentInstanceStatus.THINKING)
-            .setChangedAttributes(List.of("status"));
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(agentInstanceKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, updateCommand));
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .update();
 
     // then
-    final var updated =
-        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.UPDATED)
-            .withAgentInstanceKey(agentInstanceKey)
-            .getFirst();
-
     assertThat(updated.getKey()).isEqualTo(agentInstanceKey);
     assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
     assertThat(updated.getValue().getChangedAttributes()).containsExactly("status");
@@ -105,28 +93,19 @@ public class AgentInstanceUpdateTest {
     // given
     final var agentInstanceKey = createAgentInstance();
 
-    final var firstDeltas = new AgentInstanceRecord().setAgentInstanceKey(agentInstanceKey);
-    firstDeltas.getMetrics().setInputTokens(10).setOutputTokens(5).setModelCalls(1).setToolCalls(0);
-    firstDeltas.setChangedAttributes(List.of("metrics"));
-
-    final var secondDeltas = new AgentInstanceRecord().setAgentInstanceKey(agentInstanceKey);
-    secondDeltas
-        .getMetrics()
-        .setInputTokens(20)
-        .setOutputTokens(15)
-        .setModelCalls(2)
-        .setToolCalls(1);
-    secondDeltas.setChangedAttributes(List.of("metrics"));
-
     // when
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(agentInstanceKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, firstDeltas));
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(agentInstanceKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, secondDeltas));
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withMetricsDelta(10L, 5L, 1, 0)
+        .update();
+
+    final var secondUpdate =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(20L, 15L, 2, 1)
+            .update();
 
     // then
     final var updates =
@@ -134,14 +113,13 @@ public class AgentInstanceUpdateTest {
             .withAgentInstanceKey(agentInstanceKey)
             .limit(2)
             .toList();
-
     assertThat(updates).hasSize(2);
-    final var secondUpdated = updates.get(1).getValue();
-    assertThat(secondUpdated.getMetrics().getInputTokens()).isEqualTo(30L);
-    assertThat(secondUpdated.getMetrics().getOutputTokens()).isEqualTo(20L);
-    assertThat(secondUpdated.getMetrics().getModelCalls()).isEqualTo(3);
-    assertThat(secondUpdated.getMetrics().getToolCalls()).isEqualTo(1);
-    assertThat(secondUpdated.getChangedAttributes()).containsExactly("metrics");
+
+    assertThat(secondUpdate.getValue().getMetrics().getInputTokens()).isEqualTo(30L);
+    assertThat(secondUpdate.getValue().getMetrics().getOutputTokens()).isEqualTo(20L);
+    assertThat(secondUpdate.getValue().getMetrics().getModelCalls()).isEqualTo(3);
+    assertThat(secondUpdate.getValue().getMetrics().getToolCalls()).isEqualTo(1);
+    assertThat(secondUpdate.getValue().getChangedAttributes()).containsExactly("metrics");
   }
 
   @Test
@@ -150,24 +128,106 @@ public class AgentInstanceUpdateTest {
     final var agentInstanceKey = createAgentInstance();
 
     // when — set status to the same value as current (INITIALIZING)
-    final var updateCommand =
-        new AgentInstanceRecord()
-            .setAgentInstanceKey(agentInstanceKey)
-            .setStatus(AgentInstanceStatus.INITIALIZING)
-            .setChangedAttributes(List.of("status"));
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(agentInstanceKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, updateCommand));
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.INITIALIZING)
+            .update();
 
     // then
-    final var updated =
-        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.UPDATED)
-            .withAgentInstanceKey(agentInstanceKey)
-            .getFirst();
-
     assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
     assertThat(updated.getValue().getChangedAttributes()).isEmpty();
+  }
+
+  @Test
+  public void shouldOnlyUpdateAttributesNamedInChangedAttributes() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when — the command attempts to set status, metrics, and tools, but only "status" is
+    // listed in changedAttributes via the escape hatch — the other fields must be ignored.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withMetricsDelta(99L, 88L, 7, 5)
+            .withTools(tools(tool("calc", "Calculator", "calc-task")))
+            .withChangedAttributes(List.of("status"))
+            .update();
+
+    // then — only status is applied; metrics stay zero, tools stay empty.
+    assertThat(updated.getValue().getStatus()).isEqualTo(AgentInstanceStatus.THINKING);
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isZero();
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isZero();
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isZero();
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isZero();
+    assertThat(updated.getValue().getTools()).isEmpty();
+    assertThat(updated.getValue().getChangedAttributes()).containsExactly("status");
+  }
+
+  @Test
+  public void shouldReplaceToolsListEntirely() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+    final var firstTools = tools(tool("t1", "first tool", "t1-elem"));
+    final var secondTools = tools(tool("t2", "second tool", "t2-elem"));
+
+    // when
+    ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withTools(firstTools).update();
+    final var second =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withTools(secondTools)
+            .update();
+
+    // then — final tools list contains only the second tool; the first is gone.
+    assertThat(second.getValue().getTools())
+        .singleElement()
+        .satisfies(t -> assertThat(t.getName()).isEqualTo("t2"));
+  }
+
+  @Test
+  public void shouldClearToolsListWhenEmptyListProvided() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when — first add a tool, then clear with an empty list.
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withTools(tools(tool("t1", "first tool", "t1-elem")))
+        .update();
+    final var cleared =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withTools(List.of())
+            .update();
+
+    // then
+    assertThat(cleared.getValue().getTools()).isEmpty();
+  }
+
+  @Test
+  public void shouldEmitUpdatedEventCarryingChangedAttributes() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when — both status and metrics are updated.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withMetricsDelta(1L, 1L, 1, 1)
+            .update();
+
+    // then — UPDATED carries the effective changedAttributes (both "status" and "metrics").
+    assertThat(updated.getValue().getChangedAttributes())
+        .containsExactlyInAnyOrder("status", "metrics");
   }
 
   @Test
@@ -176,23 +236,15 @@ public class AgentInstanceUpdateTest {
     final var nonExistentKey = 987654321L;
 
     // when
-    final var updateCommand =
-        new AgentInstanceRecord()
-            .setAgentInstanceKey(nonExistentKey)
-            .setStatus(AgentInstanceStatus.THINKING)
-            .setChangedAttributes(List.of("status"));
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(nonExistentKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, updateCommand));
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(nonExistentKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .expectRejection()
+            .update();
 
     // then
-    final Record<?> rejection =
-        RecordingExporter.agentInstanceRecords()
-            .onlyCommandRejections()
-            .withIntent(AgentInstanceIntent.UPDATE)
-            .getFirst();
-
     assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason()).contains(String.valueOf(nonExistentKey));
@@ -204,22 +256,15 @@ public class AgentInstanceUpdateTest {
     final var agentInstanceKey = createAgentInstance();
 
     // when
-    final var updateCommand =
-        new AgentInstanceRecord()
-            .setAgentInstanceKey(agentInstanceKey)
-            .setChangedAttributes(List.of());
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(agentInstanceKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, updateCommand));
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withChangedAttributes(List.of())
+            .expectRejection()
+            .update();
 
     // then
-    final Record<?> rejection =
-        RecordingExporter.agentInstanceRecords()
-            .onlyCommandRejections()
-            .withIntent(AgentInstanceIntent.UPDATE)
-            .getFirst();
-
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason()).contains("changedAttributes");
   }
@@ -230,22 +275,15 @@ public class AgentInstanceUpdateTest {
     final var agentInstanceKey = createAgentInstance();
 
     // when
-    final var updateCommand =
-        new AgentInstanceRecord()
-            .setAgentInstanceKey(agentInstanceKey)
-            .setChangedAttributes(List.of("foo"));
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(agentInstanceKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, updateCommand));
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withChangedAttributes(List.of("foo"))
+            .expectRejection()
+            .update();
 
     // then
-    final Record<?> rejection =
-        RecordingExporter.agentInstanceRecords()
-            .onlyCommandRejections()
-            .withIntent(AgentInstanceIntent.UPDATE)
-            .getFirst();
-
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason()).contains("foo");
   }
@@ -256,22 +294,15 @@ public class AgentInstanceUpdateTest {
     final var agentInstanceKey = createAgentInstance();
 
     // when
-    final var updateCommand = new AgentInstanceRecord().setAgentInstanceKey(agentInstanceKey);
-    updateCommand.getMetrics().setInputTokens(-1L);
-    updateCommand.setChangedAttributes(List.of("metrics"));
-
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(agentInstanceKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, updateCommand));
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(-1L, 0L, 0, 0)
+            .expectRejection()
+            .update();
 
     // then
-    final Record<?> rejection =
-        RecordingExporter.agentInstanceRecords()
-            .onlyCommandRejections()
-            .withIntent(AgentInstanceIntent.UPDATE)
-            .getFirst();
-
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason()).containsIgnoringCase("negative");
   }
@@ -282,62 +313,71 @@ public class AgentInstanceUpdateTest {
     final var agentInstanceKey = createAgentInstance();
 
     // when — explicitly UNSPECIFIED with status named in changedAttributes
-    final var updateCommand =
-        new AgentInstanceRecord()
-            .setAgentInstanceKey(agentInstanceKey)
-            .setStatus(AgentInstanceStatus.UNSPECIFIED)
-            .setChangedAttributes(List.of("status"));
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(agentInstanceKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, updateCommand));
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.UNSPECIFIED)
+            .expectRejection()
+            .update();
 
     // then
-    final Record<?> rejection =
-        RecordingExporter.agentInstanceRecords()
-            .onlyCommandRejections()
-            .withIntent(AgentInstanceIntent.UPDATE)
-            .getFirst();
-
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test
-  public void shouldRejectTransitionToInitializing() {
-    // given — first transition from INITIALIZING to THINKING
-    final var agentInstanceKey = createAgentInstance();
-    final var firstUpdate =
-        new AgentInstanceRecord()
-            .setAgentInstanceKey(agentInstanceKey)
-            .setStatus(AgentInstanceStatus.THINKING)
-            .setChangedAttributes(List.of("status"));
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(agentInstanceKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, firstUpdate));
-    RecordingExporter.agentInstanceRecords(AgentInstanceIntent.UPDATED)
-        .withAgentInstanceKey(agentInstanceKey)
-        .getFirst();
+  public void shouldRejectTransitionToInitializingFromToolDiscovery() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.TOOL_DISCOVERY);
+  }
 
-    // when — attempt to go back to INITIALIZING
-    final var backToInitializing =
-        new AgentInstanceRecord()
-            .setAgentInstanceKey(agentInstanceKey)
-            .setStatus(AgentInstanceStatus.INITIALIZING)
-            .setChangedAttributes(List.of("status"));
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(agentInstanceKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, backToInitializing));
+  @Test
+  public void shouldRejectTransitionToInitializingFromThinking() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.THINKING);
+  }
 
-    // then
-    final Record<?> rejection =
-        RecordingExporter.agentInstanceRecords()
-            .onlyCommandRejections()
-            .withIntent(AgentInstanceIntent.UPDATE)
-            .getFirst();
+  @Test
+  public void shouldRejectTransitionToInitializingFromToolCalling() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.TOOL_CALLING);
+  }
 
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+  @Test
+  public void shouldRejectTransitionToInitializingFromIdle() {
+    assertRejectsTransitionToInitializingFrom(AgentInstanceStatus.IDLE);
+  }
+
+  @Test
+  public void shouldAllowStatusTransitionsBetweenActiveStates() {
+    // given — verify the matrix of active-state -> active-state transitions, including same-state.
+    final var activeStates =
+        List.of(
+            AgentInstanceStatus.INITIALIZING,
+            AgentInstanceStatus.TOOL_DISCOVERY,
+            AgentInstanceStatus.THINKING,
+            AgentInstanceStatus.TOOL_CALLING,
+            AgentInstanceStatus.IDLE);
+
+    for (final var from : activeStates) {
+      for (final var to : activeStates) {
+        // Skip transitions to INITIALIZING from non-INITIALIZING states — those are rejected.
+        if (to == AgentInstanceStatus.INITIALIZING && from != AgentInstanceStatus.INITIALIZING) {
+          continue;
+        }
+        final var agentInstanceKey = createAgentInstance();
+        // Move the agent into the "from" state if necessary.
+        if (from != AgentInstanceStatus.INITIALIZING) {
+          ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(from).update();
+        }
+        // when
+        final var updated =
+            ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(to).update();
+
+        // then
+        assertThat(updated.getIntent())
+            .as("expected transition from %s to %s to be allowed", from, to)
+            .isEqualTo(AgentInstanceIntent.UPDATED);
+        assertThat(updated.getValue().getStatus()).isEqualTo(to);
+      }
+    }
   }
 
   @Test
@@ -346,23 +386,54 @@ public class AgentInstanceUpdateTest {
     final var agentInstanceKey = createAgentInstance();
 
     // when
-    final var updateCommand =
-        new AgentInstanceRecord()
-            .setAgentInstanceKey(agentInstanceKey)
-            .setStatus(AgentInstanceStatus.COMPLETED)
-            .setChangedAttributes(List.of("status"));
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(agentInstanceKey)
-            .agentInstance(AgentInstanceIntent.UPDATE, updateCommand));
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.COMPLETED)
+            .expectRejection()
+            .update();
 
     // then
-    final Record<?> rejection =
-        RecordingExporter.agentInstanceRecords()
-            .onlyCommandRejections()
-            .withIntent(AgentInstanceIntent.UPDATE)
-            .getFirst();
-
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  public void shouldNotEnforceLimits() {
+    // given — CREATE the agent instance directly (limits are reset on CREATE anyway, so the
+    // intent here is to assert the UPDATE processor does not enforce maxTokens / etc.).
+    final var agentInstanceKey = createAgentInstance();
+
+    // when — UPDATE with input-tokens delta of 200, well above any reasonable max-tokens.
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(200L, 0L, 0, 0)
+            .update();
+
+    // then — UPDATED is emitted normally; no limit-based rejection.
+    assertThat(updated.getIntent()).isEqualTo(AgentInstanceIntent.UPDATED);
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isEqualTo(200L);
+  }
+
+  private void assertRejectsTransitionToInitializingFrom(final AgentInstanceStatus from) {
+    // given — move the agent from INITIALIZING into the requested "from" state.
+    final var agentInstanceKey = createAgentInstance();
+    ENGINE.agentInstances().withAgentInstanceKey(agentInstanceKey).withStatus(from).update();
+
+    // when — attempt to transition back to INITIALIZING.
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.INITIALIZING)
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType())
+        .as("transition from %s -> INITIALIZING should be rejected", from)
+        .isEqualTo(RejectionType.INVALID_STATE);
   }
 }
