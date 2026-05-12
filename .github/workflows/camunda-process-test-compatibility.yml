@@ -216,13 +216,15 @@ jobs:
           echo "SERVER_LIST:"
           cat /tmp/server_list.txt
 
-      - name: Download tested combinations artifact
-        id: download-tested
-        continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - name: Restore tested combinations cache
+        id: restore-tested
+        if: inputs.skip_cache != true
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
-          name: cpt-compatibility-tested-combinations
-          path: /tmp/cpt-compatibility-state-download
+          path: /tmp/cpt-compatibility-state/tested-combinations.txt
+          key: cpt-compatibility-tested-${{ github.ref_name }}
+          restore-keys: |
+            cpt-compatibility-tested-${{ github.ref_name }}
 
       - name: Load tested combinations
         id: load-tested
@@ -232,8 +234,7 @@ jobs:
           if [[ "${{ inputs.skip_cache }}" == "true" ]]; then
             touch /tmp/cpt-compatibility-state/tested-combinations.txt
             echo "Skipping cache - will test all combinations"
-          elif [[ -f /tmp/cpt-compatibility-state-download/tested-combinations.txt ]]; then
-            cp /tmp/cpt-compatibility-state/tested-combinations.txt /tmp/cpt-compatibility-state/tested-combinations.txt
+          elif [[ -f /tmp/cpt-compatibility-state/tested-combinations.txt ]]; then
             echo "Loaded $(wc -l < /tmp/cpt-compatibility-state/tested-combinations.txt) previously tested combinations"
           else
             touch /tmp/cpt-compatibility-state/tested-combinations.txt
@@ -487,13 +488,13 @@ jobs:
             ${{ steps.api-version.outputs.extra-props }}
 
       - name: Record tested combination
-        if: success()
+        if: success() && !contains(matrix.client, 'SNAPSHOT') && !contains(matrix.server, 'SNAPSHOT')
         run: |
           mkdir -p cpt-test-results
           echo "${{ matrix.client }}-${{ matrix.server }}" >> cpt-test-results/tested.txt
 
       - name: Upload tested combinations
-        if: success()
+        if: success() && !contains(matrix.client, 'SNAPSHOT') && !contains(matrix.server, 'SNAPSHOT')
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: tested-combo-${{ matrix.client }}-${{ matrix.server }}
@@ -528,6 +529,14 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Restore previous tested combinations cache
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: /tmp/cpt-compatibility-state/tested-combinations.txt
+          key: cpt-compatibility-tested-${{ github.ref_name }}
+          restore-keys: |
+            cpt-compatibility-tested-${{ github.ref_name }}
+
       - name: Download all tested combinations
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -537,24 +546,23 @@ jobs:
 
       - name: Merge tested combinations
         run: |
-          mkdir -p cpt-compatibility-state
-          touch cpt-compatibility-state/tested-combinations.txt
+          mkdir -p /tmp/cpt-compatibility-state
+          touch /tmp/cpt-compatibility-state/tested-combinations.txt
 
           if [[ -d cpt-test-results ]]; then
-            cat cpt-test-results/*.txt >> cpt-compatibility-state/tested-combinations.txt 2>/dev/null || true
+            cat cpt-test-results/*.txt >> /tmp/cpt-compatibility-state/tested-combinations.txt 2>/dev/null || true
           fi
 
-          sort -u cpt-compatibility-state/tested-combinations.txt -o cpt-compatibility-state/tested-combinations.txt
+          sort -u /tmp/cpt-compatibility-state/tested-combinations.txt -o /tmp/cpt-compatibility-state/tested-combinations.txt
 
           echo "All tested combinations:"
-          cat cpt-compatibility-state/tested-combinations.txt
+          cat /tmp/cpt-compatibility-state/tested-combinations.txt
 
-      - name: Upload combined results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - name: Save tested combinations cache
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
-          name: cpt-compatibility-tested-combinations
-          path: cpt-compatibility-state/tested-combinations.txt
-          retention-days: 90
+          path: /tmp/cpt-compatibility-state/tested-combinations.txt
+          key: cpt-compatibility-tested-${{ github.ref_name }}-${{ github.run_id }}
 
       - name: Observe build status
         if: always()
