@@ -9,7 +9,6 @@ package io.camunda.db.rdbms.read.replication;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
-import java.util.Optional;
 
 public final class ReplicationLogStatusProviderFactory {
 
@@ -25,11 +24,17 @@ public final class ReplicationLogStatusProviderFactory {
     this.replicationStatusMapper = replicationStatusMapper;
   }
 
-  public Optional<ReplicationLogStatusProvider> create() {
+  public ReplicationLogStatusProvider create() {
     return switch (vendorDatabaseProperties.databaseId()) {
       case POSTGRESQL_DATABASE_ID ->
-          Optional.of(new PostgresReplicationLogStatusProvider(replicationStatusMapper));
-      case null, default -> Optional.empty();
+          new PostgresReplicationLogStatusProvider(replicationStatusMapper);
+      case null ->
+          throw new IllegalArgumentException(
+              "Cannot create ReplicationLogStatusProvider for null database id");
+      default ->
+          throw new IllegalArgumentException(
+              "Cannot create ReplicationLogStatusProvider for unknown database id "
+                  + vendorDatabaseProperties.databaseId());
     };
   }
 }

@@ -28,11 +28,7 @@ public class AsyncReplicationIT {
   @TestTemplate
   public void shouldQueryReplicationStatus(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var oReplicationStatusProvider = rdbmsService.getReplicationLogStatusProvider();
-
-    assertThat(oReplicationStatusProvider).isPresent();
-
-    final var replicationStatusProvider = oReplicationStatusProvider.get();
+    final var replicationStatusProvider = rdbmsService.getReplicationLogStatusProvider();
 
     final var currentLsn = replicationStatusProvider.getCurrent();
     final var replicationStatuses = replicationStatusProvider.getReplicationStatuses();

@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.read.replication;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,9 +31,7 @@ class ReplicationLogStatusProviderFactoryTest {
     final var provider = factory.create();
 
     // then
-    assertThat(provider)
-        .hasValueSatisfying(
-            value -> assertThat(value).isInstanceOf(PostgresReplicationLogStatusProvider.class));
+    assertThat(provider).isInstanceOf(PostgresReplicationLogStatusProvider.class);
   }
 
   @Test
@@ -45,10 +44,9 @@ class ReplicationLogStatusProviderFactoryTest {
             vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
 
     // when
-    final var provider = factory.create();
-
-    // then
-    assertThat(provider).isEmpty();
+    assertThatThrownBy(factory::create)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Cannot create ReplicationLogStatusProvider for unknown database id oracle");
   }
 
   @Test
@@ -61,9 +59,8 @@ class ReplicationLogStatusProviderFactoryTest {
             vendorDatabaseProperties, mock(ReplicationStatusMapper.class));
 
     // when
-    final var provider = factory.create();
-
-    // then
-    assertThat(provider).isEmpty();
+    assertThatThrownBy(factory::create)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Cannot create ReplicationLogStatusProvider for null database id");
   }
 }

@@ -26,6 +26,24 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The LsnReplicationController uses the log sequence number (LSN) of the database to compare the
+ * replication status of the primary and all linked replicas with each other. We only
+ * acknowledge/commit exporter positions to the ExporterController if the LSN of the replicas has
+ * reached the LSN of the primary at the time of the flush. <br>
+ * <br>
+ * This ensures that the exporter will only acknowledge positions to the ExporterController if they
+ * have been replicated to all replicas, which guarantees that no data will be lost in case of a
+ * failover. The replication status is checked periodically by polling the database for the current
+ * LSN of the primary and all replicas and comparing them with each other. If the replication lag
+ * exceeds a configured threshold of <code>maxLag</code>, the replication is considered out-of-sync
+ * and the exporter is paused until it is back in sync.<br>
+ * <br>
+ * Note: While the exporter position is a sequential offset per partition, the LSN is a global,
+ * monotonically increasing value representing the commit order of transactions in the database. The
+ * used LSN is never the actual LSN of the last exporter transaction, but it is still guaranteed
+ * that it is higher, so we still can use that LSN as a guarantee for replication.
+ */
 public class LsnReplicationController implements ReplicationController {
   public static final int DEFAULT_QUEUE_CAPACITY = 8192;
 
@@ -33,7 +51,7 @@ public class LsnReplicationController implements ReplicationController {
 
   private final ReplicationLogStatusProvider lsnProvider;
   private final Controller controller;
-  private final ReplicationConfiguration replicationConfiguration;
+  private final ReplicationConfiguration config;
   private final int partitionId;
   private final InstantSource clock;
 
@@ -43,11 +61,7 @@ public class LsnReplicationController implements ReplicationController {
   private final AtomicReference<Instant> lastConfirmedReplication;
   private final AtomicBoolean paused = new AtomicBoolean(false);
 
-  private final int minSyncReplicas;
-  private final Duration maxLag;
-  private final boolean pauseOnMaxLagExceeded;
-
-  private ScheduledTask replicationCheckTask;
+  private volatile ScheduledTask replicationCheckTask;
 
   public LsnReplicationController(
       final Controller controller,
@@ -57,7 +71,7 @@ public class LsnReplicationController implements ReplicationController {
       final InstantSource clock) {
     this.lsnProvider = lsnProvider;
     this.controller = controller;
-    this.replicationConfiguration = replicationConfiguration;
+    config = replicationConfiguration;
     this.partitionId = partitionId;
     this.clock = clock;
 
@@ -65,13 +79,16 @@ public class LsnReplicationController implements ReplicationController {
     replicationCheckTask =
         controller.scheduleCancellableTask(
             replicationConfiguration.getPollingInterval(), this::checkReplication);
-    minSyncReplicas = this.replicationConfiguration.getMinSyncReplicas();
-    maxLag = this.replicationConfiguration.getMaxLag();
-    pauseOnMaxLagExceeded = this.replicationConfiguration.isPauseOnMaxLagExceeded();
 
-    lastConfirmedReplication = new AtomicReference<>(this.clock.instant());
+    lastConfirmedReplication = new AtomicReference<>(Instant.MIN);
   }
 
+  /**
+   * Tracks the current LSN and link it to the current exporter position. This pair is remembered in
+   * a list until it is confirmed by the connected replicas.
+   *
+   * @param exporterPosition current exported position
+   */
   @Override
   public void onFlush(final long exporterPosition) {
     flushedPosition.set(exporterPosition);
@@ -85,10 +102,8 @@ public class LsnReplicationController implements ReplicationController {
           currentLsn);
       if (!pendingEntries.offer(new LsnPositionEntry(exporterPosition, currentLsn, now))) {
         // it's fine to just drop. When we are able to compact, when we export a new entry it will
-        // be
-        // added. If the queue is not full for too much it's not a problem, otherwise we will just
-        // hit
-        // the max_lag bound.
+        // be added. If the queue is not full for too much it's not a problem, otherwise we will
+        // just hit the max_lag bound.
         LOG.warn(
             "[RDBMS Exporter P{}] Replication queue is full, dropping LSN entry (lsn={}, position={})",
             partitionId,
@@ -105,6 +120,13 @@ public class LsnReplicationController implements ReplicationController {
     return !paused.get();
   }
 
+  /**
+   * Retrieve the replication status from the connected replicas and confirm all older pairs of
+   * LSN+position to the exporter controller.<br>
+   * <br>
+   * If the oldest still not replicated position is older than the configured <code>maxLag</code>,
+   * the replication is marked as <i>out-of-sync</i>.
+   */
   @VisibleForTesting
   void checkReplication() {
     try {
@@ -122,18 +144,20 @@ public class LsnReplicationController implements ReplicationController {
           dbReplicationLag);
 
       final boolean dbLagExceeded = isMaxLagExceeded(dbReplicationLag);
-      final boolean quorumNotMet = pendingEntries.isEmpty() && connectedReplicas < minSyncReplicas;
+      final boolean quorumNotMet =
+          pendingEntries.isEmpty() && connectedReplicas < config.getMinSyncReplicas();
 
       // pause when:
       // - pauseOnMaxLagExceeded is true
       // - either the replicas have not confirmed for long time
       // - or there are no pending entries and there are not enough replicas connected
       updatePausedState(
-          pauseOnMaxLagExceeded && (dbLagExceeded || quorumNotMet),
+          config.isPauseOnMaxLagExceeded() && (dbLagExceeded || quorumNotMet),
           dbReplicationLag,
           connectedReplicas);
 
       if (confirmedEntry != null) {
+        replicatedPosition.set(confirmedEntry.position);
         LOG.info(
             "[RDBMS Exporter P{}] Updating replicated position to {}",
             partitionId,
@@ -144,14 +168,13 @@ public class LsnReplicationController implements ReplicationController {
       LOG.error(
           "[RDBMS Exporter P{}] Error while checking replication status, will retry after {}",
           partitionId,
-          replicationConfiguration.getPollingInterval(),
+          config.getPollingInterval(),
           e);
     } finally {
       // if null, controller was closed during check
       if (replicationCheckTask != null) {
         replicationCheckTask =
-            controller.scheduleCancellableTask(
-                replicationConfiguration.getPollingInterval(), this::checkReplication);
+            controller.scheduleCancellableTask(config.getPollingInterval(), this::checkReplication);
       }
     }
   }
@@ -166,7 +189,7 @@ public class LsnReplicationController implements ReplicationController {
 
   @VisibleForTesting
   boolean isMaxLagExceeded(final Duration dbLag) {
-    return dbLag.compareTo(maxLag) > 0;
+    return dbLag.compareTo(config.getMaxLag()) > 0;
   }
 
   /**
@@ -197,7 +220,6 @@ public class LsnReplicationController implements ReplicationController {
       lastConfirmedEntry = pendingEntries.poll();
     }
     if (newReplicatedPosition > replicatedPosition.get()) {
-      replicatedPosition.set(newReplicatedPosition);
       return lastConfirmedEntry;
     }
 
@@ -222,36 +244,42 @@ public class LsnReplicationController implements ReplicationController {
           "[RDBMS Exporter P{}] Pausing exporter: replication lag ({}) exceeded maxLag ({})",
           partitionId,
           dbReportedLag,
-          maxLag);
+          config.getMaxLag());
     } else if (!shouldPause && wasPaused) {
       LOG.info(
           "[RDBMS Exporter P{}] Resuming exporter: replication quorum met ({}/{} replicas) and lag ({}) within maxLag ({})",
           partitionId,
           connectedReplicas,
-          minSyncReplicas,
+          config.getMinSyncReplicas(),
           dbReportedLag,
-          maxLag);
+          config.getMaxLag());
     }
   }
 
+  /**
+   * Calculates the lowest LSN which is confirmed by at least the configured <code>minSyncReplicas
+   * </code> connected replicas.<br>
+   * The number of entries in <code>statuses</code> may vary over time since replicas may disconnect
+   * on network failure or when new, optional replicas are connected. The <code>minSyncReplicas
+   * </code> configuration property defines a minimal quorum of replicas in sync.
+   *
+   * @param statuses the replication status read from all connected replicas.
+   * @return the lowest LSN confirmed.
+   */
   @VisibleForTesting
   long computeConfirmedLsn(final List<ReplicationLogStatus> statuses) {
     if (lsnProvider.getCurrent() < 0) {
       return Long.MIN_VALUE;
     }
 
-    if (minSyncReplicas == 0) {
-      return Long.MAX_VALUE;
-    }
-
-    if (statuses.size() < minSyncReplicas) {
+    if (statuses.size() < config.getMinSyncReplicas()) {
       return -1;
     }
 
     return statuses.stream()
         .map(ReplicationLogStatus::logStatus)
         .sorted(Comparator.<Long>naturalOrder().reversed())
-        .limit(minSyncReplicas)
+        .limit(config.getMinSyncReplicas())
         .min(Comparator.naturalOrder())
         .orElse(-1L);
   }
@@ -262,5 +290,12 @@ public class LsnReplicationController implements ReplicationController {
     replicationCheckTask = null;
   }
 
+  /**
+   * An entry linking an LSN to an exporter position.
+   *
+   * @param position the exporter position
+   * @param lsn the LSN
+   * @param enqueueTimeMs the instant in ms when the LSN was queried
+   */
   record LsnPositionEntry(long position, long lsn, long enqueueTimeMs) {}
 }

@@ -131,13 +131,7 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.historyDeletionService(historyDeletionService);
     if (config.getAsyncReplication().isEnabled()) {
       final ReplicationLogStatusProvider replicationLogStatusProvider =
-          rdbmsService
-              .getReplicationLogStatusProvider()
-              .orElseThrow(
-                  () ->
-                      new IllegalStateException(
-                          "No LSN provider found for configured databaseId "
-                              + vendorDatabaseProperties.databaseId()));
+          rdbmsService.getReplicationLogStatusProvider();
       builder.replicationControllerFactory(
           new LsnReplicationControllerFactory(
               replicationLogStatusProvider,
