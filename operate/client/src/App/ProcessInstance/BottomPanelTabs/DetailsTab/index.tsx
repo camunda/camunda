@@ -44,7 +44,7 @@ const DetailsTab: React.FC = () => {
 
   const {
     isAgentElement,
-    agentSubprocessKey,
+    primaryAgentElementInstanceKey,
     getAgentDataForElement,
     getIterationForElement,
     getToolCallForElement,
@@ -55,7 +55,8 @@ const DetailsTab: React.FC = () => {
     : null;
 
   const showAgentContent =
-    isAgentElement(selectedElementId) && agentSubprocessKey !== null;
+    isAgentElement(selectedElementId) &&
+    primaryAgentElementInstanceKey !== null;
 
   // Inner ad-hoc subprocess activations share the parent's elementId
   // (`AI_Agent`), so clicking the agent on the BPMN diagram resolves to
@@ -63,8 +64,8 @@ const DetailsTab: React.FC = () => {
   // the outer subprocess instance directly so the agent panel can render
   // regardless of which entry point the user took (diagram vs. history).
   const {data: agentSubprocessInstance} = useElementInstance(
-    agentSubprocessKey ?? '',
-    {enabled: showAgentContent && !!agentSubprocessKey},
+    primaryAgentElementInstanceKey ?? '',
+    {enabled: showAgentContent && !!primaryAgentElementInstanceKey},
   );
 
   // In agent mode `resolvedElementInstance` is null when the user clicked the
@@ -126,11 +127,25 @@ const DetailsTab: React.FC = () => {
   const job = jobSearchResult?.[0];
 
   const agentData = useMemo(() => {
-    if (!showAgentContent || !agentSubprocessKey) {
+    if (!showAgentContent) {
       return null;
     }
-    return getAgentDataForElement(agentSubprocessKey);
-  }, [showAgentContent, agentSubprocessKey, getAgentDataForElement]);
+    // When the user picks a specific row in instance-history, resolvedElementInstance
+    // pins us to one agent run. When the click is on the BPMN diagram and matches
+    // multiple instances, fall back to the active one (primary).
+    const lookupKey =
+      resolvedElementInstance?.elementInstanceKey ??
+      primaryAgentElementInstanceKey;
+    if (!lookupKey) {
+      return null;
+    }
+    return getAgentDataForElement(lookupKey);
+  }, [
+    showAgentContent,
+    resolvedElementInstance,
+    primaryAgentElementInstanceKey,
+    getAgentDataForElement,
+  ]);
 
   const rows = useMemo(() => {
     // In agent mode, clicking AI_Agent on the diagram matches every inner
