@@ -3,7 +3,7 @@
 # Contains OS specific sed function
 . utils.sh
 
-set -exo pipefail
+set -eo pipefail
 
 usage() {
   cat <<'EOF'
@@ -225,7 +225,6 @@ git clone --depth 1 --branch main --single-branch https://github.com/camunda/cam
 # Make deps
 helm dependency build "camunda-platform-helm/charts/$helm_chart"
 
-set +x
 echo
 echo "Scaffolding complete. Next steps:"
 echo "  cd $namespace"
