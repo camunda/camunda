@@ -306,13 +306,25 @@
     <!-- Error message filters -->
     <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
       <foreach collection="filter.errorMessageOperations" item="operation">
-        AND EXISTS (
-        SELECT 1
-        FROM ${prefix}INCIDENT i
-        WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-        AND i.ERROR_MESSAGE
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        )
+        <choose>
+          <when test="operation.operator.name().equals('NOT_EXISTS')">
+            AND NOT EXISTS (
+            SELECT 1
+            FROM ${prefix}INCIDENT i
+            WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+            AND i.ERROR_MESSAGE IS NOT NULL
+            )
+          </when>
+          <otherwise>
+            AND EXISTS (
+            SELECT 1
+            FROM ${prefix}INCIDENT i
+            WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+            AND i.ERROR_MESSAGE
+            <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+            )
+          </otherwise>
+        </choose>
       </foreach>
     </if>
     <if

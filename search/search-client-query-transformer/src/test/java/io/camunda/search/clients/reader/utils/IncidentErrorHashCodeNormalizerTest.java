@@ -176,22 +176,23 @@ class IncidentErrorHashCodeNormalizerTest {
   }
 
   @Test
-  void shouldNormalizeToDedupeErrorMessageWhenHashAndMatchingErrorMessageSupplied() {
+  void shouldPrependCanonicalEqWhenHashAndErrorMessageInSupplied() {
     final var filter =
         new ProcessInstanceFilter.Builder()
             .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
-            .errorMessageOperations(List.of(Operation.eq("Resolved")))
+            .errorMessageOperations(List.of(Operation.in(List.of("sharedPrefix"))))
             .build();
     when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
         .thenReturn("Resolved");
     final var result =
         normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
     assertThat(result).isPresent();
-    assertThat(result.get().errorMessageOperations()).containsExactly(Operation.eq("Resolved"));
+    assertThat(result.get().errorMessageOperations())
+        .containsExactly(Operation.eq("Resolved"), Operation.in(List.of("sharedPrefix")));
   }
 
   @Test
-  void shouldReturnEmptyWhenHashAndErrorMessageSuppliedButNotEqual() {
+  void shouldPrependCanonicalEqAndKeepUserOpsEvenWhenContradicting() {
     final var filter =
         new ProcessInstanceFilter.Builder()
             .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
@@ -201,7 +202,9 @@ class IncidentErrorHashCodeNormalizerTest {
         .thenReturn("Resolved");
     final var result =
         normalizer.normalizeAndValidateProcessInstanceFilter(filter, resourceAccessChecks);
-    assertThat(result).isEmpty();
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations())
+        .containsExactly(Operation.eq("Resolved"), Operation.eq("Other"));
   }
 
   @Test
@@ -407,22 +410,23 @@ class IncidentErrorHashCodeNormalizerTest {
   }
 
   @Test
-  void shouldNormalizeToDedupeErrorMessageWhenHashAndMatchingErrorMessageSuppliedDefStat() {
+  void shouldPrependCanonicalEqWhenHashAndErrorMessageInSuppliedDefStat() {
     final var filter =
         new ProcessDefinitionStatisticsFilter.Builder(1L)
             .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
-            .errorMessageOperations(List.of(Operation.eq("Resolved")))
+            .errorMessageOperations(List.of(Operation.in(List.of("sharedPrefix"))))
             .build();
     when(incidentReader.findErrorMessageByErrorHashCodes(eq(List.of(Operation.eq(1234))), any()))
         .thenReturn("Resolved");
     final var result =
         normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
     assertThat(result).isPresent();
-    assertThat(result.get().errorMessageOperations()).containsExactly(Operation.eq("Resolved"));
+    assertThat(result.get().errorMessageOperations())
+        .containsExactly(Operation.eq("Resolved"), Operation.in(List.of("sharedPrefix")));
   }
 
   @Test
-  void shouldReturnEmptyWhenHashAndErrorMessageSuppliedButNotEqualDefStat() {
+  void shouldPrependCanonicalEqAndKeepUserOpsEvenWhenContradictingDefStat() {
     final var filter =
         new ProcessDefinitionStatisticsFilter.Builder(1L)
             .incidentErrorHashCodeOperations(List.of(Operation.eq(1234)))
@@ -432,7 +436,9 @@ class IncidentErrorHashCodeNormalizerTest {
         .thenReturn("Resolved");
     final var result =
         normalizer.normalizeAndValidateProcessDefinitionFilter(filter, resourceAccessChecks);
-    assertThat(result).isEmpty();
+    assertThat(result).isPresent();
+    assertThat(result.get().errorMessageOperations())
+        .containsExactly(Operation.eq("Resolved"), Operation.eq("Other"));
   }
 
   @Test
