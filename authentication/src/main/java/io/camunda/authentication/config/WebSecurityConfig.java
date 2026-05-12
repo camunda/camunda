@@ -478,11 +478,11 @@ public class WebSecurityConfig {
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   @ConditionalOnSecondaryStorageEnabled
-  public static class BasicConfiguration {
+  public static class BasicConfig {
 
     private final SecurityConfiguration securityConfiguration;
 
-    public BasicConfiguration(final SecurityConfiguration securityConfiguration) {
+    public BasicConfig(final SecurityConfiguration securityConfiguration) {
       this.securityConfiguration = securityConfiguration;
     }
 
@@ -633,11 +633,11 @@ public class WebSecurityConfig {
 
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
-  public static class OidcConfiguration {
+  public static class OidcConfig {
 
     private final SecurityConfiguration securityConfiguration;
 
-    public OidcConfiguration(final SecurityConfiguration securityConfiguration) {
+    public OidcConfig(final SecurityConfiguration securityConfiguration) {
       this.securityConfiguration = securityConfiguration;
     }
 
