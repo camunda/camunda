@@ -32,8 +32,10 @@ import jakarta.servlet.ServletContext;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,6 +95,12 @@ public class SystemControllerTest extends RestControllerTest {
   void setupUsageMetricsServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
+
+  @AfterEach
+  void resetWebappConfiguration() {
+    webappConfiguration.setActiveComponents(
+        new ArrayList<>(List.of("admin", "operate", "tasklist")));
   }
 
   @Test
@@ -501,7 +509,6 @@ public class SystemControllerTest extends RestControllerTest {
   }
 
   @Test
-  @org.springframework.test.annotation.DirtiesContext
   void shouldReturnWebappConfigurationWithSomeComponentsDisabled() {
     // given
     final var jobMetricsCfg = new JobMetricsConfiguration();
