@@ -45,7 +45,7 @@ const Tabs = <T extends { key: string; label: string; content: ReactNode }>({
     if (selectedTabIndex === -1) {
       void navigate(`${path}/${tabs[0].key}`, { replace: true });
     }
-  }, [navigate, path, selectedTabIndex]);
+  }, [navigate, path, selectedTabIndex, tabs]);
 
   return (
     <CarbonTabs

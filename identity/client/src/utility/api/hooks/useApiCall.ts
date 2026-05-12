@@ -133,7 +133,7 @@ const useApiCall: UseApiCall = <R, P>(
         success: apiSuccess,
       };
     },
-    [apiDefinition],
+    [apiDefinition, enqueueNotification, options.suppressErrorNotification, t],
   ) as ApiCall<R, P>;
 
   return [

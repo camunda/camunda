@@ -67,13 +67,13 @@ const usePollingReload = <T>(
       stopPolling();
       setPollingStatus("timeout");
     }, POLL_TIMEOUT_MS);
-  }, [stopPolling, reload]);
+  }, [stopPolling, reload, compare]);
 
   useEffect(() => {
     return () => {
       stopPolling();
     };
-  }, []);
+  }, [stopPolling]);
 
   return {
     startPolling,
