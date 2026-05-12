@@ -90,6 +90,11 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   }
 
   @Override
+  public int getValueLength() {
+    return valueProp.getValue().capacity();
+  }
+
+  @Override
   public long getScopeKey() {
     return scopeKeyProp.getValue();
   }
