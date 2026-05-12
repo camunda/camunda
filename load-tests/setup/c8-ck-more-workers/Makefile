@@ -2,6 +2,13 @@ namespace ?= c8-ck-more-workers
 secondary_storage ?= elasticsearch
 helm_chart ?= camunda-platform-8.10
 enable_optimize ?= true
+# Namespace lifecycle values (baked in by newLoadTest.sh). The `create-namespace` target
+# applies these on first creation so that rerunning `make install` after a TTL deletion
+# recreates the namespace with the same zone pinning and ownership labels.
+availability_zone ?= europe-west1-d
+git_author ?= Christopher-Kujawa
+ttl_days ?= 1
+enable_single_zone ?= true
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
@@ -76,10 +83,38 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 all: install
 
 .PHONY: install
-install: install-storage create-credentials install-platform install-load-test install-elasticsearch-exporter
+install: create-namespace install-storage create-credentials install-platform install-load-test install-elasticsearch-exporter
 
 .PHONY: install-stable
-install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: create-namespace install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
+
+# Ensure the namespace exists with the expected labels and zone annotation.
+# Idempotent: if the namespace already exists we leave it untouched so reruns of
+# `make install` don't silently reset `deadline-date`. After a TTL cleanup deletes
+# the namespace, rerunning `make install` recreates it from these baked values.
+.PHONY: create-namespace
+create-namespace:
+	@if kubectl get namespace $(namespace) >/dev/null 2>&1; then \
+		echo "Namespace $(namespace) already exists, skipping namespace setup."; \
+	else \
+		echo "Creating namespace $(namespace)..."; \
+		kubectl create namespace $(namespace); \
+		if [ "$(enable_single_zone)" = "true" ] && [ "$(availability_zone)" != "~" ]; then \
+			kubectl annotate namespace $(namespace) topology.kubernetes.io/zone=$(availability_zone) --overwrite; \
+			echo "Pods will be deployed into the $(availability_zone) AZ only."; \
+		else \
+			echo "Single-zone deployment disabled — pods may schedule across all AZs."; \
+		fi; \
+		kubectl label namespace $(namespace) camunda.io/purpose=load-test --overwrite; \
+		kubectl label namespace $(namespace) camunda.io/created-by=$(git_author) --overwrite; \
+		kubectl label namespace $(namespace) registry=harbor --overwrite; \
+		if deadline_date=$$(date -d "+$(ttl_days) days" +%Y-%m-%d 2>/dev/null); then :; \
+		elif deadline_date=$$(date -v +$(ttl_days)d +%Y-%m-%d 2>/dev/null); then :; \
+		else echo "Warning: could not calculate deadline date (need GNU or BSD date)."; deadline_date=unknown; \
+		fi; \
+		kubectl label namespace $(namespace) deadline-date=$$deadline_date --overwrite; \
+		echo "Namespace $(namespace) ready."; \
+	fi
 
 # Install secondary storage based on configuration (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, OpenSearch)
 .PHONY: install-storage
@@ -89,18 +124,21 @@ ifeq ($(secondary_storage),postgresql)
 	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
 	helm upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
+		--create-namespace \
 		$(platform_values)
 else ifeq ($(secondary_storage),mysql)
 	@echo "Installing MySQL database for namespace $(namespace)..."
 	# Install MySQL database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-mysql.yaml
 	helm upgrade --install mysql oci://registry-1.docker.io/bitnamicharts/mysql \
 		--namespace $(namespace) \
+		--create-namespace \
 		$(platform_values)
 else ifeq ($(secondary_storage),mariadb)
 	@echo "Installing MariaDB database for namespace $(namespace)..."
 	# Install MariaDB database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-mariadb.yaml
 	helm upgrade --install mariadb oci://registry-1.docker.io/bitnamicharts/mariadb \
 		--namespace $(namespace) \
+		--create-namespace \
 		$(platform_values)
 else ifeq ($(secondary_storage),mssql)
 	@echo "Installing MSSQL database for namespace $(namespace)..."
@@ -115,6 +153,7 @@ else ifeq ($(secondary_storage),opensearch)
 	helm upgrade --install opensearch opensearch/opensearch \
 		--version "2.31.0" \
 		--namespace $(namespace) \
+		--create-namespace \
 		$(platform_values)
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
@@ -133,6 +172,7 @@ ifeq ($(secondary_storage),elasticsearch)
 	@echo "Installing Elasticsearch Prometheus Exporter for namespace $(namespace)..."
 	helm upgrade --install elasticsearch-exporter oci://ghcr.io/prometheus-community/charts/prometheus-elasticsearch-exporter \
     --namespace $(namespace) \
+    --create-namespace \
     --version $(prometheus_elasticsearch_exporter_chart_version) \
     --wait --timeout 5m0s \
     -f prometheus-elasticsearch-exporter-values.yaml
@@ -146,6 +186,7 @@ install-platform: setup-leader-balancer
 	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
 		--namespace $(namespace) \
+		--create-namespace \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		$(platform_values) \
@@ -159,6 +200,7 @@ install-platform-stable: setup-leader-balancer
 	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
 		--namespace $(namespace) \
+		--create-namespace \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		$(platform_values_stable) \
@@ -171,6 +213,7 @@ install-load-test:
 	helm upgrade $(namespace)-test $(helm_chart_load_tests) \
 		--install \
 		--namespace $(namespace) \
+		--create-namespace \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		-f load-test-values.yaml \
@@ -265,3 +308,5 @@ else ifeq ($(secondary_storage),opensearch)
 	-helm --namespace $(namespace) uninstall opensearch
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch
 endif
+	@echo "Deleting namespace $(namespace) (async, no wait)..."
+	-kubectl delete namespace $(namespace) --wait=false --ignore-not-found
