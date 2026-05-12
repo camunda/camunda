@@ -128,33 +128,60 @@ final class BrokerInfoTest {
   }
 
   @Test
-  void shouldDecodeVersion8PayloadWithZoneUsingBrokerInfo() {
-    // given -- encode a full v8 BrokerInfo payload with zone set
-    // This verifies that a v8 payload (as emitted during rolling update) is correctly
-    // decoded by BrokerInfo, which is what runs on the receiving broker.
-    final BrokerInfo brokerInfo =
-        new BrokerInfo()
-            .setNodeId(42)
-            .setPartitionsCount(3)
-            .setClusterSize(3)
-            .setReplicationFactor(3)
-            .setZone("us-east-1a");
-    brokerInfo.setVersion("8.7.0");
+  void shouldDecodeVersion8PayloadWithVersion7Header() {
+    // given -- manually encode a v7 BrokerInfo payload (without zone)
+    // This simulates the forward compat scenario: a broker on the previous version receives
+    // a payload encoded without zone. BrokerInfo.wrap() should handle it gracefully.
+    final int nodeId = 42;
+    final int partitionsCount = 3;
+    final int clusterSize = 3;
+    final int replicationFactor = 3;
+    final String versionStr = "8.7.0";
+    final byte[] versionBytes = versionStr.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
-    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[brokerInfo.getLength()]);
-    brokerInfo.write(buffer, 0);
+    final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[1024]);
+    int offset = 0;
 
-    // when -- decode using BrokerInfo directly
+    // write header with version=7
+    final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+    headerEncoder.wrap(buffer, offset);
+    headerEncoder
+        .blockLength(BrokerInfoEncoder.BLOCK_LENGTH)
+        .templateId(BrokerInfoEncoder.TEMPLATE_ID)
+        .schemaId(BrokerInfoEncoder.SCHEMA_ID)
+        .version(7);
+    offset += MessageHeaderEncoder.ENCODED_LENGTH;
+
+    // write body with all v7 fields
+    final BrokerInfoEncoder bodyEncoder = new BrokerInfoEncoder();
+    bodyEncoder
+        .wrap(buffer, offset)
+        .nodeId(nodeId)
+        .partitionsCount(partitionsCount)
+        .clusterSize(clusterSize)
+        .replicationFactor(replicationFactor);
+
+    bodyEncoder.addressesCount(0);
+    bodyEncoder.partitionRolesCount(0);
+    bodyEncoder.partitionLeaderTermsCount(0);
+    bodyEncoder.putVersion(versionBytes, 0, versionBytes.length);
+    bodyEncoder.partitionHealthCount(0);
+
+    // zone is NOT written (this is a v7 payload)
+
+    final int totalLength = MessageHeaderEncoder.ENCODED_LENGTH + bodyEncoder.encodedLength();
+
+    // when -- decode with BrokerInfo directly
     final BrokerInfo decoded = new BrokerInfo();
-    assertThatNoException().isThrownBy(() -> decoded.wrap(buffer, 0, buffer.capacity()));
+    assertThatNoException().isThrownBy(() -> decoded.wrap(buffer, 0, totalLength));
 
-    // then -- all fields including zone decode correctly
-    assertThat(decoded.getNodeId()).isEqualTo(42);
-    assertThat(decoded.getPartitionsCount()).isEqualTo(3);
-    assertThat(decoded.getClusterSize()).isEqualTo(3);
-    assertThat(decoded.getReplicationFactor()).isEqualTo(3);
-    assertThat(decoded.getVersion()).isEqualTo("8.7.0");
-    assertThat(decoded.getZone()).isEqualTo("us-east-1a");
+    // then -- all v7 fields decode correctly, zone is null
+    assertThat(decoded.getNodeId()).isEqualTo(nodeId);
+    assertThat(decoded.getPartitionsCount()).isEqualTo(partitionsCount);
+    assertThat(decoded.getClusterSize()).isEqualTo(clusterSize);
+    assertThat(decoded.getReplicationFactor()).isEqualTo(replicationFactor);
+    assertThat(decoded.getVersion()).isEqualTo(versionStr);
+    assertThat(decoded.getZone()).isNull();
   }
 
   @Test
