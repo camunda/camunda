@@ -70,10 +70,7 @@ final class OptimizeReportEvaluatorTest {
     when(apiClient.evaluateDetailedPage("pd-static"))
         .thenReturn(
             new DetailedPageResult(
-                200,
-                15L,
-                List.of(new ReportEvaluationResult("rD", 200, 6L, "{}")),
-                List.of(new ReportEvaluationResult("rD", 200, 8L, "{}"))));
+                200, 15L, List.of(new ReportEvaluationResult("rD", 200, 6L, "{}"))));
     evaluator = new OptimizeReportEvaluator(props, apiClient, executor);
 
     // when
@@ -92,7 +89,7 @@ final class OptimizeReportEvaluatorTest {
         .thenThrow(new RuntimeException("boom"))
         .thenReturn(new HomepageResult(200, 1L, List.of()));
     when(apiClient.evaluateDetailedPage("pd-static"))
-        .thenReturn(new DetailedPageResult(200, 1L, List.of(), List.of()));
+        .thenReturn(new DetailedPageResult(200, 1L, List.of()));
     evaluator = new OptimizeReportEvaluator(props, apiClient, executor);
 
     // when - first cycle blows up inside evaluateHomepage; runOneCycleSafely catches the
@@ -143,7 +140,7 @@ final class OptimizeReportEvaluatorTest {
     when(apiClient.fetchFirstProcessDefinitionKey()).thenReturn("pd-discovered");
     when(apiClient.evaluateHomepage()).thenReturn(new HomepageResult(200, 1L, List.of()));
     when(apiClient.evaluateDetailedPage("pd-discovered"))
-        .thenReturn(new DetailedPageResult(200, 1L, List.of(), List.of()));
+        .thenReturn(new DetailedPageResult(200, 1L, List.of()));
     evaluator = new OptimizeReportEvaluator(props, apiClient, executor);
 
     // when
@@ -177,7 +174,7 @@ final class OptimizeReportEvaluatorTest {
     doNothing().when(apiClient).authenticate();
     when(apiClient.evaluateHomepage()).thenReturn(new HomepageResult(200, 1L, List.of()));
     when(apiClient.evaluateDetailedPage(any()))
-        .thenReturn(new DetailedPageResult(200, 1L, List.of(), List.of()));
+        .thenReturn(new DetailedPageResult(200, 1L, List.of()));
     evaluator = new OptimizeReportEvaluator(props, apiClient, executor);
     evaluator.start();
 

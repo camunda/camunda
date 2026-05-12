@@ -107,15 +107,16 @@ load-tester:
 
   # Optional Optimize report evaluation meter (starter-only). Polls Optimize REST endpoints
   # periodically to emit query-latency timers under load. Requires the Optimize backend to
-  # be running PR camunda/camunda#46878 with api.jwtAuthForApiEnabled=true, since this
-  # client only supports password-grant -> Bearer auth.
+  # be running PR camunda/camunda#46878 with api.jwtAuthForApiEnabled=true. Auth uses the
+  # OAuth 2.0 client_credentials grant against the dedicated `optimize-loadtest` Keycloak
+  # client (bootstrapped by Identity, see `identity.clients[]` in camunda-platform-values.yaml).
   optimize:
-    enabled: ${LOAD_TESTER_OPTIMIZE_ENABLED:true}
-    base-url: ${OPTIMIZE_BASE_URL:http://localhost:8083}
-    keycloak-url: ${OPTIMIZE_KEYCLOAK_URL:http://localhost:18080}
+    enabled: ${LOAD_TESTER_OPTIMIZE_ENABLED:false}
+    base-url: ${OPTIMIZE_BASE_URL:http://optimize}
+    keycloak-url: ${OPTIMIZE_KEYCLOAK_URL:http://keycloak}
     realm: ${OPTIMIZE_REALM:camunda-platform}
-    client-id: ${OPTIMIZE_CLIENT_ID:optimize}
-    client-secret: ${OPTIMIZE_CLIENT_SECRET:demo-client-secret}
+    client-id: ${OPTIMIZE_CLIENT_ID:optimize-loadtest}
+    client-secret: ${OPTIMIZE_LOADTEST_CLIENT_SECRET:demo-client-secret}
     process-definition-key: ${OPTIMIZE_PROCESS_DEFINITION_KEY:}
     evaluation-interval: ${OPTIMIZE_EVALUATION_INTERVAL:60s}
     initial-delay: ${OPTIMIZE_INITIAL_DELAY:10s}

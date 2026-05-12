@@ -9,7 +9,6 @@ package io.camunda.zeebe.optimize;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.zeebe.config.OptimizeProperties;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -23,9 +22,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Talks to a deployed Optimize via its REST API. Authenticates with Keycloak using the OAuth 2.0
- * client credentials grant (requires Optimize {@code api.jwtAuthForApiEnabled=true} and the
- * service-account user in {@code OPTIMIZE_SUPER_USER_IDS}) and uses the resulting JWT as a bearer
- * token on every Optimize request.
+ * client credentials grant (requires Optimize {@code api.jwtAuthForApiEnabled=true}) and uses the
+ * resulting JWT as a bearer token on every Optimize request. The Keycloak client used here is
+ * bootstrapped by Identity with {@code write:*} on the {@code optimize-api} resource server (see
+ * {@code identity.clients[]} in {@code load-tests/camunda-platform-values.yaml}), which is what
+ * authorizes the {@code /api/**} calls.
  *
  * <p>Not a Spring bean — owned by {@link OptimizeReportEvaluator} so tests can construct it with a
  * fake {@link WebClient.Builder}.
@@ -34,7 +35,6 @@ public class OptimizeApiClient {
 
   static final String API_DASHBOARD_MANAGEMENT = "/api/dashboard/management";
   static final String API_DASHBOARD_INSTANT = "/api/dashboard/instant/";
-  static final String API_REPORT_EVALUATE = "/api/report/evaluate";
   static final String API_PROCESS_OVERVIEW = "/api/process/overview";
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeApiClient.class);
@@ -146,16 +146,7 @@ public class OptimizeApiClient {
           dashboard.statusCode);
     }
     final List<ReportEvaluationResult> reports = fetchAllReportMetrics(dashboard.body);
-
-    final List<ReportEvaluationResult> detailed = new ArrayList<>();
-    for (final ReportEvaluationResult report : reports) {
-      if (!report.success()) {
-        continue;
-      }
-      detailed.add(fetchDetailedReportMetrics(report.reportId(), report.responseBody()));
-    }
-    return new DetailedPageResult(
-        dashboard.statusCode, dashboard.responseTimeMs, reports, detailed);
+    return new DetailedPageResult(dashboard.statusCode, dashboard.responseTimeMs, reports);
   }
 
   public String fetchFirstProcessDefinitionKey() {
@@ -183,7 +174,7 @@ public class OptimizeApiClient {
     }
   }
 
-  public List<String> extractReportIdsFromDashboard(final String dashboardBody) {
+  List<String> extractReportIdsFromDashboard(final String dashboardBody) {
     final List<String> reportIds = new ArrayList<>();
     try {
       final JsonNode rootNode = objectMapper.readTree(dashboardBody);
@@ -201,45 +192,6 @@ public class OptimizeApiClient {
       LOG.warn("Failed to parse dashboard body for report ids", e);
     }
     return reportIds;
-  }
-
-  String transformForDetailedEvaluate(final String responseBody) {
-    try {
-      final JsonNode rootNode = objectMapper.readTree(responseBody);
-      if (!(rootNode instanceof final ObjectNode root)) {
-        return responseBody;
-      }
-      root.remove("result");
-
-      final JsonNode data = root.path("data");
-      if (!(data instanceof final ObjectNode dataObj)) {
-        return objectMapper.writeValueAsString(root);
-      }
-
-      final JsonNode view = dataObj.path("view");
-      if (view instanceof final ObjectNode viewObj) {
-        viewObj.remove("entity");
-        if (viewObj.has("properties")) {
-          viewObj.set("properties", objectMapper.createArrayNode().add("rawData"));
-        }
-      }
-
-      final JsonNode groupBy = dataObj.path("groupBy");
-      if (groupBy instanceof final ObjectNode groupByObj) {
-        groupByObj.put("type", "none");
-        groupByObj.remove("value");
-      }
-
-      final JsonNode sorting = dataObj.path("configuration").path("sorting");
-      if (sorting instanceof final ObjectNode sortingObj) {
-        sortingObj.put("by", "startDate");
-      }
-
-      return objectMapper.writeValueAsString(root);
-    } catch (final Exception e) {
-      LOG.warn("Failed to transform report body for detailed evaluate, sending original", e);
-      return responseBody;
-    }
   }
 
   String getAccessTokenForTesting() {
@@ -262,15 +214,6 @@ public class OptimizeApiClient {
   private ReportEvaluationResult fetchReportMetrics(final String reportId) {
     ensureValidToken();
     final TimedResponse response = executePost("/api/report/" + reportId + "/evaluate", "{}");
-    return new ReportEvaluationResult(
-        reportId, response.statusCode, response.responseTimeMs, response.body);
-  }
-
-  private ReportEvaluationResult fetchDetailedReportMetrics(
-      final String reportId, final String responseBody) {
-    ensureValidToken();
-    final String transformedBody = transformForDetailedEvaluate(responseBody);
-    final TimedResponse response = executePost(API_REPORT_EVALUATE, transformedBody);
     return new ReportEvaluationResult(
         reportId, response.statusCode, response.responseTimeMs, response.body);
   }
@@ -332,10 +275,9 @@ public class OptimizeApiClient {
   public record DetailedPageResult(
       int dashboardStatusCode,
       long dashboardResponseTimeMs,
-      List<ReportEvaluationResult> reportEvaluationResults,
-      List<ReportEvaluationResult> detailedEvaluationResults) {}
+      List<ReportEvaluationResult> reportEvaluationResults) {}
 
-  /** Thrown when Keycloak password-grant authentication fails. */
+  /** Thrown when Keycloak client_credentials authentication fails. */
   public static class OptimizeAuthException extends RuntimeException {
     private final int statusCode;
 

@@ -10,7 +10,6 @@ package io.camunda.zeebe.optimize;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.config.OptimizeProperties;
 import io.camunda.zeebe.optimize.OptimizeApiClient.DetailedPageResult;
@@ -199,20 +198,15 @@ final class OptimizeApiClientTest {
   }
 
   @Test
-  void shouldEvaluateDetailedPageWithTransformedBody() throws Exception {
+  void shouldEvaluateDetailedPagePerTile() {
     // given
     primeAuth("tok-detail");
     exchange.respond(
         req -> req.url().getPath().equals("/api/dashboard/instant/key-123"),
         jsonResponse(HttpStatus.OK, "{\"tiles\":[{\"id\":\"rD\"}]}"));
-    final String reportPayload =
-        "{\"name\":\"r\",\"result\":{\"data\":[]},\"data\":{\"view\":{\"entity\":\"processInstance\",\"properties\":[\"frequency\"]},\"groupBy\":{\"type\":\"endDate\",\"value\":{\"unit\":\"day\"}},\"configuration\":{\"sorting\":{\"by\":\"key\"}}}}";
     exchange.respond(
         req -> req.url().getPath().equals("/api/report/rD/evaluate"),
-        jsonResponse(HttpStatus.OK, reportPayload));
-    exchange.respond(
-        req -> req.url().getPath().equals("/api/report/evaluate"),
-        jsonResponse(HttpStatus.OK, "{\"detailed\":true}"));
+        jsonResponse(HttpStatus.OK, "{\"reportId\":\"rD\"}"));
 
     // when
     final DetailedPageResult result = client.evaluateDetailedPage("key-123");
@@ -220,22 +214,13 @@ final class OptimizeApiClientTest {
     // then
     assertThat(result.dashboardStatusCode()).isEqualTo(200);
     assertThat(result.reportEvaluationResults()).hasSize(1);
-    assertThat(result.detailedEvaluationResults()).hasSize(1);
-
-    final ClientRequest detailedRequest =
-        exchange.requests().stream()
-            .filter(r -> r.url().getPath().equals("/api/report/evaluate"))
-            .findFirst()
-            .orElseThrow();
-    final JsonNode transformed = new ObjectMapper().readTree(extractBody(detailedRequest));
-    assertThat(transformed.has("result")).isFalse();
-    assertThat(transformed.path("data").path("view").has("entity")).isFalse();
-    assertThat(transformed.path("data").path("view").path("properties").get(0).asText())
-        .isEqualTo("rawData");
-    assertThat(transformed.path("data").path("groupBy").path("type").asText()).isEqualTo("none");
-    assertThat(transformed.path("data").path("groupBy").has("value")).isFalse();
-    assertThat(transformed.path("data").path("configuration").path("sorting").path("by").asText())
-        .isEqualTo("startDate");
+    assertThat(result.reportEvaluationResults().get(0).reportId()).isEqualTo("rD");
+    // No /api/report/evaluate (raw-data) call should be made.
+    assertThat(
+            exchange.requests().stream()
+                .filter(r -> r.url().getPath().equals("/api/report/evaluate"))
+                .toList())
+        .isEmpty();
   }
 
   @Test
@@ -257,12 +242,6 @@ final class OptimizeApiClientTest {
 
     assertThatThrownBy(() -> client.fetchFirstProcessDefinitionKey())
         .isInstanceOf(OptimizeApiException.class);
-  }
-
-  @Test
-  void shouldReturnUnchangedBodyWhenTransformInputIsNotObject() {
-    assertThat(client.transformForDetailedEvaluate("\"plain-string\""))
-        .isEqualTo("\"plain-string\"");
   }
 
   @Test

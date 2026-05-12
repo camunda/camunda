@@ -74,11 +74,11 @@ identity:
   clients:
     - id: optimize-loadtest
       name: Optimize Load Tester
-      type: confidential
-      # rootUrl + redirectUris are not used by the client_credentials grant but Identity's
-      # ClientInitializationService rejects clients that omit them. Dummies are fine.
-      rootUrl: http://optimize-loadtest
-      redirectUris: /dummy
+      # M2M = service-account user only (Identity sets serviceAccountsEnabled=true,
+      # standardFlowEnabled=false). The load-tester uses `client_credentials` against
+      # this client; the browser standard flow is never needed. M2M also skips the
+      # rootUrl validation in identity/.../ClientInitializationService.java:209.
+      type: m2m
       secret:
         existingSecret: camunda-credentials
         existingSecretKey: identity-optimize-loadtest-client-secret

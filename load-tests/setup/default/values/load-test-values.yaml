@@ -38,18 +38,12 @@ global:
     # and the dedicated `optimize-loadtest` Keycloak client declared under identity.clients[]
     # in the same values file. Uses the OAuth 2.0 client_credentials grant — only client-id +
     # client-secret are needed.
-    # Service DNS used here: keycloak/optimize are ClusterIP services on port 80.
+    # Base URL, Keycloak URL, and realm default to the in-cluster service names
+    # (`http://optimize`, `http://keycloak`, `camunda-platform`) in application.yaml,
+    # which match the fullnameOverride values pinned in camunda-platform-values.yaml.
     - name: LOAD_TESTER_OPTIMIZE_ENABLED
       value: "true"
-    - name: OPTIMIZE_BASE_URL
-      value: "http://optimize"
-    - name: OPTIMIZE_KEYCLOAK_URL
-      value: "http://keycloak"
-    - name: OPTIMIZE_REALM
-      value: "camunda-platform"
-    - name: OPTIMIZE_CLIENT_ID
-      value: "optimize-loadtest"
-    - name: OPTIMIZE_CLIENT_SECRET
+    - name: OPTIMIZE_LOADTEST_CLIENT_SECRET
       valueFrom:
         secretKeyRef:
           name: camunda-credentials

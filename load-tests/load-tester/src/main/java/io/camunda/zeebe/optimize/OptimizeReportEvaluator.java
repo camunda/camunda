@@ -38,7 +38,6 @@ public class OptimizeReportEvaluator implements AutoCloseable {
   static final String PAGE_DETAILED = "detailed";
   static final String PHASE_DASHBOARD = "dashboard";
   static final String PHASE_REPORT_EVALUATE = "report_evaluate";
-  static final String PHASE_DETAILED_EVALUATE = "detailed_evaluate";
   static final String NA = "n/a";
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeReportEvaluator.class);
@@ -124,7 +123,6 @@ public class OptimizeReportEvaluator implements AutoCloseable {
           result.dashboardStatusCode(),
           result.dashboardResponseTimeMs());
       logReports(PAGE_DETAILED, PHASE_REPORT_EVALUATE, result.reportEvaluationResults());
-      logReports(PAGE_DETAILED, PHASE_DETAILED_EVALUATE, result.detailedEvaluationResults());
     } catch (final Exception e) {
       THROTTLED_LOGGER.warn("Failed to evaluate Optimize detailed page", e);
     }
