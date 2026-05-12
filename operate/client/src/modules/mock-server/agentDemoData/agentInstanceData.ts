@@ -33,6 +33,7 @@ You have access to the following tools:
 - **ListUsers** — query the user directory
 - **LoadUserByID** — fetch a single user profile by \`id\`
 - **GetDateAndTime** — get the current UTC timestamp
+- **DraftEmailTemplate** — produce a formatted email draft from a subject and body
 - **AskHumanToSendEmail** — delegate email sending to a human operator
 
 ## Guidelines
@@ -45,6 +46,7 @@ You have access to the following tools:
       {name: 'ListUsers', source: 'AD_HOC'},
       {name: 'LoadUserByID', source: 'AD_HOC'},
       {name: 'GetDateAndTime', source: 'AD_HOC'},
+      {name: 'DraftEmailTemplate', source: 'AD_HOC'},
       {name: 'AskHumanToSendEmail', source: 'AD_HOC'},
     ],
   },
@@ -84,14 +86,14 @@ export const MOCK_AGENT_HISTORY_ELEMENTS: HistoryElement[] = [
     role: 'user',
     timestamp: '2026-03-26T14:30:00.400Z',
     content:
-      'Find the email address of user Leanne Graham and send her an invitation to the company offsite.',
+      "Hi! Could you find the email address of user Leanne Graham and send her an invitation to the company offsite on March 28? Please make sure you pick the correct Leanne if there are several — she's the one at Romaguera-Crona. The invitation should be friendly and include the date prominently. Thanks!",
   }),
   baseElement({
     historyElementKey: '6755399441055701',
     role: 'assistant',
     timestamp: '2026-03-26T14:30:01.200Z',
     content:
-      "I'll start by looking up the user directory to find Leanne Graham.",
+      "To find Leanne Graham's email I need to start from the user directory, since the request doesn't include an ID and I don't have her contact info cached. I'll call `ListUsers` first to get the full set of users and confirm she exists; that also lets me disambiguate if there's more than one Leanne — the user mentioned Romaguera-Crona as her company, which I can use as a tiebreaker. Once I have her ID, I'll fetch her full profile to get the verified email address before drafting the invitation. I'm going to avoid sending the email myself and instead delegate to a human operator at the end, since that's the safer pattern for outbound communication.",
     metrics: {inputTokens: 482, outputTokens: 87, totalTokens: 569},
   }),
   baseElement({
@@ -116,7 +118,7 @@ export const MOCK_AGENT_HISTORY_ELEMENTS: HistoryElement[] = [
     role: 'assistant',
     timestamp: '2026-03-26T14:30:03.000Z',
     content:
-      'Found Leanne Graham (id: 1). Loading her full profile and getting the current date in parallel.',
+      "Good — the directory returned a single Leanne (id: 1, email Sincere@april.biz) and the only other user, Ervin Howell, clearly isn't who the request is about, so no disambiguation is needed beyond the obvious. The user also mentioned Romaguera-Crona, which I'd still like to verify against her full profile to be sure I'm not relying on a stale directory snapshot. I'll fetch the full profile via `LoadUserByID` and at the same time pull the current date via `GetDateAndTime` — running these in parallel saves a round-trip, and I need the date anyway so the invitation copy reads naturally relative to the offsite on March 28. Once both come back I'll have everything I need to draft the invitation and hand it off to a human operator.",
     metrics: {inputTokens: 621, outputTokens: 64, totalTokens: 685},
   }),
   baseElement({
@@ -156,13 +158,31 @@ export const MOCK_AGENT_HISTORY_ELEMENTS: HistoryElement[] = [
     role: 'assistant',
     timestamp: '2026-03-26T14:30:04.290Z',
     content:
-      "I have everything needed: Leanne's email is Sincere@april.biz and the current date is 2026-03-26. Requesting a human operator to send the invitation email.",
+      "Everything checks out: the full profile confirms Leanne Graham at Romaguera-Crona, her email is Sincere@april.biz, and today is 2026-03-26 — so the offsite on March 28 is two days out, which is worth surfacing in the copy so the urgency reads. I'll draft a short, friendly invitation that opens warmly, names the date prominently in the first line of the body, and signs off without overpromising on logistics, since the request didn't mention venue or agenda. Because sending email is an outbound action with real-world consequences, I'm routing it through `AskHumanToSendEmail` rather than firing it directly — this gives the human operator a final review on tone and recipient before anything goes out, which is the right level of friction for a personal invitation.",
     metrics: {inputTokens: 856, outputTokens: 91, totalTokens: 947},
   }),
   baseElement({
     historyElementKey: '6755399441055710',
     role: 'tool_call',
     timestamp: '2026-03-26T14:30:04.300Z',
+    content: JSON.stringify({
+      name: 'DraftEmailTemplate',
+      input: {
+        recipient_name: 'Leanne Graham',
+        subject: 'Company Offsite Invitation — March 28',
+        tone: 'friendly',
+        body_outline: [
+          'Open warmly and address Leanne by first name.',
+          'Lead the body with the offsite date (March 28, 2026) on its own line.',
+          'Close with a soft RSVP nudge — no firm logistics promised.',
+        ],
+      },
+    }),
+  }),
+  baseElement({
+    historyElementKey: '6755399441055711',
+    role: 'tool_call',
+    timestamp: '2026-03-26T14:30:04.350Z',
     content: JSON.stringify({
       name: 'AskHumanToSendEmail',
       input: {

@@ -313,6 +313,12 @@ function StatusAccordion({agentData}: {agentData: AgentElementData}) {
           width: '100%',
         }}
       >
+        {currentMessage && (
+          <div>
+            <strong style={{color: 'var(--cds-text-primary)'}}>Message:</strong>{' '}
+            {currentMessage}
+          </div>
+        )}
         {activeTools.length > 0 && (
           <div
             style={{
@@ -322,10 +328,7 @@ function StatusAccordion({agentData}: {agentData: AgentElementData}) {
               flexWrap: 'wrap',
             }}
           >
-            <span style={attachmentLabelStyle}>
-              {activeTools.length} tool{activeTools.length > 1 ? 's' : ''}{' '}
-              called
-            </span>
+            <span style={attachmentLabelStyle}>Tool calls</span>
             {activeTools.map((t) => (
               <button
                 key={t.toolElementId}
@@ -341,12 +344,6 @@ function StatusAccordion({agentData}: {agentData: AgentElementData}) {
                 {t.toolName}
               </button>
             ))}
-          </div>
-        )}
-        {currentMessage && (
-          <div>
-            <strong style={{color: 'var(--cds-text-primary)'}}>Message:</strong>{' '}
-            {currentMessage}
           </div>
         )}
       </div>
@@ -607,70 +604,6 @@ function IterationDetail({iteration}: {iteration: AgentIteration}) {
         />
       </DetailSection>
     </>
-  );
-}
-
-type ElementDetailsProps = {
-  elementInstanceKey: string;
-  executionDuration: string;
-  retriesLeft?: number;
-};
-
-function ElementDetailsSection({
-  details,
-  extraItems,
-}: {
-  details: ElementDetailsProps;
-  extraItems?: {label: string; value: React.ReactNode}[];
-}) {
-  const items: {label: string; value: React.ReactNode}[] = [
-    {label: 'Instance key', value: details.elementInstanceKey},
-    {label: 'Duration', value: details.executionDuration},
-  ];
-  if (details.retriesLeft !== undefined) {
-    items.push({label: 'Retries left', value: String(details.retriesLeft)});
-  }
-  if (extraItems) {
-    items.push(...extraItems);
-  }
-
-  const columnCount = items.length <= 2 ? 2 : 3;
-
-  return (
-    <DetailSection>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-          gap: 'var(--cds-spacing-05)',
-        }}
-      >
-        {items.map((item) => (
-          <div key={item.label}>
-            <div
-              style={{
-                fontSize: 'var(--cds-label-01-font-size)',
-                lineHeight: 'var(--cds-label-01-line-height)',
-                letterSpacing: 'var(--cds-label-01-letter-spacing)',
-                color: 'var(--cds-text-secondary)',
-                marginBottom: 'var(--cds-spacing-02)',
-              }}
-            >
-              {item.label}
-            </div>
-            <div
-              style={{
-                fontSize: 'var(--cds-body-compact-01-font-size)',
-                color: 'var(--cds-text-primary)',
-                wordBreak: 'break-all',
-              }}
-            >
-              {item.value}
-            </div>
-          </div>
-        ))}
-      </div>
-    </DetailSection>
   );
 }
 
@@ -1126,10 +1059,4 @@ function DefaultAgentDetail({agentData}: {agentData: AgentElementData}) {
   );
 }
 
-export {
-  DefaultAgentDetail,
-  IterationDetail,
-  ToolCallDetail,
-  ElementDetailsSection,
-};
-export type {ElementDetailsProps};
+export {DefaultAgentDetail, IterationDetail, ToolCallDetail};

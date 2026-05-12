@@ -82,6 +82,9 @@ export const AGENT_BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
       <bpmn:serviceTask id="Fetch_URL" name="Fetch URL">
         <bpmn:documentation>Fetches the contents of a given URL.</bpmn:documentation>
       </bpmn:serviceTask>
+      <bpmn:task id="AI_Task_Agent" name="AI task agent">
+        <bpmn:documentation>A nested AI task agent that the orchestrating agent can delegate work to.</bpmn:documentation>
+      </bpmn:task>
     </bpmn:adHocSubProcess>
     <bpmn:sequenceFlow id="Flow_16otfp1" sourceRef="Gateway_0z6ctwk" targetRef="AI_Agent" />
     <bpmn:sequenceFlow id="Flow_0m7etfk" sourceRef="AI_Agent" targetRef="User_Feedback" />
@@ -110,7 +113,7 @@ export const AGENT_BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_03yngb7_di" bpmnElement="AI_Agent" isExpanded="true">
-        <dc:Bounds x="350" y="160" width="510" height="540" />
+        <dc:Bounds x="350" y="160" width="510" height="640" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0kkpyxf_di" bpmnElement="ListUsers">
         <dc:Bounds x="380" y="230" width="100" height="80" />
@@ -129,6 +132,9 @@ export const AGENT_BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1knqabi_di" bpmnElement="Fetch_URL">
         <dc:Bounds x="730" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_AI_Task_Agent_di" bpmnElement="AI_Task_Agent">
+        <dc:Bounds x="385" y="700" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0d8luif_di" bpmnElement="Search_Recipe">
         <dc:Bounds x="380" y="330" width="100" height="80" />

@@ -122,7 +122,7 @@ const TopPanel: React.FC = observer(() => {
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {isExecutionCountVisible} = executionCountToggleStore.state;
-  const {isAgentInstance, getAgentStatusLabel, agentElementId} = useAgentData();
+  const {activeAgentStatuses} = useAgentData();
 
   const {data: selectedElementRunningInstancesCount} =
     useTotalRunningInstancesForElement(selectedElementId ?? undefined);
@@ -175,34 +175,33 @@ const TopPanel: React.FC = observer(() => {
       : notCompletedElementStateOverlays;
   }, [statistics, businessObjects, isExecutionCountVisible]);
 
-  const agentStatusLabel = isAgentInstance ? getAgentStatusLabel() : null;
-  const agentStatusOverlays = useMemo(() => {
-    if (!agentStatusLabel || !agentElementId) {
-      return [];
-    }
-    return [
-      {
-        payload: {label: agentStatusLabel},
+  // `activeAgentStatuses` is already `[]` when there's no agent instance, so
+  // it can be iterated unconditionally — and stays referentially stable from
+  // the context's useMemo, so these overlay arrays only re-build when the
+  // underlying agent state changes.
+  const agentStatusOverlays = useMemo(
+    () =>
+      activeAgentStatuses.map(({elementId, label}) => ({
+        payload: {label},
         type: OVERLAY_TYPE_AGENT_STATUS,
-        elementId: agentElementId,
+        elementId,
         position: AGENT_STATUS_TAG,
-      },
-    ];
-  }, [agentStatusLabel, agentElementId]);
+      })),
+    [activeAgentStatuses],
+  );
 
-  const agentShineOverlays = useMemo(() => {
-    if (!agentStatusLabel || !agentElementId) {
-      return [];
-    }
-    return [
-      {
-        payload: {elementId: agentElementId},
-        type: OVERLAY_TYPE_AGENT_SHINE,
-        elementId: agentElementId,
-        position: {top: 0, left: 0},
-      },
-    ];
-  }, [agentStatusLabel, agentElementId]);
+  const agentShineOverlays = useMemo(
+    () =>
+      activeAgentStatuses
+        .filter(({showShine}) => showShine)
+        .map(({elementId}) => ({
+          payload: {elementId},
+          type: OVERLAY_TYPE_AGENT_SHINE,
+          elementId,
+          position: {top: 0, left: 0},
+        })),
+    [activeAgentStatuses],
+  );
 
   const selectedElementIds = useMemo(() => {
     return selectedAnchorElementId

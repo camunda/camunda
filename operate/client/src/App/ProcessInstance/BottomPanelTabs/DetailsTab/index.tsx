@@ -27,8 +27,6 @@ import {
   DefaultAgentDetail,
   IterationDetail,
   ToolCallDetail,
-  ElementDetailsSection,
-  type ElementDetailsProps,
 } from '../AiAgentTab/AgentDetailPanel';
 
 const DetailsTab: React.FC = () => {
@@ -56,8 +54,28 @@ const DetailsTab: React.FC = () => {
     ? xmlData?.businessObjects[selectedElementId]
     : null;
 
+  const showAgentContent =
+    isAgentElement(selectedElementId) && agentSubprocessKey !== null;
+
+  // Inner ad-hoc subprocess activations share the parent's elementId
+  // (`AI_Agent`), so clicking the agent on the BPMN diagram resolves to
+  // multiple element instances and `resolvedElementInstance` is null. Look up
+  // the outer subprocess instance directly so the agent panel can render
+  // regardless of which entry point the user took (diagram vs. history).
+  const {data: agentSubprocessInstance} = useElementInstance(
+    agentSubprocessKey ?? '',
+    {enabled: showAgentContent && !!agentSubprocessKey},
+  );
+
+  // In agent mode `resolvedElementInstance` is null when the user clicked the
+  // agent on the diagram, so fall back to the outer subprocess instance — this
+  // also routes the dependent queries (useJobs etc.) at the agent's instance,
+  // which is what surfaces e.g. the agent's "Retries Left" in the details table.
   const elementInstanceKey =
-    resolvedElementInstance?.elementInstanceKey ?? null;
+    resolvedElementInstance?.elementInstanceKey ??
+    (showAgentContent
+      ? (agentSubprocessInstance?.elementInstanceKey ?? null)
+      : null);
   const resolvedElementType = resolvedElementInstance?.type;
 
   const {data: calledProcessInstancesSearchResult} = useProcessInstancesSearch(
@@ -107,19 +125,6 @@ const DetailsTab: React.FC = () => {
       : undefined;
   const job = jobSearchResult?.[0];
 
-  const showAgentContent =
-    isAgentElement(selectedElementId) && agentSubprocessKey !== null;
-
-  // Inner ad-hoc subprocess activations share the parent's elementId
-  // (`AI_Agent`), so clicking the agent on the BPMN diagram resolves to
-  // multiple element instances and `resolvedElementInstance` is null. Look up
-  // the outer subprocess instance directly so the agent panel can render
-  // regardless of which entry point the user took (diagram vs. history).
-  const {data: agentSubprocessInstance} = useElementInstance(
-    agentSubprocessKey ?? '',
-    {enabled: showAgentContent && !!agentSubprocessKey},
-  );
-
   const agentData = useMemo(() => {
     if (!showAgentContent || !agentSubprocessKey) {
       return null;
@@ -127,39 +132,18 @@ const DetailsTab: React.FC = () => {
     return getAgentDataForElement(agentSubprocessKey);
   }, [showAgentContent, agentSubprocessKey, getAgentDataForElement]);
 
-  const agentElementDetails = useMemo<ElementDetailsProps | null>(() => {
-    if (!showAgentContent) {
-      return null;
-    }
-    // Prefer the user's resolved selection (specific tool / inner instance).
-    // Fall back to the outer agent subprocess only when the selection can't
-    // be resolved — e.g., clicking AI_Agent on the diagram matches every
-    // inner-instance row, leaving `resolvedElementInstance` null.
-    const source = resolvedElementInstance ?? agentSubprocessInstance;
-    if (!source) {
-      return null;
-    }
-    const {startDate, endDate} = source;
-    return {
-      elementInstanceKey: source.elementInstanceKey ?? '-',
-      executionDuration: startDate
-        ? getExecutionDuration(startDate, endDate)
-        : '-',
-      retriesLeft: job?.retries,
-    };
-  }, [
-    showAgentContent,
-    resolvedElementInstance,
-    agentSubprocessInstance,
-    job,
-  ]);
-
   const rows = useMemo(() => {
-    if (!resolvedElementInstance) {
+    // In agent mode, clicking AI_Agent on the diagram matches every inner
+    // instance, so `resolvedElementInstance` is null. Fall back to the outer
+    // agent subprocess instance so the details table still populates.
+    const source =
+      resolvedElementInstance ??
+      (showAgentContent ? agentSubprocessInstance : null);
+    if (!source) {
       return [];
     }
 
-    const {startDate, endDate} = resolvedElementInstance;
+    const {startDate, endDate} = source;
 
     const baseRows: Array<{
       key: string;
@@ -169,7 +153,7 @@ const DetailsTab: React.FC = () => {
         key: 'element-instance-key',
         columns: [
           {cellContent: 'Element Instance Key'},
-          {cellContent: elementInstanceKey ?? '-'},
+          {cellContent: source.elementInstanceKey ?? '-'},
         ],
       },
       {
@@ -296,7 +280,8 @@ const DetailsTab: React.FC = () => {
     return baseRows;
   }, [
     resolvedElementInstance,
-    elementInstanceKey,
+    showAgentContent,
+    agentSubprocessInstance,
     job,
     businessObject,
     calledProcessInstance,
@@ -310,7 +295,7 @@ const DetailsTab: React.FC = () => {
   // the multi-instance empty-state below: clicking AI_Agent on the diagram
   // matches every inner-instance row, so `resolvedElementInstance` is null.
   if (showAgentContent) {
-    if (!agentData || !agentElementDetails || !selectedElementId) {
+    if (!agentData || !selectedElementId || rows.length === 0) {
       return <StructuredListSkeleton rowCount={5} />;
     }
 
@@ -324,7 +309,15 @@ const DetailsTab: React.FC = () => {
         data-testid="details-tab"
         style={{flex: 1, minHeight: 0, overflowY: 'auto'}}
       >
-        <ElementDetailsSection details={agentElementDetails} />
+        <StructuredList
+          label="Element Instance Details"
+          headerSize="sm"
+          headerColumns={[
+            {cellContent: 'Property', width: '30%'},
+            {cellContent: 'Value', width: '70%'},
+          ]}
+          rows={rows}
+        />
         <h4
           style={{
             fontSize: 'var(--cds-heading-compact-01-font-size)',

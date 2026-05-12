@@ -124,7 +124,9 @@ function historyToAgentElementData(
         toolName: payload.name,
         toolElementId: payload.name,
         toolDescription: '',
-        rationale: '',
+        // Surface the iteration's reasoning so the status accordion has copy
+        // to show while the tool call is in-flight.
+        rationale: current.reasoning,
         input: payload.input ?? {},
         status: 'ACTIVE',
       };
@@ -168,18 +170,26 @@ function historyToAgentElementData(
       });
     } else if (element.role === 'tool_call') {
       const payload = parseToolCall(text);
-      conversation.push({
-        role: 'assistant',
-        content: [],
-        timestamp: element.timestamp,
-        toolCalls: [
-          {
-            id: element.historyElementKey,
-            name: payload.name,
-            arguments: payload.input ?? {},
-          },
-        ],
-      });
+      const newToolCall = {
+        id: element.historyElementKey,
+        name: payload.name,
+        arguments: payload.input ?? {},
+      };
+      // Attach to the preceding assistant message so its text and the tools it
+      // called appear in a single conversation entry (avoids empty-text
+      // assistant blocks that show only tool chips).
+      const lastMsg = conversation[conversation.length - 1];
+      if (lastMsg && lastMsg.role === 'assistant') {
+        lastMsg.toolCalls = lastMsg.toolCalls ?? [];
+        lastMsg.toolCalls.push(newToolCall);
+      } else {
+        conversation.push({
+          role: 'assistant',
+          content: [],
+          timestamp: element.timestamp,
+          toolCalls: [newToolCall],
+        });
+      }
     } else if (element.role === 'tool_result') {
       conversation.push({
         role: 'tool_call_result',

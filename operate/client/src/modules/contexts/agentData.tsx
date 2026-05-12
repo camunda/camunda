@@ -17,6 +17,15 @@ import type {
   AgentToolCall,
 } from './agentData.types';
 
+type ActiveAgentStatus = {
+  elementId: string;
+  label: string;
+  // Whether the canvas should render the animated shine border around this
+  // element. The status tag always renders; the shine is opt-in so nested
+  // agent tasks can show a status without also pulsing.
+  showShine: boolean;
+};
+
 interface AgentDataContextValue {
   isAgentInstance: boolean;
   agentData: Record<string, AgentElementData> | null;
@@ -32,6 +41,11 @@ interface AgentDataContextValue {
     elementId: string,
   ) => {tool: AgentToolCall; iteration: AgentIteration} | null;
   getAgentStatusLabel: () => string | null;
+  // One entry per BPMN element that should render a status tag + shine border.
+  // Consumers (TopPanel overlays) iterate this to support multiple in-flight
+  // agents on the canvas — e.g. an orchestrating agent and a nested AI task
+  // agent both showing their state at once.
+  activeAgentStatuses: ActiveAgentStatus[];
 }
 
 const EMPTY_VALUE: AgentDataContextValue = {
@@ -45,6 +59,7 @@ const EMPTY_VALUE: AgentDataContextValue = {
   getIterationForElement: () => null,
   getToolCallForElement: () => null,
   getAgentStatusLabel: () => null,
+  activeAgentStatuses: [],
 };
 
 const AgentDataContext = createContext<AgentDataContextValue>(EMPTY_VALUE);
@@ -121,6 +136,10 @@ const AgentDataProvider: React.FC<{
         }
         return 'Calling tools...';
       },
+      activeAgentStatuses: buildActiveAgentStatuses(
+        elementData,
+        scenario.agentElementId,
+      ),
     };
   }, [agentInstance, historyResult, scenario]);
 
@@ -130,6 +149,33 @@ const AgentDataProvider: React.FC<{
     </AgentDataContext.Provider>
   );
 };
+
+// Demo wiring: in the prototype scenario a nested "AI task agent" tool runs
+// inside the orchestrating agent. Surface it as a second active status so
+// the canvas shows both tags at once. Replace with real per-agent state once
+// the API exposes nested agent instances.
+const NESTED_TASK_AGENT_ELEMENT_ID = 'AI_Task_Agent';
+const NESTED_TASK_AGENT_LABEL = 'Thinking...';
+
+function buildActiveAgentStatuses(
+  elementData: AgentElementData,
+  agentElementId: string,
+): ActiveAgentStatus[] {
+  const statuses: ActiveAgentStatus[] = [];
+  if (elementData.status !== 'COMPLETED' && elementData.status !== 'FAILED') {
+    statuses.push({
+      elementId: agentElementId,
+      label: 'Calling tools...',
+      showShine: true,
+    });
+  }
+  statuses.push({
+    elementId: NESTED_TASK_AGENT_ELEMENT_ID,
+    label: NESTED_TASK_AGENT_LABEL,
+    showShine: false,
+  });
+  return statuses;
+}
 
 function matchIteration(
   elementData: AgentElementData,
