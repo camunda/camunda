@@ -108,13 +108,19 @@ test.describe('Operations', () => {
 
       await operateProcessesPage.applyButton.click();
 
-      // The cancel operation + index update can take longer than the default
-      // 10s on slow runners (the retry step above also uses 60s for the same
-      // reason). Once the instance moves to CANCELED, the Active+Incidents
-      // filter no longer matches and the empty-state message appears.
-      await expect(operateProcessesPage.noMatchingInstancesMessage).toBeVisible(
-        {timeout: 60000},
-      );
+      // The cancel operation + index update is async. A page reload forces a
+      // fresh backend query so stale index state does not cause a spurious
+      // failure on slow runners.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({timeout: 30000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Validate canceled instance details', async () => {
