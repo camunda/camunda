@@ -75,6 +75,10 @@ identity:
     - id: optimize-loadtest
       name: Optimize Load Tester
       type: confidential
+      # rootUrl + redirectUris are not used by the client_credentials grant but Identity's
+      # ClientInitializationService rejects clients that omit them. Dummies are fine.
+      rootUrl: http://optimize-loadtest
+      redirectUris: /dummy
       secret:
         existingSecret: camunda-credentials
         existingSecretKey: identity-optimize-loadtest-client-secret
