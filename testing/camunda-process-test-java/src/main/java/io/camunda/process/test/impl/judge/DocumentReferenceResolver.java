@@ -26,7 +26,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,11 +75,15 @@ public final class DocumentReferenceResolver {
       return Collections.emptyList();
     }
     LOG.debug("Found {} Camunda document reference(s) in variable", referenceNodes.size());
-    final List<ResolvedDocument> resolved = new ArrayList<>(referenceNodes.size());
+    final Map<DocumentKey, ResolvedDocument> seen = new LinkedHashMap<>();
     for (final JsonNode node : referenceNodes) {
-      resolved.add(download(parseReference(node)));
+      final DocumentReferenceResponse ref = parseReference(node);
+      final DocumentKey key = new DocumentKey(ref.getDocumentId(), ref.getStoreId());
+      if (!seen.containsKey(key)) {
+        seen.put(key, download(ref));
+      }
     }
-    return resolved;
+    return new ArrayList<>(seen.values());
   }
 
   private static List<JsonNode> findReferences(final String variableJson) {
@@ -163,5 +170,30 @@ public final class DocumentReferenceResolver {
       out.write(buffer, 0, read);
     }
     return out.toByteArray();
+  }
+
+  private static final class DocumentKey {
+    private final String documentId;
+    private final String storeId;
+
+    DocumentKey(final String documentId, final String storeId) {
+      this.documentId = documentId;
+      this.storeId = storeId;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (!(o instanceof DocumentKey)) {
+        return false;
+      }
+      final DocumentKey other = (DocumentKey) o;
+      return Objects.equals(documentId, other.documentId)
+          && Objects.equals(storeId, other.storeId);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(documentId, storeId);
+    }
   }
 }
