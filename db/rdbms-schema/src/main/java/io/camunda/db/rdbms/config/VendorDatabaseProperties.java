@@ -11,6 +11,9 @@ import java.util.Properties;
 
 public class VendorDatabaseProperties {
 
+  /** Required property to specify the databaseId. */
+  public static final String DATABASE_ID = "databaseId";
+
   /**
    * Required property to specify the size of the variable value preview in characters. This is used
    * to truncate variable values for preview purposes.
@@ -52,6 +55,7 @@ public class VendorDatabaseProperties {
 
   private final Properties properties;
 
+  private final String databaseId;
   private final int variableValuePreviewSize;
   private final boolean disableFkBeforeTruncate;
   private final boolean supportsInsertBatching;
@@ -62,6 +66,11 @@ public class VendorDatabaseProperties {
 
   public VendorDatabaseProperties(final Properties properties) {
     this.properties = properties;
+
+    if (!properties.containsKey(DATABASE_ID)) {
+      throw new IllegalArgumentException("Property '" + DATABASE_ID + "' is missing");
+    }
+    databaseId = properties.getProperty(DATABASE_ID);
 
     if (!properties.containsKey(VARIABLE_VALUE_PREVIEW_SIZE)) {
       throw new IllegalArgumentException(
@@ -102,6 +111,10 @@ public class VendorDatabaseProperties {
     supportsInsertBatching =
         !properties.containsKey(SUPPORTS_INSERT_BATCHING)
             || Boolean.parseBoolean(properties.getProperty(SUPPORTS_INSERT_BATCHING));
+  }
+
+  public String databaseId() {
+    return databaseId;
   }
 
   public int variableValuePreviewSize() {

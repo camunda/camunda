@@ -26,6 +26,7 @@ public final class VendorDatabasePropertiesLoader {
             "No vendor properties found for databaseId " + databaseId);
       }
     }
+    properties.put(VendorDatabaseProperties.DATABASE_ID, databaseId);
 
     return new VendorDatabaseProperties(properties);
   }

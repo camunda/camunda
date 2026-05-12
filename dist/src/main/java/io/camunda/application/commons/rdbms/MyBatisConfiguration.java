@@ -36,6 +36,7 @@ import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
+import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.TableMetricsMapper;
@@ -335,6 +336,12 @@ public class MyBatisConfiguration {
   MapperFactoryBean<HistoryDeletionMapper> historyDeletionMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, HistoryDeletionMapper.class);
+  }
+
+  @Bean
+  MapperFactoryBean<ReplicationStatusMapper> replicationStatusMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, ReplicationStatusMapper.class);
   }
 
   @Bean

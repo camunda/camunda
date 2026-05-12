@@ -13,6 +13,7 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
+import io.camunda.db.rdbms.read.replication.ReplicationLogStatusProviderFactory;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
@@ -79,6 +80,7 @@ import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
+import io.camunda.db.rdbms.sql.ReplicationStatusMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.TableMetricsMapper;
@@ -389,6 +391,14 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory(
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final ReplicationStatusMapper replicationStatusMapper) {
+    return new ReplicationLogStatusProviderFactory(
+        vendorDatabaseProperties, replicationStatusMapper);
+  }
+
+  @Bean
   public GlobalListenerDbReader globalListenerRdbmsReader(
       final GlobalListenerMapper globalListenerMapper, final RdbmsReaderConfig readerConfig) {
     return new GlobalListenerDbReader(globalListenerMapper, readerConfig);
@@ -514,7 +524,8 @@ public class RdbmsConfiguration {
       final IncidentProcessInstanceStatisticsByDefinitionDbReader
           incidentProcessInstanceStatisticsByDefinitionReader,
       final GlobalListenerDbReader globalListenerDbReader,
-      final DeployedResourceDbReader deployedResourceDbReader) {
+      final DeployedResourceDbReader deployedResourceDbReader,
+      final ReplicationLogStatusProviderFactory replicationLogStatusProviderFactory) {
     return new RdbmsService(
         rdbmsWriterFactory,
         auditLogReader,
@@ -554,7 +565,8 @@ public class RdbmsConfiguration {
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,
         globalListenerDbReader,
-        deployedResourceDbReader);
+        deployedResourceDbReader,
+        replicationLogStatusProviderFactory);
   }
 
   @Bean
