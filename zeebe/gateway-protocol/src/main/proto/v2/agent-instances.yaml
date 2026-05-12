@@ -270,6 +270,7 @@ components:
         - creationDate
         - lastUpdatedDate
         - completionDate
+        - elementInstanceKeys
       properties:
         agentInstanceKey:
           description: The unique key for this agent instance.
@@ -323,6 +324,12 @@ components:
           format: date-time
           nullable: true
           description: The date when this agent instance completed. Null while the agent is still running.
+        elementInstanceKeys:
+          description: The keys of all element instances associated with this agent instance.
+          type: array
+          items:
+            allOf:
+                - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
 
     AgentInstanceDefinition:
       description: The static definition of an agent instance, set once at creation.
