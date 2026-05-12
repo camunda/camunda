@@ -7,7 +7,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: loadTestMetrics.sh <namespace> [duration_seconds] [endpoint] [extra_curl_opts]
+Usage: loadTestMetrics.sh <namespace> [duration_seconds] [endpoint] [extra_curl_opts] [time_anchor]
 
 Arguments:
   namespace          Substituted for $NAMESPACE in queries (required).
@@ -16,6 +16,12 @@ Arguments:
                      (assumes a `kubectl port-forward` is open in another terminal).
   extra_curl_opts    Free-form curl options string, e.g. `--user "u:p"`.
                      Pass "" if not needed. Default: "".
+  time_anchor        Optional Prometheus `time` parameter — RFC3339 (e.g.
+                     2026-05-09T12:00:00Z) or Unix timestamp. When set, every
+                     query's range ends at this instant instead of "now". Useful
+                     for snapshotting runs whose namespace TTL has already
+                     expired (Prometheus retains scraped data past namespace
+                     deletion). Default: unset (queries end at "now").
 
 Options:
   -h, --help         Show this help message.
@@ -29,6 +35,12 @@ Examples:
     "$NAMESPACE" "$DURATION_SECONDS" \
     "https://ci-monitor.benchmark.camunda.cloud" \
     "--user $PROM_USER:$PROM_PASS" > /tmp/results.json
+
+  # Historical snapshot of an already-cleaned-up namespace:
+  ./loadTestMetrics.sh c8-foo-20260508 3600 \
+    "https://ci-monitor.benchmark.camunda.cloud" \
+    "--user $PROM_USER:$PROM_PASS" \
+    2026-05-09T12:00:00Z > /tmp/results.json
 EOF
 }
 
@@ -48,6 +60,7 @@ NAMESPACE="$1"
 DURATION_SECONDS="${2:-600}"
 ENDPOINT="${3:-http://localhost:9090}"
 EXTRA_OPTS="${4-}"
+TIME_ANCHOR="${5-}"
 
 if (( ${#NAMESPACE} > 63 )) || ! [[ "$NAMESPACE" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
   echo "Error: namespace '$NAMESPACE' must be a valid Kubernetes DNS label (max 63 characters; lowercase alphanumeric or '-', and must start and end with an alphanumeric character)." >&2
@@ -80,6 +93,13 @@ done
 # array is empty (bash 3.2 + set -u would otherwise raise "unbound variable").
 read -ra EXTRA_OPTS_ARR <<<"$EXTRA_OPTS"
 
+# Build the optional time anchor as a separate curl arg array so we can expand
+# it conditionally (empty arrays + `set -u` would otherwise error).
+declare -a TIME_ARGS=()
+if [[ -n "$TIME_ANCHOR" ]]; then
+  TIME_ARGS=(--data-urlencode "time=$TIME_ANCHOR")
+fi
+
 ### --- Run queries ---
 
 count=$(yq '.queries | length' "$QUERIES_FILE")
@@ -94,7 +114,8 @@ for i in $(seq 0 $((count - 1))); do
 
   resp=$(curl -sf -G ${EXTRA_OPTS_ARR[@]+"${EXTRA_OPTS_ARR[@]}"} \
         "${ENDPOINT}/api/v1/query" \
-        --data-urlencode "query=$promql" 2>/dev/null) || continue
+        --data-urlencode "query=$promql" \
+        ${TIME_ARGS[@]+"${TIME_ARGS[@]}"} 2>/dev/null) || continue
 
   [[ "$(jq -r '.status' <<<"$resp" 2>/dev/null || echo error)" == "success" ]] || continue
 
