@@ -6,13 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {Dropdown, TextInput} from '@carbon/react';
 import {Close, Maximize} from '@carbon/react/icons';
 import {createPortal} from 'react-dom';
 import {Field, useForm} from 'react-final-form';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {IconTextInput} from 'modules/components/IconInput';
+import {EDITOR_MODE_TOGGLE} from 'modules/feature-flags';
+import {editorModeStore} from 'modules/stores/editorMode';
 import type {VariableFilterOperator} from 'modules/stores/variableFilter';
 import {VARIABLE_FILTER_OPERATORS} from './constants';
 import {FilterRow, ValueFieldContainer, DeleteButton} from './styled';
@@ -22,6 +24,11 @@ type Props = {
   onDelete: () => void;
   isDeleteHidden: boolean;
   rowIndex: number;
+  onJsonEditorOpen: () => void;
+  onJsonEditorClose: () => void;
+  onExpandRow?: (index: number) => void;
+  onEditValue?: (index: number) => void;
+  onSlideOverOpen?: (index: number) => void;
 };
 
 const getValuePlaceholder = (operator: VariableFilterOperator): string => {
@@ -40,9 +47,16 @@ const VariableFilterRow: React.FC<Props> = ({
   onDelete,
   isDeleteHidden,
   rowIndex,
+  onJsonEditorOpen,
+  onJsonEditorClose,
+  onExpandRow,
+  onEditValue,
+  onSlideOverOpen,
 }) => {
   const [isJsonEditorOpen, setIsJsonEditorOpen] = useState(false);
   const form = useForm();
+  const iconButtonRef = useRef<HTMLButtonElement>(null);
+  const editorMode = EDITOR_MODE_TOGGLE ? editorModeStore.mode : 'default';
 
   return (
     <FilterRow>
@@ -118,48 +132,93 @@ const VariableFilterRow: React.FC<Props> = ({
                       dirtySinceLastSubmit: true,
                     }}
                   >
-                    {({input, meta}) => (
-                      <>
-                        <IconTextInput
-                          id={input.name}
-                          name={input.name}
-                          labelText="Value"
-                          hideLabel
-                          placeholder={getValuePlaceholder(operatorInput.value)}
-                          value={input.value}
-                          onChange={input.onChange}
-                          onBlur={input.onBlur}
-                          invalid={
-                            !meta.dirtySinceLastSubmit &&
-                            meta.submitError !== undefined
-                          }
-                          invalidText={
-                            meta.dirtySinceLastSubmit
-                              ? undefined
-                              : meta.submitError
-                          }
-                          size="sm"
-                          Icon={Maximize}
-                          buttonLabel="Open JSON editor"
-                          onIconClick={() => setIsJsonEditorOpen(true)}
-                          data-testid={`variable-filter-value-${rowIndex}`}
-                        />
-                        {isJsonEditorOpen &&
-                          createPortal(
-                            <JSONEditorModal
-                              isVisible={isJsonEditorOpen}
-                              title="Edit Variable Value"
-                              value={input.value}
-                              onClose={() => setIsJsonEditorOpen(false)}
-                              onApply={(value) => {
-                                input.onChange(value ?? '');
-                                setIsJsonEditorOpen(false);
-                              }}
-                            />,
-                            document.body,
-                          )}
-                      </>
-                    )}
+                    {({input, meta}) => {
+                      const handleIconClick = () => {
+                        if (editorMode === 'inline') {
+                          onExpandRow?.(rowIndex);
+                        } else if (editorMode === 'step') {
+                          onEditValue?.(rowIndex);
+                        } else if (editorMode === 'slideOver') {
+                          onSlideOverOpen?.(rowIndex);
+                        } else {
+                          setIsJsonEditorOpen(true);
+                          onJsonEditorOpen();
+                        }
+                      };
+
+                      return (
+                        <>
+                          <IconTextInput
+                            id={input.name}
+                            name={input.name}
+                            labelText="Value"
+                            hideLabel
+                            placeholder={getValuePlaceholder(
+                              operatorInput.value,
+                            )}
+                            value={input.value}
+                            onChange={input.onChange}
+                            onBlur={input.onBlur}
+                            invalid={
+                              !meta.dirtySinceLastSubmit &&
+                              meta.submitError !== undefined
+                            }
+                            invalidText={
+                              meta.dirtySinceLastSubmit
+                                ? undefined
+                                : meta.submitError
+                            }
+                            size="sm"
+                            Icon={Maximize}
+                            buttonLabel="Open JSON editor"
+                            buttonRef={iconButtonRef}
+                            onIconClick={handleIconClick}
+                            data-testid={`variable-filter-value-${rowIndex}`}
+                          />
+                          {editorMode === 'default' &&
+                            isJsonEditorOpen &&
+                            createPortal(
+                              <div className="variable-filter-json-editor">
+                                <JSONEditorModal
+                                  isVisible={isJsonEditorOpen}
+                                  title={(() => {
+                                    const variableName = form
+                                      .getState()
+                                      .values?.[
+                                        'conditions'
+                                      ]?.[rowIndex]?.name?.trim();
+                                    return variableName
+                                      ? `Edit value: ${variableName}`
+                                      : 'Edit Variable Value';
+                                  })()}
+                                  modalLabel={(() => {
+                                    const variableName = form
+                                      .getState()
+                                      .values?.[
+                                        'conditions'
+                                      ]?.[rowIndex]?.name?.trim();
+                                    return variableName
+                                      ? `Variable: ${variableName}`
+                                      : undefined;
+                                  })()}
+                                  launcherButtonRef={iconButtonRef}
+                                  value={input.value}
+                                  onClose={() => {
+                                    setIsJsonEditorOpen(false);
+                                    onJsonEditorClose();
+                                  }}
+                                  onApply={(value) => {
+                                    input.onChange(value ?? '');
+                                    setIsJsonEditorOpen(false);
+                                    onJsonEditorClose();
+                                  }}
+                                />
+                              </div>,
+                              document.body,
+                            )}
+                        </>
+                      );
+                    }}
                   </Field>
                 )}
               </ValueFieldContainer>

@@ -20,12 +20,21 @@ import {VARIABLE_FILTER_OPERATORS} from './constants';
 import {VariableFilterModal} from './VariableFilterModal';
 import {ConditionList, ConditionItem} from './styled';
 
+const MAX_VALUE_LENGTH = 50;
+
+const truncateValue = (value: string): string => {
+  if (value.length <= MAX_VALUE_LENGTH) {
+    return value;
+  }
+  return `${value.slice(0, MAX_VALUE_LENGTH)}…`;
+};
+
 const getConditionLabel = (condition: VariableCondition): string => {
   const config = VARIABLE_FILTER_OPERATORS.find(
     (op) => op.id === condition.operator,
   );
   return config?.requiresValue
-    ? `${condition.name} ${config.label} ${condition.value}`
+    ? `${condition.name} ${config.label} ${truncateValue(condition.value)}`
     : `${condition.name} ${config?.label ?? condition.operator}`;
 };
 

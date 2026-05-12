@@ -44,6 +44,8 @@ describe('<VariableFilterRow />', () => {
         rowIndex={0}
         onDelete={vi.fn()}
         isDeleteHidden
+        onJsonEditorOpen={vi.fn()}
+        onJsonEditorClose={vi.fn()}
       />,
       {wrapper: getWrapper()},
     );
@@ -62,6 +64,8 @@ describe('<VariableFilterRow />', () => {
         rowIndex={0}
         onDelete={vi.fn()}
         isDeleteHidden
+        onJsonEditorOpen={vi.fn()}
+        onJsonEditorClose={vi.fn()}
       />,
       {wrapper: getWrapper({operator: 'exists'})},
     );
@@ -78,6 +82,8 @@ describe('<VariableFilterRow />', () => {
         rowIndex={0}
         onDelete={vi.fn()}
         isDeleteHidden
+        onJsonEditorOpen={vi.fn()}
+        onJsonEditorClose={vi.fn()}
       />,
       {wrapper: getWrapper()},
     );
@@ -91,6 +97,8 @@ describe('<VariableFilterRow />', () => {
         rowIndex={0}
         onDelete={vi.fn()}
         isDeleteHidden={false}
+        onJsonEditorOpen={vi.fn()}
+        onJsonEditorClose={vi.fn()}
       />,
       {wrapper: getWrapper()},
     );
@@ -105,6 +113,8 @@ describe('<VariableFilterRow />', () => {
         rowIndex={0}
         onDelete={vi.fn()}
         isDeleteHidden
+        onJsonEditorOpen={vi.fn()}
+        onJsonEditorClose={vi.fn()}
       />,
       {wrapper: getWrapper()},
     );
@@ -121,6 +131,8 @@ describe('<VariableFilterRow />', () => {
         rowIndex={0}
         onDelete={vi.fn()}
         isDeleteHidden
+        onJsonEditorOpen={vi.fn()}
+        onJsonEditorClose={vi.fn()}
       />,
       {wrapper: getWrapper({name: 'status'})},
     );
@@ -138,6 +150,8 @@ describe('<VariableFilterRow />', () => {
         rowIndex={0}
         onDelete={onDelete}
         isDeleteHidden={false}
+        onJsonEditorOpen={vi.fn()}
+        onJsonEditorClose={vi.fn()}
       />,
       {wrapper: getWrapper()},
     );
@@ -154,6 +168,8 @@ describe('<VariableFilterRow />', () => {
         rowIndex={0}
         onDelete={vi.fn()}
         isDeleteHidden
+        onJsonEditorOpen={vi.fn()}
+        onJsonEditorClose={vi.fn()}
       />,
       {wrapper: getWrapper()},
     );
@@ -166,6 +182,25 @@ describe('<VariableFilterRow />', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should call onJsonEditorOpen when editor icon is clicked', async () => {
+    const onJsonEditorOpen = vi.fn();
+    const {user} = render(
+      <VariableFilterRow
+        fieldName="conditions[0]"
+        rowIndex={0}
+        onDelete={vi.fn()}
+        isDeleteHidden
+        onJsonEditorOpen={onJsonEditorOpen}
+        onJsonEditorClose={vi.fn()}
+      />,
+      {wrapper: getWrapper({name: 'status'})},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Open JSON editor'}));
+
+    expect(onJsonEditorOpen).toHaveBeenCalledTimes(1);
+  });
+
   it('should show value field after switching back from exists to equals', async () => {
     const {user} = render(
       <VariableFilterRow
@@ -173,6 +208,8 @@ describe('<VariableFilterRow />', () => {
         rowIndex={0}
         onDelete={vi.fn()}
         isDeleteHidden
+        onJsonEditorOpen={vi.fn()}
+        onJsonEditorClose={vi.fn()}
       />,
       {wrapper: getWrapper({operator: 'exists'})},
     );

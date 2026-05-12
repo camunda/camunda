@@ -38,6 +38,8 @@ type Props = {
   editModeTitle?: string;
   readOnly?: boolean;
   allowModeToggle?: boolean;
+  launcherButtonRef?: React.RefObject<HTMLButtonElement | null>;
+  modalLabel?: React.ReactNode;
 };
 
 const JSONEditorModal: React.FC<Props> = observer(
@@ -50,6 +52,8 @@ const JSONEditorModal: React.FC<Props> = observer(
     editModeTitle,
     readOnly = false,
     allowModeToggle = false,
+    launcherButtonRef,
+    modalLabel,
   }) => {
     const [editedValue, setEditedValue] = useState(value);
     const [isValid, setIsValid] = useState(true);
@@ -96,6 +100,8 @@ const JSONEditorModal: React.FC<Props> = observer(
       <Modal
         open={isVisible}
         modalHeading={isInEditMode && editModeTitle ? editModeTitle : title}
+        modalLabel={modalLabel}
+        launcherButtonRef={launcherButtonRef}
         onRequestClose={() => {
           onClose?.();
         }}

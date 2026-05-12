@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const MULTI_VARIABLE_FILTER = false;
+const MULTI_VARIABLE_FILTER = true;
+const EDITOR_MODE_TOGGLE = true;
 
-export {MULTI_VARIABLE_FILTER};
+export {MULTI_VARIABLE_FILTER, EDITOR_MODE_TOGGLE};

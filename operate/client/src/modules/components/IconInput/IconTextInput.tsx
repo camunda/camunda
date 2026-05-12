@@ -19,6 +19,7 @@ interface Props extends React.ComponentProps<typeof BaseTextInput> {
   onIconClick: () => void;
   buttonLabel: string;
   tooltipPosition?: React.ComponentProps<typeof BaseIconButton>['align'];
+  buttonRef?: React.Ref<HTMLButtonElement>;
 }
 
 const IconTextInput: React.FC<Props> = ({
@@ -27,6 +28,7 @@ const IconTextInput: React.FC<Props> = ({
   onIconClick,
   buttonLabel,
   tooltipPosition = 'top-end',
+  buttonRef,
   ...props
 }) => {
   return (
@@ -34,6 +36,7 @@ const IconTextInput: React.FC<Props> = ({
       <TextInput invalid={invalid} {...props} />
       <IconContainer>
         <IconButton
+          ref={buttonRef}
           kind="ghost"
           size="sm"
           onClick={onIconClick}
