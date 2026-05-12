@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda.optimize</groupId>
+    <artifactId>optimize-parent</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>optimize-data-generator</artifactId>
+  <name>Optimize Data Generator</name>
+  <description>Standalone CLI tool that generates synthetic Zeebe process-instance data and bulk-indexes it
+    into Elasticsearch. Used for local development, performance testing, and PoC demos.</description>
+
+  <dependencies>
+
+    <!--
+      optimize-backend provides all Zeebe record DTOs (ZeebeRecordDto, ZeebeProcessInstanceRecordDto,
+      ZeebeIncidentRecordDto, ZeebeUserTaskRecordDto, etc.), optimize-commons (ZeebeConstants,
+      ObjectMapperFactory, OptimizeElasticsearchClient, DatabaseConstants), zeebe-protocol,
+      the Elasticsearch clients, and Apache HTTP components — everything the generator needs.
+    -->
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- Logging runtime (needed for standalone CLI execution) -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Required at runtime by the ES low-level REST client -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpasyncclient</artifactId>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Build an executable uber-jar for the CLI. Run via:
+           java -jar optimize-data-generator-VERSION-shaded.jar -\-instances 100000 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>shaded</shadedClassifierName>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>io.camunda.optimize.test.generator.ZeebeDataGeneratorCli</mainClass>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
