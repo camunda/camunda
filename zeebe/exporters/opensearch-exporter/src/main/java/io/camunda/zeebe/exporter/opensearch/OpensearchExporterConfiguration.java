@@ -167,6 +167,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
       case CONDITIONAL_EVALUATION -> index.conditionalEvaluation;
       case GLOBAL_LISTENER_BATCH -> index.globalListenerBatch;
       case GLOBAL_LISTENER -> index.globalListener;
+      case AGENT_INSTANCE -> index.agentInstance;
       default -> false;
     };
   }
@@ -281,6 +282,8 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
 
     public boolean globalListenerBatch = true;
     public boolean globalListener = true;
+
+    public boolean agentInstance = true;
 
     // index settings
     private Integer numberOfShards = null;
