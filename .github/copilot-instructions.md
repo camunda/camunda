@@ -72,6 +72,9 @@ Note: `-Dquickly` skips tests, checks, and Optimize. Add `-DskipTests=false` to 
 - Enforced by the Maven Spotless plugin (Google Java Format).
 - Follow conventions in `CONTRIBUTING.md` and the
   [Zeebe Code Style wiki](https://github.com/camunda/camunda/wiki/Code-Style).
+- Repository is currently being migrated to use jspecify nullness annotations.
+  Please add `@Nullable` and `@NullMarked` annotations in classes where they are missing in order to increase coverage.
+  You should do that in a separate `refactor: ` commit.
 
 ## Testing Conventions
 
