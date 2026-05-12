@@ -26,19 +26,20 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
+import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.util.collection.Tuple;
 import jakarta.servlet.ServletContext;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
-import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
@@ -85,17 +86,13 @@ public class SystemControllerTest extends RestControllerTest {
   @MockitoBean SecurityConfiguration securityConfiguration;
   @MockitoBean ServletContext servletContext;
 
-  // Environment is provided by SystemControllerTestConfiguration
-  @org.springframework.beans.factory.annotation.Autowired Environment environment;
+  // WebappConfiguration is provided by SystemControllerTestConfiguration
+  @Autowired WebappConfiguration webappConfiguration;
 
   @BeforeEach
   void setupUsageMetricsServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-  }
-
-  private MockEnvironment getMockEnvironment() {
-    return (MockEnvironment) environment;
   }
 
   @Test
@@ -512,11 +509,7 @@ public class SystemControllerTest extends RestControllerTest {
 
     when(servletContext.getContextPath()).thenReturn("");
 
-    // admin is disabled via webapp-enabled flag
-    getMockEnvironment().setProperty("camunda.admin.webapp-enabled", "false");
-
-    // tasklist is disabled via ui-enabled flag
-    getMockEnvironment().setProperty("camunda.webapps.tasklist.ui-enabled", "false");
+    webappConfiguration.setActiveComponents(List.of("operate"));
 
     // when/then
     webClient

@@ -23,9 +23,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
-import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
@@ -92,26 +90,6 @@ public class SystemControllerLegacyPropertyTest extends RestControllerTest {
       cloud.setMixpanelToken("test-token");
       cloud.setMixpanelApiHost("test-host");
       return config;
-    }
-
-    @Bean
-    @Primary
-    public Environment testEnvironment() {
-      final MockEnvironment env = new MockEnvironment();
-
-      env.setProperty("spring.servlet.multipart.max-request-size", "4MB");
-
-      env.setProperty("camunda.admin.webapp-enabled", "true");
-      env.setProperty("camunda.webapps.admin.enabled", "true");
-      env.setProperty("camunda.webapps.admin.ui-enabled", "true");
-      env.setProperty("camunda.operate.webapp-enabled", "true");
-      env.setProperty("camunda.webapps.operate.enabled", "true");
-      env.setProperty("camunda.webapps.operate.ui-enabled", "true");
-      env.setProperty("camunda.tasklist.webapp-enabled", "true");
-      env.setProperty("camunda.webapps.tasklist.enabled", "true");
-      env.setProperty("camunda.webapps.tasklist.ui-enabled", "true");
-
-      return env;
     }
   }
 }

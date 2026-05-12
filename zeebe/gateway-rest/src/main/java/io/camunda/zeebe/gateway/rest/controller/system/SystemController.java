@@ -30,10 +30,8 @@ import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.ServletContext;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,14 +41,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/v2/system")
 public class SystemController {
 
-  private static final List<String> KNOWN_COMPONENTS = List.of("admin", "operate", "tasklist");
-
   private final UsageMetricsServices usageMetricsServices;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final GatewayRestConfiguration gatewayRestConfiguration;
   private final SecurityConfiguration securityConfiguration;
   private final ServletContext servletContext;
-  private final Environment environment;
   private final WebappConfiguration webappConfiguration;
   private final Long maxRequestSizeBytes;
 
@@ -60,7 +55,6 @@ public class SystemController {
       final GatewayRestConfiguration gatewayRestConfiguration,
       @Autowired(required = false) final SecurityConfiguration securityConfiguration,
       @Autowired(required = false) final ServletContext servletContext,
-      @Autowired(required = false) final Environment environment,
       @Autowired(required = false) final WebappConfiguration webappConfiguration,
       @Value("${spring.servlet.multipart.max-request-size:4MB}") final DataSize maxRequestSize) {
     this.usageMetricsServices = usageMetricsServices;
@@ -68,7 +62,6 @@ public class SystemController {
     this.gatewayRestConfiguration = gatewayRestConfiguration;
     this.securityConfiguration = securityConfiguration;
     this.servletContext = servletContext;
-    this.environment = environment;
     this.webappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     this.maxRequestSizeBytes = maxRequestSize != null ? maxRequestSize.toBytes() : null;
@@ -110,26 +103,9 @@ public class SystemController {
   }
 
   private ComponentsConfigurationResponse buildComponentsConfiguration() {
-    final List<String> activeComponents =
-        KNOWN_COMPONENTS.stream().filter(this::isComponentEnabled).toList();
-    return ComponentsConfigurationResponse.Builder.create().active(activeComponents).build();
-  }
-
-  private boolean isComponentEnabled(final String name) {
-    if (environment == null) {
-      return false;
-    }
-    final Boolean legacyEnabled =
-        environment.getProperty("camunda." + name + ".webapp-enabled", Boolean.class);
-    final Boolean unifiedEnabled =
-        environment.getProperty("camunda.webapps." + name + ".enabled", Boolean.class);
-    final Boolean uiEnabled =
-        environment.getProperty("camunda.webapps." + name + ".ui-enabled", Boolean.class);
-
-    // Default to true if property is not set
-    return (legacyEnabled == null || legacyEnabled)
-        && (unifiedEnabled == null || unifiedEnabled)
-        && (uiEnabled == null || uiEnabled);
+    return ComponentsConfigurationResponse.Builder.create()
+        .active(webappConfiguration.getActiveComponents())
+        .build();
   }
 
   private DeploymentConfigurationResponse buildDeploymentConfiguration() {

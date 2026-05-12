@@ -7,11 +7,15 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class WebappConfiguration {
 
   private boolean enterprise = false;
   private boolean loginDelegated = false;
   private Cloud cloud = new Cloud();
+  private List<String> activeComponents = new ArrayList<>();
 
   public boolean isEnterprise() {
     return enterprise;
@@ -35,6 +39,14 @@ public class WebappConfiguration {
 
   public void setCloud(final Cloud cloud) {
     this.cloud = cloud;
+  }
+
+  public List<String> getActiveComponents() {
+    return activeComponents;
+  }
+
+  public void setActiveComponents(final List<String> activeComponents) {
+    this.activeComponents = activeComponents;
   }
 
   public static class Cloud {
