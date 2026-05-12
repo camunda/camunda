@@ -16,10 +16,9 @@
 package io.camunda.process.test.impl.judge;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -51,12 +50,14 @@ public final class DocumentReferenceResolver {
   static final String DOCUMENT_TYPE_VALUE = "camunda";
 
   private static final Logger LOG = LoggerFactory.getLogger(DocumentReferenceResolver.class);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final CamundaClient client;
+  private final CamundaAssertJsonMapper jsonMapper;
 
-  public DocumentReferenceResolver(final CamundaClient client) {
+  public DocumentReferenceResolver(
+      final CamundaClient client, final CamundaAssertJsonMapper jsonMapper) {
     this.client = client;
+    this.jsonMapper = jsonMapper;
   }
 
   /**
@@ -70,14 +71,14 @@ public final class DocumentReferenceResolver {
    *     downloaded
    */
   public List<ResolvedDocument> resolve(final String variableJson) {
-    final List<JsonNode> referenceNodes = findReferences(variableJson);
+    final List<JsonNode> referenceNodes = findReferences(variableJson, jsonMapper);
     if (referenceNodes.isEmpty()) {
       return Collections.emptyList();
     }
     LOG.debug("Found {} Camunda document reference(s) in variable", referenceNodes.size());
     final Map<DocumentKey, ResolvedDocument> seen = new LinkedHashMap<>();
     for (final JsonNode node : referenceNodes) {
-      final DocumentReferenceResponse ref = parseReference(node);
+      final DocumentReferenceResponse ref = parseReference(node, jsonMapper);
       final DocumentKey key = new DocumentKey(ref.getDocumentId(), ref.getStoreId());
       if (!seen.containsKey(key)) {
         seen.put(key, download(ref));
@@ -86,8 +87,9 @@ public final class DocumentReferenceResolver {
     return new ArrayList<>(seen.values());
   }
 
-  private static List<JsonNode> findReferences(final String variableJson) {
-    final JsonNode root = parseJsonOrNull(variableJson);
+  private static List<JsonNode> findReferences(
+      final String variableJson, final CamundaAssertJsonMapper jsonMapper) {
+    final JsonNode root = parseJsonOrNull(variableJson, jsonMapper);
     if (root == null) {
       return Collections.emptyList();
     }
@@ -96,13 +98,14 @@ public final class DocumentReferenceResolver {
     return references;
   }
 
-  private static JsonNode parseJsonOrNull(final String variableJson) {
+  private static JsonNode parseJsonOrNull(
+      final String variableJson, final CamundaAssertJsonMapper jsonMapper) {
     if (variableJson == null || variableJson.isEmpty()) {
       return null;
     }
     try {
-      return OBJECT_MAPPER.readTree(variableJson);
-    } catch (final IOException e) {
+      return jsonMapper.readJson(variableJson, JsonNode.class);
+    } catch (final CamundaAssertJsonMapper.JsonMappingException e) {
       LOG.debug(
           "Variable value is not valid JSON, skipping document resolution: {}", e.getMessage());
       return null;
@@ -134,11 +137,12 @@ public final class DocumentReferenceResolver {
         && DOCUMENT_TYPE_VALUE.equals(typeNode.asText());
   }
 
-  private static DocumentReferenceResponse parseReference(final JsonNode referenceNode) {
+  private static DocumentReferenceResponse parseReference(
+      final JsonNode referenceNode, final CamundaAssertJsonMapper jsonMapper) {
     final DocumentReferenceResponse reference;
     try {
-      reference = OBJECT_MAPPER.treeToValue(referenceNode, DocumentReferenceResponseImpl.class);
-    } catch (final IOException e) {
+      reference = jsonMapper.readJson(referenceNode.toString(), DocumentReferenceDto.class);
+    } catch (final CamundaAssertJsonMapper.JsonMappingException e) {
       throw new IllegalStateException(
           "Failed to parse Camunda document reference: " + e.getMessage(), e);
     }
