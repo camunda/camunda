@@ -497,7 +497,7 @@ public class WebSecurityConfig {
     protected boolean isOidcConfigurationEnabled(
         final SecurityConfiguration securityConfiguration) {
       if (securityConfiguration.getAuthentication().getOidc() != null
-          && securityConfiguration.getAuthentication().getOidc().isSet()) {
+          && securityConfiguration.getAuthentication().getOidc().isAnyPropertySet()) {
         return true;
       }
 
@@ -505,7 +505,7 @@ public class WebSecurityConfig {
           .map(AuthenticationConfiguration::getProviders)
           .map(OidcProvidersConfiguration::getOidc)
           .map(Map::values)
-          .map(values -> values.stream().anyMatch(OidcConfiguration::isSet))
+          .map(values -> values.stream().anyMatch(OidcConfiguration::isAnyPropertySet))
           .orElse(false);
     }
 
