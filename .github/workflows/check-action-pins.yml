@@ -2,6 +2,11 @@
 # Policy in .github/zizmor.yml: actions/*, github/*, camunda/* may use tags;
 # everything else must be SHA-pinned. Closes #25934.
 #
+# Reusable workflow — invoked from `ci.yml`'s `pin-check` job so the result
+# rolls up into the `check-results` umbrella that branch protection enforces.
+# File-level gating (skip when no action files changed) happens at the caller
+# via `detect-changes.outputs.actionlint`, and again at the diff step below.
+#
 # Behavior:
 #   - unpinned-uses violations  → ::error + bot PR comment + job fails
 #   - other zizmor audits       → ::warning only (visibility, never gates)
@@ -10,12 +15,7 @@
 name: check-action-pins
 
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/*.yml'
-      - '.github/workflows/*.yaml'
-      - '.github/actions/**/action.yml'
-      - '.github/actions/**/action.yaml'
+  workflow_call:
 
 # pull-requests: write needed for the bot comment.
 # Fork PRs get a read-only token from GitHub — comment step silently skips.
