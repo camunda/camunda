@@ -22,11 +22,11 @@ import org.springframework.stereotype.Service;
 @ConditionalOnSecondaryStorageDisabled
 public class NoDBMembershipService implements MembershipService {
 
-  private final OidcGroupsExtractor oidcGroupsLoader;
+  private final OidcGroupsExtractor oidcGroupsExtractor;
   private final boolean isGroupsClaimConfigured;
 
   public NoDBMembershipService(final SecurityConfiguration securityConfiguration) {
-    oidcGroupsLoader =
+    oidcGroupsExtractor =
         new OidcGroupsExtractor(
             securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
     isGroupsClaimConfigured =
@@ -41,7 +41,7 @@ public class NoDBMembershipService implements MembershipService {
       throws OAuth2AuthenticationException {
     final Set<String> groups =
         isGroupsClaimConfigured
-            ? new HashSet<>(oidcGroupsLoader.extract(tokenClaims))
+            ? new HashSet<>(oidcGroupsExtractor.extract(tokenClaims))
             : Collections.emptySet();
 
     return CamundaAuthentication.of(
