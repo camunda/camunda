@@ -385,6 +385,8 @@ jobs:
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
       - name: Start backend
         working-directory: ./optimize/client
+        env:
+          AUTH0_CLIENTSECRET: "${{ steps.vault_secrets.outputs.AUTH0_CLIENTSECRET }}"
         run: |
           yarn run start-backend-cloud ci &> ./build/backendLogs.log &
       - name: Start frontend
