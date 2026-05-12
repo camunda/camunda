@@ -97,20 +97,17 @@ test.describe('Process Instance History', () => {
     await test.step('Open Process Instances Page', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expect(async () => {
-            await operateFiltersPanelPage.selectProcess('IncidentProcess');
-          }).toPass({intervals: [5_000], timeout: 60_000});
+          await operateFiltersPanelPage.selectProcess('IncidentProcess');
+          await operateFiltersPanelPage.selectVersion('1');
         },
         onFailure: async () => {
           await page.reload();
         },
       });
-      await operateFiltersPanelPage.selectVersion('1');
     });
 
     await test.step('Wait for incident to appear', async () => {
       await operateFiltersPanelPage.clickActiveInstancesCheckbox();
-      await page.waitForTimeout(5000);
       await operateFiltersPanelPage.displayOptionalFilter(
         'Process Instance Key(s)',
       );
@@ -128,6 +125,9 @@ test.describe('Process Instance History', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.selectProcess('IncidentProcess');
+          await operateFiltersPanelPage.selectVersion('1');
+          await operateFiltersPanelPage.clickActiveInstancesCheckbox();
           await operateFiltersPanelPage.displayOptionalFilter(
             'Process Instance Key(s)',
           );
@@ -152,9 +152,6 @@ test.describe('Process Instance History', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.displayOptionalFilter('Variable');
-          await operateFiltersPanelPage.fillVariableNameFilter('wuf');
-          await operateFiltersPanelPage.fillVariableValueFilter('1');
         },
       });
 
@@ -183,24 +180,22 @@ test.describe('Process Instance History', () => {
     });
 
     await test.step('Verify incident is resolved in Instance History', async () => {
-      await page.waitForTimeout(12000);
       await waitForAssertion({
         assertion: async () => {
           await expect(operateProcessInstancePage.incidentsTab).toBeHidden();
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            mainProcessName,
+            ['ACTIVE'],
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            incidentItemName,
+            ['COMPLETED'],
+          );
         },
         onFailure: async () => {
           await page.reload();
         },
       });
-
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        mainProcessName,
-        ['ACTIVE'],
-      );
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        incidentItemName,
-        ['COMPLETED'],
-      );
     });
   });
 
