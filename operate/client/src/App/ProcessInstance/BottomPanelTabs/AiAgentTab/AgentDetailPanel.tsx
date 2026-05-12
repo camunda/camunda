@@ -672,29 +672,32 @@ function ExpandableSegment({
           style={{
             display: 'flex',
             flexDirection: 'row',
-            gap: 'var(--cds-spacing-02)',
             flexShrink: 0,
             alignSelf: 'flex-start',
           }}
         >
-          <IconButton
+          <Button
             kind="ghost"
             size="sm"
-            label="Expand"
-            align="left"
+            hasIconOnly
+            renderIcon={Maximize}
+            iconDescription="Expand"
+            tooltipPosition="top"
             onClick={() => setIsModalOpen(true)}
-          >
-            <Maximize size={16} />
-          </IconButton>
-          <IconButton
+            aria-label="Expand"
+          />
+          <Button
             kind="ghost"
             size="sm"
-            label="Copy"
-            align="left"
-            onClick={() => navigator.clipboard.writeText(content)}
-          >
-            <Copy size={16} />
-          </IconButton>
+            hasIconOnly
+            renderIcon={Copy}
+            iconDescription="Copy"
+            tooltipPosition="top"
+            onClick={() => {
+              navigator.clipboard.writeText(content);
+            }}
+            aria-label="Copy"
+          />
         </div>
       </div>
       <Modal
