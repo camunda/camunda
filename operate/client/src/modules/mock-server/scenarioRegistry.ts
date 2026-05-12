@@ -19,26 +19,26 @@ import type {
 } from 'modules/queries/agentInstances/types';
 
 import {
-  MOCK_AGENT_INSTANCE_KEY,
-  MOCK_AGENT_DEFINITION_KEY,
-  MOCK_AGENT_DEFINITION_ID,
-  MOCK_AGENT_SUBPROCESS_KEY,
-  MOCK_AGENT_SUBPROCESS_ELEMENT_IDS,
-  MOCK_AGENT_AGENT_INSTANCE_KEY,
+  MOCK_AGENT_INSTANCE_KEY_ACTIVE,
+  MOCK_AGENT_DEFINITION_KEY_ACTIVE,
+  MOCK_AGENT_DEFINITION_ID_ACTIVE,
+  MOCK_AGENT_SUBPROCESS_KEY_ACTIVE,
+  MOCK_AGENT_SUBPROCESS_ELEMENT_IDS_ACTIVE,
+  MOCK_AGENT_AGENT_INSTANCE_KEY_ACTIVE,
 } from './agentDemoData/constants';
 import {AGENT_BPMN_XML} from './agentDemoData/agentBpmnXml';
 import {
-  MOCK_AGENT_PROCESS_INSTANCE,
-  MOCK_AGENT_PROCESS_DEFINITION,
-  MOCK_AGENT_ELEMENT_INSTANCES,
-  MOCK_AGENT_ELEMENT_STATISTICS,
-  MOCK_AGENT_SEQUENCE_FLOWS,
-  MOCK_AGENT_VARIABLES,
-  MOCK_AGENT_JOBS,
+  MOCK_AGENT_PROCESS_INSTANCE_ACTIVE,
+  MOCK_AGENT_PROCESS_DEFINITION_ACTIVE,
+  MOCK_AGENT_ELEMENT_INSTANCES_ACTIVE,
+  MOCK_AGENT_ELEMENT_STATISTICS_ACTIVE,
+  MOCK_AGENT_SEQUENCE_FLOWS_ACTIVE,
+  MOCK_AGENT_VARIABLES_ACTIVE,
+  MOCK_AGENT_JOBS_ACTIVE,
 } from './agentDemoData/agentProcessInstance';
 import {
-  MOCK_AGENT_INSTANCE,
-  MOCK_AGENT_HISTORY_ELEMENTS,
+  MOCK_AGENT_INSTANCE_ACTIVE,
+  MOCK_AGENT_HISTORY_ELEMENTS_ACTIVE,
 } from './agentDemoData/agentInstanceData';
 
 type MockElementInstance = ElementInstance & {flowScopeKey: string};
@@ -81,28 +81,28 @@ export interface ScenarioDefinition {
 
 export const SCENARIOS: ScenarioDefinition[] = [
   {
-    instanceKey: MOCK_AGENT_INSTANCE_KEY,
-    definitionKey: MOCK_AGENT_DEFINITION_KEY,
-    definitionId: MOCK_AGENT_DEFINITION_ID,
+    instanceKey: MOCK_AGENT_INSTANCE_KEY_ACTIVE,
+    definitionKey: MOCK_AGENT_DEFINITION_KEY_ACTIVE,
+    definitionId: MOCK_AGENT_DEFINITION_ID_ACTIVE,
     name: 'Agent chat with tools',
     description: 'Ad-hoc subprocess with agent + tools bundled together',
     pattern: 'subprocess',
     agentElementId: 'AI_Agent',
-    agentElementIds: MOCK_AGENT_SUBPROCESS_ELEMENT_IDS,
-    agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY,
+    agentElementIds: MOCK_AGENT_SUBPROCESS_ELEMENT_IDS_ACTIVE,
+    agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_ACTIVE,
     bpmnXml: AGENT_BPMN_XML,
-    processInstance: MOCK_AGENT_PROCESS_INSTANCE,
-    processDefinition: MOCK_AGENT_PROCESS_DEFINITION,
-    elementInstances: MOCK_AGENT_ELEMENT_INSTANCES,
-    elementStatistics: MOCK_AGENT_ELEMENT_STATISTICS,
-    sequenceFlows: MOCK_AGENT_SEQUENCE_FLOWS,
-    variables: MOCK_AGENT_VARIABLES,
-    jobs: MOCK_AGENT_JOBS,
+    processInstance: MOCK_AGENT_PROCESS_INSTANCE_ACTIVE,
+    processDefinition: MOCK_AGENT_PROCESS_DEFINITION_ACTIVE,
+    elementInstances: MOCK_AGENT_ELEMENT_INSTANCES_ACTIVE,
+    elementStatistics: MOCK_AGENT_ELEMENT_STATISTICS_ACTIVE,
+    sequenceFlows: MOCK_AGENT_SEQUENCE_FLOWS_ACTIVE,
+    variables: MOCK_AGENT_VARIABLES_ACTIVE,
+    jobs: MOCK_AGENT_JOBS_ACTIVE,
     agentInstances: [
       {
-        instance: MOCK_AGENT_INSTANCE,
-        elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY,
-        history: MOCK_AGENT_HISTORY_ELEMENTS,
+        instance: MOCK_AGENT_INSTANCE_ACTIVE,
+        elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_ACTIVE,
+        history: MOCK_AGENT_HISTORY_ELEMENTS_ACTIVE,
       },
     ],
   },

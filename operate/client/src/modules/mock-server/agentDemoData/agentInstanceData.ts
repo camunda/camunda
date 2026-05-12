@@ -11,16 +11,16 @@ import type {
   HistoryElement,
 } from 'modules/queries/agentInstances/types';
 import {
-  MOCK_AGENT_AGENT_INSTANCE_KEY,
-  MOCK_AGENT_DEFINITION_KEY,
-  MOCK_AGENT_INSTANCE_KEY,
-  MOCK_AGENT_SUBPROCESS_KEY,
+  MOCK_AGENT_AGENT_INSTANCE_KEY_ACTIVE,
+  MOCK_AGENT_DEFINITION_KEY_ACTIVE,
+  MOCK_AGENT_INSTANCE_KEY_ACTIVE,
+  MOCK_AGENT_SUBPROCESS_KEY_ACTIVE,
 } from './constants';
 
 const JOB_KEY = '4451799813685011';
 
-export const MOCK_AGENT_INSTANCE: AgentInstance = {
-  agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY,
+export const MOCK_AGENT_INSTANCE_ACTIVE: AgentInstance = {
+  agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_ACTIVE,
   status: 'CALLING_TOOL',
   definition: {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
@@ -58,8 +58,8 @@ You have access to the following tools:
   },
   creationTime: '2026-03-26T14:30:00.300Z',
   elementId: 'AI_Agent',
-  processInstanceKey: MOCK_AGENT_INSTANCE_KEY,
-  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY,
+  processInstanceKey: MOCK_AGENT_INSTANCE_KEY_ACTIVE,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_ACTIVE,
   tenantId: '<default>',
 };
 
@@ -70,8 +70,8 @@ const baseElement = (overrides: {
   content: string;
   metrics?: HistoryElement['metrics'];
 }): HistoryElement => ({
-  agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY,
-  elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY,
+  agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_ACTIVE,
+  elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_ACTIVE,
   jobKey: JOB_KEY,
   committed: true,
   metrics: {},
@@ -79,7 +79,7 @@ const baseElement = (overrides: {
   content: [{contentType: 'text', content: overrides.content}],
 });
 
-export const MOCK_AGENT_HISTORY_ELEMENTS: HistoryElement[] = [
+export const MOCK_AGENT_HISTORY_ELEMENTS_ACTIVE: HistoryElement[] = [
   // ----- Iteration 1: user asks, agent calls ListUsers -----
   baseElement({
     historyElementKey: '6755399441055700',
