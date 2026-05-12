@@ -12,6 +12,7 @@ import {
   assertUnauthorizedRequest,
   buildUrl,
   defaultHeaders,
+  isForwardCompat,
 } from '../../../utils/http';
 import {
   brokerResponseFields,
@@ -21,13 +22,10 @@ import {
 
 test.describe('Cluster API Tests', () => {
   test('Get Cluster Topology', async ({request}) => {
-    // eslint-disable-next-line playwright/no-conditional-in-test
-    if (process.env.FORWARD_COMPAT_MODE === 'true') {
-      test.skip(
-        true,
-        'Skipped in forward-compat mode - partition count differs on target server',
-      );
-    }
+    test.skip(
+      isForwardCompat,
+      'Skipped in forward-compat mode - partition count differs on target server',
+    );
     const res = await request.get(buildUrl('/topology'), {
       headers: defaultHeaders(),
     });
