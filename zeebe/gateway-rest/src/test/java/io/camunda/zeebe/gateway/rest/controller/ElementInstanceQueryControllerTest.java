@@ -77,8 +77,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                    "state":"ACTIVE",
                    "hasIncident":false,
                    "incidentKey": null,
-                   "tenantId":"<default>",
-                   "agentInstanceKey": null
+                   "tenantId":"<default>"
                  }
               ],
               "page": {
@@ -131,8 +130,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                    "state":"ACTIVE",
                    "hasIncident":true,
                    "incidentKey":"1234",
-                   "tenantId":"tenantId",
-                   "agentInstanceKey": null
+                   "tenantId":"tenantId"
                  }
           """;
 
