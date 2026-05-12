@@ -13,7 +13,8 @@ import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
+import io.camunda.zeebe.engine.processing.job.JobBatchCollector.CollectionResult;
+import io.camunda.zeebe.engine.processing.secret.SecretStore;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -34,8 +35,6 @@ import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.ControllableStreamClockImpl;
 import io.camunda.zeebe.test.util.MsgPackUtil;
-import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.time.Instant;
@@ -72,7 +71,9 @@ final class JobBatchCollectorTest {
             state,
             SecurityConfigurations.unauthenticatedAndUnauthorized(),
             new EngineConfiguration());
-    collector = new JobBatchCollector(state, lengthEvaluator, authorizationCheckBehavior, clock);
+    collector =
+        new JobBatchCollector(
+            state, lengthEvaluator, authorizationCheckBehavior, clock, SecretStore.EMPTY);
   }
 
   @Test
@@ -85,15 +86,16 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to only accept the first job
     lengthEvaluator.canWriteEventOfLength = (length) -> toggle.getAndSet(false);
-    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+    final CollectionResult result =
         collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
-    EitherAssert.assertThat(result)
+    assertThat(result.activatedJobCountPerJobKind())
         .as("should have activated only one job successfully")
-        .right()
         .isEqualTo(Map.of(JobKind.BPMN_ELEMENT, 1));
+    assertThat(result.tooLargeJob()).isNull();
+    assertThat(result.secretFailures()).isEmpty();
     JobBatchRecordValueAssert.assertThat(batchRecord)
         .hasOnlyJobKeys(jobs.getFirst().key)
         .isTruncated();
@@ -108,15 +110,17 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to accept no jobs
     lengthEvaluator.canWriteEventOfLength = (length) -> false;
-    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+    final CollectionResult result =
         collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
-    EitherAssert.assertThat(result)
+    assertThat(result.tooLargeJob())
         .as("should return excessively large job")
-        .left()
+        .isNotNull()
         .hasFieldOrPropertyWithValue("key", jobs.getFirst().key);
+    assertThat(result.activatedJobCountPerJobKind()).isEmpty();
+    assertThat(result.secretFailures()).isEmpty();
     JobBatchRecordValueAssert.assertThat(batchRecord).hasNoJobKeys().hasNoJobs().isTruncated();
   }
 
@@ -171,15 +175,16 @@ final class JobBatchCollectorTest {
     record.getValue().setMaxJobsToActivate(1);
 
     // when
-    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+    final CollectionResult result =
         collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
-    EitherAssert.assertThat(result)
+    assertThat(result.activatedJobCountPerJobKind())
         .as("should collect only the first job")
-        .right()
         .isEqualTo(Map.of(JobKind.BPMN_ELEMENT, 1));
+    assertThat(result.tooLargeJob()).isNull();
+    assertThat(result.secretFailures()).isEmpty();
     JobBatchRecordValueAssert.assertThat(batchRecord)
         .hasJobKeys(jobs.getFirst().key)
         .isNotTruncated();
