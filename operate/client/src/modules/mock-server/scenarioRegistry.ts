@@ -125,7 +125,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     instanceKey: MOCK_AGENT_INSTANCE_KEY_ACTIVE,
     definitionKey: MOCK_AGENT_DEFINITION_KEY_ACTIVE,
     definitionId: MOCK_AGENT_DEFINITION_ID_ACTIVE,
-    name: 'Agent chat with tools',
+    name: 'Agent active',
     description: 'Ad-hoc subprocess with agent + tools bundled together',
     pattern: 'subprocess',
     agentElementId: 'AI_Agent',

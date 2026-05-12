@@ -309,11 +309,7 @@ const DetailsTab: React.FC = () => {
   // inline inside the Details tab (no dedicated tab). This must happen before
   // the multi-instance empty-state below: clicking AI_Agent on the diagram
   // matches every inner-instance row, so `resolvedElementInstance` is null.
-  if (showAgentContent) {
-    if (!agentData || !selectedElementId || rows.length === 0) {
-      return <StructuredListSkeleton rowCount={5} />;
-    }
-
+  if (showAgentContent && agentData && selectedElementId && rows.length > 0) {
     const iteration = getIterationForElement(selectedElementId);
     const toolInfo = !iteration
       ? getToolCallForElement(selectedElementId)
@@ -355,6 +351,12 @@ const DetailsTab: React.FC = () => {
       </Container>
     );
   }
+
+  // If showAgentContent is true but we can't find agent data (e.g., selected a
+  // tool element-instance in the multi-instance scenario whose key isn't in
+  // the per-subprocess data map), fall through to the standard non-agent
+  // render below — the StructuredList with Element Instance Key / Duration /
+  // Retries.
 
   if (isFetchingElement) {
     return <StructuredListSkeleton rowCount={5} />;
