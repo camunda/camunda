@@ -391,9 +391,7 @@ jobs:
   comment-comparison-pr:
     name: Post PR vs Daily comparison comment
     needs: render-comparison
-    # Mirror render-comparison's cancellation guard so a cancelled run never
-    # leaves a half-finished comment behind. needs.render-comparison.result
-    # check also skips when the render itself was skipped upstream.
+    # Skip when render was cancelled or skipped upstream so we never post a half-finished comment.
     if: ${{ !cancelled() && needs.render-comparison.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -404,6 +402,8 @@ jobs:
       COMPARISON_MD: ${{ needs.render-comparison.outputs.comparison-md }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Post comparison comment
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
