@@ -48,6 +48,8 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
           JobIntent.MIGRATED);
   private static final Set<JobIntent> FAILED_JOB_EVENTS =
       Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN);
+  private static final Set<JobIntent> INTENTS_RETAINING_ELEMENT_ID =
+      Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN, JobIntent.RETRIES_UPDATED);
 
   protected final String indexName;
 
@@ -122,9 +124,11 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
       entity.setDeadline(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(jobDeadline)));
     }
 
-    if (FAILED_JOB_EVENTS.contains(record.getIntent())) {
-      // set flowNodeId to null to not overwrite it (because zeebe puts an error message there)
+    if (INTENTS_RETAINING_ELEMENT_ID.contains(record.getIntent())) {
       entity.setFlowNodeId(null);
+    }
+
+    if (FAILED_JOB_EVENTS.contains(record.getIntent())) {
       if (recordValue.getRetries() > 0) {
         entity.setJobFailedWithRetriesLeft(true);
       } else {
