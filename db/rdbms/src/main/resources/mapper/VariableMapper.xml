@@ -175,7 +175,8 @@
           LONG_VALUE   = #{longValue, jdbcType=NUMERIC},
           VAR_VALUE  = #{value},
           VAR_FULL_VALUE = #{fullValue},
-          IS_PREVIEW     = #{isPreview}
+          IS_PREVIEW     = #{isPreview},
+          PROCESS_DEFINITION_KEY = #{processDefinitionKey, jdbcType=BIGINT}
       WHERE VAR_KEY = #{variableKey}
   </update>
 

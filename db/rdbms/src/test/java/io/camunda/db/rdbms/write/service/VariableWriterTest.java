@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -25,6 +26,7 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class VariableWriterTest {
 
@@ -86,5 +88,36 @@ class VariableWriterTest {
                     123L,
                     "io.camunda.db.rdbms.sql.VariableMapper.update",
                     truncatedModel)));
+  }
+
+  @Test
+  void shouldMigrateToProcess() {
+    // given
+    final long variableKey = 123L;
+    final String processDefinitionId = "myProcess";
+    final long processDefinitionKey = 456L;
+
+    // when
+    writer.migrateToProcess(variableKey, processDefinitionId, processDefinitionKey);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(QueueItem.class);
+    verify(executionQueue).executeInQueue(captor.capture());
+    final var queueItem = captor.getValue();
+
+    assertThat(queueItem.contextType()).isEqualTo(ContextType.VARIABLE);
+    assertThat(queueItem.statementType()).isEqualTo(WriteStatementType.UPDATE);
+    assertThat(queueItem.id()).isEqualTo(variableKey);
+    assertThat(queueItem.statementId())
+        .isEqualTo("io.camunda.db.rdbms.sql.VariableMapper.migrateToProcess");
+    assertThat(queueItem.parameter())
+        .isInstanceOfSatisfying(
+            VariableMapper.MigrateToProcessDto.Builder.class,
+            builder -> {
+              final var dto = builder.build();
+              assertThat(dto.variableKey()).isEqualTo(variableKey);
+              assertThat(dto.processDefinitionId()).isEqualTo(processDefinitionId);
+              assertThat(dto.processDefinitionKey()).isEqualTo(processDefinitionKey);
+            });
   }
 }
