@@ -68,7 +68,30 @@ public final class VersionUtil {
   }
 
   /**
-   * @return the previous stable version or null if none was found.
+   * Returns the configured backwards-compatibility baseline version used by Zeebe tests and RevAPI
+   * checks.
+   *
+   * <p>The value is read from the {@code zeebe.last.version} property of {@code
+   * /zeebe-util.properties}, which is populated at build time from the Maven property {@code
+   * backwards.compat.version} declared in {@code parent/pom.xml} (commented there as "version
+   * against which backwards compatibility is checked").
+   *
+   * <p>By convention:
+   *
+   * <ul>
+   *   <li>On {@code main}, this baseline points to a release of the previous minor version (e.g.
+   *       while {@code main} targets 8.8.x, the baseline is an 8.7.x release).
+   *   <li>On a stable branch (e.g. {@code stable/8.7}), it points to a release of the previous
+   *       stable minor (e.g. an 8.6.x release).
+   * </ul>
+   *
+   * <p>The property is a <em>manually maintained</em> baseline, not "the latest previous patch at
+   * the moment of invocation" -- its value is only updated when a new baseline is intentionally
+   * chosen, and it can legitimately differ between branches. This method is currently referenced
+   * from tests only.
+   *
+   * @return the configured backwards-compatibility baseline, or {@code null} if the property is not
+   *     set or the properties file cannot be read.
    */
   public static String getPreviousVersion() {
     if (lastVersion == null) {
