@@ -36,6 +36,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class MetricsExporterTest {
@@ -294,8 +295,9 @@ class MetricsExporterTest {
       exporter.open(new ExporterTestController());
     }
 
-    @Test
-    void shouldRecordBytesOnVariableCreated() {
+    @ParameterizedTest
+    @EnumSource(VariableIntent.class)
+    void shouldRecordMetricsOnlyForCreatedVariableEvents(final VariableIntent intent) {
       // given
       final var valueBytes = new byte[128];
       final var variableRecord = newVariableRecord(valueBytes);
@@ -305,7 +307,7 @@ class MetricsExporterTest {
           ImmutableRecord.builder()
               .withRecordType(RecordType.EVENT)
               .withValueType(ValueType.VARIABLE)
-              .withIntent(VariableIntent.CREATED)
+              .withIntent(intent)
               .withPartitionId(PARTITION_ID)
               .withValue(variableRecord)
               .build());
@@ -315,99 +317,39 @@ class MetricsExporterTest {
           context
               .getMeterRegistry()
               .find("zeebe.variable.created.bytes")
-              .tag("partition", String.valueOf(PARTITION_ID))
               .tag("bpmnProcessId", BPMN_PROCESS_ID)
               .counter();
-      assertThat(counter)
-          .describedAs("Expected zeebe.variable.created.bytes counter to be registered")
-          .isNotNull();
-      assertThat(counter.count())
-          .describedAs("Expected counter to record raw msgpack byte length")
-          .isEqualTo((double) variableRecord.getValueLength());
-      assertThat(variableRecord.getValueLength()).isEqualTo(valueBytes.length);
-    }
-
-    @Test
-    void shouldRecordSizeOnVariableCreated() {
-      // given
-      final var valueBytes = new byte[256];
-      final var variableRecord = newVariableRecord(valueBytes);
-
-      // when
-      exporter.export(
-          ImmutableRecord.builder()
-              .withRecordType(RecordType.EVENT)
-              .withValueType(ValueType.VARIABLE)
-              .withIntent(VariableIntent.CREATED)
-              .withPartitionId(PARTITION_ID)
-              .withValue(variableRecord)
-              .build());
-
-      // then
       final var summary =
           context
               .getMeterRegistry()
               .find("zeebe.variable.created.size")
-              .tag("partition", String.valueOf(PARTITION_ID))
               .tag("bpmnProcessId", BPMN_PROCESS_ID)
               .summary();
-      assertThat(summary)
-          .describedAs("Expected zeebe.variable.created.size summary to be registered")
-          .isNotNull();
-      assertThat(summary.count()).isOne();
-      assertThat(summary.totalAmount())
-          .describedAs("Expected summary total to match raw msgpack byte length")
-          .isEqualTo((double) variableRecord.getValueLength());
-    }
 
-    @Test
-    void shouldIgnoreVariableUpdatedEvents() {
-      // given
-      final var valueBytes = new byte[64];
-      final var variableRecord = newVariableRecord(valueBytes);
+      if (intent == VariableIntent.CREATED) {
+        assertThat(counter)
+            .describedAs("Expected zeebe.variable.created.bytes counter to be registered on CREATED")
+            .isNotNull();
+        assertThat(counter.count())
+            .describedAs("Expected counter to record raw msgpack byte length")
+            .isEqualTo((double) variableRecord.getValueLength());
+        assertThat(variableRecord.getValueLength()).isEqualTo(valueBytes.length);
 
-      // when
-      exporter.export(
-          ImmutableRecord.builder()
-              .withRecordType(RecordType.EVENT)
-              .withValueType(ValueType.VARIABLE)
-              .withIntent(VariableIntent.UPDATED)
-              .withPartitionId(PARTITION_ID)
-              .withValue(variableRecord)
-              .build());
-
-      // then
-      assertThat(context.getMeterRegistry().find("zeebe.variable.created.bytes").counter())
-          .describedAs("Expected no zeebe.variable.created.bytes counter on UPDATED")
-          .isNull();
-      assertThat(context.getMeterRegistry().find("zeebe.variable.created.size").summary())
-          .describedAs("Expected no zeebe.variable.created.size summary on UPDATED")
-          .isNull();
-    }
-
-    @Test
-    void shouldIgnoreVariableMigratedEvents() {
-      // given
-      final var valueBytes = new byte[64];
-      final var variableRecord = newVariableRecord(valueBytes);
-
-      // when
-      exporter.export(
-          ImmutableRecord.builder()
-              .withRecordType(RecordType.EVENT)
-              .withValueType(ValueType.VARIABLE)
-              .withIntent(VariableIntent.MIGRATED)
-              .withPartitionId(PARTITION_ID)
-              .withValue(variableRecord)
-              .build());
-
-      // then
-      assertThat(context.getMeterRegistry().find("zeebe.variable.created.bytes").counter())
-          .describedAs("Expected no zeebe.variable.created.bytes counter on MIGRATED")
-          .isNull();
-      assertThat(context.getMeterRegistry().find("zeebe.variable.created.size").summary())
-          .describedAs("Expected no zeebe.variable.created.size summary on MIGRATED")
-          .isNull();
+        assertThat(summary)
+            .describedAs("Expected zeebe.variable.created.size summary to be registered on CREATED")
+            .isNotNull();
+        assertThat(summary.count()).isOne();
+        assertThat(summary.totalAmount())
+            .describedAs("Expected summary total to match raw msgpack byte length")
+            .isEqualTo((double) variableRecord.getValueLength());
+      } else {
+        assertThat(counter)
+            .describedAs("Expected no zeebe.variable.created.bytes counter on %s", intent)
+            .isNull();
+        assertThat(summary)
+            .describedAs("Expected no zeebe.variable.created.size summary on %s", intent)
+            .isNull();
+      }
     }
 
     private VariableRecord newVariableRecord(final byte[] valueBytes) {
