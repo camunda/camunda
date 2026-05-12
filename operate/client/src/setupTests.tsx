@@ -22,6 +22,8 @@ import MockBpmnIoElementTemplateIconRenderer from '__mocks__/@bpmn-io/element-te
 import MockReactMarkdown from '__mocks__/react-markdown';
 import ResizeObserverPolyfill from 'resize-observer-polyfill';
 
+import {resetAllStores} from 'modules/stores/resetAllStores';
+
 vi.mock('dmn-js-shared/lib/base/Manager', () => ({
   default: MockDmnJsSharedManager,
 }));
@@ -209,7 +211,11 @@ beforeAll(() => {
   // jsdom doesn't implement window.prompt, needed by copy-to-clipboard (used by Carbon CodeSnippet)
   window.prompt = vi.fn();
 });
-afterEach(() => mockServer.resetHandlers());
+afterEach(async () => {
+  mockServer.resetHandlers();
+
+  resetAllStores();
+});
 afterAll(() => mockServer.close());
 beforeEach(async () => {
   vi.stubEnv('TZ', 'UTC');
