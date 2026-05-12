@@ -11,6 +11,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static io.camunda.configuration.physicaltenants.PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -18,12 +19,11 @@ import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
 import io.camunda.application.commons.search.SearchClientConfiguration;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.tenant.SearchClients;
-import io.camunda.search.connect.tenant.TenantConnectConfigResolver;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -39,6 +39,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
@@ -53,8 +54,8 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 })
 public class PhysicalTenantSearchClientReadersConfigurationIT {
 
-  static final String TENANT_A = "tenant-a";
-  static final String TENANT_B = "tenant-b";
+  static final String TENANT_A = "tenanta";
+  static final String TENANT_B = "tenantb";
 
   static final long PROCESS_INSTANCE_KEY_A = 1001L;
   static final long PROCESS_INSTANCE_KEY_B = 2002L;
@@ -69,10 +70,9 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
   @Test
   void shouldWirePerTenantSearchClientsFromResolver() {
     assertThat(searchClients.esClients())
-        .containsOnlyKeys(TenantConnectConfigResolver.DEFAULT_TENANT_ID, TENANT_A, TENANT_B);
+        .containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID, TENANT_A, TENANT_B);
     assertThat(searchClients.osClients()).isEmpty();
-    assertThat(tenantDescriptors)
-        .containsOnlyKeys(TenantConnectConfigResolver.DEFAULT_TENANT_ID, TENANT_A, TENANT_B);
+    assertThat(tenantDescriptors).containsOnlyKeys(DEFAULT_PHYSICAL_TENANT_ID, TENANT_A, TENANT_B);
   }
 
   @Test
@@ -114,24 +114,34 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
     }
 
     @Bean
-    ConnectConfiguration connectConfiguration(final WireMockServer wmTenantA) {
+    MockEnvironment mockEnvironment(
+        final WireMockServer wmTenantA, final WireMockServer wmTenantB) {
       stubFakeEs(wmTenantA, PROCESS_INSTANCE_KEY_A);
-      return connectConfig(wmTenantA, TENANT_A);
+      stubFakeEs(wmTenantB, PROCESS_INSTANCE_KEY_B);
+      final var env = new MockEnvironment();
+      env.setProperty(
+          "camunda.physical-tenants." + TENANT_A + ".data.secondary-storage.elasticsearch.url",
+          "http://localhost:" + wmTenantA.port());
+      env.setProperty(
+          "camunda.physical-tenants."
+              + TENANT_A
+              + ".data.secondary-storage.elasticsearch.index-prefix",
+          TENANT_A);
+      env.setProperty(
+          "camunda.physical-tenants." + TENANT_B + ".data.secondary-storage.elasticsearch.url",
+          "http://localhost:" + wmTenantB.port());
+      env.setProperty(
+          "camunda.physical-tenants."
+              + TENANT_B
+              + ".data.secondary-storage.elasticsearch.index-prefix",
+          TENANT_B);
+      return env;
     }
 
     @Bean
     @Primary
-    TenantConnectConfigResolver tenantConnectConfigResolverOverride(
-        final ConnectConfiguration tenantAConfig, final WireMockServer wmTenantB) {
-      stubFakeEs(wmTenantB, PROCESS_INSTANCE_KEY_B);
-      return new TenantConnectConfigResolver(
-          Map.of(
-              TenantConnectConfigResolver.DEFAULT_TENANT_ID,
-              tenantAConfig,
-              TENANT_A,
-              tenantAConfig,
-              TENANT_B,
-              connectConfig(wmTenantB, TENANT_B)));
+    PhysicalTenantResolver physicalTenantResolverOverride(final MockEnvironment environment) {
+      return PhysicalTenantResolver.of(environment, new Camunda());
     }
 
     /** {@link GatewayRestConfiguration} is a plain POJO; register it as a bean for injection. */
@@ -147,15 +157,6 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
     @Bean
     ResourceAccessController testAnonymousResourceAccessController() {
       return new AnonymousResourceAccessController();
-    }
-
-    private static ConnectConfiguration connectConfig(
-        final WireMockServer wm, final String indexPrefix) {
-      final var cfg = new ConnectConfiguration();
-      cfg.setUrl("http://localhost:" + wm.port());
-      cfg.setIndexPrefix(indexPrefix);
-      cfg.setType(DatabaseType.ELASTICSEARCH.toString());
-      return cfg;
     }
 
     private static void stubFakeEs(final WireMockServer wm, final long processInstanceKey) {

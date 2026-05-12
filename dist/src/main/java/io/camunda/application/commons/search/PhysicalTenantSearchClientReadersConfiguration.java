@@ -8,7 +8,9 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
@@ -16,9 +18,7 @@ import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.cache.ProcessCache;
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.transformers.ServiceTransformers;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.tenant.SearchClients;
-import io.camunda.search.connect.tenant.TenantConnectConfigResolver;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.security.reader.ResourceAccessController;
@@ -38,16 +38,11 @@ import org.springframework.context.annotation.Configuration;
 public class PhysicalTenantSearchClientReadersConfiguration {
 
   @Bean
-  public TenantConnectConfigResolver tenantConnectConfigResolver(
-      final ConnectConfiguration connectConfiguration) {
-    return new TenantConnectConfigResolver(
-        Map.of(TenantConnectConfigResolver.DEFAULT_TENANT_ID, connectConfiguration));
-  }
-
-  @Bean
-  public SearchClients searchClients(
-      final TenantConnectConfigResolver tenantConnectConfigResolver) {
-    return SearchClients.from(tenantConnectConfigResolver.tenantConfigs());
+  public SearchClients searchClients(final PhysicalTenantResolver physicalTenantResolver) {
+    return SearchClients.from(
+        physicalTenantResolver.mapValues(
+            physicalTenantCfg ->
+                new SearchEngineConnectPropertiesOverride.Converter(physicalTenantCfg).convert()));
   }
 
   @Bean
