@@ -5,9 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.util.liveness;
+package io.camunda.zeebe.gateway.impl.probes.health;
 
-import io.camunda.zeebe.util.health.MemoryHealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -20,13 +19,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnEnabledHealthIndicator("memory")
 @AutoConfigureBefore(HealthContributorAutoConfiguration.class)
-@EnableConfigurationProperties(LivenessMemoryHealthIndicatorProperties.class)
-public class LivenessMemoryHealthIndicatorAutoConfiguration {
+@EnableConfigurationProperties(MemoryHealthIndicatorProperties.class)
+public class MemoryHealthIndicatorAutoConfiguration {
 
   @Bean
-  @ConditionalOnMissingBean(name = "livenessMemoryHealthIndicator")
-  public MemoryHealthIndicator livenessMemoryHealthIndicator(
-      final LivenessMemoryHealthIndicatorProperties properties) {
+  @ConditionalOnMissingBean(name = "memoryHealthIndicator")
+  public MemoryHealthIndicator memoryHealthIndicator(
+      final MemoryHealthIndicatorProperties properties) {
     return new MemoryHealthIndicator(properties.getThreshold());
   }
 }

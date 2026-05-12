@@ -43,8 +43,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 @ComponentScan(
     basePackages = {
       "io.camunda.zeebe.gateway",
-      "io.camunda.zeebe.shared",
-      "io.camunda.zeebe.util.liveness"
+      "io.camunda.zeebe.shared"
     },
     excludeFilters = {
       @ComponentScan.Filter(
