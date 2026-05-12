@@ -19,6 +19,7 @@ import io.camunda.client.api.response.DocumentMetadata;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.process.test.api.judge.ResolvedDocument;
 import java.util.List;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 /**
  * Builds the {@code <resolved_documents>} section that is appended to the judge prompt when Camunda
@@ -71,6 +72,6 @@ public final class ResolvedDocumentPromptSection {
 
   private static void appendAttribute(
       final StringBuilder out, final String name, final String value) {
-    out.append(name).append("=\"").append(value == null ? "" : value).append('"');
+    out.append(name).append("=\"").append(value == null ? "" : StringEscapeUtils.escapeJava(value)).append('"');
   }
 }
