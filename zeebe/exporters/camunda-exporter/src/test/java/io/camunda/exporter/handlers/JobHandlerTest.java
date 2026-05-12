@@ -336,6 +336,33 @@ final class JobHandlerTest {
   }
 
   @Test
+  void shouldNotUpdateFlowNodeIdOnRetriesUpdated() {
+    // given
+    final long recordKey = 789;
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withElementId("serviceTask")
+            .withRetries(3)
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.RETRIES_UPDATED)
+                    .withKey(recordKey)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then - flowNodeId is null so flush() won't overwrite the stored value
+    assertThat(entity.getFlowNodeId()).isNull();
+  }
+
+  @Test
   void testUpdateEntityWithFailedIntentAndRetriesLeft() {
     // given
     final long recordKey = 789;
