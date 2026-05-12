@@ -19,6 +19,7 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_FAI
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PRIORITY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
@@ -149,6 +150,7 @@ final class JobHandlerTest {
     final String tenantId = "tenantId";
     final String jobType = "jobType";
     final int retries = 3;
+    final int priority = 77;
     final String jobWorker = "jobWorker";
     final String errorMessage = "someErrorMessage";
     final String errorCode = "errorCode";
@@ -165,6 +167,7 @@ final class JobHandlerTest {
             .withProcessDefinitionKey(processDefinitionKey)
             .withType(jobType)
             .withRetries(retries)
+            .withPriority(priority)
             .withWorker(jobWorker)
             .withCustomHeaders(Map.of("key", "val"))
             .withTenantId(tenantId)
@@ -202,6 +205,7 @@ final class JobHandlerTest {
     assertThat(entity.getJobKind()).isEqualTo(jobKind.name());
     assertThat(entity.getListenerEventType()).isEqualTo(jobListenerEventType.name());
     assertThat(entity.getRetries()).isEqualTo(retries);
+    assertThat(entity.getPriority()).isEqualTo(priority);
     assertThat(entity.getWorker()).isEqualTo(jobWorker);
     assertThat(entity.getCustomHeaders()).isEqualTo(Map.of("key", "val"));
     assertThat(entity.getState()).isEqualTo("CREATED");
@@ -260,6 +264,7 @@ final class JobHandlerTest {
     final String tenantId = "tenantId";
     final String jobType = "jobType";
     final int retries = 3;
+    final int priority = 88;
     final String jobWorker = "jobWorker";
     final String errorMessage = "someErrorMessage";
     final String errorCode = "errorCode";
@@ -278,6 +283,7 @@ final class JobHandlerTest {
             .withProcessDefinitionKey(processDefinitionKey)
             .withType(jobType)
             .withRetries(retries)
+            .withPriority(priority)
             .withWorker(jobWorker)
             .withCustomHeaders(Map.of("key", "val"))
             .withTenantId(tenantId)
@@ -320,6 +326,7 @@ final class JobHandlerTest {
     assertThat(entity.getJobKind()).isEqualTo(jobKind.name());
     assertThat(entity.getListenerEventType()).isEqualTo(jobListenerEventType.name());
     assertThat(entity.getRetries()).isEqualTo(retries);
+    assertThat(entity.getPriority()).isEqualTo(priority);
     assertThat(entity.getWorker()).isEqualTo(jobWorker);
     assertThat(entity.getCustomHeaders()).isEqualTo(Map.of("key", "val"));
     assertThat(entity.getState()).isEqualTo("COMPLETED");
@@ -400,11 +407,39 @@ final class JobHandlerTest {
   }
 
   @Test
+  void shouldSetPriorityWhenCompletingPreV810Entity() {
+    // given
+    final var entity = new JobEntity().setId("111");
+    assertThat(entity.getPriority()).isNull();
+
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .withResult(ImmutableJobResultValue.builder().build())
+            .withPriority(10)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.COMPLETED)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getPriority()).isEqualTo(10);
+  }
+
+  @Test
   void shouldUpsertEntityOnFlush() {
     // given
     final String jobId = "111";
     final String expectedIndexName = JobTemplate.INDEX_NAME;
     final int retries = 3;
+    final int priority = 55;
     final String jobWorker = "jobWorker";
     final String errorMessage = "someErrorMessage";
     final String errorCode = "errorCode";
@@ -423,6 +458,7 @@ final class JobHandlerTest {
             .setWorker(jobWorker)
             .setState(state)
             .setRetries(retries)
+            .setPriority(priority)
             .setErrorMessage(errorMessage)
             .setErrorCode(errorCode)
             .setEndTime(endTime)
@@ -437,6 +473,7 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_WORKER, jobEntity.getWorker());
     expectedUpdateFields.put(JOB_STATE, jobEntity.getState());
     expectedUpdateFields.put(RETRIES, jobEntity.getRetries());
+    expectedUpdateFields.put(PRIORITY, jobEntity.getPriority());
     expectedUpdateFields.put(ERROR_MESSAGE, jobEntity.getErrorMessage());
     expectedUpdateFields.put(ERROR_CODE, jobEntity.getErrorCode());
     expectedUpdateFields.put(TIME, jobEntity.getEndTime());
@@ -465,6 +502,7 @@ final class JobHandlerTest {
     final String expectedIndexName = JobTemplate.INDEX_NAME;
     final String elementId = "elementId";
     final int retries = 2;
+    final int priority = 55;
     final String jobWorker = "jobWorker";
     final String errorMessage = "someErrorMessage";
     final String errorCode = "errorCode";
@@ -484,6 +522,7 @@ final class JobHandlerTest {
             .setWorker(jobWorker)
             .setState(state)
             .setRetries(retries)
+            .setPriority(priority)
             .setErrorMessage(errorMessage)
             .setErrorCode(errorCode)
             .setEndTime(endTime)
@@ -501,6 +540,7 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_WORKER, jobEntity.getWorker());
     expectedUpdateFields.put(JOB_STATE, jobEntity.getState());
     expectedUpdateFields.put(RETRIES, jobEntity.getRetries());
+    expectedUpdateFields.put(PRIORITY, jobEntity.getPriority());
     expectedUpdateFields.put(ERROR_MESSAGE, jobEntity.getErrorMessage());
     expectedUpdateFields.put(ERROR_CODE, jobEntity.getErrorCode());
     expectedUpdateFields.put(TIME, jobEntity.getEndTime());

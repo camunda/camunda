@@ -25,6 +25,7 @@ public record JobEntity(
     JobKind kind,
     ListenerEventType listenerEventType,
     Integer retries,
+    @Nullable Integer priority,
     @Nullable Boolean isDenied,
     @Nullable String deniedReason,
     Boolean hasFailedWithRetriesLeft,
@@ -75,6 +76,7 @@ public record JobEntity(
     private @Nullable JobKind kind;
     private @Nullable ListenerEventType listenerEventType;
     private @Nullable Integer retries;
+    private @Nullable Integer priority;
     private @Nullable Boolean isDenied;
     private @Nullable String deniedReason;
     private @Nullable Boolean hasFailedWithRetriesLeft;
@@ -125,6 +127,11 @@ public record JobEntity(
 
     public Builder retries(final Integer retries) {
       this.retries = retries;
+      return this;
+    }
+
+    public Builder priority(final Integer priority) {
+      this.priority = priority;
       return this;
     }
 
@@ -224,6 +231,7 @@ public record JobEntity(
           kind,
           listenerEventType,
           retries,
+          priority,
           isDenied,
           deniedReason,
           hasFailedWithRetriesLeft,
