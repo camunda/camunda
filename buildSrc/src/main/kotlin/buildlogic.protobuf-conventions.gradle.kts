@@ -14,15 +14,17 @@ plugins {
     id("com.google.protobuf")
 }
 
+val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val protobufVersion = versionCatalog.findVersion("com-google-protobuf-protobuf-java").get().requiredVersion
+val grpcVersion = versionCatalog.findVersion("io-grpc-grpc-api").get().requiredVersion
+
 protobuf {
     protoc {
-        // version.protobuf from parent pom: 4.33.4
-        artifact = "com.google.protobuf:protoc:4.33.4"
+        artifact = "com.google.protobuf:protoc:$protobufVersion"
     }
     plugins {
         create("grpc") {
-            // version.grpc from parent pom: 1.78.0
-            artifact = "io.grpc:protoc-gen-grpc-java:1.78.0"
+            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
         }
     }
     generateProtoTasks {

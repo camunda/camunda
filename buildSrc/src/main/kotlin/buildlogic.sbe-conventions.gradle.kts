@@ -13,6 +13,9 @@ plugins {
     id("buildlogic.java-conventions")
 }
 
+val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val sbeToolVersion = versionCatalog.findVersion("uk-co-real-logic-sbe-tool").get().requiredVersion
+
 // Extension to configure SBE input files
 interface SbeExtension {
     val inputFiles: ConfigurableFileCollection
@@ -68,7 +71,7 @@ val sbeTool by configurations.creating {
 }
 
 dependencies {
-    sbeTool("uk.co.real-logic:sbe-tool:1.37.1")
+    sbeTool("uk.co.real-logic:sbe-tool:$sbeToolVersion")
 }
 
 // Add generated Java sources to the source set

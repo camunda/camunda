@@ -9,6 +9,7 @@ com-azure-azure-identity = "1.18.2"
 com-azure-azure-storage-blob = "12.33.3"
 com-azure-azure-storage-common = "12.32.2"
 com-cronutils-cron-utils = "9.2.1"
+com-diffplug-spotless-spotless-plugin-gradle = "7.2.1"
 com-esotericsoftware-kryo = "5.6.2"
 com-esotericsoftware-minlog = "1.3.1"
 com-fasterxml-jackson-core-jackson-annotations = "2.21"
@@ -38,8 +39,10 @@ com-google-code-gson-gson = "2.13.2"
 com-google-errorprone-error-prone-core = "2.49.0"
 com-google-googlejavaformat-google-java-format = "1.35.0"
 com-google-guava-guava = "33.5.0-jre"
+com-google-protobuf-protobuf-gradle-plugin = "0.9.4"
 com-google-protobuf-protobuf-java = "4.34.1"
 com-google-protobuf-protobuf-java-util = "4.34.1"
+com-gradleup-shadow-shadow-gradle-plugin = "8.3.5"
 com-h2database-h2 = "2.4.240"
 com-ibm-icu-icu4j = "78.2"
 com-icegreen-greenmail = "2.1.8"
@@ -133,6 +136,7 @@ net-jodah-concurrentunit = "0.4.6"
 net-jodah-failsafe = "2.4.4"
 net-jqwik-jqwik = "1.9.3"
 net-jqwik-jqwik-api = "1.9.3"
+net-ltgt-gradle-gradle-errorprone-plugin = "4.3.0"
 org-agrona-agrona = "2.4.0"
 org-apache-commons-commons-collections4 = "4.5.0"
 org-apache-commons-commons-compress = "1.28.0"
@@ -215,6 +219,7 @@ org-mybatis-mybatis = "3.5.19"
 org-mybatis-mybatis-spring = "4.0.0"
 org-objenesis-objenesis = "3.5"
 org-openapitools-jackson-databind-nullable = "0.2.10"
+org-openapitools-openapi-generator-gradle-plugin = "7.18.0"
 org-openjdk-jmh-jmh-core = "1.37"
 org-openjdk-jmh-jmh-generator-annprocess = "1.37"
 org-opensearch-client-opensearch-java = "3.5.0"
@@ -326,6 +331,7 @@ com-azure-azure-identity = { module = "com.azure:azure-identity", version.ref = 
 com-azure-azure-storage-blob = { module = "com.azure:azure-storage-blob", version.ref = "com-azure-azure-storage-blob" }
 com-azure-azure-storage-common = { module = "com.azure:azure-storage-common", version.ref = "com-azure-azure-storage-common" }
 com-cronutils-cron-utils = { module = "com.cronutils:cron-utils", version.ref = "com-cronutils-cron-utils" }
+com-diffplug-spotless-spotless-plugin-gradle = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "com-diffplug-spotless-spotless-plugin-gradle" }
 com-esotericsoftware-kryo = { module = "com.esotericsoftware:kryo", version.ref = "com-esotericsoftware-kryo" }
 com-esotericsoftware-minlog = { module = "com.esotericsoftware:minlog", version.ref = "com-esotericsoftware-minlog" }
 com-fasterxml-jackson-core-jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "com-fasterxml-jackson-core-jackson-annotations" }
@@ -355,8 +361,10 @@ com-google-code-gson-gson = { module = "com.google.code.gson:gson", version.ref 
 com-google-errorprone-error-prone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "com-google-errorprone-error-prone-core" }
 com-google-googlejavaformat-google-java-format = { module = "com.google.googlejavaformat:google-java-format", version.ref = "com-google-googlejavaformat-google-java-format" }
 com-google-guava-guava = { module = "com.google.guava:guava", version.ref = "com-google-guava-guava" }
+com-google-protobuf-protobuf-gradle-plugin = { module = "com.google.protobuf:protobuf-gradle-plugin", version.ref = "com-google-protobuf-protobuf-gradle-plugin" }
 com-google-protobuf-protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "com-google-protobuf-protobuf-java" }
 com-google-protobuf-protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "com-google-protobuf-protobuf-java-util" }
+com-gradleup-shadow-shadow-gradle-plugin = { module = "com.gradleup.shadow:shadow-gradle-plugin", version.ref = "com-gradleup-shadow-shadow-gradle-plugin" }
 com-h2database-h2 = { module = "com.h2database:h2", version.ref = "com-h2database-h2" }
 com-ibm-icu-icu4j = { module = "com.ibm.icu:icu4j", version.ref = "com-ibm-icu-icu4j" }
 com-icegreen-greenmail = { module = "com.icegreen:greenmail", version.ref = "com-icegreen-greenmail" }
@@ -450,6 +458,7 @@ net-jodah-concurrentunit = { module = "net.jodah:concurrentunit", version.ref = 
 net-jodah-failsafe = { module = "net.jodah:failsafe", version.ref = "net-jodah-failsafe" }
 net-jqwik-jqwik = { module = "net.jqwik:jqwik", version.ref = "net-jqwik-jqwik" }
 net-jqwik-jqwik-api = { module = "net.jqwik:jqwik-api", version.ref = "net-jqwik-jqwik-api" }
+net-ltgt-gradle-gradle-errorprone-plugin = { module = "net.ltgt.gradle:gradle-errorprone-plugin", version.ref = "net-ltgt-gradle-gradle-errorprone-plugin" }
 org-agrona-agrona = { module = "org.agrona:agrona", version.ref = "org-agrona-agrona" }
 org-apache-commons-commons-collections4 = { module = "org.apache.commons:commons-collections4", version.ref = "org-apache-commons-commons-collections4" }
 org-apache-commons-commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "org-apache-commons-commons-compress" }
@@ -534,6 +543,7 @@ org-mybatis-mybatis = { module = "org.mybatis:mybatis", version.ref = "org-mybat
 org-mybatis-mybatis-spring = { module = "org.mybatis:mybatis-spring", version.ref = "org-mybatis-mybatis-spring" }
 org-objenesis-objenesis = { module = "org.objenesis:objenesis", version.ref = "org-objenesis-objenesis" }
 org-openapitools-jackson-databind-nullable = { module = "org.openapitools:jackson-databind-nullable", version.ref = "org-openapitools-jackson-databind-nullable" }
+org-openapitools-openapi-generator-gradle-plugin = { module = "org.openapitools:openapi-generator-gradle-plugin", version.ref = "org-openapitools-openapi-generator-gradle-plugin" }
 org-openjdk-jmh-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "org-openjdk-jmh-jmh-core" }
 org-openjdk-jmh-jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "org-openjdk-jmh-jmh-generator-annprocess" }
 org-opensearch-client-opensearch-java = { module = "org.opensearch.client:opensearch-java", version.ref = "org-opensearch-client-opensearch-java" }
