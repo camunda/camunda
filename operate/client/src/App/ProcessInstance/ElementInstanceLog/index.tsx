@@ -30,9 +30,13 @@ const Layout: React.FC<{children: React.ReactNode; isPanel: boolean}> =
       <Container data-testid="instance-history">
         <PanelHeader title="Instance History" size="sm">
           {!modificationsStore.isModificationModeEnabled && (
-            <Stack orientation="horizontal" gap={5}>
-              <ExecutionCountToggle />
+            <Stack
+              orientation="horizontal"
+              gap={3}
+              style={{marginLeft: 'auto'}}
+            >
               <TimeStampPill />
+              <ExecutionCountToggle />
             </Stack>
           )}
         </PanelHeader>
