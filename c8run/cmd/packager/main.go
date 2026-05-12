@@ -71,6 +71,14 @@ func main() {
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
 
+	// Sync .env with resolved versions so the bundled package is self-consistent.
+	// CAMUNDA_VERSION may be overridden via the environment (e.g. 8.10.0-SNAPSHOT on a branch)
+	// while .env still has a stale released version.
+	envContent := "# this is the version of camunda/ zeebe\nCAMUNDA_VERSION=" + camundaVersion + "\n# Look here: https://artifacts.camunda.com/ui/native/connectors/io/camunda/connector/connector-runtime-bundle/\nCONNECTORS_VERSION=" + connectorsVersion + "\n"
+	if err := os.WriteFile(".env", []byte(envContent), 0644); err != nil {
+		fmt.Printf("warning: could not update .env: %v\n", err)
+	}
+
 	baseCommand, err := getBaseCommand()
 	if err != nil {
 		fmt.Println(err.Error())
