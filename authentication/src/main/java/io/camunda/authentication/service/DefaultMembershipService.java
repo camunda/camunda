@@ -58,7 +58,8 @@ public class DefaultMembershipService implements MembershipService {
     this.roleServices = roleServices;
     this.groupServices = groupServices;
     oidcGroupsExtractor =
-        new OidcGroupsExtractor(securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
+        new OidcGroupsExtractor(
+            securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
     isGroupsClaimConfigured =
         securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
   }

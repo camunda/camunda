@@ -8,7 +8,7 @@
 package io.camunda.security.configuration;
 
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.configuration.headers.HeaderConfiguration;
+import io.camunda.security.api.model.config.headers.HeaderConfiguration;
 import java.util.regex.Pattern;
 
 /** Will be populated with the configuration properties of 'camunda.security' */

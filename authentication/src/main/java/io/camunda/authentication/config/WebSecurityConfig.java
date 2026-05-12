@@ -7,8 +7,8 @@
  */
 package io.camunda.authentication.config;
 
-import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
-import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
+import static io.camunda.security.api.model.config.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
+import static io.camunda.security.api.model.config.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
@@ -31,11 +31,11 @@ import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.headers.HeaderConfiguration;
+import io.camunda.security.api.model.config.headers.values.FrameOptionMode;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.configuration.headers.HeaderConfiguration;
-import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.oidc.CachingOidcClaimsProvider;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;

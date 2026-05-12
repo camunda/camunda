@@ -27,7 +27,8 @@ public class NoDBMembershipService implements MembershipService {
 
   public NoDBMembershipService(final SecurityConfiguration securityConfiguration) {
     oidcGroupsLoader =
-        new OidcGroupsExtractor(securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
+        new OidcGroupsExtractor(
+            securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
     isGroupsClaimConfigured =
         securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
   }
