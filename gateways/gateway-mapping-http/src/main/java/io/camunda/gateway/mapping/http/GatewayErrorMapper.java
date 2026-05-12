@@ -110,6 +110,7 @@ public class GatewayErrorMapper {
       case UNKNOWN, INTERNAL -> HttpStatus.INTERNAL_SERVER_ERROR;
       case FORBIDDEN -> HttpStatus.FORBIDDEN;
       case NOT_FOUND -> HttpStatus.NOT_FOUND;
+      case NOT_ACCEPTABLE -> HttpStatus.NOT_ACCEPTABLE;
       case UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
       case ALREADY_EXISTS, INVALID_STATE -> HttpStatus.CONFLICT;
       case INVALID_ARGUMENT -> HttpStatus.BAD_REQUEST;

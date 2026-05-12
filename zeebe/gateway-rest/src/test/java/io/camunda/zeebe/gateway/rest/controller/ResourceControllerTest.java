@@ -20,6 +20,7 @@ import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -687,6 +688,41 @@ public class ResourceControllerTest extends RestControllerTest {
               "status": 404,
               "title": "NOT_FOUND",
               "detail": "Command 'FETCH' rejected with code 'NOT_FOUND': Resource not found",
+              "instance": "%s"
+            }
+            """
+                .formatted(url),
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void getResourceContentShouldYieldNotAcceptableWhenResourceIsNotRpa() {
+    // given
+    when(resourceServices.getContentByKeyFilteredByType(eq(1L), eq("rpa"), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException(
+                    "Resource with key '1' is of type 'bpmn', expected 'rpa'",
+                    ServiceException.Status.NOT_ACCEPTABLE)));
+    final var url = GET_RESOURCE_CONTENT_ENDPOINT.formatted(1);
+
+    // when / then
+    webClient
+        .get()
+        .uri(url)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.NOT_ACCEPTABLE)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 406,
+              "title": "NOT_ACCEPTABLE",
+              "detail": "Resource with key '1' is of type 'bpmn', expected 'rpa'",
               "instance": "%s"
             }
             """

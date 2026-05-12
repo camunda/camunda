@@ -231,8 +231,17 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   private void validateResourceType(
       final String entityResourceType, final String resourceTypeFilter, final long resourceKey) {
     if (resourceTypeFilter != null && !resourceTypeFilter.equalsIgnoreCase(entityResourceType)) {
-      throw resourceNotFoundException(resourceKey);
+      throw resourceTypeNotAcceptableException(resourceKey, entityResourceType, resourceTypeFilter);
     }
+  }
+
+  private static ServiceException resourceTypeNotAcceptableException(
+      final long resourceKey, final String actualType, final String expectedType) {
+    return new ServiceException(
+        String.format(
+            "Resource with key '%d' is of type '%s', expected '%s'",
+            resourceKey, actualType, expectedType),
+        ServiceException.Status.NOT_ACCEPTABLE);
   }
 
   private static ServiceException resourceNotFoundException(final long resourceKey) {
