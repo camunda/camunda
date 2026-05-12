@@ -323,40 +323,43 @@ function StatusAccordion({agentData}: {agentData: AgentElementData}) {
           width: '100%',
         }}
       >
-        {currentMessage && (
+        {(currentMessage ||
+          (agentData.status !== 'COMPLETED' && activeTools.length > 0)) && (
           <ExpandableMessageBlock
             role="Assistant"
             roleColor="#8a3ffc"
             borderColor="#8a3ffc"
-            contents={[currentMessage]}
-          />
-        )}
-        {agentData.status !== 'COMPLETED' && activeTools.length > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--cds-spacing-02)',
-              flexWrap: 'wrap',
-            }}
+            contents={currentMessage ? [currentMessage] : []}
           >
-            <span style={attachmentLabelStyle}>Tool calls</span>
-            {activeTools.map((t) => (
-              <button
-                key={t.toolElementId}
-                type="button"
-                onClick={() => selectElement({elementId: t.toolElementId})}
+            {agentData.status !== 'COMPLETED' && activeTools.length > 0 && (
+              <div
                 style={{
-                  all: 'unset',
-                  cursor: 'pointer',
-                  ...tagStyle,
-                  color: 'var(--cds-link-primary)',
+                  marginTop: currentMessage ? 'var(--cds-spacing-05)' : 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--cds-spacing-02)',
+                  flexWrap: 'wrap',
                 }}
               >
-                {t.toolName}
-              </button>
-            ))}
-          </div>
+                <span style={attachmentLabelStyle}>Tool calls</span>
+                {activeTools.map((t) => (
+                  <button
+                    key={t.toolElementId}
+                    type="button"
+                    onClick={() => selectElement({elementId: t.toolElementId})}
+                    style={{
+                      all: 'unset',
+                      cursor: 'pointer',
+                      ...tagStyle,
+                      color: 'var(--cds-link-primary)',
+                    }}
+                  >
+                    {t.toolName}
+                  </button>
+                ))}
+              </div>
+            )}
+          </ExpandableMessageBlock>
         )}
       </div>
     </AccordionItem>
@@ -668,9 +671,10 @@ function ExpandableSegment({
         <div
           style={{
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: 'row',
             gap: 'var(--cds-spacing-02)',
             flexShrink: 0,
+            alignSelf: 'flex-start',
           }}
         >
           <IconButton

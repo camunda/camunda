@@ -34,6 +34,7 @@ const ShineBorder = styled.div<{$w: number; $h: number; $borderWidth: number}>`
   height: ${(p) => p.$h}px;
   pointer-events: none;
   border-radius: 10px;
+  z-index: 0;
   will-change: background-position;
 
   background-image: radial-gradient(

@@ -115,6 +115,8 @@ const Container = styled(Stack)<ContainerProps>`
       backgroundColors[$theme][$state][$isFaded ? 'fadedColor' : 'color'];
 
     return css`
+      position: relative;
+      z-index: 2;
       align-items: center;
       font-weight: bold;
       font-size: 13px;

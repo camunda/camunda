@@ -57,9 +57,12 @@ const AgentTag = styled(Tag)`
     background-image: linear-gradient(
       110deg,
       ${PURPLE_60} 0%,
+      ${PURPLE_60} 18%,
       ${PURPLE_30} 25%,
-      ${PURPLE_60} 50%,
+      ${PURPLE_60} 32%,
+      ${PURPLE_60} 68%,
       ${PURPLE_30} 75%,
+      ${PURPLE_60} 82%,
       ${PURPLE_60} 100%
     );
     background-size: 200% 100%;

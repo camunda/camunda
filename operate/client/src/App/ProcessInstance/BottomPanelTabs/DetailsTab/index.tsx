@@ -45,6 +45,7 @@ const DetailsTab: React.FC = () => {
   const {
     isAgentElement,
     primaryAgentElementInstanceKey,
+    agentElementInstanceKeys,
     getAgentDataForElement,
     getIterationForElement,
     getToolCallForElement,
@@ -130,20 +131,35 @@ const DetailsTab: React.FC = () => {
     if (!showAgentContent) {
       return null;
     }
-    // When the user picks a specific row in instance-history, resolvedElementInstance
-    // pins us to one agent run. When the click is on the BPMN diagram and matches
-    // multiple instances, fall back to the active one (primary).
-    const lookupKey =
-      resolvedElementInstance?.elementInstanceKey ??
-      primaryAgentElementInstanceKey;
-    if (!lookupKey) {
+    // Try the user's resolved selection first — when they pick a row in
+    // instance-history that IS an agent subprocess, that key is in the map.
+    const resolvedKey = resolvedElementInstance?.elementInstanceKey;
+    if (resolvedKey) {
+      const direct = getAgentDataForElement(resolvedKey);
+      if (direct) {
+        return direct;
+      }
+      // Resolved to something specific (tool / inner-instance / nested task)
+      // whose key isn't a subprocess key. In single-agent scenarios fall back
+      // to primary so tool selections still route to ToolCallDetail. In
+      // multi-agent scenarios we can't reliably attribute the selection to
+      // one specific run from this key alone, so drop to the standard non-
+      // agent rendering (the falsy return below).
+      if (agentElementInstanceKeys.length > 1) {
+        return null;
+      }
+    }
+    // No resolved selection (diagram click on an ambiguous element) OR
+    // single-agent fall-back: use primary.
+    if (!primaryAgentElementInstanceKey) {
       return null;
     }
-    return getAgentDataForElement(lookupKey);
+    return getAgentDataForElement(primaryAgentElementInstanceKey);
   }, [
     showAgentContent,
     resolvedElementInstance,
     primaryAgentElementInstanceKey,
+    agentElementInstanceKeys,
     getAgentDataForElement,
   ]);
 
