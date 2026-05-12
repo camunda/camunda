@@ -1187,7 +1187,7 @@ Merge incident counts into agent instance rows by `processInstanceId` on the Jav
 
 **Location**: `optimize/client/src/components/AgenticControlPlane/`
 
-**Framework**: React + Carbon Design System (consistent with existing Optimize UI).
+**Framework**: React functional components with hooks, consistent with the existing Optimize frontend. Carbon Design System for UI primitives. Chart.js (already used across Optimize) for all charts — do **not** use Carbon Charts.
 
 ### Views
 
@@ -1197,40 +1197,153 @@ Merge incident counts into agent instance rows by `processInstanceId` on the Jav
 | — with process selected | — | L1 |
 | — with process + agent | — | L2 |
 
+### Route Registration
+
+Register in `optimize/client/src/App.js` following the existing `PrivateRoute` pattern:
+
+```tsx
+<PrivateRoute path="/agentic-control-plane" component={AgenticControlPlane} />
+```
+
 ### Component Structure
+
+No dedicated hooks directory. Data fetching lives inside each component via `useEffect` + `mightFail`, calling functions from the co-located `service.ts`. This follows the established Optimize pattern used in `Processes`, `Dashboards`, and `Analysis`.
 
 ```
 AgenticControlPlane/
   index.tsx                     Entry / route registration
-  ControlPlaneDashboard.tsx     Main dashboard layout
+  ControlPlaneDashboard.tsx     Main layout; owns AgentFilterContext
+  AgentFilterContext.ts         Context definition and provider
+  service.ts                    All API call functions for A1–A7
   components/
-    ProcessSelector.tsx         Dropdown (uses A1 response)
-    AgentSelector.tsx           Dropdown (uses A2 response)
-    SummaryKPIs.tsx             Stat block (uses A3)
-    TokenTrendChart.tsx         Multi-line chart (uses A4)
-    DurationHistogram.tsx       Bar chart (uses A5)
-    IncidentRateKPI.tsx         KPI + sparkline (uses A6)
-    AgentsList.tsx              Paginated table (uses A7)
-  hooks/
-    useProcessBreakdown.ts
-    useAgentElements.ts
-    useSummaryKPIs.ts
-    useTokenTrend.ts
-    useDurationHistogram.ts
-    useIncidentRate.ts
-    useAgentsList.ts
+    ProcessSelector.tsx         Dropdown — calls loadProcessBreakdown()
+    AgentSelector.tsx           Dropdown — calls loadAgentElements()
+    SummaryKPIs.tsx             Stat block — calls loadSummaryKPIs()
+    TokenTrendChart.tsx         Line chart — calls loadTokenTrend()
+    DurationHistogram.tsx       Bar chart — calls loadDurationHistogram()
+    IncidentRateKPI.tsx         KPI card — calls loadIncidentRate()
+    AgentsList.tsx              Paginated table — calls loadAgents()
 ```
 
-### Filter propagation
+### Filter State — AgentFilterContext
 
-A global `AgentFilterContext` holds `{ processDefinitionKey, elementId, dateRange }`. All hooks read from context. Selecting a process triggers L0→L1 transition; additionally selecting an agent triggers L1→L2.
+`ControlPlaneDashboard` owns and provides the context. All child components read from it.
+
+```ts
+// AgentFilterContext.ts
+interface AgentFilter {
+  processDefinitionKey: string | null;
+  elementId: string | null;
+  dateRange: { from: string; to: string } | null;
+  interval: '1d' | '1w' | '1M';   // derived from dateRange width; passed to A4
+}
+
+export const AgentFilterContext = createContext<AgentFilter>({
+  processDefinitionKey: null,
+  elementId: null,
+  dateRange: null,
+  interval: '1w',
+});
+```
+
+Selecting a process sets `processDefinitionKey` and clears `elementId` (L0→L1). Selecting an agent sets `elementId` (L1→L2). Changing the date range updates `dateRange` and recomputes `interval`.
+
+`interval` is derived from the selected date range and passed to the A4 endpoint:
+
+| Date range width | interval |
+|---|---|
+| ≤ 14 days | `1d` |
+| ≤ 90 days | `1w` |
+| > 90 days | `1M` |
+
+### Data Fetching Pattern
+
+Every component follows the same pattern. Example — `SummaryKPIs.tsx`:
+
+```tsx
+export default function SummaryKPIs() {
+  const {processDefinitionKey, elementId, dateRange} = useContext(AgentFilterContext);
+  const [data, setData] = useState<SummaryKPIsResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const {mightFail} = useErrorHandling();
+
+  useEffect(() => {
+    setLoading(true);
+    mightFail(
+      loadSummaryKPIs({processDefinitionKey, elementId, dateRange}),
+      setData,
+      showError,
+      () => setLoading(false)
+    );
+  }, [processDefinitionKey, elementId, dateRange, mightFail]);
+
+  if (loading) return <Loading />;
+  // render data
+}
+```
+
+When any filter value in the context changes, the `useEffect` dependency array detects it and re-fetches automatically. Each component is independent — there is no shared data between tiles; each calls its own endpoint.
+
+### Service Layer
+
+All API calls are plain async functions in `service.ts`, returning parsed JSON. They receive filter params as arguments and map them to the appropriate query string or request body.
+
+```ts
+// service.ts
+export async function loadSummaryKPIs(filters: AgentFilter): Promise<SummaryKPIsResponse> {
+  const response = await get('api/agentic-control-plane/summary', buildParams(filters));
+  return response.json();
+}
+
+export async function loadAgentElements(processDefinitionKey: string): Promise<AgentElementsResponse> {
+  const response = await get('api/agentic-control-plane/agent-elements', {processDefinitionKey});
+  const data: AgentElementsResponse = await response.json();
+  // Resolve human-readable labels via DefinitionService after fetching elementIds
+  return enrichWithLabels(data, processDefinitionKey);
+}
+
+// ... loadProcessBreakdown, loadTokenTrend, loadDurationHistogram, loadIncidentRate, loadAgents
+```
+
+`buildParams` conditionally omits `processDefinitionKey` and `elementId` when null — they must never be sent as empty strings to the backend.
+
+### Agent Element Labels
+
+`loadAgentElements` resolves human-readable BPMN element names after fetching elementIds from A2. This uses `DefinitionService.getProcessDefinitionWithXmlAsService(processDefinitionKey)` to parse the BPMN XML and map each `elementId` to its label — the same mechanism used by `FlowNodeRestService`. If a label cannot be resolved, fall back to the raw `elementId` string.
+
+### Charts
+
+Use Chart.js directly, following the pattern in `optimize/client/src/modules/components/DurationChart/DurationChart.tsx`:
+
+- `TokenTrendChart`: `Line` chart type. Series are input tokens and output tokens over time.
+- `DurationHistogram`: `Bar` chart type with custom bucket labels on the x-axis.
+
+### Pagination — Agents List
+
+`AgentsList` uses a **"Load more"** button pattern backed by the `nextCursor` from A7. This does not use the existing `react-table` pagination (which is page-number based). On each load-more click, the current cursor is passed to `loadAgents()` and the new page of results is appended to the existing list.
+
+```ts
+const [items, setItems] = useState<AgentInstance[]>([]);
+const [cursor, setCursor] = useState<string | null>(null);
+
+const loadMore = () => {
+  mightFail(
+    loadAgents({processDefinitionKey, elementId, after: cursor}),
+    ({items: newItems, nextCursor}) => {
+      setItems((prev) => [...prev, ...newItems]);
+      setCursor(nextCursor);
+    },
+    showError
+  );
+};
+```
 
 ### Notes
 
-- Token trend chart: render top-5 agent series + "Other" rolled-up series using Carbon `LineChart`.
-- Duration histogram: use Carbon `SimpleBarChart` with custom bucket labels.
-- Agents list: uses `nextCursor` from A7 response for "load more" pagination (not page-number).
-- No status badges rendered — status visible only in agents list table column.
+- The date range picker should reuse the existing `DateFilter` component from `optimize/client/src/components/Dashboards/filters/DateFilter.js`.
+- No status badges (Healthy / Degraded / Failing) — out of scope for phase 1. Agent `status` field is visible only as a text column in the AgentsList table.
+- No "Configure in settings" button on the IncidentRateKPI card — the settings page (Layer 4) is out of scope for phase 1.
+- Token trend chart behaviour at L0/L1 vs L2 (multi-line by agent vs single line) is a **pending product decision** and must be resolved before implementing `TokenTrendChart`. See Section 4.5 open question.
 
 ---
 
