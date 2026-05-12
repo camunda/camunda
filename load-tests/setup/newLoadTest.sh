@@ -149,7 +149,7 @@ IDENTITY_OPTIMIZE_CLIENT_TOKEN=$(gen_token)
 
 # Copy default folder (incl. resources/) and the parent platform values files.
 cp -rv default/ "$namespace"
-cp -v ../*.yaml "$namespace/"
+cp -v default/values/*.yaml "$namespace/"
 
 cd "$namespace"
 
