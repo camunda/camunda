@@ -763,30 +763,97 @@ function ExpandableSegment({
   );
 }
 
+const TIMELINE_COLUMN_WIDTH = 28;
+const TIMELINE_LINE_WIDTH = 1;
+const TIMELINE_DOT_SIZE = 10;
+const TIMELINE_DOT_TOP_OFFSET = 6;
+const TIMELINE_LINE_COLOR = 'var(--cds-border-strong-01)';
+
+function TimelineColumn({
+  dotColor,
+  isFirst,
+  isLast,
+}: {
+  dotColor: string;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
+  return (
+    <div
+      style={{
+        width: TIMELINE_COLUMN_WIDTH,
+        flexShrink: 0,
+        position: 'relative',
+      }}
+    >
+      {!isFirst && (
+        <div
+          style={{
+            position: 'absolute',
+            left: (TIMELINE_COLUMN_WIDTH - TIMELINE_LINE_WIDTH) / 2,
+            width: TIMELINE_LINE_WIDTH,
+            backgroundColor: TIMELINE_LINE_COLOR,
+            top: 0,
+            height: TIMELINE_DOT_TOP_OFFSET + TIMELINE_DOT_SIZE / 2,
+          }}
+        />
+      )}
+      {!isLast && (
+        <div
+          style={{
+            position: 'absolute',
+            left: (TIMELINE_COLUMN_WIDTH - TIMELINE_LINE_WIDTH) / 2,
+            width: TIMELINE_LINE_WIDTH,
+            backgroundColor: TIMELINE_LINE_COLOR,
+            top: TIMELINE_DOT_TOP_OFFSET + TIMELINE_DOT_SIZE / 2,
+            bottom: 0,
+          }}
+        />
+      )}
+      <div
+        style={{
+          position: 'absolute',
+          top: TIMELINE_DOT_TOP_OFFSET,
+          left: (TIMELINE_COLUMN_WIDTH - TIMELINE_DOT_SIZE) / 2,
+          width: TIMELINE_DOT_SIZE,
+          height: TIMELINE_DOT_SIZE,
+          borderRadius: '50%',
+          backgroundColor: dotColor,
+          boxShadow: `0 0 0 3px var(--cds-layer)`,
+        }}
+      />
+    </div>
+  );
+}
+
 function ExpandableMessageBlock({
   role,
   borderColor,
   contents,
   children,
+  variant = 'standalone',
+  isFirst = false,
+  isLast = false,
 }: {
   role: string;
   borderColor: string;
   contents: string[];
   children?: React.ReactNode;
+  variant?: 'timeline' | 'standalone';
+  isFirst?: boolean;
+  isLast?: boolean;
 }) {
   const segments = contents.filter((c) => c.length > 0);
 
-  return (
+  const block = (
     <div
       style={{
-        // Blockquote-style — no bubble, no radius. The role-colored left
-        // border acts as a spine running down the message; text indents
-        // beside it. Small vertical padding gives the text breathing room
-        // off the spine's top/bottom; the parent stack's gap separates
-        // adjacent messages.
+        flex: 1,
+        minWidth: 0,
         padding:
-          'var(--cds-spacing-03) 0 var(--cds-spacing-03) var(--cds-spacing-05)',
-        borderLeft: `2px solid ${borderColor}`,
+          variant === 'timeline'
+            ? 0
+            : 'var(--cds-spacing-03) 0 var(--cds-spacing-03) 0',
       }}
     >
       <div
@@ -822,6 +889,21 @@ function ExpandableMessageBlock({
       {children}
     </div>
   );
+
+  if (variant === 'timeline') {
+    return (
+      <div style={{display: 'flex', alignItems: 'stretch'}}>
+        <TimelineColumn
+          dotColor={borderColor}
+          isFirst={isFirst}
+          isLast={isLast}
+        />
+        {block}
+      </div>
+    );
+  }
+
+  return block;
 }
 
 function ConversationHistory({
@@ -879,6 +961,8 @@ function ConversationHistory({
         <SortIcon size={12} />
       </button>
       {filtered.map((msg, i) => {
+        const isFirst = i === 0;
+        const isLast = i === filtered.length - 1;
         if (msg.role === 'user') {
           return (
             <ExpandableMessageBlock
@@ -886,6 +970,9 @@ function ConversationHistory({
               role="User"
               borderColor="var(--cds-interactive)"
               contents={msg.content}
+              variant="timeline"
+              isFirst={isFirst}
+              isLast={isLast}
             >
               {msg.documents && msg.documents.length > 0 && (
                 <div
@@ -917,6 +1004,9 @@ function ConversationHistory({
               role="Assistant"
               borderColor="#8a3ffc"
               contents={msg.content}
+              variant="timeline"
+              isFirst={isFirst}
+              isLast={isLast}
             >
               {msg.toolCalls && msg.toolCalls.length > 0 && (
                 <div
