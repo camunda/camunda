@@ -323,21 +323,88 @@ export const MOCK_AGENT_HISTORY_ELEMENTS_MULTIPLE_1: HistoryElement[] =
     elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_1,
   }));
 
-// Run 2 — active agent run (same in-flight shape as ACTIVE scenario)
+// Run 2 — active agent run, responding to user feedback from Run 1.
+// Shorter than ACTIVE: one iteration, two in-flight tool calls, no results yet.
 export const MOCK_AGENT_INSTANCE_MULTIPLE_2: AgentInstance = {
   ...MOCK_AGENT_INSTANCE_ACTIVE,
   agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_MULTIPLE_2,
   processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
   processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
-  // Bump timestamps by ~15 seconds to sit after the user-feedback step.
   creationTime: '2026-03-26T14:30:15.000Z',
+  metrics: {
+    inputTokens: 612,
+    outputTokens: 78,
+    totalTokens: 690,
+    toolCalls: 2,
+  },
 };
 
-export const MOCK_AGENT_HISTORY_ELEMENTS_MULTIPLE_2: HistoryElement[] =
-  MOCK_AGENT_HISTORY_ELEMENTS_ACTIVE.map((el) => ({
-    ...el,
-    agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_MULTIPLE_2,
-    elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
-    // Shift all timestamps by +15 seconds so they sit after the first run + user feedback.
-    timestamp: new Date(new Date(el.timestamp).getTime() + 15000).toISOString(),
-  }));
+const multiple2BaseElement = (overrides: {
+  historyElementKey: string;
+  role: HistoryElement['role'];
+  timestamp: string;
+  content: string;
+  metrics?: HistoryElement['metrics'];
+}): HistoryElement => ({
+  agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_MULTIPLE_2,
+  elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
+  jobKey: '7451799813685011',
+  committed: true,
+  metrics: {},
+  ...overrides,
+  content: [{contentType: 'text', content: overrides.content}],
+});
+
+export const MOCK_AGENT_HISTORY_ELEMENTS_MULTIPLE_2: HistoryElement[] = [
+  // User feedback replayed as the new user prompt for Run 2.
+  multiple2BaseElement({
+    historyElementKey: '7451799441055800',
+    role: 'user',
+    timestamp: '2026-03-26T14:30:15.000Z',
+    content:
+      "The draft is OK but it doesn't include the day of the week — March 28 is a Saturday and that context matters. Also please mention it's a casual offsite, not a formal event.",
+  }),
+  // Single iteration: assistant reasons about the feedback, then issues two parallel tool calls.
+  multiple2BaseElement({
+    historyElementKey: '7451799441055801',
+    role: 'assistant',
+    timestamp: '2026-03-26T14:30:15.400Z',
+    content:
+      "Got the feedback — two adjustments: surface that March 28 is a Saturday (so the weekend framing reads naturally) and shift the tone from neutral-formal to casual. I'll regenerate the template with both notes and re-route through the human operator so they can review the revised copy before send.",
+    metrics: {inputTokens: 612, outputTokens: 78, totalTokens: 690},
+  }),
+  multiple2BaseElement({
+    historyElementKey: '7451799441055802',
+    role: 'tool_call',
+    timestamp: '2026-03-26T14:30:15.500Z',
+    content: JSON.stringify({
+      name: 'DraftEmailTemplate',
+      input: {
+        recipient_name: 'Leanne Graham',
+        subject: 'Saturday offsite — bring something casual',
+        tone: 'casual',
+        body_outline: [
+          'Open warmly with first name.',
+          "Lead with the date as 'Saturday, March 28'.",
+          'Position the event as casual — no agenda, no dress code.',
+          'Close with a low-pressure RSVP nudge.',
+        ],
+      },
+    }),
+  }),
+  multiple2BaseElement({
+    historyElementKey: '7451799441055803',
+    role: 'tool_call',
+    timestamp: '2026-03-26T14:30:15.550Z',
+    content: JSON.stringify({
+      name: 'AskHumanToSendEmail',
+      input: {
+        recipient_name: 'Leanne Graham',
+        recipient_email: 'Sincere@april.biz',
+        email_subject: 'Saturday offsite — bring something casual',
+        email_body:
+          'Hi Leanne,\n\nQuick update — the offsite is this Saturday, March 28. Nothing formal — bring whatever you want, we just want you there.\n\nLet us know either way!',
+      },
+    }),
+  }),
+];

@@ -50,12 +50,7 @@ import {
   MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_MULTIPLE_1,
   MOCK_USER_FEEDBACK_KEY_MULTIPLE,
   MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
-  MOCK_AGENT_INNER_INSTANCE_1_KEY_MULTIPLE_2,
-  MOCK_AGENT_INNER_INSTANCE_2_KEY_MULTIPLE_2,
-  MOCK_AGENT_INNER_INSTANCE_3_KEY_MULTIPLE_2,
   MOCK_AGENT_INNER_INSTANCE_4_KEY_MULTIPLE_2,
-  MOCK_AGENT_INNER_INSTANCE_5_KEY_MULTIPLE_2,
-  MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_MULTIPLE_2,
 } from './constants';
 
 // Extended type for mock data — flowScopeKey is not in the API type but needed for scope filtering
@@ -1178,25 +1173,6 @@ const RUN_1_REBINDS: RebindMap = {
   '6451799813685035': '7451799813685035', // AskHumanToSendEmail
 };
 
-const RUN_2_REBINDS: RebindMap = {
-  [MOCK_AGENT_INSTANCE_KEY_ACTIVE]: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
-  [MOCK_AGENT_SUBPROCESS_KEY_ACTIVE]: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
-  [MOCK_AGENT_INNER_INSTANCE_1_KEY_ACTIVE]:
-    MOCK_AGENT_INNER_INSTANCE_1_KEY_MULTIPLE_2,
-  [MOCK_AGENT_INNER_INSTANCE_2_KEY_ACTIVE]:
-    MOCK_AGENT_INNER_INSTANCE_2_KEY_MULTIPLE_2,
-  [MOCK_AGENT_INNER_INSTANCE_3_KEY_ACTIVE]:
-    MOCK_AGENT_INNER_INSTANCE_3_KEY_MULTIPLE_2,
-  [MOCK_AGENT_INNER_INSTANCE_4_KEY_ACTIVE]:
-    MOCK_AGENT_INNER_INSTANCE_4_KEY_MULTIPLE_2,
-  [MOCK_AGENT_INNER_INSTANCE_5_KEY_ACTIVE]:
-    MOCK_AGENT_INNER_INSTANCE_5_KEY_MULTIPLE_2,
-  [MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_ACTIVE]:
-    MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_MULTIPLE_2,
-  // StartEvent + Gateway pass 1 are NOT in Run 2 (Run 2 starts after the user-feedback loopback)
-  // so those entries from ACTIVE are filtered out below before rebinding.
-};
-
 const run1Cloned = rebindElementInstances(
   MOCK_AGENT_ELEMENT_INSTANCES_COMPLETED.filter(
     (el) =>
@@ -1214,19 +1190,66 @@ const run1Cloned = rebindElementInstances(
   RUN_1_REBINDS,
 );
 
-// Run 2 from ACTIVE: drop the top-level PROCESS + StartEvent + first Gateway
-// (those belong only to the first pass; Run 2 starts at the second Gateway pass).
-const run2Cloned = rebindElementInstances(
-  MOCK_AGENT_ELEMENT_INSTANCES_ACTIVE.filter(
-    (el) =>
-      el.elementId !== MOCK_AGENT_DEFINITION_ID_ACTIVE &&
-      el.elementId !== 'StartEvent_1' &&
-      el.elementId !== 'Gateway_0z6ctwk',
-  ),
-  MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
-  MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
-  RUN_2_REBINDS,
-);
+// Run 2 — hand-written, matches the shorter Run-2 history:
+// only the AskHumanToSendEmail tool is BPMN-resident (DraftEmailTemplate is
+// agent-internal, no element-instance). Timestamps shifted to sit after
+// User_Feedback (14:30:05.500Z) and Gateway pass 2 (14:30:14.100Z).
+const run2Entries: MockElementInstance[] = [
+  // AI_Agent #2 subprocess (ACTIVE)
+  {
+    elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+    elementId: 'AI_Agent',
+    elementName: 'AI Agent',
+    type: 'AD_HOC_SUB_PROCESS',
+    state: 'ACTIVE',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:15.300Z',
+    endDate: null,
+    incidentKey: null,
+  },
+  // Tool activation: AskHumanToSendEmail — innerInstance wrapper (ACTIVE)
+  {
+    elementInstanceKey: MOCK_AGENT_INNER_INSTANCE_4_KEY_MULTIPLE_2,
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+    elementId: 'AI_Agent',
+    elementName: 'AI Agent#innerInstance',
+    type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+    state: 'ACTIVE',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:15.550Z',
+    endDate: null,
+    incidentKey: null,
+  },
+  // AskHumanToSendEmail user task (ACTIVE)
+  {
+    elementInstanceKey: '7451799813685135',
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+    elementId: 'AskHumanToSendEmail',
+    elementName: 'Ask human to send email',
+    type: 'USER_TASK',
+    state: 'ACTIVE',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INNER_INSTANCE_4_KEY_MULTIPLE_2,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:15.560Z',
+    endDate: null,
+    incidentKey: null,
+  },
+];
 
 export const MOCK_AGENT_ELEMENT_INSTANCES_MULTIPLE: MockElementInstance[] = [
   // Top-level process
@@ -1340,7 +1363,7 @@ export const MOCK_AGENT_ELEMENT_INSTANCES_MULTIPLE: MockElementInstance[] = [
     incidentKey: null,
   },
   // Run 2 — AI_Agent + inner instances + tools (active state)
-  ...run2Cloned,
+  ...run2Entries,
 ];
 
 export const MOCK_AGENT_ELEMENT_STATISTICS_MULTIPLE = {
@@ -1365,21 +1388,21 @@ export const MOCK_AGENT_ELEMENT_STATISTICS_MULTIPLE = {
       active: 0,
       canceled: 0,
       incidents: 0,
-      completed: 2,
+      completed: 1,
     },
     {
       elementId: 'LoadUserByID',
       active: 0,
       canceled: 0,
       incidents: 0,
-      completed: 2,
+      completed: 1,
     },
     {
       elementId: 'GetDateAndTime',
       active: 0,
       canceled: 0,
       incidents: 0,
-      completed: 2,
+      completed: 1,
     },
     {
       elementId: 'AskHumanToSendEmail',
@@ -1390,7 +1413,7 @@ export const MOCK_AGENT_ELEMENT_STATISTICS_MULTIPLE = {
     },
     {
       elementId: 'AI_Task_Agent',
-      active: 1,
+      active: 0,
       canceled: 0,
       incidents: 0,
       completed: 1,
