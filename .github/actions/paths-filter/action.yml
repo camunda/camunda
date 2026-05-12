@@ -235,6 +235,16 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-c8-e2e-test-suite.outputs.c8-e2e-test-suite-change == 'true'
       }}
+  gradle-changes:
+    description: Output whether the Gradle compile check should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-common.outputs.java-code-change == 'true' ||
+        steps.filter-common.outputs.gradle-change == 'true'
+      }}
 
 runs:
   using: composite
@@ -316,6 +326,13 @@ runs:
         - 'qa/acceptance-tests/**'
         - 'search/search-domain/**'
         - 'zeebe/exporters/rdbms-exporter/**'
+
+        gradle-change:
+          - '**/*.gradle.kts'
+          - 'gradle.properties'
+          - 'gradlew'
+          - 'gradle/**'
+          - 'buildSrc/**'
 
   - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
     id: filter-github-actions

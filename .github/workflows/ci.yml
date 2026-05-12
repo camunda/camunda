@@ -63,6 +63,7 @@ jobs:
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
       c8-e2e-test-suite-changes: ${{ steps.filter.outputs.c8-e2e-test-suite-changes }}
       deps-changed: ${{ steps.filter.outputs.deps-changed }}
+      gradle-changes: ${{ steps.filter.outputs.gradle-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -181,6 +182,33 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw spotless:check
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  gradle-compile-check:
+    if: needs.detect-changes.outputs.gradle-changes == 'true'
+    name: "Gradle / Compile"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: gradle-compile
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+      - run: ./gradlew build -x test
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2114,6 +2142,7 @@ jobs:
       - docker-checks
       - general-unit-tests
       - generate-db-versions
+      - gradle-compile-check
       - history-tests
       - identity-frontend-sbom-snyk
       - identity-frontend-tests
