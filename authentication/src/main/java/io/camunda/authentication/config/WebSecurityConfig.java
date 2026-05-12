@@ -33,6 +33,7 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.headers.HeaderConfiguration;
 import io.camunda.security.api.model.config.headers.values.FrameOptionMode;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -504,10 +505,7 @@ public class WebSecurityConfig {
           .map(AuthenticationConfiguration::getProviders)
           .map(OidcProvidersConfiguration::getOidc)
           .map(Map::values)
-          .map(
-              values ->
-                  values.stream()
-                      .anyMatch(io.camunda.security.api.model.config.oidc.OidcConfiguration::isSet))
+          .map(values -> values.stream().anyMatch(OidcConfiguration::isSet))
           .orElse(false);
     }
 
@@ -791,8 +789,7 @@ public class WebSecurityConfig {
     }
 
     private ClientRegistration createClientRegistration(
-        final String registrationId,
-        final io.camunda.security.api.model.config.oidc.OidcConfiguration configuration) {
+        final String registrationId, final OidcConfiguration configuration) {
       try {
         return ClientRegistrationFactory.createClientRegistration(registrationId, configuration);
       } catch (final Exception e) {
@@ -836,9 +833,8 @@ public class WebSecurityConfig {
       final var decoderFactory = new OidcIdTokenDecoderFactory();
       decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
 
-      final Map<String, io.camunda.security.api.model.config.oidc.OidcConfiguration>
-          oidcAuthenticationConfigurations =
-              oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations();
+      final Map<String, OidcConfiguration> oidcAuthenticationConfigurations =
+          oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations();
       final Map<ClientRegistration, JwsAlgorithm> clientRegistrationToAlgorithmMap =
           oidcAuthenticationConfigurations.entrySet().stream()
               .collect(
@@ -914,7 +910,7 @@ public class WebSecurityConfig {
                       && !config.getAdditionalJwkSetUris().isEmpty())
           .collect(
               toMap(
-                  io.camunda.security.api.model.config.oidc.OidcConfiguration::getIssuerUri,
+                  OidcConfiguration::getIssuerUri,
                   config -> List.copyOf(config.getAdditionalJwkSetUris()),
                   (a, b) -> {
                     if (!a.equals(b)) {

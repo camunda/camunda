@@ -18,7 +18,7 @@ import io.camunda.operate.webapp.security.permission.PermissionsService.Resource
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.configuration.AuthorizationsConfiguration;
+import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccess;

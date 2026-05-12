@@ -21,7 +21,7 @@ import io.camunda.search.filter.JobFilter;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
