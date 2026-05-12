@@ -14,6 +14,7 @@ export class IdentityTenantsPage {
   private page: Page;
   readonly tenantsList: Locator;
   readonly createTenantButton: Locator;
+  readonly editTenantButton: (rowName?: string) => Locator;
   readonly deleteTenantButton: (rowName?: string) => Locator;
   readonly createTenantModal: Locator;
   readonly closeCreateTenantModal: Locator;
@@ -22,6 +23,10 @@ export class IdentityTenantsPage {
   readonly tenantDescriptionField: Locator;
   readonly createTenantModalCancelButton: Locator;
   readonly createTenantModalButton: Locator;
+  readonly editTenantModal: Locator;
+  readonly editTenantNameField: Locator;
+  readonly editTenantDescriptionField: Locator;
+  readonly editTenantModalButton: Locator;
   readonly deleteTenantModal: Locator;
   readonly closeDeleteTenantModal: Locator;
   readonly deleteTenantModalCancelButton: Locator;
@@ -48,6 +53,8 @@ export class IdentityTenantsPage {
     this.createTenantButton = page.getByRole('button', {
       name: 'Create tenant',
     });
+    this.editTenantButton = (rowName) =>
+      this.tenantsList.getByRole('row', {name: rowName}).getByLabel('Edit');
     this.deleteTenantButton = (rowName) =>
       this.tenantsList.getByRole('row', {name: rowName}).getByLabel('Delete');
 
@@ -72,6 +79,21 @@ export class IdentityTenantsPage {
     );
     this.createTenantModalButton = this.createTenantModal.getByRole('button', {
       name: 'Create tenant',
+    });
+    this.editTenantModal = page.getByRole('dialog', {
+      name: 'Edit tenant',
+    });
+    this.editTenantNameField = this.editTenantModal.getByRole('textbox', {
+      name: 'Tenant name',
+    });
+    this.editTenantDescriptionField = this.editTenantModal.getByRole(
+      'textbox',
+      {
+        name: 'Description',
+      },
+    );
+    this.editTenantModalButton = this.editTenantModal.getByRole('button', {
+      name: 'Edit tenant',
     });
 
     this.deleteTenantModal = page.getByRole('dialog', {
@@ -176,6 +198,28 @@ export class IdentityTenantsPage {
     await expect(this.deleteTenantModal).toBeVisible();
     await this.deleteTenantModalDeleteButton.click();
     await expect(this.deleteTenantModal).toBeHidden();
+  }
+
+  async editTenant(
+    currentName: string,
+    updatedName: string,
+    updatedDescription?: string,
+  ) {
+    await expect(async () => {
+      await expect(this.editTenantButton(currentName)).toBeVisible({
+        timeout: 20000,
+      });
+      await this.tenantsHeading.click();
+      await this.editTenantButton(currentName).click();
+    }).toPass(defaultAssertionOptions);
+
+    await expect(this.editTenantModal).toBeVisible();
+    await this.editTenantNameField.fill(updatedName);
+    if (updatedDescription) {
+      await this.editTenantDescriptionField.fill(updatedDescription);
+    }
+    await this.editTenantModalButton.click();
+    await expect(this.editTenantModal).toBeHidden();
   }
 
   async createTenant(tenant: {

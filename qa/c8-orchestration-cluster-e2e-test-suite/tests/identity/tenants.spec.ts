@@ -20,13 +20,18 @@ const USER = {
 
 test.describe.serial('tenants CRUD', () => {
   let NEW_TENANT: NonNullable<ReturnType<typeof createTestData>['tenant']>;
+  let EDITED_TENANT: NonNullable<
+    ReturnType<typeof createTestData>['editedTenant']
+  >;
 
   test.beforeAll(() => {
     const testData = createTestData({
       tenant: true,
+      editedTenant: true,
       user: true,
     });
     NEW_TENANT = testData.tenant!;
+    EDITED_TENANT = testData.editedTenant!;
   });
 
   test.beforeEach(async ({page, loginPage, identityHeader}) => {
@@ -64,10 +69,27 @@ test.describe.serial('tenants CRUD', () => {
       await waitForItemInList(page, item, {timeout: 60000, clickNext: true});
     });
 
+    test('edits a tenant', async ({page, identityTenantsPage}) => {
+      const item = identityTenantsPage.tenantCell(NEW_TENANT.name);
+      await waitForItemInList(page, item, {timeout: 60000, clickNext: true});
+
+      await identityTenantsPage.editTenant(
+        NEW_TENANT.name,
+        EDITED_TENANT.name,
+        EDITED_TENANT.description,
+      );
+
+      const editedItem = identityTenantsPage.tenantCell(EDITED_TENANT.name);
+      await waitForItemInList(page, editedItem, {
+        timeout: 60000,
+        clickNext: true,
+      });
+    });
+
     test('assign a user', async ({page, identityTenantsPage}) => {
       await waitForItemInList(
         page,
-        identityTenantsPage.tenantCell(NEW_TENANT.name),
+        identityTenantsPage.tenantCell(EDITED_TENANT.name),
         {timeout: 60000, clickNext: true},
       );
       await identityTenantsPage.openTenantDetails(NEW_TENANT.tenantId).click();
@@ -82,7 +104,7 @@ test.describe.serial('tenants CRUD', () => {
     test('remove a user', async ({page, identityTenantsPage}) => {
       await waitForItemInList(
         page,
-        identityTenantsPage.tenantCell(NEW_TENANT.name),
+        identityTenantsPage.tenantCell(EDITED_TENANT.name),
         {timeout: 60000, clickNext: true},
       );
       await identityTenantsPage.openTenantDetails(NEW_TENANT.tenantId).click();
@@ -95,13 +117,13 @@ test.describe.serial('tenants CRUD', () => {
     });
 
     test('delete a tenant', async ({page, identityTenantsPage}) => {
-      const item = identityTenantsPage.tenantCell(NEW_TENANT.name);
+      const item = identityTenantsPage.tenantCell(EDITED_TENANT.name);
       await waitForItemInList(page, item, {
         clickNext: true,
         timeout: 60000,
       });
 
-      await identityTenantsPage.deleteTenant(NEW_TENANT.name);
+      await identityTenantsPage.deleteTenant(EDITED_TENANT.name);
 
       await waitForItemInList(page, item, {
         shouldBeVisible: false,
