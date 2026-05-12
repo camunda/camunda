@@ -64,6 +64,23 @@ identity:
     secret:
       existingSecret: camunda-credentials
       existingSecretKey: identity-firstuser-password
+  # Bootstrap a dedicated Keycloak client for the load-tester's Optimize meter. Identity
+  # (a) registers the confidential client with serviceAccountsEnabled=true,
+  # (b) attaches a hardcoded-audience mapper so tokens carry `aud=optimize-api`, and
+  # (c) grants the client's service-account user write access on the `optimize-api`
+  # resource server, so `/api/**` calls authorize without OPTIMIZE_SUPER_USER_IDS.
+  # The chart-managed `optimize` client used by the Optimize UI cookie flow is left
+  # untouched (different `id`).
+  clients:
+    - id: optimize-loadtest
+      name: Optimize Load Tester
+      type: confidential
+      secret:
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-optimize-loadtest-client-secret
+      permissions:
+        - resourceServerId: optimize-api
+          definition: write:*
   env:
     # https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/#google-stackdriver-json-logging
     - name: IDENTITY_LOG_APPENDER
@@ -85,28 +102,19 @@ optimize:
           ttl: 'P1D'
           processDataCleanup:
             enabled: true
-        # Override the chart's environment-config.yaml hardcoded `api.audience: optimize-api`.
-        # The Keycloak `optimize` client mints `aud=["optimize","account"]` by default (no
-        # audience mapper); without this override the bearer filter returns 401 "The required
-        # audience is missing". Spring loads application.yml after environment-config.yaml so
-        # this wins.
-        api:
-          audience: "optimize"
   env:
     # https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/#google-stackdriver-json-logging
     - name: OPTIMIZE_LOG_APPENDER
       value: Stackdriver
-    # Bearer-token (JWT) auth for /api/** added in camunda/camunda#46878. Required by the
-    # load-tester's Optimize evaluator (client_credentials -> Bearer header).
+    # Bearer-token (JWT) auth for /api/** added in camunda/camunda#46878. The load-tester's
+    # Optimize evaluator uses client_credentials against the `optimize-loadtest` Keycloak
+    # client (declared above under identity.clients[]); its tokens carry `aud=optimize-api`
+    # and the service-account user has `write:*` on the `optimize-api` resource server.
     - name: CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED
       value: "true"
     # The `keycloak` Service exposes only port 80; inside the pod KC listens on 8080.
     - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
       value: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
-    # `client_credentials` token's subject is the Keycloak service-account user.
-    # Grant it super-user access to the non-public Optimize API so /api/** calls succeed.
-    - name: OPTIMIZE_SUPER_USER_IDS
-      value: "[service-account-optimize]"
   tolerations:
     - key: nodepool
       operator: Equal

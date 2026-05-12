@@ -33,10 +33,11 @@ global:
       valueFrom:
         fieldRef:
           fieldPath: metadata.namespace
-    # Optimize report evaluation meter (starter-only). Requires the Optimize backend
-    # to run with CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED=true (set in
-    # camunda-platform-values.yaml). Uses the OAuth 2.0 client_credentials grant against
-    # the Keycloak `optimize` client, so only client-id + client-secret are needed.
+    # Optimize report evaluation meter (starter-only). Requires the Optimize backend to
+    # run with CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED=true (set in camunda-platform-values.yaml)
+    # and the dedicated `optimize-loadtest` Keycloak client declared under identity.clients[]
+    # in the same values file. Uses the OAuth 2.0 client_credentials grant — only client-id +
+    # client-secret are needed.
     # Service DNS used here: keycloak/optimize are ClusterIP services on port 80.
     - name: LOAD_TESTER_OPTIMIZE_ENABLED
       value: "true"
@@ -47,12 +48,12 @@ global:
     - name: OPTIMIZE_REALM
       value: "camunda-platform"
     - name: OPTIMIZE_CLIENT_ID
-      value: "optimize"
+      value: "optimize-loadtest"
     - name: OPTIMIZE_CLIENT_SECRET
       valueFrom:
         secretKeyRef:
           name: camunda-credentials
-          key: identity-optimize-client-token
+          key: identity-optimize-loadtest-client-secret
 
 # Saas configuration to run load tests against Camunda SaaS environment
 saas:
