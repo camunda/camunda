@@ -11,6 +11,8 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -34,6 +36,8 @@ public class SystemConfigurationIT {
   @MultiDbTestApplication
   private static final TestCamundaApplication CAMUNDA_APPLICATION =
       new TestCamundaApplication().withBasicAuth().withAuthenticatedAccess();
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -68,46 +72,40 @@ public class SystemConfigurationIT {
     // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
 
-    final String body = response.body();
-    assertThat(body).contains("\"jobMetrics\"");
-    assertThat(body).contains("\"components\"");
-    assertThat(body).contains("\"active\"");
-    assertThat(body).contains("\"deployment\"");
-    assertThat(body).contains("\"isEnterprise\"");
-    assertThat(body).contains("\"isMultiTenancyEnabled\"");
-    assertThat(body).contains("\"contextPath\"");
-    assertThat(body).contains("\"maxRequestSize\"");
-    assertThat(body).contains("\"authentication\"");
-    assertThat(body).contains("\"canLogout\"");
-    assertThat(body).contains("\"isLoginDelegated\"");
-    assertThat(body).contains("\"cloud\"");
-    assertThat(body).contains("\"organizationId\"");
-    assertThat(body).contains("\"clusterId\"");
-    assertThat(body).contains("\"stage\"");
-    assertThat(body).contains("\"mixpanelToken\"");
-    assertThat(body).contains("\"mixpanelAPIHost\"");
-  }
+    final JsonNode root = OBJECT_MAPPER.readTree(response.body());
 
-  @Test
-  void shouldReturnSelfManagedDefaultsForCloudFields() throws IOException, InterruptedException {
-    // given
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(configUri())
-            .header("Authorization", basicAuth(DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD))
-            .GET()
-            .build();
+    final JsonNode jobMetrics = root.get("jobMetrics");
+    assertThat(jobMetrics).isNotNull();
+    assertThat(jobMetrics.get("enabled").booleanValue()).isTrue();
+    assertThat(jobMetrics.get("exportInterval").textValue()).isEqualTo("PT5M");
+    assertThat(jobMetrics.get("maxWorkerNameLength").intValue()).isEqualTo(100);
+    assertThat(jobMetrics.get("maxJobTypeLength").intValue()).isEqualTo(100);
+    assertThat(jobMetrics.get("maxTenantIdLength").intValue()).isEqualTo(30);
+    assertThat(jobMetrics.get("maxUniqueKeys").intValue()).isEqualTo(9500);
 
-    // when
-    final HttpResponse<String> response =
-        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    final JsonNode components = root.get("components");
+    assertThat(components).isNotNull();
+    assertThat(components.get("active").isArray()).isTrue();
 
-    // then: on self-managed, cloud fields are null and canLogout is true
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-    assertThat(response.body())
-        .contains("\"canLogout\":true")
-        .contains("\"isEnterprise\":false")
-        .contains("\"isMultiTenancyEnabled\":false");
+    final JsonNode deployment = root.get("deployment");
+    assertThat(deployment).isNotNull();
+    assertThat(deployment.get("isEnterprise").booleanValue()).isFalse();
+    assertThat(deployment.get("isMultiTenancyEnabled").booleanValue()).isFalse();
+    assertThat(deployment.get("contextPath").textValue()).isEqualTo("");
+    assertThat(deployment.get("maxRequestSize").longValue()).isPositive();
+
+    final JsonNode authentication = root.get("authentication");
+    assertThat(authentication).isNotNull();
+    assertThat(authentication.get("canLogout").booleanValue()).isTrue();
+    assertThat(authentication.get("isLoginDelegated").booleanValue()).isFalse();
+
+    final JsonNode cloud = root.get("cloud");
+    assertThat(cloud).isNotNull();
+    assertThat(cloud.get("organizationId").isNull()).isTrue();
+    assertThat(cloud.get("clusterId").isNull()).isTrue();
+    assertThat(cloud.get("stage").isNull()).isTrue();
+    assertThat(cloud.get("mixpanelToken").isNull()).isTrue();
+    assertThat(cloud.get("mixpanelAPIHost").isNull()).isTrue();
   }
 
   private URI configUri() {
