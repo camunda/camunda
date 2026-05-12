@@ -43,7 +43,7 @@ Full explanation and rule of thumb: `processors.md` § *Reading state safely*.
 
 1. **Don't edit the existing class.** Create the next version, e.g. `XxxV2Applier.java`.
 2. **Register the new version in `EventAppliers`** alongside the existing version.
-3. **Forward-port to all newer minor branches before their next release.** A new applier version that ships in a patch of an older minor but misses the next minor's initial release breaks the upgrade path: the new minor cannot replay events written with that version, leaving partitions dead until an ad-hoc patch ships (this hit 8.9.0 with `ProcessEvent.TRIGGERING` v2). Full context: `docs/zeebe/event-applier-golden-files.md`.
+3. **Forward-port to all newer minor branches before their next release.** A new applier version that ships in a patch of an older minor but misses the next minor's initial release breaks the upgrade path: the new minor cannot replay events written with that version, leaving partitions dead until an ad-hoc patch ships (this hit 8.9.0 with `ProcessEvent.TRIGGERING` v2). Full context: `zeebe/docs/event-applier-golden-files.md`.
    - First check whether a release branch already exists for any newer minor (skip the fetch if working offline):
 
      ```bash
@@ -65,6 +65,5 @@ Full explanation and rule of thumb: `processors.md` § *Reading state safely*.
 
 ## Canonical docs
 
-- `docs/zeebe/event-applier-golden-files.md` — full golden-file guide, back/forward-port cases, allowed changes.
-- `zeebe/engine/README.md` § "Event appliers are not allowed to be changed after having been released".
+- `zeebe/docs/event-applier-golden-files.md` — full golden-file guide, back/forward-port cases, allowed changes.
 

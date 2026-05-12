@@ -61,10 +61,9 @@ Re-run any new or modified test at least 3× to catch flakiness. Push and let CI
 
 ## Canonical docs
 
-- `zeebe/engine/README.md` — architecture, do's and don'ts.
-- `docs/zeebe/event-applier-golden-files.md` — golden files, versioning, port rules.
-- `docs/zeebe/developer_handbook.md` — step-by-step for new records, REST endpoints, authorization.
-- `docs/zeebe/engine_questions.md` — FAQ on tokens, joining gateways, variable scoping.
+- `zeebe/docs/event-applier-golden-files.md` — golden files, versioning, port rules.
+- `zeebe/docs/developer_handbook.md` — step-by-step for new records, REST endpoints, authorization.
+- `zeebe/docs/engine_questions.md` — FAQ on tokens, joining gateways, variable scoping.
 - https://github.com/camunda/camunda/wiki/Logging — logging guidance.
 - https://github.com/camunda/camunda/wiki/Error-Guidelines — error message format and rejection vs. exception.
 

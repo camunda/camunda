@@ -26,7 +26,7 @@ Values returned from `ColumnFamily.get(...)` — and from `*State` reads built o
 
 Two escape hatches:
 
-- `value.copyFrom(stateRead)` into an instance you own. See `ProcessInstanceMigrationCatchEventBehavior` for examples (`copy.copyFrom(timerInstance)`, `copySubscription.copyFrom(subscription)`).
+- `value.copyFrom(stateRead)` into an instance you own. See `ProcessInstanceMigrationCatchEventBehaviour` for examples (`copy.copyFrom(timerInstance)`, `copySubscription.copyFrom(subscription)`).
 - `cf.get(key, valueSupplier)` allocates a fresh instance per call instead of returning the shared reference — useful when you'd otherwise immediately copy.
 
 Rule of thumb: if the value escapes the immediate read (passed to a helper that may itself read state, stored anywhere, or returned across another `get` on the same CF), copy it.
@@ -37,7 +37,7 @@ State writes (`stateWriter.appendFollowUpEvent`, follow-up commands, response wr
 
 Two asymmetries to remember:
 
-- **Forward** (already in `zeebe/engine/README.md` § *Side-effects are not guaranteed to be executed*): a side effect may not run — failover or commit failure can drop it. Don't put critical work in one.
+- **Forward:** a side effect may not run — failover or commit failure can drop it. Don't put critical work in one.
 - **Inverse** (not in the README): a side effect that *did* run is not rolled back. If it executes before a later state write that throws, the state rolls back but the side effect stays — counters drift, sometimes negative.
 
 **Fix:** order matters. Inside a processor, do all state writes, follow-up commands, and response writes — and any helper calls that could throw — first. Run inline non-transactional side effects only after every potentially-throwing step has succeeded.
@@ -65,7 +65,6 @@ Production example: `IncidentResolveProcessor.processRecord` called `incidentMet
 
 ## Canonical docs
 
-- `zeebe/engine/README.md` § "Do's and Don'ts" — full list of stream-processor invariants.
-- `docs/zeebe/developer_handbook.md` § "Authorization Checks in the Engine" — when and how to add authorization to a processor.
-- `docs/zeebe/engine_questions.md` — variable scoping, joining gateways, token semantics.
+- `zeebe/docs/developer_handbook.md` § "Authorization Checks in the Engine" — when and how to add authorization to a processor.
+- `zeebe/docs/engine_questions.md` — variable scoping, joining gateways, token semantics.
 

@@ -10,11 +10,10 @@ Records are the engine's data carriers. They flow through the log stream during 
   - the **output data** consumers need (e.g., the resulting cumulative total).
   - Concrete example: a counter record carries `incrementBy` (input from the command) **and** `totalAfter` (output computed by the processor and persisted in the event).
 - **SBE messages are extended, not changed in incompatible ways.** Adding fields is fine; reordering, retyping, or removing existing fields is not.
-- **Sensitive fields use `#sanitized()`** (e.g., `new IntegerProperty("token").sanitized()`) so they are excluded from logs and `toString()` while still being serialized to JSON for export.
 
 ## Workflow
 
-Read `docs/zeebe/developer_handbook.md` before starting. The canonical step-by-step lives there:
+Read `zeebe/docs/developer_handbook.md` before starting. The canonical step-by-step lives there:
 
 - For a new record/value type: § "How to create a new record" walks through the seven phases (protocol, protocol-impl, exporters, test setups, official docs, Camunda Process Test, supported value types).
 - For extending an existing record: § "How to extend an existing record" — the smaller four-step variant.
@@ -31,6 +30,5 @@ The skill's role is to surface the iron rules above, not to replace the handbook
 
 ## Canonical docs
 
-- `docs/zeebe/developer_handbook.md` — new and extended record walkthroughs.
-- `zeebe/engine/README.md` § "Record values are data objects that are often reused across different records of the same value type" — when to introduce a sub-record-value type.
+- `zeebe/docs/developer_handbook.md` — new and extended record walkthroughs.
 
