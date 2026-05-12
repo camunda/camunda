@@ -162,7 +162,6 @@ public class UsageMetricRpiTest {
     // when
     engine.conditionalEvaluation().withVariables(Map.of("x", 1000, "y", 100)).evaluate();
 
-    // then
     // then - the process completes, but the RPI count must still be 1
     engine.awaitProcessingOf(
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)

@@ -36,6 +36,8 @@ public final class EventHandle {
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final ProcessInstanceRecord recordForPICreation = new ProcessInstanceRecord();
+  private final ProcessInstanceCreationRecord recordForPICreationEvent =
+      new ProcessInstanceCreationRecord();
   private final MessageStartEventSubscriptionRecord startEventSubscriptionRecord =
       new MessageStartEventSubscriptionRecord();
 
@@ -250,17 +252,15 @@ public final class EventHandle {
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
 
-    final var creationRecord = new ProcessInstanceCreationRecord();
-    creationRecord
+    recordForPICreationEvent
         .setBpmnProcessId(process.getBpmnProcessId())
         .setProcessDefinitionKey(process.getKey())
         .setVersion(process.getVersion())
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(processInstanceKey)
-        .setVariables(variablesBuffer)
         .setTenantId(tenantId);
 
     stateWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceCreationIntent.CREATED, creationRecord);
+        processInstanceKey, ProcessInstanceCreationIntent.CREATED, recordForPICreationEvent);
   }
 }
