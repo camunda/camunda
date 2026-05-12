@@ -17,8 +17,6 @@ public class OptimizeProperties {
   private String realm = "camunda-platform";
   private String clientId = "optimize";
   private String clientSecret = "";
-  private String username = "demo";
-  private String password = "demo";
   private String processDefinitionKey = "";
   private Duration evaluationInterval = Duration.ofSeconds(60);
   private Duration initialDelay = Duration.ofSeconds(10);
@@ -73,22 +71,6 @@ public class OptimizeProperties {
 
   public void setClientSecret(final String clientSecret) {
     this.clientSecret = clientSecret;
-  }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public void setUsername(final String username) {
-    this.username = username;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(final String password) {
-    this.password = password;
   }
 
   public String getProcessDefinitionKey() {

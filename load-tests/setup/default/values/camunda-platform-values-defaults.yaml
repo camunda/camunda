@@ -85,23 +85,28 @@ optimize:
           ttl: 'P1D'
           processDataCleanup:
             enabled: true
+        # Override the chart's environment-config.yaml hardcoded `api.audience: optimize-api`.
+        # The Keycloak `optimize` client mints `aud=["optimize","account"]` by default (no
+        # audience mapper); without this override the bearer filter returns 401 "The required
+        # audience is missing". Spring loads application.yml after environment-config.yaml so
+        # this wins.
+        api:
+          audience: "optimize"
   env:
     # https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/#google-stackdriver-json-logging
     - name: OPTIMIZE_LOG_APPENDER
       value: Stackdriver
     # Bearer-token (JWT) auth for /api/** added in camunda/camunda#46878. Required by the
-    # load-tester's Optimize report evaluation meter (password grant -> Bearer header).
-    # Verbatim env var names from the PR: service-config.yaml binds
-    # jwtAuthForApiEnabled: ${CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED:false} and the JWKS URI
-    # is read from Spring Security's standard property (not an Optimize-specific key).
+    # load-tester's Optimize evaluator (client_credentials -> Bearer header).
     - name: CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED
       value: "true"
-    # Default `aud` claim minted by the Keycloak `optimize` client is `optimize`.
-    - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
-      value: "optimize"
     # The `keycloak` Service exposes only port 80; inside the pod KC listens on 8080.
     - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
       value: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
+    # `client_credentials` token's subject is the Keycloak service-account user.
+    # Grant it super-user access to the non-public Optimize API so /api/** calls succeed.
+    - name: OPTIMIZE_SUPER_USER_IDS
+      value: "[service-account-optimize]"
   tolerations:
     - key: nodepool
       operator: Equal

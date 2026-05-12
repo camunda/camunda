@@ -73,8 +73,6 @@ class ConfigTest {
     assertThat(optimizeCfg.getRealm()).isEqualTo("camunda-platform");
     assertThat(optimizeCfg.getClientId()).isEqualTo("optimize");
     assertThat(optimizeCfg.getClientSecret()).isEmpty();
-    assertThat(optimizeCfg.getUsername()).isEqualTo("demo");
-    assertThat(optimizeCfg.getPassword()).isEqualTo("demo");
     assertThat(optimizeCfg.getProcessDefinitionKey()).isEmpty();
     assertThat(optimizeCfg.getEvaluationInterval()).hasSeconds(60);
     assertThat(optimizeCfg.getInitialDelay()).hasSeconds(10);
@@ -135,8 +133,6 @@ class ConfigTest {
       assertThat(optimizeCfg.getRealm()).isEqualTo("custom-realm");
       assertThat(optimizeCfg.getClientId()).isEqualTo("custom-optimize");
       assertThat(optimizeCfg.getClientSecret()).isEqualTo("s3cr3t");
-      assertThat(optimizeCfg.getUsername()).isEqualTo("user-x");
-      assertThat(optimizeCfg.getPassword()).isEqualTo("pass-x");
       assertThat(optimizeCfg.getProcessDefinitionKey()).isEqualTo("pd-override");
       assertThat(optimizeCfg.getEvaluationInterval()).hasSeconds(30);
       assertThat(optimizeCfg.getInitialDelay()).hasSeconds(5);

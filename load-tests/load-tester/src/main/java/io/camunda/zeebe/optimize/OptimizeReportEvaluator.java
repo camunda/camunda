@@ -8,17 +8,10 @@
 package io.camunda.zeebe.optimize;
 
 import io.camunda.zeebe.config.OptimizeProperties;
-import io.camunda.zeebe.metrics.OptimizeMetricsDoc;
-import io.camunda.zeebe.metrics.OptimizeMetricsDoc.OptimizeMetricKeyNames;
 import io.camunda.zeebe.optimize.OptimizeApiClient.DetailedPageResult;
 import io.camunda.zeebe.optimize.OptimizeApiClient.HomepageResult;
-import io.camunda.zeebe.optimize.OptimizeApiClient.OptimizeAuthException;
 import io.camunda.zeebe.optimize.OptimizeApiClient.ReportEvaluationResult;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
@@ -29,29 +22,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Schedules periodic Optimize report evaluations and records latency and failure metrics. Owns an
- * {@link OptimizeApiClient} and a single-threaded scheduler.
+ * Schedules periodic Optimize dashboard and report evaluations to exercise the Optimize REST API
+ * under load. Owns an {@link OptimizeApiClient} and a single-threaded scheduler.
+ *
+ * <p>No Micrometer metrics are emitted; Optimize already publishes its own report-evaluation
+ * timers. Failures are logged (throttled) and the next cycle continues.
  *
  * <p>Started from {@code Starter} when {@code load-tester.optimize.enabled=true}. Synchronous
  * execution per cycle (matches {@link io.camunda.zeebe.read.DataReadMeter}) to avoid pile-up when
- * Optimize is slow under load.
+ * Optimize is slow.
  */
 public class OptimizeReportEvaluator implements AutoCloseable {
+
+  static final String PAGE_HOMEPAGE = "homepage";
+  static final String PAGE_DETAILED = "detailed";
+  static final String PHASE_DASHBOARD = "dashboard";
+  static final String PHASE_REPORT_EVALUATE = "report_evaluate";
+  static final String PHASE_DETAILED_EVALUATE = "detailed_evaluate";
+  static final String NA = "n/a";
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeReportEvaluator.class);
   private static final ThrottledLogger THROTTLED_LOGGER =
       new ThrottledLogger(LOG, Duration.ofSeconds(5));
 
-  private static final String PAGE_HOMEPAGE = "homepage";
-  private static final String PAGE_DETAILED = "detailed";
-  private static final String PHASE_DASHBOARD = "dashboard";
-  private static final String PHASE_REPORT_EVALUATE = "report_evaluate";
-  private static final String PHASE_DETAILED_EVALUATE = "detailed_evaluate";
-  private static final String NA = "n/a";
-
   private final OptimizeProperties props;
   private final OptimizeApiClient client;
-  private final MeterRegistry registry;
   private final ScheduledExecutorService executor;
   private final AtomicReference<String> processDefinitionKey = new AtomicReference<>();
   private ScheduledFuture<?> scheduledTask;
@@ -59,11 +54,9 @@ public class OptimizeReportEvaluator implements AutoCloseable {
   public OptimizeReportEvaluator(
       final OptimizeProperties props,
       final OptimizeApiClient client,
-      final MeterRegistry registry,
       final ScheduledExecutorService executor) {
     this.props = props;
     this.client = client;
-    this.registry = registry;
     this.executor = executor;
   }
 
@@ -99,22 +92,15 @@ public class OptimizeReportEvaluator implements AutoCloseable {
   private void evaluateHomepage() {
     try {
       final HomepageResult result = client.evaluateHomepage();
-      recordEvaluation(
+      logEvaluation(
           PAGE_HOMEPAGE,
           PHASE_DASHBOARD,
           NA,
           result.dashboardStatusCode(),
           result.dashboardResponseTimeMs());
-      for (final ReportEvaluationResult report : result.reportResults()) {
-        recordEvaluation(
-            PAGE_HOMEPAGE,
-            PHASE_REPORT_EVALUATE,
-            report.reportId(),
-            report.statusCode(),
-            report.responseTimeMs());
-      }
+      logReports(PAGE_HOMEPAGE, PHASE_REPORT_EVALUATE, result.reportResults());
     } catch (final Exception e) {
-      THROTTLED_LOGGER.error("Failed to evaluate Optimize homepage", e);
+      THROTTLED_LOGGER.warn("Failed to evaluate Optimize homepage", e);
     }
   }
 
@@ -123,7 +109,7 @@ public class OptimizeReportEvaluator implements AutoCloseable {
     try {
       pdKey = resolveProcessDefinitionKey();
     } catch (final Exception e) {
-      THROTTLED_LOGGER.error("Failed to resolve process definition key for detailed evaluation", e);
+      THROTTLED_LOGGER.warn("Failed to resolve process definition key for detailed evaluation", e);
       return;
     }
     if (pdKey == null || pdKey.isBlank()) {
@@ -131,68 +117,49 @@ public class OptimizeReportEvaluator implements AutoCloseable {
     }
     try {
       final DetailedPageResult result = client.evaluateDetailedPage(pdKey);
-      recordEvaluation(
+      logEvaluation(
           PAGE_DETAILED,
           PHASE_DASHBOARD,
           NA,
           result.dashboardStatusCode(),
           result.dashboardResponseTimeMs());
-      recordReports(PAGE_DETAILED, PHASE_REPORT_EVALUATE, result.reportEvaluationResults());
-      recordReports(PAGE_DETAILED, PHASE_DETAILED_EVALUATE, result.detailedEvaluationResults());
+      logReports(PAGE_DETAILED, PHASE_REPORT_EVALUATE, result.reportEvaluationResults());
+      logReports(PAGE_DETAILED, PHASE_DETAILED_EVALUATE, result.detailedEvaluationResults());
     } catch (final Exception e) {
-      THROTTLED_LOGGER.error("Failed to evaluate Optimize detailed page", e);
+      THROTTLED_LOGGER.warn("Failed to evaluate Optimize detailed page", e);
     }
   }
 
-  private void recordReports(
+  private void logReports(
       final String page, final String phase, final List<ReportEvaluationResult> reports) {
     for (final ReportEvaluationResult report : reports) {
-      recordEvaluation(
-          page, phase, report.reportId(), report.statusCode(), report.responseTimeMs());
+      logEvaluation(page, phase, report.reportId(), report.statusCode(), report.responseTimeMs());
     }
   }
 
-  private void recordEvaluation(
+  private void logEvaluation(
       final String page,
       final String phase,
       final String reportId,
       final int statusCode,
       final long responseTimeMs) {
     if (statusCode >= 200 && statusCode < 300) {
-      latencyTimer(page, phase, reportId).record(responseTimeMs, TimeUnit.MILLISECONDS);
-    } else {
-      failureCounter(page, phase, statusCode).increment();
       LOG.debug(
-          "Optimize evaluation non-2xx: page={} phase={} report={} status={}",
+          "Optimize {} {} report={} status={} timeMs={}",
           page,
           phase,
           reportId,
-          statusCode);
+          statusCode,
+          responseTimeMs);
+    } else {
+      THROTTLED_LOGGER.warn(
+          "Optimize {} {} report={} non-2xx status={} timeMs={}",
+          page,
+          phase,
+          reportId,
+          statusCode,
+          responseTimeMs);
     }
-  }
-
-  private Timer latencyTimer(final String page, final String phase, final String reportId) {
-    return MicrometerUtil.buildTimer(OptimizeMetricsDoc.REPORT_EVALUATION_LATENCY)
-        .tag(OptimizeMetricKeyNames.PAGE.asString(), page)
-        .tag(OptimizeMetricKeyNames.PHASE.asString(), phase)
-        .tag(OptimizeMetricKeyNames.REPORT_ID.asString(), reportId)
-        .register(registry);
-  }
-
-  private Counter failureCounter(final String page, final String phase, final int statusCode) {
-    return Counter.builder(OptimizeMetricsDoc.REPORT_EVALUATION_FAILURES.getName())
-        .description(OptimizeMetricsDoc.REPORT_EVALUATION_FAILURES.getDescription())
-        .tag(OptimizeMetricKeyNames.PAGE.asString(), page)
-        .tag(OptimizeMetricKeyNames.PHASE.asString(), phase)
-        .tag(OptimizeMetricKeyNames.STATUS_CODE.asString(), Integer.toString(statusCode))
-        .register(registry);
-  }
-
-  private Counter authFailureCounter(final String reason) {
-    return Counter.builder(OptimizeMetricsDoc.AUTH_FAILURES.getName())
-        .description(OptimizeMetricsDoc.AUTH_FAILURES.getDescription())
-        .tag(OptimizeMetricKeyNames.REASON.asString(), reason)
-        .register(registry);
   }
 
   private String resolveProcessDefinitionKey() {
@@ -216,25 +183,10 @@ public class OptimizeReportEvaluator implements AutoCloseable {
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         LOG.info("Authenticating with Optimize Keycloak (attempt {}/{})", attempt, maxAttempts);
-        client.authenticateWithPasswordGrant();
+        client.authenticate();
         LOG.info("Optimize successfully authenticated");
         return;
-      } catch (final OptimizeAuthException e) {
-        authFailureCounter(reasonFor(e.getStatusCode())).increment();
-        if (attempt == maxAttempts) {
-          LOG.error("Failed to authenticate with Optimize after {} attempts", maxAttempts, e);
-          throw new IllegalStateException(
-              "Optimize authentication failed after " + maxAttempts + " attempts", e);
-        }
-        THROTTLED_LOGGER.warn(
-            "Failed to authenticate with Optimize (attempt {}/{}), retrying in {}ms",
-            attempt,
-            maxAttempts,
-            delayMillis,
-            e);
-        sleep(delayMillis);
-      } catch (final Exception e) {
-        authFailureCounter("other").increment();
+      } catch (final RuntimeException e) {
         if (attempt == maxAttempts) {
           LOG.error("Failed to authenticate with Optimize after {} attempts", maxAttempts, e);
           throw new IllegalStateException(
@@ -249,19 +201,6 @@ public class OptimizeReportEvaluator implements AutoCloseable {
         sleep(delayMillis);
       }
     }
-  }
-
-  private static String reasonFor(final int statusCode) {
-    if (statusCode == 0) {
-      return "network";
-    }
-    if (statusCode >= 400 && statusCode < 500) {
-      return "http_4xx";
-    }
-    if (statusCode >= 500 && statusCode < 600) {
-      return "http_5xx";
-    }
-    return "other";
   }
 
   private static void sleep(final long millis) {

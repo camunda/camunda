@@ -22,9 +22,10 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Talks to a deployed Optimize via its REST API. Authenticates with Keycloak using the password
- * grant flow (requires Optimize {@code api.jwtAuthForApiEnabled=true}) and uses the resulting JWT
- * as a bearer token on every Optimize request.
+ * Talks to a deployed Optimize via its REST API. Authenticates with Keycloak using the OAuth 2.0
+ * client credentials grant (requires Optimize {@code api.jwtAuthForApiEnabled=true} and the
+ * service-account user in {@code OPTIMIZE_SUPER_USER_IDS}) and uses the resulting JWT as a bearer
+ * token on every Optimize request.
  *
  * <p>Not a Spring bean — owned by {@link OptimizeReportEvaluator} so tests can construct it with a
  * fake {@link WebClient.Builder}.
@@ -72,17 +73,13 @@ public class OptimizeApiClient {
     keycloakClient = webClientBuilder.clone().baseUrl(props.getKeycloakUrl()).build();
   }
 
-  public void authenticateWithPasswordGrant() {
+  public void authenticate() {
     final String body =
-        "grant_type=password"
+        "grant_type=client_credentials"
             + "&client_id="
             + URLEncoder.encode(props.getClientId(), StandardCharsets.UTF_8)
             + "&client_secret="
             + URLEncoder.encode(props.getClientSecret(), StandardCharsets.UTF_8)
-            + "&username="
-            + URLEncoder.encode(props.getUsername(), StandardCharsets.UTF_8)
-            + "&password="
-            + URLEncoder.encode(props.getPassword(), StandardCharsets.UTF_8)
             + "&scope=openid";
 
     final TimedResponse response =
@@ -102,7 +99,8 @@ public class OptimizeApiClient {
       final int status = response == null ? 0 : response.statusCode;
       final String responseBody = response == null ? "<no response>" : response.body;
       throw new OptimizeAuthException(
-          String.format("Password grant failed with status %d: %s", status, responseBody), status);
+          String.format("Client credentials grant failed with status %d: %s", status, responseBody),
+          status);
     }
 
     try {
@@ -113,14 +111,14 @@ public class OptimizeApiClient {
     } catch (final Exception e) {
       throw new OptimizeAuthException("Failed to parse Keycloak token response", e);
     }
-    LOG.debug("Successfully authenticated with Keycloak via password grant");
+    LOG.debug("Successfully authenticated with Keycloak via client credentials grant");
   }
 
   public void ensureValidToken() {
     if (accessToken == null
         || nowMillis.getAsLong() >= tokenExpiresAtMillis - props.getTokenRefreshSkew().toMillis()) {
       LOG.debug("Optimize token expired or missing, re-authenticating");
-      authenticateWithPasswordGrant();
+      authenticate();
     }
   }
 

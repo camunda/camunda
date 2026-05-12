@@ -225,7 +225,7 @@ public class Starter implements CommandLineRunner {
         new OptimizeApiClient(properties.getOptimize(), webClientBuilder, objectMapper);
     optimizeReportEvaluator =
         new OptimizeReportEvaluator(
-            properties.getOptimize(), apiClient, registry, Executors.newScheduledThreadPool(1));
+            properties.getOptimize(), apiClient, Executors.newScheduledThreadPool(1));
   }
 
   private void setupDataReadMeter() {

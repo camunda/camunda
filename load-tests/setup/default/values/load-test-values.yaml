@@ -35,9 +35,9 @@ global:
           fieldPath: metadata.namespace
     # Optimize report evaluation meter (starter-only). Requires the Optimize backend
     # to run with CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED=true (set in
-    # camunda-platform-values.yaml) and the Keycloak `optimize` client to have
-    # Direct Access Grants enabled. Service DNS used here: keycloak/optimize are
-    # ClusterIP services on port 80 (in this chart configuration).
+    # camunda-platform-values.yaml). Uses the OAuth 2.0 client_credentials grant against
+    # the Keycloak `optimize` client, so only client-id + client-secret are needed.
+    # Service DNS used here: keycloak/optimize are ClusterIP services on port 80.
     - name: LOAD_TESTER_OPTIMIZE_ENABLED
       value: "true"
     - name: OPTIMIZE_BASE_URL
@@ -48,13 +48,6 @@ global:
       value: "camunda-platform"
     - name: OPTIMIZE_CLIENT_ID
       value: "optimize"
-    - name: OPTIMIZE_USERNAME
-      value: "demo"
-    - name: OPTIMIZE_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: camunda-credentials
-          key: identity-firstuser-password
     - name: OPTIMIZE_CLIENT_SECRET
       valueFrom:
         secretKeyRef:

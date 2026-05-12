@@ -54,8 +54,6 @@ final class OptimizeApiClientTest {
     props.setRealm("camunda-platform");
     props.setClientId("optimize");
     props.setClientSecret("secret");
-    props.setUsername("demo");
-    props.setPassword("demo");
     props.setRequestTimeout(Duration.ofSeconds(2));
     props.setTokenRefreshSkew(Duration.ofSeconds(30));
     clockMillis = new AtomicLong(0L);
@@ -64,7 +62,7 @@ final class OptimizeApiClientTest {
   }
 
   @Test
-  void shouldAuthenticateWithPasswordGrantAndCacheToken() {
+  void shouldAuthenticateWithClientCredentialsAndCacheToken() {
     // given
     exchange.respond(
         req -> req.url().getHost().equals("keycloak"),
@@ -72,7 +70,7 @@ final class OptimizeApiClientTest {
     clockMillis.set(1_000L);
 
     // when
-    client.authenticateWithPasswordGrant();
+    client.authenticate();
 
     // then
     assertThat(client.getAccessTokenForTesting()).isEqualTo("tok-1");
@@ -86,12 +84,13 @@ final class OptimizeApiClientTest {
 
     final String formBody = extractBody(capturedRequest);
     assertThat(formBody)
-        .contains("grant_type=password")
+        .contains("grant_type=client_credentials")
         .contains("client_id=optimize")
         .contains("client_secret=secret")
-        .contains("username=demo")
-        .contains("password=demo")
-        .contains("scope=openid");
+        .contains("scope=openid")
+        .doesNotContain("username=")
+        .doesNotContain("password=")
+        .doesNotContain("grant_type=password");
   }
 
   @Test
@@ -134,14 +133,14 @@ final class OptimizeApiClientTest {
   }
 
   @Test
-  void shouldThrowOnPasswordGrantNon200() {
+  void shouldThrowOnClientCredentialsNon200() {
     // given
     exchange.respond(
         req -> req.url().getHost().equals("keycloak"),
-        jsonResponse(HttpStatus.UNAUTHORIZED, "{\"error\":\"invalid_grant\"}"));
+        jsonResponse(HttpStatus.UNAUTHORIZED, "{\"error\":\"invalid_client\"}"));
 
     // when / then
-    assertThatThrownBy(client::authenticateWithPasswordGrant)
+    assertThatThrownBy(client::authenticate)
         .isInstanceOf(OptimizeAuthException.class)
         .hasMessageContaining("401");
   }
