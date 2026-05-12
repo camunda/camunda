@@ -63,7 +63,7 @@ saas:
     # Saas.credentials.clientId to define the clientId to connect
     clientId: "orchestration"
     # Saas.credentials.clientSecret to define the clientSecret to connect
-    clientSecret: "__SECRET__"
+    clientSecret: "AWXUaJRkshx3JOSbfUWv"
     # Saas.credentials.zeebeRestAddress to define the rest address of the cluster (including port)
     # Use headless service so DNS returns all pod IPs for client-side load balancing.
     zeebeRestAddress: "http://camunda:8080"
