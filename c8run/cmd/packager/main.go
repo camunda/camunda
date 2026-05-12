@@ -83,6 +83,9 @@ func main() {
 
 	switch baseCommand {
 	case "package":
+		if err := syncEnvFile(camundaVersion, connectorsVersion); err != nil {
+			fmt.Printf("warning: could not update .env: %v\n", err)
+		}
 		err := packages.New(camundaVersion, connectorsVersion)
 		if err != nil {
 			fmt.Printf("%+v", err)
@@ -95,4 +98,11 @@ func main() {
 
 func cleanCommand(camundaVersion string) {
 	packages.Clean(camundaVersion)
+}
+
+func syncEnvFile(camundaVersion, connectorsVersion string) error {
+	envContent :=
+		"CAMUNDA_VERSION=" + camundaVersion + "\n" +
+			"CONNECTORS_VERSION=" + connectorsVersion + "\n"
+	return os.WriteFile(".env", []byte(envContent), 0644)
 }
