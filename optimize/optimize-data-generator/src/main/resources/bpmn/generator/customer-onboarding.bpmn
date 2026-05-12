@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+             exporter="Camunda Web Modeler" exporterVersion="0.0.0">
+
+  <process id="customer-onboarding" isExecutable="true">
+    <startEvent id="startEvent_1">
+      <outgoing>f0</outgoing>
+    </startEvent>
+    <serviceTask id="serviceTask_1" name="Send onboarding request">
+      <incoming>f0</incoming>
+      <outgoing>f1</outgoing>
+    </serviceTask>
+    <eventBasedGateway id="eventBasedGateway_1" name="Await customer response">
+      <incoming>f1</incoming>
+      <outgoing>f_ev1</outgoing>
+      <outgoing>f_ev2</outgoing>
+    </eventBasedGateway>
+    <receiveTask id="receiveTask_1" name="Receive acceptance">
+      <incoming>f_ev1</incoming>
+      <outgoing>f_ev3</outgoing>
+    </receiveTask>
+    <endEvent id="endEvent_evA">
+      <incoming>f_ev3</incoming>
+    </endEvent>
+    <receiveTask id="receiveTask_2" name="Receive rejection">
+      <incoming>f_ev2</incoming>
+      <outgoing>f_ev4</outgoing>
+    </receiveTask>
+    <serviceTask id="serviceTask_4" name="Close application">
+      <incoming>f_ev4</incoming>
+      <outgoing>f_ev5</outgoing>
+    </serviceTask>
+    <endEvent id="endEvent_evB">
+      <incoming>f_ev5</incoming>
+    </endEvent>
+    <sequenceFlow id="f0"    sourceRef="startEvent_1"        targetRef="serviceTask_1"/>
+    <sequenceFlow id="f1"    sourceRef="serviceTask_1"       targetRef="eventBasedGateway_1"/>
+    <sequenceFlow id="f_ev1" sourceRef="eventBasedGateway_1" targetRef="receiveTask_1"/>
+    <sequenceFlow id="f_ev2" sourceRef="eventBasedGateway_1" targetRef="receiveTask_2"/>
+    <sequenceFlow id="f_ev3" sourceRef="receiveTask_1"       targetRef="endEvent_evA"/>
+    <sequenceFlow id="f_ev4" sourceRef="receiveTask_2"       targetRef="serviceTask_4"/>
+    <sequenceFlow id="f_ev5" sourceRef="serviceTask_4"       targetRef="endEvent_evB"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="customer-onboarding">
+      <bpmndi:BPMNShape id="startEvent_1_di" bpmnElement="startEvent_1">
+        <dc:Bounds x="152" y="162" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="serviceTask_1_di" bpmnElement="serviceTask_1">
+        <dc:Bounds x="240" y="140" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="eventBasedGateway_1_di" bpmnElement="eventBasedGateway_1" isMarkerVisible="true">
+        <dc:Bounds x="400" y="155" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="receiveTask_1_di" bpmnElement="receiveTask_1">
+        <dc:Bounds x="510" y="40" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endEvent_evA_di" bpmnElement="endEvent_evA">
+        <dc:Bounds x="672" y="62" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="receiveTask_2_di" bpmnElement="receiveTask_2">
+        <dc:Bounds x="510" y="220" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="serviceTask_4_di" bpmnElement="serviceTask_4">
+        <dc:Bounds x="670" y="220" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endEvent_evB_di" bpmnElement="endEvent_evB">
+        <dc:Bounds x="832" y="242" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="f0_di" bpmnElement="f0">
+        <di:waypoint x="188" y="180"/><di:waypoint x="240" y="180"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f1_di" bpmnElement="f1">
+        <di:waypoint x="340" y="180"/><di:waypoint x="400" y="180"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_ev1_di" bpmnElement="f_ev1">
+        <di:waypoint x="425" y="155"/><di:waypoint x="425" y="80"/><di:waypoint x="510" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_ev2_di" bpmnElement="f_ev2">
+        <di:waypoint x="425" y="205"/><di:waypoint x="425" y="260"/><di:waypoint x="510" y="260"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_ev3_di" bpmnElement="f_ev3">
+        <di:waypoint x="610" y="80"/><di:waypoint x="672" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_ev4_di" bpmnElement="f_ev4">
+        <di:waypoint x="610" y="260"/><di:waypoint x="670" y="260"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_ev5_di" bpmnElement="f_ev5">
+        <di:waypoint x="770" y="260"/><di:waypoint x="832" y="260"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

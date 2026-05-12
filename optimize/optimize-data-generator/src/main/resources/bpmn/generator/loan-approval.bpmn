@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+             exporter="Camunda Web Modeler" exporterVersion="0.0.0">
+
+  <process id="loan-approval" isExecutable="true">
+    <startEvent id="startEvent_1">
+      <outgoing>f0</outgoing>
+    </startEvent>
+    <serviceTask id="serviceTask_1" name="Assess application">
+      <incoming>f0</incoming>
+      <outgoing>f1</outgoing>
+    </serviceTask>
+    <userTask id="userTask_1" name="Initial review">
+      <incoming>f1</incoming>
+      <outgoing>f2</outgoing>
+    </userTask>
+    <serviceTask id="serviceTask_2" name="Credit check">
+      <incoming>f2</incoming>
+      <outgoing>f3</outgoing>
+    </serviceTask>
+    <userTask id="userTask_2" name="Underwriter review">
+      <incoming>f3</incoming>
+      <outgoing>f4</outgoing>
+    </userTask>
+    <serviceTask id="serviceTask_3" name="Disburse loan">
+      <incoming>f4</incoming>
+      <outgoing>f5</outgoing>
+    </serviceTask>
+    <endEvent id="endEvent_1">
+      <incoming>f5</incoming>
+    </endEvent>
+    <sequenceFlow id="f0" sourceRef="startEvent_1"  targetRef="serviceTask_1"/>
+    <sequenceFlow id="f1" sourceRef="serviceTask_1" targetRef="userTask_1"/>
+    <sequenceFlow id="f2" sourceRef="userTask_1"    targetRef="serviceTask_2"/>
+    <sequenceFlow id="f3" sourceRef="serviceTask_2" targetRef="userTask_2"/>
+    <sequenceFlow id="f4" sourceRef="userTask_2"    targetRef="serviceTask_3"/>
+    <sequenceFlow id="f5" sourceRef="serviceTask_3" targetRef="endEvent_1"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="loan-approval">
+      <bpmndi:BPMNShape id="startEvent_1_di" bpmnElement="startEvent_1">
+        <dc:Bounds x="152" y="62" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="serviceTask_1_di" bpmnElement="serviceTask_1">
+        <dc:Bounds x="240" y="40" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="userTask_1_di" bpmnElement="userTask_1">
+        <dc:Bounds x="390" y="40" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="serviceTask_2_di" bpmnElement="serviceTask_2">
+        <dc:Bounds x="540" y="40" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="userTask_2_di" bpmnElement="userTask_2">
+        <dc:Bounds x="690" y="40" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="serviceTask_3_di" bpmnElement="serviceTask_3">
+        <dc:Bounds x="840" y="40" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endEvent_1_di" bpmnElement="endEvent_1">
+        <dc:Bounds x="1002" y="62" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="f0_di" bpmnElement="f0">
+        <di:waypoint x="188" y="80"/><di:waypoint x="240" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f1_di" bpmnElement="f1">
+        <di:waypoint x="340" y="80"/><di:waypoint x="390" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f2_di" bpmnElement="f2">
+        <di:waypoint x="490" y="80"/><di:waypoint x="540" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f3_di" bpmnElement="f3">
+        <di:waypoint x="640" y="80"/><di:waypoint x="690" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f4_di" bpmnElement="f4">
+        <di:waypoint x="790" y="80"/><di:waypoint x="840" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f5_di" bpmnElement="f5">
+        <di:waypoint x="940" y="80"/><di:waypoint x="1002" y="80"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

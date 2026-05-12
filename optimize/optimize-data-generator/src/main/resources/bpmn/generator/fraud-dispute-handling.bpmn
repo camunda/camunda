@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+             exporter="Camunda Web Modeler" exporterVersion="0.0.0">
+
+  <process id="fraud-dispute-handling" name="Fraud Dispute Handling" isExecutable="true">
+    <startEvent id="StartEvent_1" name="Credit card fraud dispute started">
+      <outgoing>f0</outgoing>
+    </startEvent>
+    <subProcess id="documentCollection" name="Document Collection">
+      <incoming>f0</incoming>
+      <outgoing>f_dc_fa</outgoing>
+      <startEvent id="sub1_start">
+        <outgoing>f_s1_0</outgoing>
+      </startEvent>
+      <serviceTask id="requestDocuments" name="Request documents from customer">
+        <incoming>f_s1_0</incoming>
+        <outgoing>f_s1_1</outgoing>
+      </serviceTask>
+      <userTask id="provideDocuments" name="Collect and verify documents">
+        <incoming>f_s1_1</incoming>
+        <outgoing>f_s1_2</outgoing>
+      </userTask>
+      <endEvent id="sub1_end">
+        <incoming>f_s1_2</incoming>
+      </endEvent>
+      <sequenceFlow id="f_s1_0" sourceRef="sub1_start"       targetRef="requestDocuments"/>
+      <sequenceFlow id="f_s1_1" sourceRef="requestDocuments"  targetRef="provideDocuments"/>
+      <sequenceFlow id="f_s1_2" sourceRef="provideDocuments"  targetRef="sub1_end"/>
+    </subProcess>
+    <subProcess id="fraudAssessment" name="Fraud Assessment">
+      <incoming>f_dc_fa</incoming>
+      <outgoing>f_fa_ar</outgoing>
+      <startEvent id="sub2_start">
+        <outgoing>f_s2_0</outgoing>
+      </startEvent>
+      <serviceTask id="analyzeTransaction" name="Analyze transaction">
+        <incoming>f_s2_0</incoming>
+        <outgoing>f_s2_1</outgoing>
+      </serviceTask>
+      <serviceTask id="evaluateRisk" name="Evaluate fraud risk">
+        <incoming>f_s2_1</incoming>
+        <outgoing>f_s2_2</outgoing>
+      </serviceTask>
+      <endEvent id="sub2_end">
+        <incoming>f_s2_2</incoming>
+      </endEvent>
+      <sequenceFlow id="f_s2_0" sourceRef="sub2_start"         targetRef="analyzeTransaction"/>
+      <sequenceFlow id="f_s2_1" sourceRef="analyzeTransaction"  targetRef="evaluateRisk"/>
+      <sequenceFlow id="f_s2_2" sourceRef="evaluateRisk"        targetRef="sub2_end"/>
+    </subProcess>
+    <exclusiveGateway id="assessmentResult" name="Assessment result">
+      <incoming>f_fa_ar</incoming>
+      <outgoing>f4</outgoing>
+      <outgoing>f5</outgoing>
+      <outgoing>f6</outgoing>
+    </exclusiveGateway>
+    <serviceTask id="processRefund" name="Process refund">
+      <incoming>f4</incoming>
+      <outgoing>f7</outgoing>
+    </serviceTask>
+    <userTask id="decideOnFraudCase" name="Decide on fraud case">
+      <incoming>f5</incoming>
+      <outgoing>f8</outgoing>
+    </userTask>
+    <serviceTask id="initiateClawback" name="Initiate credit and clawback">
+      <incoming>f8</incoming>
+      <outgoing>f9</outgoing>
+    </serviceTask>
+    <serviceTask id="informDecline" name="Inform customer about unsuccessful claim">
+      <incoming>f6</incoming>
+      <outgoing>f11</outgoing>
+    </serviceTask>
+    <endEvent id="EndEvent_noRefund" name="Dispute settled - no refund">
+      <incoming>f11</incoming>
+    </endEvent>
+    <serviceTask id="informCustomerSuccess" name="Inform customer about successful claim">
+      <incoming>f7</incoming>
+      <incoming>f9</incoming>
+      <outgoing>f10</outgoing>
+    </serviceTask>
+    <endEvent id="EndEvent_refund" name="Dispute settled - refund">
+      <incoming>f10</incoming>
+    </endEvent>
+    <sequenceFlow id="f0"      sourceRef="StartEvent_1"          targetRef="documentCollection"/>
+    <sequenceFlow id="f_dc_fa" sourceRef="documentCollection"    targetRef="fraudAssessment"/>
+    <sequenceFlow id="f_fa_ar" sourceRef="fraudAssessment"       targetRef="assessmentResult"/>
+    <sequenceFlow id="f4"  name="refund approved"                sourceRef="assessmentResult"  targetRef="processRefund"/>
+    <sequenceFlow id="f5"  name="manual review required"         sourceRef="assessmentResult"  targetRef="decideOnFraudCase"/>
+    <sequenceFlow id="f6"  name="no refund"                      sourceRef="assessmentResult"  targetRef="informDecline"/>
+    <sequenceFlow id="f7"      sourceRef="processRefund"         targetRef="informCustomerSuccess"/>
+    <sequenceFlow id="f8"      sourceRef="decideOnFraudCase"     targetRef="initiateClawback"/>
+    <sequenceFlow id="f9"      sourceRef="initiateClawback"      targetRef="informCustomerSuccess"/>
+    <sequenceFlow id="f10"     sourceRef="informCustomerSuccess"  targetRef="EndEvent_refund"/>
+    <sequenceFlow id="f11"     sourceRef="informDecline"         targetRef="EndEvent_noRefund"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="fraud-dispute-handling">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="272" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="documentCollection_di" bpmnElement="documentCollection" isExpanded="true">
+        <dc:Bounds x="230" y="160" width="420" height="260"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sub1_start_di" bpmnElement="sub1_start">
+        <dc:Bounds x="260" y="272" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="requestDocuments_di" bpmnElement="requestDocuments">
+        <dc:Bounds x="330" y="250" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="provideDocuments_di" bpmnElement="provideDocuments">
+        <dc:Bounds x="460" y="250" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sub1_end_di" bpmnElement="sub1_end">
+        <dc:Bounds x="590" y="272" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="fraudAssessment_di" bpmnElement="fraudAssessment" isExpanded="true">
+        <dc:Bounds x="690" y="160" width="380" height="260"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sub2_start_di" bpmnElement="sub2_start">
+        <dc:Bounds x="710" y="272" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="analyzeTransaction_di" bpmnElement="analyzeTransaction">
+        <dc:Bounds x="770" y="250" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="evaluateRisk_di" bpmnElement="evaluateRisk">
+        <dc:Bounds x="900" y="250" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sub2_end_di" bpmnElement="sub2_end">
+        <dc:Bounds x="1022" y="272" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="assessmentResult_di" bpmnElement="assessmentResult" isMarkerVisible="true">
+        <dc:Bounds x="1130" y="265" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="processRefund_di" bpmnElement="processRefund">
+        <dc:Bounds x="1240" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="decideOnFraudCase_di" bpmnElement="decideOnFraudCase">
+        <dc:Bounds x="1240" y="250" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="initiateClawback_di" bpmnElement="initiateClawback">
+        <dc:Bounds x="1400" y="250" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="informDecline_di" bpmnElement="informDecline">
+        <dc:Bounds x="1240" y="400" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_noRefund_di" bpmnElement="EndEvent_noRefund">
+        <dc:Bounds x="1402" y="422" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="informCustomerSuccess_di" bpmnElement="informCustomerSuccess">
+        <dc:Bounds x="1560" y="250" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_refund_di" bpmnElement="EndEvent_refund">
+        <dc:Bounds x="1722" y="272" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="f0_di" bpmnElement="f0">
+        <di:waypoint x="188" y="290"/><di:waypoint x="230" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_dc_fa_di" bpmnElement="f_dc_fa">
+        <di:waypoint x="650" y="290"/><di:waypoint x="690" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_fa_ar_di" bpmnElement="f_fa_ar">
+        <di:waypoint x="1070" y="290"/><di:waypoint x="1130" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f4_di" bpmnElement="f4">
+        <di:waypoint x="1155" y="265"/><di:waypoint x="1155" y="120"/><di:waypoint x="1240" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f5_di" bpmnElement="f5">
+        <di:waypoint x="1180" y="290"/><di:waypoint x="1240" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f6_di" bpmnElement="f6">
+        <di:waypoint x="1155" y="315"/><di:waypoint x="1155" y="440"/><di:waypoint x="1240" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f7_di" bpmnElement="f7">
+        <di:waypoint x="1340" y="120"/><di:waypoint x="1610" y="120"/><di:waypoint x="1610" y="250"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f8_di" bpmnElement="f8">
+        <di:waypoint x="1340" y="290"/><di:waypoint x="1400" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f9_di" bpmnElement="f9">
+        <di:waypoint x="1500" y="290"/><di:waypoint x="1560" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f10_di" bpmnElement="f10">
+        <di:waypoint x="1660" y="290"/><di:waypoint x="1722" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f11_di" bpmnElement="f11">
+        <di:waypoint x="1340" y="440"/><di:waypoint x="1402" y="440"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_s1_0_di" bpmnElement="f_s1_0">
+        <di:waypoint x="296" y="290"/><di:waypoint x="330" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_s1_1_di" bpmnElement="f_s1_1">
+        <di:waypoint x="430" y="290"/><di:waypoint x="460" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_s1_2_di" bpmnElement="f_s1_2">
+        <di:waypoint x="560" y="290"/><di:waypoint x="590" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_s2_0_di" bpmnElement="f_s2_0">
+        <di:waypoint x="746" y="290"/><di:waypoint x="770" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_s2_1_di" bpmnElement="f_s2_1">
+        <di:waypoint x="870" y="290"/><di:waypoint x="900" y="290"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f_s2_2_di" bpmnElement="f_s2_2">
+        <di:waypoint x="1000" y="290"/><di:waypoint x="1022" y="290"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
