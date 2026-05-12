@@ -43,10 +43,11 @@ public enum VariableMetricsDoc implements ExtendedMeterDocumentation {
 
   /** Size distribution of variable values written on VARIABLE:CREATED events. */
   VARIABLE_CREATED_SIZE {
-    private static final double[] BUCKETS = {64, 256, 1024, 4096, 16384, 65536, 262144, 1048576};
+    private static final double[] BUCKETS = {
+      64, 256, 1024, 4096, 16384, 65536, 262144, 1048576, 2097152
+    };
 
-    private static final KeyName[] KEY_NAMES =
-        new KeyName[] {PartitionKeyNames.PARTITION, VariableKeyNames.BPMN_PROCESS_ID};
+    private static final KeyName[] KEY_NAMES = new KeyName[] {VariableKeyNames.BPMN_PROCESS_ID};
 
     @Override
     public String getDescription() {
