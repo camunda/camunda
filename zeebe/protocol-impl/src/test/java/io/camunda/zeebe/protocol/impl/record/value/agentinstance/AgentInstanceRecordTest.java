@@ -28,6 +28,7 @@ final class AgentInstanceRecordTest {
     assertThat(record.getElementInstanceKey()).isEqualTo(-1L);
     assertThat(record.getElementId()).isEmpty();
     assertThat(record.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(record.getBpmnProcessId()).isEmpty();
     assertThat(record.getProcessDefinitionKey()).isEqualTo(-1L);
     assertThat(record.getProcessDefinitionVersion()).isEqualTo(-1);
     assertThat(record.getVersionTag()).isEmpty();
@@ -43,6 +44,7 @@ final class AgentInstanceRecordTest {
             .setElementInstanceKey(2251799813685249L)
             .setElementId("invoice-data-extraction-agent")
             .setProcessInstanceKey(2251799813685248L)
+            .setBpmnProcessId("invoice-handling-process")
             .setProcessDefinitionKey(2251799813685100L)
             .setProcessDefinitionVersion(3)
             .setVersionTag("v1.2")
@@ -57,6 +59,7 @@ final class AgentInstanceRecordTest {
     assertThat(copy.getElementInstanceKey()).isEqualTo(original.getElementInstanceKey());
     assertThat(copy.getElementId()).isEqualTo(original.getElementId());
     assertThat(copy.getProcessInstanceKey()).isEqualTo(original.getProcessInstanceKey());
+    assertThat(copy.getBpmnProcessId()).isEqualTo(original.getBpmnProcessId());
     assertThat(copy.getProcessDefinitionKey()).isEqualTo(original.getProcessDefinitionKey());
     assertThat(copy.getProcessDefinitionVersion())
         .isEqualTo(original.getProcessDefinitionVersion());
