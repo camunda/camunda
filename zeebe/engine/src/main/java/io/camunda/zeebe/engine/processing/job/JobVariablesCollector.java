@@ -57,24 +57,24 @@ public class JobVariablesCollector {
   public Optional<String> setJobVariables(
       final Collection<DirectBuffer> requestedVariables, final JobRecord jobRecord) {
     // Resolve secret references first so a missing secret short-circuits the variable read.
-    final var partitioned = partitionRequested(requestedVariables);
-    if (partitioned.missingSecret() != null) {
-      return Optional.of(partitioned.missingSecret());
+    final var split = splitVariables(requestedVariables);
+    if (split.missingSecret() != null) {
+      return Optional.of(split.missingSecret());
     }
 
     final boolean fetchAll = requestedVariables.isEmpty();
-    final DirectBuffer processVariables = readProcessVariables(jobRecord, partitioned, fetchAll);
+    final DirectBuffer processVariables = readProcessVariables(jobRecord, split, fetchAll);
 
     final DirectBuffer jobVariables =
         switch (jobRecord.getJobKind()) {
           case BPMN_ELEMENT, EXECUTION_LISTENER, AD_HOC_SUB_PROCESS ->
-              mergeSecrets(processVariables, partitioned.resolvedSecrets());
+              mergeSecrets(processVariables, split.resolvedSecrets());
           case TASK_LISTENER -> {
             final var taskVariablesMap =
-                getTaskVariables(partitioned.regularVariables(), jobRecord.getElementInstanceKey());
+                getTaskVariables(split.regularVariables(), jobRecord.getElementInstanceKey());
             final Map<String, Object> merged = MsgPackConverter.convertToMap(processVariables);
             merged.putAll(taskVariablesMap);
-            merged.putAll(partitioned.resolvedSecrets());
+            merged.putAll(split.resolvedSecrets());
             yield BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(merged));
           }
         };
@@ -84,7 +84,7 @@ public class JobVariablesCollector {
   }
 
   private DirectBuffer readProcessVariables(
-      final JobRecord jobRecord, final PartitionedRequest partitioned, final boolean fetchAll) {
+      final JobRecord jobRecord, final SplitVariables split, final boolean fetchAll) {
     final long elementInstanceKey = jobRecord.getElementInstanceKey();
     if (elementInstanceKey < 0) {
       return DocumentValue.EMPTY_DOCUMENT;
@@ -94,11 +94,11 @@ public class JobVariablesCollector {
       // process variable, so we don't need to merge anything else here.
       return variableState.getVariablesAsDocument(elementInstanceKey);
     }
-    if (partitioned.regularVariables().isEmpty()) {
+    if (split.regularVariables().isEmpty()) {
       // Worker asked exclusively for secrets — skip the state read entirely.
       return DocumentValue.EMPTY_DOCUMENT;
     }
-    return variableState.getVariablesAsDocument(elementInstanceKey, partitioned.regularVariables());
+    return variableState.getVariablesAsDocument(elementInstanceKey, split.regularVariables());
   }
 
   private static DirectBuffer mergeSecrets(
@@ -111,7 +111,7 @@ public class JobVariablesCollector {
     return BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(merged));
   }
 
-  private PartitionedRequest partitionRequested(final Collection<DirectBuffer> requestedVariables) {
+  private SplitVariables splitVariables(final Collection<DirectBuffer> requestedVariables) {
     final Map<String, String> resolvedSecrets = new HashMap<>();
     final List<DirectBuffer> regularVariables = new ArrayList<>(requestedVariables.size());
     for (final DirectBuffer name : requestedVariables) {
@@ -120,14 +120,14 @@ public class JobVariablesCollector {
         final String secretName = nameStr.substring(SecretStore.FEEL_NAMESPACE.length());
         final Optional<String> resolved = secretStore.resolve(secretName);
         if (resolved.isEmpty()) {
-          return PartitionedRequest.miss(nameStr);
+          return SplitVariables.miss(nameStr);
         }
         resolvedSecrets.put(nameStr, resolved.get());
       } else {
         regularVariables.add(name);
       }
     }
-    return new PartitionedRequest(regularVariables, resolvedSecrets, null);
+    return new SplitVariables(regularVariables, resolvedSecrets, null);
   }
 
   private Map<String, Object> getTaskVariables(
@@ -159,12 +159,12 @@ public class JobVariablesCollector {
    * resolved secret references. If {@link #missingSecret} is non-null, resolution short-circuited
    * on that reference and the other fields are not meaningful.
    */
-  private record PartitionedRequest(
+  private record SplitVariables(
       List<DirectBuffer> regularVariables,
       Map<String, String> resolvedSecrets,
       String missingSecret) {
-    static PartitionedRequest miss(final String missingSecret) {
-      return new PartitionedRequest(List.of(), Map.of(), missingSecret);
+    static SplitVariables miss(final String missingSecret) {
+      return new SplitVariables(List.of(), Map.of(), missingSecret);
     }
   }
 }
