@@ -303,23 +303,6 @@ export const MOCK_AGENT_ELEMENT_INSTANCES_ACTIVE: MockElementInstance[] = [
     endDate: null,
     incidentKey: null,
   },
-  {
-    elementInstanceKey: '4451799813685040',
-    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_ACTIVE,
-    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_ACTIVE,
-    processDefinitionId: MOCK_AGENT_DEFINITION_ID_ACTIVE,
-    elementId: 'User_Feedback',
-    elementName: 'User Feedback',
-    type: 'USER_TASK',
-    state: 'ACTIVE',
-    hasIncident: false,
-    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_ACTIVE,
-    rootProcessInstanceKey: null,
-    tenantId: '<default>',
-    startDate: '2026-03-26T14:30:08.600Z',
-    endDate: null,
-    incidentKey: null,
-  },
 ];
 
 export const MOCK_AGENT_ELEMENT_STATISTICS_ACTIVE = {
@@ -369,13 +352,6 @@ export const MOCK_AGENT_ELEMENT_STATISTICS_ACTIVE = {
     },
     {
       elementId: 'AI_Task_Agent',
-      active: 1,
-      canceled: 0,
-      incidents: 0,
-      completed: 0,
-    },
-    {
-      elementId: 'User_Feedback',
       active: 1,
       canceled: 0,
       incidents: 0,
