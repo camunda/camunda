@@ -218,14 +218,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
 
     final var startTimer = Timer.start();
     return ElasticsearchUtil.deleteAsync(deleteRequest, archiverExecutor, esClient)
-        .<Long>handle(
-            (response, e) -> {
-              final var result = handleResponse(response, e, sourceIndexName, "delete");
-              if (result.isLeft()) {
-                throw new CompletionException(result.getLeft());
-              }
-              return result.get();
-            })
+        .handle((response, e) -> handleResponse(response, e, sourceIndexName, "delete"))
         .whenComplete(
             (result, e) -> {
               try {
@@ -234,6 +227,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                 LOGGER.warn("Failed to record delete timer for index [{}]", sourceIndexName, ex);
               }
             })
+        .<Long>thenCompose(this::unwrapEither)
         .whenComplete(
             (val, e) -> {
               if (e != null) {
@@ -261,14 +255,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
 
     final var startTimer = Timer.start();
     return ElasticsearchUtil.reindexAsync(archiverExecutor, reindexRequest, esClient)
-        .<Long>handle(
-            (response, e) -> {
-              final var result = handleResponse(response, e, sourceIndexName, "reindex");
-              if (result.isLeft()) {
-                throw new CompletionException(result.getLeft());
-              }
-              return result.get();
-            })
+        .handle((response, e) -> handleResponse(response, e, sourceIndexName, "reindex"))
         .whenComplete(
             (result, e) -> {
               try {
@@ -277,6 +264,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                 LOGGER.warn("Failed to record reindex timer for index [{}]", sourceIndexName, ex);
               }
             })
+        .<Long>thenCompose(this::unwrapEither)
         .whenComplete(
             (val, e) -> {
               if (e != null) {
@@ -501,6 +489,14 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
         Metrics.COUNTER_NAME_DELETE_FAILURES, 1, "exception", cause.getClass().getSimpleName());
   }
 
+  private <T> CompletableFuture<T> unwrapEither(final Either<Throwable, T> result) {
+    if (result.isLeft()) {
+      return CompletableFuture.failedFuture(result.getLeft());
+    }
+    return CompletableFuture.completedFuture(result.get());
+  }
+
+  /** Strips the {@link CompletionException} wrapper added by {@code thenCompose}. */
   private static Throwable unwrapCompletion(final Throwable e) {
     return e instanceof CompletionException && e.getCause() != null ? e.getCause() : e;
   }

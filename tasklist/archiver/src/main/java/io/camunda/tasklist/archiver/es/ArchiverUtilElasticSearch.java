@@ -63,14 +63,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
     final var startTimer = Timer.start();
 
     return sendDeleteRequest(deleteRequest)
-        .<Long>handle(
-            (response, e) -> {
-              final var result = handleResponse(response, e, sourceIndexName, "delete");
-              if (result.isLeft()) {
-                throw new CompletionException(result.getLeft());
-              }
-              return result.get();
-            })
+        .handle((response, e) -> handleResponse(response, e, sourceIndexName, "delete"))
         .whenComplete(
             (result, e) -> {
               try {
@@ -79,6 +72,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
                 LOGGER.warn("Failed to record delete timer for index [{}]", sourceIndexName, ex);
               }
             })
+        .<Long>thenCompose(this::unwrapEither)
         .whenComplete(
             (val, e) -> {
               if (e != null) {
@@ -105,14 +99,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
 
     final var startTimer = Timer.start();
     return sendReindexRequest(reindexRequest)
-        .<Long>handle(
-            (response, e) -> {
-              final var result = handleResponse(response, e, sourceIndexName, "reindex");
-              if (result.isLeft()) {
-                throw new CompletionException(result.getLeft());
-              }
-              return result.get();
-            })
+        .handle((response, e) -> handleResponse(response, e, sourceIndexName, "reindex"))
         .whenComplete(
             (result, e) -> {
               try {
@@ -121,6 +108,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
                 LOGGER.warn("Failed to record reindex timer for index [{}]", sourceIndexName, ex);
               }
             })
+        .<Long>thenCompose(this::unwrapEither)
         .whenComplete(
             (val, e) -> {
               if (e != null) {
@@ -183,6 +171,14 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
         .setSlices(AUTO_SLICES);
   }
 
+  private <T> CompletableFuture<T> unwrapEither(final Either<Throwable, T> result) {
+    if (result.isLeft()) {
+      return CompletableFuture.failedFuture(result.getLeft());
+    }
+    return CompletableFuture.completedFuture(result.get());
+  }
+
+  /** Strips the {@link CompletionException} wrapper added by {@code thenCompose}. */
   private static Throwable unwrapCompletion(final Throwable e) {
     return e instanceof CompletionException && e.getCause() != null ? e.getCause() : e;
   }
