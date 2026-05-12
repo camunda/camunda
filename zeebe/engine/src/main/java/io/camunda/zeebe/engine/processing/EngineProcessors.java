@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -141,6 +142,9 @@ public final class EngineProcessors {
     final ExpressionLanguageMetricsImpl expressionLanguageMetrics =
         new ExpressionLanguageMetricsImpl(typedRecordProcessorContext.getMeterRegistry());
     final var incidentMetrics = new IncidentMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var processDefinitionMetrics =
+        new ProcessDefinitionMetrics(
+            typedRecordProcessorContext.getMeterRegistry(), processingState.getProcessState());
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -198,7 +202,8 @@ public final class EngineProcessors {
         clock,
         authCheckBehavior,
         routingInfo,
-        expressionLanguageMetrics);
+        expressionLanguageMetrics,
+        processDefinitionMetrics);
     addMessageProcessors(
         typedRecordProcessorContext.getPartitionId(),
         bpmnBehaviors,
@@ -268,7 +273,8 @@ public final class EngineProcessors {
         processingState,
         commandDistributionBehavior,
         bpmnBehaviors,
-        authCheckBehavior);
+        authCheckBehavior,
+        processDefinitionMetrics);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -518,7 +524,8 @@ public final class EngineProcessors {
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
       final RoutingInfo routingInfo,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final ExpressionLanguageMetrics expressionLanguageMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
@@ -533,7 +540,8 @@ public final class EngineProcessors {
             config,
             clock,
             authCheckBehavior,
-            expressionLanguageMetrics);
+            expressionLanguageMetrics,
+            processDefinitionMetrics);
 
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
@@ -633,7 +641,8 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
       final BpmnBehaviors bpmnBehaviors,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
     final var resourceDeletionProcessor =
         new ResourceDeletionDeleteProcessor(
             writers,
@@ -641,7 +650,8 @@ public final class EngineProcessors {
             processingState,
             commandDistributionBehavior,
             bpmnBehaviors,
-            authCheckBehavior);
+            authCheckBehavior,
+            processDefinitionMetrics);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
   }

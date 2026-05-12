@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
@@ -43,7 +44,8 @@ public final class DeploymentTransformer {
       final FeatureFlags featureFlags,
       final ValidationConfig config,
       final InstantSource clock,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final ExpressionLanguageMetrics expressionLanguageMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
     validator = new DeploymentValidator(config);
 
     final var bpmnResourceTransformer =
@@ -56,7 +58,8 @@ public final class DeploymentTransformer {
             featureFlags.enableStraightThroughProcessingLoopDetector(),
             config,
             clock,
-            expressionLanguageMetrics);
+            expressionLanguageMetrics,
+            processDefinitionMetrics);
 
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
