@@ -16,10 +16,10 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.probes.health.ClusterAwarenessHealthIndicator;
+import io.camunda.zeebe.gateway.impl.probes.health.MemoryHealthIndicator;
 import io.camunda.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealthIndicator;
 import io.camunda.zeebe.gateway.impl.probes.health.StartedHealthIndicator;
 import io.camunda.zeebe.it.shared.gateway.GatewayHealthIndicatorsIntegrationTest.Config;
-import io.camunda.zeebe.util.health.MemoryHealthIndicator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -138,6 +138,6 @@ public class GatewayHealthIndicatorsIntegrationTest {
   }
 
   @Configuration
-  @ComponentScan({"io.camunda.zeebe.gateway.impl", "io.camunda.zeebe.util.health"})
+  @ComponentScan("io.camunda.zeebe.gateway.impl")
   static class Config {}
 }

@@ -5,14 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.util.health;
+package io.camunda.zeebe.gateway.impl.probes.health;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.data.Offset;
 import org.junit.Before;
 import org.junit.Test;
 
-public class LivenessMemoryHealthIndicatorPropertiesTest {
+public class MemoryHealthIndicatorPropertiesTest {
 
   private MemoryHealthIndicatorProperties sutProperties;
 

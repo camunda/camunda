@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.util.liveness;
+package io.camunda.zeebe.gateway.impl.probes.liveness;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "management.health.liveness.memory")
 public class LivenessMemoryHealthIndicatorProperties
-    extends io.camunda.zeebe.util.health.MemoryHealthIndicatorProperties {
+    extends io.camunda.zeebe.gateway.impl.probes.health.MemoryHealthIndicatorProperties {
 
   @Override
   protected double getDefaultThreshold() {
