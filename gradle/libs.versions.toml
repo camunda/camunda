@@ -188,6 +188,7 @@ org-jboss-forge-roaster-roaster-api = "2.31.0.Final"
 org-jeasy-easy-random-core = "5.0.0"
 org-jetbrains-annotations = "26.1.0"
 org-jmock-jmock = "2.13.1"
+org-jspecify-jspecify = "1.0.0"
 org-junit-jupiter-junit-jupiter-api = "5.14.2"
 org-junit-jupiter-junit-jupiter-api-x1 = "6.0.1"
 org-junit-jupiter-junit-jupiter-engine = "5.14.2"
@@ -509,9 +510,11 @@ org-immutables-value-processor = { module = "org.immutables:value-processor", ve
 org-instancio-instancio-core = { module = "org.instancio:instancio-core", version.ref = "org-instancio-instancio-core" }
 org-javassist-javassist = { module = "org.javassist:javassist", version.ref = "org-javassist-javassist" }
 org-jboss-forge-roaster-roaster-api = { module = "org.jboss.forge.roaster:roaster-api", version.ref = "org-jboss-forge-roaster-roaster-api" }
+org-jboss-forge-roaster-roaster-jdt = { module = "org.jboss.forge.roaster:roaster-jdt", version.ref = "org-jboss-forge-roaster-roaster-api" }
 org-jeasy-easy-random-core = { module = "org.jeasy:easy-random-core", version.ref = "org-jeasy-easy-random-core" }
 org-jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "org-jetbrains-annotations" }
 org-jmock-jmock = { module = "org.jmock:jmock", version.ref = "org-jmock-jmock" }
+org-jspecify-jspecify = { module = "org.jspecify:jspecify", version.ref = "org-jspecify-jspecify" }
 org-junit-jupiter-junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "org-junit-jupiter-junit-jupiter-api" }
 org-junit-jupiter-junit-jupiter-api-x1 = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "org-junit-jupiter-junit-jupiter-api-x1" }
 org-junit-jupiter-junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "org-junit-jupiter-junit-jupiter-engine" }

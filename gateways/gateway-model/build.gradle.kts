@@ -3,14 +3,50 @@
  */
 
 plugins {
-    id("buildlogic.openapi-spring-conventions")
+    id("buildlogic.java-conventions")
+    id("org.openapi.generator")
 }
 
 val openapiDir = "${project.rootDir}/zeebe/gateway-protocol/src/main/proto/v2"
 
-// Configure OpenAPI generation for this module (advanced configuration)
-openApiGenerate {
-    modelPackage.set("io.camunda.gateway.protocol.model")
+// Separate source set for the ModelGenerator tool — compiled on demand, not shipped in the jar
+val toolSources by sourceSets.creating {
+    java.srcDir("src/tool/java")
+}
+
+// Runtime classpath for executing ModelGenerator
+val modelGeneratorTool by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
+val generateAdvancedModel by tasks.registering(JavaExec::class) {
+    group = "openapi"
+    description = "Generate advanced model classes from OpenAPI spec using ModelGenerator"
+
+    dependsOn(toolSources.compileJavaTaskName)
+
+    mainClass.set("io.camunda.gateway.protocol.model.tools.ModelGenerator")
+    classpath = toolSources.output + modelGeneratorTool
+
+    val outputDir = layout.buildDirectory.dir(
+        "generated/openapi/src/main/java/io/camunda/gateway/protocol/model"
+    )
+
+    inputs.dir(openapiDir)
+        .withPropertyName("openapiDir")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(toolSources.allJava)
+        .withPropertyName("toolSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.dir(outputDir)
+        .withPropertyName("advancedModelOutDir")
+
+    args(openapiDir, outputDir.get().asFile.absolutePath)
+
+    doFirst {
+        outputDir.get().asFile.mkdirs()
+    }
 }
 
 // Second OpenAPI generation: "simple" models with simplified type mappings
@@ -148,16 +184,30 @@ val openApiGenerateSimple by tasks.registering(org.openapitools.generator.gradle
 sourceSets {
     main {
         java {
-            srcDir("${project.layout.buildDirectory.get()}/generated/openapi-simple/src/main/java")
+            srcDir(layout.buildDirectory.dir("generated/openapi/src/main/java"))
+            srcDir(layout.buildDirectory.dir("generated/openapi-simple/src/main/java"))
         }
     }
 }
 
 tasks.named("compileJava") {
+    dependsOn(generateAdvancedModel)
     dependsOn(openApiGenerateSimple)
 }
 
 dependencies {
+    // Tool compile classpath (needed to compile src/tool/java)
+    "toolSourcesCompileOnly"(libs.org.jboss.forge.roaster.roaster.api)
+    "toolSourcesCompileOnly"(libs.org.jboss.forge.roaster.roaster.jdt)
+    "toolSourcesCompileOnly"(libs.org.yaml.snakeyaml)
+    "toolSourcesCompileOnly"(libs.org.jspecify.jspecify)
+
+    // Tool runtime classpath (needed to execute ModelGenerator)
+    modelGeneratorTool(libs.org.jboss.forge.roaster.roaster.api)
+    modelGeneratorTool(libs.org.jboss.forge.roaster.roaster.jdt)
+    modelGeneratorTool(libs.org.yaml.snakeyaml)
+    modelGeneratorTool(libs.org.jspecify.jspecify)
+
     api(libs.org.springframework.spring.core)
     api(libs.org.springframework.spring.context)
     api(libs.org.springframework.spring.web)
@@ -166,6 +216,7 @@ dependencies {
     api(libs.jakarta.validation.jakarta.validation.api)
     api(libs.jakarta.annotation.jakarta.annotation.api)
     api(libs.io.swagger.core.v3.swagger.annotations.jakarta)
+    api(libs.org.jspecify.jspecify)
 }
 
 description = "Camunda Gateway Model"
