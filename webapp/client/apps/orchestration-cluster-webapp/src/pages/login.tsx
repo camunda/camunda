@@ -6,13 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useRouter} from '@tanstack/react-router';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import {TextInput, PasswordInput, Column, Grid, Stack, InlineNotification, Button} from '@carbon/react';
-import {LoadingSpinner} from '#/modules/login/components/LoadingSpinner';
 import {CamundaLogo} from '#/modules/login/components/CamundaLogo';
 import {getCurrentCopyrightNoticeText} from '#/modules/login/getCurrentCopyrightNoticeText';
 import {Disclaimer} from '#/modules/login/components/Disclaimer';
+import {LoadingSpinner} from '#/modules/login/components/LoadingSpinner';
+import {authenticationStore} from '#/modules/auth/stores/authentication';
 import styles from './login.module.scss';
 
 type FormValues = {
@@ -21,13 +23,38 @@ type FormValues = {
 };
 
 const Login: React.FC = () => {
+	const router = useRouter();
+
 	return (
 		<Grid as="main" condensed className={styles['container']!}>
 			<Form<FormValues>
-				onSubmit={async () => {
-					// TODO: call authentication API, navigate on success, return FORM_ERROR on failure
-					// https://github.com/camunda/camunda/issues/51318
-					return {[FORM_ERROR]: 'Login not yet implemented.'};
+				onSubmit={async ({username, password}) => {
+					try {
+						const {error} = await authenticationStore.handleLogin(username, password);
+
+						if (error === null) {
+							// Re-triggers /login beforeLoad, which detects the active session and redirects
+							await router.invalidate();
+							return;
+						}
+
+						if (error.variant === 'failed-response' && error.response.status === 401) {
+							return {
+								// TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325
+								[FORM_ERROR]: 'Username and password do not match.',
+							};
+						}
+
+						return {
+							// TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325
+							[FORM_ERROR]: 'Credentials could not be verified. Please try again.',
+						};
+					} catch {
+						return {
+							// TODO: replace with i18n: https://github.com/camunda/camunda/issues/51325
+							[FORM_ERROR]: 'Credentials could not be verified. Please try again.',
+						};
+					}
 				}}
 				validate={({username, password}) => {
 					const errors: {username?: string; password?: string} = {};

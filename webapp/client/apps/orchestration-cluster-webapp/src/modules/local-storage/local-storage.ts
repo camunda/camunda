@@ -10,6 +10,7 @@ import {z} from 'zod';
 
 const validators = {
 	theme: z.enum(['light', 'dark', 'system']),
+	wasReloaded: z.boolean(),
 } as const;
 
 type Validators = typeof validators;

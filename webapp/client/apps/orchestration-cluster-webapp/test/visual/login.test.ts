@@ -7,9 +7,14 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
+import {HttpResponse, http} from 'msw';
 import {LoginPage} from '../pages/Login.page';
 
-test('should match the login page snapshot', async ({page}) => {
+test('should match the login page snapshot', async ({network, page}) => {
+	network.use(
+		http.get('/v2/authentication/me', () => new HttpResponse(null, {status: 401}), {once: true}),
+	);
+
 	const loginPage = new LoginPage(page);
 	await loginPage.goto();
 	await expect(loginPage.submitButton).toBeVisible();
