@@ -214,7 +214,8 @@ public final class DeploymentCreateProcessor
     if (value.processesMetadata().stream().findAny().isPresent()) {
       categories.add(DeploymentResourceCategory.BPMN);
     }
-    if (value.decisionsMetadata().stream().findAny().isPresent()) {
+    if (value.decisionsMetadata().stream().findAny().isPresent()
+        || value.decisionRequirementsMetadata().stream().findAny().isPresent()) {
       categories.add(DeploymentResourceCategory.DMN);
     }
     if (value.formMetadata().stream().findAny().isPresent()) {
@@ -264,7 +265,7 @@ public final class DeploymentCreateProcessor
       createTimerIfTimerStartEvent(command);
     } catch (final RuntimeException e) {
       final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-      throw new TimerCreationFailedException(reason, result.getLeft());
+      throw new TimerCreationFailedException(reason);
     }
 
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
@@ -486,8 +487,7 @@ public final class DeploymentCreateProcessor
    */
   private static final class TimerCreationFailedException extends RuntimeException {
 
-    public TimerCreationFailedException(
-        final String message, final DeploymentTransformationFailure left) {
+    public TimerCreationFailedException(final String message) {
       super(message);
     }
   }
