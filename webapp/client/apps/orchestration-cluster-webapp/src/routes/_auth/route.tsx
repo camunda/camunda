@@ -6,12 +6,30 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {createFileRoute, Outlet, redirect} from '@tanstack/react-router';
+import {SessionWatcher} from '#/modules/auth/SessionWatcher';
+import {currentUserQueryOptions} from '#/modules/queries/currentUser.query';
 
 export const Route = createFileRoute('/_auth')({
+	beforeLoad: async ({location, context: {queryClient}}) => {
+		// Verify the session server-side. Redirect to login on 401 response.
+		try {
+			await queryClient.ensureQueryData(currentUserQueryOptions);
+		} catch {
+			throw redirect({
+				to: '/login',
+				search: location.href === '/' ? {} : {redirect: location.href},
+			});
+		}
+	},
 	component: RouteComponent,
 });
 
 function RouteComponent() {
-	return <Outlet />;
+	return (
+		<>
+			<SessionWatcher />
+			<Outlet />
+		</>
+	);
 }

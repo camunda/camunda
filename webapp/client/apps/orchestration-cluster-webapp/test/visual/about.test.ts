@@ -18,8 +18,16 @@ const mockAboutEndpoint = createEndpointMock({
 	method: 'GET',
 });
 
+const mockCurrentUserEndpoint = createEndpointMock({
+	endpoint: '/v2/authentication/me',
+	method: 'GET',
+});
+
 test('should match the about page snapshot', async ({network, page}) => {
 	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json({}),
+		}),
 		mockAboutEndpoint({
 			successResponse: HttpResponse.json({message: ABOUT_MESSAGE}),
 		}),

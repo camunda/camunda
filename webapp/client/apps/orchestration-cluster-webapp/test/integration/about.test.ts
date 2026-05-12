@@ -18,8 +18,16 @@ const mockAboutEndpoint = createEndpointMock({
 	method: 'GET',
 });
 
+const mockCurrentUserEndpoint = createEndpointMock({
+	endpoint: '/v2/authentication/me',
+	method: 'GET',
+});
+
 test('should render mocked about data', async ({network, page}) => {
 	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json({}),
+		}),
 		mockAboutEndpoint({
 			successResponse: HttpResponse.json({message: ABOUT_MESSAGE}),
 		}),
@@ -33,6 +41,9 @@ test('should render mocked about data', async ({network, page}) => {
 
 test('should render an error when about data fails to load', async ({network, page}) => {
 	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json({}),
+		}),
 		mockAboutEndpoint({
 			successResponse: HttpResponse.json({error: 'Internal Server Error'}, {status: 500}),
 		}),

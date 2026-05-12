@@ -7,8 +7,7 @@
  */
 
 import {reactQueryClient} from '#/modules/http/reactQueryClient';
-// TODO: uncomment when authenticationStore is available
-// import {authenticationStore} from '#/modules/auth/authentication';
+import {authenticationStore} from '#/modules/auth/stores/authentication';
 import {z} from 'zod';
 
 type RequestError =
@@ -53,8 +52,7 @@ async function request(
 		const response = await fetch(input);
 
 		if (response.ok) {
-			// TODO: uncomment when authenticationStore is available
-			// authenticationStore.activateSession();
+			authenticationStore.activateSession();
 		}
 
 		const tokenFromResponse = response.headers.get('X-CSRF-TOKEN');
@@ -64,8 +62,7 @@ async function request(
 		}
 
 		if (!skipSessionCheck && response.status === 401) {
-			// TODO: uncomment when authenticationStore is available
-			// authenticationStore.disableSession();
+			authenticationStore.disableSession();
 			reactQueryClient.clear();
 		}
 
