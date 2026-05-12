@@ -16,7 +16,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {processInstancesSelectionStore} from 'modules/stores/instancesSelection';
 import {authenticationStore} from 'modules/stores/authentication';
-import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import {incidentsPanelFiltersStore} from 'modules/stores/incidentsPanelFiltersStore';
 import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
@@ -42,7 +42,7 @@ function resetAllStores() {
     diagramOverlaysStore.reset();
     processInstancesSelectionStore.reset();
     authenticationStore.reset();
-    incidentsPanelStore.reset();
+    incidentsPanelFiltersStore.reset();
     elementTimeStampStore.reset();
     executionCountToggleStore.reset();
     dateRangePopoverStore.reset();
