@@ -15,7 +15,7 @@ import io.camunda.gateway.mcp.tool.process.instance.ProcessInstanceTools;
 import io.camunda.gateway.mcp.tool.usertask.UserTaskTools;
 import io.camunda.gateway.mcp.tool.variable.VariableTools;
 import io.camunda.gateway.protocol.model.JobActivationResult;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.ProcessDefinitionServices;

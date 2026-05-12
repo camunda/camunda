@@ -14,7 +14,7 @@ import io.camunda.application.commons.service.CamundaServicesConfiguration;
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.gateway.mcp.tool.cluster.ClusterTools;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.lang.reflect.Method;
 import java.util.ArrayList;

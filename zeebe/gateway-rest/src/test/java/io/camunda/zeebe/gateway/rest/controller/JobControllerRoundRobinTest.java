@@ -16,7 +16,7 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.JobServices;

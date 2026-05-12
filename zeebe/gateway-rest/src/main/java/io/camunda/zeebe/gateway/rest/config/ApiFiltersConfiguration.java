@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.rest.config;
 
 import static io.camunda.security.api.model.config.oidc.OidcConfiguration.GROUPS_CLAIM_PROPERTY;
-import static io.camunda.security.configuration.MultiTenancyConfiguration.API_ENABLED_PROPERTY;
+import static io.camunda.security.api.model.config.MultiTenancyConfiguration.API_ENABLED_PROPERTY;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
