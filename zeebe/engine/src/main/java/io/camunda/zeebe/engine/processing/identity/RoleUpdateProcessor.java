@@ -29,6 +29,8 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
 
   public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to update role with ID '%s', but a role with this ID does not exist.";
+  public static final String ROLE_PROTECTED_ERROR_MESSAGE =
+      "Expected to update role with ID '%s', but this role is protected and cannot be modified.";
   private final RoleState roleState;
   private final KeyGenerator keyGenerator;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -67,6 +69,13 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    if (ProtectedRoles.isProtected(record.getRoleId())) {
+      final var errorMessage = ROLE_PROTECTED_ERROR_MESSAGE.formatted(record.getRoleId());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
       return;
     }
 

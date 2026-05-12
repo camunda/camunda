@@ -92,4 +92,38 @@ public class DeleteAuthorizationTest {
         .hasRejectionReason(
             "Expected to delete authorization with key 1, but an authorization with this key does not exist");
   }
+
+  @Test
+  public void shouldRejectDeleteOfAuthorizationOwnedByProtectedRole() {
+    // given
+    final var protectedRoleId = "rpa";
+    engine.role().newRole(protectedRoleId).withName("RPA").create();
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(protectedRoleId)
+            .withOwnerType(AuthorizationOwnerType.ROLE)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var deleteRejection =
+        engine.authorization().deleteAuthorization(authorizationKey).expectRejection().delete();
+
+    // then
+    assertThat(deleteRejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to delete authorization with key "
+                + authorizationKey
+                + ", but it belongs to protected role '"
+                + protectedRoleId
+                + "' whose authorizations cannot be deleted.");
+  }
 }

@@ -11,6 +11,8 @@ const PROTECTED_ROLE_IDS = new Set([
   "readonly-admin",
   "rpa",
   "connectors",
+  "app-integrations",
+  "task-worker",
 ]);
 
 export const isProtectedRole = (roleId: string): boolean =>
