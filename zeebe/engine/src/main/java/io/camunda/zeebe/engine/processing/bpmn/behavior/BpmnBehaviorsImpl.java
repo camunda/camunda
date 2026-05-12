@@ -425,8 +425,4 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   public ExpressionLanguage expressionLanguage() {
     return expressionLanguage;
   }
-
-  public SecretStore secretStore() {
-    return secretStore;
-  }
 }
