@@ -87,8 +87,8 @@ runs:
         roleId: ${{ inputs.vault-role-id }}
         secretId: ${{ inputs.vault-secret-id }}
         secrets: |
-          secret/data/products/distribution/ci NEXUS_USERNAME;
-          secret/data/products/distribution/ci NEXUS_PASSWORD;
+          secret/data/products/distribution/ci/nexus USER | NEXUS_USERNAME;
+          secret/data/products/distribution/ci/nexus PASSWORD | NEXUS_PASSWORD;
 
     - name: print architecture
       run: arch
