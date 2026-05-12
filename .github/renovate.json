@@ -70,6 +70,22 @@
       "enabled": false
     },
     {
+      "description": "Disable npm patch updates for frontend apps on stable branches.",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/"
+      ],
+      "matchFileNames": [
+        "operate/**",
+        "tasklist/**",
+        "identity/**",
+        "optimize/**"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
       "matchManagers": [
         "dockerfile",
