@@ -112,7 +112,10 @@ Example:
 . ./newLoadTest.sh my-load-test-name
 ```
 
-This will source and run the `newLoadTest.sh` script, which means it will create a new Kubernetes namespace. Furthermore, a new folder will be created with the given name.
+This will source and run the `newLoadTest.sh` script. A new folder is created with the given name, containing a rendered Makefile, Helm values, and (under `resources/`) two Kubernetes manifests: `namespace.yaml` (labels, AZ pinning, TTL) and `camunda-credentials.yaml` (randomly generated passwords/tokens). The cluster itself is unchanged by this script — `make install` from inside the folder runs `kubectl apply -f resources/…` to create the namespace and secret. Reruns after a TTL deletion reapply the same manifests, so the orchestration secret stays in sync with `load-test-values.yaml` and you don't lose credentials.
+
+`resources/camunda-credentials.yaml` is git-ignored (random secrets on disk; do not commit).
+
 If you used `.` before `./newLoadTest.sh`, the script will change your directory after running, so you can directly start to configure your load test.
 
 #### Secondary storage options
@@ -182,14 +185,28 @@ To install/upgrade both the [Camunda Platform Helm](https://github.com/camunda/c
 make install
 ```
 
+`make install` first runs `check-deadline` (fails fast if today ≥ the baked `deadline-date` so we don't deploy into a namespace the TTL cleanup workflow is about to delete), then `create-namespace` and `create-credentials` which `kubectl apply -f resources/namespace.yaml` and `resources/camunda-credentials.yaml`. Both are idempotent, so reruns after a TTL deletion recreate the namespace and reapply the same credentials — the orchestration OIDC secret stays in sync with `load-test-values.yaml`.
+
 Or install/upgrade them separately:
 
 ```shell
+# Apply the namespace + secret manifests (idempotent)
+make create-namespace
+make create-credentials
+
 # Install/upgrade the Camunda Platform (includes leader balancer cronjob)
 make install-platform
 
 # Install/upgrade the load test (starter, worker, etc.)
 make install-load-test
+```
+
+To bump the deadline of an existing namespace without re-scaffolding:
+
+```sh
+# 1. Edit the deadline-date label in resources/namespace.yaml
+# 2. Reapply:
+make create-namespace
 ```
 
 The Camunda Platform deployment automatically sets up a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
@@ -236,14 +253,16 @@ make template-load-test scenario=max  # renders load test manifests
 
 ### How to clean up a load test
 
-After you're done with your load test, you should remove the remaining namespace.
-In order to do this easily, just run:
+When you're done, run `make clean` from inside the namespace folder:
 
 ```sh
-./deleteLoadTest.sh my-load-test-name
+cd c8-my-load-test-name
+make clean
 ```
 
-This will switch to the default namespace, delete the given namespace, and delete the corresponding folder.
+This uninstalls the Helm releases (Camunda Platform + load test + Elasticsearch exporter), removes any secondary-storage chart/PVCs, drops the leader-balancer cronjob, and finally `kubectl delete -f resources/namespace.yaml --wait=false --ignore-not-found` to drop the namespace itself.
+
+The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reapply `resources/namespace.yaml` + `resources/camunda-credentials.yaml`), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
 
 ## Running on stable/non-spot VMs
 

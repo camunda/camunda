@@ -22,6 +22,13 @@ Options:
 Examples:
   ./newLoadTest.sh demo
   ./newLoadTest.sh perf opensearch 3 false
+
+This script scaffolds the per-namespace folder including rendered Kubernetes
+manifests under resources/ (namespace + credentials). The cluster itself is
+unchanged by this script — namespace and secret are created on first
+`make install` via `kubectl apply -f resources/...`. Reruns of `make install`
+after a TTL deletion recreate both from the same baked manifests, so
+credentials stay in sync with `load-test-values.yaml`.
 EOF
 }
 
@@ -74,6 +81,9 @@ if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
   exit 1
 fi
 
+enable_single_zone="${5:-true}"
+enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
+
 # Pick a "random" zone, selected from the input value.
 function hashmod_zone() {
     local input="${1?"Specify an initial value to compute the zone from"}"
@@ -95,67 +105,97 @@ function hashmod_zone() {
     echo "$zone"
 }
 
-enable_single_zone="${5:-true}"
-enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
-single_zone_annotation_name="topology.kubernetes.io/zone"
-availability_zone="~"
-
-# Create namespace if it doesn't exist
-if ! kubectl get namespace $namespace >/dev/null 2>&1; then
-  kubectl create namespace "$namespace"
-  if [[ "$enable_single_zone" == "true" ]]; then
-    availability_zone="$(hashmod_zone "$namespace")"
-    kubectl annotate namespace "$namespace" "${single_zone_annotation_name}=${availability_zone}"
-    echo "Will configure pods to deploy into the $availability_zone AZ only."
-  else
-    availability_zone="~"
-    echo "Will NOT configure pods to deploy into a single zone."
-  fi
+# `hashmod_zone` is deterministic, so the zone baked into namespace.yaml and
+# the values files matches any re-applied manifest after TTL deletion.
+if [[ "$enable_single_zone" == "true" ]]; then
+  availability_zone="$(hashmod_zone "$namespace")"
 else
-  echo "Namespace '$namespace' already exists"
-
-  existing_zone="$(kubectl get ns "$namespace" -o json | jq --raw-output ".metadata.annotations[\"$single_zone_annotation_name\"]")"
-  availability_zone="$existing_zone"
-  echo "Namespace ${namespace} has previously been configured to run on the single availability zone: $availability_zone"
+  availability_zone="~"
 fi
 
-# Label to easily find related namespaces
-kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
-
-# Label namespace with author (based on git author)
 git_author=$(compute_git_author)
-kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
 
-# Label namespace with TTL deadline (default: 1 day from now)
-# Try GNU date format first (Linux), then BSD/macOS format
+# Compute deadline-date once at scaffold time. The Makefile's check-deadline
+# target compares this against today; if it has passed, install fails fast.
 if deadline_date=$(date -d "+${ttl_days} days" +%Y-%m-%d 2>/dev/null); then
   : # GNU date succeeded
 elif deadline_date=$(date -v +${ttl_days}d +%Y-%m-%d 2>/dev/null); then
   : # BSD/macOS date succeeded
 else
-  echo "Warning: Could not calculate deadline date. Supported on Linux and macOS only."
-  deadline_date="unknown"
+  echo "Error: Could not calculate deadline date. Supported on Linux and macOS only."
+  exit 1
 fi
-kubectl label namespace $namespace deadline-date="${deadline_date}" --overwrite
 
-# Label namespace with registry (required to inject image pull secrets)
-kubectl label namespace "$namespace" registry=harbor --overwrite
+# Generate credentials. These are baked into resources/camunda-credentials.yaml
+# and (for the orchestration OIDC secret) into load-test-values.yaml. Any
+# subsequent `make install` reapplies the same manifest, so the secret in the
+# cluster always matches the value the load test starter authenticates with.
+# `head -c 20` closes the pipe early; upstream `tr` then takes SIGPIPE and
+# returns 141 under `set -o pipefail`. Wrap in a subshell so the harmless
+# SIGPIPE doesn't trip `set -e` in the caller.
+gen_password() { ( set +o pipefail; LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20 ); }
+gen_token()    { openssl rand -hex 16; }
 
-# Copy default folder to new namespace folder
-cp -rv default/ $namespace
+IDENTITY_FIRSTUSER_PASSWORD=$(gen_password)
+IDENTITY_KEYCLOAK_ADMIN_PASSWORD=$(gen_password)
+IDENTITY_KEYCLOAK_POSTGRESQL_ADMIN_PASSWORD=$(gen_password)
+IDENTITY_KEYCLOAK_POSTGRESQL_USER_PASSWORD=$(gen_password)
+IDENTITY_POSTGRESQL_ADMIN_PASSWORD=$(gen_password)
+IDENTITY_POSTGRESQL_USER_PASSWORD=$(gen_password)
+CONNECTORS_SECRET=$(gen_password)
+ORCHESTRATION_SECRET=$(gen_password)
+IDENTITY_ADMIN_CLIENT_TOKEN=$(gen_token)
+IDENTITY_OPTIMIZE_CLIENT_TOKEN=$(gen_token)
 
-# Copy all *.yaml files to the new folder
-cp -v ../*.yaml $namespace/
+# Copy default folder (incl. resources/) and the parent platform values files.
+cp -rv default/ "$namespace"
+cp -v ../*.yaml "$namespace/"
 
-cd $namespace
+cd "$namespace"
 
-# Update Makefile to use the namespace and secondary storage
-sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
-sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
+# Bake values into the rendered Makefile.
+sed_inplace "s/__NAMESPACE__/$namespace/"           Makefile
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
-sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" *.yaml 
-sed_inplace "s/__AUTHOR__/$git_author/" *.yaml
+sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"    Makefile
+
+# Bake values into the resource manifests and the platform/load-test values.
+# Values shared with the chart (NAMESPACE, AVAILABILITY_ZONE, AUTHOR) flow into
+# the upstream yaml files via the same sed pass.
+sed_inplace "s/__NAMESPACE__/$namespace/"                       load-test-values.yaml resources/*.yaml
+sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/"        *.yaml databases/*.yaml resources/namespace.yaml
+sed_inplace "s/__AUTHOR__/$git_author/"                          *.yaml databases/*.yaml resources/namespace.yaml
+sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"                resources/namespace.yaml
+
+# When single-zone is disabled the topology annotation has no useful value;
+# strip the annotation line and the now-empty `annotations:` key so the manifest
+# stays tidy.
+if [[ "$enable_single_zone" != "true" ]]; then
+  sed_inplace "/topology.kubernetes.io\\/zone:/d" resources/namespace.yaml
+  # `sed_inplace` splits args on whitespace and the `annotations:` line pattern
+  # contains literal spaces, so call sed directly with OS-aware -i flag.
+  detect_os
+  if [ "${GO_OS}" == "darwin" ]; then
+    sed -i '' -e '/^  annotations:$/d' resources/namespace.yaml
+  else
+    sed -i    -e '/^  annotations:$/d' resources/namespace.yaml
+  fi
+fi
+
+# Bake the orchestration OIDC secret into the load-test starter values.
+sed_inplace "s|__SECRET__|$ORCHESTRATION_SECRET|" load-test-values.yaml
+
+# Bake the credential values into the secret manifest.
+sed_inplace "s|__IDENTITY_FIRSTUSER_PASSWORD__|$IDENTITY_FIRSTUSER_PASSWORD|"                                 resources/camunda-credentials.yaml
+sed_inplace "s|__IDENTITY_KEYCLOAK_ADMIN_PASSWORD__|$IDENTITY_KEYCLOAK_ADMIN_PASSWORD|"                       resources/camunda-credentials.yaml
+sed_inplace "s|__IDENTITY_KEYCLOAK_POSTGRESQL_ADMIN_PASSWORD__|$IDENTITY_KEYCLOAK_POSTGRESQL_ADMIN_PASSWORD|" resources/camunda-credentials.yaml
+sed_inplace "s|__IDENTITY_KEYCLOAK_POSTGRESQL_USER_PASSWORD__|$IDENTITY_KEYCLOAK_POSTGRESQL_USER_PASSWORD|"   resources/camunda-credentials.yaml
+sed_inplace "s|__IDENTITY_POSTGRESQL_ADMIN_PASSWORD__|$IDENTITY_POSTGRESQL_ADMIN_PASSWORD|"                   resources/camunda-credentials.yaml
+sed_inplace "s|__IDENTITY_POSTGRESQL_USER_PASSWORD__|$IDENTITY_POSTGRESQL_USER_PASSWORD|"                     resources/camunda-credentials.yaml
+sed_inplace "s|__ORCHESTRATION_SECRET__|$ORCHESTRATION_SECRET|"                                               resources/camunda-credentials.yaml
+sed_inplace "s|__CONNECTORS_SECRET__|$CONNECTORS_SECRET|"                                                     resources/camunda-credentials.yaml
+sed_inplace "s|__IDENTITY_ADMIN_CLIENT_TOKEN__|$IDENTITY_ADMIN_CLIENT_TOKEN|"                                 resources/camunda-credentials.yaml
+sed_inplace "s|__IDENTITY_OPTIMIZE_CLIENT_TOKEN__|$IDENTITY_OPTIMIZE_CLIENT_TOKEN|"                           resources/camunda-credentials.yaml
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update
@@ -164,10 +204,15 @@ helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --for
 helm repo update
 
 # Clone Platform Helm so we can run the latest chart
-
 git clone --depth 1 --branch main --single-branch https://github.com/camunda/camunda-platform-helm.git
 
 # Make deps
-
 helm dependency build "camunda-platform-helm/charts/$helm_chart"
 
+set +x
+echo
+echo "Scaffolding complete. Next steps:"
+echo "  cd $namespace"
+echo "  make install   # applies resources/namespace.yaml + resources/camunda-credentials.yaml and deploys"
+echo
+echo "Deadline: $deadline_date (TTL = $ttl_days day(s)). Bump it via resources/namespace.yaml + kubectl label, or rerun this script."
