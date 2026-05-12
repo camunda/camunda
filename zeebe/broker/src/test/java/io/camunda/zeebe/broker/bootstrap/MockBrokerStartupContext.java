@@ -95,6 +95,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private CheckpointSchedulingService checkpointSchedulingService =
       mock(CheckpointSchedulingService.class);
   private NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
+  private List<String> physicalTenantIds = List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME);
 
   @Override
   public BrokerInfo getBrokerInfo() {
@@ -277,15 +278,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public void setPartitionManager(final PartitionManagerImpl partitionManager) {
-    if (partitionManager == null) {
-      partitionManagers.remove(PartitionManagerImpl.DEFAULT_GROUP_NAME);
-    } else {
-      partitionManagers.put(PartitionManagerImpl.DEFAULT_GROUP_NAME, partitionManager);
-    }
-  }
-
-  @Override
   public Map<String, PartitionManagerImpl> getPartitionManagers() {
     return Collections.unmodifiableMap(partitionManagers);
   }
@@ -463,5 +455,14 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   public void setNodeIdProvider(final NodeIdProvider nodeIdProvider) {
     this.nodeIdProvider = nodeIdProvider;
+  }
+
+  @Override
+  public List<String> getPhysicalTenantIds() {
+    return physicalTenantIds;
+  }
+
+  public void setPhysicalTenantIds(final List<String> physicalTenantIds) {
+    this.physicalTenantIds = physicalTenantIds;
   }
 }

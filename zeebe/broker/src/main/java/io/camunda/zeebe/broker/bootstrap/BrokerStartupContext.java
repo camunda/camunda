@@ -169,4 +169,7 @@ public interface BrokerStartupContext {
   void setCheckpointSchedulingService(CheckpointSchedulingService checkpointSchedulingService);
 
   NodeIdProvider getNodeIdProvider();
+
+  /** Returns the list of physical tenant IDs this broker should run. */
+  List<String> getPhysicalTenantIds();
 }

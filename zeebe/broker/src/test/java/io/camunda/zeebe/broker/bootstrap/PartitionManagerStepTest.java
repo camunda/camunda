@@ -177,7 +177,8 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.setActorSchedulingService(mock(ActorScheduler.class));
       testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
 
-      testBrokerStartupContext.setPartitionManager(mockPartitionManager);
+      testBrokerStartupContext.addPartitionManager(
+          PartitionManagerImpl.DEFAULT_GROUP_NAME, mockPartitionManager);
       final ClusterConfigurationService mockClusterTopology =
           mock(ClusterConfigurationService.class);
       testBrokerStartupContext.setClusterConfigurationService(mockClusterTopology);
