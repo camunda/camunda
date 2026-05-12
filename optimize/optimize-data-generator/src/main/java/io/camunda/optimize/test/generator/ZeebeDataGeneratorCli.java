@@ -17,7 +17,12 @@ import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_VARIABLE_IN
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
+import io.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionDataDto;
+import io.camunda.optimize.dto.zeebe.incident.ZeebeIncidentDataDto;
+import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
@@ -218,12 +223,45 @@ public final class ZeebeDataGeneratorCli {
 
   static OptimizeElasticsearchClient buildEsClient(
       final RestClient restClient, final String prefix) {
-    final ObjectMapper mapper = ObjectMapperFactory.OPTIMIZE_MAPPER;
+    final ObjectMapper mapper = ObjectMapperFactory.OPTIMIZE_MAPPER.copy();
+    // Several Zeebe DTO methods throw UnsupportedOperationException because they implement
+    // protocol interfaces whose fields are not populated by the generator. Register mixins to
+    // suppress those properties during Jackson serialization.
+    mapper.addMixIn(ZeebeRecordDto.class, ZeebeRecordDtoMixin.class);
+    mapper.addMixIn(ZeebeProcessDefinitionDataDto.class, ProcessDefinitionDataMixin.class);
+    mapper.addMixIn(ZeebeIncidentDataDto.class, IncidentDataMixin.class);
+    mapper.addMixIn(ZeebeUserTaskDataDto.class, UserTaskDataMixin.class);
     final ElasticsearchClient esClient =
         new ElasticsearchClient(
             new RestClientTransport(restClient, new JacksonJsonpMapper(mapper)));
     return new OptimizeElasticsearchClient(
         restClient, mapper, esClient, new OptimizeIndexNameService(prefix));
+  }
+
+  abstract static class ZeebeRecordDtoMixin {
+    @JsonIgnore
+    abstract int getRecordVersion();
+  }
+
+  abstract static class ProcessDefinitionDataMixin {
+    @JsonIgnore
+    abstract long getDeploymentKey();
+  }
+
+  abstract static class IncidentDataMixin {
+    @JsonIgnore
+    abstract java.util.List<java.util.List<Long>> getElementInstancePath();
+
+    @JsonIgnore
+    abstract java.util.List<Long> getProcessDefinitionPath();
+
+    @JsonIgnore
+    abstract java.util.List<Integer> getCallingElementPath();
+  }
+
+  abstract static class UserTaskDataMixin {
+    @JsonIgnore
+    abstract int getPriority();
   }
 
   /** Groups the Elasticsearch connection parameters passed via CLI arguments. */
