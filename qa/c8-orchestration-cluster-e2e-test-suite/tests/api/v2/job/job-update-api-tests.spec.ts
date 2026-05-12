@@ -31,6 +31,13 @@ test.describe('Job Update API Tests', () => {
   test.afterEach(afterEach);
 
   test('Update Job - success', async ({request}) => {
+    // eslint-disable-next-line playwright/no-conditional-in-test
+    if (process.env.FORWARD_COMPAT_MODE === 'true') {
+      test.skip(
+        true,
+        'Skipped in forward-compat mode - job update endpoint behavior changed on main',
+      );
+    }
     const jobKey = await activateJobToObtainAValidJobKey(
       request,
       'jobApiTaskType',

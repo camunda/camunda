@@ -50,6 +50,7 @@ export {RESPONSE_INDEX} from './_generated/index.js';
 
 const _allowExtraFields = process.env.AJB_ALLOW_EXTRA_FIELDS === 'true';
 const _allowNullValues = process.env.AJB_ALLOW_NULL_VALUES === 'true';
+const _allowEnumExtensions = process.env.FORWARD_COMPAT_MODE === 'true';
 
 // Derive types from the generated functions so they stay in sync with
 // assert-json-body upgrades without manual maintenance.
@@ -69,7 +70,8 @@ function _filterForwardCompatErrors(
         _allowNullValues &&
         e.startsWith('[TYPE]') &&
         /: expected .*, got null/.test(e)
-      ),
+      ) &&
+      !(_allowEnumExtensions && e.startsWith('[ENUM]')),
   );
   if (remaining.length === 0) {
     return {...result, ok: true, errors: undefined};
