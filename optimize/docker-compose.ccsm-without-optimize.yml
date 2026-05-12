@@ -139,7 +139,7 @@ services:
   tasklist:
     profiles: ["", "elasticsearch"]
     container_name: tasklist
-    image: camunda/tasklist:latest
+    image: camunda/camunda:latest
     ports:
       - "8082:8080"
     environment:
@@ -157,7 +157,7 @@ services:
 # We include Operate here to use its data generator, via the SPRING_PROFILES_ACTIVE property
   operate:
     profiles: ["", "elasticsearch"]
-    image: camunda/operate:latest
+    image: camunda/camunda:latest
     container_name: operate
     environment:
         - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
@@ -236,7 +236,7 @@ services:
       - localhost
   operate-opensearch:
     profiles: ["opensearch"]
-    image: camunda/operate:latest
+    image: camunda/camunda:latest
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080
@@ -265,7 +265,7 @@ services:
   tasklist-opensearch:
     profiles: ["opensearch"]
     container_name: tasklist-opensearch
-    image: camunda/tasklist:latest
+    image: camunda/camunda:latest
     ports:
       - "8082:8080"
     environment:
