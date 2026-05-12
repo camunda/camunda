@@ -112,11 +112,7 @@ const VariablesTable: React.FC<Props> = ({
   const rows = filteredVariables.map(
     ({name, value, variableKey, isTruncated}) => {
       const recognition = recognizeDocumentValue(value, Boolean(isTruncated));
-      // truncated-list still needs the regular variable actions (so the user
-      // can "Show all" to load the full payload). single and list fully
-      // replace the action column with document-specific buttons.
-      const hasDocumentActions =
-        recognition.kind === 'single' || recognition.kind === 'list';
+      const hasDocumentActions = recognition.kind !== 'none';
 
       return {
         key: name,
@@ -202,6 +198,7 @@ const VariablesTable: React.FC<Props> = ({
                 <Operations>
                   {hasDocumentActions ? (
                     <DocumentActions
+                      variableKey={variableKey}
                       variableName={name}
                       recognition={recognition}
                     />

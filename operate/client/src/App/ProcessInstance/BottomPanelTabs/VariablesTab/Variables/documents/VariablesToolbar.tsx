@@ -6,14 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Search} from '@carbon/react';
-import {
-  Toolbar,
-  ToolbarSearch,
-  TypeStrip,
-  TypeStripButton,
-  TypeStripDivider,
-} from './styled';
+import {Search, SelectableTag} from '@carbon/react';
+import {Toolbar, ToolbarSearch, FilterChipRow} from './styled';
 
 type VariableTypeFilter = 'all' | 'documents';
 
@@ -35,35 +29,30 @@ const VariablesToolbar: React.FC<Props> = ({
       <ToolbarSearch>
         <Search
           size="sm"
-          labelText="Search variables by name"
-          placeholder="Search variables by name"
+          labelText="Search by name"
+          placeholder="Search by name"
           value={searchTerm}
           onChange={(event) => onSearchChange(event.target.value)}
           onClear={() => onSearchChange('')}
           data-testid="search-variables-input"
         />
       </ToolbarSearch>
-      <TypeStrip role="group" aria-label="Variable type filter">
-        <TypeStripButton
-          type="button"
-          $active={typeFilter === 'all'}
-          aria-pressed={typeFilter === 'all'}
+      <FilterChipRow role="group" aria-label="Variable type filter">
+        <SelectableTag
+          size="sm"
+          text="All"
+          selected={typeFilter === 'all'}
           onClick={() => onTypeFilterChange('all')}
           data-testid="filter-variables-all"
-        >
-          All
-        </TypeStripButton>
-        <TypeStripDivider aria-hidden>·</TypeStripDivider>
-        <TypeStripButton
-          type="button"
-          $active={typeFilter === 'documents'}
-          aria-pressed={typeFilter === 'documents'}
+        />
+        <SelectableTag
+          size="sm"
+          text="Documents"
+          selected={typeFilter === 'documents'}
           onClick={() => onTypeFilterChange('documents')}
           data-testid="filter-variables-documents"
-        >
-          Documents
-        </TypeStripButton>
-      </TypeStrip>
+        />
+      </FilterChipRow>
     </Toolbar>
   );
 };

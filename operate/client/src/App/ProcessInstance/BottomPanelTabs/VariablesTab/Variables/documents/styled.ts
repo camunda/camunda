@@ -32,6 +32,13 @@ const DocumentFileName = styled.span`
   white-space: nowrap;
 `;
 
+const DocumentMeta = styled.span`
+  ${styles.helperText01};
+  color: var(--cds-text-secondary);
+  white-space: nowrap;
+  flex: 0 0 auto;
+`;
+
 const ListSummary = styled.div`
   ${styles.bodyShort01};
   display: flex;
@@ -96,57 +103,57 @@ const PreviewImageContainer = styled.div`
 
 const Toolbar = styled.div`
   display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-04);
+  flex-direction: column;
+  gap: var(--cds-spacing-03);
   padding: var(--cds-spacing-03) var(--cds-spacing-05);
-  border-bottom: 1px solid var(--cds-border-subtle);
   background-color: var(--cds-layer);
-  flex-wrap: nowrap;
 `;
 
 const ToolbarSearch = styled.div`
-  flex: 1 1 auto;
-  min-width: 0;
+  width: 100%;
+
+  /* Carbon's Search defaults to a transparent input with only a bottom border.
+     The rest of Operate's filter inputs use the field token, so match that
+     here for visual consistency. */
+  .cds--search-input {
+    background-color: var(--cds-field);
+  }
 `;
 
-const TypeStrip = styled.div`
-  ${styles.bodyShort01};
+const FilterChipRow = styled.div`
   display: flex;
   align-items: center;
   gap: var(--cds-spacing-02);
   flex: 0 0 auto;
-`;
 
-const TypeStripButton = styled.button<{$active: boolean}>`
-  appearance: none;
-  border: none;
-  background: transparent;
-  padding: var(--cds-spacing-01) var(--cds-spacing-02);
-  cursor: pointer;
-  color: ${({$active}) =>
-    $active ? 'var(--cds-text-primary)' : 'var(--cds-text-secondary)'};
-  font-weight: ${({$active}) => ($active ? 600 : 400)};
-  border-radius: 2px;
+  /* Carbon's SelectableTag defaults to a button-secondary look (black when
+     selected). Override to the softer cool-gray ramp from the Figma design. */
+  .cds--tag--selectable {
+    background-color: var(--cds-tag-background-cool-gray);
+    color: var(--cds-tag-color-cool-gray);
+    border: none;
+  }
 
-  &:hover {
+  .cds--tag--selectable:hover {
+    background-color: var(--cds-tag-hover-cool-gray);
+    color: var(--cds-tag-color-cool-gray);
+  }
+
+  .cds--tag--selectable[aria-pressed='true'] {
+    background-color: var(--cds-layer-active-01);
     color: var(--cds-text-primary);
   }
 
-  &:focus-visible {
-    outline: 2px solid var(--cds-focus);
-    outline-offset: 1px;
+  .cds--tag--selectable[aria-pressed='true']:hover {
+    background-color: var(--cds-layer-hover-01);
   }
-`;
-
-const TypeStripDivider = styled.span`
-  color: var(--cds-text-placeholder);
-  user-select: none;
 `;
 
 export {
   DocumentRow,
   DocumentLabel,
   DocumentFileName,
+  DocumentMeta,
   ListSummary,
   ModalListItem,
   ModalListItemLabel,
@@ -156,7 +163,5 @@ export {
   PreviewImageContainer,
   Toolbar,
   ToolbarSearch,
-  TypeStrip,
-  TypeStripButton,
-  TypeStripDivider,
+  FilterChipRow,
 };

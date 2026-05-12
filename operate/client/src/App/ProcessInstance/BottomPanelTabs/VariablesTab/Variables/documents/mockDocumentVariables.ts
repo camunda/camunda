@@ -7,6 +7,7 @@
  */
 
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {DocumentReference} from './types';
 
 // Prototype-only fixture. Injected client-side into the variables list so the
 // document-recognition UI has data to render without a backend.
@@ -146,16 +147,18 @@ const idDocumentsVariable: Variable = {
 // Truncated list of references — backend chops the variable at the truncation
 // threshold, so the UI can only surface a lower-bound count until the user
 // expands the variable.
-const caseFilesFullDocuments = Array.from({length: 12}).map((_, index) => ({
-  'camunda.document.type': 'camunda',
-  documentId: `doc-case-file-${(index + 1).toString().padStart(2, '0')}`,
-  storeId: 'in-memory',
-  metadata: {
-    fileName: `case-file-${(index + 1).toString().padStart(2, '0')}.pdf`,
-    contentType: 'application/pdf',
-    size: 200000 + index * 1024,
-  },
-}));
+const caseFilesFullDocuments: DocumentReference[] = Array.from({length: 12}).map(
+  (_, index) => ({
+    'camunda.document.type': 'camunda',
+    documentId: `doc-case-file-${(index + 1).toString().padStart(2, '0')}`,
+    storeId: 'in-memory',
+    metadata: {
+      fileName: `case-file-${(index + 1).toString().padStart(2, '0')}.pdf`,
+      contentType: 'application/pdf',
+      size: 200000 + index * 1024,
+    },
+  }),
+);
 const caseFilesFullValue = JSON.stringify(caseFilesFullDocuments);
 const caseFilesVariable: Variable = {
   ...baseFields,
@@ -199,6 +202,15 @@ const MOCK_DOCUMENT_VARIABLES: Variable[] = [
   ...regularVariables,
 ];
 
+// Side-channel for truncated-list variables: maps variableKey to the full
+// document list that the backend would return when expanding the variable.
+//
+// TODO: Replace with API call to GET /v2/variables/{variableKey} (full value)
+// + re-parse the JSON; this stub keeps the prototype self-contained.
+const MOCK_TRUNCATED_FULL_DOCUMENTS: Record<string, DocumentReference[]> = {
+  'mock-doc-case-files': caseFilesFullDocuments,
+};
+
 // Map document IDs to public assets so the preview modal can render real files.
 const MOCK_DOCUMENT_ASSET_PATHS: Record<string, string> = {
   'doc-claim-photo-001': '/nature.jpg',
@@ -210,4 +222,8 @@ const MOCK_DOCUMENT_ASSET_PATHS: Record<string, string> = {
   'doc-proof-of-address': '/EN-Camunda-Compared-to-Alternatives-2024.pdf',
 };
 
-export {MOCK_DOCUMENT_VARIABLES, MOCK_DOCUMENT_ASSET_PATHS};
+export {
+  MOCK_DOCUMENT_VARIABLES,
+  MOCK_DOCUMENT_ASSET_PATHS,
+  MOCK_TRUNCATED_FULL_DOCUMENTS,
+};

@@ -11,9 +11,11 @@ import type {DocumentRecognition} from './types';
 import {
   DocumentLabel,
   DocumentFileName,
+  DocumentMeta,
   DocumentRow,
   ListSummary,
 } from './styled';
+import {formatBytes} from './formatBytes';
 
 type Props = {
   recognition: DocumentRecognition;
@@ -22,6 +24,7 @@ type Props = {
 const DocumentValueCell: React.FC<Props> = ({recognition}) => {
   if (recognition.kind === 'single') {
     const {document} = recognition;
+    const size = formatBytes(document.metadata.size);
     return (
       <DocumentRow>
         <DocumentLabel>
@@ -29,6 +32,7 @@ const DocumentValueCell: React.FC<Props> = ({recognition}) => {
           <DocumentFileName title={document.metadata.fileName}>
             {document.metadata.fileName}
           </DocumentFileName>
+          {size !== '' && <DocumentMeta>{size}</DocumentMeta>}
         </DocumentLabel>
       </DocumentRow>
     );

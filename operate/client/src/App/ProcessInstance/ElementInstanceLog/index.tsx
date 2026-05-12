@@ -14,6 +14,7 @@ import {Stack} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 import {ExecutionCountToggle} from './ExecutionCountToggle';
 import {ElementInstancesTree} from './ElementInstancesTree';
+import {InstanceHistoryToolbar} from './InstanceHistoryToolbar';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {isRequestError} from 'modules/request';
@@ -36,6 +37,9 @@ const Layout: React.FC<{children: React.ReactNode; isPanel: boolean}> =
             </Stack>
           )}
         </PanelHeader>
+        {!modificationsStore.isModificationModeEnabled && (
+          <InstanceHistoryToolbar />
+        )}
         {children}
       </Container>
     );

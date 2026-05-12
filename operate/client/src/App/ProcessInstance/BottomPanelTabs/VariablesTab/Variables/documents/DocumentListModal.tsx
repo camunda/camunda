@@ -43,15 +43,10 @@ const DocumentListModal: React.FC<Props> = ({
         modalHeading={`${documents.length} document${documents.length === 1 ? '' : 's'} in ${variableName}`}
         onRequestClose={onClose}
         passiveModal
-        size="md"
+        size="sm"
       >
         {documents.map((document, index) => {
-          const meta = [
-            document.metadata.contentType,
-            formatBytes(document.metadata.size),
-          ]
-            .filter(Boolean)
-            .join(' • ');
+          const meta = formatBytes(document.metadata.size);
 
           return (
             <ModalListItem
