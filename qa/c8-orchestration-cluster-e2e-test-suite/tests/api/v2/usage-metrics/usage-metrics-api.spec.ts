@@ -231,13 +231,10 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         '//Skipped due to bug 43428: https://github.com/camunda/camunda/issues/43428',
       );
     }
-    // eslint-disable-next-line playwright/no-conditional-in-test
-    if (process.env.FORWARD_COMPAT_MODE === 'true') {
-      test.skip(
-        true,
-        'Skipped in forward-compat mode - auth enforcement changed on main',
-      );
-    }
+    test.skip(
+      process.env.FORWARD_COMPAT_MODE === 'true',
+      'Skipped in forward-compat mode - auth enforcement changed on main',
+    );
     const startOfTodayLocal = new Date();
     startOfTodayLocal.setHours(0, 0, 0, 0);
     const isoLocalMidnight = startOfTodayLocal.toISOString();

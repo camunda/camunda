@@ -277,13 +277,10 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
   test('Resolve related incidents of a process instance without permissions - Forbidden', async ({
     request,
   }) => {
-    // eslint-disable-next-line playwright/no-conditional-in-test
-    if (process.env.FORWARD_COMPAT_MODE === 'true') {
-      test.skip(
-        true,
-        'Skipped in forward-compat mode - auth check order changed on main (404 before 403)',
-      );
-    }
+    test.skip(
+      process.env.FORWARD_COMPAT_MODE === 'true',
+      'Skipped in forward-compat mode - auth check order changed on main (404 before 403)',
+    );
     const token = encode(
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );
