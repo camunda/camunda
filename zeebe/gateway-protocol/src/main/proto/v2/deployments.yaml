@@ -112,6 +112,7 @@ paths:
             application/json:
               schema:
                 type: object
+                additionalProperties: true
         "404":
           description: An RPA resource with the given key was not found.
           content:
