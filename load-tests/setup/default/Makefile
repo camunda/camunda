@@ -2,10 +2,6 @@ namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.10
 enable_optimize ?= __ENABLE_OPTIMIZE__
-# Deadline date baked into resources/namespace.yaml by newLoadTest.sh. The
-# `check-deadline` target compares against today's date and fails fast so we
-# don't deploy into a namespace the TTL cleanup workflow is about to delete.
-deadline_date ?= __DEADLINE_DATE__
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
@@ -85,19 +81,23 @@ install: check-deadline create-namespace create-credentials install-storage inst
 .PHONY: install-stable
 install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter
 
-# Fail fast if the namespace TTL deadline is today or in the past — the TTL
-# cleanup workflow will delete the namespace and undo the install. To extend,
-# either rerun newLoadTest.sh into a new folder or edit `deadline-date` in
-# resources/namespace.yaml and reapply.
+# Fail fast if the namespace TTL deadline (read from resources/namespace.yaml,
+# the single source of truth) is today or in the past — the TTL cleanup
+# workflow will delete the namespace and undo the install. To extend, edit
+# `deadline-date` in resources/namespace.yaml and `make create-namespace`.
 .PHONY: check-deadline
 check-deadline:
-	@today=$$(date +%Y-%m-%d); \
-	if [ "$$today" \> "$(deadline_date)" ] || [ "$$today" = "$(deadline_date)" ]; then \
-		echo "ERROR: namespace deadline-date ($(deadline_date)) is today or earlier (today: $$today)."; \
+	@deadline_date=$$(awk -F'"' '/^[[:space:]]*deadline-date:/ {print $$2; exit}' resources/namespace.yaml); \
+	if [ -z "$$deadline_date" ]; then \
+		echo "ERROR: could not parse deadline-date from resources/namespace.yaml."; \
+		exit 1; \
+	fi; \
+	today=$$(date +%Y-%m-%d); \
+	if [ "$$today" \> "$$deadline_date" ] || [ "$$today" = "$$deadline_date" ]; then \
+		echo "ERROR: namespace deadline-date ($$deadline_date) is today or earlier (today: $$today)."; \
 		echo "       The TTL cleanup workflow will delete this namespace."; \
-		echo "       To proceed, bump the deadline:"; \
-		echo "         kubectl label namespace $(namespace) deadline-date=YYYY-MM-DD --overwrite"; \
-		echo "       and update resources/namespace.yaml to match, or rerun newLoadTest.sh into a fresh folder."; \
+		echo "       To extend, edit deadline-date in resources/namespace.yaml and run:"; \
+		echo "         make create-namespace"; \
 		exit 1; \
 	fi
 
