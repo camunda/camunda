@@ -220,10 +220,15 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     ElasticsearchUtil.deleteAsync(deleteRequest, archiverExecutor, esClient)
         .whenComplete(
             (response, e) -> {
+              Throwable failure = e;
               try {
                 final var result = handleResponse(response, e, sourceIndexName, "delete");
+                if (result.isLeft()) {
+                  failure = result.getLeft();
+                }
                 result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
               } catch (final Exception unexpected) {
+                failure = unexpected;
                 LOGGER.error(
                     "Unexpected error in delete callback for index [{}]",
                     sourceIndexName,
@@ -239,9 +244,9 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                   LOGGER.warn(
                       "Failed to record delete timer for index [{}]", sourceIndexName, timerEx);
                 }
-                if (deleteFuture.isCompletedExceptionally()) {
+                if (deleteFuture.isCompletedExceptionally() && failure != null) {
                   try {
-                    trackMetricForDeleteFailures(processInstanceKeys, e);
+                    trackMetricForDeleteFailures(processInstanceKeys, failure);
                   } catch (final Exception metricEx) {
                     LOGGER.warn("Failed to record delete failure metric", metricEx);
                   }
@@ -269,10 +274,15 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     ElasticsearchUtil.reindexAsync(archiverExecutor, reindexRequest, esClient)
         .whenComplete(
             (response, e) -> {
+              Throwable failure = e;
               try {
                 final var result = handleResponse(response, e, sourceIndexName, "reindex");
+                if (result.isLeft()) {
+                  failure = result.getLeft();
+                }
                 result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
               } catch (final Exception unexpected) {
+                failure = unexpected;
                 LOGGER.error(
                     "Unexpected error in reindex callback for index [{}]",
                     sourceIndexName,
@@ -288,9 +298,9 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                   LOGGER.warn(
                       "Failed to record reindex timer for index [{}]", sourceIndexName, timerEx);
                 }
-                if (reindexFuture.isCompletedExceptionally()) {
+                if (reindexFuture.isCompletedExceptionally() && failure != null) {
                   try {
-                    trackMetricForReindexFailures(processInstanceKeys, e);
+                    trackMetricForReindexFailures(processInstanceKeys, failure);
                   } catch (final Exception metricEx) {
                     LOGGER.warn("Failed to record reindex failure metric", metricEx);
                   }
