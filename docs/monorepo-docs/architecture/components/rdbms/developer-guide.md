@@ -373,6 +373,101 @@ whether the change has already been applied and mark it as ran if yes. For examp
 
 ---
 
+### Rolling-upgrade-compatible schema evolution
+
+During a rolling upgrade, some nodes still run version **n-1** while others have already applied
+the schema for version **n**. For RDBMS secondary storage to keep working throughout the mixed-
+version window, every schema change introduced in version n must remain **write-compatible with
+records produced by version n-1**.
+
+#### Goal
+
+Schema changes in validated RDBMS upgrade changesets must be **expand-only** (additive):
+
+- New tables and new nullable columns can be added.
+- Existing tables, columns, and constraints must not be removed or tightened.
+- Destructive or contract-breaking changes are not allowed by the enforced rules.
+
+#### Allowlist of safe operations
+
+Only the following Liquibase change types are permitted in a validated changeset:
+
+| Change type  | Notes                                                                              |
+|--------------|------------------------------------------------------------------------------------|
+| `createTable`| New tables have no n-1 write paths; any column definition is acceptable.           |
+| `addColumn`  | **Column must be nullable.** n-1 nodes do not know about the column and will not supply a value. |
+| `createIndex`| A new index never rejects existing writes.                                         |
+| `dropIndex`  | Removing an index does not affect writes (only read performance).                  |
+| `sql` (raw)  | Used for database-specific partial index creation (`CREATE INDEX WHERE …`). Safe from a rolling-upgrade perspective but must be manually reviewed. |
+
+All other operations are **forbidden by default** (allowlist approach).
+
+#### Forbidden operations
+
+| Operation                              | Reason                                                        |
+|----------------------------------------|---------------------------------------------------------------|
+| `dropColumn`                           | Breaks writes from n-1 nodes that still include the column.   |
+| `renameColumn`                         | Breaks writes from n-1 nodes that reference the old name.     |
+| `modifyDataType`                       | Type narrowing or incompatible changes break n-1 writes.      |
+| `addNotNullConstraint` on existing col | Rejects NULL writes from n-1 nodes.                           |
+| `addUniqueConstraint` on existing col  | Can reject duplicate writes from n-1 nodes.                   |
+| `addForeignKeyConstraint`              | Can reject orphaned writes from n-1 nodes.                    |
+| Any other change type                  | Not in the allowlist; must be explicitly reviewed.            |
+
+#### Rule: new columns added to existing tables must be nullable
+
+When adding a column to an **existing** table with `addColumn`, the column **must be nullable**.
+n-1 exporters do not know about the new column and will not include it in their writes. If the
+column is NOT NULL, the database will reject those writes.
+
+❌ **Wrong** – breaks n-1 writes:
+
+```xml
+<addColumn tableName="${prefix}PROCESS_INSTANCE">
+  <column name="NEW_FIELD" type="VARCHAR(100)">
+    <constraints nullable="false"/>  <!-- FORBIDDEN -->
+  </column>
+</addColumn>
+```
+
+✅ **Correct** – compatible with n-1 writes:
+
+```xml
+<addColumn tableName="${prefix}PROCESS_INSTANCE">
+  <column name="NEW_FIELD" type="VARCHAR(100)"/>
+</addColumn>
+```
+
+#### Rule: destructive changes are forbidden by validator rules
+
+If you need to remove or rename a column, or add a tightening constraint, you **must not** do it
+in a validated upgrade changeset. The validator enforces expand-only changes and fails the build
+when forbidden operations are present.
+
+#### Automated validation
+
+The rolling-upgrade compatibility rules are enforced automatically by
+`RollingUpgradeCompatibilityValidator` (in `db/rdbms-schema`). The validator:
+
+1. Parses validated Liquibase upgrade changeset files.
+2. Checks each change against the allowlist.
+3. Fails with an actionable error message for each violation.
+
+Validation is executed in the build path by `LiquibaseScriptGenerator` (Maven `process-classes`
+phase), so enforcement is always on for validated upgrade changesets. The unit test
+(`RollingUpgradeCompatibilityValidatorTest`) additionally verifies rule behavior and validates the
+current release changeset file. Historical changeset files from prior releases pre-date the
+guardrail and are exempt.
+
+**Run it locally:**
+
+```bash
+./mvnw test -pl db/rdbms-schema -Dtest=RollingUpgradeCompatibilityValidatorTest \
+  -DskipTests=false -Dquickly
+```
+
+---
+
 ### Data types
 
 Use the following Liquibase-level types which are mapped correctly across all supported databases:
@@ -825,4 +920,3 @@ If the entity should generate audit log entries, implement `AuditLogTransformer`
 `zeebe/exporter-common/…/auditlog/transformers/` and register it in
 `AuditLogTransformerRegistry`. The `RdbmsExporterWrapper` will automatically pick it up when
 `auditLog.enabled` is `true`.
-
