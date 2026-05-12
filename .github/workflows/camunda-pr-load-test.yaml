@@ -256,12 +256,11 @@ jobs:
             const results = safeJsonParse(process.env.PR_RESULTS_JSON, 'Current');
             const dailyResults = safeJsonParse(process.env.DAILY_RESULTS_JSON, 'Daily');
 
-            // Some metrics (counts) scale linearly with run duration; others (rates,
-            // percentages) are duration-invariant. optimal.json encodes the difference:
-            // counts use `per-second`, everything else uses `expected`.
+            // `expected` and `per-second` are both duration-invariant comparison values;
+            // `per-second` is kept as a semantic marker for metrics expressed as a rate.
             const optimalFor = (spec) => {
               if (spec.expected != null) return spec.expected;
-              if (spec['per-second'] != null) return spec['per-second'] * durationSeconds;
+              if (spec['per-second'] != null) return spec['per-second'];
               return null;
             };
 

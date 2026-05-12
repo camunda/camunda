@@ -71,15 +71,19 @@ graph TD
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
-    PR -- "after 15min wait" --> PROFILE
-    PR -- "metrics + comparison<br/>vs daily-on-main" --> METRICS
+    PR -- "profile path:<br/>after 15min wait" --> PROFILE
+    PR -- "metrics path:<br/>after 1h wait,<br/>compare vs daily-on-main" --> METRICS
     ADHOC --> CORE
     ADHOC --> RELEASE
 
     CORE -- "newLoadTest.sh + make install" --> MAKEFILE
     MAKEFILE -- "Helm install" --> GKE
     PROFILE -- "async-profiler" --> GKE
-    VERIFY -- "kubectl wait + delete" --> GKE
+    VERIFY -- "kubectl wait" --> GKE
+    VERIFY -- "delegate cleanup" --> DELETE
+    PR -- "auto cleanup after<br/>metrics comment posts" --> DELETE
+    PR -- "cleanup on label removal / PR close" --> DELETE
+    DELETE -- "kubectl delete ns" --> GKE
     CLEANUP -- "kubectl delete expired ns" --> GKE
 ```
 
