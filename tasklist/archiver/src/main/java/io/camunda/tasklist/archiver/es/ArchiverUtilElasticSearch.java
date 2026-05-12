@@ -24,7 +24,6 @@ import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -64,24 +63,20 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
 
     return sendDeleteRequest(deleteRequest)
         .handle((response, e) -> handleResponse(response, e, sourceIndexName, "delete"))
-        .whenComplete(
-            (result, e) -> {
+        .thenCompose(
+            result -> {
               try {
                 startTimer.stop(getArchiverDeleteQueryTimer());
-              } catch (final Exception ex) {
-                LOGGER.warn("Failed to record delete timer for index [{}]", sourceIndexName, ex);
-              }
-            })
-        .<Long>thenCompose(this::unwrapEither)
-        .whenComplete(
-            (val, e) -> {
-              if (e != null) {
-                try {
-                  trackMetricForDeleteFailures(processInstanceKeys, unwrapCompletion(e));
-                } catch (final Exception ex) {
-                  LOGGER.warn("Failed to record delete failure metric", ex);
+                if (result.isLeft()) {
+                  trackMetricForDeleteFailures(processInstanceKeys, result.getLeft());
                 }
+              } catch (final Throwable ex) {
+                LOGGER.warn("Failed to record metric", ex);
               }
+              if (result.isLeft()) {
+                return CompletableFuture.failedFuture(result.getLeft());
+              }
+              return CompletableFuture.completedFuture(result.get());
             });
   }
 
@@ -100,24 +95,20 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
     final var startTimer = Timer.start();
     return sendReindexRequest(reindexRequest)
         .handle((response, e) -> handleResponse(response, e, sourceIndexName, "reindex"))
-        .whenComplete(
-            (result, e) -> {
+        .thenCompose(
+            result -> {
               try {
                 startTimer.stop(getArchiverReindexQueryTimer());
-              } catch (final Exception ex) {
-                LOGGER.warn("Failed to record reindex timer for index [{}]", sourceIndexName, ex);
-              }
-            })
-        .<Long>thenCompose(this::unwrapEither)
-        .whenComplete(
-            (val, e) -> {
-              if (e != null) {
-                try {
-                  trackMetricForReindexFailures(processInstanceKeys, unwrapCompletion(e));
-                } catch (final Exception ex) {
-                  LOGGER.warn("Failed to record reindex failure metric", ex);
+                if (result.isLeft()) {
+                  trackMetricForReindexFailures(processInstanceKeys, result.getLeft());
                 }
+              } catch (final Throwable ex) {
+                LOGGER.warn("Failed to record metric", ex);
               }
+              if (result.isLeft()) {
+                return CompletableFuture.failedFuture(result.getLeft());
+              }
+              return CompletableFuture.completedFuture(result.get());
             });
   }
 
@@ -169,18 +160,6 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
         .setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
         .setAbortOnVersionConflict(false)
         .setSlices(AUTO_SLICES);
-  }
-
-  private <T> CompletableFuture<T> unwrapEither(final Either<Throwable, T> result) {
-    if (result.isLeft()) {
-      return CompletableFuture.failedFuture(result.getLeft());
-    }
-    return CompletableFuture.completedFuture(result.get());
-  }
-
-  /** Strips the {@link CompletionException} wrapper added by {@code thenCompose}. */
-  private static Throwable unwrapCompletion(final Throwable e) {
-    return e instanceof CompletionException && e.getCause() != null ? e.getCause() : e;
   }
 
   private Either<Throwable, Long> handleResponse(

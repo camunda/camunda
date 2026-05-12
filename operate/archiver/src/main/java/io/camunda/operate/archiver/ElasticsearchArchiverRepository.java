@@ -37,7 +37,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -219,26 +218,21 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     final var startTimer = Timer.start();
     return ElasticsearchUtil.deleteAsync(deleteRequest, archiverExecutor, esClient)
         .handle((response, e) -> handleResponse(response, e, sourceIndexName, "delete"))
-        .whenComplete(
-            (result, e) -> {
+        .thenCompose(
+            result -> {
               try {
                 startTimer.stop(getArchiverDeleteQueryTimer());
-              } catch (final Exception ex) {
-                LOGGER.warn("Failed to record delete timer for index [{}]", sourceIndexName, ex);
-              }
-            })
-        .<Long>thenCompose(this::unwrapEither)
-        .whenComplete(
-            (val, e) -> {
-              if (e != null) {
-                try {
-                  trackMetricForDeleteFailures(processInstanceKeys, unwrapCompletion(e));
-                } catch (final Exception ex) {
-                  LOGGER.warn("Failed to record delete failure metric", ex);
+                if (result.isLeft()) {
+                  trackMetricForDeleteFailures(processInstanceKeys, result.getLeft());
                 }
+              } catch (final Throwable ex) {
+                LOGGER.warn("Failed to record metric", ex);
               }
-            })
-        .thenApply(ok -> null);
+              if (result.isLeft()) {
+                return CompletableFuture.failedFuture(result.getLeft());
+              }
+              return CompletableFuture.completedFuture(null);
+            });
   }
 
   @Override
@@ -256,26 +250,21 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     final var startTimer = Timer.start();
     return ElasticsearchUtil.reindexAsync(archiverExecutor, reindexRequest, esClient)
         .handle((response, e) -> handleResponse(response, e, sourceIndexName, "reindex"))
-        .whenComplete(
-            (result, e) -> {
+        .thenCompose(
+            result -> {
               try {
                 startTimer.stop(getArchiverReindexQueryTimer());
-              } catch (final Exception ex) {
-                LOGGER.warn("Failed to record reindex timer for index [{}]", sourceIndexName, ex);
-              }
-            })
-        .<Long>thenCompose(this::unwrapEither)
-        .whenComplete(
-            (val, e) -> {
-              if (e != null) {
-                try {
-                  trackMetricForReindexFailures(processInstanceKeys, unwrapCompletion(e));
-                } catch (final Exception ex) {
-                  LOGGER.warn("Failed to record reindex failure metric", ex);
+                if (result.isLeft()) {
+                  trackMetricForReindexFailures(processInstanceKeys, result.getLeft());
                 }
+              } catch (final Throwable ex) {
+                LOGGER.warn("Failed to record metric", ex);
               }
-            })
-        .thenApply(ok -> null);
+              if (result.isLeft()) {
+                return CompletableFuture.failedFuture(result.getLeft());
+              }
+              return CompletableFuture.completedFuture(null);
+            });
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest(final AggregationBuilder agg) {
@@ -487,18 +476,6 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     final Throwable cause = e.getCause() != null ? e.getCause() : e;
     metrics.recordCounts(
         Metrics.COUNTER_NAME_DELETE_FAILURES, 1, "exception", cause.getClass().getSimpleName());
-  }
-
-  private <T> CompletableFuture<T> unwrapEither(final Either<Throwable, T> result) {
-    if (result.isLeft()) {
-      return CompletableFuture.failedFuture(result.getLeft());
-    }
-    return CompletableFuture.completedFuture(result.get());
-  }
-
-  /** Strips the {@link CompletionException} wrapper added by {@code thenCompose}. */
-  private static Throwable unwrapCompletion(final Throwable e) {
-    return e instanceof CompletionException && e.getCause() != null ? e.getCause() : e;
   }
 
   private Either<Throwable, Long> handleResponse(
