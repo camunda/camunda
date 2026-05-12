@@ -41,7 +41,7 @@ public class OperateProperties {
 
   private String tasklistUrl = null;
 
-  @Value("${camunda.operate.internal.version.current}")
+  @Value("${camunda.operate.internal.version.current:unknown-version}")
   private String version = UNKNOWN_VERSION;
 
   @NestedConfigurationProperty

@@ -12,5 +12,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
 
 @ConfigurationProperties(TasklistProperties.PREFIX)
-@PropertySource("classpath:tasklist-version.properties")
+@PropertySource(value = "classpath:tasklist-version.properties", ignoreResourceNotFound = true)
 public class LegacyTasklistProperties extends TasklistProperties {}

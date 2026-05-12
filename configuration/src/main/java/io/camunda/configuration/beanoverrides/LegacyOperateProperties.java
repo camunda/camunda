@@ -12,5 +12,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
 
 @ConfigurationProperties(OperateProperties.PREFIX)
-@PropertySource("classpath:operate-version.properties")
+@PropertySource(value = "classpath:operate-version.properties", ignoreResourceNotFound = true)
 public class LegacyOperateProperties extends OperateProperties {}
