@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.exporter.metrics;
 
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
@@ -17,8 +16,7 @@ public enum VariableMetricsDoc implements ExtendedMeterDocumentation {
 
   /** Total bytes of variable values written on VARIABLE:CREATED events. */
   VARIABLE_CREATED_BYTES {
-    private static final KeyName[] KEY_NAMES =
-        new KeyName[] {PartitionKeyNames.PARTITION, VariableKeyNames.BPMN_PROCESS_ID};
+    private static final KeyName[] KEY_NAMES = new KeyName[] {VariableKeyNames.BPMN_PROCESS_ID};
 
     @Override
     public String getDescription() {

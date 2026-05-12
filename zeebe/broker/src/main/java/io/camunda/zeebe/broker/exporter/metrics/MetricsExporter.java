@@ -129,8 +129,7 @@ public class MetricsExporter implements Exporter {
       return;
     }
     final var value = (VariableRecordValue) record.getValue();
-    variableMetrics.recordVariableCreated(
-        value.getBpmnProcessId(), String.valueOf(record.getPartitionId()), value.getValueLength());
+    variableMetrics.recordVariableCreated(value.getBpmnProcessId(), value.getValueLength());
   }
 
   private void handleProcessInstanceRecord(final Record<?> record, final long recordKey) {
