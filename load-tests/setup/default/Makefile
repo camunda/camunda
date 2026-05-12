@@ -2,6 +2,10 @@ namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.10
 enable_optimize ?= __ENABLE_OPTIMIZE__
+# Deadline date baked into resources/namespace.yaml by newLoadTest.sh. The
+# `check-deadline` target compares against today's date and fails fast so we
+# don't deploy into a namespace the TTL cleanup workflow is about to delete.
+deadline_date ?= __DEADLINE_DATE__
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
@@ -76,10 +80,42 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 all: install
 
 .PHONY: install
-install: install-storage create-credentials install-platform install-load-test install-elasticsearch-exporter
+install: check-deadline create-namespace create-credentials install-storage install-platform install-load-test install-elasticsearch-exporter
 
 .PHONY: install-stable
-install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: check-deadline create-namespace create-credentials install-storage install-platform-stable install-load-test install-elasticsearch-exporter
+
+# Fail fast if the namespace TTL deadline is today or in the past — the TTL
+# cleanup workflow will delete the namespace and undo the install. To extend,
+# either rerun newLoadTest.sh into a new folder or edit `deadline-date` in
+# resources/namespace.yaml and reapply.
+.PHONY: check-deadline
+check-deadline:
+	@today=$$(date +%Y-%m-%d); \
+	if [ "$$today" \> "$(deadline_date)" ] || [ "$$today" = "$(deadline_date)" ]; then \
+		echo "ERROR: namespace deadline-date ($(deadline_date)) is today or earlier (today: $$today)."; \
+		echo "       The TTL cleanup workflow will delete this namespace."; \
+		echo "       To proceed, bump the deadline:"; \
+		echo "         kubectl label namespace $(namespace) deadline-date=YYYY-MM-DD --overwrite"; \
+		echo "       and update resources/namespace.yaml to match, or rerun newLoadTest.sh into a fresh folder."; \
+		exit 1; \
+	fi
+
+# Apply the rendered namespace manifest. Idempotent: the same manifest applies
+# cleanly whether the namespace exists or not, so reruns of `make install`
+# after a TTL deletion recreate the namespace with the same labels and AZ.
+.PHONY: create-namespace
+create-namespace:
+	@echo "Applying namespace manifest for $(namespace)..."
+	kubectl apply -f resources/namespace.yaml
+
+# Apply the camunda-credentials secret. Idempotent: rerunning after a TTL
+# deletion reapplies the SAME credentials, so the orchestration secret in
+# load-test-values.yaml stays in sync with the live secret.
+.PHONY: create-credentials
+create-credentials:
+	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
+	kubectl apply -n $(namespace) -f resources/camunda-credentials.yaml
 
 # Install secondary storage based on configuration (PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, OpenSearch)
 .PHONY: install-storage
@@ -119,12 +155,6 @@ else ifeq ($(secondary_storage),opensearch)
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
-
-# Create camunda-credentials secret
-.PHONY: create-credentials
-create-credentials:
-	@echo "Creating camunda-credentials secret for namespace $(namespace)..."
-	./createCredsLoadTest.sh $(namespace)
 
 # Install Elasticsearch Prometheus exporter if secondary_storage is elasticsearch
 .PHONY: install-elasticsearch-exporter
@@ -265,3 +295,5 @@ else ifeq ($(secondary_storage),opensearch)
 	-helm --namespace $(namespace) uninstall opensearch
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch
 endif
+	@echo "Deleting namespace $(namespace) (async, no wait)..."
+	-kubectl delete -f resources/namespace.yaml --wait=false --ignore-not-found

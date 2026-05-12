@@ -1,3 +1,6 @@
 
 #!!! DO NOT ADD CREDENTIALS TO THE REPO !!!
 cloudcredentials.yaml
+# Rendered per-namespace credentials manifest (random secrets baked in by newLoadTest.sh).
+# Pattern matches only namespace folders (always `c8-*`), not the default/ template.
+c8-*/resources/camunda-credentials.yaml
