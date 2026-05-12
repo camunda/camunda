@@ -13,11 +13,13 @@ import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.AuthenticationConfigurationResponse;
 import io.camunda.gateway.protocol.model.CloudConfigurationResponse;
+import io.camunda.gateway.protocol.model.CloudStage;
 import io.camunda.gateway.protocol.model.ComponentsConfigurationResponse;
 import io.camunda.gateway.protocol.model.DeploymentConfigurationResponse;
 import io.camunda.gateway.protocol.model.JobMetricsConfigurationResponse;
 import io.camunda.gateway.protocol.model.SystemConfigurationResponse;
 import io.camunda.gateway.protocol.model.UsageMetricsResponse;
+import io.camunda.gateway.protocol.model.WebappComponent;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -104,7 +106,10 @@ public class SystemController {
 
   private ComponentsConfigurationResponse buildComponentsConfiguration() {
     return ComponentsConfigurationResponse.Builder.create()
-        .active(webappConfiguration.getActiveComponents())
+        .active(
+            webappConfiguration.getActiveComponents().stream()
+                .map(WebappComponent::fromValue)
+                .toList())
         .build();
   }
 
@@ -148,7 +153,10 @@ public class SystemController {
     return CloudConfigurationResponse.Builder.create()
         .organizationId(organizationId)
         .clusterId(clusterId)
-        .stage(webappConfiguration.getCloud().getStage())
+        .stage(
+            webappConfiguration.getCloud().getStage() != null
+                ? CloudStage.fromValue(webappConfiguration.getCloud().getStage())
+                : null)
         .mixpanelToken(webappConfiguration.getCloud().getMixpanelToken())
         .mixpanelAPIHost(webappConfiguration.getCloud().getMixpanelApiHost())
         .build();

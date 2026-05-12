@@ -250,7 +250,7 @@ components:
           description: List of webapp components whose UI is enabled in this deployment.
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/WebappComponent'
           example: ["operate", "tasklist"]
 
     DeploymentConfigurationResponse:
@@ -310,25 +310,42 @@ components:
           description: The SaaS organization ID, if applicable.
           type: string
           nullable: true
-          example: null
+          example: "org-123456"
         clusterId:
           description: The SaaS cluster ID, if applicable.
           type: string
           nullable: true
-          example: null
+          example: "cluster-abc"
         stage:
-          description: The cloud deployment stage (e.g., prod, int).
-          type: string
+          description: The cloud deployment stage.
           nullable: true
-          example: null
+          allOf:
+            - $ref: '#/components/schemas/CloudStage'
+          example: "prod"
         mixpanelToken:
           description: The Mixpanel analytics token for the cloud UI.
           type: string
           nullable: true
-          example: null
+          example: "abc123token"
         mixpanelAPIHost:
           description: The Mixpanel API host URL.
           type: string
           nullable: true
-          example: null
+          example: "https://api.mixpanel.com"
+
+    WebappComponent:
+      description: A Camunda webapp component name.
+      type: string
+      enum:
+        - operate
+        - tasklist
+        - admin
+
+    CloudStage:
+      description: The cloud deployment stage.
+      type: string
+      enum:
+        - dev
+        - int
+        - prod
 
