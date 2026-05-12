@@ -221,12 +221,16 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>configuration</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-testcontainer</artifactId>
     </dependency>
   </dependencies>
 </project>

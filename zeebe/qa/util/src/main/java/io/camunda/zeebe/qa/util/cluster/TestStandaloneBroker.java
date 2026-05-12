@@ -21,6 +21,7 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
+import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
@@ -77,8 +78,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         "org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration,"
             + "org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration");
 
-    //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class).withAdditionalProfile(Profile.BROKER);
+    withAdditionalProfile(Profile.BROKER);
 
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthorizations().setEnabled(false);
@@ -160,6 +160,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withProperty(
         "zeebe.broker.gateway.enable",
         property("zeebe.broker.gateway.enable", Boolean.class, isGatewayEnabled));
+    // Flatten the in-memory unified config into camunda.* properties at the latest possible point,
+    // so every withClusterConfig/withDataConfig/... call made up to now is captured. Refreshable
+    // so that fields cleared between stop/start (e.g. an exporter removed) don't remain.
+    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
     return super.createSpringBuilder();
   }
 
@@ -335,8 +339,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   /**
    * Convenience method for setting the secondary storage type in the unified configuration.
-   * Additionally, the environment variable camunda.data.secondary-storage.type is set to ensure
-   * that ConditionalOnSecondaryStorageType behaves as expected
    *
    * @param type the secondary storage type
    * @return itself for chaining
@@ -344,7 +346,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public TestStandaloneBroker withSecondaryStorageType(final SecondaryStorageType type) {
     unifiedConfig.getData().getSecondaryStorage().setType(type);
-    withProperty("camunda.data.secondary-storage.type", type.name());
     return this;
   }
 

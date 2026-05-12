@@ -24,8 +24,10 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
@@ -47,6 +49,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private final Collection<String> additionalProfiles;
   private final Collection<ApplicationContextInitializer> additionalInitializers;
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
+  private final Set<String> refreshableKeys = new HashSet<>();
 
   public TestSpringApplication(final Class<?>... springApplications) {
     this(new HashMap<>(), new HashMap<>(), new ArrayList<>(), springApplications);
@@ -166,6 +169,22 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   @Override
   public T withAdditionalProfile(final String profile) {
     additionalProfiles.add(profile);
+    return self();
+  }
+
+  /**
+   * Replaces a set of properties that should be re-derived from in-memory builder state on every
+   * {@link #start()}. Keys set in a previous call are removed before the new {@code properties} are
+   * applied, so fields that disappear between restarts (e.g. an exporter cleared from the unified
+   * config) do not remain in Spring's property sources. Properties added via {@link #withProperty}
+   * or {@link io.camunda.zeebe.qa.util.cluster.TestApplication#withAdditionalProperties} are not
+   * tracked here and persist across restarts as before.
+   */
+  public T withRefreshableProperties(final Map<String, Object> properties) {
+    refreshableKeys.forEach(propertyOverrides::remove);
+    refreshableKeys.clear();
+    propertyOverrides.putAll(properties);
+    refreshableKeys.addAll(properties.keySet());
     return self();
   }
 
