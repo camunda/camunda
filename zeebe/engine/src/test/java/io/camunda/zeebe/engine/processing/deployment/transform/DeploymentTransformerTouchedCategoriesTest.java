@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.variable.EventApplyingStateWriter;
@@ -30,6 +31,7 @@ import java.time.InstantSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 
 /**
  * Verifies that {@link DeploymentTransformer#transform} surfaces the categories of every
@@ -48,6 +50,8 @@ final class DeploymentTransformerTouchedCategoriesTest {
   private MutableProcessingState processingState;
 
   private DeploymentTransformer deploymentTransformer;
+
+  @Mock private ProcessDefinitionMetrics processDefinitionMetrics;
 
   @BeforeEach
   void beforeEach() {
@@ -78,7 +82,8 @@ final class DeploymentTransformerTouchedCategoriesTest {
                 .withValidatorResultsOutputMaxSize(1000)
                 .build(),
             InstantSource.system(),
-            ExpressionLanguageMetrics.noop());
+            ExpressionLanguageMetrics.noop(),
+            processDefinitionMetrics);
   }
 
   @Test

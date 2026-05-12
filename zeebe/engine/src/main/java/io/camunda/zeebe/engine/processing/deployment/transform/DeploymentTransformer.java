@@ -117,7 +117,8 @@ public final class DeploymentTransformer {
                     .flatMap(ok -> writeResourceRecords(deploymentEvent, rwt)))
         .mapLeft(
             failure ->
-                new DeploymentTransformationFailure(failure.getMessage(), touchedCategories));
+                new DeploymentTransformationFailure(
+                    failure.getMessage(), EnumSet.copyOf(touchedCategories)));
   }
 
   private List<ResourceWithTransformer> resolveTransformers(
