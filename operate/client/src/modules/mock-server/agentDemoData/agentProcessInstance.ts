@@ -38,6 +38,24 @@ import {
   MOCK_AGENT_INNER_INSTANCE_4_KEY_COMPLETED,
   MOCK_AGENT_INNER_INSTANCE_5_KEY_COMPLETED,
   MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_COMPLETED,
+  MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+  MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+  MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+  MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_1,
+  MOCK_AGENT_INNER_INSTANCE_1_KEY_MULTIPLE_1,
+  MOCK_AGENT_INNER_INSTANCE_2_KEY_MULTIPLE_1,
+  MOCK_AGENT_INNER_INSTANCE_3_KEY_MULTIPLE_1,
+  MOCK_AGENT_INNER_INSTANCE_4_KEY_MULTIPLE_1,
+  MOCK_AGENT_INNER_INSTANCE_5_KEY_MULTIPLE_1,
+  MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_MULTIPLE_1,
+  MOCK_USER_FEEDBACK_KEY_MULTIPLE,
+  MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
+  MOCK_AGENT_INNER_INSTANCE_1_KEY_MULTIPLE_2,
+  MOCK_AGENT_INNER_INSTANCE_2_KEY_MULTIPLE_2,
+  MOCK_AGENT_INNER_INSTANCE_3_KEY_MULTIPLE_2,
+  MOCK_AGENT_INNER_INSTANCE_4_KEY_MULTIPLE_2,
+  MOCK_AGENT_INNER_INSTANCE_5_KEY_MULTIPLE_2,
+  MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_MULTIPLE_2,
 } from './constants';
 
 // Extended type for mock data — flowScopeKey is not in the API type but needed for scope filtering
@@ -1033,3 +1051,328 @@ export const MOCK_AGENT_VARIABLES_COMPLETED: Variable[] = [
 ];
 
 export const MOCK_AGENT_JOBS_COMPLETED: Job[] = [];
+
+// State 4 — Multiple element instances. Two AI_Agent runs separated by a
+// User_Feedback step that returned userSatisfied = false.
+
+export const MOCK_AGENT_PROCESS_INSTANCE_MULTIPLE: ProcessInstance = {
+  processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+  processDefinitionName: 'AI Agent Chat With Tools',
+  processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+  processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
+  tenantId: '<default>',
+  state: 'ACTIVE',
+  startDate: '2026-03-26T14:30:00.000Z',
+  endDate: null,
+  hasIncident: false,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
+};
+
+export const MOCK_AGENT_PROCESS_DEFINITION_MULTIPLE: ProcessDefinition = {
+  name: 'AI Agent Chat With Tools',
+  processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+  resourceName: 'ai-agent-chat-with-tools.bpmn',
+  version: 1,
+  versionTag: null,
+  tenantId: '<default>',
+  hasStartForm: false,
+};
+
+// Rebinding helpers — point cloned element-instances at the MULTIPLE keyspace.
+type RebindMap = Record<string, string>;
+const rebindElementInstances = (
+  source: MockElementInstance[],
+  processKey: string,
+  definitionKey: string,
+  keyRebinds: RebindMap,
+): MockElementInstance[] =>
+  source.map((el) => ({
+    ...el,
+    processInstanceKey: processKey,
+    processDefinitionKey: definitionKey,
+    elementInstanceKey:
+      keyRebinds[el.elementInstanceKey] ?? el.elementInstanceKey,
+    flowScopeKey: keyRebinds[el.flowScopeKey] ?? el.flowScopeKey,
+  }));
+
+const RUN_1_REBINDS: RebindMap = {
+  [MOCK_AGENT_INSTANCE_KEY_COMPLETED]: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+  [MOCK_AGENT_SUBPROCESS_KEY_COMPLETED]: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_1,
+  [MOCK_AGENT_INNER_INSTANCE_1_KEY_COMPLETED]:
+    MOCK_AGENT_INNER_INSTANCE_1_KEY_MULTIPLE_1,
+  [MOCK_AGENT_INNER_INSTANCE_2_KEY_COMPLETED]:
+    MOCK_AGENT_INNER_INSTANCE_2_KEY_MULTIPLE_1,
+  [MOCK_AGENT_INNER_INSTANCE_3_KEY_COMPLETED]:
+    MOCK_AGENT_INNER_INSTANCE_3_KEY_MULTIPLE_1,
+  [MOCK_AGENT_INNER_INSTANCE_4_KEY_COMPLETED]:
+    MOCK_AGENT_INNER_INSTANCE_4_KEY_MULTIPLE_1,
+  [MOCK_AGENT_INNER_INSTANCE_5_KEY_COMPLETED]:
+    MOCK_AGENT_INNER_INSTANCE_5_KEY_MULTIPLE_1,
+  [MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_COMPLETED]:
+    MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_MULTIPLE_1,
+  // Keep child element-instance keys disjoint from other scenarios.
+  '6451799813685001': '7451799813685001', // StartEvent
+  '6451799813685005': '7451799813685005', // Gateway pass 1
+  '6451799813685020': '7451799813685020', // ListUsers
+  '6451799813685025': '7451799813685025', // LoadUserByID
+  '6451799813685030': '7451799813685030', // GetDateAndTime
+  '6451799813685035': '7451799813685035', // AskHumanToSendEmail
+};
+
+const RUN_2_REBINDS: RebindMap = {
+  [MOCK_AGENT_INSTANCE_KEY_ACTIVE]: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+  [MOCK_AGENT_SUBPROCESS_KEY_ACTIVE]: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
+  [MOCK_AGENT_INNER_INSTANCE_1_KEY_ACTIVE]:
+    MOCK_AGENT_INNER_INSTANCE_1_KEY_MULTIPLE_2,
+  [MOCK_AGENT_INNER_INSTANCE_2_KEY_ACTIVE]:
+    MOCK_AGENT_INNER_INSTANCE_2_KEY_MULTIPLE_2,
+  [MOCK_AGENT_INNER_INSTANCE_3_KEY_ACTIVE]:
+    MOCK_AGENT_INNER_INSTANCE_3_KEY_MULTIPLE_2,
+  [MOCK_AGENT_INNER_INSTANCE_4_KEY_ACTIVE]:
+    MOCK_AGENT_INNER_INSTANCE_4_KEY_MULTIPLE_2,
+  [MOCK_AGENT_INNER_INSTANCE_5_KEY_ACTIVE]:
+    MOCK_AGENT_INNER_INSTANCE_5_KEY_MULTIPLE_2,
+  [MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_ACTIVE]:
+    MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_MULTIPLE_2,
+  // StartEvent + Gateway pass 1 are NOT in Run 2 (Run 2 starts after the user-feedback loopback)
+  // so those entries from ACTIVE are filtered out below before rebinding.
+};
+
+const run1Cloned = rebindElementInstances(
+  MOCK_AGENT_ELEMENT_INSTANCES_COMPLETED.filter(
+    (el) => el.elementId !== MOCK_AGENT_DEFINITION_ID_COMPLETED, // drop the PROCESS row; handled at top
+  ),
+  MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+  MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+  RUN_1_REBINDS,
+);
+
+// Run 2 from ACTIVE: drop the top-level PROCESS + StartEvent + first Gateway
+// (those belong only to the first pass; Run 2 starts at the second Gateway pass).
+const run2Cloned = rebindElementInstances(
+  MOCK_AGENT_ELEMENT_INSTANCES_ACTIVE.filter(
+    (el) =>
+      el.elementId !== MOCK_AGENT_DEFINITION_ID_ACTIVE &&
+      el.elementId !== 'StartEvent_1' &&
+      el.elementId !== 'Gateway_0z6ctwk',
+  ),
+  MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+  MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+  RUN_2_REBINDS,
+);
+
+export const MOCK_AGENT_ELEMENT_INSTANCES_MULTIPLE: MockElementInstance[] = [
+  // Top-level process
+  {
+    elementInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+    elementId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+    elementName: 'AI Agent Chat With Tools',
+    type: 'PROCESS',
+    state: 'ACTIVE',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:00.000Z',
+    endDate: null,
+    incidentKey: null,
+  },
+  // StartEvent (just once)
+  {
+    elementInstanceKey: '7451799813685001',
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+    elementId: 'StartEvent_1',
+    elementName: 'Task to perform received',
+    type: 'START_EVENT',
+    state: 'COMPLETED',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:00.100Z',
+    endDate: '2026-03-26T14:30:00.200Z',
+    incidentKey: null,
+  },
+  // Gateway pass 1
+  {
+    elementInstanceKey: '7451799813685005',
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+    elementId: 'Gateway_0z6ctwk',
+    elementName: null,
+    type: 'EXCLUSIVE_GATEWAY',
+    state: 'COMPLETED',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:00.250Z',
+    endDate: '2026-03-26T14:30:00.280Z',
+    incidentKey: null,
+  },
+  // Run 1 — AI_Agent + inner instances + tools (all COMPLETED)
+  ...run1Cloned,
+  // User_Feedback — COMPLETED, userSatisfied = false
+  {
+    elementInstanceKey: MOCK_USER_FEEDBACK_KEY_MULTIPLE,
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+    elementId: 'User_Feedback',
+    elementName: 'User Feedback',
+    type: 'USER_TASK',
+    state: 'COMPLETED',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:05.500Z',
+    endDate: '2026-03-26T14:30:14.000Z',
+    incidentKey: null,
+  },
+  // Gateway pass 2 (after user-feedback loopback)
+  {
+    elementInstanceKey: '7451799813685006',
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
+    elementId: 'Gateway_0z6ctwk',
+    elementName: null,
+    type: 'EXCLUSIVE_GATEWAY',
+    state: 'COMPLETED',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:14.100Z',
+    endDate: '2026-03-26T14:30:14.120Z',
+    incidentKey: null,
+  },
+  // Run 2 — AI_Agent + inner instances + tools (active state)
+  ...run2Cloned,
+];
+
+export const MOCK_AGENT_ELEMENT_STATISTICS_MULTIPLE = {
+  items: [
+    {
+      elementId: 'StartEvent_1',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      elementId: 'Gateway_0z6ctwk',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 2,
+    },
+    {elementId: 'AI_Agent', active: 1, canceled: 0, incidents: 0, completed: 1},
+    {
+      elementId: 'ListUsers',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 2,
+    },
+    {
+      elementId: 'LoadUserByID',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 2,
+    },
+    {
+      elementId: 'GetDateAndTime',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 2,
+    },
+    {
+      elementId: 'AskHumanToSendEmail',
+      active: 1,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      elementId: 'AI_Task_Agent',
+      active: 1,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      elementId: 'User_Feedback',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+  ],
+};
+
+export const MOCK_AGENT_SEQUENCE_FLOWS_MULTIPLE = {
+  items: [
+    {
+      processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+      elementId: 'Flow_0pbzrme',
+    },
+    {
+      processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+      elementId: 'Flow_16otfp1',
+    },
+    {
+      processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+      elementId: 'Flow_0m7etfk',
+    },
+    {
+      processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+      elementId: 'Flow_09y08ef',
+    },
+    {
+      processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+      elementId: 'Flow_19gp461',
+    },
+  ],
+};
+
+export const MOCK_AGENT_VARIABLES_MULTIPLE: Variable[] = [
+  {
+    variableKey: `${MOCK_AGENT_INSTANCE_KEY_MULTIPLE}-inputText`,
+    name: 'inputText',
+    value:
+      '"Find the email address of user Leanne Graham and send her an invitation to the company offsite."',
+    isTruncated: false,
+    tenantId: '<default>',
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    scopeKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    rootProcessInstanceKey: null,
+  },
+  {
+    variableKey: `${MOCK_AGENT_INSTANCE_KEY_MULTIPLE}-userSatisfied`,
+    name: 'userSatisfied',
+    value: 'false',
+    isTruncated: false,
+    tenantId: '<default>',
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    scopeKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+    rootProcessInstanceKey: null,
+  },
+];
+
+export const MOCK_AGENT_JOBS_MULTIPLE: Job[] = [];

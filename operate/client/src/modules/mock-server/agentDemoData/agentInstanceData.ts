@@ -19,6 +19,12 @@ import {
   MOCK_AGENT_DEFINITION_KEY_COMPLETED,
   MOCK_AGENT_INSTANCE_KEY_COMPLETED,
   MOCK_AGENT_SUBPROCESS_KEY_COMPLETED,
+  MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+  MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+  MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_1,
+  MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
+  MOCK_AGENT_AGENT_INSTANCE_KEY_MULTIPLE_1,
+  MOCK_AGENT_AGENT_INSTANCE_KEY_MULTIPLE_2,
 } from './constants';
 
 const JOB_KEY = '4451799813685011';
@@ -299,3 +305,39 @@ export const MOCK_AGENT_HISTORY_ELEMENTS_COMPLETED: HistoryElement[] = [
     metrics: {inputTokens: 1255, outputTokens: 116, totalTokens: 1371},
   }),
 ];
+
+// State 4 — Multiple element instances: two AI_Agent runs separated by User_Feedback.
+
+// Run 1 — completed agent run
+export const MOCK_AGENT_INSTANCE_MULTIPLE_1: AgentInstance = {
+  ...MOCK_AGENT_INSTANCE_COMPLETED,
+  agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_MULTIPLE_1,
+  processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+};
+
+export const MOCK_AGENT_HISTORY_ELEMENTS_MULTIPLE_1: HistoryElement[] =
+  MOCK_AGENT_HISTORY_ELEMENTS_COMPLETED.map((el) => ({
+    ...el,
+    agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_MULTIPLE_1,
+    elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_1,
+  }));
+
+// Run 2 — active agent run (same in-flight shape as ACTIVE scenario)
+export const MOCK_AGENT_INSTANCE_MULTIPLE_2: AgentInstance = {
+  ...MOCK_AGENT_INSTANCE_ACTIVE,
+  agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_MULTIPLE_2,
+  processInstanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
+  // Bump timestamps by ~15 seconds to sit after the user-feedback step.
+  creationTime: '2026-03-26T14:30:15.000Z',
+};
+
+export const MOCK_AGENT_HISTORY_ELEMENTS_MULTIPLE_2: HistoryElement[] =
+  MOCK_AGENT_HISTORY_ELEMENTS_ACTIVE.map((el) => ({
+    ...el,
+    agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_MULTIPLE_2,
+    elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_MULTIPLE_2,
+    // Shift all timestamps by +15 seconds so they sit after the first run + user feedback.
+    timestamp: new Date(new Date(el.timestamp).getTime() + 15000).toISOString(),
+  }));
