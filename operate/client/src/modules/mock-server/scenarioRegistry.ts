@@ -196,7 +196,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     instanceKey: MOCK_AGENT_INSTANCE_KEY_MULTIPLE,
     definitionKey: MOCK_AGENT_DEFINITION_KEY_MULTIPLE,
     definitionId: MOCK_AGENT_DEFINITION_ID_MULTIPLE,
-    name: 'Multiple element instances',
+    name: 'Multiple agent runs',
     description:
       'Two AI Agent runs separated by a User_Feedback (userSatisfied = false) loop.',
     pattern: 'subprocess',
