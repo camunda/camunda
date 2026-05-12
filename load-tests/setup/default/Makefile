@@ -164,7 +164,6 @@ install-platform: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		$(platform_values) \
-		-f values-preemptible.yaml \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration)
 
@@ -212,7 +211,6 @@ setup-leader-balancer:
 template:
 	helm template $(namespace) $(helm_chart_platform) \
 		$(platform_values) \
-		-f values-preemptible.yaml \
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration) \
 		--output-dir .
