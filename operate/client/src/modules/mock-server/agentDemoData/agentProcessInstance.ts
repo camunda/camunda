@@ -25,6 +25,9 @@ import {
   MOCK_AGENT_INNER_INSTANCE_5_KEY_ACTIVE,
   MOCK_AGENT_TASK_AGENT_INSTANCE_KEY_ACTIVE,
   MOCK_AGENT_SUBPROCESS_KEY_ACTIVE,
+  MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+  MOCK_AGENT_DEFINITION_KEY_NOT_ACTIVE,
+  MOCK_AGENT_DEFINITION_ID_NOT_ACTIVE,
 } from './constants';
 
 // Extended type for mock data — flowScopeKey is not in the API type but needed for scope filtering
@@ -527,3 +530,130 @@ export const MOCK_AGENT_JOBS_ACTIVE: Job[] = [
     tenantId: '<default>',
   },
 ];
+
+export const MOCK_AGENT_PROCESS_INSTANCE_NOT_ACTIVE: ProcessInstance = {
+  processInstanceKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+  processDefinitionName: 'AI Agent Chat With Tools',
+  processDefinitionId: MOCK_AGENT_DEFINITION_ID_NOT_ACTIVE,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_NOT_ACTIVE,
+  processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
+  tenantId: '<default>',
+  state: 'ACTIVE',
+  startDate: '2026-03-26T14:30:00.000Z',
+  endDate: null,
+  hasIncident: false,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
+};
+
+export const MOCK_AGENT_PROCESS_DEFINITION_NOT_ACTIVE: ProcessDefinition = {
+  name: 'AI Agent Chat With Tools',
+  processDefinitionId: MOCK_AGENT_DEFINITION_ID_NOT_ACTIVE,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_NOT_ACTIVE,
+  resourceName: 'ai-agent-chat-with-tools.bpmn',
+  version: 1,
+  versionTag: null,
+  tenantId: '<default>',
+  hasStartForm: false,
+};
+
+export const MOCK_AGENT_ELEMENT_INSTANCES_NOT_ACTIVE: MockElementInstance[] = [
+  {
+    elementInstanceKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_NOT_ACTIVE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_NOT_ACTIVE,
+    elementId: MOCK_AGENT_DEFINITION_ID_NOT_ACTIVE,
+    elementName: 'AI Agent Chat With Tools',
+    type: 'PROCESS',
+    state: 'ACTIVE',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:00.000Z',
+    endDate: null,
+    incidentKey: null,
+  },
+  {
+    elementInstanceKey: '5451799813685001',
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_NOT_ACTIVE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_NOT_ACTIVE,
+    elementId: 'StartEvent_1',
+    elementName: 'Task to perform received',
+    type: 'START_EVENT',
+    state: 'COMPLETED',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:00.100Z',
+    endDate: '2026-03-26T14:30:00.200Z',
+    incidentKey: null,
+  },
+  {
+    elementInstanceKey: '5451799813685005',
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+    processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_NOT_ACTIVE,
+    processDefinitionId: MOCK_AGENT_DEFINITION_ID_NOT_ACTIVE,
+    elementId: 'Gateway_0z6ctwk',
+    elementName: null,
+    type: 'EXCLUSIVE_GATEWAY',
+    state: 'COMPLETED',
+    hasIncident: false,
+    flowScopeKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+    rootProcessInstanceKey: null,
+    tenantId: '<default>',
+    startDate: '2026-03-26T14:30:00.250Z',
+    endDate: '2026-03-26T14:30:00.280Z',
+    incidentKey: null,
+  },
+];
+
+export const MOCK_AGENT_ELEMENT_STATISTICS_NOT_ACTIVE = {
+  items: [
+    {
+      elementId: 'StartEvent_1',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      elementId: 'Gateway_0z6ctwk',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+  ],
+};
+
+export const MOCK_AGENT_SEQUENCE_FLOWS_NOT_ACTIVE = {
+  items: [
+    {
+      processInstanceKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+      elementId: 'Flow_0pbzrme',
+    },
+  ],
+};
+
+export const MOCK_AGENT_VARIABLES_NOT_ACTIVE: Variable[] = [
+  {
+    variableKey: `${MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE}-inputText`,
+    name: 'inputText',
+    value:
+      '"Find the email address of user Leanne Graham and send her an invitation to the company offsite."',
+    isTruncated: false,
+    tenantId: '<default>',
+    processInstanceKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+    scopeKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+    rootProcessInstanceKey: null,
+  },
+];
+
+export const MOCK_AGENT_JOBS_NOT_ACTIVE: Job[] = [];

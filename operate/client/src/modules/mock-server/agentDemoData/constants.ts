@@ -31,3 +31,8 @@ export const MOCK_AGENT_SUBPROCESS_ELEMENT_IDS_ACTIVE = new Set([
 ]);
 
 export const MOCK_AGENT_AGENT_INSTANCE_KEY_ACTIVE = '4451799813685200';
+
+// State 1 — Agent not yet active. No AI_Agent instance; only the entry events.
+export const MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE = '5451799813685000';
+export const MOCK_AGENT_DEFINITION_KEY_NOT_ACTIVE = '5451799813685099';
+export const MOCK_AGENT_DEFINITION_ID_NOT_ACTIVE = 'ai-agent-chat-with-tools';

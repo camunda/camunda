@@ -25,6 +25,9 @@ import {
   MOCK_AGENT_SUBPROCESS_KEY_ACTIVE,
   MOCK_AGENT_SUBPROCESS_ELEMENT_IDS_ACTIVE,
   MOCK_AGENT_AGENT_INSTANCE_KEY_ACTIVE,
+  MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+  MOCK_AGENT_DEFINITION_KEY_NOT_ACTIVE,
+  MOCK_AGENT_DEFINITION_ID_NOT_ACTIVE,
 } from './agentDemoData/constants';
 import {AGENT_BPMN_XML} from './agentDemoData/agentBpmnXml';
 import {
@@ -35,6 +38,13 @@ import {
   MOCK_AGENT_SEQUENCE_FLOWS_ACTIVE,
   MOCK_AGENT_VARIABLES_ACTIVE,
   MOCK_AGENT_JOBS_ACTIVE,
+  MOCK_AGENT_PROCESS_INSTANCE_NOT_ACTIVE,
+  MOCK_AGENT_PROCESS_DEFINITION_NOT_ACTIVE,
+  MOCK_AGENT_ELEMENT_INSTANCES_NOT_ACTIVE,
+  MOCK_AGENT_ELEMENT_STATISTICS_NOT_ACTIVE,
+  MOCK_AGENT_SEQUENCE_FLOWS_NOT_ACTIVE,
+  MOCK_AGENT_VARIABLES_NOT_ACTIVE,
+  MOCK_AGENT_JOBS_NOT_ACTIVE,
 } from './agentDemoData/agentProcessInstance';
 import {
   MOCK_AGENT_INSTANCE_ACTIVE,
@@ -52,7 +62,7 @@ export interface ScenarioDefinition {
   pattern: 'subprocess' | 'task';
   agentElementId: string;
   agentElementIds: Set<string>;
-  agentInstanceKey: string;
+  agentInstanceKey?: string;
   bpmnXml: string;
   processInstance: ProcessInstance;
   processDefinition: ProcessDefinition;
@@ -105,6 +115,25 @@ export const SCENARIOS: ScenarioDefinition[] = [
         history: MOCK_AGENT_HISTORY_ELEMENTS_ACTIVE,
       },
     ],
+  },
+  {
+    instanceKey: MOCK_AGENT_INSTANCE_KEY_NOT_ACTIVE,
+    definitionKey: MOCK_AGENT_DEFINITION_KEY_NOT_ACTIVE,
+    definitionId: MOCK_AGENT_DEFINITION_ID_NOT_ACTIVE,
+    name: 'Agent not yet active',
+    description: 'AI Agent element rendered but no agent run has started.',
+    pattern: 'subprocess',
+    agentElementId: 'AI_Agent',
+    agentElementIds: MOCK_AGENT_SUBPROCESS_ELEMENT_IDS_ACTIVE,
+    bpmnXml: AGENT_BPMN_XML,
+    processInstance: MOCK_AGENT_PROCESS_INSTANCE_NOT_ACTIVE,
+    processDefinition: MOCK_AGENT_PROCESS_DEFINITION_NOT_ACTIVE,
+    elementInstances: MOCK_AGENT_ELEMENT_INSTANCES_NOT_ACTIVE,
+    elementStatistics: MOCK_AGENT_ELEMENT_STATISTICS_NOT_ACTIVE,
+    sequenceFlows: MOCK_AGENT_SEQUENCE_FLOWS_NOT_ACTIVE,
+    variables: MOCK_AGENT_VARIABLES_NOT_ACTIVE,
+    jobs: MOCK_AGENT_JOBS_NOT_ACTIVE,
+    agentInstances: [],
   },
 ];
 
