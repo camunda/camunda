@@ -193,21 +193,25 @@ public final class S3NodeIdProviderRestoreAcceptanceIT {
       Thread.ofVirtual()
           .start(
               () -> {
-                final var restore =
-                    new TestRestoreApp()
-                        .withWorkingDirectory(workingDirectory)
-                        .withUnifiedConfig(
-                            cfg -> {
-                              cfg.getCluster().setSize(CLUSTER_SIZE);
-                              cfg.getCluster().setPartitionCount(PARTITIONS_COUNT);
-                              cfg.getCluster().setReplicationFactor(REPLICATION_FACTOR);
-                              configureNodeIdProvider(cfg);
-                              configureBackupStore(cfg);
-                            })
-                        .withBackupId(backupId)
-                        .start();
-                restore.close();
-                task.complete(null);
+                try {
+                  final var restore =
+                      new TestRestoreApp()
+                          .withWorkingDirectory(workingDirectory)
+                          .withUnifiedConfig(
+                              cfg -> {
+                                cfg.getCluster().setSize(CLUSTER_SIZE);
+                                cfg.getCluster().setPartitionCount(PARTITIONS_COUNT);
+                                cfg.getCluster().setReplicationFactor(REPLICATION_FACTOR);
+                                configureNodeIdProvider(cfg);
+                                configureBackupStore(cfg);
+                              })
+                          .withBackupId(backupId)
+                          .start();
+                  restore.close();
+                  task.complete(null);
+                } catch (final Throwable t) {
+                  task.completeExceptionally(t);
+                }
               });
       restoreTasks.add(task);
     }
