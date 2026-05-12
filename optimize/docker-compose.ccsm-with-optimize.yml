@@ -82,11 +82,11 @@ services:
       KC_HTTP_RELATIVE_PATH: /auth
       KC_HEALTH_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
-      #      # The camunda/keycloak:quay-26 image ships an HTTP/2 codec that throws
-      #      # NoSuchMethodError on h2c upgrade (Netty version mismatch). The JDK 21
-      #      # HttpClient used by the Identity SDK negotiates HTTP/2 by default, hits
-      #      # the bug, and the token-exchange request hangs forever. Forcing HTTP/1.1
-      #      # on the inbound side avoids the broken code path.
+      # The camunda/keycloak:quay-26 image ships an HTTP/2 codec that throws
+      # NoSuchMethodError on h2c upgrade (Netty version mismatch). The JDK 21
+      # HttpClient used by the Identity SDK negotiates HTTP/2 by default, hits
+      # the bug, and the token-exchange request hangs forever. Forcing HTTP/1.1
+      # on the inbound side avoids the broken code path.
       JAVA_OPTS_APPEND: "-Dquarkus.http.http2=false"
     healthcheck:
       test: bash -c "echo -e 'GET /auth HTTP/1.0\r\n\r\n' >/dev/tcp/127.0.0.1/8080 || exit 1"
@@ -236,7 +236,6 @@ services:
       DATABASE_PORT: "9200"
       DATABASE_TYPE: opensearch
       ZEEBE_EXPORTER_CLASS_NAME: io.camunda.zeebe.exporter.opensearch.OpensearchExporter
-    # Offset host ports so the elasticsearch and opensearch profiles can run side by side.
     ports:
       - "26500:26500"
       - "9600:9600"
