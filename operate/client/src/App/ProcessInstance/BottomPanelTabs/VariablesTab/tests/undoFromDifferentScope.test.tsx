@@ -121,6 +121,7 @@ const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
 describe('Undo variable modifications from different scope', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess('');
   });
 
