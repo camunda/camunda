@@ -132,10 +132,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return this;
   }
 
-  public @Nullable String zone() {
-    return zone;
-  }
-
   public int getPartitionsCount() {
     if (partitionsCountNullValue() == partitionsCount) {
       throw new IllegalStateException("partitionsCount is not set");

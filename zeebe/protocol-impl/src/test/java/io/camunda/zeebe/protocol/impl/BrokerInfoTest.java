@@ -128,6 +128,55 @@ final class BrokerInfoTest {
   }
 
   @Test
+  void shouldDecodeVersion8PayloadWithVersion7Decoder() {
+    // given -- encode a v8 BrokerInfo payload with zone set
+    final BrokerInfo brokerInfo =
+        new BrokerInfo()
+            .setNodeId(42)
+            .setPartitionsCount(3)
+            .setClusterSize(3)
+            .setReplicationFactor(3)
+            .setZone("us-east-1a");
+    brokerInfo.setVersion("8.7.0");
+
+    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[brokerInfo.getLength()]);
+    brokerInfo.write(buffer, 0);
+
+    // when -- decode the v8 payload using a v7-aware decoder (actingVersion=7)
+    // simulating a broker on the previous version receiving a v8 payload
+    final var headerDecoder = new io.camunda.zeebe.protocol.record.MessageHeaderDecoder();
+    headerDecoder.wrap(buffer, 0);
+    final int headerLength = headerDecoder.encodedLength();
+
+    final var bodyDecoder = new io.camunda.zeebe.protocol.record.BrokerInfoDecoder();
+    bodyDecoder.wrap(buffer, headerLength, headerDecoder.blockLength(), 7);
+
+    // then -- all v7 fields decode correctly; zone is skipped
+    assertThat(bodyDecoder.nodeId()).isEqualTo(42);
+    assertThat(bodyDecoder.partitionsCount()).isEqualTo(3);
+    assertThat(bodyDecoder.clusterSize()).isEqualTo(3);
+    assertThat(bodyDecoder.replicationFactor()).isEqualTo(3);
+
+    // skip through groups
+    final var addresses = bodyDecoder.addresses();
+    assertThat(addresses.count()).isZero();
+    final var partitionRoles = bodyDecoder.partitionRoles();
+    assertThat(partitionRoles.count()).isZero();
+    final var partitionLeaderTerms = bodyDecoder.partitionLeaderTerms();
+    assertThat(partitionLeaderTerms.count()).isZero();
+
+    // version var-data is present in v7
+    assertThat(bodyDecoder.version()).isEqualTo("8.7.0");
+
+    // partitionHealth group
+    final var partitionHealth = bodyDecoder.partitionHealth();
+    assertThat(partitionHealth.count()).isZero();
+
+    // zone is not accessible with actingVersion=7 -- zoneLength returns 0
+    assertThat(bodyDecoder.zoneLength()).isZero();
+  }
+
+  @Test
   void shouldDecodeVersion7PayloadWithoutZone() {
     // given — manually encode a v7 BrokerInfo payload (no zone field)
     final int nodeId = 42;

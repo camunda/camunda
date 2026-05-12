@@ -273,7 +273,7 @@ public final class TopologyManagerImpl extends Actor
         .filter(
             id -> {
               try {
-                return id.isInZone(localBroker.zone()) && id.nodeIdx() == nodeId;
+                return id.isInZone(localBroker.getZone()) && id.nodeIdx() == nodeId;
               } catch (final IllegalStateException e) {
                 return false;
               }
