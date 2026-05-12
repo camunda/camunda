@@ -82,17 +82,6 @@ public class SearchEngineConnectPropertiesOverride {
 
       final SecondaryStorageDatabase<?> database;
 
-      // The Spring condition gating this bean reads camunda.data.secondary-storage.type from the
-      // Environment, while this factory reads the (possibly mutated) Camunda POJO. Callers that
-      // mutate the POJO post-condition (e.g. TestRestoreApp with type=none) can land us here with
-      // a "none" storage type; treat it as a no-op rather than failing startup.
-      // TODO we need to stop overriding the configuration POJO in the integration tests and rather
-      // use spring properties
-      if (secondaryStorage.getType() == SecondaryStorageType.none) {
-        LOGGER.warn("Unexpected: secondary storage type is set to 'none'");
-        return;
-      }
-
       switch (secondaryStorage.getType()) {
         case elasticsearch:
           {

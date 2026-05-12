@@ -10,6 +10,7 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.configuration.Camunda;
+import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
 import java.time.Instant;
@@ -35,9 +36,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   public TestRestoreApp(final Camunda config) {
     super(RestoreApp.class);
     this.config = config;
-
-    //noinspection resource
-    withBean("config", config, Camunda.class).withAdditionalProfile(Profile.RESTORE);
+    withAdditionalProfile(Profile.RESTORE);
   }
 
   @Override
@@ -82,6 +81,9 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
+    // Flatten the in-memory unified config into camunda.* properties at the latest possible point.
+    // Refreshable so that fields cleared between stop/start don't linger.
+    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(config));
     return super.createSpringBuilder().web(WebApplicationType.NONE);
   }
 
