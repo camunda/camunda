@@ -28,7 +28,7 @@ public class TasklistProperties {
 
   private boolean enterprise = false;
 
-  @Value("${camunda.tasklist.internal.version.current}")
+  @Value("${camunda.tasklist.internal.version.current:unknown-version}")
   private String version = UNKNOWN_VERSION;
 
   @NestedConfigurationProperty
