@@ -15,6 +15,10 @@ import {
   MOCK_AGENT_DEFINITION_KEY_ACTIVE,
   MOCK_AGENT_INSTANCE_KEY_ACTIVE,
   MOCK_AGENT_SUBPROCESS_KEY_ACTIVE,
+  MOCK_AGENT_AGENT_INSTANCE_KEY_COMPLETED,
+  MOCK_AGENT_DEFINITION_KEY_COMPLETED,
+  MOCK_AGENT_INSTANCE_KEY_COMPLETED,
+  MOCK_AGENT_SUBPROCESS_KEY_COMPLETED,
 } from './constants';
 
 const JOB_KEY = '4451799813685011';
@@ -193,5 +197,105 @@ export const MOCK_AGENT_HISTORY_ELEMENTS_ACTIVE: HistoryElement[] = [
           'Dear Leanne,\n\nYou are invited to the company offsite on March 28, 2026.\n\nBest regards',
       },
     }),
+  }),
+];
+
+export const MOCK_AGENT_INSTANCE_COMPLETED: AgentInstance = {
+  agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_COMPLETED,
+  status: 'COMPLETED',
+  definition: {
+    model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
+    provider: 'AWS Bedrock',
+    systemPrompt: `You are a helpful assistant that performs tasks on behalf of the user.
+
+## Available Tools
+
+You have access to the following tools:
+- **ListUsers** — query the user directory
+- **LoadUserByID** — fetch a single user profile by \`id\`
+- **GetDateAndTime** — get the current UTC timestamp
+- **DraftEmailTemplate** — produce a formatted email draft from a subject and body
+- **AskHumanToSendEmail** — delegate email sending to a human operator
+
+## Guidelines
+
+1. Always **verify** information before taking action.
+2. Use \`=inputText\` for the user's request.
+3. When composing emails, include all required fields.
+4. Be concise in your reasoning.`,
+    tools: [
+      {name: 'ListUsers', source: 'AD_HOC'},
+      {name: 'LoadUserByID', source: 'AD_HOC'},
+      {name: 'GetDateAndTime', source: 'AD_HOC'},
+      {name: 'DraftEmailTemplate', source: 'AD_HOC'},
+      {name: 'AskHumanToSendEmail', source: 'AD_HOC'},
+    ],
+  },
+  metrics: {
+    inputTokens: 2814,
+    outputTokens: 358,
+    totalTokens: 3172,
+    toolCalls: 5,
+  },
+  creationTime: '2026-03-26T14:30:00.300Z',
+  elementId: 'AI_Agent',
+  processInstanceKey: MOCK_AGENT_INSTANCE_KEY_COMPLETED,
+  processDefinitionKey: MOCK_AGENT_DEFINITION_KEY_COMPLETED,
+  tenantId: '<default>',
+};
+
+// Build the COMPLETED history by reusing MOCK_AGENT_HISTORY_ELEMENTS_ACTIVE and
+// appending the missing tool_results + a final assistant exit message.
+const completedBaseElement = (overrides: {
+  historyElementKey: string;
+  role: HistoryElement['role'];
+  timestamp: string;
+  content: string;
+  metrics?: HistoryElement['metrics'];
+}): HistoryElement => ({
+  agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_COMPLETED,
+  elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_COMPLETED,
+  jobKey: '6451799813685011',
+  committed: true,
+  metrics: {},
+  ...overrides,
+  content: [{contentType: 'text', content: overrides.content}],
+});
+
+export const MOCK_AGENT_HISTORY_ELEMENTS_COMPLETED: HistoryElement[] = [
+  // The first iterations mirror the active scenario verbatim. Reuse the text
+  // but rebind the agentInstanceKey + elementInstanceKey to the COMPLETED keys.
+  ...MOCK_AGENT_HISTORY_ELEMENTS_ACTIVE.map((el) => ({
+    ...el,
+    agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_COMPLETED,
+    elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_COMPLETED,
+  })),
+  // Tool results for DraftEmailTemplate + AskHumanToSendEmail (which were in-flight
+  // in the active scenario).
+  completedBaseElement({
+    historyElementKey: '6451799441055720',
+    role: 'tool_result',
+    timestamp: '2026-03-26T14:30:05.100Z',
+    content: JSON.stringify({
+      subject: 'Company Offsite Invitation — March 28',
+      preview:
+        'Hi Leanne,\\n\\nThe team is hosting the offsite on March 28, 2026 — would love to have you there.',
+      tone_used: 'friendly',
+    }),
+  }),
+  completedBaseElement({
+    historyElementKey: '6451799441055721',
+    role: 'tool_result',
+    timestamp: '2026-03-26T14:30:05.400Z',
+    content: JSON.stringify({sent: true, sent_at: '2026-03-26T14:30:05.380Z'}),
+  }),
+  // Final assistant exit message — what StatusAccordion shows in the Completed view.
+  completedBaseElement({
+    historyElementKey: '6451799441055722',
+    role: 'assistant',
+    timestamp: '2026-03-26T14:30:05.500Z',
+    content:
+      'Done — the invitation to Leanne Graham at Sincere@april.biz has been drafted with March 28 prominently in the body, the human operator confirmed the send, and the email left the queue at 14:30:05 UTC. The full audit trail (5 tool calls across 3 iterations) is recorded under this agent run, and no follow-up is required from the user.',
+    metrics: {inputTokens: 1255, outputTokens: 116, totalTokens: 1371},
   }),
 ];
