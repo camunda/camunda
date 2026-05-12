@@ -65,4 +65,14 @@ interface DeploymentResourceTransformer {
    *     DeploymentResourceTransformer#createMetadata(DeploymentResource, DeploymentRecord)}
    */
   void writeRecords(DeploymentResource resource, DeploymentRecord deployment);
+
+  /**
+   * Optional hook invoked by the {@link DeploymentTransformer} at the beginning of each deployment
+   * transformation.
+   *
+   * <p>The default implementation does nothing.
+   */
+  default void reset() {
+    // no-op
+  }
 }
