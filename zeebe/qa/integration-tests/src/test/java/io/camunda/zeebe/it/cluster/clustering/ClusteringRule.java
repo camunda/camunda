@@ -395,7 +395,8 @@ public class ClusteringRule extends ExternalResource {
             new NoopOidcClaimsProvider(),
             null,
             null,
-            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
+            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
 
     final Broker broker =
         new Broker(

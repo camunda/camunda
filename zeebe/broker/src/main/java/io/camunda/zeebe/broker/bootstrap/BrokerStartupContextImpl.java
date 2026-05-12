@@ -75,6 +75,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final OidcClaimsProvider oidcClaimsProvider;
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
+  private final List<String> physicalTenantIds;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   private ConcurrencyControl concurrencyControl;
@@ -113,7 +114,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final OidcClaimsProvider oidcClaimsProvider,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final NodeIdProvider nodeIdProvider) {
+      final NodeIdProvider nodeIdProvider,
+      final List<String> physicalTenantIds) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -133,6 +135,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.oidcClaimsProvider = oidcClaimsProvider;
     this.searchClientsProxy = searchClientsProxy;
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
+    this.physicalTenantIds = List.copyOf(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
@@ -423,5 +426,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
+  }
+
+  @Override
+  public List<String> getPhysicalTenantIds() {
+    return physicalTenantIds;
   }
 }

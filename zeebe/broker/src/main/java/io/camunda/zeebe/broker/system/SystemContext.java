@@ -64,9 +64,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TlsConfigUtil;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -140,6 +138,7 @@ public final class SystemContext {
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final NodeIdProvider nodeIdProvider;
+  private final List<String> physicalTenantIds;
   private final GlobalListenerValidator globalListenerValidator;
 
   public SystemContext(
@@ -157,7 +156,8 @@ public final class SystemContext {
       final OidcClaimsProvider oidcClaimsProvider,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final NodeIdProvider nodeIdProvider) {
+      final NodeIdProvider nodeIdProvider,
+      final List<String> physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -174,40 +174,9 @@ public final class SystemContext {
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.nodeIdProvider = nodeIdProvider;
+    this.physicalTenantIds = List.copyOf(physicalTenantIds);
     globalListenerValidator = new GlobalListenerValidator();
     initSystemContext();
-  }
-
-  @VisibleForTesting
-  public SystemContext(
-      final BrokerCfg brokerCfg,
-      final ActorScheduler scheduler,
-      final AtomixCluster cluster,
-      final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
-      final UserServices userServices,
-      final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final OidcClaimsProvider oidcClaimsProvider,
-      final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final NodeIdProvider nodeIdProvider) {
-    this(
-        DEFAULT_SHUTDOWN_TIMEOUT,
-        brokerCfg,
-        null,
-        scheduler,
-        cluster,
-        brokerClient,
-        new SimpleMeterRegistry(),
-        securityConfiguration,
-        userServices,
-        passwordEncoder,
-        jwtDecoder,
-        oidcClaimsProvider,
-        searchClientsProxy,
-        brokerRequestAuthorizationConverter,
-        nodeIdProvider);
   }
 
   private void initSystemContext() {
@@ -774,5 +743,9 @@ public final class SystemContext {
 
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
+  }
+
+  public List<String> getPhysicalTenantIds() {
+    return physicalTenantIds;
   }
 }

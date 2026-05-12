@@ -114,10 +114,13 @@ final class PartitionJoinTest {
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
     final var systemContext =
         new SystemContext(
+            SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             brokerCfg,
+            null,
             actorScheduler,
             atomixCluster,
             brokerClient,
+            new SimpleMeterRegistry(),
             new SecurityConfiguration(),
             null,
             null,
@@ -125,7 +128,8 @@ final class PartitionJoinTest {
             new NoopOidcClaimsProvider(),
             null,
             null,
-            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
+            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
   }

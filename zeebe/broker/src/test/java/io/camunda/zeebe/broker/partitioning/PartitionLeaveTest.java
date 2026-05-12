@@ -230,10 +230,13 @@ final class PartitionLeaveTest {
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
     final var systemContext =
         new SystemContext(
+            SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             brokerCfg,
+            null,
             actorScheduler,
             atomixCluster,
             brokerClient,
+            new SimpleMeterRegistry(),
             SecurityConfigurations.unauthenticatedAndUnauthorized(),
             null,
             null,
@@ -241,7 +244,8 @@ final class PartitionLeaveTest {
             new NoopOidcClaimsProvider(),
             null,
             null,
-            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()),
+            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
   }

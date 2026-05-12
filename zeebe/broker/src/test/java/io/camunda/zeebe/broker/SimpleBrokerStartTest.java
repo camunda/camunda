@@ -19,6 +19,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
@@ -35,6 +36,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.junit.Before;
 import org.junit.Rule;
@@ -70,10 +72,13 @@ public final class SimpleBrokerStartTest {
             () -> {
               final var systemContext =
                   new SystemContext(
+                      SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
                       brokerCfg,
+                      null,
                       mock(ActorScheduler.class),
                       mock(AtomixCluster.class),
                       mock(BrokerClient.class),
+                      new SimpleMeterRegistry(),
                       new SecurityConfiguration(),
                       mock(UserServices.class),
                       mock(PasswordEncoder.class),
@@ -81,7 +86,8 @@ public final class SimpleBrokerStartTest {
                       new NoopOidcClaimsProvider(),
                       mock(SearchClientsProxy.class),
                       mock(BrokerRequestAuthorizationConverter.class),
-                      mock(NodeIdProvider.class));
+                      mock(NodeIdProvider.class),
+                      List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
             });
 
@@ -103,10 +109,13 @@ public final class SimpleBrokerStartTest {
 
     final var systemContext =
         new SystemContext(
+            SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             brokerCfg,
+            null,
             actorScheduler,
             atomixCluster,
             brokerClient,
+            new SimpleMeterRegistry(),
             new SecurityConfiguration(),
             mock(UserServices.class),
             mock(PasswordEncoder.class),
@@ -114,7 +123,8 @@ public final class SimpleBrokerStartTest {
             new NoopOidcClaimsProvider(),
             mock(SearchClientsProxy.class),
             mock(BrokerRequestAuthorizationConverter.class),
-            mock(NodeIdProvider.class));
+            mock(NodeIdProvider.class),
+            List.of(PartitionManagerImpl.DEFAULT_GROUP_NAME));
 
     final var leaderLatch = new CountDownLatch(1);
     final var listener =
