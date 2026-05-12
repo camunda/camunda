@@ -27,6 +27,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty processDefinitionKeyProp =
       new LongProperty("processDefinitionKey", -1L);
   private final IntegerProperty processDefinitionVersionProp =
@@ -46,11 +47,12 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ArrayProperty<>("tools", AgentInstanceTool::new);
 
   public AgentInstanceRecord() {
-    super(13);
+    super(14);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(processInstanceKeyProp)
+        .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processDefinitionVersionProp)
         .declareProperty(versionTagProp)
@@ -99,6 +101,16 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public AgentInstanceRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
