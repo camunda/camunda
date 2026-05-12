@@ -104,6 +104,13 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Needed on the classpath for runtime classloading in AnalyticsExporterIT -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-db-rdbms</artifactId>
@@ -668,6 +675,7 @@
         <configuration>
           <usedDependencies>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+            <dependency>io.camunda:analytics-exporter</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
