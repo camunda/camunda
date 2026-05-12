@@ -15,6 +15,7 @@ export declare global {
     clusterId?: string;
     idPattern?: string;
     resourcePermissions?: Record<string, string[]>;
+    protectedRoleIds?: string[];
   }
 
   interface Window {

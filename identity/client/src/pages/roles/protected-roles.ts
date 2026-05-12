@@ -6,14 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const PROTECTED_ROLE_IDS = new Set([
-  "admin",
-  "readonly-admin",
-  "rpa",
-  "connectors",
-  "app-integrations",
-  "task-worker",
-]);
+import { getClientConfigObject } from "src/configuration/clientConfig";
+
+const PROTECTED_ROLE_IDS = new Set(
+  getClientConfigObject<string[]>("protectedRoleIds", []),
+);
 
 export const isProtectedRole = (roleId: string): boolean =>
   PROTECTED_ROLE_IDS.has(roleId);
