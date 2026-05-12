@@ -48,7 +48,7 @@
 services:
   keycloak:
     container_name: keycloak
-    image: camunda/keycloak:quay-26@sha256:72f3630dfb4cee43107327ab4ce6fe812be06fea7f5f4b047c3aba09c7017390
+    image: camunda/keycloak:quay-26@sha256:3eba2912da4668619c8a7b6cdc00138d20a1f293ce3fcba980ce70ec2ed7f8d0
     command: [ start ]
     ports:
       - "18080:8080"

@@ -1,53 +1,47 @@
-# description: This is a Workflow for running end to end FE tests on Optimize in Self-Managed mode. Starts an instance of Optimize and uses that instance to run tests on
+# description: Nightly full E2E run for Optimize in Self-Managed mode, including visual regression tests
 # test location: /optimize/client/e2e/sm-tests
 # type: CI
 # owner: @camunda/core-features
-name: "[Legacy] Optimize E2E Self-Managed"
+name: Optimize E2E Self-Managed (Nightly)
 
 on:
-  pull_request:
-    paths:
-      - ".github/actions/**"
-      - ".github/workflows/optimize-*"
-      - "bom/*"
-      - "parent/*"
-      - "pom.xml"
-      - "optimize/**"
-      - "optimize.Dockerfile"
-  push:
-    branches:
-      - "main"
-      - "stable/**"
-      - "release/**"
-    paths:
-      - ".github/actions/**"
-      - ".github/workflows/optimize-*"
-      - "bom/*"
-      - "parent/*"
-      - "pom.xml"
-      - "optimize/**"
-      - "optimize.Dockerfile"
+  schedule:
+    - cron: "0 2 * * *"
   workflow_dispatch:
 
-# Will limit the workflow to 1 concurrent run per ref (branch / PR)
-# If a new commits occurs, the current run will be canceled
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: bash
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
 permissions:
-  contents: read # for git clone
+  contents: read
   id-token: write # for authenticating with GCP
 
 jobs:
-  e2e-tests-sm:
-    name: E2E Self-Managed
+  e2e-full:
+    name: "E2E Self-Managed (Full + Visual)"
+    permissions:
+      contents: read
+      id-token: write # for authenticating with GCP
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    env:
+      TEST_TYPE: E2E
+      TEST_OWNER: Core Features
 
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
@@ -59,7 +53,7 @@ jobs:
         uses: ./.github/actions/setup-build
         with:
           harbor: true
-          maven-cache-key-modifier: optimize-tests
+          maven-cache-key-modifier: optimize-e2e-nightly
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -107,9 +101,9 @@ jobs:
       - name: Wait for frontend to start
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
 
-      - name: Run tests
+      - name: Run full tests
         working-directory: ./optimize/client
-        run: yarn run e2e:ci:sm:headless
+        run: yarn run e2e:ci:sm:nightly:headless
 
       - name: Run visual tests
         working-directory: ./optimize/client
@@ -121,7 +115,7 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         if: always()
         with:
-          name: logs
+          name: optimize-e2e-nightly-logs
           path: ./optimize/client/build/*.log
 
       - name: Upload diff images as artifact
@@ -135,4 +129,15 @@ jobs:
         uses: ./.github/actions/docker-logs
         if: always()
         with:
-          archive_name: e2e-docker-logs
+          archive_name: optimize-e2e-nightly-docker-logs
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
