@@ -205,11 +205,9 @@ make install-platform
 make install-load-test
 ```
 
-To bump the deadline of an existing namespace without re-scaffolding:
+To bump the deadline of an existing namespace without re-scaffolding, edit `deadline-date` in `resources/namespace.yaml` (single source of truth — `check-deadline` reads it directly) and reapply:
 
 ```sh
-# 1. Edit the deadline-date label in resources/namespace.yaml
-# 2. Reapply:
 make create-namespace
 ```
 

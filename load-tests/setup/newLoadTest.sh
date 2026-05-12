@@ -56,6 +56,21 @@ if [[ ! "$namespace" =~ ^c8- ]]; then
   echo "Namespace prefix added: $namespace"
 fi
 
+# Validate against Kubernetes DNS-1123 label rules. Previously this was
+# implicit (`kubectl create namespace` rejected bad names at cluster time);
+# now that namespace creation is deferred to `make install`, validate here so
+# we don't render a folder with random secrets just to discover the name is
+# invalid.
+if [[ ! "$namespace" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
+  echo "Error: namespace '$namespace' is not a valid Kubernetes DNS-1123 label."
+  echo "       Allowed: lowercase letters, digits, '-'. Must start and end with an alphanumeric."
+  exit 1
+fi
+if [ ${#namespace} -gt 63 ]; then
+  echo "Error: namespace '$namespace' is ${#namespace} characters; Kubernetes labels are capped at 63."
+  exit 1
+fi
+
 # Validate secondaryStorage value
 secondaryStorage="${2:-elasticsearch}"
 if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "postgresql" && "$secondaryStorage" != "mysql" && "$secondaryStorage" != "mariadb" && "$secondaryStorage" != "mssql" && "$secondaryStorage" != "oracle" && "$secondaryStorage" != "none" ]]; then
@@ -153,11 +168,12 @@ cp -v ../*.yaml "$namespace/"
 
 cd "$namespace"
 
-# Bake values into the rendered Makefile.
+# Bake values into the rendered Makefile. The deadline lives only in
+# resources/namespace.yaml (single source of truth) — check-deadline parses
+# it out of there so the user only edits one place to extend the TTL.
 sed_inplace "s/__NAMESPACE__/$namespace/"           Makefile
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
-sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"    Makefile
 
 # Bake values into the resource manifests and the platform/load-test values.
 # Values shared with the chart (NAMESPACE, AVAILABILITY_ZONE, AUTHOR) flow into
@@ -215,4 +231,4 @@ echo "Scaffolding complete. Next steps:"
 echo "  cd $namespace"
 echo "  make install   # applies resources/namespace.yaml + resources/camunda-credentials.yaml and deploys"
 echo
-echo "Deadline: $deadline_date (TTL = $ttl_days day(s)). Bump it via resources/namespace.yaml + kubectl label, or rerun this script."
+echo "Deadline: $deadline_date (TTL = $ttl_days day(s)). To extend, edit deadline-date in resources/namespace.yaml and run \`make create-namespace\`."
