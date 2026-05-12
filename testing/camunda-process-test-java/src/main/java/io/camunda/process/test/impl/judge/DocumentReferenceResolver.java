@@ -16,13 +16,10 @@
 package io.camunda.process.test.impl.judge;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.api.judge.ResolvedDocument;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -34,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Detects Camunda document references inside a variable's JSON value and downloads their binary
- * content via the {@link CamundaClient}.
+ * content via the {@link CamundaDataSource}.
  *
  * <p>A document reference is any JSON object containing the discriminator field {@code
  * "camunda.document.type": "camunda"}. References are detected at any depth (top-level, nested
@@ -51,12 +48,12 @@ public final class DocumentReferenceResolver {
 
   private static final Logger LOG = LoggerFactory.getLogger(DocumentReferenceResolver.class);
 
-  private final CamundaClient client;
+  private final CamundaDataSource dataSource;
   private final CamundaAssertJsonMapper jsonMapper;
 
   public DocumentReferenceResolver(
-      final CamundaClient client, final CamundaAssertJsonMapper jsonMapper) {
-    this.client = client;
+      final CamundaDataSource dataSource, final CamundaAssertJsonMapper jsonMapper) {
+    this.dataSource = dataSource;
     this.jsonMapper = jsonMapper;
   }
 
@@ -154,26 +151,7 @@ public final class DocumentReferenceResolver {
   }
 
   private ResolvedDocument download(final DocumentReferenceResponse reference) {
-    try (final InputStream stream = client.newDocumentContentGetRequest(reference).send().join()) {
-      return new ResolvedDocumentImpl(reference, readAllBytes(stream));
-    } catch (final Exception e) {
-      throw new IllegalStateException(
-          "Failed to download Camunda document '"
-              + reference.getDocumentId()
-              + "' for judge enrichment: "
-              + e.getMessage(),
-          e);
-    }
-  }
-
-  private static byte[] readAllBytes(final InputStream stream) throws IOException {
-    final ByteArrayOutputStream out = new ByteArrayOutputStream();
-    final byte[] buffer = new byte[8192];
-    int read;
-    while ((read = stream.read(buffer)) != -1) {
-      out.write(buffer, 0, read);
-    }
-    return out.toByteArray();
+    return new ResolvedDocumentImpl(reference, dataSource.getDocumentContent(reference));
   }
 
   private static final class DocumentKey {

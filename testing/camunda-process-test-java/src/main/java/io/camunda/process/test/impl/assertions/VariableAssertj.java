@@ -443,7 +443,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     if (!judgeAssertj.isMultimodalDocumentResolutionEnabled()) {
       return Collections.emptyList();
     }
-    return new DocumentReferenceResolver(dataSource.getClient(), jsonMapper).resolve(rawValue);
+    return new DocumentReferenceResolver(dataSource, jsonMapper).resolve(rawValue);
   }
 
   private void assertSatisfiesExpression(
