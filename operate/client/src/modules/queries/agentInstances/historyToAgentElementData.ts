@@ -157,15 +157,21 @@ function historyToAgentElementData(
   for (const element of history) {
     const text = textOf(element);
     if (element.role === 'user') {
+      const blocks = element.content
+        .filter((c) => c.contentType === 'text')
+        .map((c) => c.content);
       conversation.push({
         role: 'user',
-        content: [text],
+        content: blocks,
         timestamp: element.timestamp,
       });
     } else if (element.role === 'assistant') {
+      const blocks = element.content
+        .filter((c) => c.contentType === 'text')
+        .map((c) => c.content);
       conversation.push({
         role: 'assistant',
-        content: [text],
+        content: blocks,
         timestamp: element.timestamp,
       });
     } else if (element.role === 'tool_call') {

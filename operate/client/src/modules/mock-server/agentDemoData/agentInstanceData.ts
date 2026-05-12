@@ -98,14 +98,28 @@ export const MOCK_AGENT_HISTORY_ELEMENTS_ACTIVE: HistoryElement[] = [
     content:
       "Hi! Could you find the email address of user Leanne Graham and send her an invitation to the company offsite on March 28? Please make sure you pick the correct Leanne if there are several — she's the one at Romaguera-Crona. The invitation should be friendly and include the date prominently. Thanks!",
   }),
-  baseElement({
+  {
+    agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY_ACTIVE,
+    elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY_ACTIVE,
+    jobKey: JOB_KEY,
+    committed: true,
     historyElementKey: '6755399441055701',
     role: 'assistant',
     timestamp: '2026-03-26T14:30:01.200Z',
-    content:
-      "To find Leanne Graham's email I need to start from the user directory, since the request doesn't include an ID and I don't have her contact info cached. I'll call `ListUsers` first to get the full set of users and confirm she exists; that also lets me disambiguate if there's more than one Leanne — the user mentioned Romaguera-Crona as her company, which I can use as a tiebreaker. Once I have her ID, I'll fetch her full profile to get the verified email address before drafting the invitation. I'm going to avoid sending the email myself and instead delegate to a human operator at the end, since that's the safer pattern for outbound communication.",
+    content: [
+      {
+        contentType: 'text',
+        content:
+          "To find Leanne Graham's email I need to start from the user directory, since the request doesn't include an ID and I don't have her contact info cached. I'll call `ListUsers` first to confirm she exists and to disambiguate if there's more than one Leanne — the user mentioned Romaguera-Crona as her company, which I can use as a tiebreaker.",
+      },
+      {
+        contentType: 'text',
+        content:
+          "Once I have her ID, I'll fetch her full profile to get the verified email address before drafting the invitation. I'm going to avoid sending the email myself and instead delegate to a human operator at the end, since that's the safer pattern for outbound communication.",
+      },
+    ],
     metrics: {inputTokens: 482, outputTokens: 87, totalTokens: 569},
-  }),
+  },
   baseElement({
     historyElementKey: '6755399441055702',
     role: 'tool_call',

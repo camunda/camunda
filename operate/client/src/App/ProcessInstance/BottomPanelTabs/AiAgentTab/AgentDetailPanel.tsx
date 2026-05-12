@@ -7,7 +7,13 @@
  */
 
 import {lazy, Suspense, useState} from 'react';
-import {Accordion, AccordionItem, IconButton, Modal} from '@carbon/react';
+import {
+  Accordion,
+  AccordionItem,
+  Button,
+  IconButton,
+  Modal,
+} from '@carbon/react';
 import {
   Maximize,
   Time,
@@ -21,6 +27,7 @@ import {
   SortAscending,
   SortDescending,
 } from '@carbon/icons-react';
+import {Copy} from '@carbon/react/icons';
 import type {
   AgentElementData,
   AgentIteration,
@@ -317,10 +324,12 @@ function StatusAccordion({agentData}: {agentData: AgentElementData}) {
         }}
       >
         {currentMessage && (
-          <div>
-            <strong style={{color: 'var(--cds-text-primary)'}}>Message:</strong>{' '}
-            {currentMessage}
-          </div>
+          <ExpandableMessageBlock
+            role="Assistant"
+            roleColor="#8a3ffc"
+            borderColor="#8a3ffc"
+            contents={[currentMessage]}
+          />
         )}
         {agentData.status !== 'COMPLETED' && activeTools.length > 0 && (
           <div
@@ -613,90 +622,57 @@ function IterationDetail({iteration}: {iteration: AgentIteration}) {
 function ExpandableSegment({
   content,
   isFirst,
+  blockIndex,
+  blockCount,
+  role,
 }: {
   content: string;
   isFirst: boolean;
-}) {
-  return (
-    <div
-      style={{
-        fontSize: 'var(--cds-body-compact-01-font-size)',
-        lineHeight: '1.5',
-        color: 'var(--cds-text-primary)',
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word',
-        maxHeight: 160,
-        overflowY: 'auto',
-        marginTop: isFirst ? 0 : 'var(--cds-spacing-04)',
-      }}
-    >
-      {content}
-    </div>
-  );
-}
-
-function ExpandableMessageBlock({
-  role,
-  roleColor,
-  borderColor,
-  contents,
-  modalHeading,
-  expandedJson,
-  children,
-}: {
+  blockIndex: number;
+  blockCount: number;
   role: string;
-  roleColor: string;
-  borderColor: string;
-  contents: string[];
-  modalHeading: string;
-  /**
-   * When provided, the expand-to-modal view shows the full message payload as
-   * formatted JSON (matching the shape the agent decision trail records). When
-   * omitted, the modal falls back to the joined markdown content (used for
-   * non-message blocks like the System prompt).
-   */
-  expandedJson?: unknown;
-  children?: React.ReactNode;
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const segments = contents.filter((c) => c.length > 0);
-  const fullContent = segments.join('\n\n');
-  const modalLanguage = expandedJson !== undefined ? 'json' : 'markdown';
-  const modalValue =
-    expandedJson !== undefined
-      ? JSON.stringify(expandedJson, null, 2)
-      : fullContent;
+  const modalHeading =
+    blockCount > 1
+      ? `${role} message — block ${blockIndex + 1} of ${blockCount}`
+      : role === 'System'
+        ? 'System prompt'
+        : `${role} message`;
 
   return (
     <>
       <div
         style={{
-          padding: 'var(--cds-spacing-04)',
-          background: 'var(--cds-layer-02)',
-          borderRadius: 4,
-          borderLeft: `3px solid ${borderColor}`,
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 'var(--cds-spacing-03)',
+          marginTop: isFirst ? 0 : 'var(--cds-spacing-04)',
         }}
       >
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 'var(--cds-spacing-03)',
-            marginBottom: 'var(--cds-spacing-02)',
+            flex: 1,
+            minWidth: 0,
+            fontSize: 'var(--cds-body-compact-01-font-size)',
+            lineHeight: '1.5',
+            color: 'var(--cds-text-primary)',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            maxHeight: 160,
+            overflowY: 'auto',
           }}
         >
-          <span
-            style={{
-              fontWeight: 600,
-              textTransform: 'uppercase' as const,
-              letterSpacing: '0.32px',
-              fontSize: 10,
-              color: roleColor,
-            }}
-          >
-            {role}
-          </span>
+          {content}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--cds-spacing-02)',
+            flexShrink: 0,
+          }}
+        >
           <IconButton
             kind="ghost"
             size="sm"
@@ -706,15 +682,16 @@ function ExpandableMessageBlock({
           >
             <Maximize size={16} />
           </IconButton>
+          <IconButton
+            kind="ghost"
+            size="sm"
+            label="Copy"
+            align="left"
+            onClick={() => navigator.clipboard.writeText(content)}
+          >
+            <Copy size={16} />
+          </IconButton>
         </div>
-        {segments.map((segment, index) => (
-          <ExpandableSegment
-            key={index}
-            content={segment}
-            isFirst={index === 0}
-          />
-        ))}
-        {children}
       </div>
       <Modal
         open={isModalOpen}
@@ -723,6 +700,22 @@ function ExpandableMessageBlock({
         size="lg"
         passiveModal
       >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            padding: '0 var(--cds-spacing-05) var(--cds-spacing-03)',
+          }}
+        >
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Copy}
+            onClick={() => navigator.clipboard.writeText(content)}
+          >
+            Copy
+          </Button>
+        </div>
         <Suspense
           fallback={
             <div
@@ -739,8 +732,8 @@ function ExpandableMessageBlock({
         >
           <MonacoEditor
             height="60vh"
-            language={modalLanguage}
-            value={modalValue}
+            language="markdown"
+            value={content}
             options={{
               readOnly: true,
               minimap: {enabled: false},
@@ -757,32 +750,63 @@ function ExpandableMessageBlock({
   );
 }
 
-/**
- * Reshape a conversation message into the agent decision-trail JSON shape
- * (content is an array of `{type: "text", text: ...}` blocks, matching what
- * the backend records). Used by the expand-to-modal view so operators can see
- * the raw payload behind each message.
- */
-function messageToDecisionTrailShape(msg: ConversationMessage) {
-  const out: Record<string, unknown> = {
-    role: msg.role,
-    content: msg.content
-      .filter((text) => text.length > 0)
-      .map((text) => ({type: 'text', text})),
-  };
-  if (msg.timestamp) {
-    out.timestamp = msg.timestamp;
-  }
-  if (msg.documents && msg.documents.length > 0) {
-    out.documents = msg.documents;
-  }
-  if (msg.toolCalls && msg.toolCalls.length > 0) {
-    out.toolCalls = msg.toolCalls;
-  }
-  if (msg.toolResults && msg.toolResults.length > 0) {
-    out.toolResults = msg.toolResults;
-  }
-  return out;
+function ExpandableMessageBlock({
+  role,
+  roleColor,
+  borderColor,
+  contents,
+  children,
+}: {
+  role: string;
+  roleColor: string;
+  borderColor: string;
+  contents: string[];
+  children?: React.ReactNode;
+}) {
+  const segments = contents.filter((c) => c.length > 0);
+
+  return (
+    <div
+      style={{
+        padding: 'var(--cds-spacing-04)',
+        background: 'var(--cds-layer-02)',
+        borderRadius: 4,
+        borderLeft: `3px solid ${borderColor}`,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--cds-spacing-03)',
+          marginBottom: 'var(--cds-spacing-02)',
+        }}
+      >
+        <span
+          style={{
+            fontWeight: 600,
+            textTransform: 'uppercase' as const,
+            letterSpacing: '0.32px',
+            fontSize: 10,
+            color: roleColor,
+          }}
+        >
+          {role}
+        </span>
+      </div>
+      {segments.map((segment, index) => (
+        <ExpandableSegment
+          key={index}
+          content={segment}
+          isFirst={index === 0}
+          blockIndex={index}
+          blockCount={segments.length}
+          role={role}
+        />
+      ))}
+      {children}
+    </div>
+  );
 }
 
 function ConversationHistory({
@@ -848,8 +872,6 @@ function ConversationHistory({
               roleColor="var(--cds-interactive)"
               borderColor="var(--cds-interactive)"
               contents={msg.content}
-              modalHeading="User message"
-              expandedJson={messageToDecisionTrailShape(msg)}
             >
               {msg.documents && msg.documents.length > 0 && (
                 <div
@@ -882,8 +904,6 @@ function ConversationHistory({
               roleColor="#8a3ffc"
               borderColor="#8a3ffc"
               contents={msg.content}
-              modalHeading="Assistant message"
-              expandedJson={messageToDecisionTrailShape(msg)}
             >
               {msg.toolCalls && msg.toolCalls.length > 0 && (
                 <div
@@ -1015,7 +1035,6 @@ function DefaultAgentDetail({agentData}: {agentData: AgentElementData}) {
               roleColor="var(--cds-text-secondary)"
               borderColor="var(--cds-border-subtle-01)"
               contents={[agentData.systemPrompt]}
-              modalHeading="System prompt"
             />
           </div>
         </AccordionItem>
