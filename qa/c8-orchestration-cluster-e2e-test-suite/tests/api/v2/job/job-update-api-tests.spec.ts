@@ -31,6 +31,10 @@ test.describe('Job Update API Tests', () => {
   test.afterEach(afterEach);
 
   test('Update Job - success', async ({request}) => {
+    test.skip(
+      process.env.FORWARD_COMPAT_MODE === 'true',
+      'Skipped in forward-compat mode - job update endpoint behavior changed on main',
+    );
     const jobKey = await activateJobToObtainAValidJobKey(
       request,
       'jobApiTaskType',

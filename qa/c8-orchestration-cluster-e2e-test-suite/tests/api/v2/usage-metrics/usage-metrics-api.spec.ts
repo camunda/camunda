@@ -231,6 +231,10 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         '//Skipped due to bug 43428: https://github.com/camunda/camunda/issues/43428',
       );
     }
+    test.skip(
+      process.env.FORWARD_COMPAT_MODE === 'true',
+      'Skipped in forward-compat mode - auth enforcement changed on main',
+    );
     const startOfTodayLocal = new Date();
     startOfTodayLocal.setHours(0, 0, 0, 0);
     const isoLocalMidnight = startOfTodayLocal.toISOString();

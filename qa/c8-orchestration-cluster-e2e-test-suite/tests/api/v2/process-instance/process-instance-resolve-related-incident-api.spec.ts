@@ -277,6 +277,10 @@ test.describe.parallel('Resolve related incidents API Tests', () => {
   test('Resolve related incidents of a process instance without permissions - Forbidden', async ({
     request,
   }) => {
+    test.skip(
+      process.env.FORWARD_COMPAT_MODE === 'true',
+      'Skipped in forward-compat mode - auth check order changed on main (404 before 403)',
+    );
     const token = encode(
       `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
     );

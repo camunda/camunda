@@ -26,12 +26,15 @@
  * relations), and this tolerance avoids false positives in forward-compat
  * test runs.
  *
- * All other error categories (`[MISSING]`, `[ENUM]`, non-null `[TYPE]`) still
- * fail.
+ * When `FORWARD_COMPAT_MODE=true` is set, `[ENUM]` errors are also filtered
+ * out. A newer server may introduce new enum values not yet declared in
+ * `responses.json`, and this tolerance avoids false positives.
+ *
+ * All other error categories (`[MISSING]`, non-null `[TYPE]`) still fail.
  *
  * Usage: set `AJB_ALLOW_EXTRA_FIELDS: "true"` and optionally
- * `AJB_ALLOW_NULL_VALUES: "true"` in the CI workflow `env` block for
- * forward-compatibility test runs.
+ * `AJB_ALLOW_NULL_VALUES: "true"` and/or `FORWARD_COMPAT_MODE: "true"` in
+ * the CI workflow `env` block for forward-compatibility test runs.
  */
 
 import {
@@ -50,6 +53,7 @@ export {RESPONSE_INDEX} from './_generated/index.js';
 
 const _allowExtraFields = process.env.AJB_ALLOW_EXTRA_FIELDS === 'true';
 const _allowNullValues = process.env.AJB_ALLOW_NULL_VALUES === 'true';
+const _allowEnumExtensions = process.env.FORWARD_COMPAT_MODE === 'true';
 
 // Derive types from the generated functions so they stay in sync with
 // assert-json-body upgrades without manual maintenance.
@@ -60,7 +64,8 @@ function _filterForwardCompatErrors(
   result: ValidationResult,
 ): ValidationResult {
   if (result.ok || !result.errors) return result;
-  if (!_allowExtraFields && !_allowNullValues) return result;
+  if (!_allowExtraFields && !_allowNullValues && !_allowEnumExtensions)
+    return result;
 
   const remaining = result.errors.filter(
     (e: string) =>
@@ -69,7 +74,8 @@ function _filterForwardCompatErrors(
         _allowNullValues &&
         e.startsWith('[TYPE]') &&
         /: expected .*, got null/.test(e)
-      ),
+      ) &&
+      !(_allowEnumExtensions && e.startsWith('[ENUM]')),
   );
   if (remaining.length === 0) {
     return {...result, ok: true, errors: undefined};
@@ -94,7 +100,7 @@ export function validateResponseShape<
   body: unknown,
   options?: ValidateOptions,
 ) {
-  if (!_allowExtraFields && !_allowNullValues) {
+  if (!_allowExtraFields && !_allowNullValues && !_allowEnumExtensions) {
     return _generatedValidateResponseShape(spec, body, options);
   }
 
@@ -131,7 +137,7 @@ export async function validateResponse<
   response: PlaywrightAPIResponse,
   options?: ValidateOptions,
 ) {
-  if (!_allowExtraFields && !_allowNullValues) {
+  if (!_allowExtraFields && !_allowNullValues && !_allowEnumExtensions) {
     return _generatedValidateResponse(spec, response, options);
   }
 
