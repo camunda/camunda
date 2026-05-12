@@ -530,6 +530,11 @@ public class CompactRecordLogger {
 
     result.append(" status:").append(value.getStatus());
 
+    final var changedAttributes = value.getChangedAttributes();
+    if (changedAttributes != null && !changedAttributes.isEmpty()) {
+      result.append(" changed:").append(changedAttributes);
+    }
+
     return result.toString();
   }
 

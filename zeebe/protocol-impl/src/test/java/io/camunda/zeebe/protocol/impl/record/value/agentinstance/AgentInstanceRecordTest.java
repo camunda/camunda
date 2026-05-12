@@ -68,9 +68,9 @@ final class AgentInstanceRecordTest {
   }
 
   @Test
-  void shouldDefaultStatusToInitializing() {
+  void shouldDefaultStatusToUnspecified() {
     final AgentInstanceRecord record = new AgentInstanceRecord();
-    assertThat(record.getStatus()).isEqualTo(AgentInstanceStatus.INITIALIZING);
+    assertThat(record.getStatus()).isEqualTo(AgentInstanceStatus.UNSPECIFIED);
   }
 
   @Test
@@ -203,6 +203,39 @@ final class AgentInstanceRecordTest {
         .containsExactly(
             tuple("extract_line_items", "", "extract-line-items-task"),
             tuple("MCP_ocr___scan_document", "OCR a PDF", "MCP_ocr"));
+  }
+
+  @Test
+  void shouldDefaultChangedAttributesToEmptyList() {
+    final AgentInstanceRecord record = new AgentInstanceRecord();
+    assertThat(record.getChangedAttributes()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripChangedAttributesViaMsgPack() {
+    // given
+    final AgentInstanceRecord original =
+        new AgentInstanceRecord().setChangedAttributes(List.of("status", "metrics"));
+
+    // when
+    final AgentInstanceRecord copy = new AgentInstanceRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getChangedAttributes()).containsExactly("status", "metrics");
+  }
+
+  @Test
+  void shouldReplaceExistingChangedAttributesOnSet() {
+    // given
+    final AgentInstanceRecord record =
+        new AgentInstanceRecord().setChangedAttributes(List.of("status"));
+
+    // when
+    record.setChangedAttributes(List.of("metrics", "tools"));
+
+    // then
+    assertThat(record.getChangedAttributes()).containsExactly("metrics", "tools");
   }
 
   @Test
