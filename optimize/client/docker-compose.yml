@@ -181,7 +181,7 @@ services:
       KEYCLOAK_USERS_6_ROLES_1: 'Identity'
   operate:
     profiles: ['self-managed', 'self-managed:elasticsearch']
-    image: camunda/camunda:${CAMUNDA_VERSION:-latest}
+    image: camunda/camunda:${OPERATE_VERSION:-8.9.0}
     container_name: operate
     environment:
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
@@ -211,7 +211,7 @@ services:
     restart: always
   operate-opensearch:
     profiles: ['self-managed:opensearch']
-    image: camunda/camunda:${CAMUNDA_VERSION:-latest}
+    image: camunda/camunda:${OPERATE_VERSION:-8.9.0}
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080
