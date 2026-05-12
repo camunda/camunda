@@ -256,7 +256,7 @@ public class CamundaProcessInstanceContextTest {
   }
 
   @Test
-  public void shouldNotResolveProcessInstanceKeyInOutputMapping() {
+  public void shouldResolveProcessInstanceKeyInOutputMapping() {
     // given - service task with output mapping using camunda.processInstance.key
     final var process =
         Bpmn.createExecutableProcess("processOut")
@@ -275,20 +275,20 @@ public class CamundaProcessInstanceContextTest {
     // when - the job completes, triggering the output mapping
     ENGINE.job().withType("outType").ofInstance(processInstanceKey).complete();
 
-    // then - the namespace must not be available outside input mappings,
-    // so the output mapping resolves to null (FEEL semantics for missing path)
+    // then - the namespace is now available in all FEEL expressions, so the
+    // output mapping resolves to the actual processInstanceKey
     final var variableRecord =
-        io.camunda.zeebe.test.util.record.RecordingExporter.variableRecords()
+        RecordingExporter.variableRecords()
             .withProcessInstanceKey(processInstanceKey)
             .withName("outVar")
             .getFirst()
             .getValue();
 
-    assertThat(variableRecord.getValue()).isEqualTo("null");
+    assertThat(variableRecord.getValue()).isEqualTo(String.valueOf(processInstanceKey));
   }
 
   @Test
-  public void shouldNotResolveProcessInstanceKeyInJobTypeExpression() {
+  public void shouldResolveProcessInstanceKeyInJobTypeExpression() {
     // given - job type expression using camunda.processInstance.key
     final var process =
         Bpmn.createExecutableProcess("processJobType")
@@ -304,14 +304,47 @@ public class CamundaProcessInstanceContextTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId("processJobType").create();
 
-    // then - the namespace must not be available, so the expression evaluates to
-    // null which is not a valid job type, creating an incident
-    final var incident =
-        io.camunda.zeebe.test.util.record.RecordingExporter.incidentRecords()
+    // then - the namespace is now available in all FEEL expressions, so the job
+    // type expression resolves to the string form of the processInstanceKey
+    final var job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst()
             .getValue();
 
-    assertThat(incident.getErrorMessage()).contains("string(camunda.processInstance.key)");
+    assertThat(job.getType()).isEqualTo(String.valueOf(processInstanceKey));
+  }
+
+  @Test
+  public void shouldResolveProcessInstanceKeyInSequenceFlowCondition() {
+    // given - a sequence-flow condition referencing camunda.processInstance.key
+    final var process =
+        Bpmn.createExecutableProcess("processCondition")
+            .startEvent()
+            .exclusiveGateway("gateway")
+            .conditionExpression("=camunda.processInstance.key > 0")
+            .serviceTask("matchedTask", b -> b.zeebeJobType("matched"))
+            .endEvent()
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
+            .endEvent("noEnd")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("processCondition").create();
+
+    // then - the condition resolves truthy because the namespace is available,
+    // so the "matched" job is created on the truthy branch
+    final var job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("matched")
+            .getFirst()
+            .getValue();
+
+    assertThat(job.getType()).isEqualTo("matched");
   }
 }

@@ -1,14 +1,15 @@
-# `camunda.processInstance` Input-Mapping Context
+# `camunda.processInstance` Expression Context
 
-This document specifies the `camunda.processInstance` FEEL expression context, available in input
-mapping expressions on any BPMN flow node. The context currently exposes two properties — `key` and
-`businessId` — letting a model reference attributes of the running process instance without
-relying on a service task or worker to inject them.
+This document specifies the `camunda.processInstance` FEEL expression context. It is available in
+any FEEL expression evaluated by the engine within a running process instance — input and output
+mappings, sequence-flow conditions, job-type/retries/assignee/due-date expressions, listener
+expressions, multi-instance collections, and so on. The context currently exposes two properties —
+`key` and `businessId` — letting a model reference attributes of the running process instance
+without relying on a service task or worker to inject them.
 
-The feature implements the input-mapping slice of the broader
+The feature implements the first slice of the broader
 [`camunda.*` expression namespace tracked in #10987](https://github.com/camunda/camunda/issues/10987).
-Other contexts in that issue (`camunda.process`, `camunda.userTask`, …) are intentionally out of
-scope here.
+Other contexts in that issue (`camunda.process`, `camunda.userTask`, …) are out of scope here.
 
 ## Why
 
@@ -39,28 +40,28 @@ camunda.processInstance.businessId or "no-bid"
 
 ### Where it works
 
-Only in **input mapping expressions** (`zeebe:input` on any flow node — process, sub-process,
-activity, event). It is **not** visible in:
+The namespace is registered globally for the engine's FEEL evaluation, so it resolves wherever the
+engine evaluates an expression in the scope of a running process instance. Example sites:
 
-- output mappings (`zeebe:output`),
-- sequence flow conditions,
+- input mappings (`zeebe:input`) and output mappings (`zeebe:output`),
+- sequence-flow conditions,
 - job type / retries / assignee / candidate-groups / due-date expressions,
-- listener variable expressions,
-- decision references,
-- any other FEEL evaluation in the engine.
+- execution and task listener variable expressions,
+- multi-instance input collections and completion conditions,
+- signal names and message correlation key expressions,
+- decision references (`zeebe:calledDecision`).
 
-In those contexts, the path resolves to `null` (or produces a type incident if a non-null type is
-required, e.g. for `zeebe:taskDefinition type`).
-
-This narrow scope is deliberate. The broader breakdown in #10987 plans to scope different
-`camunda.*` contexts to different expressions (e.g., `camunda.userTask` on output mappings of user
-tasks). Leaking `processInstance` everywhere up front would foreclose those decisions.
+The only remaining limitation: evaluations that are **not** tied to a running process instance —
+for example, ad-hoc decision evaluation via the API outside of any process — have no element-
+instance scope to look up. In those cases `camunda.processInstance.key` and
+`camunda.processInstance.businessId` both resolve to `null`, because
+`ProcessInstanceEvaluationContext` short-circuits when `processInstanceKey < 0`.
 
 ### Precedence
 
-The lookup order in an input mapping expression is:
+The lookup order in an expression is:
 
-1. Body-provided variables (mapping input variables on the record).
+1. Body-provided variables (e.g. mapping input variables on the record).
 2. Process / element instance variables visible from the activating element's scope, walked up the
    scope tree.
 3. Tenant-scoped cluster variables.
@@ -73,7 +74,7 @@ Process variables therefore **shadow** the namespace. A user who has a process v
 
 ## Examples
 
-### Pass the key to a job worker
+### Pass the key to a job worker (input mapping)
 
 ```xml
 <bpmn:serviceTask id="notify">
@@ -97,9 +98,24 @@ The job activation payload will contain `pik` set to the running process instanc
 If the parent process was started with `businessId = "ORDER-42"` and `orderLine = 3`, the input
 mapping yields `"ORDER-42-shipment-3"`.
 
-### Consistent across nested input mappings
+### Use the key in a job type expression
 
-The same `camunda.processInstance.key` resolves to the same value in every input mapping evaluated
+```xml
+<bpmn:serviceTask id="route">
+  <bpmn:extensionElements>
+    <zeebe:taskDefinition
+      type="=&quot;worker-&quot; + string(camunda.processInstance.key)" />
+  </bpmn:extensionElements>
+</bpmn:serviceTask>
+```
+
+The engine activates a job whose type embeds the process instance key — useful for routing or for
+isolating workers per instance. The same pattern works for sequence-flow conditions
+(`=camunda.processInstance.key = parentPik`), due-date expressions, and any other engine FEEL site.
+
+### Consistent across the whole instance
+
+The same `camunda.processInstance.key` resolves to the same value in every expression evaluated
 within a single process instance, regardless of how deeply nested the activating element is. This is
 because resolution looks up the element instance's `ProcessInstanceRecord`, which carries the same
 `processInstanceKey` for every element in the instance.
@@ -107,40 +123,25 @@ because resolution looks up the element instance's `ProcessInstanceRecord`, whic
 ## Design
 
 ```
-                                  ┌───────────────────────────────────┐
-zeebe:input expression ──────────►│ inputMappingExpressionProcessor   │
-                                  │   camunda.vars                    │
-                                  │   camunda.processInstance         │
-                                  └───────────────────────────────────┘
-
-zeebe:output, conditions,         ┌───────────────────────────────────┐
-job type, listener expr.  ───────►│ expressionProcessor               │
-                                  │   camunda.vars                    │
+all engine FEEL expressions ─────►┌───────────────────────────────────┐
+(input/output mappings,           │ expressionProcessor               │
+ conditions, job type,            │   camunda.vars                    │
+ listeners, …)                    │   camunda.processInstance         │
                                   └───────────────────────────────────┘
 ```
 
-Two `ExpressionProcessor` instances are constructed in
+A single `ExpressionProcessor` is constructed in
 [`BpmnBehaviorsImpl`](../../zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/behavior/BpmnBehaviorsImpl.java).
-Both share the same `camundaVars` sub-context, so `camunda.vars.*` works everywhere. Only the
-input-mapping processor's `camunda` namespace also registers `processInstance`.
-
-[`BpmnVariableMappingBehavior`](../../zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/behavior/BpmnVariableMappingBehavior.java)
-holds both processors; `applyInputMappings` uses the input-mapping one, `applyOutputMappings` keeps
-the regular one.
+Its `camunda` namespace registers both `vars` and `processInstance`, so every consumer of the
+processor — `BpmnVariableMappingBehavior` for input and output mappings, `ExpressionBehavior` for
+everything else — sees the same namespace.
 
 [`ProcessInstanceEvaluationContext`](../../zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/expression/ProcessInstanceEvaluationContext.java)
 is a `ScopedEvaluationContext`. On `processScoped(scopeKey)` it looks up the element instance by
 key, reads `processInstanceKey` and `businessId` from its `ProcessInstanceRecord`, and stores them.
 `getVariable("key")` and `getVariable("businessId")` then return the cached values encoded as
-MessagePack.
-
-### Why two processors instead of `ExpressionProcessor.prependContext`?
-
-Prepending a fresh `NamespacedEvaluationContext` with `camunda → processInstance` at input mapping
-evaluation time would have shadowed `camunda.vars` — `CombinedEvaluationContext` returns the first
-context whose `camunda` lookup yields a non-null result, not a merged view. Building two processors
-sharing the inner `camundaVars` keeps the two namespaces co-located in input mappings while keeping
-`processInstance` invisible to everything else.
+MessagePack. When `processInstanceKey < 0` — i.e. the evaluation is not tied to a running instance —
+the context short-circuits and both properties resolve to `null`.
 
 ## Testing
 
@@ -152,15 +153,15 @@ covers:
 - `businessId` resolves to the value set on `CreateProcessInstance`.
 - `businessId` resolves to `null` when none was set.
 - `businessId` composes for child-id derivation in a sub-process input mapping.
-- The namespace does **not** resolve in output mappings (the mapped variable comes out as `null`).
-- The namespace does **not** resolve in a job type expression (results in an incident referring to
-  the offending expression).
+- The namespace resolves in output mappings.
+- The namespace resolves in job type expressions.
+- The namespace resolves in sequence-flow conditions.
 
 ## Future extensions
 
 Other `camunda.*` contexts queued in #10987 — `camunda.process.{key, id, name, version,
-versionTag}`, `camunda.userTask.{assignee, dueDate, followUpDate}`, etc. — are expected to follow
-the same pattern: a dedicated `ScopedEvaluationContext` registered into a context-specific
-`ExpressionProcessor` for the expression types where it should be visible. Each new context is a
-chance to revisit whether the namespace should be added to one of the existing processors or get
-its own.
+versionTag}`, `camunda.userTask.{assignee, dueDate, followUpDate}`, etc. — may want narrower
+scoping than `processInstance`. `camunda.userTask`, for instance, only makes sense within a
+user-task lifecycle and should not leak into unrelated expressions. Each new context is a chance
+to decide whether to extend the global `camunda` namespace or register a scoped variant for
+specific expression types.

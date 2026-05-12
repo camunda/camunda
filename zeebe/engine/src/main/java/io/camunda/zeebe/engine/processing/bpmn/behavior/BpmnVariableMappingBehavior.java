@@ -29,7 +29,6 @@ import org.agrona.DirectBuffer;
 
 public final class BpmnVariableMappingBehavior {
   private final ExpressionProcessor expressionProcessor;
-  private final ExpressionProcessor inputMappingExpressionProcessor;
   private final VariableState variablesState;
   private final ElementInstanceState elementInstanceState;
   private final VariableBehavior variableBehavior;
@@ -39,12 +38,10 @@ public final class BpmnVariableMappingBehavior {
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
-      final ExpressionProcessor inputMappingExpressionProcessor,
       final ProcessingState processingState,
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior) {
     this.expressionProcessor = expressionProcessor;
-    this.inputMappingExpressionProcessor = inputMappingExpressionProcessor;
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     this.variableBehavior = variableBehavior;
@@ -70,7 +67,7 @@ public final class BpmnVariableMappingBehavior {
     final long rootProcessInstanceKey = context.getRootProcessInstanceKey();
 
     if (inputMappingExpression.isPresent()) {
-      return inputMappingExpressionProcessor
+      return expressionProcessor
           .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey, tenantId)
           .map(
               result -> {
