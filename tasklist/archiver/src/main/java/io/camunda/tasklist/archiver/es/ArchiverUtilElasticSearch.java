@@ -66,11 +66,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
         .whenComplete(
             (response, e) -> {
               try {
-                final var timer = getArchiverDeleteQueryTimer();
-                startTimer.stop(timer);
                 final var result = handleResponse(response, e, sourceIndexName, "delete");
-                result.ifLeft(
-                    throwable -> trackMetricForDeleteFailures(processInstanceKeys, throwable));
                 result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
               } catch (final Exception unexpected) {
                 LOGGER.error(
@@ -79,6 +75,21 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
                     unexpected);
                 if (!deleteFuture.isDone()) {
                   deleteFuture.completeExceptionally(unexpected);
+                }
+              } finally {
+                try {
+                  final var timer = getArchiverDeleteQueryTimer();
+                  startTimer.stop(timer);
+                } catch (final Exception timerEx) {
+                  LOGGER.warn(
+                      "Failed to record delete timer for index [{}]", sourceIndexName, timerEx);
+                }
+                if (deleteFuture.isCompletedExceptionally()) {
+                  try {
+                    trackMetricForDeleteFailures(processInstanceKeys, e);
+                  } catch (final Exception metricEx) {
+                    LOGGER.warn("Failed to record delete failure metric", metricEx);
+                  }
                 }
               }
             });
@@ -104,11 +115,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
         .whenComplete(
             (response, e) -> {
               try {
-                final var reindexTimer = getArchiverReindexQueryTimer();
-                startTimer.stop(reindexTimer);
                 final var result = handleResponse(response, e, sourceIndexName, "reindex");
-                result.ifLeft(
-                    throwable -> trackMetricForReindexFailures(processInstanceKeys, throwable));
                 result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
               } catch (final Exception unexpected) {
                 LOGGER.error(
@@ -117,6 +124,21 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
                     unexpected);
                 if (!reindexFuture.isDone()) {
                   reindexFuture.completeExceptionally(unexpected);
+                }
+              } finally {
+                try {
+                  final var reindexTimer = getArchiverReindexQueryTimer();
+                  startTimer.stop(reindexTimer);
+                } catch (final Exception timerEx) {
+                  LOGGER.warn(
+                      "Failed to record reindex timer for index [{}]", sourceIndexName, timerEx);
+                }
+                if (reindexFuture.isCompletedExceptionally()) {
+                  try {
+                    trackMetricForReindexFailures(processInstanceKeys, e);
+                  } catch (final Exception metricEx) {
+                    LOGGER.warn("Failed to record reindex failure metric", metricEx);
+                  }
                 }
               }
             });

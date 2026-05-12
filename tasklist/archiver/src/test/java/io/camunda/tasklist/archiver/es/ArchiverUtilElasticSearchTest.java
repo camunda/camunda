@@ -15,6 +15,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.util.ElasticsearchUtil;
@@ -163,14 +164,14 @@ public class ArchiverUtilElasticSearchTest {
   public void deleteDocumentsCompletesFutureWhenTimerThrows() throws Exception {
     try (final MockedStatic<ElasticsearchUtil> mockedStatic = mockStatic(ElasticsearchUtil.class);
         final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
-      mockedTimer.when(Timer::start).thenReturn(mock(Timer.Sample.class));
+      final Timer.Sample timerSample = mock(Timer.Sample.class);
+      when(timerSample.stop(any())).thenThrow(new RuntimeException("timer exploded"));
+      mockedTimer.when(Timer::start).thenReturn(timerSample);
       final CompletableFuture<BulkByScrollResponse> failed = new CompletableFuture<>();
       failed.completeExceptionally(new RuntimeException("ES delete failed"));
       mockedStatic
           .when(() -> ElasticsearchUtil.deleteByQueryAsync(any(), any(), any()))
           .thenReturn(failed);
-      // metrics.getTimer() returns null → timer.stop(null) will throw NPE inside the callback
-      // before handleResponse or metric tracking even runs
 
       final CompletableFuture<Long> res = underTest.deleteDocuments("idx", "id", List.of("1"));
 
@@ -185,7 +186,9 @@ public class ArchiverUtilElasticSearchTest {
   public void reindexDocumentsCompletesFutureWhenTimerThrows() throws Exception {
     try (final MockedStatic<ElasticsearchUtil> mockedStatic = mockStatic(ElasticsearchUtil.class);
         final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
-      mockedTimer.when(Timer::start).thenReturn(mock(Timer.Sample.class));
+      final Timer.Sample timerSample = mock(Timer.Sample.class);
+      when(timerSample.stop(any())).thenThrow(new RuntimeException("timer exploded"));
+      mockedTimer.when(Timer::start).thenReturn(timerSample);
       final CompletableFuture<BulkByScrollResponse> failed = new CompletableFuture<>();
       failed.completeExceptionally(new RuntimeException("ES reindex failed"));
       mockedStatic

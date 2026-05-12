@@ -302,14 +302,14 @@ public class ElasticsearchArchiveRepositoryTest {
   public void testDeleteDocumentsCompletesFutureWhenTimerThrows() throws Exception {
     try (final MockedStatic<ElasticsearchUtil> mockedStatic = mockStatic(ElasticsearchUtil.class);
         final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
-      mockedTimer.when(Timer::start).thenReturn(mock(Timer.Sample.class));
+      final Timer.Sample timerSample = mock(Timer.Sample.class);
+      when(timerSample.stop(any())).thenThrow(new RuntimeException("timer exploded"));
+      mockedTimer.when(Timer::start).thenReturn(timerSample);
       final CompletableFuture<BulkByScrollResponse> failedFuture = new CompletableFuture<>();
       failedFuture.completeExceptionally(new RuntimeException("ES failed"));
       mockedStatic
           .when(() -> ElasticsearchUtil.deleteAsync(any(), any(), any()))
           .thenReturn(failedFuture);
-      // metrics.getTimer() returns null → startTimer.stop(null) throws NPE before
-      // handleResponse or metric tracking ever runs
 
       final CompletableFuture<Void> res = underTest.deleteDocuments("index", "id", List.of());
 
@@ -322,7 +322,9 @@ public class ElasticsearchArchiveRepositoryTest {
   public void testReindexDocumentsCompletesFutureWhenTimerThrows() throws Exception {
     try (final MockedStatic<ElasticsearchUtil> mockedStatic = mockStatic(ElasticsearchUtil.class);
         final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
-      mockedTimer.when(Timer::start).thenReturn(mock(Timer.Sample.class));
+      final Timer.Sample timerSample = mock(Timer.Sample.class);
+      when(timerSample.stop(any())).thenThrow(new RuntimeException("timer exploded"));
+      mockedTimer.when(Timer::start).thenReturn(timerSample);
       final CompletableFuture<BulkByScrollResponse> failedFuture = new CompletableFuture<>();
       failedFuture.completeExceptionally(new RuntimeException("ES failed"));
       mockedStatic
