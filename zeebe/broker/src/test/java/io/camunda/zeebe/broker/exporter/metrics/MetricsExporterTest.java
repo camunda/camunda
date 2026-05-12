@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.metrics;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -14,12 +15,14 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.micrometer.core.instrument.distribution.ValueAtPercentile;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -27,6 +30,8 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -209,7 +214,8 @@ class MetricsExporterTest {
       return Stream.of(
           new TypeCombination(RecordType.EVENT, ValueType.JOB),
           new TypeCombination(RecordType.EVENT, ValueType.JOB_BATCH),
-          new TypeCombination(RecordType.EVENT, ValueType.PROCESS_INSTANCE));
+          new TypeCombination(RecordType.EVENT, ValueType.PROCESS_INSTANCE),
+          new TypeCombination(RecordType.EVENT, ValueType.VARIABLE));
     }
 
     /** Returns the inverse of {@link #acceptedCombinations()}. */
@@ -269,5 +275,147 @@ class MetricsExporterTest {
 
     /** Defines a combination of a RecordType and a ValueType. */
     record TypeCombination(RecordType recordType, ValueType valueType) {}
+  }
+
+  @Nested
+  @DisplayName("MetricsExporter records variable metrics")
+  class VariableMetricsTest {
+
+    private static final String BPMN_PROCESS_ID = "process";
+    private static final String VARIABLE_NAME = "myVar";
+    private static final int PARTITION_ID = 1;
+
+    private MetricsExporter exporter;
+
+    @BeforeEach
+    void setUp() throws Exception {
+      exporter = new MetricsExporter();
+      exporter.configure(context);
+      exporter.open(new ExporterTestController());
+    }
+
+    @Test
+    void shouldRecordBytesOnVariableCreated() {
+      // given
+      final var valueBytes = new byte[128];
+      final var variableRecord = newVariableRecord(valueBytes);
+
+      // when
+      exporter.export(
+          ImmutableRecord.builder()
+              .withRecordType(RecordType.EVENT)
+              .withValueType(ValueType.VARIABLE)
+              .withIntent(VariableIntent.CREATED)
+              .withPartitionId(PARTITION_ID)
+              .withValue(variableRecord)
+              .build());
+
+      // then
+      final var counter =
+          context
+              .getMeterRegistry()
+              .find("zeebe.variable.created.bytes")
+              .tag("partition", String.valueOf(PARTITION_ID))
+              .tag("bpmnProcessId", BPMN_PROCESS_ID)
+              .counter();
+      assertThat(counter)
+          .describedAs("Expected zeebe.variable.created.bytes counter to be registered")
+          .isNotNull();
+      assertThat(counter.count())
+          .describedAs("Expected counter to record raw msgpack byte length")
+          .isEqualTo((double) variableRecord.getValueLength());
+      assertThat(variableRecord.getValueLength()).isEqualTo(valueBytes.length);
+    }
+
+    @Test
+    void shouldRecordSizeOnVariableCreated() {
+      // given
+      final var valueBytes = new byte[256];
+      final var variableRecord = newVariableRecord(valueBytes);
+
+      // when
+      exporter.export(
+          ImmutableRecord.builder()
+              .withRecordType(RecordType.EVENT)
+              .withValueType(ValueType.VARIABLE)
+              .withIntent(VariableIntent.CREATED)
+              .withPartitionId(PARTITION_ID)
+              .withValue(variableRecord)
+              .build());
+
+      // then
+      final var summary =
+          context
+              .getMeterRegistry()
+              .find("zeebe.variable.created.size")
+              .tag("partition", String.valueOf(PARTITION_ID))
+              .tag("bpmnProcessId", BPMN_PROCESS_ID)
+              .summary();
+      assertThat(summary)
+          .describedAs("Expected zeebe.variable.created.size summary to be registered")
+          .isNotNull();
+      assertThat(summary.count()).isOne();
+      assertThat(summary.totalAmount())
+          .describedAs("Expected summary total to match raw msgpack byte length")
+          .isEqualTo((double) variableRecord.getValueLength());
+    }
+
+    @Test
+    void shouldIgnoreVariableUpdatedEvents() {
+      // given
+      final var valueBytes = new byte[64];
+      final var variableRecord = newVariableRecord(valueBytes);
+
+      // when
+      exporter.export(
+          ImmutableRecord.builder()
+              .withRecordType(RecordType.EVENT)
+              .withValueType(ValueType.VARIABLE)
+              .withIntent(VariableIntent.UPDATED)
+              .withPartitionId(PARTITION_ID)
+              .withValue(variableRecord)
+              .build());
+
+      // then
+      assertThat(context.getMeterRegistry().find("zeebe.variable.created.bytes").counter())
+          .describedAs("Expected no zeebe.variable.created.bytes counter on UPDATED")
+          .isNull();
+      assertThat(context.getMeterRegistry().find("zeebe.variable.created.size").summary())
+          .describedAs("Expected no zeebe.variable.created.size summary on UPDATED")
+          .isNull();
+    }
+
+    @Test
+    void shouldIgnoreVariableMigratedEvents() {
+      // given
+      final var valueBytes = new byte[64];
+      final var variableRecord = newVariableRecord(valueBytes);
+
+      // when
+      exporter.export(
+          ImmutableRecord.builder()
+              .withRecordType(RecordType.EVENT)
+              .withValueType(ValueType.VARIABLE)
+              .withIntent(VariableIntent.MIGRATED)
+              .withPartitionId(PARTITION_ID)
+              .withValue(variableRecord)
+              .build());
+
+      // then
+      assertThat(context.getMeterRegistry().find("zeebe.variable.created.bytes").counter())
+          .describedAs("Expected no zeebe.variable.created.bytes counter on MIGRATED")
+          .isNull();
+      assertThat(context.getMeterRegistry().find("zeebe.variable.created.size").summary())
+          .describedAs("Expected no zeebe.variable.created.size summary on MIGRATED")
+          .isNull();
+    }
+
+    private VariableRecord newVariableRecord(final byte[] valueBytes) {
+      final var record = new VariableRecord();
+      record.setValue(new UnsafeBuffer(valueBytes));
+      record.setName(wrapString(VARIABLE_NAME));
+      record.setBpmnProcessId(wrapString(BPMN_PROCESS_ID));
+      return record;
+    }
   }
 }
