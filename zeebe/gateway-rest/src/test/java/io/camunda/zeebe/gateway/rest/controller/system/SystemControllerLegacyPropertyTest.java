@@ -68,7 +68,7 @@ public class SystemControllerLegacyPropertyTest extends RestControllerTest {
                 "isEnterprise": true
               },
               "cloud": {
-                "stage": "test-stage",
+                "stage": "dev",
                 "mixpanelToken": "test-token",
                 "mixpanelAPIHost": "test-host"
               }
@@ -86,7 +86,7 @@ public class SystemControllerLegacyPropertyTest extends RestControllerTest {
       final WebappConfiguration config = new WebappConfiguration();
       config.setEnterprise(true);
       final WebappConfiguration.Cloud cloud = config.getCloud();
-      cloud.setStage("test-stage");
+      cloud.setStage("dev");
       cloud.setMixpanelToken("test-token");
       cloud.setMixpanelApiHost("test-host");
       return config;
