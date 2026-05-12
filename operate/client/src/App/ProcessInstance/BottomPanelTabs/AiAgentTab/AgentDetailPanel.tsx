@@ -766,7 +766,10 @@ function ExpandableSegment({
 const TIMELINE_COLUMN_WIDTH = 28;
 const TIMELINE_LINE_WIDTH = 1;
 const TIMELINE_DOT_SIZE = 10;
-const TIMELINE_DOT_TOP_OFFSET = 6;
+// Dot top offset is half of (role-label line-height - dot height) so the dot
+// center vertically aligns with the role label's center. Label-01 line-height
+// is 16; dot height is 10; offset = (16 - 10) / 2 = 3.
+const TIMELINE_DOT_TOP_OFFSET = 3;
 const TIMELINE_LINE_COLOR = 'var(--cds-border-strong-01)';
 
 function TimelineColumn({
@@ -892,7 +895,17 @@ function ExpandableMessageBlock({
 
   if (variant === 'timeline') {
     return (
-      <div style={{display: 'flex', alignItems: 'stretch'}}>
+      // Inter-message space is paddingBottom on the wrapper (instead of a
+      // parent flex-gap), so the absolutely-positioned line in the timeline
+      // column extends through it — the spine reads as one continuous line
+      // running from the first dot to the last dot.
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'stretch',
+          paddingBottom: isLast ? 0 : 'var(--cds-spacing-06)',
+        }}
+      >
         <TimelineColumn
           dotColor={borderColor}
           isFirst={isFirst}
@@ -938,7 +951,8 @@ function ConversationHistory({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 'var(--cds-spacing-06)',
+        // Inter-message spacing comes from each message's paddingBottom so
+        // the timeline line continues through the gap. No parent gap here.
         width: '100%',
       }}
     >
