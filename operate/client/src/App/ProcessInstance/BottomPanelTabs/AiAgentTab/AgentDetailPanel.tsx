@@ -11,6 +11,7 @@ import {Accordion, AccordionItem, IconButton, Modal} from '@carbon/react';
 import {
   Maximize,
   Time,
+  CheckmarkOutline,
   MeterAlt,
   DocumentBlank,
   Chip,
@@ -287,6 +288,8 @@ function StatusAccordion({agentData}: {agentData: AgentElementData}) {
     return lastIteration.toolCalls.filter((t) => t.status === 'ACTIVE');
   })();
 
+  const StatusIcon = agentData.status === 'COMPLETED' ? CheckmarkOutline : Time;
+
   const accordionTitle = (
     <span
       style={{
@@ -295,7 +298,7 @@ function StatusAccordion({agentData}: {agentData: AgentElementData}) {
         gap: 'var(--cds-spacing-03)',
       }}
     >
-      <Time size={16} />
+      <StatusIcon size={16} />
       Status: {statusLabel}
     </span>
   );
@@ -319,7 +322,7 @@ function StatusAccordion({agentData}: {agentData: AgentElementData}) {
             {currentMessage}
           </div>
         )}
-        {activeTools.length > 0 && (
+        {agentData.status !== 'COMPLETED' && activeTools.length > 0 && (
           <div
             style={{
               display: 'flex',
