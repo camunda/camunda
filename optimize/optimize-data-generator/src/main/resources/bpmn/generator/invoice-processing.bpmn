@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+             exporter="Camunda Web Modeler" exporterVersion="0.0.0">
+
+  <process id="invoice-processing" isExecutable="true">
+    <startEvent id="startEvent_1">
+      <outgoing>f0</outgoing>
+    </startEvent>
+    <serviceTask id="serviceTask_1" name="Validate invoice">
+      <incoming>f0</incoming>
+      <outgoing>f1</outgoing>
+    </serviceTask>
+    <serviceTask id="serviceTask_2" name="Calculate amounts">
+      <incoming>f1</incoming>
+      <outgoing>f2</outgoing>
+    </serviceTask>
+    <userTask id="userTask_1" name="Approve invoice">
+      <incoming>f2</incoming>
+      <outgoing>f3</outgoing>
+    </userTask>
+    <endEvent id="endEvent_1">
+      <incoming>f3</incoming>
+    </endEvent>
+    <sequenceFlow id="f0" sourceRef="startEvent_1"  targetRef="serviceTask_1"/>
+    <sequenceFlow id="f1" sourceRef="serviceTask_1" targetRef="serviceTask_2"/>
+    <sequenceFlow id="f2" sourceRef="serviceTask_2" targetRef="userTask_1"/>
+    <sequenceFlow id="f3" sourceRef="userTask_1"    targetRef="endEvent_1"/>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="invoice-processing">
+      <bpmndi:BPMNShape id="startEvent_1_di" bpmnElement="startEvent_1">
+        <dc:Bounds x="152" y="62" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="serviceTask_1_di" bpmnElement="serviceTask_1">
+        <dc:Bounds x="240" y="40" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="serviceTask_2_di" bpmnElement="serviceTask_2">
+        <dc:Bounds x="390" y="40" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="userTask_1_di" bpmnElement="userTask_1">
+        <dc:Bounds x="540" y="40" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endEvent_1_di" bpmnElement="endEvent_1">
+        <dc:Bounds x="702" y="62" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="f0_di" bpmnElement="f0">
+        <di:waypoint x="188" y="80"/><di:waypoint x="240" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f1_di" bpmnElement="f1">
+        <di:waypoint x="340" y="80"/><di:waypoint x="390" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f2_di" bpmnElement="f2">
+        <di:waypoint x="490" y="80"/><di:waypoint x="540" y="80"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="f3_di" bpmnElement="f3">
+        <di:waypoint x="640" y="80"/><di:waypoint x="702" y="80"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
