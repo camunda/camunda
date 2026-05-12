@@ -24,6 +24,7 @@ import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -55,51 +56,39 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
       final String sourceIndexName,
       final String idFieldName,
       final List<String> processInstanceKeys) {
-    final var deleteFuture = new CompletableFuture<Long>();
     final var deleteRequest =
         createDeleteByQueryRequestWithDefaults(sourceIndexName)
             .setQuery(termsQuery(idFieldName, processInstanceKeys))
             .setMaxRetries(UPDATE_RETRY_COUNT);
     final var startTimer = Timer.start();
 
-    sendDeleteRequest(deleteRequest)
-        .whenComplete(
+    return sendDeleteRequest(deleteRequest)
+        .<Long>handle(
             (response, e) -> {
-              Throwable failure = e;
+              final var result = handleResponse(response, e, sourceIndexName, "delete");
+              if (result.isLeft()) {
+                throw new CompletionException(result.getLeft());
+              }
+              return result.get();
+            })
+        .whenComplete(
+            (result, e) -> {
               try {
-                final var result = handleResponse(response, e, sourceIndexName, "delete");
-                if (result.isLeft()) {
-                  failure = result.getLeft();
-                }
-                result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
-              } catch (final Exception unexpected) {
-                failure = unexpected;
-                LOGGER.error(
-                    "Unexpected error in delete callback for index [{}]",
-                    sourceIndexName,
-                    unexpected);
-                if (!deleteFuture.isDone()) {
-                  deleteFuture.completeExceptionally(unexpected);
-                }
-              } finally {
+                startTimer.stop(getArchiverDeleteQueryTimer());
+              } catch (final Exception ex) {
+                LOGGER.warn("Failed to record delete timer for index [{}]", sourceIndexName, ex);
+              }
+            })
+        .whenComplete(
+            (val, e) -> {
+              if (e != null) {
                 try {
-                  final var timer = getArchiverDeleteQueryTimer();
-                  startTimer.stop(timer);
-                } catch (final Exception timerEx) {
-                  LOGGER.warn(
-                      "Failed to record delete timer for index [{}]", sourceIndexName, timerEx);
-                }
-                if (deleteFuture.isCompletedExceptionally() && failure != null) {
-                  try {
-                    trackMetricForDeleteFailures(processInstanceKeys, failure);
-                  } catch (final Exception metricEx) {
-                    LOGGER.warn("Failed to record delete failure metric", metricEx);
-                  }
+                  trackMetricForDeleteFailures(processInstanceKeys, unwrapCompletion(e));
+                } catch (final Exception ex) {
+                  LOGGER.warn("Failed to record delete failure metric", ex);
                 }
               }
             });
-
-    return deleteFuture;
   }
 
   @Override
@@ -108,7 +97,6 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
       final String destinationIndexName,
       final String idFieldName,
       final List<String> processInstanceKeys) {
-    final var reindexFuture = new CompletableFuture<Long>();
     final var reindexRequest =
         createReindexRequestWithDefaults()
             .setSourceIndices(sourceIndexName)
@@ -116,44 +104,33 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
             .setSourceQuery(termsQuery(idFieldName, processInstanceKeys));
 
     final var startTimer = Timer.start();
-    sendReindexRequest(reindexRequest)
-        .whenComplete(
+    return sendReindexRequest(reindexRequest)
+        .<Long>handle(
             (response, e) -> {
-              Throwable failure = e;
+              final var result = handleResponse(response, e, sourceIndexName, "reindex");
+              if (result.isLeft()) {
+                throw new CompletionException(result.getLeft());
+              }
+              return result.get();
+            })
+        .whenComplete(
+            (result, e) -> {
               try {
-                final var result = handleResponse(response, e, sourceIndexName, "reindex");
-                if (result.isLeft()) {
-                  failure = result.getLeft();
-                }
-                result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
-              } catch (final Exception unexpected) {
-                failure = unexpected;
-                LOGGER.error(
-                    "Unexpected error in reindex callback for index [{}]",
-                    sourceIndexName,
-                    unexpected);
-                if (!reindexFuture.isDone()) {
-                  reindexFuture.completeExceptionally(unexpected);
-                }
-              } finally {
+                startTimer.stop(getArchiverReindexQueryTimer());
+              } catch (final Exception ex) {
+                LOGGER.warn("Failed to record reindex timer for index [{}]", sourceIndexName, ex);
+              }
+            })
+        .whenComplete(
+            (val, e) -> {
+              if (e != null) {
                 try {
-                  final var reindexTimer = getArchiverReindexQueryTimer();
-                  startTimer.stop(reindexTimer);
-                } catch (final Exception timerEx) {
-                  LOGGER.warn(
-                      "Failed to record reindex timer for index [{}]", sourceIndexName, timerEx);
-                }
-                if (reindexFuture.isCompletedExceptionally() && failure != null) {
-                  try {
-                    trackMetricForReindexFailures(processInstanceKeys, failure);
-                  } catch (final Exception metricEx) {
-                    LOGGER.warn("Failed to record reindex failure metric", metricEx);
-                  }
+                  trackMetricForReindexFailures(processInstanceKeys, unwrapCompletion(e));
+                } catch (final Exception ex) {
+                  LOGGER.warn("Failed to record reindex failure metric", ex);
                 }
               }
             });
-
-    return reindexFuture;
   }
 
   @Override
@@ -204,6 +181,10 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
         .setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
         .setAbortOnVersionConflict(false)
         .setSlices(AUTO_SLICES);
+  }
+
+  private static Throwable unwrapCompletion(final Throwable e) {
+    return e instanceof CompletionException && e.getCause() != null ? e.getCause() : e;
   }
 
   private Either<Throwable, Long> handleResponse(

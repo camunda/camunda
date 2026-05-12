@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -210,50 +211,40 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
       final String sourceIndexName,
       final String idFieldName,
       final List<Object> processInstanceKeys) {
-    final var deleteFuture = new CompletableFuture<Long>();
     final var deleteRequest =
         createDeleteByQueryRequestWithDefaults(sourceIndexName)
             .setQuery(termsQuery(idFieldName, processInstanceKeys))
             .setMaxRetries(UPDATE_RETRY_COUNT);
 
     final var startTimer = Timer.start();
-    ElasticsearchUtil.deleteAsync(deleteRequest, archiverExecutor, esClient)
-        .whenComplete(
+    return ElasticsearchUtil.deleteAsync(deleteRequest, archiverExecutor, esClient)
+        .<Long>handle(
             (response, e) -> {
-              Throwable failure = e;
+              final var result = handleResponse(response, e, sourceIndexName, "delete");
+              if (result.isLeft()) {
+                throw new CompletionException(result.getLeft());
+              }
+              return result.get();
+            })
+        .whenComplete(
+            (result, e) -> {
               try {
-                final var result = handleResponse(response, e, sourceIndexName, "delete");
-                if (result.isLeft()) {
-                  failure = result.getLeft();
-                }
-                result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
-              } catch (final Exception unexpected) {
-                failure = unexpected;
-                LOGGER.error(
-                    "Unexpected error in delete callback for index [{}]",
-                    sourceIndexName,
-                    unexpected);
-                if (!deleteFuture.isDone()) {
-                  deleteFuture.completeExceptionally(unexpected);
-                }
-              } finally {
+                startTimer.stop(getArchiverDeleteQueryTimer());
+              } catch (final Exception ex) {
+                LOGGER.warn("Failed to record delete timer for index [{}]", sourceIndexName, ex);
+              }
+            })
+        .whenComplete(
+            (val, e) -> {
+              if (e != null) {
                 try {
-                  final var timer = getArchiverDeleteQueryTimer();
-                  startTimer.stop(timer);
-                } catch (final Exception timerEx) {
-                  LOGGER.warn(
-                      "Failed to record delete timer for index [{}]", sourceIndexName, timerEx);
-                }
-                if (deleteFuture.isCompletedExceptionally() && failure != null) {
-                  try {
-                    trackMetricForDeleteFailures(processInstanceKeys, failure);
-                  } catch (final Exception metricEx) {
-                    LOGGER.warn("Failed to record delete failure metric", metricEx);
-                  }
+                  trackMetricForDeleteFailures(processInstanceKeys, unwrapCompletion(e));
+                } catch (final Exception ex) {
+                  LOGGER.warn("Failed to record delete failure metric", ex);
                 }
               }
-            });
-    return deleteFuture.thenApply(ok -> null);
+            })
+        .thenApply(ok -> null);
   }
 
   @Override
@@ -262,7 +253,6 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
       final String destinationIndexName,
       final String idFieldName,
       final List<Object> processInstanceKeys) {
-    final var reindexFuture = new CompletableFuture<Long>();
     final var reindexRequest =
         createReindexRequestWithDefaults()
             .setSourceIndices(sourceIndexName)
@@ -270,44 +260,34 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
             .setSourceQuery(termsQuery(idFieldName, processInstanceKeys));
 
     final var startTimer = Timer.start();
-
-    ElasticsearchUtil.reindexAsync(archiverExecutor, reindexRequest, esClient)
-        .whenComplete(
+    return ElasticsearchUtil.reindexAsync(archiverExecutor, reindexRequest, esClient)
+        .<Long>handle(
             (response, e) -> {
-              Throwable failure = e;
+              final var result = handleResponse(response, e, sourceIndexName, "reindex");
+              if (result.isLeft()) {
+                throw new CompletionException(result.getLeft());
+              }
+              return result.get();
+            })
+        .whenComplete(
+            (result, e) -> {
               try {
-                final var result = handleResponse(response, e, sourceIndexName, "reindex");
-                if (result.isLeft()) {
-                  failure = result.getLeft();
-                }
-                result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
-              } catch (final Exception unexpected) {
-                failure = unexpected;
-                LOGGER.error(
-                    "Unexpected error in reindex callback for index [{}]",
-                    sourceIndexName,
-                    unexpected);
-                if (!reindexFuture.isDone()) {
-                  reindexFuture.completeExceptionally(unexpected);
-                }
-              } finally {
+                startTimer.stop(getArchiverReindexQueryTimer());
+              } catch (final Exception ex) {
+                LOGGER.warn("Failed to record reindex timer for index [{}]", sourceIndexName, ex);
+              }
+            })
+        .whenComplete(
+            (val, e) -> {
+              if (e != null) {
                 try {
-                  final var reindexTimer = getArchiverReindexQueryTimer();
-                  startTimer.stop(reindexTimer);
-                } catch (final Exception timerEx) {
-                  LOGGER.warn(
-                      "Failed to record reindex timer for index [{}]", sourceIndexName, timerEx);
-                }
-                if (reindexFuture.isCompletedExceptionally() && failure != null) {
-                  try {
-                    trackMetricForReindexFailures(processInstanceKeys, failure);
-                  } catch (final Exception metricEx) {
-                    LOGGER.warn("Failed to record reindex failure metric", metricEx);
-                  }
+                  trackMetricForReindexFailures(processInstanceKeys, unwrapCompletion(e));
+                } catch (final Exception ex) {
+                  LOGGER.warn("Failed to record reindex failure metric", ex);
                 }
               }
-            });
-    return reindexFuture.thenApply(ok -> null);
+            })
+        .thenApply(ok -> null);
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest(final AggregationBuilder agg) {
@@ -519,6 +499,10 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     final Throwable cause = e.getCause() != null ? e.getCause() : e;
     metrics.recordCounts(
         Metrics.COUNTER_NAME_DELETE_FAILURES, 1, "exception", cause.getClass().getSimpleName());
+  }
+
+  private static Throwable unwrapCompletion(final Throwable e) {
+    return e instanceof CompletionException && e.getCause() != null ? e.getCause() : e;
   }
 
   private Either<Throwable, Long> handleResponse(
