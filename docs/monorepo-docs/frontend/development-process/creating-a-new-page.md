@@ -8,9 +8,9 @@ live in [Data loading](../data-loading.md).
 
 A page spans three folders in `apps/orchestration-cluster-webapp/src/`:
 
-- `modules/` — components, hooks, stores, utilities.
-- `pages/` — one file per page, wires modules together.
-- `routes/` — [TanStack Router](https://tanstack.com/router/latest)
+- `modules/`: components, hooks, stores, utilities.
+- `pages/`: one file per page, wires modules together.
+- `routes/`: [TanStack Router](https://tanstack.com/router/latest)
   mount points. Owns the loader, `pendingComponent`, and
   `errorComponent`.
 
@@ -25,30 +25,30 @@ intent.
 
 Skip a route only for:
 
-- Transient overlays — toasts, snackbars, command palette, hover
+- Transient overlays such as toasts, snackbars, command palette, and hover
   cards.
-- Modals that should not be linkable — confirmations, inline edit
+- Modals that should not be linkable, like confirmations and inline edit
   dialogs.
-- In-page tabs on a page already gated by the same data — encode the
+- In-page tabs on a page already gated by the same data. Encode the
   active tab as a search param (`/_auth/processes?tab=completed`).
 
 Anything else, justify it in the PR description.
 
-## Step 1 — Build the modules
+## Step 1: Build the modules
 
 Modules live in `src/modules/<thing>/`. Each owns one focused concern
-— `http`, `errors`, `theme`, `login`.
+(`http`, `errors`, `theme`, `login`).
 
 Layout:
 
-- `components/` — React components, optionally a subfolder per
+- `components/`: React components, optionally a subfolder per
   component for co-located styles and tests.
-- Module root — hooks, stores, utilities, types.
+- Module root: hooks, stores, utilities, types.
 
 Reuse before building. For what counts as a module, see the
 [Modules section](../orchestration-cluster-webapp.md#modules).
 
-## Step 2 — Compose the page
+## Step 2: Compose the page
 
 Page lives at `src/pages/<page>.tsx` with co-located styles and tests:
 
@@ -83,7 +83,7 @@ export function DashboardPage({ data }: { data: Dashboard }) {
 }
 ```
 
-## Step 3 — Plug into the router
+## Step 3: Plug into the router
 
 Route lives at `src/routes/<path>.tsx`. File path = URL path. Place
 under `_auth/` when auth is required.
@@ -117,11 +117,11 @@ applies. Full tier breakdown in [Data loading](../data-loading.md).
 The URL holds the page's state. Components read from it, not from each
 other.
 
-- **Route params** — entity identity (`/_auth/processes/$processKey`).
-- **Search params** — view state: filters, sort, cursor, selection,
-  active tab, modal-open flag.
-- **Local React state** — ephemeral UI only: open menu, input draft,
-  hover, focus.
+- **Route params**: entity identity (`/_auth/processes/$processKey`).
+- **Search params**: view state including filters, sort, cursor, selection,
+  active tab, and modal-open flag.
+- **Local React state**: ephemeral UI only, such as open menu, input draft,
+  hover, and focus.
 
 Payoff: deep-linkable, refresh preserves intent, back/forward work,
 siblings stay decoupled.
