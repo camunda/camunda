@@ -24,7 +24,6 @@ import {
   SCENARIOS,
   getScenarioByInstanceKey,
   getScenarioByDefinitionKey,
-  getScenarioByAgentInstanceKey,
 } from './scenarioRegistry';
 
 const PAGE_DEFAULTS = {
@@ -343,35 +342,41 @@ const handlers: RequestHandler[] = [
 
   // GET single agent instance
   http.get('*/v2/agent-instances/:agentInstanceKey', ({params}) => {
-    const scenario = getScenarioByAgentInstanceKey(
-      params.agentInstanceKey as string,
-    );
-    if (scenario) {
-      return HttpResponse.json(scenario.agentInstance);
+    const agentInstanceKey = params.agentInstanceKey as string;
+    for (const scenario of SCENARIOS) {
+      const entry = scenario.agentInstances.find(
+        (e) => e.instance.agentInstanceKey === agentInstanceKey,
+      );
+      if (entry) {
+        return HttpResponse.json(entry.instance);
+      }
     }
     return passthrough();
   }),
 
-  // POST agent-instances search (filter by processInstanceKey / elementId)
+  // POST agent-instances search (filter by processInstanceKey / elementInstanceKey)
   http.post('*/v2/agent-instances/search', async ({request}) => {
-    const body = (await request.json()) as Record<string, unknown>;
-    const filter = body?.filter as Record<string, unknown> | undefined;
-    const piKey = filter?.processInstanceKey as string | undefined;
-    const elementIdFilter = filter?.elementId as string | undefined;
-
-    const scenario = piKey ? getScenarioByInstanceKey(piKey) : undefined;
+    const body = (await request.json()) as {
+      filter?: {processInstanceKey?: string; elementInstanceKey?: string};
+    };
+    const scenario = SCENARIOS.find(
+      (s) => s.instanceKey === body.filter?.processInstanceKey,
+    );
     if (!scenario) {
-      return passthrough();
-    }
-    if (
-      elementIdFilter !== undefined &&
-      elementIdFilter !== scenario.agentElementId
-    ) {
       return HttpResponse.json({items: [], total: 0});
     }
+    const entries = scenario.agentInstances.filter((entry) => {
+      if (
+        body.filter?.elementInstanceKey &&
+        entry.elementInstanceKey !== body.filter.elementInstanceKey
+      ) {
+        return false;
+      }
+      return true;
+    });
     return HttpResponse.json({
-      items: [scenario.agentInstance],
-      total: 1,
+      items: entries.map((e) => e.instance),
+      total: entries.length,
     });
   }),
 
@@ -379,19 +384,25 @@ const handlers: RequestHandler[] = [
   http.post(
     '*/v2/agent-instances/:agentInstanceKey/history/search',
     async ({params, request}) => {
-      const scenario = getScenarioByAgentInstanceKey(
-        params.agentInstanceKey as string,
-      );
-      if (!scenario) {
-        return passthrough();
-      }
-      const body = (await request.json()) as Record<string, unknown>;
+      const {agentInstanceKey} = params as {agentInstanceKey: string};
+      const body = (await request.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
       const filter = body?.filter as Record<string, unknown> | undefined;
-      let items = [...scenario.agentInstanceHistory];
-      if (typeof filter?.committed === 'boolean') {
-        items = items.filter((h) => h.committed === filter.committed);
+      for (const scenario of SCENARIOS) {
+        const entry = scenario.agentInstances.find(
+          (e) => e.instance.agentInstanceKey === agentInstanceKey,
+        );
+        if (entry) {
+          let items = [...entry.history];
+          if (filter?.committed === true) {
+            items = items.filter((h) => h.committed === true);
+          }
+          return HttpResponse.json({items, total: items.length});
+        }
       }
-      return HttpResponse.json({items, total: items.length});
+      return HttpResponse.json({items: [], total: 0});
     },
   ),
 ];

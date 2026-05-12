@@ -93,12 +93,19 @@ const AgentDataProvider: React.FC<{
       return EMPTY_VALUE;
     }
 
+    const agentEntry = scenario.agentInstances.find(
+      (e) => e.instance.agentInstanceKey === agentInstance.agentInstanceKey,
+    );
+    if (!agentEntry) {
+      return EMPTY_VALUE;
+    }
+
     const elementData = historyToAgentElementData(
       agentInstance,
       historyResult.items,
     );
     const data: Record<string, AgentElementData> = {
-      [scenario.agentElementInstanceKey]: elementData,
+      [agentEntry.elementInstanceKey]: elementData,
     };
 
     return {
@@ -108,7 +115,7 @@ const AgentDataProvider: React.FC<{
         data[elementInstanceKey] ?? null,
       isAgentElement: (elementId) =>
         !!elementId && scenario.agentElementIds.has(elementId),
-      agentSubprocessKey: scenario.agentElementInstanceKey,
+      agentSubprocessKey: agentEntry.elementInstanceKey,
       agentElementId: scenario.agentElementId,
       getIterationSummary: (elementId) => {
         const iteration = matchIteration(elementData, elementId);

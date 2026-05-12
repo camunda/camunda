@@ -51,7 +51,6 @@ export interface ScenarioDefinition {
   description: string;
   pattern: 'subprocess' | 'task';
   agentElementId: string;
-  agentElementInstanceKey: string;
   agentElementIds: Set<string>;
   agentInstanceKey: string;
   bpmnXml: string;
@@ -72,8 +71,12 @@ export interface ScenarioDefinition {
   };
   variables: Variable[];
   jobs: Job[];
-  agentInstance: AgentInstance;
-  agentInstanceHistory: HistoryElement[];
+  agentInstances: Array<{
+    instance: AgentInstance;
+    // BPMN element-instance key this agent run belongs to.
+    elementInstanceKey: string;
+    history: HistoryElement[];
+  }>;
 }
 
 export const SCENARIOS: ScenarioDefinition[] = [
@@ -85,7 +88,6 @@ export const SCENARIOS: ScenarioDefinition[] = [
     description: 'Ad-hoc subprocess with agent + tools bundled together',
     pattern: 'subprocess',
     agentElementId: 'AI_Agent',
-    agentElementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY,
     agentElementIds: MOCK_AGENT_SUBPROCESS_ELEMENT_IDS,
     agentInstanceKey: MOCK_AGENT_AGENT_INSTANCE_KEY,
     bpmnXml: AGENT_BPMN_XML,
@@ -96,8 +98,13 @@ export const SCENARIOS: ScenarioDefinition[] = [
     sequenceFlows: MOCK_AGENT_SEQUENCE_FLOWS,
     variables: MOCK_AGENT_VARIABLES,
     jobs: MOCK_AGENT_JOBS,
-    agentInstance: MOCK_AGENT_INSTANCE,
-    agentInstanceHistory: MOCK_AGENT_HISTORY_ELEMENTS,
+    agentInstances: [
+      {
+        instance: MOCK_AGENT_INSTANCE,
+        elementInstanceKey: MOCK_AGENT_SUBPROCESS_KEY,
+        history: MOCK_AGENT_HISTORY_ELEMENTS,
+      },
+    ],
   },
 ];
 
