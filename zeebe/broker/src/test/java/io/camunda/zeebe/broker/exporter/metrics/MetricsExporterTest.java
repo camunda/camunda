@@ -328,7 +328,8 @@ class MetricsExporterTest {
 
       if (intent == VariableIntent.CREATED) {
         assertThat(counter)
-            .describedAs("Expected zeebe.variable.created.bytes counter to be registered on CREATED")
+            .describedAs(
+                "Expected zeebe.variable.created.bytes counter to be registered on CREATED")
             .isNotNull();
         assertThat(counter.count())
             .describedAs("Expected counter to record raw msgpack byte length")
