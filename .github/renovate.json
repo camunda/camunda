@@ -29,11 +29,7 @@
     "enabled": true
   },
   "lockFileMaintenance": {
-    "enabled": true,
-    "automerge": true,
-    "addLabels": [
-      "automerge"
-    ]
+    "enabled": false
   },
   "hostRules": [
     {
@@ -109,15 +105,6 @@
       "addLabels": [
         "area/frontend"
       ]
-    },
-    {
-      "description": "Disable lockfile maintenance for npm package managers.",
-      "matchManagers": [
-        "npm"
-      ],
-      "lockFileMaintenance": {
-        "enabled": false
-      }
     },
     {
       "description": "Identify updates related to backend dependencies.",
