@@ -239,6 +239,14 @@ components:
           description: The completion date of the agent instance.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+        elementInstanceKeys:
+            description: |-
+              The keys of element instances associated with this agent instance.
+              If multiple keys are provided, the filter matches agent instances associated with all of the provided keys at the same time.
+            type: array
+            items:
+              allOf:
+                - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
 
     AgentInstanceSearchQueryResult:
       description: Agent instance search response.
