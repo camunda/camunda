@@ -65,15 +65,22 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
     sendDeleteRequest(deleteRequest)
         .whenComplete(
             (response, e) -> {
-              final var timer = getArchiverDeleteQueryTimer();
-              startTimer.stop(timer);
-
-              if (e != null) {
-                trackMetricForDeleteFailures(processInstanceKeys, e);
+              try {
+                final var timer = getArchiverDeleteQueryTimer();
+                startTimer.stop(timer);
+                final var result = handleResponse(response, e, sourceIndexName, "delete");
+                result.ifLeft(
+                    throwable -> trackMetricForDeleteFailures(processInstanceKeys, throwable));
+                result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
+              } catch (final Exception unexpected) {
+                LOGGER.error(
+                    "Unexpected error in delete callback for index [{}]",
+                    sourceIndexName,
+                    unexpected);
+                if (!deleteFuture.isDone()) {
+                  deleteFuture.completeExceptionally(unexpected);
+                }
               }
-
-              final var result = handleResponse(response, e, sourceIndexName, "delete");
-              result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
             });
 
     return deleteFuture;
@@ -96,15 +103,22 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
     sendReindexRequest(reindexRequest)
         .whenComplete(
             (response, e) -> {
-              final var reindexTimer = getArchiverReindexQueryTimer();
-              startTimer.stop(reindexTimer);
-
-              if (e != null) {
-                trackMetricForReindexFailures(processInstanceKeys, e);
+              try {
+                final var reindexTimer = getArchiverReindexQueryTimer();
+                startTimer.stop(reindexTimer);
+                final var result = handleResponse(response, e, sourceIndexName, "reindex");
+                result.ifLeft(
+                    throwable -> trackMetricForReindexFailures(processInstanceKeys, throwable));
+                result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
+              } catch (final Exception unexpected) {
+                LOGGER.error(
+                    "Unexpected error in reindex callback for index [{}]",
+                    sourceIndexName,
+                    unexpected);
+                if (!reindexFuture.isDone()) {
+                  reindexFuture.completeExceptionally(unexpected);
+                }
               }
-
-              final var result = handleResponse(response, e, sourceIndexName, "reindex");
-              result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
             });
 
     return reindexFuture;
@@ -201,11 +215,9 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
         "Failed reindex while trying to reindex the following process instance keys [{}]",
         processInstanceKeys);
 
+    final Throwable cause = e.getCause() != null ? e.getCause() : e;
     metrics.recordCounts(
-        Metrics.COUNTER_NAME_REINDEX_FAILURES,
-        1,
-        "exception",
-        e.getCause().getClass().getSimpleName());
+        Metrics.COUNTER_NAME_REINDEX_FAILURES, 1, "exception", cause.getClass().getSimpleName());
   }
 
   private void trackMetricForDeleteFailures(
@@ -214,11 +226,9 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
         "Failed deletion while trying to archive the following process instance keys [{}]",
         processInstanceKeys);
 
+    final Throwable cause = e.getCause() != null ? e.getCause() : e;
     metrics.recordCounts(
-        Metrics.COUNTER_NAME_DELETE_FAILURES,
-        1,
-        "exception",
-        e.getCause().getClass().getSimpleName());
+        Metrics.COUNTER_NAME_DELETE_FAILURES, 1, "exception", cause.getClass().getSimpleName());
   }
 
   private Timer getArchiverDeleteQueryTimer() {
