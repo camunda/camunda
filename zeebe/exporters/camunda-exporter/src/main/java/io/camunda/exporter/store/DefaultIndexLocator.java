@@ -7,11 +7,15 @@
  */
 package io.camunda.exporter.store;
 
-import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 
-public class DefaultIndexLocatorProvider implements IndexLocatorProvider {
+public final class DefaultIndexLocator implements IndexLocator {
+  public static final IndexLocator INSTANCE = new DefaultIndexLocator();
+
+  private DefaultIndexLocator() {}
+
   @Override
-  public IndexLocator createIndexLocator(final Record<?> record) {
-    return DefaultIndexLocator.INSTANCE;
+  public String getIndexLocation(final ExporterEntity<?> entity, final String baseIndexName) {
+    return baseIndexName;
   }
 }
