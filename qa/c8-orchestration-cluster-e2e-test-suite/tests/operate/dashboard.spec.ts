@@ -18,6 +18,7 @@ import {waitForProcessInstances} from 'utils/incidentsHelper';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {waitForAssertion} from '../../utils/waitForAssertion';
+import {defaultAssertionOptions} from '../../utils/constants';
 
 let instanceIds: string[] = [];
 
@@ -86,19 +87,27 @@ test.afterEach(async ({page}, testInfo) => {
 test.describe('Dashboard', () => {
   test('Statistics', async ({operateDashboardPage}) => {
     await test.step('Verify total count equals sum of active and incident instances', async () => {
-      const incidentInstancesCount = Number(
-        await operateDashboardPage.incidentInstancesBadge.innerText(),
-      );
-      const activeProcessInstancesCount = Number(
-        await operateDashboardPage.activeInstancesBadge.innerText(),
-      );
-      const totalInstancesCount = operateDashboardPage.totalInstancesLink;
-
-      await expect(totalInstancesCount).toHaveText(
-        `${
-          incidentInstancesCount + activeProcessInstancesCount
-        } Running Process Instances in total`,
-      );
+      // The three badges (active, incident, total) update on independent
+      // polling intervals while other tests in this suite keep creating
+      // process instances, so reading the parts and then asserting the
+      // sum can fail when the system snapshot shifts between reads.
+      // Re-read all three values atomically on each poll iteration and
+      // verify the invariant holds for a consistent snapshot.
+      await expect
+        .poll(async () => {
+          const incident = Number(
+            await operateDashboardPage.incidentInstancesBadge.innerText(),
+          );
+          const active = Number(
+            await operateDashboardPage.activeInstancesBadge.innerText(),
+          );
+          const total =
+            await operateDashboardPage.totalInstancesLink.innerText();
+          return (
+            total === `${incident + active} Running Process Instances in total`
+          );
+        }, defaultAssertionOptions)
+        .toBe(true);
     });
   });
 
