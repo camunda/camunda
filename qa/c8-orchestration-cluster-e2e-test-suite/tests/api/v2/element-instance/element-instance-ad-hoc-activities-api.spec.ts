@@ -76,6 +76,13 @@ test.describe.parallel('Element Instance Ad-hoc Activities API', () => {
   test('Activate AdHoc Activities SucceedsWithValidElements', async ({
     request,
   }) => {
+    // eslint-disable-next-line playwright/no-conditional-in-test
+    if (process.env.FORWARD_COMPAT_MODE === 'true') {
+      test.skip(
+        true,
+        'Skipped in forward-compat mode - ad-hoc activities endpoint not available on target server',
+      );
+    }
     const adHocKey = state.adHocSubProcessInstanceKeySimple as string;
 
     const body = {

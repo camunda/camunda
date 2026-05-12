@@ -85,6 +85,13 @@ test.describe('Correlate Message API Tests', () => {
   });
 
   test('Correlate Message Flow', async ({request}) => {
+    // eslint-disable-next-line playwright/no-conditional-in-test
+    if (process.env.FORWARD_COMPAT_MODE === 'true') {
+      test.skip(
+        true,
+        'Skipped in forward-compat mode - processInstanceKey mismatch due to partition count difference',
+      );
+    }
     await test.step('Correlate Message', async () => {
       const res = await request.post(buildUrl('/messages/correlation'), {
         headers: jsonHeaders(),
