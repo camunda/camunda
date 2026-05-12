@@ -27,7 +27,6 @@ import type {
 import {
   ApiDefinition,
   apiPost,
-  apiPatch,
   apiDelete,
   apiPut,
 } from "src/utility/api/request";
@@ -55,7 +54,7 @@ export const updateTenant: ApiDefinition<
   undefined,
   UpdateTenantRequestBody & Pick<Tenant, "tenantId">
 > = ({ tenantId, name, description }) =>
-  apiPatch(`${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}`, {
+  apiPut(`${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}`, {
     name,
     description,
   });
