@@ -750,7 +750,7 @@ public class TaskStoreElasticSearch implements TaskStore {
             + "}else{"
             + "doc['"
             + field
-            + "'].value.getMillis().toString()"
+            + "'].value.toInstant().toEpochMilli().toString()"
             + "}";
     return ElasticsearchUtil.scriptSort(scriptSource, ScriptSortType.String, sortOrder);
   }
