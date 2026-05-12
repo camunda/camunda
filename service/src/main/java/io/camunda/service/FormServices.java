@@ -7,6 +7,9 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.FORM_READ_AUTHORIZATION;
+
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.query.FormQuery;
@@ -20,7 +23,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.Optional;
 
 public final class FormServices extends SearchQueryService<FormServices, FormQuery, FormEntity> {
-
   private final FormSearchClient formSearchClient;
 
   public FormServices(
@@ -51,7 +53,10 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
     return executeSearchRequest(
         () ->
             formSearchClient
-                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        withAuthorization(FORM_READ_AUTHORIZATION, FormEntity::formId)))
                 .getForm(key));
   }
 
