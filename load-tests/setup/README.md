@@ -282,7 +282,7 @@ cd c8-my-load-test-name
 make clean
 ```
 
-This uninstalls the Helm releases (Camunda Platform + load test + Elasticsearch exporter), removes any secondary-storage chart/PVCs, drops the leader-balancer cronjob, and finally `kubectl delete -f resources/namespace.yaml --wait=false --ignore-not-found` to drop the namespace itself.
+This uninstalls the Helm releases (Camunda Platform + load test + Elasticsearch exporter), removes any secondary-storage chart/PVCs, drops the leader-balancer cronjob, and finally `kubectl delete -f resources/namespace.yaml --ignore-not-found` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
 
 The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reapply `resources/namespace.yaml` + `resources/camunda-credentials.yaml`), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
 

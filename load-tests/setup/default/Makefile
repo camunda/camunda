@@ -295,5 +295,9 @@ else ifeq ($(secondary_storage),opensearch)
 	-helm --namespace $(namespace) uninstall opensearch
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch
 endif
-	@echo "Deleting namespace $(namespace) (async, no wait)..."
-	-kubectl delete -f resources/namespace.yaml --wait=false --ignore-not-found
+	@echo "Deleting namespace $(namespace) and waiting for finalization..."
+	# `--wait` (default) blocks until the namespace is fully gone. We intentionally
+	# wait so that a subsequent `make install` (or `make clean install`) doesn't
+	# race against finalizers — applying manifests into a still-terminating
+	# namespace errors out with "namespace X is being terminated".
+	-kubectl delete -f resources/namespace.yaml --ignore-not-found
