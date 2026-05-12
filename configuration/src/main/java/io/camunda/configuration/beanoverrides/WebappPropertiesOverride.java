@@ -57,8 +57,12 @@ public class WebappPropertiesOverride {
   public WebappProperties webappProperties() {
     final WebappProperties resolved = new WebappProperties();
     BeanUtils.copyProperties(webappProperties, resolved);
+    final Cloud resolvedCloud = new Cloud();
+    BeanUtils.copyProperties(webappProperties.getCloud(), resolvedCloud);
+    resolved.setCloud(resolvedCloud);
 
     applyEnterpriseFallback(resolved);
+    applyLoginDelegatedFallback(resolved);
     applyCloudFallbacks(resolved);
     resolved.setActiveComponents(computeActiveComponents());
 
@@ -76,10 +80,16 @@ public class WebappPropertiesOverride {
   }
 
   private void applyEnterpriseFallback(final WebappProperties target) {
-    if (!webappProperties.isEnterprise()
+    if (environment.getProperty("camunda.webapp.enterprise") == null
         && (legacyOperateProperties.isEnterprise() || legacyTasklistProperties.isEnterprise())) {
-      target.setEnterprise(
-          legacyOperateProperties.isEnterprise() || legacyTasklistProperties.isEnterprise());
+      target.setEnterprise(true);
+    }
+  }
+
+  private void applyLoginDelegatedFallback(final WebappProperties target) {
+    if (environment.getProperty("camunda.webapp.login-delegated") == null) {
+      target.setLoginDelegated(
+          environment.getProperty("camunda.webapps.login-delegated", Boolean.class, false));
     }
   }
 
