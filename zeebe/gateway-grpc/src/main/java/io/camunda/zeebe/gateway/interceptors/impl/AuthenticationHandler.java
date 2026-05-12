@@ -72,7 +72,8 @@ public sealed interface AuthenticationHandler {
           new OidcPrincipalLoader(
               oidcAuthenticationConfiguration.getUsernameClaim(),
               oidcAuthenticationConfiguration.getClientIdClaim());
-      oidcGroupsExtractor = new OidcGroupsExtractor(oidcAuthenticationConfiguration.getGroupsClaim());
+      oidcGroupsExtractor =
+          new OidcGroupsExtractor(oidcAuthenticationConfiguration.getGroupsClaim());
     }
 
     @Override
