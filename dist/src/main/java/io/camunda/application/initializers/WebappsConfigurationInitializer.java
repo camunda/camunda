@@ -15,9 +15,9 @@ import static io.camunda.application.Profile.TASKLIST;
 import static io.camunda.application.Profile.TMP_WEBAPP;
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
-import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.configuration.helpers.WebappsHelper;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,7 +55,8 @@ public class WebappsConfigurationInitializer
       propertyMap.put("spring.thymeleaf.prefix", DEFAULT_RESOURCES_LOCATION);
 
       propertyMap.put("camunda.webapps.login-delegated", isLoginDelegated(context));
-      propertyMap.put("server.servlet.session.cookie.name", WebSecurityConfig.SESSION_COOKIE);
+      propertyMap.put(
+          "server.servlet.session.cookie.name", CamundaSecurityFilterChainConstants.SESSION_COOKIE);
     }
 
     // locations and home page

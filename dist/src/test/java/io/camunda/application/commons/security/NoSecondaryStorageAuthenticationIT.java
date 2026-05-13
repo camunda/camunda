@@ -12,7 +12,7 @@ import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABAS
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.config.BasicAuthenticationNoDbConfiguration;
 import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.service.NoDBMembershipService;
@@ -50,7 +50,7 @@ public class NoSecondaryStorageAuthenticationIT {
         .put("camunda.security.authentication.method", "basic");
 
     // when - trying to start application with basic auth in no-db mode
-    context.register(WebSecurityConfig.BasicAuthenticationNoDbConfiguration.class);
+    context.register(BasicAuthenticationNoDbConfiguration.class);
 
     // then - should fail fast with clear error message
     assertThatThrownBy(context::refresh)

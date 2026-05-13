@@ -39,8 +39,8 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 /**
- * Tests that the {@link LoggingAuthenticationFailureHandler} correctly handles JWT decoding
- * failures in the webapp security filter chain (protected by {@code
+ * Tests that the {@link io.camunda.security.spring.handler.LoggingAuthenticationFailureHandler}
+ * correctly handles JWT decoding failures in the webapp security filter chain (protected by {@code
  * ConditionalOnSecondaryStorageEnabled}).
  *
  * <p>This test specifically validates that transient JWKS endpoint failures (e.g., HTTP 500 errors)

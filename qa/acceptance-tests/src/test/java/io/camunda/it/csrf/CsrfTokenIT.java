@@ -11,12 +11,12 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestWebappClient.TestLoggedInWebappClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.config.CsrfConfiguration;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -122,7 +122,8 @@ public class CsrfTokenIT {
       assertThat(loggedInClient.getCookies())
           .extracting(c -> c.getName())
           .containsExactlyInAnyOrder(
-              WebSecurityConfig.SESSION_COOKIE, WebSecurityConfig.X_CSRF_TOKEN);
+              CamundaSecurityFilterChainConstants.SESSION_COOKIE,
+              CamundaSecurityFilterChainConstants.X_CSRF_TOKEN);
     }
   }
 
@@ -171,7 +172,8 @@ public class CsrfTokenIT {
       }
 
       if (includeCsrfToken) {
-        requestBuilder.header(WebSecurityConfig.X_CSRF_TOKEN, webappClient.getCsrfToken());
+        requestBuilder.header(
+            CamundaSecurityFilterChainConstants.X_CSRF_TOKEN, webappClient.getCsrfToken());
         requestBuilder.header(HttpHeaders.COOKIE, webappClient.getCsrfCookie().toString());
       }
 

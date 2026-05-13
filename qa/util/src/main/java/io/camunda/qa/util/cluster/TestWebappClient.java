@@ -7,7 +7,7 @@
  */
 package io.camunda.qa.util.cluster;
 
-import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.net.CookieManager;
@@ -47,7 +47,10 @@ public class TestWebappClient {
     final var loginResponse = sendRequestAndThrowExceptionOnFailure(httpClient, loginRequest);
 
     final var csrfToken =
-        loginResponse.headers().firstValue(WebSecurityConfig.X_CSRF_TOKEN).orElse(null);
+        loginResponse
+            .headers()
+            .firstValue(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN)
+            .orElse(null);
 
     return new TestLoggedInWebappClient(httpClient, cookieManager, csrfToken);
   }
@@ -90,11 +93,11 @@ public class TestWebappClient {
     }
 
     public HttpCookie getSessionCookie() {
-      return findCookie(WebSecurityConfig.SESSION_COOKIE);
+      return findCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
     }
 
     public HttpCookie getCsrfCookie() {
-      return findCookie(WebSecurityConfig.X_CSRF_TOKEN);
+      return findCookie(CamundaSecurityFilterChainConstants.X_CSRF_TOKEN);
     }
 
     public URI getRootEndpoint() {

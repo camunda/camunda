@@ -10,6 +10,7 @@ package io.camunda.authentication.config;
 import static io.camunda.security.api.model.config.oidc.OidcConfiguration.CLIENT_AUTHENTICATION_METHODS;
 
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -23,7 +24,8 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 public final class ClientRegistrationFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientRegistrationFactory.class);
 
-  private static final String DEFAULT_REDIRECT_URI = "{baseUrl}" + WebSecurityConfig.REDIRECT_URI;
+  private static final String DEFAULT_REDIRECT_URI =
+      "{baseUrl}" + CamundaSecurityFilterChainConstants.REDIRECT_URI;
 
   private ClientRegistrationFactory() {}
 
