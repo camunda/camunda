@@ -43,6 +43,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
+        onEditValue={vi.fn()}
         isDeleteHidden
       />,
       {wrapper: getWrapper()},
@@ -61,6 +62,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
+        onEditValue={vi.fn()}
         isDeleteHidden
       />,
       {wrapper: getWrapper({operator: 'exists'})},
@@ -77,6 +79,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
+        onEditValue={vi.fn()}
         isDeleteHidden
       />,
       {wrapper: getWrapper()},
@@ -90,6 +93,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
+        onEditValue={vi.fn()}
         isDeleteHidden={false}
       />,
       {wrapper: getWrapper()},
@@ -104,6 +108,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
+        onEditValue={vi.fn()}
         isDeleteHidden
       />,
       {wrapper: getWrapper()},
@@ -120,6 +125,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
+        onEditValue={vi.fn()}
         isDeleteHidden
       />,
       {wrapper: getWrapper({name: 'status'})},
@@ -137,6 +143,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={onDelete}
+        onEditValue={vi.fn()}
         isDeleteHidden={false}
       />,
       {wrapper: getWrapper()},
@@ -153,6 +160,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
+        onEditValue={vi.fn()}
         isDeleteHidden
       />,
       {wrapper: getWrapper()},
@@ -172,6 +180,7 @@ describe('<VariableFilterRow />', () => {
         fieldName="conditions[0]"
         rowIndex={0}
         onDelete={vi.fn()}
+        onEditValue={vi.fn()}
         isDeleteHidden
       />,
       {wrapper: getWrapper({operator: 'exists'})},
@@ -181,5 +190,23 @@ describe('<VariableFilterRow />', () => {
     await user.click(screen.getByText('equals'));
 
     expect(screen.getByTestId('variable-filter-value-0')).toBeInTheDocument();
+  });
+
+  it('should call onEditValue with rowIndex when Maximize icon is clicked', async () => {
+    const onEditValue = vi.fn();
+    const {user} = render(
+      <VariableFilterRow
+        fieldName="conditions[0]"
+        rowIndex={0}
+        onDelete={vi.fn()}
+        onEditValue={onEditValue}
+        isDeleteHidden
+      />,
+      {wrapper: getWrapper({name: 'status', value: '"active"'})},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Open JSON editor'}));
+
+    expect(onEditValue).toHaveBeenCalledWith(0);
   });
 });
