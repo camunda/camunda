@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.store.DefaultIndexLocator;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
@@ -450,7 +451,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
     // when
-    underTest.flush(null, inputEntity, mockRequest);
+    underTest.flush(DefaultIndexLocator.INSTANCE, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1)).upsert(expectedIndexName, id, inputEntity, expectedUpdateFields);

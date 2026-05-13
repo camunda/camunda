@@ -428,11 +428,23 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     final Set<String> ordinalBasedIndexes = new HashSet<>();
     final var listViewName = indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName();
     ordinalBasedIndexes.add(listViewName);
+
+    // TODO tmp exempt batch operation items from ordinal indexes (history deletion jobs would need
+    // updating to be ordinal aware for this to work properly or we do exempt and then need
+    // different archiving strategy)
+    final var operationIndexName =
+        indexDescriptors.get(OperationTemplate.class).getFullQualifiedName();
+    final var nonOrdinalIndexes = Set.of(operationIndexName);
     for (final var indexDescriptor : indexDescriptors.templates()) {
+      final var indexName = indexDescriptor.getFullQualifiedName();
+      if (nonOrdinalIndexes.contains(indexName)) {
+        continue;
+      }
       if (indexDescriptor instanceof ProcessInstanceDependant) {
-        ordinalBasedIndexes.add(indexDescriptor.getFullQualifiedName());
+        ordinalBasedIndexes.add(indexName);
       }
     }
+
     indexLocatorProvider = new FakeOrdinalIndexLocatorProvider(ordinalBasedIndexes);
   }
 
@@ -498,6 +510,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public BiConsumer<String, Error> getCustomErrorHandlers() {
     return (index, error) -> {
+      // strip of any ordinal to get the "main" index name
+      index = index.replaceAll("ord.*$", "");
       indicesWithCustomErrorHandlers.getOrDefault(index, ErrorHandlers.THROWING).handle(error);
     };
   }

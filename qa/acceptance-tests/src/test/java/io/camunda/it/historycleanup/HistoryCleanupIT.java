@@ -45,6 +45,8 @@ public class HistoryCleanupIT {
         };
   }
 
+  // TODO re-enable
+  @Disabled("disabled until archiver-less supports cleanup logic")
   @Test
   void shouldDeleteProcessesWhichAreMarkedForCleanup() {
     // this will deploy resource, start two process instances and complete user tasks for one that

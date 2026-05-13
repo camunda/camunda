@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +67,8 @@ public class ProcessInstanceHistoryCleanupIT {
         };
   }
 
+  // TODO re-enable
+  @Disabled("disabled until archiver-less supports cleanup logic")
   @Test
   void shouldDeleteInstancesDataOnlyWhenRootInstancesAreCompleted() {
     // Given

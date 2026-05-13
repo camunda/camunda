@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import java.util.List;
 import java.util.Map;
 
@@ -47,9 +48,8 @@ public class ListViewFromChunkItemHandler
     // Use a composite ID (processInstanceKey:batchOperationKey) so that each (PI, batchOp) pair
     // gets its own cached entity. This prevents a second batch operation targeting the same PI
     // from overwriting the first one's batchOperationId in the shared entity.
-    final var batchOpKey = record.getValue().getBatchOperationKey();
     return record.getValue().getItems().stream()
-        .map(item -> item.getProcessInstanceKey() + ":" + batchOpKey)
+        .map(item -> generateId(record.getValue(), item))
         .toList();
   }
 
@@ -90,5 +90,10 @@ public class ListViewFromChunkItemHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  public static String generateId(
+      final BatchOperationChunkRecordValue record, final BatchOperationItemValue item) {
+    return item.getProcessInstanceKey() + ":" + record.getBatchOperationKey();
   }
 }
