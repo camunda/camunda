@@ -74,10 +74,10 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 all: install
 
 .PHONY: install
-install: check-deadline create-namespace create-credentials install-platform install-load-test install-elasticsearch-exporter install-optimize-cleanup
+install: check-deadline create-namespace create-credentials install-platform install-load-test install-elasticsearch-exporter
 
 .PHONY: install-stable
-install-stable: check-deadline create-namespace create-credentials install-platform-stable install-load-test install-elasticsearch-exporter install-optimize-cleanup
+install-stable: check-deadline create-namespace create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
 
 # Fail fast if the namespace TTL deadline is today or in the past — the TTL
 # cleanup workflow will delete the namespace and undo the install. To extend,
@@ -124,11 +124,6 @@ ifeq ($(secondary_storage),elasticsearch)
 else
 	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
-
-.PHONY: install-optimize-cleanup
-install-optimize-cleanup:
-	@echo "Deploying Optimize indices cleanup job"
-	kubectl apply --namespace $(namespace) -f resources/optimize-indices-cleanup.yaml
 
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
