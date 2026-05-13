@@ -20,6 +20,7 @@ import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 public class BrokerRequestAuthorizationConverterTest {
@@ -161,5 +162,92 @@ public class BrokerRequestAuthorizationConverterTest {
 
     // then
     assertThat(brokerRequestAuth).hasSize(0);
+  }
+
+  @Test
+  void shouldNotInvokeGroupsSupplierWhenCamundaGroupsEnabled() {
+    // given — default config: BASIC auth, authorizations enabled, no OIDC groupsClaim, so
+    // camundaGroupsEnabled=true and the engine looks up groups itself.
+    final var invoked = new AtomicBoolean();
+    final var authentication =
+        CamundaAuthentication.of(
+            b ->
+                b.user("foo")
+                    .groupIdsSupplier(
+                        () -> {
+                          invoked.set(true);
+                          return List.of("group1");
+                        }));
+    final var converter = new BrokerRequestAuthorizationConverter(new SecurityConfiguration());
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(invoked).isFalse();
+    assertThat(brokerRequestAuth).doesNotContainKey(USER_GROUPS_CLAIMS);
+    assertThat(brokerRequestAuth).containsEntry(AUTHORIZED_USERNAME, "foo");
+  }
+
+  @Test
+  void shouldNotInvokeGroupsSupplierWhenAuthorizationClaimsDisabled() {
+    // given — OIDC with groupsClaim (camundaGroupsEnabled=false), but both authorization and
+    // multi-tenancy are off, so the engine will not consume the groups.
+    final var invoked = new AtomicBoolean();
+    final var oidcConfiguration = new OidcAuthenticationConfiguration();
+    oidcConfiguration.setGroupsClaim("groups");
+    final var securityConfiguration = new SecurityConfiguration();
+    securityConfiguration.getAuthentication().setMethod(OIDC);
+    securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
+    securityConfiguration.getAuthorizations().setEnabled(false);
+    securityConfiguration.getMultiTenancy().setChecksEnabled(false);
+
+    final var authentication =
+        CamundaAuthentication.of(
+            b ->
+                b.user("foo")
+                    .groupIdsSupplier(
+                        () -> {
+                          invoked.set(true);
+                          return List.of("group1");
+                        }));
+    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(invoked).isFalse();
+    assertThat(brokerRequestAuth).doesNotContainKey(USER_GROUPS_CLAIMS);
+  }
+
+  @Test
+  void shouldInvokeGroupsSupplierOnlyWhenAuthorizationClaimsEnabledAndCamundaGroupsDisabled() {
+    // given — OIDC with groupsClaim (camundaGroupsEnabled=false) and authorizations enabled;
+    // the engine consumes the groups, so the supplier must run exactly once.
+    final var invoked = new AtomicBoolean();
+    final var oidcConfiguration = new OidcAuthenticationConfiguration();
+    oidcConfiguration.setGroupsClaim("groups");
+    final var securityConfiguration = new SecurityConfiguration();
+    securityConfiguration.getAuthentication().setMethod(OIDC);
+    securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
+
+    final var authentication =
+        CamundaAuthentication.of(
+            b ->
+                b.user("foo")
+                    .groupIdsSupplier(
+                        () -> {
+                          invoked.set(true);
+                          return List.of("group1", "group2");
+                        }));
+    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(invoked).isTrue();
+    assertThat(brokerRequestAuth).containsEntry(USER_GROUPS_CLAIMS, List.of("group1", "group2"));
   }
 }

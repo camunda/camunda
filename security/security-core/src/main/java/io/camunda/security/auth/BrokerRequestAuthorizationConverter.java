@@ -48,14 +48,48 @@ public class BrokerRequestAuthorizationConverter {
   }
 
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
-    return convert(
-        authentication.isAnonymous(),
-        authentication.authenticatedUsername(),
-        authentication.authenticatedClientId(),
-        authentication.authenticatedGroupIds(),
-        authentication.claims());
+    if (authentication.isAnonymous()) {
+      return Map.of(AUTHORIZED_ANONYMOUS_USER, true);
+    }
+
+    final var claims = new HashMap<String, Object>();
+
+    final var username = authentication.authenticatedUsername();
+    if (username != null) {
+      claims.put(AUTHORIZED_USERNAME, username);
+    }
+
+    final var clientId = authentication.authenticatedClientId();
+    if (clientId != null) {
+      claims.put(AUTHORIZED_CLIENT_ID, clientId);
+    }
+
+    if (shouldIncludeAuthorizationClaims) {
+      // authenticatedGroupIds() is lazy on the CamundaAuthentication record; resolve it only on
+      // the OIDC token-claim path where the engine actually consumes group membership. On the
+      // camundaGroupsEnabled path the engine resolves groups itself, so reading the field here
+      // would trigger an avoidable DB lookup on every broker request.
+      if (!camundaGroupsEnabled) {
+        final var groups = authentication.authenticatedGroupIds();
+        if (!groups.isEmpty()) {
+          claims.put(USER_GROUPS_CLAIMS, groups);
+        }
+      }
+
+      final var tokenClaims = authentication.claims();
+      if (!tokenClaims.isEmpty()) {
+        claims.put(USER_TOKEN_CLAIMS, tokenClaims);
+      }
+    }
+
+    return claims;
   }
 
+  /**
+   * Legacy overload used by callers that don't have a {@link CamundaAuthentication} on hand (e.g.
+   * the gRPC {@code EndpointManager}, which assembles fields out of the call context). Prefer
+   * {@link #convert(CamundaAuthentication)} when possible, since it defers lazy field resolution.
+   */
   public Map<String, Object> convert(
       final boolean isAnonymous,
       final String username,
