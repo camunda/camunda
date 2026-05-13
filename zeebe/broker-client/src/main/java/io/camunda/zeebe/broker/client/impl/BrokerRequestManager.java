@@ -36,6 +36,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 final class BrokerRequestManager extends Actor {
 
@@ -296,9 +298,10 @@ final class BrokerRequestManager extends Actor {
         Duration timeout);
   }
 
-  private class BrokerAddressProvider implements Supplier<String> {
+  @NullMarked
+  private class BrokerAddressProvider implements Supplier<@Nullable String> {
 
-    private final Function<BrokerClusterState, BrokerMemberId> nodeIdSelector;
+    private final Function<BrokerClusterState, @Nullable BrokerMemberId> nodeIdSelector;
 
     BrokerAddressProvider() {
       this(BrokerClusterState::getRandomBroker);
@@ -308,18 +311,21 @@ final class BrokerRequestManager extends Actor {
       this(state -> state.getLeaderForPartition(partitionId));
     }
 
-    BrokerAddressProvider(final Function<BrokerClusterState, BrokerMemberId> nodeIdSelector) {
+    BrokerAddressProvider(
+        final Function<BrokerClusterState, @Nullable BrokerMemberId> nodeIdSelector) {
       this.nodeIdSelector = nodeIdSelector;
     }
 
     @Override
-    public String get() {
+    public @Nullable String get() {
       final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null) {
-        return topology.getBrokerAddress(nodeIdSelector.apply(topology));
-      } else {
-        return null;
+        final var brokerId = nodeIdSelector.apply(topology);
+        if (brokerId != null) {
+          return topology.getBrokerAddress(brokerId);
+        }
       }
+      return null;
     }
   }
 }
