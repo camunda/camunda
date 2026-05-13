@@ -443,6 +443,9 @@ function ToolCallDetail({
                   tooltipPosition="top"
                   onClick={() => setIsInputModalOpen(true)}
                   aria-label="Expand"
+                  // Match the vertical position of CodeSnippet's built-in
+                  // Copy button (which sits ~spacing-02 from the snippet top).
+                  style={{marginTop: 'var(--cds-spacing-01)'}}
                 />
               </div>
             ) : (
@@ -481,6 +484,7 @@ function ToolCallDetail({
                   tooltipPosition="top"
                   onClick={() => setIsOutputModalOpen(true)}
                   aria-label="Expand"
+                  style={{marginTop: 'var(--cds-spacing-01)'}}
                 />
               </div>
             ) : (
