@@ -128,22 +128,16 @@ public final class RocksdbCfg implements ConfigurationEntry {
     if (blockCacheBytes <= totalMemorySize) {
       return;
     }
-    switch (memoryAllocationStrategy) {
-      case BROKER, PARTITION ->
-          LOGGER.warn(
-              "Requested RocksDB memory ({} bytes / {} MB) exceeds total system memory ({} bytes / {} MB). "
-                  + "Memory allocation strategy: {}. Partitions count: {}. "
-                  + "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT.",
-              blockCacheBytes,
-              blockCacheBytes / (1024 * 1024),
-              totalMemorySize,
-              totalMemorySize / (1024 * 1024),
-              getMemoryAllocationStrategy(),
-              partitionsCount);
-      // if FRACTION:
-      default ->
-          throw new IllegalStateException("Unexpected value: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYFRACTION should be within [0,1]");
-    }
+    LOGGER.warn(
+        "Requested RocksDB memory ({} bytes / {} MB) exceeds total system memory ({} bytes / {} MB). "
+            + "Memory allocation strategy: {}. Partitions count: {}. "
+            + "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT.",
+        blockCacheBytes,
+        blockCacheBytes / (1024 * 1024),
+        totalMemorySize,
+        totalMemorySize / (1024 * 1024),
+        getMemoryAllocationStrategy(),
+        partitionsCount);
   }
 
   private void warnIfTooHighFraction() {
