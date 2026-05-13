@@ -145,8 +145,7 @@ test.describe('Dashboard', () => {
     });
   });
 
-  // skipped due to bug 45129: https://github.com/camunda/camunda/issues/45129
-  test.skip('Navigate to processes view (same truncated error message)', async ({
+  test('Navigate to processes view (same truncated error message)', async ({
     operateDashboardPage,
     operateProcessInstancePage,
   }) => {
@@ -226,12 +225,7 @@ test.describe('Dashboard', () => {
     });
   });
 
-  // skipped due to bug 45129: https://github.com/camunda/camunda/issues/45129
-  // Dashboard "incidents by error" badge counts every incident of a given
-  // error type, but the filtered Process Instances page applies the truncated
-  // error message (cut at 100 chars) as a filter — so totals don't match when
-  // the message is longer.
-  test.skip('Select process instances by error message', async ({
+  test('Select process instances by error message', async ({
     operateDashboardPage,
   }) => {
     await test.step('Select first error and verify incident count', async () => {
