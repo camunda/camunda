@@ -12,6 +12,7 @@ import {
   assertUnauthorizedRequest,
   buildUrl,
   defaultHeaders,
+  isForwardCompat,
 } from '../../../utils/http';
 import {
   brokerResponseFields,
@@ -21,6 +22,10 @@ import {
 
 test.describe('Cluster API Tests', () => {
   test('Get Cluster Topology', async ({request}) => {
+    test.skip(
+      isForwardCompat,
+      'Skipped in forward-compat mode - partition count differs on target server',
+    );
     const res = await request.get(buildUrl('/topology'), {
       headers: defaultHeaders(),
     });

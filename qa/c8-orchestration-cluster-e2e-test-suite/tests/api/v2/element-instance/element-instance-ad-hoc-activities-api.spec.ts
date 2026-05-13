@@ -13,6 +13,7 @@ import {
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
+  isForwardCompat,
   jsonHeaders,
 } from '../../../../utils/http';
 import {
@@ -26,6 +27,11 @@ const state: Record<string, unknown> = {};
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Element Instance Ad-hoc Activities API', () => {
+  test.skip(
+    isForwardCompat,
+    'Skipped in forward-compat mode - ad-hoc activities endpoint not available on target server',
+  );
+
   test.beforeAll(async ({request}) => {
     await test.step('Deploy BPMN with ad-hoc subprocess', async () => {
       await deploy(['./resources/ad_hoc_sub_process_api_test.bpmn']);
