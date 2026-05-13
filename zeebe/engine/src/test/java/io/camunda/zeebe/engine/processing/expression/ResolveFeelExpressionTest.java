@@ -956,25 +956,7 @@ public class ResolveFeelExpressionTest {
   }
 
   @Test
-  public void shouldRejectWhenProcessInstanceKeyNotFound() {
-    // when
-    final var record =
-        ENGINE_RULE
-            .expression()
-            .withExpression("=1")
-            .withScopeKey(999999L)
-            .expectRejection()
-            .resolve();
-
-    // then
-    Assertions.assertThat(record)
-        .hasIntent(ExpressionIntent.EVALUATE)
-        .hasRejectionType(RejectionType.NOT_FOUND);
-    assertThat(record.getRejectionReason()).contains("999999");
-  }
-
-  @Test
-  public void shouldRejectWhenElementInstanceKeyNotFound() {
+  public void shouldRejectWhenScopeKeyNotFound() {
     // when
     final var record =
         ENGINE_RULE
