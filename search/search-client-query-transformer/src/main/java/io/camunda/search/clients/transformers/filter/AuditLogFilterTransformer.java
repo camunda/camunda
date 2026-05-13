@@ -16,11 +16,11 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.AUDIT_LOG;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.security.api.model.authz.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.security.api.model.authz.PermissionType.READ_USER_TASK;
 import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.*;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUDIT_LOG;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;

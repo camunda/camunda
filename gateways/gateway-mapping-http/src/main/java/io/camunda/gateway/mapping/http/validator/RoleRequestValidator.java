@@ -11,8 +11,8 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 
 import io.camunda.gateway.protocol.model.RoleCreateRequest;
 import io.camunda.gateway.protocol.model.RoleUpdateRequest;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.validation.RoleValidator;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 

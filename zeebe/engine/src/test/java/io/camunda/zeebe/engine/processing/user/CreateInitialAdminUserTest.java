@@ -12,12 +12,12 @@ import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProc
 import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProcessor.USER_ALREADY_EXISTS_ERROR_MESSAGE;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
+import io.camunda.security.api.model.authz.DefaultRole;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
-import io.camunda.zeebe.protocol.record.value.DefaultRole;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;

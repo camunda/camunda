@@ -7,9 +7,9 @@
  */
 package io.camunda.service.authorization;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.COMPONENT;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.ACCESS;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_TASK_LISTENER;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.COMPONENT;
+import static io.camunda.security.api.model.authz.PermissionType.ACCESS;
+import static io.camunda.security.api.model.authz.PermissionType.READ_TASK_LISTENER;
 
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;

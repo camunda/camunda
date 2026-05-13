@@ -7,19 +7,19 @@
  */
 package io.camunda.authentication.converter;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
-import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
-import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
+import static io.camunda.security.api.model.authz.EntityType.GROUP;
+import static io.camunda.security.api.model.authz.EntityType.ROLE;
+import static io.camunda.security.api.model.authz.EntityType.USER;
 
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.Set;

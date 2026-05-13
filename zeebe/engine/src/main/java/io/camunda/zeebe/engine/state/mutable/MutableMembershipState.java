@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public interface MutableMembershipState extends MembershipState {
 

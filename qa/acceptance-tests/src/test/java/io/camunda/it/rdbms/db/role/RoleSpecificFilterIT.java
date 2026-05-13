@@ -13,7 +13,7 @@ import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRandomRo
 import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRole;
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveTenant;
 import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
-import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
+import static io.camunda.security.api.model.authz.EntityType.ROLE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
@@ -33,7 +33,7 @@ import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.sort.RoleSort;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.Arrays;
 import java.util.List;

@@ -9,11 +9,11 @@ package io.camunda.zeebe.engine.state.authorization;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

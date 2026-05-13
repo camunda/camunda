@@ -7,22 +7,22 @@
  */
 package io.camunda.zeebe.engine.state.authorization;
 
+import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD;
+import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD_CHAR;
 import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_ASSIGNEE;
 import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_GROUPS;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.api.model.authz.AuthorizationOwnerType;
+import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.AuthorizationScope;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;

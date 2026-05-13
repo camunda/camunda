@@ -7,8 +7,8 @@
  */
 package io.camunda.search.filter;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.function.Function;
 
 public record GroupMemberFilter(String groupId, EntityType memberType) implements FilterBase {

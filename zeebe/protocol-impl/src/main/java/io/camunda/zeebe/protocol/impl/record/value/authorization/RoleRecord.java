@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 

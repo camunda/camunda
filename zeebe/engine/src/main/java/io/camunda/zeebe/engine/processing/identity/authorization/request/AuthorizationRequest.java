@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.request;
 
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.ResourceAuthorizationProperties;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Collection;
 import java.util.Collections;

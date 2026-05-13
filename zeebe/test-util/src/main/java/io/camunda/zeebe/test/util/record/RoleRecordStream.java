@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.test.util.record;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.stream.Stream;
 

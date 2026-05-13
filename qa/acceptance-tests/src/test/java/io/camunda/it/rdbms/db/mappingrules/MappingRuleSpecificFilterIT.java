@@ -11,7 +11,7 @@ import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveGroup;
 import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.*;
 import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.createAndSaveMappingRule;
 import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRole;
-import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
+import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;

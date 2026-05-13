@@ -7,15 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
+import static io.camunda.security.api.model.authz.EntityType.GROUP;
+import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
+import static io.camunda.security.api.model.authz.EntityType.ROLE;
+import static io.camunda.security.api.model.authz.EntityType.USER;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
-import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
-import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
-import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
-import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;

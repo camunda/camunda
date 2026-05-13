@@ -155,7 +155,7 @@ public class AuthorizationsUtil implements CloseableSilently {
                           f.ownerIds(username)
                               .resourceType(resourceType.name())
                               .permissionTypes(
-                                  io.camunda.zeebe.protocol.record.value.PermissionType.valueOf(
+                                  io.camunda.security.api.model.authz.PermissionType.valueOf(
                                       permissionType.name()))
                               .resourceIds(resourceId)));
 

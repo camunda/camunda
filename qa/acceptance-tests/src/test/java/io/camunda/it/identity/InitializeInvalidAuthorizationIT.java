@@ -9,10 +9,10 @@ package io.camunda.it.identity;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.security.api.model.authz.AuthorizationOwnerType;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.configuration.ConfiguredAuthorization;
 import io.camunda.security.validation.IdentityInitializationException;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import java.util.List;

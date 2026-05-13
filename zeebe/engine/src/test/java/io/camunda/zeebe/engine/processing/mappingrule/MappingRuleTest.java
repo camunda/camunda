@@ -9,11 +9,11 @@ package io.camunda.zeebe.engine.processing.mappingrule;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;

@@ -1,12 +1,11 @@
 # Camunda Security
 
-Security core, services, protocol, and validation for Camunda 8's authentication and authorization system.
+Security core, services, and validation for Camunda 8's authentication and authorization system.
 
 ## Module Structure
 
 - **`security-core/`** – Core security implementations (authorization checker, authentication service strategies)
 - **`security-services/`** – Business logic services for authorization and authentication workflows
-- **`security-protocol/`** – Protocol-level security definitions and enums (permission types, resource types, owner types)
 - **`security-validation/`** – Validation rules and checkers for security-related inputs
 
 ### New Camunda Security Library

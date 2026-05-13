@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;

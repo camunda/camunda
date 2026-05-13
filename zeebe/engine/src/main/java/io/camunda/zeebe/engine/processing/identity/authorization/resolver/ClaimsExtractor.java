@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.resolver;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

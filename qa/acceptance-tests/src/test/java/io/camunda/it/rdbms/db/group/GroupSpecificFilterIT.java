@@ -26,7 +26,7 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.sort.GroupSort;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.api.model.authz.EntityType;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

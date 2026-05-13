@@ -55,7 +55,7 @@ These keys are used to attach identity information to requests so that downstrea
 
 ## Resource Types
 
-**Location:** `security/security-protocol/.../AuthorizationResourceType.java`
+**Location:** `camunda-security-library-api/.../io/camunda/security/api/model/authz/AuthorizationResourceType.java`
 
 Each resource type declares the set of permission types it supports. The full list:
 
@@ -86,7 +86,7 @@ The special value `UNSPECIFIED` exists as an internal default to catch cases whe
 
 ## Authorization Scope
 
-**Location:** `security/security-protocol/.../AuthorizationScope.java`
+**Location:** `camunda-security-library-api/.../io/camunda/security/api/model/authz/AuthorizationScope.java`
 
 `AuthorizationScope` defines how a permission is scoped to specific resources:
 
@@ -162,4 +162,3 @@ Authorizations are granted to identity entities (users, roles, groups, mapping r
 - A **User**, **Role**, **Group**, **Mapping Rule**, or **Client** can be granted one or more `Authorization` records.
 - Each `Authorization` contains one or more `Permission` entries scoped to specific resources.
 - Roles and groups provide indirect authorization -- a user inherits permissions from their assigned roles and group memberships.
-

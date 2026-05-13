@@ -14,11 +14,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;

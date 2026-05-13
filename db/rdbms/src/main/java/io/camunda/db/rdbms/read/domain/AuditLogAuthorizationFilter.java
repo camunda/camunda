@@ -7,11 +7,11 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUDIT_LOG;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.AUDIT_LOG;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD_CHAR;
+import static io.camunda.security.api.model.authz.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.security.api.model.authz.PermissionType.READ_USER_TASK;
 
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;

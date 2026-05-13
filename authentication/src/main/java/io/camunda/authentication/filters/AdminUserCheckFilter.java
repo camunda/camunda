@@ -8,10 +8,10 @@
 package io.camunda.authentication.filters;
 
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.DefaultRole;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
-import io.camunda.zeebe.protocol.record.value.DefaultRole;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

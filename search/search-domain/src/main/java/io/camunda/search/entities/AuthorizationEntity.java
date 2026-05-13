@@ -8,7 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.security.api.model.authz.PermissionType;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;

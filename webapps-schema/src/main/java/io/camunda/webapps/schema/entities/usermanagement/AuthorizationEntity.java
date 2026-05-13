@@ -7,10 +7,10 @@
  */
 package io.camunda.webapps.schema.entities.usermanagement;
 
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.SinceVersion;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
 
 public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEntity> {

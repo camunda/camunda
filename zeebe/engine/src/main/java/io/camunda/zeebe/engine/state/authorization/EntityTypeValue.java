@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.authorization;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public class EntityTypeValue extends UnpackedObject implements DbValue {
 

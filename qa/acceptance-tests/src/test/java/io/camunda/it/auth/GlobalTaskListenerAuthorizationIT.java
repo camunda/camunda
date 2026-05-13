@@ -12,7 +12,7 @@ import static io.camunda.client.api.search.enums.PermissionType.DELETE_TASK_LIST
 import static io.camunda.client.api.search.enums.PermissionType.READ_TASK_LISTENER;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE_TASK_LISTENER;
 import static io.camunda.client.api.search.enums.ResourceType.GLOBAL_LISTENER;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
+import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD_CHAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

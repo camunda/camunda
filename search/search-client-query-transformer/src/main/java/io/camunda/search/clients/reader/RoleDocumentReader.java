@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.reader;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
+import static io.camunda.security.api.model.authz.EntityType.ROLE;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.RoleEntity;

@@ -7,8 +7,8 @@
  */
 package io.camunda.search.clients.auth;
 
+import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD;
 import static io.camunda.security.auth.Authorization.withAuthorization;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.Authorization;

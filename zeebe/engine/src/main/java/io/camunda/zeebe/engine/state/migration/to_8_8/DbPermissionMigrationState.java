@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_8_8;
 
+import io.camunda.security.api.model.authz.AuthorizationScope;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -16,8 +18,6 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.authorization.Permissions;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
 
 public class DbPermissionMigrationState {

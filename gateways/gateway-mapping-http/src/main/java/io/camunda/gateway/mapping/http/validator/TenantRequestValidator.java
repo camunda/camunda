@@ -11,8 +11,8 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 
 import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.gateway.protocol.model.TenantUpdateRequest;
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.validation.TenantValidator;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 

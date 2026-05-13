@@ -22,7 +22,7 @@ import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.api.model.authz.EntityType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;

@@ -9,9 +9,9 @@ package io.camunda.identity.webapp.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.util.Map;
 import org.slf4j.Logger;

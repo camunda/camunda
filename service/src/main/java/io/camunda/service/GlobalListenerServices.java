@@ -7,9 +7,9 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.api.model.authz.AuthorizationScope.WILDCARD_CHAR;
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.GLOBAL_TASK_LISTENER_READ_AUTHORIZATION;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
 
 import io.camunda.search.clients.GlobalListenerSearchClient;
 import io.camunda.search.entities.GlobalListenerEntity;

@@ -16,11 +16,11 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.GlobalListenerMapper;
 import io.camunda.search.query.GlobalListenerQuery;
+import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

@@ -12,10 +12,10 @@ import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveAudi
 import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveRandomAuditLogs;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUDIT_LOG;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.AUDIT_LOG;
+import static io.camunda.security.api.model.authz.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.security.api.model.authz.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.security.api.model.authz.PermissionType.READ_USER_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;

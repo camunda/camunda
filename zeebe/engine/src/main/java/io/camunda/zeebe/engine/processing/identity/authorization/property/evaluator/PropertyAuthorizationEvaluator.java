@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator;
 
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.ResourceAuthorizationProperties;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.Map;
 import java.util.Set;
 

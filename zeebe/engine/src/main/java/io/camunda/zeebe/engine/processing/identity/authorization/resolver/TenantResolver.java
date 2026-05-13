@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.resolver;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
@@ -14,7 +15,6 @@ import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationTyp
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.stream.Collectors;
