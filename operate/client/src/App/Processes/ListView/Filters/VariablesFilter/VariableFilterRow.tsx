@@ -6,12 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
 import {Dropdown, TextInput} from '@carbon/react';
 import {Close, Maximize} from '@carbon/react/icons';
-import {createPortal} from 'react-dom';
 import {Field, useForm} from 'react-final-form';
-import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {IconTextInput} from 'modules/components/IconInput';
 import type {VariableFilterOperator} from 'modules/stores/variableFilter';
 import {VARIABLE_FILTER_OPERATORS} from './constants';
@@ -22,6 +19,7 @@ type Props = {
   onDelete: () => void;
   isDeleteHidden: boolean;
   rowIndex: number;
+  onEditValue: (index: number) => void;
 };
 
 const getValuePlaceholder = (operator: VariableFilterOperator): string => {
@@ -40,8 +38,8 @@ const VariableFilterRow: React.FC<Props> = ({
   onDelete,
   isDeleteHidden,
   rowIndex,
+  onEditValue,
 }) => {
-  const [isJsonEditorOpen, setIsJsonEditorOpen] = useState(false);
   const form = useForm();
 
   return (
@@ -119,46 +117,30 @@ const VariableFilterRow: React.FC<Props> = ({
                     }}
                   >
                     {({input, meta}) => (
-                      <>
-                        <IconTextInput
-                          id={input.name}
-                          name={input.name}
-                          labelText="Value"
-                          hideLabel
-                          placeholder={getValuePlaceholder(operatorInput.value)}
-                          value={input.value}
-                          onChange={input.onChange}
-                          onBlur={input.onBlur}
-                          invalid={
-                            !meta.dirtySinceLastSubmit &&
-                            meta.submitError !== undefined
-                          }
-                          invalidText={
-                            meta.dirtySinceLastSubmit
-                              ? undefined
-                              : meta.submitError
-                          }
-                          size="sm"
-                          Icon={Maximize}
-                          buttonLabel="Open JSON editor"
-                          onIconClick={() => setIsJsonEditorOpen(true)}
-                          data-testid={`variable-filter-value-${rowIndex}`}
-                        />
-                        {isJsonEditorOpen &&
-                          createPortal(
-                            <JSONEditorModal
-                              isVisible={isJsonEditorOpen}
-                              title="Edit Variable Value"
-                              value={input.value}
-                              onClose={() => setIsJsonEditorOpen(false)}
-                              onApply={(value) => {
-                                input.onChange(value ?? '');
-                                setIsJsonEditorOpen(false);
-                              }}
-                            />,
-                            document.body,
-                          )}
-                      </>
+                      <IconTextInput
+                        id={input.name}
+                        name={input.name}
+                        labelText="Value"
+                        hideLabel
+                        placeholder={getValuePlaceholder(operatorInput.value)}
+                        value={input.value}
+                        onChange={input.onChange}
+                        onBlur={input.onBlur}
+                        invalid={
+                          !meta.dirtySinceLastSubmit &&
+                          meta.submitError !== undefined
+                        }
+                        invalidText={
+                          meta.dirtySinceLastSubmit
+                            ? undefined
+                            : meta.submitError
+                        }
+                        size="sm"
+                        Icon={Maximize}
+                        buttonLabel="Open JSON editor"
+                        onIconClick={() => onEditValue(rowIndex)}
+                        data-testid={`variable-filter-value-${rowIndex}`}
+                      />
                     )}
                   </Field>
                 )}

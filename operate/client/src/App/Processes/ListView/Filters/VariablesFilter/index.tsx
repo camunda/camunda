@@ -8,6 +8,7 @@
 
 import {observer} from 'mobx-react';
 import {useNavigate, useLocation} from 'react-router-dom';
+import truncate from 'lodash/truncate';
 import {Button} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
 import {Paths} from 'modules/Routes';
@@ -23,9 +24,10 @@ const getConditionLabel = (condition: VariableCondition): string => {
   const config = VARIABLE_FILTER_OPERATORS.find(
     (op) => op.id === condition.operator,
   );
-  return config?.requiresValue
-    ? `${condition.name} ${config.label} ${condition.value}`
-    : `${condition.name} ${config?.label ?? condition.operator}`;
+  if (!config?.requiresValue) {
+    return `${condition.name} ${config?.label ?? condition.operator}`;
+  }
+  return `${condition.name} ${config.label} ${truncate(condition.value, {length: 50})}`;
 };
 
 const VariableFilter: React.FC = observer(() => {

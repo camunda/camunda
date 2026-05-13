@@ -53,6 +53,18 @@ const ConditionList = styled.ul`
 
 const ConditionItem = styled.li`
   ${styles.bodyShort01};
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-all;
+`;
+
+const EditorToolbar = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--cds-spacing-03);
+  padding-bottom: var(--cds-spacing-03);
 `;
 
 export {
@@ -63,4 +75,5 @@ export {
   DeleteButton,
   ConditionList,
   ConditionItem,
+  EditorToolbar,
 };

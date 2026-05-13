@@ -104,7 +104,7 @@ describe('<VariableFilter />', () => {
     await user.click(screen.getByRole('button', {name: 'Add conditions'}));
 
     expect(
-      screen.getByRole('dialog', {name: 'Filter by Variable'}),
+      screen.getByRole('dialog', {name: 'Filter by variable'}),
     ).toBeInTheDocument();
   });
 
@@ -163,7 +163,7 @@ describe('<VariableFilter />', () => {
     });
 
     expect(
-      screen.getByRole('dialog', {name: 'Filter by Variable'}),
+      screen.getByRole('dialog', {name: 'Filter by variable'}),
     ).toBeInTheDocument();
   });
 
@@ -175,7 +175,7 @@ describe('<VariableFilter />', () => {
     await user.click(screen.getByRole('button', {name: 'Add conditions'}));
 
     expect(
-      screen.getByRole('dialog', {name: 'Filter by Variable'}),
+      screen.getByRole('dialog', {name: 'Filter by variable'}),
     ).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent(
       Paths.processesVariables(),
@@ -193,7 +193,7 @@ describe('<VariableFilter />', () => {
     });
 
     expect(
-      screen.getByRole('dialog', {name: 'Filter by Variable'}),
+      screen.getByRole('dialog', {name: 'Filter by variable'}),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Cancel'}));

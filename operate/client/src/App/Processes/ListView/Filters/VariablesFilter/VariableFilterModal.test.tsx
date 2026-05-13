@@ -194,7 +194,7 @@ describe('<VariableFilterModal />', () => {
     expect(screen.getByText('Variable name is required')).toBeInTheDocument();
     expect(variableFilterStore.conditions).toHaveLength(0);
     expect(
-      screen.getByRole('dialog', {name: 'Filter by Variable'}),
+      screen.getByRole('dialog', {name: 'Filter by variable'}),
     ).toBeInTheDocument();
   });
 
@@ -329,5 +329,111 @@ describe('<VariableFilterModal />', () => {
       screen.queryByText('Variable name is required'),
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Value is required')).not.toBeInTheDocument();
+  });
+
+  it('should switch to editor step when Maximize icon is clicked', async () => {
+    variableFilterStore.setConditions([
+      {name: 'status', operator: 'equals', value: '"active"'},
+    ]);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('button', {name: 'Open JSON editor'}));
+
+    expect(
+      screen.getByRole('heading', {name: 'Edit value: status'}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Save'})).toBeInTheDocument();
+  });
+
+  it('should show fallback heading when variable name is empty', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('button', {name: 'Open JSON editor'}));
+
+    expect(
+      screen.getByRole('heading', {name: 'Edit variable value'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should return to conditions step when Cancel is clicked on editor step', async () => {
+    variableFilterStore.setConditions([
+      {name: 'status', operator: 'equals', value: '"active"'},
+    ]);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('button', {name: 'Open JSON editor'}));
+    expect(
+      screen.getByRole('heading', {name: 'Edit value: status'}),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+
+    expect(
+      screen.getByRole('heading', {name: 'Filter by variable'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should not navigate when X button is clicked on editor step', async () => {
+    variableFilterStore.setConditions([
+      {name: 'status', operator: 'equals', value: '"active"'},
+    ]);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('button', {name: 'Open JSON editor'}));
+    await user.click(screen.getByRole('button', {name: /close/i}));
+
+    expect(
+      screen.getByRole('heading', {name: 'Filter by variable'}),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processesVariables(),
+    );
+  });
+
+  it('should return to conditions step when Save button is clicked', async () => {
+    variableFilterStore.setConditions([
+      {name: 'status', operator: 'equals', value: '"old"'},
+    ]);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('button', {name: 'Open JSON editor'}));
+    expect(
+      screen.getByRole('heading', {name: 'Edit value: status'}),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Save'}));
+
+    expect(
+      screen.getByRole('heading', {name: 'Filter by variable'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should show Copy button on editor step', async () => {
+    variableFilterStore.setConditions([
+      {name: 'status', operator: 'equals', value: '"active"'},
+    ]);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('button', {name: 'Open JSON editor'}));
+
+    expect(screen.getByRole('button', {name: /copy/i})).toBeInTheDocument();
+  });
+
+  it('should not show conditions list on editor step', async () => {
+    variableFilterStore.setConditions([
+      {name: 'status', operator: 'equals', value: '"active"'},
+      {name: 'count', operator: 'equals', value: '5'},
+    ]);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(2);
+
+    await user.click(
+      screen.getAllByRole('button', {name: 'Open JSON editor'})[0]!,
+    );
+
+    expect(
+      screen.queryByPlaceholderText('Variable name'),
+    ).not.toBeInTheDocument();
   });
 });
