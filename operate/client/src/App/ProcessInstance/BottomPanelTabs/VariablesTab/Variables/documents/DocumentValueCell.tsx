@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Tag} from '@carbon/react';
 import {Document} from '@carbon/react/icons';
 import type {DocumentRecognition} from './types';
 import {
@@ -16,6 +17,7 @@ import {
   ListSummary,
 } from './styled';
 import {formatBytes} from './formatBytes';
+import {isDocumentCorrupted, isDocumentExpired} from './expiry';
 
 type Props = {
   recognition: DocumentRecognition;
@@ -25,6 +27,8 @@ const DocumentValueCell: React.FC<Props> = ({recognition}) => {
   if (recognition.kind === 'single') {
     const {document} = recognition;
     const size = formatBytes(document.metadata.size);
+    const expired = isDocumentExpired(document);
+    const corrupted = !expired && isDocumentCorrupted(document);
     return (
       <DocumentRow>
         <DocumentLabel>
@@ -33,6 +37,24 @@ const DocumentValueCell: React.FC<Props> = ({recognition}) => {
             {document.metadata.fileName}
           </DocumentFileName>
           {size !== '' && <DocumentMeta>{size}</DocumentMeta>}
+          {expired && (
+            <Tag
+              type="red"
+              size="sm"
+              title="The file is past its retention period and is no longer available"
+            >
+              Expired
+            </Tag>
+          )}
+          {corrupted && (
+            <Tag
+              type="red"
+              size="sm"
+              title="The file is unreadable — bytes appear to be corrupted"
+            >
+              Corrupted
+            </Tag>
+          )}
         </DocumentLabel>
       </DocumentRow>
     );

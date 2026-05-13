@@ -200,7 +200,12 @@ const VariablesTable: React.FC<Props> = ({
                     <DocumentActions
                       variableKey={variableKey}
                       variableName={name}
+                      variableValue={value}
                       recognition={recognition}
+                      canEdit={
+                        !isModificationModeEnabled &&
+                        !!isProcessInstanceRunning
+                      }
                     />
                   ) : (
                     variableOps

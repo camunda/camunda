@@ -13,46 +13,75 @@ import {DocumentPreviewModal} from './DocumentPreviewModal';
 import {DocumentListModal} from './DocumentListModal';
 import {downloadDocument} from './downloadDocument';
 import {MOCK_TRUNCATED_FULL_DOCUMENTS} from './mockDocumentVariables';
+import {ViewFullVariableButton} from '../ViewFullVariableButton';
+import {isDocumentCorrupted, isDocumentExpired} from './expiry';
 import type {DocumentRecognition} from './types';
 
 type Props = {
   variableKey: string;
   variableName: string;
+  variableValue: string;
   recognition: DocumentRecognition;
+  canEdit?: boolean;
 };
 
 const DocumentActions: React.FC<Props> = ({
   variableKey,
   variableName,
+  variableValue,
   recognition,
+  canEdit = false,
 }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isListOpen, setIsListOpen] = useState(false);
 
+  const expandButton = (
+    <ViewFullVariableButton
+      mode="show"
+      variableName={variableName}
+      variableKey={variableKey}
+      variableValue={variableValue}
+      canEdit={canEdit}
+    />
+  );
+
   if (recognition.kind === 'single') {
     const {document} = recognition;
+    const expired = isDocumentExpired(document);
+    const corrupted = !expired && isDocumentCorrupted(document);
+    // Expired (file purged) and corrupted (bytes unreadable) both leave the
+    // reference intact but the file unusable — only the Expand button stays
+    // so the operator can still inspect the JSON.
+    const isUnusable = expired || corrupted;
+    const showPreview = !isUnusable;
+    const showDownload = !isUnusable;
     return (
       <>
-        <Button
-          kind="ghost"
-          size="sm"
-          hasIconOnly
-          iconDescription="View"
-          tooltipPosition="top"
-          renderIcon={ViewIcon}
-          onClick={() => setIsPreviewOpen(true)}
-          data-testid={`view-document-${variableName}-button`}
-        />
-        <Button
-          kind="ghost"
-          size="sm"
-          hasIconOnly
-          iconDescription="Download"
-          tooltipPosition="top"
-          renderIcon={Download}
-          onClick={() => downloadDocument(document)}
-          data-testid={`download-document-${variableName}-button`}
-        />
+        {expandButton}
+        {showPreview && (
+          <Button
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            iconDescription="View"
+            tooltipPosition="top"
+            renderIcon={ViewIcon}
+            onClick={() => setIsPreviewOpen(true)}
+            data-testid={`view-document-${variableName}-button`}
+          />
+        )}
+        {showDownload && (
+          <Button
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            iconDescription="Download"
+            tooltipPosition="top"
+            renderIcon={Download}
+            onClick={() => downloadDocument(document)}
+            data-testid={`download-document-${variableName}-button`}
+          />
+        )}
         {isPreviewOpen && (
           <DocumentPreviewModal
             document={document}
@@ -68,6 +97,7 @@ const DocumentActions: React.FC<Props> = ({
     const {documents} = recognition;
     return (
       <>
+        {expandButton}
         <Button
           kind="ghost"
           size="sm"
@@ -97,6 +127,7 @@ const DocumentActions: React.FC<Props> = ({
       MOCK_TRUNCATED_FULL_DOCUMENTS[variableKey] ?? [];
     return (
       <>
+        {expandButton}
         <Button
           kind="ghost"
           size="sm"

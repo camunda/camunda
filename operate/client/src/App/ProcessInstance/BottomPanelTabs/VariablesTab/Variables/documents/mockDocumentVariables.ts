@@ -73,6 +73,46 @@ const processDataVariable: Variable = {
   }),
 };
 
+// Expired document — TTL passed, the underlying file is purged from storage.
+// Reference still exists in the variable; UI shows an "Expired" badge and
+// disables preview/download.
+const expiredInvoiceVariable: Variable = {
+  ...baseFields,
+  variableKey: 'mock-doc-expired-invoice',
+  name: 'expiredInvoice',
+  value: JSON.stringify({
+    'camunda.document.type': 'camunda',
+    documentId: 'doc-expired-invoice-004',
+    storeId: 'in-memory',
+    metadata: {
+      fileName: 'invoice-2025-09.pdf',
+      contentType: 'application/pdf',
+      size: 184320,
+      expiresAt: '2026-04-12T00:00:00Z',
+    },
+  }),
+};
+
+// Corrupted document — reference is intact and not expired, but the bytes
+// can't be rendered. The UI only discovers this when preview/download fails.
+// In the prototype we flag it via MOCK_CORRUPTED_DOCUMENT_IDS so the preview
+// modal can show the failure state.
+const corruptedReceiptVariable: Variable = {
+  ...baseFields,
+  variableKey: 'mock-doc-corrupted-receipt',
+  name: 'corruptedReceipt',
+  value: JSON.stringify({
+    'camunda.document.type': 'camunda',
+    documentId: 'doc-corrupted-receipt-005',
+    storeId: 'in-memory',
+    metadata: {
+      fileName: 'receipt-scan.pdf',
+      contentType: 'application/pdf',
+      size: 81760,
+    },
+  }),
+};
+
 // Mixed object with nested document references (e.g. agent memory). Out of
 // scope for the document UI — renders as a plain JSON variable.
 const agentMemoryVariable: Variable = {
@@ -196,11 +236,20 @@ const MOCK_DOCUMENT_VARIABLES: Variable[] = [
   claimPhotoVariable,
   compareReportVariable,
   processDataVariable,
+  expiredInvoiceVariable,
+  corruptedReceiptVariable,
   agentMemoryVariable,
   idDocumentsVariable,
   caseFilesVariable,
   ...regularVariables,
 ];
+
+// Prototype-only: document IDs whose underlying file is corrupted. Looked up
+// inside DocumentPreviewModal so it can render the failure state.
+// TODO: Replace with a real load-error from the document service.
+const MOCK_CORRUPTED_DOCUMENT_IDS = new Set<string>([
+  'doc-corrupted-receipt-005',
+]);
 
 // Side-channel for truncated-list variables: maps variableKey to the full
 // document list that the backend would return when expanding the variable.
@@ -226,4 +275,5 @@ export {
   MOCK_DOCUMENT_VARIABLES,
   MOCK_DOCUMENT_ASSET_PATHS,
   MOCK_TRUNCATED_FULL_DOCUMENTS,
+  MOCK_CORRUPTED_DOCUMENT_IDS,
 };

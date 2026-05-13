@@ -107,6 +107,11 @@ const Toolbar = styled.div`
   gap: var(--cds-spacing-03);
   padding: var(--cds-spacing-03) var(--cds-spacing-05);
   background-color: var(--cds-layer);
+
+  /* BottomPanelTabs/TabContent adds a 16px padding-top to every tab. Cancel
+     it so the Variables toolbar only contributes its own 8px (matching the
+     Instance History toolbar's vertical padding). */
+  margin-top: calc(-1 * var(--cds-spacing-05));
 `;
 
 const ToolbarSearch = styled.div`
@@ -127,15 +132,15 @@ const FilterChipRow = styled.div`
   flex: 0 0 auto;
 
   /* Carbon's SelectableTag defaults to a button-secondary look (black when
-     selected). Override to the softer cool-gray ramp from the Figma design. */
+     selected). Override: unselected = transparent, selected = soft gray fill. */
   .cds--tag--selectable {
-    background-color: var(--cds-tag-background-cool-gray);
+    background-color: transparent;
     color: var(--cds-tag-color-cool-gray);
     border: none;
   }
 
   .cds--tag--selectable:hover {
-    background-color: var(--cds-tag-hover-cool-gray);
+    background-color: var(--cds-layer-hover-01);
     color: var(--cds-tag-color-cool-gray);
   }
 

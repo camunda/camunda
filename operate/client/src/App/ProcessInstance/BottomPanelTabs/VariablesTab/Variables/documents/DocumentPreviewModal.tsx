@@ -10,7 +10,10 @@ import {lazy, Suspense, useEffect, useState} from 'react';
 import {InlineNotification, Modal} from '@carbon/react';
 import {readFile} from './readFile';
 import type {DocumentReference} from './types';
-import {MOCK_DOCUMENT_ASSET_PATHS} from './mockDocumentVariables';
+import {
+  MOCK_DOCUMENT_ASSET_PATHS,
+  MOCK_CORRUPTED_DOCUMENT_IDS,
+} from './mockDocumentVariables';
 import {PreviewIframeContainer, PreviewImageContainer} from './styled';
 
 const JSONEditorLazy = lazy(async () => {
@@ -77,7 +80,17 @@ const DocumentPreviewModal: React.FC<Props> = ({document, isOpen, onClose}) => {
 
   let modalContent: React.ReactNode = null;
 
-  if (assetPath === null) {
+  if (MOCK_CORRUPTED_DOCUMENT_IDS.has(document.documentId)) {
+    modalContent = (
+      <InlineNotification
+        kind="error"
+        title="Could not display this file"
+        subtitle="The file appears to be corrupted. You can still download it to inspect the raw bytes."
+        hideCloseButton
+        lowContrast
+      />
+    );
+  } else if (assetPath === null) {
     modalContent = (
       <InlineNotification
         kind="warning"
