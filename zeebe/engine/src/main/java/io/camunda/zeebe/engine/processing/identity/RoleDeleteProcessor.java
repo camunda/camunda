@@ -36,7 +36,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
-  private static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
+  public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete role with ID '%s', but a role with this ID doesn't exist.";
   public static final String ROLE_PROTECTED_ERROR_MESSAGE =
       "Expected to delete role with ID '%s', but this role is protected and cannot be deleted.";
