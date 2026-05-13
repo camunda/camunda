@@ -62,6 +62,18 @@ Keep each module's internal structure flat. React components live in a
 `components/` subfolder; everything else (hooks, utilities, stores,
 etc.) sits at the module root.
 
+### Filename conventions
+
+Keep filenames consistent so the role of each file is obvious at a
+glance:
+
+| Kind      | Pattern          | Example              |
+| --------- | ---------------- | -------------------- |
+| Hook      | `use*.ts(x)`     | `useAuth.ts`         |
+| Store     | `*.store.ts`     | `session.store.ts`   |
+| Component | `PascalCase.tsx` | `LoadingSpinner.tsx` |
+| Unit test | `*.test.ts(x)`   | `request.test.ts`    |
+
 There is **no** `modules/process-instances/` covering an entire large page;
 pages are assembled in `src/pages/` from these building blocks.
 
