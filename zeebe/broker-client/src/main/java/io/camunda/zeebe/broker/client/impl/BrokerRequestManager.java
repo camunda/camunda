@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.AdditionalErrorCodes;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -298,7 +298,7 @@ final class BrokerRequestManager extends Actor {
 
   private class BrokerAddressProvider implements Supplier<String> {
 
-    private final Function<BrokerClusterState, MemberId> nodeIdSelector;
+    private final Function<BrokerClusterState, BrokerMemberId> nodeIdSelector;
 
     BrokerAddressProvider() {
       this(BrokerClusterState::getRandomBroker);
@@ -308,7 +308,7 @@ final class BrokerRequestManager extends Actor {
       this(state -> state.getLeaderForPartition(partitionId));
     }
 
-    BrokerAddressProvider(final Function<BrokerClusterState, MemberId> nodeIdSelector) {
+    BrokerAddressProvider(final Function<BrokerClusterState, BrokerMemberId> nodeIdSelector) {
       this.nodeIdSelector = nodeIdSelector;
     }
 

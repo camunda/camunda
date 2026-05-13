@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.ClusterStatus;
 import io.camunda.service.TopologyServices.Health;
@@ -40,6 +40,12 @@ import org.mockito.Mockito;
 @NullMarked
 public class TopologyServiceTest {
 
+  private static final int partitionId1 = 1;
+  private static final int partitionId2 = 2;
+  private static final int partitionId3 = 3;
+  private static final BrokerMemberId leaderId1 = BrokerMemberId.from(1);
+  private static final BrokerMemberId leaderId2 = BrokerMemberId.from(2);
+  private static final BrokerMemberId leaderId3 = BrokerMemberId.from(3);
   private BrokerClient brokerClient;
   private BrokerClusterState clusterState;
   private TopologyServices services;
@@ -62,18 +68,12 @@ public class TopologyServiceTest {
 
   @Test
   void shouldReturnHealthyWhenAtLeastOnePartitionHasHealthyLeader() {
-    // given
-    final int partitionId1 = 1;
-    final int partitionId2 = 2;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
-
     when(clusterState.getPartitions()).thenReturn(List.of(partitionId1, partitionId2));
-    when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(memberId(leaderId1));
-    when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(memberId(leaderId2));
-    when(clusterState.getPartitionHealth(memberId(leaderId1), partitionId1))
+    when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
+    when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(leaderId2);
+    when(clusterState.getPartitionHealth(leaderId1, partitionId1))
         .thenReturn(PartitionHealthStatus.HEALTHY);
-    when(clusterState.getPartitionHealth(memberId(leaderId2), partitionId2))
+    when(clusterState.getPartitionHealth(leaderId2, partitionId2))
         .thenReturn(PartitionHealthStatus.UNHEALTHY);
 
     // when
@@ -86,7 +86,7 @@ public class TopologyServiceTest {
     verify(topologyManager).getTopology();
     verify(clusterState).getPartitions();
     verify(clusterState).getLeaderForPartition(partitionId1);
-    verify(clusterState).getPartitionHealth(memberId(leaderId1), partitionId1);
+    verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
   }
 
   @ParameterizedTest
@@ -96,19 +96,11 @@ public class TopologyServiceTest {
       mode = EnumSource.Mode.EXCLUDE)
   void shouldReturnUnhealthyWhenNoPartitionHasHealthyLeader(
       final PartitionHealthStatus unhealthyStatus) {
-    // given
-    final int partitionId1 = 1;
-    final int partitionId2 = 2;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
-
     when(clusterState.getPartitions()).thenReturn(List.of(partitionId1, partitionId2));
-    when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(memberId(leaderId1));
-    when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(memberId(leaderId2));
-    when(clusterState.getPartitionHealth(memberId(leaderId1), partitionId1))
-        .thenReturn(unhealthyStatus);
-    when(clusterState.getPartitionHealth(memberId(leaderId2), partitionId2))
-        .thenReturn(unhealthyStatus);
+    when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
+    when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(leaderId2);
+    when(clusterState.getPartitionHealth(leaderId1, partitionId1)).thenReturn(unhealthyStatus);
+    when(clusterState.getPartitionHealth(leaderId2, partitionId2)).thenReturn(unhealthyStatus);
 
     // when
     final var status = services.getStatus().join();
@@ -120,9 +112,9 @@ public class TopologyServiceTest {
     verify(topologyManager).getTopology();
     verify(clusterState).getPartitions();
     verify(clusterState).getLeaderForPartition(partitionId1);
-    verify(clusterState).getPartitionHealth(memberId(leaderId1), partitionId1);
+    verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
     verify(clusterState).getLeaderForPartition(partitionId2);
-    verify(clusterState).getPartitionHealth(memberId(leaderId2), partitionId2);
+    verify(clusterState).getPartitionHealth(leaderId2, partitionId2);
   }
 
   @Test
@@ -160,23 +152,17 @@ public class TopologyServiceTest {
   @Test
   void shouldHandleMixedPartitionHealthStatuses() {
     // given
-    final int partitionId1 = 1;
-    final int partitionId2 = 2;
-    final int partitionId3 = 3;
-    final int leaderId1 = 1;
-    final int leaderId2 = 2;
-    final int leaderId3 = 3;
 
     when(clusterState.getPartitions())
         .thenReturn(List.of(partitionId1, partitionId2, partitionId3));
-    when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(memberId(leaderId1));
-    when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(memberId(leaderId2));
-    when(clusterState.getLeaderForPartition(partitionId3)).thenReturn(memberId(leaderId3));
-    when(clusterState.getPartitionHealth(memberId(leaderId1), partitionId1))
+    when(clusterState.getLeaderForPartition(partitionId1)).thenReturn(leaderId1);
+    when(clusterState.getLeaderForPartition(partitionId2)).thenReturn(leaderId2);
+    when(clusterState.getLeaderForPartition(partitionId3)).thenReturn(leaderId3);
+    when(clusterState.getPartitionHealth(leaderId1, partitionId1))
         .thenReturn(PartitionHealthStatus.DEAD);
-    when(clusterState.getPartitionHealth(memberId(leaderId2), partitionId2))
+    when(clusterState.getPartitionHealth(leaderId2, partitionId2))
         .thenReturn(PartitionHealthStatus.UNHEALTHY);
-    when(clusterState.getPartitionHealth(memberId(leaderId3), partitionId3))
+    when(clusterState.getPartitionHealth(leaderId3, partitionId3))
         .thenReturn(PartitionHealthStatus.HEALTHY);
 
     // when
@@ -189,11 +175,11 @@ public class TopologyServiceTest {
     verify(topologyManager).getTopology();
     verify(clusterState).getPartitions();
     verify(clusterState).getLeaderForPartition(partitionId1);
-    verify(clusterState).getPartitionHealth(memberId(leaderId1), partitionId1);
+    verify(clusterState).getPartitionHealth(leaderId1, partitionId1);
     verify(clusterState).getLeaderForPartition(partitionId2);
-    verify(clusterState).getPartitionHealth(memberId(leaderId2), partitionId2);
+    verify(clusterState).getPartitionHealth(leaderId2, partitionId2);
     verify(clusterState).getLeaderForPartition(partitionId3);
-    verify(clusterState).getPartitionHealth(memberId(leaderId3), partitionId3);
+    verify(clusterState).getPartitionHealth(leaderId3, partitionId3);
   }
 
   @Test
@@ -258,10 +244,6 @@ public class TopologyServiceTest {
             });
   }
 
-  private static MemberId memberId(final int brokerId) {
-    return MemberId.from(brokerId);
-  }
-
   /**
    * Topology stub which returns a static topology with 3 brokers, 1 partition, replication factor
    * 3, where 0 is the leader (healthy), 1 is the follower (healthy), and 2 is inactive (unhealthy).
@@ -290,23 +272,23 @@ public class TopologyServiceTest {
     }
 
     @Override
-    public MemberId getLeaderForPartition(final int partition) {
-      return memberId(0);
+    public BrokerMemberId getLeaderForPartition(final int partition) {
+      return BrokerMemberId.from(0);
     }
 
     @Override
-    public Set<MemberId> getFollowersForPartition(final int partition) {
-      return Set.of(memberId(1));
+    public Set<BrokerMemberId> getFollowersForPartition(final int partition) {
+      return Set.of(BrokerMemberId.from(1));
     }
 
     @Override
-    public Set<MemberId> getInactiveNodesForPartition(final int partition) {
-      return Set.of(memberId(2));
+    public Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
+      return Set.of(BrokerMemberId.from(2));
     }
 
     @Override
-    public MemberId getRandomBroker() {
-      return memberId(ThreadLocalRandom.current().nextInt(0, 3));
+    public BrokerMemberId getRandomBroker() {
+      return BrokerMemberId.from(ThreadLocalRandom.current().nextInt(0, 3));
     }
 
     @Override
@@ -315,22 +297,23 @@ public class TopologyServiceTest {
     }
 
     @Override
-    public List<MemberId> getBrokers() {
-      return Stream.of(0, 1, 2).map(TopologyServiceTest::memberId).toList();
+    public List<BrokerMemberId> getBrokers() {
+      return Stream.of(0, 1, 2).map(BrokerMemberId::from).toList();
     }
 
     @Override
-    public String getBrokerAddress(final MemberId brokerId) {
+    public String getBrokerAddress(final BrokerMemberId brokerId) {
       return "localhost:" + (26501 + brokerId.nodeIdx());
     }
 
     @Override
-    public String getBrokerVersion(final MemberId brokerId) {
+    public String getBrokerVersion(final BrokerMemberId brokerId) {
       return version;
     }
 
     @Override
-    public PartitionHealthStatus getPartitionHealth(final MemberId brokerId, final int partition) {
+    public PartitionHealthStatus getPartitionHealth(
+        final BrokerMemberId brokerId, final int partition) {
       if (partition != 1) {
         return PartitionHealthStatus.NULL_VAL;
       }

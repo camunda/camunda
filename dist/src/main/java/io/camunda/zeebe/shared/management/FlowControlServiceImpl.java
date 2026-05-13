@@ -9,7 +9,7 @@ package io.camunda.zeebe.shared.management;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
@@ -91,6 +91,7 @@ public class FlowControlServiceImpl implements FlowControlService {
             .map(
                 brokerId -> {
                   final var request = new BrokerAdminRequest();
+                  // TODO: https://github.com/camunda/camunda/issues/52807
                   request.setBrokerId(brokerId.nodeIdx());
                   request.setPartitionId(partitionId);
                   configureRequest.accept(request);
@@ -108,6 +109,7 @@ public class FlowControlServiceImpl implements FlowControlService {
           new IllegalStateException("No leader for partition " + partitionId));
     }
     final var request = new BrokerAdminRequest();
+    // TODO: https://github.com/camunda/camunda/issues/52807
     request.setBrokerId(brokerId.nodeIdx());
     request.setPartitionId(partitionId);
     request.getFLowControlConfiguration();
@@ -120,7 +122,7 @@ public class FlowControlServiceImpl implements FlowControlService {
                     partitionId, LimitSerializer.deserialize(response.getResponse().getPayload())));
   }
 
-  private HashSet<MemberId> getMembers(
+  private HashSet<BrokerMemberId> getMembers(
       final BrokerClusterState topology, final Integer partitionId) {
     final var leader = topology.getLeaderForPartition(partitionId);
     final var followers =
@@ -128,7 +130,7 @@ public class FlowControlServiceImpl implements FlowControlService {
     final var inactive =
         Optional.ofNullable(topology.getInactiveNodesForPartition(partitionId)).orElseGet(Set::of);
 
-    final var members = new HashSet<MemberId>(topology.getReplicationFactor());
+    final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
     members.add(leader);
     members.addAll(followers);
     members.addAll(inactive);

@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
-import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -62,7 +62,7 @@ import org.junit.jupiter.api.TestInfo;
 
 public final class BrokerClientTest {
 
-  private static final MemberId ONE = MemberId.from("1");
+  private static final BrokerMemberId ONE = BrokerMemberId.from("1");
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
   private final StubBroker broker = new StubBroker().start();
   private BrokerClient client;
@@ -421,7 +421,7 @@ public final class BrokerClientTest {
           .untilAsserted(
               () ->
                   assertThat(topologyManager.getTopology().getLeaderForPartition(1))
-                      .isEqualTo(MemberId.from(leaderBrokerId)));
+                      .isEqualTo(BrokerMemberId.from(leaderBrokerId)));
 
       response = client.sendRequest(request).join();
     }

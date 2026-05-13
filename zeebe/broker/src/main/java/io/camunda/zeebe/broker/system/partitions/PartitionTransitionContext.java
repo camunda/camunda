@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -45,7 +45,7 @@ import org.jspecify.annotations.Nullable;
 
 public interface PartitionTransitionContext extends PartitionContext {
 
-  MemberId getMemberId();
+  BrokerMemberId getMemberId();
 
   LogStream getLogStream();
 

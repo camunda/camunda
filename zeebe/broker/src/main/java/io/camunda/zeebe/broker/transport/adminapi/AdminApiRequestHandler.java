@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.adminapi;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
@@ -30,14 +30,14 @@ public class AdminApiRequestHandler
   private final PartitionAdminAccess adminAccess;
   private final RaftPartition raftPartition;
   private final ClusterConfigurationService clusterConfigurationService;
-  private final MemberId memberId;
+  private final BrokerMemberId memberId;
 
   public AdminApiRequestHandler(
       final AtomixServerTransport transport,
       final PartitionAdminAccess adminAccess,
       final RaftPartition raftPartition,
       final ClusterConfigurationService clusterConfigurationService,
-      final MemberId memberId) {
+      final BrokerMemberId memberId) {
     super(ApiRequestReader::new, ApiResponseWriter::new);
     this.transport = transport;
     this.adminAccess = adminAccess;
@@ -302,7 +302,7 @@ public class AdminApiRequestHandler
                       return;
                     }
 
-                    if (!primaryMember.get().equals(memberId)) {
+                    if (!primaryMember.get().equals(memberId.memberId())) {
                       LOG.info(
                           "Node {} is not primary for partition {} (primary is {}), initiating step-down",
                           memberId,

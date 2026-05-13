@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.admin.exporting;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
@@ -72,7 +72,7 @@ public class ExportingControlService implements ExportingControlApi {
     final var inactive =
         Optional.ofNullable(topology.getInactiveNodesForPartition(partitionId)).orElseGet(Set::of);
 
-    final var members = new HashSet<MemberId>(topology.getReplicationFactor());
+    final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
     if (leader != null) {
       members.add(leader);
     }

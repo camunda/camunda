@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
@@ -98,8 +98,8 @@ public class SnapshotApiRequestHandlerTest {
     final var clusterService = mock(ClusterEventService.class);
     final var brokerTopology = mock(BrokerTopologyManager.class);
     final var clusterState = mock(BrokerClusterState.class);
-    when(clusterState.getLeaderForPartition(1)).thenReturn(MemberId.from(1));
-    when(clusterState.getBrokerAddress(MemberId.from("1"))).thenReturn(serverAddress);
+    when(clusterState.getLeaderForPartition(1)).thenReturn(BrokerMemberId.from(1));
+    when(clusterState.getBrokerAddress(BrokerMemberId.from("1"))).thenReturn(serverAddress);
     when(clusterState.getPartitions()).thenReturn(List.of(1));
 
     when(brokerTopology.getTopology()).thenReturn(clusterState);

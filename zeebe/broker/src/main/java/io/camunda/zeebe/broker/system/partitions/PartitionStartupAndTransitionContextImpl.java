@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
@@ -68,7 +68,7 @@ import java.util.stream.Collectors;
 public class PartitionStartupAndTransitionContextImpl
     implements PartitionContext, PartitionStartupContext, PartitionTransitionContext {
 
-  private final MemberId memberId;
+  private final BrokerMemberId memberId;
   private final List<PartitionListener> partitionListeners;
   private final List<PartitionRaftListener> partitionRaftListeners;
   private final int partitionCount;
@@ -122,7 +122,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ClusterConfigurationService clusterConfigurationService;
 
   public PartitionStartupAndTransitionContextImpl(
-      final MemberId memberId,
+      final BrokerMemberId memberId,
       final int partitionCount,
       final ClusterCommunicationService clusterCommunicationService,
       final RaftPartition raftPartition,
@@ -543,7 +543,7 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public MemberId getMemberId() {
+  public BrokerMemberId getMemberId() {
     return memberId;
   }
 

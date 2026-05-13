@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
-import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PartitionRoleValues;
 import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -44,7 +44,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   private final Set<BrokerTopologyListener> topologyListeners = new HashSet<>();
 
-  private final Map<MemberId, BrokerInfo> memberProperties = new HashMap<>();
+  private final Map<BrokerMemberId, BrokerInfo> memberProperties = new HashMap<>();
 
   public BrokerTopologyManagerImpl(
       final Supplier<Set<Member>> membersSupplier,
@@ -113,13 +113,14 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   private void addBroker(final Member member, final BrokerInfo brokerInfo) {
+    final var brokerMemberId = BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
     actor.run(
         () -> {
-          if (!memberProperties.containsKey(member.id())) {
-            topologyListeners.forEach(l -> l.brokerAdded(member.id()));
+          if (!memberProperties.containsKey(brokerMemberId)) {
+            topologyListeners.forEach(l -> l.brokerAdded(brokerMemberId));
           }
 
-          memberProperties.put(member.id(), brokerInfo);
+          memberProperties.put(brokerMemberId, brokerInfo);
 
           updateTopology(
               oldTopology ->
@@ -129,10 +130,16 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   private void removeBroker(final Member member) {
+    final var brokerInfo = BrokerInfo.fromProperties(member.properties());
+    if (brokerInfo == null) {
+      return;
+    }
+
+    final var brokerMemberId = BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
     actor.run(
         () -> {
-          memberProperties.remove(member.id());
-          topologyListeners.forEach(l -> l.brokerRemoved(member.id()));
+          memberProperties.remove(brokerMemberId);
+          topologyListeners.forEach(l -> l.brokerRemoved(brokerMemberId));
 
           final var oldTopology = topology;
           topology =
@@ -177,7 +184,7 @@ public final class BrokerTopologyManagerImpl extends Actor
       case METADATA_CHANGED -> {
         LOG.debug(
             "Received metadata change from Broker {}, partitions {}, terms {} and health {}.",
-            brokerInfo.memberIdString(),
+            BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId()).id(),
             brokerInfo.getPartitionRoles(),
             brokerInfo.getPartitionLeaderTerms(),
             brokerInfo.getPartitionHealthStatuses());
@@ -189,7 +196,9 @@ public final class BrokerTopologyManagerImpl extends Actor
       }
       default ->
           LOG.debug(
-              "Received {} for broker {}, do nothing.", eventType, brokerInfo.memberIdString());
+              "Received {} for broker {}, do nothing.",
+              eventType,
+              BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId()).id());
     }
   }
 

@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.TopologyServices.Topology.Builder;
@@ -67,7 +67,8 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
             partition -> {
               final var leader = topology.getLeaderForPartition(partition);
               return leader != null
-                  && topology.getPartitionHealth(leader, partition) == PartitionHealthStatus.HEALTHY;
+                  && topology.getPartitionHealth(leader, partition)
+                      == PartitionHealthStatus.HEALTHY;
             });
   }
 
@@ -113,7 +114,9 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   private void addBrokerInfo(
-      final Broker.Builder broker, final MemberId brokerId, final BrokerClusterState topology) {
+      final Broker.Builder broker,
+      final BrokerMemberId brokerId,
+      final BrokerClusterState topology) {
     final var brokerAddress = topology.getBrokerAddress(brokerId);
     final var address = Address.from(brokerAddress);
 
@@ -125,7 +128,9 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   private void addPartitionInfoToBrokerInfo(
-      final Broker.Builder broker, final MemberId brokerId, final BrokerClusterState topology) {
+      final Broker.Builder broker,
+      final BrokerMemberId brokerId,
+      final BrokerClusterState topology) {
     topology
         .getPartitions()
         .forEach(
@@ -156,7 +161,7 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
   }
 
   private boolean setRole(
-      final MemberId brokerId,
+      final BrokerMemberId brokerId,
       final Integer partitionId,
       final BrokerClusterState topology,
       final Partition.Builder partition) {
