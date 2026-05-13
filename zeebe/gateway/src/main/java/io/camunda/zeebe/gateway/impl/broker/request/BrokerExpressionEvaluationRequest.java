@@ -32,6 +32,9 @@ public class BrokerExpressionEvaluationRequest extends BrokerExecuteCommand<Expr
   }
 
   public BrokerExpressionEvaluationRequest setTenantId(final String tenantId) {
+    if (tenantId == null) {
+      return this;
+    }
     requestDto.setTenantId(tenantId);
     return this;
   }
