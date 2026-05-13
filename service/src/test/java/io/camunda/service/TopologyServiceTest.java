@@ -40,12 +40,12 @@ import org.mockito.Mockito;
 @NullMarked
 public class TopologyServiceTest {
 
-  private static final int partitionId1 = 1;
-  private static final int partitionId2 = 2;
-  private static final int partitionId3 = 3;
-  private static final BrokerMemberId leaderId1 = BrokerMemberId.from(1);
-  private static final BrokerMemberId leaderId2 = BrokerMemberId.from(2);
-  private static final BrokerMemberId leaderId3 = BrokerMemberId.from(3);
+  private final int partitionId1 = 1;
+  private final int partitionId2 = 2;
+  private final int partitionId3 = 3;
+  private final BrokerMemberId leaderId1 = BrokerMemberId.from(1);
+  private final BrokerMemberId leaderId2 = BrokerMemberId.from(2);
+  private final BrokerMemberId leaderId3 = BrokerMemberId.from(3);
   private BrokerClient brokerClient;
   private BrokerClusterState clusterState;
   private TopologyServices services;
