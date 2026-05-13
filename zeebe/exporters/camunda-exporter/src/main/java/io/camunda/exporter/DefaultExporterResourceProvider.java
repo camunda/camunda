@@ -97,6 +97,8 @@ import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandle
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
 import io.camunda.exporter.store.FakeOrdinalIndexLocatorProvider;
 import io.camunda.exporter.store.IndexLocatorProvider;
+import io.camunda.search.schema.OrdinalIndexManager;
+import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -168,6 +170,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private ExporterEntityCacheImpl<String, CachedFormEntity> formCache;
   private ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
   private ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache;
+  private OrdinalIndexManager ordinalIndexManager;
   private IndexLocatorProvider indexLocatorProvider;
 
   @Override
@@ -176,7 +179,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       final ExporterEntityCacheProvider entityCacheProvider,
       final Context context,
       final ExporterMetadata exporterMetadata,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SearchEngineClient searchEngineClient) {
     final var globalPrefix = configuration.getConnect().getIndexPrefix();
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
@@ -445,7 +449,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       }
     }
 
-    indexLocatorProvider = new FakeOrdinalIndexLocatorProvider(ordinalBasedIndexes);
+    ordinalIndexManager = new OrdinalIndexManager(searchEngineClient, ordinalBasedIndexes);
+    indexLocatorProvider = new FakeOrdinalIndexLocatorProvider(ordinalIndexManager);
   }
 
   @Override
@@ -472,6 +477,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       decisionRequirementsCache.clear();
       decisionRequirementsCache = null;
     }
+    ordinalIndexManager = null;
     indexLocatorProvider = null;
   }
 
@@ -535,6 +541,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public IndexLocatorProvider getIndexLocatorProvider() {
     return indexLocatorProvider;
+  }
+
+  @Override
+  public OrdinalIndexManager getOrdinalIndexManager() {
+    return ordinalIndexManager;
   }
 
   private void addAuditLogHandlers(final AuditLogConfiguration auditLog, final int partitionId) {

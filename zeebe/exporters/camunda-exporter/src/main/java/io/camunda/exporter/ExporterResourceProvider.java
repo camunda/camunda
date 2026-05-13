@@ -14,6 +14,8 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.IndexLocatorProvider;
+import io.camunda.search.schema.OrdinalIndexManager;
+import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -31,7 +33,8 @@ public interface ExporterResourceProvider {
       final ExporterEntityCacheProvider entityCacheProvider,
       final Context context,
       final ExporterMetadata exporterMetadata,
-      final ObjectMapper objectMapper);
+      final ObjectMapper objectMapper,
+      final SearchEngineClient searchEngineClient);
 
   /** Resets the provider to its initial state. To avoid unnecessary resources consumptions. */
   void reset();
@@ -100,4 +103,6 @@ public interface ExporterResourceProvider {
   ExporterEntityCacheImpl<String, CachedFormEntity> getFormCache();
 
   IndexLocatorProvider getIndexLocatorProvider();
+
+  OrdinalIndexManager getOrdinalIndexManager();
 }

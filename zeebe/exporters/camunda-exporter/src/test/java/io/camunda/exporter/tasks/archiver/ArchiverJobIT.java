@@ -19,6 +19,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import io.camunda.exporter.DefaultExporterResourceProvider;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -26,6 +27,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -235,7 +237,8 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
         cacheProvider,
         context,
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        searchEngineClient(config));
     return resourceProvider;
   }
 
@@ -268,6 +271,11 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
               exporterMetrics,
               LOGGER));
     }
+  }
+
+  private SearchEngineClient searchEngineClient(final ExporterConfiguration config) {
+    final var clientAdapter = closeLater(ClientAdapter.of(config.getConnect()));
+    return clientAdapter.getSearchEngineClient();
   }
 
   protected ElasticsearchAsyncClient createAsyncESClient(final ExporterConfiguration config) {

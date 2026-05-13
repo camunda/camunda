@@ -98,7 +98,8 @@ final class CamundaExporterTest {
         mock(ExporterEntityCacheProvider.class),
         new ExporterTestContext().setPartitionId(1),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        null);
 
     // when
     final var handlers = provider.getExportHandlers();

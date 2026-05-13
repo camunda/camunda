@@ -83,34 +83,17 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
+  public void createOrdinalIndex(final String indexName) {
+    // let index template fill in the rest
+    final CreateIndexRequest request = new CreateIndexRequest.Builder().index(indexName).build();
+    createIndex(request);
+  }
+
+  @Override
   public void createIndex(
       final IndexDescriptor indexDescriptor, final IndexConfiguration settings) {
     final CreateIndexRequest request = createIndexRequest(indexDescriptor, settings);
-    try {
-      client.indices().create(request);
-      LOG.debug("Index [{}] was successfully created", indexDescriptor.getFullQualifiedName());
-    } catch (final IOException ioe) {
-      final var errMsg =
-          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
-      LOG.error(errMsg, ioe);
-      throw new SearchEngineException(errMsg, ioe);
-    } catch (final ElasticsearchException elsEx) {
-      if ("resource_already_exists_exception".equals(elsEx.error().type())) {
-        // we can ignore already exists exceptions
-        // as this means the index was created by another instance
-        final var warnMsg =
-            String.format(
-                "Expected to create index [%s], but already exist. Will continue, likely was created by a different instance.",
-                indexDescriptor.getFullQualifiedName());
-        LOG.debug(warnMsg, elsEx);
-        return;
-      }
-
-      final var errMsg =
-          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
-      LOG.error(errMsg, elsEx);
-      throw new SearchEngineException(errMsg, elsEx);
-    }
+    createIndex(request);
   }
 
   @Override
@@ -357,6 +340,32 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var errMsg =
           String.format("Failed to upsert document [%s] in index [%s]", documentId, indexName);
       throw new SearchEngineException(errMsg, ex);
+    }
+  }
+
+  private void createIndex(final CreateIndexRequest request) {
+    try {
+      client.indices().create(request);
+      LOG.debug("Index [{}] was successfully created", request.index());
+    } catch (final IOException ioe) {
+      final var errMsg = String.format("Index [%s] was not created", request.index());
+      LOG.error(errMsg, ioe);
+      throw new SearchEngineException(errMsg, ioe);
+    } catch (final ElasticsearchException elsEx) {
+      if ("resource_already_exists_exception".equals(elsEx.error().type())) {
+        // we can ignore already exists exceptions
+        // as this means the index was created by another instance
+        final var warnMsg =
+            String.format(
+                "Expected to create index [%s], but already exist. Will continue, likely was created by a different instance.",
+                request.index());
+        LOG.debug(warnMsg, elsEx);
+        return;
+      }
+
+      final var errMsg = String.format("Index [%s] was not created", request.index());
+      LOG.error(errMsg, elsEx);
+      throw new SearchEngineException(errMsg, elsEx);
     }
   }
 

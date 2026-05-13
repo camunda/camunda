@@ -267,7 +267,8 @@ public class CamundaExporter implements Exporter {
         clientAdapter.getExporterEntityCacheProvider(),
         context,
         metadata,
-        clientAdapter.objectMapper());
+        clientAdapter.objectMapper(),
+        clientAdapter.getSearchEngineClient());
 
     taskManager =
         new CamundaBackgroundTaskManagerFactory(

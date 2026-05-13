@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 public interface SearchEngineClient extends CloseableSilently {
+  void createOrdinalIndex(String indexName);
+
   void createIndex(final IndexDescriptor indexDescriptor, final IndexConfiguration settings);
 
   /**

@@ -59,7 +59,8 @@ public class DefaultExporterResourceProviderTest {
         mock(ExporterEntityCacheProvider.class),
         new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        null);
 
     provider
         .getIndexDescriptors()
@@ -95,7 +96,8 @@ public class DefaultExporterResourceProviderTest {
         mock(ExporterEntityCacheProvider.class),
         new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        null);
 
     // then
     assertThat(
@@ -118,7 +120,8 @@ public class DefaultExporterResourceProviderTest {
         mock(ExporterEntityCacheProvider.class),
         new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        null);
 
     // then
     assertThat(
@@ -141,7 +144,8 @@ public class DefaultExporterResourceProviderTest {
         mock(ExporterEntityCacheProvider.class),
         new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        null);
 
     // then
     // AuditLogHandlers are excluded because they by design have multiple instances
@@ -172,7 +176,8 @@ public class DefaultExporterResourceProviderTest {
         mock(ExporterEntityCacheProvider.class),
         context,
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        null);
 
     // then
     final var auditLogHandlers =
@@ -217,7 +222,8 @@ public class DefaultExporterResourceProviderTest {
         mock(ExporterEntityCacheProvider.class),
         new ExporterTestContext().setPartitionId(PROCESS_DEFINITION_PARTITION),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
+        TestObjectMapper.objectMapper(),
+        null);
 
     // when
     final var handlers = provider.getExportHandlers();
@@ -297,7 +303,7 @@ public class DefaultExporterResourceProviderTest {
       final ExportHandler<?, ?> handler) {
     // For AuditLogHandler, extract RecordValue from the transformer instance, because the handler
     // itself uses generic RecordValue
-    if (handler instanceof AuditLogHandler<?> auditLogHandler) {
+    if (handler instanceof final AuditLogHandler<?> auditLogHandler) {
       return findRecordValueTypeParameterFromClass(auditLogHandler.getTransformer().getClass());
     }
 
