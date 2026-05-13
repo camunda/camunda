@@ -25,16 +25,23 @@ jobs:
       options: --user 1001:1000
 
     steps:
-      - name: Verify snapshot push token is available
-        env:
-          OPERATE_VISUAL_SNAPSHOTS_TOKEN: ${{ secrets.OPERATE_VISUAL_SNAPSHOTS_TOKEN }}
-        run: |
-          test -n "$OPERATE_VISUAL_SNAPSHOTS_TOKEN"
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
+        with:
+          github-app-id-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
       - name: Check out repository code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.head_ref }}
-          token: ${{ secrets.OPERATE_VISUAL_SNAPSHOTS_TOKEN }}
+          token: ${{ steps.github-token.outputs.token }}
       - name: Setup NodeJS
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
@@ -56,4 +63,4 @@ jobs:
         with:
           commit_message: "test: updated operate snapshots"
           file_pattern: "operate/client/**/*.png"
-          token: ${{ secrets.OPERATE_VISUAL_SNAPSHOTS_TOKEN }}
+          token: ${{ steps.github-token.outputs.token }}
