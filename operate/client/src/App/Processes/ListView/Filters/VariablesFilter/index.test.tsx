@@ -7,20 +7,11 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {MemoryRouter, Route, Routes, useLocation} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
+import {LocationLog} from 'modules/utils/LocationLog';
 import {VariableFilter} from '.';
 import {variableFilterStore} from 'modules/stores/variableFilter';
-
-const LocationDisplay: React.FC = () => {
-  const location = useLocation();
-  return (
-    <div data-testid="location-display">
-      {location.pathname}
-      {location.search}
-    </div>
-  );
-};
 
 const getWrapper = (initialPath = Paths.processes()) => {
   const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
@@ -31,7 +22,7 @@ const getWrapper = (initialPath = Paths.processes()) => {
           element={
             <>
               {children}
-              <LocationDisplay />
+              <LocationLog />
             </>
           }
         />
@@ -40,7 +31,7 @@ const getWrapper = (initialPath = Paths.processes()) => {
           element={
             <>
               {children}
-              <LocationDisplay />
+              <LocationLog />
             </>
           }
         />
@@ -154,7 +145,7 @@ describe('<VariableFilter />', () => {
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(1);
   });
 
-  it('should open modal when rendered at /processes/variables', () => {
+  it('should open modal when rendered at correct URL', () => {
     render(<VariableFilter />, {
       wrapper: getWrapper(Paths.processesVariables()),
     });
@@ -174,8 +165,11 @@ describe('<VariableFilter />', () => {
     expect(
       screen.getByRole('dialog', {name: 'Filter by Variable'}),
     ).toBeInTheDocument();
-    expect(screen.getByTestId('location-display')).toHaveTextContent(
-      '/processes/variables?active=true&incidents=true',
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processesVariables(),
+    );
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?active=true&incidents=true',
     );
   });
 
@@ -193,8 +187,11 @@ describe('<VariableFilter />', () => {
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
     await waitFor(() => {
-      expect(screen.getByTestId('location-display')).toHaveTextContent(
-        '/processes?active=true&incidents=true',
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        Paths.processes(),
+      );
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        '?active=true&incidents=true',
       );
     });
   });

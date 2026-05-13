@@ -21,7 +21,7 @@ const Paths = {
     return '/processes';
   },
   processesVariables() {
-    return '/processes/variables';
+    return '/processes/filters/variables';
   },
   processInstance(
     processInstanceId: string | null = ':processInstanceId',

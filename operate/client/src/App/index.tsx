@@ -94,7 +94,7 @@ const routes = createRoutesFromElements(
           return {Component: Processes};
         }}
       >
-        <Route path="variables" element={null} />
+        <Route path="filters/variables" element={null} />
       </Route>
       <Route
         path={Paths.processInstance(undefined, true)}
