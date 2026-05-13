@@ -32,6 +32,7 @@ test.beforeAll(async ({request}) => {
     './resources/orderProcess_v_1.bpmn',
     './resources/processWithAnIncident.bpmn',
     './resources/incidentGeneratorProcess.bpmn',
+    './resources/dashboardSelectionProcess_v_1.bpmn',
   ]);
 
   await deploy([
@@ -57,6 +58,7 @@ test.beforeAll(async ({request}) => {
     createInstances('onlyIncidentsProcess', 1, 10),
     createInstances('onlyIncidentsProcess', 2, 5),
     createInstances('orderProcess', 1, 10),
+    createInstances('dashboardSelectionProcess', 1, 10),
     createSingleInstance('processWithAnIncident', 1),
     createSingleInstance('incidentGeneratorProcess', 1, {
       incidentType: 'Incident Type A',
@@ -69,8 +71,8 @@ test.beforeAll(async ({request}) => {
   const allInstances = instancesList.flatMap((instances) => instances);
   instanceIds = allInstances.map((instance) => instance.processInstanceKey);
 
-  // Wait for instances to be created (40 total: 4+8+10+5+10+1+1+1 = 40)
-  await waitForProcessInstances(request, instanceIds, 40);
+  // Wait for instances to be created (50 total: 4+8+10+5+10+10+1+1+1 = 50)
+  await waitForProcessInstances(request, instanceIds, 50);
 });
 
 test.beforeEach(async ({page, loginPage, operateHomePage}) => {
@@ -179,33 +181,36 @@ test.describe('Dashboard', () => {
     page,
     operateDashboardPage,
   }) => {
-    await test.step('Select first process and verify total count', async () => {
-      // Dashboard badge counts and the filtered Process Instances heading
-      // are computed from independent queries, so they can disagree under
-      // active load. Retry the read + click + verify cycle if the count on
-      // the next page doesn't match what we read from the badges.
+    // Use a process definition created exclusively by this spec so the
+    // badge counts and the filtered Process Instances heading reference
+    // a stable population unaffected by other tests running in parallel.
+    const PROCESS_NAME = 'Dashboard Selection Process';
+
+    await test.step('Select dashboard selection process and verify total count', async () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(operateDashboardPage.instancesByProcess).toBeVisible();
 
-          const firstInstanceByProcess =
-            operateDashboardPage.instancesByProcessItem(0);
+          const processRow =
+            operateDashboardPage.instancesByProcessItemByName(PROCESS_NAME);
+
+          await expect(processRow).toBeVisible();
 
           const incidentCount = Number(
             await operateDashboardPage
-              .incidentBadgeFromItem(firstInstanceByProcess)
+              .incidentBadgeFromItem(processRow)
               .innerText(),
           );
 
           const runningInstanceCount = Number(
             await operateDashboardPage
-              .activeBadgeFromItem(firstInstanceByProcess)
+              .activeBadgeFromItem(processRow)
               .innerText(),
           );
 
           const totalInstanceCount = incidentCount + runningInstanceCount;
 
-          await operateDashboardPage.clickItem(firstInstanceByProcess);
+          await operateDashboardPage.clickItem(processRow);
 
           await expect(
             operateDashboardPage.processInstancesHeading(
