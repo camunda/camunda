@@ -40,6 +40,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
+import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
@@ -240,6 +241,19 @@ public class CamundaServicesConfiguration {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new AdHocSubProcessActivityServices(
+        brokerClient,
+        securityContextProvider,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public AgentInstanceServices agentInstanceServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new AgentInstanceServices(
         brokerClient,
         securityContextProvider,
         executorProvider,
