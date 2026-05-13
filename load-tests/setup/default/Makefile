@@ -173,7 +173,7 @@ endif
 .PHONY: install-optimize-cleanup
 install-optimize-cleanup:
 	@echo "Deploying Optimize indices cleanup job"
-	kubectl apply --namespace $(namespace) -f resources/opoptimize-indices-cleanup.yaml
+	kubectl apply --namespace $(namespace) -f resources/optimize-indices-cleanup.yaml
 
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
