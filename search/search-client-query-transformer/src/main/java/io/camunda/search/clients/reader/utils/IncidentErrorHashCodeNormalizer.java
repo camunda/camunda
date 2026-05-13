@@ -69,60 +69,9 @@ public class IncidentErrorHashCodeNormalizer {
     final boolean hasHash = hashOps != null && !hashOps.isEmpty();
     final boolean hasMsg = msgOps != null && !msgOps.isEmpty();
 
-    if (hasHash && hasMsg) {
-      final boolean hasLike =
-          msgOps.stream().anyMatch(op -> op != null && op.operator() == Operator.LIKE);
-      if (hasLike) {
-        if (hasInvalidErrorMessages(msgOps)) {
-          logDropReason("process instance filter", "invalid error message operations", msgOps);
-          return Optional.empty();
-        }
-        return normalizeOrFilters(
-            filter.toBuilder().replaceErrorMessageOperations(dedupeErrorMessages(msgOps)).build(),
-            resourceAccessChecks,
-            visited);
-      }
-      final var inOp = msgOps.stream().filter(op -> op.operator() == Operator.IN).findFirst();
-      if (inOp.isPresent()) {
-        final var resolvedOpt = resolveErrorMessage(hashOps, resourceAccessChecks);
-        if (resolvedOpt.isEmpty()) {
-          logDropReason(
-              "process instance filter",
-              "could not resolve error message from hashOps for IN op",
-              hashOps,
-              msgOps);
-          return Optional.empty();
-        }
-        final String resolved = resolvedOpt.get();
-        final List<String> values = new ArrayList<>(inOp.get().values());
-        if (!values.contains(resolved)) {
-          values.add(resolved);
-        }
-        return normalizeOrFilters(
-            filter.toBuilder().replaceErrorMessageOperations(List.of(Operation.in(values))).build(),
-            resourceAccessChecks,
-            visited);
-      }
-      final var resolvedOpt = resolveErrorMessage(hashOps, resourceAccessChecks);
-      if (resolvedOpt.isEmpty()) {
-        logDropReason(
-            "process instance filter", "could not resolve error message from hashOps", hashOps);
-        return Optional.empty();
-      }
-      if (anyOpDoesNotMatch(msgOps, resolvedOpt.get())) {
-        logDropReason(
-            "process instance filter",
-            "resolved error message does not match msgOps",
-            msgOps,
-            resolvedOpt.get());
-        return Optional.empty();
-      }
-      return normalizeOrFilters(
-          filter.toBuilder()
-              .replaceErrorMessageOperations(List.of(Operation.eq(resolvedOpt.get())))
-              .build(),
-          resourceAccessChecks,
-          visited);
+    if (hasMsg && hasInvalidErrorMessages(msgOps)) {
+      logDropReason("process instance filter", "invalid error message operations", msgOps);
+      return Optional.empty();
     }
     if (hasHash) {
       final var resolvedOpt = resolveErrorMessage(hashOps, resourceAccessChecks);
@@ -131,18 +80,13 @@ public class IncidentErrorHashCodeNormalizer {
             "process instance filter", "could not resolve error message from hashOps", hashOps);
         return Optional.empty();
       }
+      final var combined = prependResolvedEq(resolvedOpt.get(), msgOps);
       return normalizeOrFilters(
-          filter.toBuilder()
-              .replaceErrorMessageOperations(List.of(Operation.eq(resolvedOpt.get())))
-              .build(),
+          filter.toBuilder().replaceErrorMessageOperations(combined).build(),
           resourceAccessChecks,
           visited);
     }
     if (hasMsg) {
-      if (hasInvalidErrorMessages(msgOps)) {
-        logDropReason("process instance filter", "invalid error message operations", msgOps);
-        return Optional.empty();
-      }
       return normalizeOrFilters(
           filter.toBuilder().replaceErrorMessageOperations(dedupeErrorMessages(msgOps)).build(),
           resourceAccessChecks,
@@ -194,60 +138,9 @@ public class IncidentErrorHashCodeNormalizer {
     final boolean hasHash = hashOps != null && !hashOps.isEmpty();
     final boolean hasMsg = msgOps != null && !msgOps.isEmpty();
 
-    if (hasHash && hasMsg) {
-      final boolean hasLike =
-          msgOps.stream().anyMatch(op -> op != null && op.operator() == Operator.LIKE);
-      if (hasLike) {
-        if (hasInvalidErrorMessages(msgOps)) {
-          logDropReason("process definition filter", "invalid error message operations", msgOps);
-          return Optional.empty();
-        }
-        return normalizeOrFilters(
-            filter.toBuilder().replaceErrorMessageOperations(dedupeErrorMessages(msgOps)).build(),
-            resourceAccessChecks,
-            visited);
-      }
-      final var inOp = msgOps.stream().filter(op -> op.operator() == Operator.IN).findFirst();
-      if (inOp.isPresent()) {
-        final var resolvedOpt = resolveErrorMessage(hashOps, resourceAccessChecks);
-        if (resolvedOpt.isEmpty()) {
-          logDropReason(
-              "process definition filter",
-              "could not resolve error message from hashOps for IN op",
-              hashOps,
-              msgOps);
-          return Optional.empty();
-        }
-        final String resolved = resolvedOpt.get();
-        final List<String> values = new ArrayList<>(inOp.get().values());
-        if (!values.contains(resolved)) {
-          values.add(resolved);
-        }
-        return normalizeOrFilters(
-            filter.toBuilder().replaceErrorMessageOperations(List.of(Operation.in(values))).build(),
-            resourceAccessChecks,
-            visited);
-      }
-      final var resolvedOpt = resolveErrorMessage(hashOps, resourceAccessChecks);
-      if (resolvedOpt.isEmpty()) {
-        logDropReason(
-            "process definition filter", "could not resolve error message from hashOps", hashOps);
-        return Optional.empty();
-      }
-      if (anyOpDoesNotMatch(msgOps, resolvedOpt.get())) {
-        logDropReason(
-            "process definition filter",
-            "resolved error message does not match msgOps",
-            msgOps,
-            resolvedOpt.get());
-        return Optional.empty();
-      }
-      return normalizeOrFilters(
-          filter.toBuilder()
-              .replaceErrorMessageOperations(List.of(Operation.eq(resolvedOpt.get())))
-              .build(),
-          resourceAccessChecks,
-          visited);
+    if (hasMsg && hasInvalidErrorMessages(msgOps)) {
+      logDropReason("process definition filter", "invalid error message operations", msgOps);
+      return Optional.empty();
     }
     if (hasHash) {
       final var resolvedOpt = resolveErrorMessage(hashOps, resourceAccessChecks);
@@ -256,18 +149,13 @@ public class IncidentErrorHashCodeNormalizer {
             "process definition filter", "could not resolve error message from hashOps", hashOps);
         return Optional.empty();
       }
+      final var combined = prependResolvedEq(resolvedOpt.get(), msgOps);
       return normalizeOrFilters(
-          filter.toBuilder()
-              .replaceErrorMessageOperations(List.of(Operation.eq(resolvedOpt.get())))
-              .build(),
+          filter.toBuilder().replaceErrorMessageOperations(combined).build(),
           resourceAccessChecks,
           visited);
     }
     if (hasMsg) {
-      if (hasInvalidErrorMessages(msgOps)) {
-        logDropReason("process definition filter", "invalid error message operations", msgOps);
-        return Optional.empty();
-      }
       return normalizeOrFilters(
           filter.toBuilder().replaceErrorMessageOperations(dedupeErrorMessages(msgOps)).build(),
           resourceAccessChecks,
@@ -319,25 +207,34 @@ public class IncidentErrorHashCodeNormalizer {
     return Optional.of(resolved);
   }
 
-  private boolean anyOpDoesNotMatch(final List<Operation<String>> ops, final String value) {
-    if (ops == null || ops.isEmpty()) {
-      return true;
-    }
-    for (final var op : ops) {
-      if (op == null || op.value() == null || !value.equals(op.value())) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   private boolean hasInvalidErrorMessages(final List<Operation<String>> ops) {
     if (ops == null || ops.isEmpty()) {
       return true;
     }
     for (final var op : ops) {
-      if ((op.operator() != Operator.EXISTS && op.operator() != Operator.NOT_EXISTS)
-          && (op.value() == null || op.value().isBlank())) {
+      if (op == null) {
+        return true;
+      }
+      final var operator = op.operator();
+      if (operator == null) {
+        return true;
+      }
+      if (operator == Operator.EXISTS || operator == Operator.NOT_EXISTS) {
+        continue;
+      }
+      if (operator == Operator.IN || operator == Operator.NOT_IN) {
+        final var values = op.values();
+        if (values == null || values.isEmpty()) {
+          return true;
+        }
+        for (final var v : values) {
+          if (v == null || v.isBlank()) {
+            return true;
+          }
+        }
+        continue;
+      }
+      if (op.value() == null || Objects.requireNonNull(op.value()).isBlank()) {
         return true;
       }
     }
@@ -351,6 +248,16 @@ public class IncidentErrorHashCodeNormalizer {
     } else {
       LOG.warn("Dropping {}: {}", filterType, reason);
     }
+  }
+
+  private static List<Operation<String>> prependResolvedEq(
+      final String resolved, final List<Operation<String>> existing) {
+    final List<Operation<String>> combined = new ArrayList<>();
+    combined.add(Operation.eq(resolved));
+    if (existing != null && !existing.isEmpty()) {
+      combined.addAll(existing);
+    }
+    return combined;
   }
 
   private List<Operation<String>> dedupeErrorMessages(final List<Operation<String>> ops) {
