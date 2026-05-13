@@ -22,6 +22,14 @@ import {defaultAssertionOptions} from '../../utils/constants';
 
 let instanceIds: string[] = [];
 
+// Unique per beforeAll execution so multiple projects (e.g. `chromium` and
+// `operate-e2e`) running this spec against the same cluster produce
+// distinct error-message hashes — keeping the "incidents by error" rows
+// and Process Instances counts separate for each project's worker.
+const runTag = `dashboard-spec-${Math.random().toString(36).slice(2, 10)}`;
+
+const DASHBOARD_INCIDENT_BASE_MESSAGE = `[${runTag}] This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.`;
+
 test.beforeAll(async ({request}) => {
   test.setTimeout(180000);
 
@@ -31,8 +39,8 @@ test.beforeAll(async ({request}) => {
     './resources/onlyIncidentsProcess_v_1.bpmn',
     './resources/orderProcess_v_1.bpmn',
     './resources/processWithAnIncident.bpmn',
-    './resources/incidentGeneratorProcess.bpmn',
     './resources/dashboardSelectionProcess_v_1.bpmn',
+    './resources/dashboardIncidentGenerator.bpmn',
   ]);
 
   await deploy([
@@ -41,14 +49,11 @@ test.beforeAll(async ({request}) => {
     './resources/onlyIncidentsProcess_v_2.bpmn',
   ]);
 
-  createWorker('incidentGenerator', true, {}, (job) => {
-    const BASE_ERROR_MESSAGE =
-      'This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.';
-
+  createWorker('dashboardIncidentGenerator', true, {}, (job) => {
     if (job.variables.incidentType === 'Incident Type A') {
-      return job.fail(`${BASE_ERROR_MESSAGE} Type A`);
+      return job.fail(`${DASHBOARD_INCIDENT_BASE_MESSAGE} Type A`);
     } else {
-      return job.fail(`${BASE_ERROR_MESSAGE} Type B`);
+      return job.fail(`${DASHBOARD_INCIDENT_BASE_MESSAGE} Type B`);
     }
   });
 
@@ -60,10 +65,10 @@ test.beforeAll(async ({request}) => {
     createInstances('orderProcess', 1, 10),
     createInstances('dashboardSelectionProcess', 1, 10),
     createSingleInstance('processWithAnIncident', 1),
-    createSingleInstance('incidentGeneratorProcess', 1, {
+    createSingleInstance('dashboardIncidentGenerator', 1, {
       incidentType: 'Incident Type A',
     }),
-    createSingleInstance('incidentGeneratorProcess', 1, {
+    createSingleInstance('dashboardIncidentGenerator', 1, {
       incidentType: 'Incident Type B',
     }),
   ]);
@@ -145,34 +150,44 @@ test.describe('Dashboard', () => {
     });
   });
 
-  // skipped due to bug 45129: https://github.com/camunda/camunda/issues/45129
-  test.skip('Navigate to processes view (same truncated error message)', async ({
+  test('Navigate to processes view (same truncated error message)', async ({
     operateDashboardPage,
     operateProcessInstancePage,
   }) => {
+    // Scope the link selectors to this beforeAll execution's runTag so
+    // they don't match incidents created by parallel project workers
+    // (e.g. `chromium` and `operate-e2e`) running this same spec, or by
+    // any other spec emitting incidents with similar text.
+    const typeALink = new RegExp(`${runTag}.*type a`, 'i');
+    const typeBLink = new RegExp(`${runTag}.*type b`, 'i');
+
     await test.step('Select incident type A and verify details', async () => {
-      await operateDashboardPage.clickIncidentByType(/type a/i);
+      await operateDashboardPage.clickIncidentByType(typeALink);
 
       await expect(
         operateDashboardPage.processInstancesHeading(1, false),
       ).toBeVisible();
 
       await operateDashboardPage.clickViewInstanceLink();
+      // Instances with an incident open on the Incidents tab by default;
+      // switch to Variables before asserting on the variable value.
+      await operateProcessInstancePage.clickVariablesTab();
       await expect(
-        operateProcessInstancePage.variableCellByName(/incident type a/i),
+        operateProcessInstancePage.variablesList.getByText('"Incident Type A"'),
       ).toBeVisible();
     });
 
     await test.step('Select incident type B and verify details', async () => {
       await operateDashboardPage.gotoDashboardPage();
-      await operateDashboardPage.clickIncidentByType(/type b/i);
+      await operateDashboardPage.clickIncidentByType(typeBLink);
       await expect(
         operateDashboardPage.processInstancesHeading(1, false),
       ).toBeVisible();
 
       await operateDashboardPage.clickViewInstanceLink();
+      await operateProcessInstancePage.clickVariablesTab();
       await expect(
-        operateProcessInstancePage.variableCellByName(/incident type b/i),
+        operateProcessInstancePage.variablesList.getByText('"Incident Type B"'),
       ).toBeVisible();
     });
   });
@@ -226,26 +241,29 @@ test.describe('Dashboard', () => {
     });
   });
 
-  // skipped due to bug 45129: https://github.com/camunda/camunda/issues/45129
-  // Dashboard "incidents by error" badge counts every incident of a given
-  // error type, but the filtered Process Instances page applies the truncated
-  // error message (cut at 100 chars) as a filter — so totals don't match when
-  // the message is longer.
-  test.skip('Select process instances by error message', async ({
+  test('Select process instances by error message', async ({
     operateDashboardPage,
   }) => {
-    await test.step('Select first error and verify incident count', async () => {
+    await test.step('Select dashboard-spec error and verify incident count', async () => {
       await expect(operateDashboardPage.incidentsByError).toBeVisible();
 
-      const firstInstanceByError = operateDashboardPage.incidentsByErrorItem(0);
+      // Use the row matching this beforeAll execution's runTag so the
+      // selected error population is not mutated by other specs running
+      // in parallel against the same cluster.
+      const dashboardErrorRow =
+        operateDashboardPage.incidentsByErrorItemByMessage(
+          new RegExp(runTag, 'i'),
+        );
+
+      await expect(dashboardErrorRow.first()).toBeVisible();
 
       const incidentCount = Number(
         await operateDashboardPage
-          .incidentBadgeFromItem(firstInstanceByError)
+          .incidentBadgeFromItem(dashboardErrorRow.first())
           .innerText(),
       );
 
-      await operateDashboardPage.clickItem(firstInstanceByError);
+      await operateDashboardPage.clickItem(dashboardErrorRow.first());
 
       await expect(
         operateDashboardPage.processInstancesHeading(
