@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;

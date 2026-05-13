@@ -7,8 +7,8 @@
  */
 package io.camunda.authentication.config;
 
-import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
-import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
+import static io.camunda.security.api.model.config.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
+import static io.camunda.security.api.model.config.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
@@ -29,14 +29,14 @@ import io.camunda.authentication.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.headers.HeaderConfiguration;
+import io.camunda.security.api.model.config.headers.values.FrameOptionMode;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
-import io.camunda.security.configuration.ProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.configuration.headers.HeaderConfiguration;
-import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.oidc.CachingOidcClaimsProvider;
 import io.camunda.security.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.oidc.OidcClaimsProvider;
@@ -478,11 +478,11 @@ public class WebSecurityConfig {
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   @ConditionalOnSecondaryStorageEnabled
-  public static class BasicConfiguration {
+  public static class BasicConfig {
 
     private final SecurityConfiguration securityConfiguration;
 
-    public BasicConfiguration(final SecurityConfiguration securityConfiguration) {
+    public BasicConfig(final SecurityConfiguration securityConfiguration) {
       this.securityConfiguration = securityConfiguration;
     }
 
@@ -497,15 +497,15 @@ public class WebSecurityConfig {
     protected boolean isOidcConfigurationEnabled(
         final SecurityConfiguration securityConfiguration) {
       if (securityConfiguration.getAuthentication().getOidc() != null
-          && securityConfiguration.getAuthentication().getOidc().isSet()) {
+          && securityConfiguration.getAuthentication().getOidc().isAnyPropertySet()) {
         return true;
       }
 
       return Optional.ofNullable(securityConfiguration.getAuthentication())
           .map(AuthenticationConfiguration::getProviders)
-          .map(ProvidersConfiguration::getOidc)
+          .map(OidcProvidersConfiguration::getOidc)
           .map(Map::values)
-          .map(values -> values.stream().anyMatch(OidcAuthenticationConfiguration::isSet))
+          .map(values -> values.stream().anyMatch(OidcConfiguration::isAnyPropertySet))
           .orElse(false);
     }
 
@@ -633,11 +633,11 @@ public class WebSecurityConfig {
 
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
-  public static class OidcConfiguration {
+  public static class OidcConfig {
 
     private final SecurityConfiguration securityConfiguration;
 
-    public OidcConfiguration(final SecurityConfiguration securityConfiguration) {
+    public OidcConfig(final SecurityConfiguration securityConfiguration) {
       this.securityConfiguration = securityConfiguration;
     }
 
@@ -789,7 +789,7 @@ public class WebSecurityConfig {
     }
 
     private ClientRegistration createClientRegistration(
-        final String registrationId, final OidcAuthenticationConfiguration configuration) {
+        final String registrationId, final OidcConfiguration configuration) {
       try {
         return ClientRegistrationFactory.createClientRegistration(registrationId, configuration);
       } catch (final Exception e) {
@@ -833,7 +833,7 @@ public class WebSecurityConfig {
       final var decoderFactory = new OidcIdTokenDecoderFactory();
       decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
 
-      final Map<String, OidcAuthenticationConfiguration> oidcAuthenticationConfigurations =
+      final Map<String, OidcConfiguration> oidcAuthenticationConfigurations =
           oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations();
       final Map<ClientRegistration, JwsAlgorithm> clientRegistrationToAlgorithmMap =
           oidcAuthenticationConfigurations.entrySet().stream()
@@ -910,7 +910,7 @@ public class WebSecurityConfig {
                       && !config.getAdditionalJwkSetUris().isEmpty())
           .collect(
               toMap(
-                  OidcAuthenticationConfiguration::getIssuerUri,
+                  OidcConfiguration::getIssuerUri,
                   config -> List.copyOf(config.getAdditionalJwkSetUris()),
                   (a, b) -> {
                     if (!a.equals(b)) {

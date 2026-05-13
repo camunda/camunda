@@ -7,7 +7,12 @@
  */
 package io.camunda.security.configuration;
 
-import io.camunda.security.configuration.headers.HeaderConfiguration;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.AuthorizationsConfiguration;
+import io.camunda.security.api.model.config.CsrfConfiguration;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
+import io.camunda.security.api.model.config.SaasConfiguration;
+import io.camunda.security.api.model.config.headers.HeaderConfiguration;
 import java.util.regex.Pattern;
 
 /** Will be populated with the configuration properties of 'camunda.security' */
@@ -71,7 +76,7 @@ public class SecurityConfiguration {
   }
 
   public boolean isApiProtected() {
-    return !authentication.getUnprotectedApi();
+    return !authentication.isUnprotectedApi();
   }
 
   public SaasConfiguration getSaas() {

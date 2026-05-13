@@ -7,9 +7,9 @@
  */
 package io.camunda.authentication.config;
 
-import static io.camunda.security.configuration.OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHODS;
+import static io.camunda.security.api.model.config.oidc.OidcConfiguration.CLIENT_AUTHENTICATION_METHODS;
 
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -28,7 +28,7 @@ public final class ClientRegistrationFactory {
   private ClientRegistrationFactory() {}
 
   public static ClientRegistration createClientRegistration(
-      final String registrationId, final OidcAuthenticationConfiguration configuration) {
+      final String registrationId, final OidcConfiguration configuration) {
     final Builder builder;
     if (configuration.getIssuerUri() != null) {
       builder =

@@ -12,7 +12,7 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
 import io.camunda.gateway.protocol.model.MessagePublicationRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;

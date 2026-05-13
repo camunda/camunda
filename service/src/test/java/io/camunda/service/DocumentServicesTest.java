@@ -22,7 +22,7 @@ import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.configuration.AuthorizationsConfiguration;
+import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
