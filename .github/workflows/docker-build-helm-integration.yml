@@ -63,20 +63,21 @@ jobs:
       - name: Compute concurrency group
         id: concurrency-group
         run: |
-          echo "pr-numbers=" >> "$GITHUB_OUTPUT"
           if [[ "${{ github.event_name }}" == "merge_group" ]]; then
             REF_SOURCE="${{ github.event.merge_group.head_ref || github.ref }}"
             # Expected merge queue ref shape includes pr-<number> segments, e.g.
             # refs/heads/gh-readonly-queue/stable/8.7/pr-123-<suffix>
-            PR_SEGMENTS=$(grep -oE 'pr-[0-9]+' <<< "${REF_SOURCE}" | paste -sd '-' -)
-            if [[ -n "${PR_SEGMENTS}" ]]; then
-              echo "pr-numbers=${PR_SEGMENTS//pr-/}" >> "$GITHUB_OUTPUT"
-              echo "group=${{ github.workflow }}-${PR_SEGMENTS}" >> "$GITHUB_OUTPUT"
+            PR_MATCHES=$(grep -oE 'pr-[0-9]+' <<< "${REF_SOURCE}" | paste -sd '-' -)
+            if [[ -n "${PR_MATCHES}" ]]; then
+              echo "pr-numbers=${PR_MATCHES//pr-/}" >> "$GITHUB_OUTPUT"
+              echo "group=${{ github.workflow }}-${PR_MATCHES}" >> "$GITHUB_OUTPUT"
             else
+              echo "pr-numbers=" >> "$GITHUB_OUTPUT"
               echo "::warning::Could not derive stable merge_group PR key from ref '${REF_SOURCE}'; using ref as fallback."
               echo "group=${{ github.workflow }}-${{ github.ref }}" >> "$GITHUB_OUTPUT"
             fi
           else
+            echo "pr-numbers=" >> "$GITHUB_OUTPUT"
             echo "group=${{ github.workflow }}-${{ github.ref }}" >> "$GITHUB_OUTPUT"
           fi
       - run: echo "Workflow conditions met, proceeding with build"
@@ -178,6 +179,7 @@ jobs:
   # Main build job - waits for all frontends to complete
   build-and-push-images:
     name: Build and Push Docker Images
+    # Includes should-run to consume its computed concurrency group output.
     needs: [should-run, build-operate-frontend, build-tasklist-frontend, build-identity-frontend]
     permissions: { }
     runs-on: gcp-perf-core-8-default
