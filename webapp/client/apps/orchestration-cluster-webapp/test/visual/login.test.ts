@@ -7,13 +7,12 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
-import {HttpResponse, http} from 'msw';
-import {LoginPage} from '../pages/Login.page';
+import {HttpResponse} from 'msw';
+import {LoginPage} from '#/pages/Login.page';
+import {mockCurrentUserEndpoint} from '#/shared-test-modules/mockCurrentUser';
 
 test('should match the login page snapshot', async ({network, page}) => {
-	network.use(
-		http.get('/v2/authentication/me', () => new HttpResponse(null, {status: 401}), {once: true}),
-	);
+	network.use(mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}));
 
 	const loginPage = new LoginPage(page);
 	await loginPage.goto();

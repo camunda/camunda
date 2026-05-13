@@ -10,16 +10,12 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 
 import {createEndpointMock} from '#/shared-test-modules/mock-endpoint';
+import {mockCurrentUserEndpoint} from '#/shared-test-modules/mockCurrentUser';
 
 const ABOUT_MESSAGE = 'About page loaded from MSW';
 
 const mockAboutEndpoint = createEndpointMock({
 	endpoint: '/api/about',
-	method: 'GET',
-});
-
-const mockCurrentUserEndpoint = createEndpointMock({
-	endpoint: '/v2/authentication/me',
 	method: 'GET',
 });
 
