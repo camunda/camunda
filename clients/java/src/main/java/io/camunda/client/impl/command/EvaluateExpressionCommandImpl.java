@@ -71,14 +71,8 @@ public class EvaluateExpressionCommandImpl
   }
 
   @Override
-  public EvaluateExpressionCommandStep2 processInstanceKey(final long processInstanceKey) {
-    request.setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
-    return this;
-  }
-
-  @Override
-  public EvaluateExpressionCommandStep2 elementInstanceKey(final long elementInstanceKey) {
-    request.setElementInstanceKey(ParseUtil.keyToString(elementInstanceKey));
+  public EvaluateExpressionCommandStep2 scopeKey(final long scopeKey) {
+    request.setScopeKey(ParseUtil.keyToString(scopeKey));
     return this;
   }
 
@@ -91,11 +85,6 @@ public class EvaluateExpressionCommandImpl
 
   @Override
   public CamundaFuture<EvaluateExpressionResponse> send() {
-    if (request.getProcessInstanceKey() != null && request.getElementInstanceKey() != null) {
-      throw new IllegalStateException(
-          "Expected to evaluate expression with either processInstanceKey or elementInstanceKey, "
-              + "but both were set. These fields are mutually exclusive.");
-    }
     final HttpCamundaFuture<EvaluateExpressionResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/expression/evaluation",

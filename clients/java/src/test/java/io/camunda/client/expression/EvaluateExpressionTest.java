@@ -39,11 +39,10 @@ import org.junit.jupiter.api.Test;
 
 public final class EvaluateExpressionTest extends ClientRestTest {
 
-  private static Map<String, Object> variablesMap(
-      final String k1, final Object v1, final String k2, final Object v2) {
+  private static Map<String, Object> variablesMap() {
     final Map<String, Object> map = new HashMap<>();
-    map.put(k1, v1);
-    map.put(k2, v2);
+    map.put("x", 10);
+    map.put("y", 20);
     return map;
   }
 
@@ -88,7 +87,7 @@ public final class EvaluateExpressionTest extends ClientRestTest {
   void shouldEvaluateExpressionWithVariablesAsMap() {
     // given
     final String expression = "=x + y";
-    final Map<String, Object> variables = variablesMap("x", 10, "y", 20);
+    final Map<String, Object> variables = variablesMap();
     gatewayService.onExpressionEvaluationRequest(
         new ExpressionEvaluationResult().expression(expression).result(30));
 
@@ -132,7 +131,7 @@ public final class EvaluateExpressionTest extends ClientRestTest {
             new ExpressionEvaluationRequest()
                 .expression(expression)
                 .tenantId("<default>")
-                .variables(variablesMap("x", 10, "y", 20)));
+                .variables(variablesMap()));
   }
 
   @Test
@@ -160,7 +159,7 @@ public final class EvaluateExpressionTest extends ClientRestTest {
             new ExpressionEvaluationRequest()
                 .expression(expression)
                 .tenantId("<default>")
-                .variables(variablesMap("x", 10, "y", 20)));
+                .variables(variablesMap()));
   }
 
   @Test
@@ -242,20 +241,15 @@ public final class EvaluateExpressionTest extends ClientRestTest {
   }
 
   @Test
-  void shouldEvaluateExpressionWithProcessInstanceKey() {
+  void shouldEvaluateExpressionWithScopeKey() {
     // given
     final String expression = "=x + y";
-    final long processInstanceKey = 1234567890L;
+    final long scopeKey = 1234567890L;
     gatewayService.onExpressionEvaluationRequest(
         new ExpressionEvaluationResult().expression(expression).result(30));
 
     // when
-    client
-        .newEvaluateExpressionCommand()
-        .expression(expression)
-        .processInstanceKey(processInstanceKey)
-        .send()
-        .join();
+    client.newEvaluateExpressionCommand().expression(expression).scopeKey(scopeKey).send().join();
 
     // then
     assertThat(RestGatewayService.getLastRequest())
@@ -266,14 +260,15 @@ public final class EvaluateExpressionTest extends ClientRestTest {
             new ExpressionEvaluationRequest()
                 .expression(expression)
                 .tenantId("<default>")
-                .processInstanceKey(String.valueOf(processInstanceKey)));
+                .scopeKey(String.valueOf(scopeKey)));
   }
 
   @Test
-  void shouldEvaluateExpressionWithElementInstanceKey() {
+  void shouldEvaluateExpressionWithScopeKeyAndVariables() {
     // given
     final String expression = "=x + y";
-    final long elementInstanceKey = 9876543210L;
+    final long scopeKey = 9876543210L;
+    final Map<String, Object> variables = variablesMap();
     gatewayService.onExpressionEvaluationRequest(
         new ExpressionEvaluationResult().expression(expression).result(30));
 
@@ -281,36 +276,7 @@ public final class EvaluateExpressionTest extends ClientRestTest {
     client
         .newEvaluateExpressionCommand()
         .expression(expression)
-        .elementInstanceKey(elementInstanceKey)
-        .send()
-        .join();
-
-    // then
-    assertThat(RestGatewayService.getLastRequest())
-        .hasMethod(RequestMethod.POST)
-        .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
-        .extractingBody(ExpressionEvaluationRequest.class)
-        .isEqualTo(
-            new ExpressionEvaluationRequest()
-                .expression(expression)
-                .tenantId("<default>")
-                .elementInstanceKey(String.valueOf(elementInstanceKey)));
-  }
-
-  @Test
-  void shouldEvaluateExpressionWithProcessInstanceKeyAndVariables() {
-    // given
-    final String expression = "=x + y";
-    final long processInstanceKey = 1234567890L;
-    final Map<String, Object> variables = variablesMap("x", 10, "y", 20);
-    gatewayService.onExpressionEvaluationRequest(
-        new ExpressionEvaluationResult().expression(expression).result(30));
-
-    // when
-    client
-        .newEvaluateExpressionCommand()
-        .expression(expression)
-        .processInstanceKey(processInstanceKey)
+        .scopeKey(scopeKey)
         .variables(variables)
         .send()
         .join();
@@ -324,30 +290,12 @@ public final class EvaluateExpressionTest extends ClientRestTest {
             new ExpressionEvaluationRequest()
                 .expression(expression)
                 .tenantId("<default>")
-                .processInstanceKey(String.valueOf(processInstanceKey))
+                .scopeKey(String.valueOf(scopeKey))
                 .variables(variables));
   }
 
   @Test
-  void shouldRejectBothProcessInstanceKeyAndElementInstanceKey() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newEvaluateExpressionCommand()
-                    .expression("=x + y")
-                    .processInstanceKey(1L)
-                    .elementInstanceKey(2L)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("processInstanceKey")
-        .hasMessageContaining("elementInstanceKey")
-        .hasMessageContaining("mutually exclusive");
-  }
-
-  @Test
-  void shouldReceiveExpressionEvaluationResultWithProcessInstanceKey() {
+  void shouldReceiveExpressionEvaluationResultWithScopeKey() {
     // given
     final String expression = "=x + y";
     final Object resultValue = 30;
@@ -362,33 +310,7 @@ public final class EvaluateExpressionTest extends ClientRestTest {
         client
             .newEvaluateExpressionCommand()
             .expression(expression)
-            .processInstanceKey(1234567890L)
-            .send()
-            .join();
-
-    // then
-    assertThat(response.getExpression()).isEqualTo(expression);
-    assertThat(response.getResult()).isEqualTo(resultValue);
-    assertThat(response.getWarnings()).isEmpty();
-  }
-
-  @Test
-  void shouldReceiveExpressionEvaluationResultWithElementInstanceKey() {
-    // given
-    final String expression = "=x + y";
-    final Object resultValue = 30;
-    gatewayService.onExpressionEvaluationRequest(
-        new ExpressionEvaluationResult()
-            .expression(expression)
-            .result(resultValue)
-            .warnings(Collections.emptyList()));
-
-    // when
-    final EvaluateExpressionResponse response =
-        client
-            .newEvaluateExpressionCommand()
-            .expression(expression)
-            .elementInstanceKey(9876543210L)
+            .scopeKey(1234567890L)
             .send()
             .join();
 
