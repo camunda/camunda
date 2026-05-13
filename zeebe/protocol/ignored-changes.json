@@ -375,6 +375,206 @@
           "code": "java.method.removed",
           "old": "method io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableMessageBatchRecordValue.Builder::withMessageKeys(java.lang.Iterable<? extends java.lang.Long>)",
           "justification": "Generated code removed as a consequence of removing getMessageKeys() from MessageBatchRecordValue."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.PermissionType io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue::getPermissionType()",
+          "new": "method io.camunda.security.api.model.authz.PermissionType io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue::getPermissionType()",
+          "justification": "Authorization model types were moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue::getOwnerType()",
+          "new": "method io.camunda.security.api.model.authz.AuthorizationOwnerType io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue::getOwnerType()",
+          "justification": "Authorization model types were moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue::getResourceMatcher()",
+          "new": "method io.camunda.security.api.model.authz.AuthorizationResourceMatcher io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue::getResourceMatcher()",
+          "justification": "Authorization model types were moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.AuthorizationResourceType io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue::getResourceType()",
+          "new": "method io.camunda.security.api.model.authz.AuthorizationResourceType io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue::getResourceType()",
+          "justification": "Authorization model types were moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.EntityType io.camunda.zeebe.protocol.record.value.GroupRecordValue::getEntityType()",
+          "new": "method io.camunda.security.api.model.authz.EntityType io.camunda.zeebe.protocol.record.value.GroupRecordValue::getEntityType()",
+          "justification": "EntityType was moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::addPermissionType(io.camunda.zeebe.protocol.record.value.PermissionType)",
+          "justification": "Generated immutable builder methods changed after moving authorization enums to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::addPermissionTypes(io.camunda.zeebe.protocol.record.value.PermissionType[])",
+          "justification": "Generated immutable builder methods changed after moving authorization enums to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::withOwnerType(io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType)",
+          "justification": "Generated immutable builder methods changed after moving authorization enums to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::withResourceMatcher(io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher)",
+          "justification": "Generated immutable builder methods changed after moving authorization enums to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::withResourceType(io.camunda.zeebe.protocol.record.value.AuthorizationResourceType)",
+          "justification": "Generated immutable builder methods changed after moving authorization enums to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::getOwnerType()",
+          "new": "method io.camunda.security.api.model.authz.AuthorizationOwnerType io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::getOwnerType()",
+          "justification": "Authorization model types were moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::getResourceMatcher()",
+          "new": "method io.camunda.security.api.model.authz.AuthorizationResourceMatcher io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::getResourceMatcher()",
+          "justification": "Authorization model types were moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.AuthorizationResourceType io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::getResourceType()",
+          "new": "method io.camunda.security.api.model.authz.AuthorizationResourceType io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::getResourceType()",
+          "justification": "Authorization model types were moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::withOwnerType(io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType)",
+          "justification": "Generated immutable methods changed after moving authorization enums to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::withPermissionTypes(io.camunda.zeebe.protocol.record.value.PermissionType[])",
+          "justification": "Generated immutable methods changed after moving authorization enums to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::withResourceMatcher(io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher)",
+          "justification": "Generated immutable methods changed after moving authorization enums to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::withResourceType(io.camunda.zeebe.protocol.record.value.AuthorizationResourceType)",
+          "justification": "Generated immutable methods changed after moving authorization enums to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue.Builder::withEntityType(io.camunda.zeebe.protocol.record.value.EntityType)",
+          "justification": "Generated immutable builder methods changed after moving EntityType to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.EntityType io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue::getEntityType()",
+          "new": "method io.camunda.security.api.model.authz.EntityType io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue::getEntityType()",
+          "justification": "EntityType was moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue::withEntityType(io.camunda.zeebe.protocol.record.value.EntityType)",
+          "justification": "Generated immutable methods changed after moving EntityType to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue.Builder io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue.Builder::withPermissionType(io.camunda.zeebe.protocol.record.value.PermissionType)",
+          "justification": "Generated immutable builder methods changed after moving PermissionType to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.PermissionType io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue::getPermissionType()",
+          "new": "method io.camunda.security.api.model.authz.PermissionType io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue::getPermissionType()",
+          "justification": "PermissionType was moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue::withPermissionType(io.camunda.zeebe.protocol.record.value.PermissionType)",
+          "justification": "Generated immutable methods changed after moving PermissionType to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue.Builder::withEntityType(io.camunda.zeebe.protocol.record.value.EntityType)",
+          "justification": "Generated immutable builder methods changed after moving EntityType to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.EntityType io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue::getEntityType()",
+          "new": "method io.camunda.security.api.model.authz.EntityType io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue::getEntityType()",
+          "justification": "EntityType was moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue::withEntityType(io.camunda.zeebe.protocol.record.value.EntityType)",
+          "justification": "Generated immutable methods changed after moving EntityType to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue.Builder::withEntityType(io.camunda.zeebe.protocol.record.value.EntityType)",
+          "justification": "Generated immutable builder methods changed after moving EntityType to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.EntityType io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue::getEntityType()",
+          "new": "method io.camunda.security.api.model.authz.EntityType io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue::getEntityType()",
+          "justification": "EntityType was moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue::withEntityType(io.camunda.zeebe.protocol.record.value.EntityType)",
+          "justification": "Generated immutable methods changed after moving EntityType to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.EntityType io.camunda.zeebe.protocol.record.value.RoleRecordValue::getEntityType()",
+          "new": "method io.camunda.security.api.model.authz.EntityType io.camunda.zeebe.protocol.record.value.RoleRecordValue::getEntityType()",
+          "justification": "EntityType was moved from zeebe-protocol to the shared security API package."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.protocol.record.value.EntityType io.camunda.zeebe.protocol.record.value.TenantRecordValue::getEntityType()",
+          "new": "method io.camunda.security.api.model.authz.EntityType io.camunda.zeebe.protocol.record.value.TenantRecordValue::getEntityType()",
+          "justification": "EntityType was moved from zeebe-protocol to the shared security API package."
         }
       ]
     }
