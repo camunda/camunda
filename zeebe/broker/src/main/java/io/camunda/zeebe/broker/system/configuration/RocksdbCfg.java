@@ -124,20 +124,20 @@ public final class RocksdbCfg implements ConfigurationEntry {
   }
 
   void validateExpectedRocksDBMemoryUsageDoesNotExceedSystemMemory(
-      final long totalMemorySize, final long blockCacheBytes, final int partitionsCount) {
+      final long totalMemorySize, final long blockCacheBytes, final int partitionsPerBrokerCount) {
     if (blockCacheBytes <= totalMemorySize) {
       return;
     }
     LOGGER.warn(
         "Requested RocksDB memory ({} bytes / {} MB) exceeds total system memory ({} bytes / {} MB). "
-            + "Memory allocation strategy: {}. Partitions count: {}. "
+            + "Memory allocation strategy: {}. Partitions per broker count: {}. "
             + "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT.",
         blockCacheBytes,
         blockCacheBytes / (1024 * 1024),
         totalMemorySize,
         totalMemorySize / (1024 * 1024),
         getMemoryAllocationStrategy(),
-        partitionsCount);
+        partitionsPerBrokerCount);
   }
 
   private void warnIfTooHighFraction() {

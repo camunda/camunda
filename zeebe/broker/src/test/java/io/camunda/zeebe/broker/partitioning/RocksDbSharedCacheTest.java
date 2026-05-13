@@ -310,7 +310,7 @@ class RocksDbSharedCacheTest {
                 assertThat(event.getMessage().getFormattedMessage())
                     .contains("Requested RocksDB memory")
                     .contains("Memory allocation strategy: " + strategy)
-                    .contains("Partitions count: " + partitionsCount);
+                    .contains("Partitions per broker count: " + partitionsCount);
               });
     } finally {
       logger.removeAppender(recorder);
