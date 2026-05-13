@@ -20,6 +20,7 @@ export class OperateDashboardPage {
   readonly instancesByProcessItem: (index: number) => Locator;
   readonly instancesByProcessItemByName: (name: string) => Locator;
   readonly incidentsByErrorItem: (index: number) => Locator;
+  readonly incidentsByErrorItemByMessage: (message: string | RegExp) => Locator;
   readonly activeInstancesBadge: Locator;
   readonly incidentInstancesBadge: Locator;
   readonly processInstancesHeading: (
@@ -58,6 +59,11 @@ export class OperateDashboardPage {
 
     this.incidentsByErrorItem = (index: number) =>
       page.getByTestId(`incident-byError-${index}`);
+
+    this.incidentsByErrorItemByMessage = (message: string | RegExp) =>
+      this.incidentsByError
+        .locator('[data-testid^="incident-byError-"]')
+        .filter({hasText: message});
 
     this.activeInstancesBadge = page
       .getByTestId('active-instances-badge')

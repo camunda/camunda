@@ -22,6 +22,14 @@ import {defaultAssertionOptions} from '../../utils/constants';
 
 let instanceIds: string[] = [];
 
+// Unique per beforeAll execution so multiple projects (e.g. `chromium` and
+// `operate-e2e`) running this spec against the same cluster produce
+// distinct error-message hashes — keeping the "incidents by error" rows
+// and Process Instances counts separate for each project's worker.
+const runTag = `dashboard-spec-${Math.random().toString(36).slice(2, 10)}`;
+
+const DASHBOARD_INCIDENT_BASE_MESSAGE = `[${runTag}] This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.`;
+
 test.beforeAll(async ({request}) => {
   test.setTimeout(180000);
 
@@ -42,16 +50,10 @@ test.beforeAll(async ({request}) => {
   ]);
 
   createWorker('dashboardIncidentGenerator', true, {}, (job) => {
-    // Prefix is unique to this spec so the error-message hash doesn't
-    // collide with incidents created by other specs (e.g.
-    // job-worker-statistics-test-setup.spec.ts uses the same base text).
-    const BASE_ERROR_MESSAGE =
-      '[dashboard-spec] This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.';
-
     if (job.variables.incidentType === 'Incident Type A') {
-      return job.fail(`${BASE_ERROR_MESSAGE} Type A`);
+      return job.fail(`${DASHBOARD_INCIDENT_BASE_MESSAGE} Type A`);
     } else {
-      return job.fail(`${BASE_ERROR_MESSAGE} Type B`);
+      return job.fail(`${DASHBOARD_INCIDENT_BASE_MESSAGE} Type B`);
     }
   });
 
@@ -152,10 +154,12 @@ test.describe('Dashboard', () => {
     operateDashboardPage,
     operateProcessInstancePage,
   }) => {
-    // Scope the link selectors to this spec's [dashboard-spec] prefix so
-    // they don't match identical-suffix incidents created by other specs.
-    const typeALink = /\[dashboard-spec].*type a/i;
-    const typeBLink = /\[dashboard-spec].*type b/i;
+    // Scope the link selectors to this beforeAll execution's runTag so
+    // they don't match incidents created by parallel project workers
+    // (e.g. `chromium` and `operate-e2e`) running this same spec, or by
+    // any other spec emitting incidents with similar text.
+    const typeALink = new RegExp(`${runTag}.*type a`, 'i');
+    const typeBLink = new RegExp(`${runTag}.*type b`, 'i');
 
     await test.step('Select incident type A and verify details', async () => {
       await operateDashboardPage.clickIncidentByType(typeALink);
@@ -236,18 +240,26 @@ test.describe('Dashboard', () => {
   test('Select process instances by error message', async ({
     operateDashboardPage,
   }) => {
-    await test.step('Select first error and verify incident count', async () => {
+    await test.step('Select dashboard-spec error and verify incident count', async () => {
       await expect(operateDashboardPage.incidentsByError).toBeVisible();
 
-      const firstInstanceByError = operateDashboardPage.incidentsByErrorItem(0);
+      // Use the row matching this beforeAll execution's runTag so the
+      // selected error population is not mutated by other specs running
+      // in parallel against the same cluster.
+      const dashboardErrorRow =
+        operateDashboardPage.incidentsByErrorItemByMessage(
+          new RegExp(runTag, 'i'),
+        );
+
+      await expect(dashboardErrorRow.first()).toBeVisible();
 
       const incidentCount = Number(
         await operateDashboardPage
-          .incidentBadgeFromItem(firstInstanceByError)
+          .incidentBadgeFromItem(dashboardErrorRow.first())
           .innerText(),
       );
 
-      await operateDashboardPage.clickItem(firstInstanceByError);
+      await operateDashboardPage.clickItem(dashboardErrorRow.first());
 
       await expect(
         operateDashboardPage.processInstancesHeading(
