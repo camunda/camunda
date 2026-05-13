@@ -183,6 +183,11 @@ test.describe('Process Instance History', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(operateProcessInstancePage.incidentsTab).toBeHidden();
+          await expect(
+            operateProcessInstancePage.instanceHistory
+              .getByRole('treeitem')
+              .first(),
+          ).toBeVisible();
           await operateProcessInstancePage.verifyHistoryItemsStatus(
             mainProcessName,
             ['ACTIVE'],
