@@ -36,9 +36,13 @@ public interface ZeebeExecutionListenersBuilder<B> {
 
   B zeebeEndExecutionListener(String type);
 
-  B zeebeCancelExecutionListener(String type, String retries);
+  default B zeebeCancelExecutionListener(final String type, final String retries) {
+    throw new UnsupportedOperationException("Please use concrete implementation");
+  }
 
-  B zeebeCancelExecutionListener(String type);
+  default B zeebeCancelExecutionListener(final String type) {
+    throw new UnsupportedOperationException("Please use concrete implementation");
+  }
 
   B zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer);

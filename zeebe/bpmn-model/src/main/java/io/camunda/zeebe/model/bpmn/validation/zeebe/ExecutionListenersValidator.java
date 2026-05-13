@@ -89,21 +89,7 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
       return;
     }
 
-    // Validate that 'cancel' event type is only used on process-level elements
-    if (!BpmnModelConstants.BPMN_ELEMENT_PROCESS.equals(parentElementTypeName)) {
-      final boolean hasCancelListener =
-          executionListeners.stream()
-              .anyMatch(
-                  listener -> ZeebeExecutionListenerEventType.cancel == listener.getEventType());
-      if (hasCancelListener) {
-        validationResultCollector.addError(
-            0,
-            "The 'cancel' execution listener event type is not supported for the '"
-                + parentElementTypeName
-                + "' element. The 'cancel' event type is only supported on the 'process' element.");
-      }
-    }
-
+    validateCancelListeners(executionListeners, bpmnElement, validationResultCollector);
     validateBeforeAllListeners(executionListeners, bpmnElement, validationResultCollector);
 
     final Function<ZeebeExecutionListener, String> eventTypeAndTypeClassifier =
@@ -117,6 +103,27 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
     listenersGroupedByType.values().stream()
         .filter(duplicates -> duplicates.size() > 1)
         .forEach(duplicates -> reportDuplicateListeners(duplicates, validationResultCollector));
+  }
+
+  /** Validate that 'cancel' event type is only used on process-level elements */
+  private void validateCancelListeners(
+      final Collection<ZeebeExecutionListener> executionListeners,
+      final ModelElementInstance bpmnElement,
+      final ValidationResultCollector validationResultCollector) {
+    final String parentElementTypeName = bpmnElement.getElementType().getTypeName();
+    if (!BpmnModelConstants.BPMN_ELEMENT_PROCESS.equals(parentElementTypeName)) {
+      final boolean hasCancelListener =
+          executionListeners.stream()
+              .anyMatch(
+                  listener -> ZeebeExecutionListenerEventType.cancel == listener.getEventType());
+      if (hasCancelListener) {
+        validationResultCollector.addError(
+            0,
+            "The 'cancel' execution listener event type is not supported for the '"
+                + parentElementTypeName
+                + "' element. The 'cancel' event type is only supported on the 'process' element.");
+      }
+    }
   }
 
   /**
