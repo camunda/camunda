@@ -9,7 +9,7 @@
 import {useEffect} from 'react';
 import {observer} from 'mobx-react-lite';
 import {useRouter, useLocation} from '@tanstack/react-router';
-import {authenticationStore} from '#/modules/auth/stores/authentication';
+import {authenticationStore} from '#/modules/auth/authentication.store';
 
 const INITIAL_PATH = '/';
 

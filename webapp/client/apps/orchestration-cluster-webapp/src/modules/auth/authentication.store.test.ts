@@ -9,7 +9,7 @@
 import {http, HttpResponse} from 'msw';
 import {describe, expect, beforeEach} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
-import {authenticationStore} from './authentication';
+import {authenticationStore} from './authentication.store';
 
 describe('authentication store', () => {
 	beforeEach(() => {
