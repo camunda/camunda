@@ -31,8 +31,8 @@ test.beforeAll(async ({request}) => {
     './resources/onlyIncidentsProcess_v_1.bpmn',
     './resources/orderProcess_v_1.bpmn',
     './resources/processWithAnIncident.bpmn',
-    './resources/incidentGeneratorProcess.bpmn',
     './resources/dashboardSelectionProcess_v_1.bpmn',
+    './resources/dashboardIncidentGenerator.bpmn',
   ]);
 
   await deploy([
@@ -41,9 +41,12 @@ test.beforeAll(async ({request}) => {
     './resources/onlyIncidentsProcess_v_2.bpmn',
   ]);
 
-  createWorker('incidentGenerator', true, {}, (job) => {
+  createWorker('dashboardIncidentGenerator', true, {}, (job) => {
+    // Prefix is unique to this spec so the error-message hash doesn't
+    // collide with incidents created by other specs (e.g.
+    // job-worker-statistics-test-setup.spec.ts uses the same base text).
     const BASE_ERROR_MESSAGE =
-      'This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.';
+      '[dashboard-spec] This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.';
 
     if (job.variables.incidentType === 'Incident Type A') {
       return job.fail(`${BASE_ERROR_MESSAGE} Type A`);
@@ -60,10 +63,10 @@ test.beforeAll(async ({request}) => {
     createInstances('orderProcess', 1, 10),
     createInstances('dashboardSelectionProcess', 1, 10),
     createSingleInstance('processWithAnIncident', 1),
-    createSingleInstance('incidentGeneratorProcess', 1, {
+    createSingleInstance('dashboardIncidentGenerator', 1, {
       incidentType: 'Incident Type A',
     }),
-    createSingleInstance('incidentGeneratorProcess', 1, {
+    createSingleInstance('dashboardIncidentGenerator', 1, {
       incidentType: 'Incident Type B',
     }),
   ]);
@@ -149,8 +152,13 @@ test.describe('Dashboard', () => {
     operateDashboardPage,
     operateProcessInstancePage,
   }) => {
+    // Scope the link selectors to this spec's [dashboard-spec] prefix so
+    // they don't match identical-suffix incidents created by other specs.
+    const typeALink = /\[dashboard-spec].*type a/i;
+    const typeBLink = /\[dashboard-spec].*type b/i;
+
     await test.step('Select incident type A and verify details', async () => {
-      await operateDashboardPage.clickIncidentByType(/type a/i);
+      await operateDashboardPage.clickIncidentByType(typeALink);
 
       await expect(
         operateDashboardPage.processInstancesHeading(1, false),
@@ -164,7 +172,7 @@ test.describe('Dashboard', () => {
 
     await test.step('Select incident type B and verify details', async () => {
       await operateDashboardPage.gotoDashboardPage();
-      await operateDashboardPage.clickIncidentByType(/type b/i);
+      await operateDashboardPage.clickIncidentByType(typeBLink);
       await expect(
         operateDashboardPage.processInstancesHeading(1, false),
       ).toBeVisible();
