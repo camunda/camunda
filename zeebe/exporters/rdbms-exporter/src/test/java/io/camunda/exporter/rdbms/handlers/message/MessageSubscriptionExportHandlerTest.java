@@ -21,6 +21,7 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionS
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.tools.ToolsConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -51,7 +52,7 @@ final class MessageSubscriptionExportHandlerTest {
       mock(ExporterEntityCache.class);
 
   private final MessageSubscriptionExportHandler underTest =
-      new MessageSubscriptionExportHandler(writer, processCache);
+      new MessageSubscriptionExportHandler(writer, processCache, new ToolsConfiguration());
 
   @ParameterizedTest
   @EnumSource(
