@@ -27,12 +27,6 @@ interface DeploymentResourceTransformer {
   boolean canTransform(DeploymentResource resource);
 
   /**
-   * Returns the category of state this transformer writes to. Used to determine which state caches
-   * need to be invalidated when a deployment fails.
-   */
-  DeploymentResourceCategory category();
-
-  /**
    * Step 1 of transforming the given resource: The transformer should add the deployed resource's
    * metadata to the deployment record, but not write any event records yet.
    *

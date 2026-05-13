@@ -103,11 +103,6 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public DeploymentResourceCategory category() {
-    return DeploymentResourceCategory.BPMN;
-  }
-
-  @Override
   public void reset() {
     parsedModels.clear();
   }

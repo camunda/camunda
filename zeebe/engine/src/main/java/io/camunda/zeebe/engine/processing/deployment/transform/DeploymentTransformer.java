@@ -25,9 +25,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -98,37 +96,25 @@ public final class DeploymentTransformer {
     return wrapArray(checksumGenerator.checksum(resource));
   }
 
-  public Either<DeploymentTransformationFailure, Void> transform(
-      final DeploymentRecord deploymentEvent) {
+  public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
     resourceTransformers.forEach(DeploymentResourceTransformer::reset);
-    // Tracks which transformer categories were dispatched during this run. Shared across
-    // buildMetadata and writeResourceRecords so any failure carries the full set of touched
-    // categories — the caller uses this to invalidate the matching state caches on rollback.
-    final Set<DeploymentResourceCategory> touchedCategories =
-        EnumSet.noneOf(DeploymentResourceCategory.class);
 
     return validator
         .validateResources(deploymentEvent)
-        .map(ok -> resolveTransformers(deploymentEvent, touchedCategories))
+        .map(ok -> resolveTransformers(deploymentEvent))
         .flatMap(
             rwt ->
                 buildMetadata(deploymentEvent, rwt)
                     .flatMap(contexts -> validator.validateMetadata(deploymentEvent, contexts))
-                    .flatMap(ok -> writeResourceRecords(deploymentEvent, rwt)))
-        .mapLeft(
-            failure ->
-                new DeploymentTransformationFailure(
-                    failure.getMessage(), EnumSet.copyOf(touchedCategories)));
+                    .flatMap(ok -> writeResourceRecords(deploymentEvent, rwt)));
   }
 
   private List<ResourceWithTransformer> resolveTransformers(
-      final DeploymentRecord deploymentEvent,
-      final Set<DeploymentResourceCategory> touchedCategories) {
+      final DeploymentRecord deploymentEvent) {
     final List<ResourceWithTransformer> result = new ArrayList<>();
     for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
       final var transformer = getResourceTransformer(deploymentResource);
       result.add(new ResourceWithTransformer(deploymentResource, transformer));
-      touchedCategories.add(transformer.category());
     }
     return result;
   }
