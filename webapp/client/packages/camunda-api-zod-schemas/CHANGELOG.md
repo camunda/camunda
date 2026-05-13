@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.65
+
+### 🚀 Enhancements
+
+- Add `elementInstanceKeys` to agent instance schema and search filter ([#52888](https://github.com/camunda/camunda/issues/52888))
+  - `elementInstanceKeys: z.array(z.string())` on `agentInstanceSchema` (response)
+  - `elementInstanceKeys: z.array(basicStringFilterSchema)` on `agentInstanceFilterSchema` (search filter)
+
+### ❤️ Contributors
+
+- Omran Abazid ([@OmranAbazid](https://github.com/OmranAbazid))
+
 ## v0.0.64
 
 ### 🚀 Enhancements

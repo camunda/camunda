@@ -62,6 +62,7 @@ const agentInstanceSchema = z.object({
 	creationDate: z.string(),
 	lastUpdatedDate: z.string(),
 	completionDate: z.string().nullable(),
+	elementInstanceKeys: z.array(z.string()),
 });
 type AgentInstance = z.infer<typeof agentInstanceSchema>;
 
@@ -76,6 +77,7 @@ const agentInstanceFilterSchema = z
 		creationDate: advancedDateTimeFilterSchema,
 		lastUpdatedDate: advancedDateTimeFilterSchema,
 		completionDate: advancedDateTimeFilterSchema,
+		elementInstanceKeys: z.array(basicStringFilterSchema),
 	})
 	.partial();
 type AgentInstanceFilter = z.infer<typeof agentInstanceFilterSchema>;
