@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.appliers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableAgentInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
@@ -25,13 +26,15 @@ public class AgentInstanceUpdatedApplierTest {
   private MutableProcessingState processingState;
 
   private MutableAgentInstanceState agentInstanceState;
+  private MutableElementInstanceState elementInstanceState;
   private AgentInstanceCreatedApplier createdApplier;
   private AgentInstanceUpdatedApplier updatedApplier;
 
   @BeforeEach
   public void setup() {
     agentInstanceState = processingState.getAgentInstanceState();
-    createdApplier = new AgentInstanceCreatedApplier(agentInstanceState);
+    elementInstanceState = processingState.getElementInstanceState();
+    createdApplier = new AgentInstanceCreatedApplier(agentInstanceState, elementInstanceState);
     updatedApplier = new AgentInstanceUpdatedApplier(agentInstanceState);
   }
 

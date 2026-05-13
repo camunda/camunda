@@ -167,7 +167,8 @@ public final class EventAppliers implements EventApplier {
   private void registerAgentInstanceEventAppliers(final MutableProcessingState state) {
     register(
         AgentInstanceIntent.CREATED,
-        new AgentInstanceCreatedApplier(state.getAgentInstanceState()));
+        new AgentInstanceCreatedApplier(
+            state.getAgentInstanceState(), state.getElementInstanceState()));
     register(
         AgentInstanceIntent.UPDATED,
         new AgentInstanceUpdatedApplier(state.getAgentInstanceState()));

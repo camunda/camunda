@@ -301,10 +301,10 @@ public class AgentInstanceCreateTest {
   }
 
   @Test
-  public void shouldAcceptSecondCreateForSameElementInstance() {
-    // given — the engine does not maintain a back-link from elementInstance to agentInstance,
-    // so it intentionally allows multiple CREATE commands for the same element instance. This
-    // test locks in that decision.
+  public void shouldTreatSecondCreateForSameElementInstanceAsIdempotentSuccess() {
+    // given — only one agent instance can exist per element instance; the public API has no 409.
+    // The engine short-circuits a second CREATE: a rejection lands on the stream (suppressing a
+    // second CREATED event), and the client response carries the existing record.
     ENGINE
         .deployment()
         .withXmlResource(
@@ -320,14 +320,28 @@ public class AgentInstanceCreateTest {
     // when
     final var first =
         ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
-    final var second =
-        ENGINE.agentInstances().withElementInstanceKey(serviceTaskInstance.getKey()).create();
+    final var secondRejection =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .expectRejection()
+            .create();
 
-    // then — both creates succeed and produce distinct agent instances.
-    assertThat(first.getIntent()).isEqualTo(AgentInstanceIntent.CREATED);
-    assertThat(second.getIntent()).isEqualTo(AgentInstanceIntent.CREATED);
-    assertThat(second.getValue().getAgentInstanceKey())
-        .isNotEqualTo(first.getValue().getAgentInstanceKey());
+    // then — the second CREATE is rejected on the stream with ALREADY_EXISTS.
+    assertThat(secondRejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(secondRejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
+    assertThat(secondRejection.getRejectionReason())
+        .contains(String.valueOf(first.getValue().getAgentInstanceKey()));
+
+    // and — exactly one CREATED event for this element instance lives on the stream.
+    final var createdEvents =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.CREATED)
+            .withAgentInstanceKey(first.getValue().getAgentInstanceKey())
+            .limit(1)
+            .toList();
+    assertThat(createdEvents)
+        .singleElement()
+        .satisfies(r -> assertThat(r.getKey()).isEqualTo(first.getKey()));
   }
 
   @Test

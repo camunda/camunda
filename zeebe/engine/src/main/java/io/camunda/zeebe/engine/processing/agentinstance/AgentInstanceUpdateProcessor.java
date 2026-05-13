@@ -52,8 +52,6 @@ public final class AgentInstanceUpdateProcessor
   private static final String ERROR_MSG_INVALID_TRANSITION =
       "Expected to update agent instance with key '%d' from status '%s' to '%s', but this transition is not allowed.";
 
-  // -1 signals that the gateway did not receive a value for the field — treat as not-provided.
-  // 0 means the field was provided but did not move; both are no-ops in the engine.
   private static final long METRIC_NOT_PROVIDED = -1L;
 
   private static final Set<AgentInstanceStatus> ACTIVE_STATUSES =
@@ -162,9 +160,13 @@ public final class AgentInstanceUpdateProcessor
   }
 
   /**
-   * Applies the patch in {@code delta} to {@code current} for each attribute named in {@code
-   * changed}, mutating {@code current} in place. Returns the effective {@code changedAttributes}
-   * for the UPDATED event — i.e. the subset of {@code changed} whose values actually moved.
+   * <strong>Mutates {@code current} in place.</strong> For each attribute named in {@code changed},
+   * applies the corresponding value from {@code delta} to {@code current} (status/tools are
+   * overwritten, metrics fields are summed). The caller's {@code current} reference observes every
+   * mutation directly — nothing is copied.
+   *
+   * <p>Returns the effective {@code changedAttributes} for the UPDATED event — i.e. the subset of
+   * {@code changed} whose values actually moved.
    */
   private static List<String> applyPatch(
       final AgentInstanceRecord current,

@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -37,6 +38,8 @@ public final class AgentInstanceCreateProcessor
       "Expected to create agent instance for element instance with key '%d', but it is not active.";
   private static final String ERROR_MSG_UNSUPPORTED_ELEMENT_TYPE =
       "Expected to create agent instance for element instance with key '%d', but its BPMN element type '%s' is not supported. Supported types are: %s.";
+  private static final String ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS =
+      "Expected to create agent instance for element instance with key '%d', but an agent instance with key '%d' already exists for it.";
 
   private static final List<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
       List.of(BpmnElementType.AD_HOC_SUB_PROCESS, BpmnElementType.SERVICE_TASK);
@@ -46,6 +49,7 @@ public final class AgentInstanceCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final AgentInstanceState agentInstanceState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
 
@@ -59,6 +63,7 @@ public final class AgentInstanceCreateProcessor
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
+    agentInstanceState = processingState.getAgentInstanceState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
   }
@@ -111,6 +116,23 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
+    // Idempotent CREATE: a second CREATE for the same element instance must look identical to the
+    // first from the client's perspective (the public API has no 409). Short-circuit by appending
+    // a rejection on the stream (suppressing the follow-up CREATED event) and writing the existing
+    // record back on the response.
+    final var existingAgentInstanceKey = elementInstance.getAgentInstanceKey();
+    if (existingAgentInstanceKey != -1L) {
+      final var existingRecord = agentInstanceState.getRecord(existingAgentInstanceKey);
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.ALREADY_EXISTS,
+          ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS.formatted(
+              elementInstanceKey, existingAgentInstanceKey));
+      responseWriter.writeEventOnCommand(
+          existingAgentInstanceKey, AgentInstanceIntent.CREATED, existingRecord, command);
+      return;
+    }
+
     final var deployedProcess =
         processState.getProcessByKeyAndTenant(
             elementInstanceValue.getProcessDefinitionKey(), elementInstanceValue.getTenantId());
@@ -129,12 +151,11 @@ public final class AgentInstanceCreateProcessor
             .setTenantId(elementInstanceValue.getTenantId())
             .setStatus(AgentInstanceStatus.INITIALIZING);
 
-    final var commandDefinition = commandValue.getDefinition();
     event
         .getDefinition()
-        .setModel(commandDefinition.getModel())
-        .setProvider(commandDefinition.getProvider())
-        .setSystemPrompt(commandDefinition.getSystemPrompt());
+        .setModel(commandValue.getDefinition().getModel())
+        .setProvider(commandValue.getDefinition().getProvider())
+        .setSystemPrompt(commandValue.getDefinition().getSystemPrompt());
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.CREATED, event);
     responseWriter.writeEventOnCommand(
