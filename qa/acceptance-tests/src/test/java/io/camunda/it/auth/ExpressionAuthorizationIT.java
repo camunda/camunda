@@ -175,17 +175,17 @@ class ExpressionAuthorizationIT {
         .withMessageContaining("403");
   }
 
-  // ============ PROCESS / ELEMENT INSTANCE CONTEXT AUTHORIZATION ============
+  // ============ SCOPE CONTEXT AUTHORIZATION ============
 
   @Test
-  void shouldEvaluateExpressionWithProcessInstanceKeyWhenAuthorized(
+  void shouldEvaluateExpressionWithProcessInstanceScopeKeyWhenAuthorized(
       @Authenticated(SCOPE_AUTHORIZED_USER) final CamundaClient userClient) {
     // when
     final var response =
         userClient
             .newEvaluateExpressionCommand()
             .expression("=1 + 2")
-            .processInstanceKey(processInstanceKey)
+            .scopeKey(processInstanceKey)
             .send()
             .join();
 
@@ -195,14 +195,14 @@ class ExpressionAuthorizationIT {
   }
 
   @Test
-  void shouldEvaluateExpressionWithElementInstanceKeyWhenAuthorized(
+  void shouldEvaluateExpressionWithElementInstanceScopeKeyWhenAuthorized(
       @Authenticated(SCOPE_AUTHORIZED_USER) final CamundaClient userClient) {
     // when
     final var response =
         userClient
             .newEvaluateExpressionCommand()
             .expression("=1 + 2")
-            .elementInstanceKey(elementInstanceKey)
+            .scopeKey(elementInstanceKey)
             .send()
             .join();
 
@@ -212,7 +212,7 @@ class ExpressionAuthorizationIT {
   }
 
   @Test
-  void shouldRejectEvaluateExpressionWithProcessInstanceKeyWithoutReadProcessInstance(
+  void shouldRejectEvaluateExpressionWithProcessInstanceScopeKeyWithoutReadProcessInstance(
       @Authenticated(AUTHORIZED_USER) final CamundaClient userClient) {
     // given - AUTHORIZED_USER has EVALUATE but no READ_PROCESS_INSTANCE
     // when / then
@@ -222,14 +222,14 @@ class ExpressionAuthorizationIT {
                 userClient
                     .newEvaluateExpressionCommand()
                     .expression("=1 + 2")
-                    .processInstanceKey(processInstanceKey)
+                    .scopeKey(processInstanceKey)
                     .send()
                     .join())
         .withMessageContaining("403");
   }
 
   @Test
-  void shouldRejectEvaluateExpressionWithElementInstanceKeyWithoutReadProcessInstance(
+  void shouldRejectEvaluateExpressionWithElementInstanceScopeKeyWithoutReadProcessInstance(
       @Authenticated(AUTHORIZED_USER) final CamundaClient userClient) {
     // given - AUTHORIZED_USER has EVALUATE but no READ_PROCESS_INSTANCE
     // when / then
@@ -239,14 +239,14 @@ class ExpressionAuthorizationIT {
                 userClient
                     .newEvaluateExpressionCommand()
                     .expression("=1 + 2")
-                    .elementInstanceKey(elementInstanceKey)
+                    .scopeKey(elementInstanceKey)
                     .send()
                     .join())
         .withMessageContaining("403");
   }
 
   @Test
-  void shouldRejectEvaluateExpressionWithProcessInstanceKeyWhenScopedToDifferentProcess(
+  void shouldRejectEvaluateExpressionWithProcessInstanceScopeKeyWhenScopedToDifferentProcess(
       @Authenticated(SCOPE_UNAUTHORIZED_USER) final CamundaClient userClient) {
     // given - SCOPE_UNAUTHORIZED_USER has READ_PROCESS_INSTANCE only on a different bpmnProcessId
     // when / then
@@ -256,7 +256,7 @@ class ExpressionAuthorizationIT {
                 userClient
                     .newEvaluateExpressionCommand()
                     .expression("=1 + 2")
-                    .processInstanceKey(processInstanceKey)
+                    .scopeKey(processInstanceKey)
                     .send()
                     .join())
         .withMessageContaining("403");
