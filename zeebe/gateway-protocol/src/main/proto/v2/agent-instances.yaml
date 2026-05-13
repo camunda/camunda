@@ -239,6 +239,14 @@ components:
           description: The completion date of the agent instance.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+        elementInstanceKeys:
+            description: |-
+              The keys of element instances associated with this agent instance.
+              If multiple keys are provided, the filter matches agent instances associated with all of the provided keys at the same time.
+            type: array
+            items:
+              allOf:
+                - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
 
     AgentInstanceSearchQueryResult:
       description: Agent instance search response.
@@ -270,6 +278,7 @@ components:
         - creationDate
         - lastUpdatedDate
         - completionDate
+        - elementInstanceKeys
       properties:
         agentInstanceKey:
           description: The unique key for this agent instance.
@@ -323,6 +332,12 @@ components:
           format: date-time
           nullable: true
           description: The date when this agent instance completed. Null while the agent is still running.
+        elementInstanceKeys:
+          description: The keys of all element instances associated with this agent instance.
+          type: array
+          items:
+            allOf:
+                - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
 
     AgentInstanceDefinition:
       description: The static definition of an agent instance, set once at creation.
