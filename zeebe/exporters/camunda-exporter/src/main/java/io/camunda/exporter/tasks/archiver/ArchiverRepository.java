@@ -104,10 +104,11 @@ public interface ArchiverRepository extends AutoCloseable {
   }
 
   default String buildHistoricalIndicesPattern(final IndexTemplateDescriptor indexTemplate) {
-    return "%s,-%s,-%s"
+    return "%s,-%s,-%s,-%sord*"
         .formatted(
             indexTemplate.getIndexPattern(),
             indexTemplate.getFullQualifiedName(),
-            indexTemplate.getAlias());
+            indexTemplate.getAlias(),
+            indexTemplate.getFullQualifiedName());
   }
 }
