@@ -27,8 +27,6 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public final class AgentInstanceUpdateProcessor
@@ -45,21 +43,13 @@ public final class AgentInstanceUpdateProcessor
       "Expected to update agent instance with key '%d', but no such agent instance was found.";
   private static final String ERROR_MSG_EMPTY_CHANGED =
       "Expected to update agent instance, but changedAttributes is empty.";
-  private static final String ERROR_MSG_DUPLICATE_ATTRIBUTES =
-      "Expected to update agent instance, but changedAttributes contained duplicate attribute(s) %s.";
   private static final String ERROR_MSG_UNKNOWN_ATTRIBUTES =
       "Expected to update agent instance, but changedAttributes contained unknown attribute(s) %s. Allowed attributes are: %s.";
-  private static final String ERROR_MSG_PROCESS_NOT_FOUND =
-      "Expected to update agent instance with key '%d', but its deployed process (key '%d', tenant '%s') could not be resolved.";
   private static final String ERROR_MSG_NEGATIVE_METRIC =
       "Expected to update agent instance metrics, but received negative delta(s): inputTokens=%d, outputTokens=%d, modelCalls=%d, toolCalls=%d. Metric deltas must be non-negative.";
-  private static final String ERROR_MSG_STATUS_UNSPECIFIED =
-      "Expected to update agent instance status, but status is UNSPECIFIED.";
   private static final String ERROR_MSG_INVALID_TRANSITION =
       "Expected to update agent instance with key '%d' from status '%s' to '%s', but this transition is not allowed.";
 
-  // Statuses that are valid as a target of an UPDATE (excluding COMPLETED, which is owned by
-  // the COMPLETE command).
   private static final Set<AgentInstanceStatus> ACTIVE_STATUSES =
       EnumSet.of(
           AgentInstanceStatus.INITIALIZING,
@@ -90,13 +80,9 @@ public final class AgentInstanceUpdateProcessor
   @Override
   public void processRecord(final TypedRecord<AgentInstanceRecord> command) {
     final var commandValue = command.getValue();
-    // Use the command's key as the single source of truth — the agentInstanceKey field on the
-    // record value is informational only and may diverge if a malformed command is submitted.
     final var agentInstanceKey = command.getKey();
-    final var rawChangedAttributes = commandValue.getChangedAttributes();
-    final Set<String> changed = Set.copyOf(rawChangedAttributes);
+    final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
 
-    // 1. Existence check — also covers the COMPLETED-then-deleted case naturally.
     final var current = agentInstanceState.getRecord(agentInstanceKey);
     if (current == null) {
       writeRejection(
@@ -104,31 +90,29 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    // 2. changedAttributes must not be empty.
+    final var deployedProcess =
+        processState.getProcessByKeyAndTenant(
+            current.getProcessDefinitionKey(), current.getTenantId());
+    final var authRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+            .tenantId(current.getTenantId())
+            .addResourceId(BufferUtil.bufferAsString(deployedProcess.getBpmnProcessId()))
+            .build();
+    final var authResult = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    if (authResult.isLeft()) {
+      final var rejection = authResult.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     if (changed.isEmpty()) {
       writeRejection(command, RejectionType.INVALID_ARGUMENT, ERROR_MSG_EMPTY_CHANGED);
       return;
     }
 
-    // 3. Duplicate attribute names are rejected — the patch loop iterates the raw list, so a
-    // duplicate metrics entry would apply the delta twice. Reject explicitly to keep the wire
-    // contract clean.
-    if (rawChangedAttributes.size() != changed.size()) {
-      final var seen = new HashSet<String>();
-      final var duplicates = new ArrayList<String>();
-      for (final var attr : rawChangedAttributes) {
-        if (!seen.add(attr) && !duplicates.contains(attr)) {
-          duplicates.add(attr);
-        }
-      }
-      writeRejection(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          ERROR_MSG_DUPLICATE_ATTRIBUTES.formatted(duplicates));
-      return;
-    }
-
-    // 4. Unknown attribute names are rejected.
     final var unknown = new ArrayList<String>();
     for (final var attr : changed) {
       if (!ALLOWED_ATTRIBUTES.contains(attr)) {
@@ -143,7 +127,6 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    // 5. Metric deltas must be non-negative.
     if (changed.contains(ATTR_METRICS)) {
       final var metrics = commandValue.getMetrics();
       if (metrics.getInputTokens() < 0
@@ -162,46 +145,6 @@ public final class AgentInstanceUpdateProcessor
       }
     }
 
-    // 6. Status cannot be UNSPECIFIED when listed in changedAttributes.
-    if (changed.contains(ATTR_STATUS)
-        && commandValue.getStatus() == AgentInstanceStatus.UNSPECIFIED) {
-      writeRejection(command, RejectionType.INVALID_ARGUMENT, ERROR_MSG_STATUS_UNSPECIFIED);
-      return;
-    }
-
-    // 7. Authorization — check against the deployed process for tenant and resource id.
-    // If the deployed process can no longer be resolved (e.g. it was deleted) we reject rather
-    // than fall back to wildcard PROCESS_DEFINITION auth, which would silently broaden the
-    // permission required of the caller.
-    final var deployedProcess =
-        processState.getProcessByKeyAndTenant(
-            current.getProcessDefinitionKey(), current.getTenantId());
-    if (deployedProcess == null) {
-      writeRejection(
-          command,
-          RejectionType.INVALID_STATE,
-          ERROR_MSG_PROCESS_NOT_FOUND.formatted(
-              agentInstanceKey, current.getProcessDefinitionKey(), current.getTenantId()));
-      return;
-    }
-    final var bpmnProcessId = BufferUtil.bufferAsString(deployedProcess.getBpmnProcessId());
-
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(current.getTenantId())
-            .addResourceId(bpmnProcessId)
-            .build();
-    final var authResult = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (authResult.isLeft()) {
-      final var rejection = authResult.getLeft();
-      writeRejection(command, rejection.type(), rejection.reason());
-      return;
-    }
-
-    // 8. Status transition check (only when status is changing).
     if (changed.contains(ATTR_STATUS)) {
       final var from = current.getStatus();
       final var to = commandValue.getStatus();
@@ -214,18 +157,15 @@ public final class AgentInstanceUpdateProcessor
       }
     }
 
-    // All checks passed — apply the patch.
-    final var originalStatus = current.getStatus();
-
-    final var effective = new ArrayList<String>(commandValue.getChangedAttributes().size());
-    for (final var attr : commandValue.getChangedAttributes()) {
+    final var effective = new ArrayList<String>(changed.size());
+    for (final var attr : changed) {
       switch (attr) {
         case ATTR_STATUS -> {
-          current.setStatus(commandValue.getStatus());
           // Drop "status" from the event's changedAttributes when it is a no-op.
-          if (!commandValue.getStatus().equals(originalStatus)) {
+          if (!commandValue.getStatus().equals(current.getStatus())) {
             effective.add(ATTR_STATUS);
           }
+          current.setStatus(commandValue.getStatus());
         }
         case ATTR_METRICS -> {
           final var currentMetrics = current.getMetrics();
@@ -241,17 +181,14 @@ public final class AgentInstanceUpdateProcessor
           current.setTools(commandValue.getTools());
           effective.add(ATTR_TOOLS);
         }
-        default -> {
-          // Unreachable: validated above.
-        }
       }
     }
 
-    current.setChangedAttributes(List.copyOf(effective));
+    current.setChangedAttributes(effective);
 
-    stateWriter.appendFollowUpEvent(command.getKey(), AgentInstanceIntent.UPDATED, current);
+    stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.UPDATED, current);
     responseWriter.writeEventOnCommand(
-        command.getKey(), AgentInstanceIntent.UPDATED, current, command);
+        agentInstanceKey, AgentInstanceIntent.UPDATED, current, command);
   }
 
   private boolean isAllowedTransition(

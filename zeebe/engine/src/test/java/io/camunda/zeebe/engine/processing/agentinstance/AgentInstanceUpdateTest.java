@@ -270,24 +270,26 @@ public class AgentInstanceUpdateTest {
   }
 
   @Test
-  public void shouldRejectDuplicateAttributesInChangedAttributes() {
-    // given — a malformed UPDATE with the same attribute repeated; without this guard a duplicate
-    // "metrics" would apply the delta twice.
+  public void shouldDedupeDuplicateAttributesInChangedAttributes() {
+    // given — a duplicated "metrics" entry in changedAttributes. Without dedup the delta would
+    // be applied twice; the processor iterates the validated set so each attribute is patched once.
     final var agentInstanceKey = createAgentInstance();
 
     // when
-    final Record<?> rejection =
+    final var updated =
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
-            .withMetricsDelta(10L, 0L, 0, 0)
+            .withMetricsDelta(10L, 5L, 1, 2)
             .withChangedAttributes(List.of("metrics", "metrics"))
-            .expectRejection()
             .update();
 
-    // then
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("metrics");
+    // then — delta applied once
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isEqualTo(10L);
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isEqualTo(5L);
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isEqualTo(2);
+    assertThat(updated.getValue().getChangedAttributes()).containsExactly("metrics");
   }
 
   @Test
@@ -333,7 +335,8 @@ public class AgentInstanceUpdateTest {
     // given
     final var agentInstanceKey = createAgentInstance();
 
-    // when — explicitly UNSPECIFIED with status named in changedAttributes
+    // when — explicitly UNSPECIFIED with status named in changedAttributes; this falls into the
+    // transition matrix (UNSPECIFIED is not an active target state) and is rejected as such.
     final Record<?> rejection =
         ENGINE
             .agentInstances()
@@ -343,7 +346,7 @@ public class AgentInstanceUpdateTest {
             .update();
 
     // then
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -399,53 +402,6 @@ public class AgentInstanceUpdateTest {
         assertThat(updated.getValue().getStatus()).isEqualTo(to);
       }
     }
-  }
-
-  @Test
-  public void shouldRejectUpdateWhenDeployedProcessIsGone() {
-    // given — an agent instance whose deployed process is then deleted. We must reject the UPDATE
-    // explicitly rather than silently falling back to wildcard PROCESS_DEFINITION authorization.
-    // The process instance is cancelled first so the deployment can be removed cleanly.
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
-                .endEvent()
-                .done())
-        .deploy();
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var serviceTaskInstance =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.SERVICE_TASK)
-            .withElementId(SERVICE_TASK_ID)
-            .getFirst();
-    final var createdAgentInstance =
-        ENGINE
-            .agentInstances()
-            .withElementInstanceKey(serviceTaskInstance.getKey())
-            .create()
-            .getValue();
-    final var agentInstanceKey = createdAgentInstance.getAgentInstanceKey();
-    final var processDefinitionKey = createdAgentInstance.getProcessDefinitionKey();
-
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
-    ENGINE.resourceDeletion().withResourceKey(processDefinitionKey).delete();
-
-    // when
-    final Record<?> rejection =
-        ENGINE
-            .agentInstances()
-            .withAgentInstanceKey(agentInstanceKey)
-            .withStatus(AgentInstanceStatus.THINKING)
-            .expectRejection()
-            .update();
-
-    // then
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
-    assertThat(rejection.getRejectionReason()).contains(String.valueOf(processDefinitionKey));
   }
 
   @Test

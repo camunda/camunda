@@ -77,6 +77,22 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
+    final var elementInstanceValue = elementInstance.getValue();
+    final var authRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+            .tenantId(elementInstanceValue.getTenantId())
+            .addResourceId(elementInstanceValue.getBpmnProcessId())
+            .build();
+    final var authResult = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    if (authResult.isLeft()) {
+      final var rejection = authResult.getLeft();
+      writeRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     if (!elementInstance.isActive()) {
       writeRejection(
           command,
@@ -85,8 +101,7 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
-    final var elementValue = elementInstance.getValue();
-    final var bpmnElementType = elementValue.getBpmnElementType();
+    final var bpmnElementType = elementInstanceValue.getBpmnElementType();
     if (!SUPPORTED_ELEMENT_TYPES.contains(bpmnElementType)) {
       writeRejection(
           command,
@@ -96,27 +111,9 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(elementValue.getTenantId())
-            .addResourceId(elementValue.getBpmnProcessId())
-            .build();
-    final var authResult = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (authResult.isLeft()) {
-      final var rejection = authResult.getLeft();
-      writeRejection(command, rejection.type(), rejection.reason());
-      return;
-    }
-
-    // Materialise identity fields from the element instance and force INITIALIZING status.
-    // Metrics/limits/tools/changedAttributes are reset to their defaults so the CREATED event
-    // carries a clean baseline regardless of what the CREATE command attempted to set.
     final var deployedProcess =
         processState.getProcessByKeyAndTenant(
-            elementValue.getProcessDefinitionKey(), elementValue.getTenantId());
+            elementInstanceValue.getProcessDefinitionKey(), elementInstanceValue.getTenantId());
     final var versionTag = deployedProcess == null ? "" : deployedProcess.getVersionTag();
 
     final var agentInstanceKey = keyGenerator.nextKey();
@@ -124,15 +121,14 @@ public final class AgentInstanceCreateProcessor
         new AgentInstanceRecord()
             .setAgentInstanceKey(agentInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
-            .setElementId(elementValue.getElementId())
-            .setProcessInstanceKey(elementValue.getProcessInstanceKey())
-            .setProcessDefinitionKey(elementValue.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(elementValue.getVersion())
+            .setElementId(elementInstanceValue.getElementId())
+            .setProcessInstanceKey(elementInstanceValue.getProcessInstanceKey())
+            .setProcessDefinitionKey(elementInstanceValue.getProcessDefinitionKey())
+            .setProcessDefinitionVersion(elementInstanceValue.getVersion())
             .setVersionTag(versionTag == null ? "" : versionTag)
-            .setTenantId(elementValue.getTenantId())
+            .setTenantId(elementInstanceValue.getTenantId())
             .setStatus(AgentInstanceStatus.INITIALIZING);
 
-    // Copy the definition from the command so it is preserved on the CREATED event.
     final var commandDefinition = commandValue.getDefinition();
     event
         .getDefinition()
