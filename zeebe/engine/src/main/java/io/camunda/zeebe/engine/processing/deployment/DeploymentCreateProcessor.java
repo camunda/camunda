@@ -245,6 +245,7 @@ public final class DeploymentCreateProcessor
         case DMN -> decisionState.clearCache();
         case FORM -> formState.clearCache();
         case RESOURCE -> resourceState.clearCache();
+        default -> {}
       }
     }
   }
