@@ -138,4 +138,9 @@ final class MemberIdTest {
     assertThatThrownBy(() -> Member.builder(memberId).withZoneId("us").build())
         .isInstanceOf(IllegalArgumentException.class);
   }
+
+  private void assertEncodeDecode(final MemberId memberId) {
+    final var decoded = MemberId.from(memberId.id());
+    assertThat(decoded).isEqualTo(memberId).returns(memberId.hashCode(), MemberId::hashCode);
+  }
 }
