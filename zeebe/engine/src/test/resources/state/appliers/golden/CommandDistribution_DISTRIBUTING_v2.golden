@@ -12,18 +12,19 @@ import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 
-public final class CommandDistributionDistributingApplier
+public final class CommandDistributionDistributingApplierV2
     implements TypedEventApplier<CommandDistributionIntent, CommandDistributionRecord> {
 
   private final MutableDistributionState distributionState;
 
-  public CommandDistributionDistributingApplier(final MutableDistributionState distributionState) {
+  public CommandDistributionDistributingApplierV2(
+      final MutableDistributionState distributionState) {
     this.distributionState = distributionState;
   }
 
   @Override
   public void applyState(final long key, final CommandDistributionRecord value) {
     distributionState.addPendingDistribution(key, value.getPartitionId());
-    distributionState.addRetriableDistribution(key, value.getPartitionId());
+    distributionState.addRetriableDistribution(key, value.getPartitionId(), value.getStartTime());
   }
 }
