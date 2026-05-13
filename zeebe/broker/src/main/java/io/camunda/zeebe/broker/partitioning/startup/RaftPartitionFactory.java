@@ -121,7 +121,7 @@ public final class RaftPartitionFactory {
     partitionConfig.setPreferSnapshotReplicationThreshold(
         brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
 
-    final var tenantName = brokerCfg.getExperimental().getDefaultTenantName();
+    final var tenantName = partitionMetadata.id().group();
     partitionConfig.setTenantName(tenantName);
     partitionConfig.setSendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject());
     partitionConfig.setReceiveOnLegacySubject(
