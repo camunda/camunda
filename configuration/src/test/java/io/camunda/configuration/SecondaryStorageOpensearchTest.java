@@ -17,7 +17,10 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.operate.conditions.DatabaseType;
+import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Map;
@@ -258,6 +261,65 @@ public class SecondaryStorageOpensearchTest {
       assertThat(searchEngineConnectProperties.getClusterName()).isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(searchEngineConnectProperties.getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(EXPECTED_PASSWORD);
+    }
+  }
+
+  @Nested
+  class WithoutNewAndLegacySet {
+    final OperateProperties operateProperties;
+    final TasklistProperties tasklistProperties;
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    WithoutNewAndLegacySet(
+        @Autowired final OperateProperties operateProperties,
+        @Autowired final TasklistProperties tasklistProperties,
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.operateProperties = operateProperties;
+      this.tasklistProperties = tasklistProperties;
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    @Test
+    void shouldUseOperatePropertiesDefaults() {
+      assertThat(operateProperties.getOpensearch())
+          .returns(
+              OperateOpensearchProperties.SOCKET_TIMEOUT_DEFAULT,
+              OperateOpensearchProperties::getSocketTimeout)
+          .returns(null, OperateOpensearchProperties::getConnectTimeout);
+    }
+
+    @Test
+    void shouldUseTasklistPropertiesDefaults() {
+      assertThat(tasklistProperties.getOpenSearch())
+          .returns(
+              TasklistOpenSearchProperties.SOCKET_TIMEOUT_DEFAULT,
+              TasklistOpenSearchProperties::getSocketTimeout)
+          .returns(null, TasklistOpenSearchProperties::getConnectTimeout);
+    }
+
+    @Test
+    void shouldUseCamundaExporterPropertiesDefaults() {
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+
+      assertThat(exporterConfiguration.getConnect())
+          .returns(null, ConnectConfiguration::getSocketTimeout)
+          .returns(null, ConnectConfiguration::getConnectTimeout);
+    }
+
+    @Test
+    void shouldUseSearchEngineConnectPropertiesDefaults() {
+      assertThat(searchEngineConnectProperties)
+          .returns(null, SearchEngineConnectProperties::getSocketTimeout)
+          .returns(null, SearchEngineConnectProperties::getConnectTimeout);
     }
   }
 }
