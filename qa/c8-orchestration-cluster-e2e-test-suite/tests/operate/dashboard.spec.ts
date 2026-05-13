@@ -173,9 +173,7 @@ test.describe('Dashboard', () => {
       // switch to Variables before asserting on the variable value.
       await operateProcessInstancePage.clickVariablesTab();
       await expect(
-        operateProcessInstancePage.variablesList.getByText(
-          '"Incident Type A"',
-        ),
+        operateProcessInstancePage.variablesList.getByText('"Incident Type A"'),
       ).toBeVisible();
     });
 
@@ -189,9 +187,7 @@ test.describe('Dashboard', () => {
       await operateDashboardPage.clickViewInstanceLink();
       await operateProcessInstancePage.clickVariablesTab();
       await expect(
-        operateProcessInstancePage.variablesList.getByText(
-          '"Incident Type B"',
-        ),
+        operateProcessInstancePage.variablesList.getByText('"Incident Type B"'),
       ).toBeVisible();
     });
   });
