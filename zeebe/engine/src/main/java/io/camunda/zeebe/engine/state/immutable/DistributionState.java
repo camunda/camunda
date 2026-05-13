@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.state.distribution.DistributionMetadata;
 import io.camunda.zeebe.engine.state.distribution.PersistedCommandDistribution;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import java.util.Optional;
@@ -68,6 +69,18 @@ public interface DistributionState {
    * @return an new instance of the {@link CommandDistributionRecord}
    */
   CommandDistributionRecord getCommandDistributionRecord(long distributionKey, int partition);
+
+  /**
+   * Returns the {@link DistributionMetadata} persisted for a specific distribution and target
+   * partition. Metadata is written by {@link
+   * io.camunda.zeebe.engine.state.mutable.MutableDistributionState#addRetriableDistribution(long,
+   * int, long)} (the 3-arg variant) and removed when the retriable entry is removed.
+   *
+   * @param distributionKey the key of the distribution
+   * @param partition the target partition of the distribution
+   * @return an {@link Optional} containing the metadata if present, otherwise empty
+   */
+  Optional<DistributionMetadata> getDistributionMetadata(long distributionKey, int partition);
 
   /**
    * Visits each persisted command distribution {@link PersistedCommandDistribution}
