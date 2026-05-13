@@ -55,6 +55,7 @@ jobs:
     permissions: { }
     outputs:
       concurrency-group: ${{ steps.concurrency-group.outputs.group }}
+      merge-group-pr-numbers: ${{ steps.concurrency-group.outputs.pr-numbers }}
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'merge_group'
@@ -62,10 +63,14 @@ jobs:
       - name: Compute concurrency group
         id: concurrency-group
         run: |
+          echo "pr-numbers=" >> "$GITHUB_OUTPUT"
           if [[ "${{ github.event_name }}" == "merge_group" ]]; then
             REF_SOURCE="${{ github.event.merge_group.head_ref || github.ref }}"
+            # Expected merge queue ref shape includes pr-<number> segments, e.g.
+            # refs/heads/gh-readonly-queue/stable/8.7/pr-123-<suffix>
             PR_SEGMENTS=$(grep -oE 'pr-[0-9]+' <<< "${REF_SOURCE}" | paste -sd '-' -)
             if [[ -n "${PR_SEGMENTS}" ]]; then
+              echo "pr-numbers=${PR_SEGMENTS//pr-/}" >> "$GITHUB_OUTPUT"
               echo "group=${{ github.workflow }}-${PR_SEGMENTS}" >> "$GITHUB_OUTPUT"
             else
               echo "::warning::Could not derive stable merge_group PR key from ref '${REF_SOURCE}'; using ref as fallback."
@@ -212,13 +217,12 @@ jobs:
           elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
             # For merge queue: prefer <maven-version>-mq<PR_NUMBER>-run<run_id>-a<run_attempt>
             # but fall back to a SHA-based tag if we cannot derive PR numbers from merge_group payload/ref.
-            REF_SOURCE="${{ github.event.merge_group.head_ref || github.ref }}"
-            PR_NUM=$(grep -oE 'pr-[0-9]+' <<< "${REF_SOURCE}" | sed 's/pr-//' | paste -sd '-' -)
+            PR_NUM="${{ needs.should-run.outputs.merge-group-pr-numbers }}"
             if [[ -n "${PR_NUM}" ]]; then
               echo "tag=${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
             else
               SHA_SHORT="${GITHUB_SHA::7}"
-              echo "::warning::Could not determine PR number from merge_group ref '${REF_SOURCE}'; using merge-group SHA-based tag instead."
+              echo "::warning::Could not determine PR number from merge_group payload/ref; using merge-group SHA-based tag instead."
               echo "tag=${MAVEN_VERSION}-mq${SHA_SHORT}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
             fi
           else
