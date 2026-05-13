@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import org.immutables.value.Value;
