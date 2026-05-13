@@ -138,7 +138,7 @@ public class ResolveExpressionAuthorizationTest {
     engine
         .expression()
         .withExpression(EXPRESSION)
-        .withProcessInstanceKey(processInstanceKey)
+        .withScopeKey(processInstanceKey)
         .resolve(user.getUsername());
 
     // then
@@ -181,7 +181,7 @@ public class ResolveExpressionAuthorizationTest {
     engine
         .expression()
         .withExpression(EXPRESSION)
-        .withElementInstanceKey(elementInstanceKey)
+        .withScopeKey(elementInstanceKey)
         .resolve(user.getUsername());
 
     // then
@@ -218,7 +218,7 @@ public class ResolveExpressionAuthorizationTest {
     engine
         .expression()
         .withExpression(EXPRESSION)
-        .withProcessInstanceKey(processInstanceKey)
+        .withScopeKey(processInstanceKey)
         .resolve(user.getUsername());
 
     // then
@@ -244,7 +244,7 @@ public class ResolveExpressionAuthorizationTest {
         engine
             .expression()
             .withExpression(EXPRESSION)
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .expectRejection()
             .resolve(user.getUsername());
 
@@ -275,7 +275,7 @@ public class ResolveExpressionAuthorizationTest {
         engine
             .expression()
             .withExpression(EXPRESSION)
-            .withElementInstanceKey(elementInstanceKey)
+            .withScopeKey(elementInstanceKey)
             .expectRejection()
             .resolve(user.getUsername());
 
@@ -306,7 +306,7 @@ public class ResolveExpressionAuthorizationTest {
         engine
             .expression()
             .withExpression(EXPRESSION)
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .expectRejection()
             .resolve(user.getUsername());
 
@@ -350,7 +350,7 @@ public class ResolveExpressionAuthorizationTest {
         engine
             .expression()
             .withExpression(EXPRESSION)
-            .withProcessInstanceKey(processAInstanceKey)
+            .withScopeKey(processAInstanceKey)
             .expectRejection()
             .resolve(user.getUsername());
 
@@ -391,7 +391,7 @@ public class ResolveExpressionAuthorizationTest {
         engine
             .expression()
             .withExpression(EXPRESSION)
-            .withElementInstanceKey(elementInstanceKey)
+            .withScopeKey(elementInstanceKey)
             .expectRejection()
             .resolve(user.getUsername());
 
@@ -426,7 +426,7 @@ public class ResolveExpressionAuthorizationTest {
         engine
             .expression()
             .withExpression(EXPRESSION)
-            .withProcessInstanceKey(processInstanceKey)
+            .withScopeKey(processInstanceKey)
             .expectRejection()
             .resolve(user.getUsername());
 
