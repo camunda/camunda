@@ -1,0 +1,299 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.gateway.rest.controller;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.assertArg;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.service.AgentInstanceServices;
+import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
+
+@WebMvcTest(AgentInstanceController.class)
+class AgentInstanceControllerTest extends RestControllerTest {
+
+  private static final String AGENT_INSTANCES_URL = "/v2/agent-instances";
+  private static final long ELEMENT_INSTANCE_KEY = 2251799813685248L;
+  private static final long AGENT_INSTANCE_KEY = 9007199254741017L;
+
+  @MockitoBean private AgentInstanceServices agentInstanceServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+
+  @BeforeEach
+  void setUp() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
+
+  @Test
+  void shouldCreateAgentInstance() {
+    // given
+    final var responseRecord = new AgentInstanceRecord();
+    responseRecord.setAgentInstanceKey(AGENT_INSTANCE_KEY);
+    when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "definition": {
+            "model": "gpt-4o",
+            "provider": "openai",
+            "systemPrompt": "You are a helpful assistant."
+          }
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY);
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            { "agentInstanceKey": "%d" }
+            """
+                .formatted(AGENT_INSTANCE_KEY),
+            JsonCompareMode.STRICT);
+
+    verify(agentInstanceServices)
+        .createAgentInstance(
+            assertArg(
+                record -> {
+                  assertThat(record.getElementInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
+                  assertThat(record.getDefinition().getModel()).isEqualTo("gpt-4o");
+                  assertThat(record.getDefinition().getProvider()).isEqualTo("openai");
+                  assertThat(record.getDefinition().getSystemPrompt())
+                      .isEqualTo("You are a helpful assistant.");
+                  assertThat(record.getLimits().getMaxTokens()).isEqualTo(-1L);
+                  assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(-1);
+                  assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(-1);
+                }),
+            any());
+  }
+
+  @Test
+  void shouldCreateAgentInstanceWithExplicitLimits() {
+    // given
+    final var responseRecord = new AgentInstanceRecord();
+    responseRecord.setAgentInstanceKey(AGENT_INSTANCE_KEY);
+    when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "definition": {
+            "model": "claude-sonnet-4-6",
+            "provider": "anthropic",
+            "systemPrompt": "You are an expert."
+          },
+          "limits": {
+            "maxTokens": 100000,
+            "maxModelCalls": 10,
+            "maxToolCalls": 50
+          }
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY);
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(agentInstanceServices)
+        .createAgentInstance(
+            assertArg(
+                record -> {
+                  assertThat(record.getLimits().getMaxTokens()).isEqualTo(100_000L);
+                  assertThat(record.getLimits().getMaxModelCalls()).isEqualTo(10);
+                  assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(50);
+                }),
+            any());
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidCreateRequests")
+  void shouldRejectInvalidCreateRequest(final String requestBody, final String expectedDetail) {
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "%s",
+              "instance": "/v2/agent-instances"
+            }
+            """
+                .formatted(expectedDetail),
+            JsonCompareMode.STRICT);
+
+    verifyNoInteractions(agentInstanceServices);
+  }
+
+  static Stream<Arguments> invalidCreateRequests() {
+    return Stream.of(
+        Arguments.of(
+            """
+            {
+              "definition": {
+                "model": "gpt-4o",
+                "provider": "openai",
+                "systemPrompt": "prompt"
+              }
+            }
+            """,
+            "No elementInstanceKey provided."),
+        Arguments.of(
+            """
+            {
+              "elementInstanceKey": null,
+              "definition": {
+                "model": "gpt-4o",
+                "provider": "openai",
+                "systemPrompt": "prompt"
+              }
+            }
+            """,
+            "No elementInstanceKey provided."),
+        Arguments.of(
+            """
+            {
+              "elementInstanceKey": "not-a-number",
+              "definition": {
+                "model": "gpt-4o",
+                "provider": "openai",
+                "systemPrompt": "prompt"
+              }
+            }
+            """,
+            "The provided elementInstanceKey 'not-a-number' is not a valid key."
+                + " Expected a numeric value."
+                + " Did you pass an entity id instead of an entity key?."),
+        Arguments.of(
+            """
+            {
+              "elementInstanceKey": "%d"
+            }
+            """
+                .formatted(ELEMENT_INSTANCE_KEY),
+            "No definition provided."),
+        Arguments.of(
+            """
+            {
+              "elementInstanceKey": "%d",
+              "definition": {
+                "provider": "openai",
+                "systemPrompt": "prompt"
+              }
+            }
+            """
+                .formatted(ELEMENT_INSTANCE_KEY),
+            "No definition.model provided."),
+        Arguments.of(
+            """
+            {
+              "elementInstanceKey": "%d",
+              "definition": {
+                "model": "gpt-4o",
+                "systemPrompt": "prompt"
+              }
+            }
+            """
+                .formatted(ELEMENT_INSTANCE_KEY),
+            "No definition.provider provided."),
+        Arguments.of(
+            """
+            {
+              "elementInstanceKey": "%d",
+              "definition": {
+                "model": "gpt-4o",
+                "provider": "openai"
+              }
+            }
+            """
+                .formatted(ELEMENT_INSTANCE_KEY),
+            "No definition.systemPrompt provided."));
+  }
+
+  @Test
+  void shouldReturn5xxOnServiceError() {
+    // given
+    when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("broker unavailable")));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "definition": {
+            "model": "gpt-4o",
+            "provider": "openai",
+            "systemPrompt": "prompt"
+          }
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY);
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .is5xxServerError();
+  }
+}
