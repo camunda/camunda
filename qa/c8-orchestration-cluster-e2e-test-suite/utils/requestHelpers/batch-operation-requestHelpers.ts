@@ -24,6 +24,15 @@ export async function cancelBatchOperation(
   );
 }
 
+// A freshly created batch operation can take longer than the default 30s
+// to be visible to the suspend/resume commands on a loaded shared cluster
+// (404 → 204). Use the same generous budget that createCompletedBatchOperation
+// uses for engine catch-up.
+const batchOperationLifecycleOptions = {
+  intervals: [5_000, 10_000, 10_000, 15_000, 20_000],
+  timeout: 90_000,
+};
+
 export async function suspendBatchOperation(
   request: APIRequestContext,
   batchOperationKey: string,
@@ -39,7 +48,7 @@ export async function suspendBatchOperation(
     );
     result.response = res;
     await assertStatusCode(res, expectedStatusCode);
-  }).toPass(defaultAssertionOptions);
+  }).toPass(batchOperationLifecycleOptions);
   return result.response as APIResponse;
 }
 
@@ -58,7 +67,7 @@ export async function resumeBatchOperation(
     );
     result.response = res;
     await assertStatusCode(res, expectedStatusCode);
-  }).toPass(defaultAssertionOptions);
+  }).toPass(batchOperationLifecycleOptions);
   return result.response as APIResponse;
 }
 

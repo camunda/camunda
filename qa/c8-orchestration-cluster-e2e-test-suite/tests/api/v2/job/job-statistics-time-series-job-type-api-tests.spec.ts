@@ -16,6 +16,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   createUser,
   grantUserResourceAuthorization,
@@ -111,35 +112,39 @@ test.describe
     }
 
     await test.step('Get time-series metrics with jobType', async () => {
-      const extendedSearchRes = await request.post(
-        buildUrl('/jobs/statistics/time-series'),
-        {
-          headers: jsonHeaders(),
-          data: {
-            filter: {
-              from: fromDate,
-              to: toDate,
-              jobType,
-              resolution,
+      // Retry until time-series catches up with by-types: on a shared cluster
+      // the time-series view can lag the by-types snapshot by a few seconds.
+      await expect(async () => {
+        const extendedSearchRes = await request.post(
+          buildUrl('/jobs/statistics/time-series'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                from: fromDate,
+                to: toDate,
+                jobType,
+                resolution,
+              },
             },
           },
-        },
-      );
-      await assertStatusCode(extendedSearchRes, 200);
-      await validateResponse(
-        {
-          path: '/jobs/statistics/time-series',
-          method: 'POST',
-          status: '200',
-        },
-        extendedSearchRes,
-      );
-      const extendedResponseBody = await extendedSearchRes.json();
-      const extendedItem = extendedResponseBody.items[0];
-      expect(extendedItem).toBeDefined();
-      expect(extendedItem.created.count).toBe(item.created.count);
-      expect(extendedItem.completed.count).toBe(item.completed.count);
-      expect(extendedItem.failed.count).toBe(item.failed.count);
+        );
+        await assertStatusCode(extendedSearchRes, 200);
+        await validateResponse(
+          {
+            path: '/jobs/statistics/time-series',
+            method: 'POST',
+            status: '200',
+          },
+          extendedSearchRes,
+        );
+        const extendedResponseBody = await extendedSearchRes.json();
+        const extendedItem = extendedResponseBody.items[0];
+        expect(extendedItem).toBeDefined();
+        expect(extendedItem.created.count).toBe(item.created.count);
+        expect(extendedItem.completed.count).toBe(item.completed.count);
+        expect(extendedItem.failed.count).toBe(item.failed.count);
+      }).toPass(defaultAssertionOptions);
     });
   });
 
@@ -256,34 +261,38 @@ test.describe
     }
 
     await test.step('Get time-series metrics with jobType', async () => {
-      const extendedSearchRes = await request.post(
-        buildUrl('/jobs/statistics/time-series'),
-        {
-          headers: jsonHeaders(),
-          data: {
-            filter: {
-              from: fromDate,
-              to: toDate,
-              jobType,
+      // Retry until time-series catches up with by-types: on a shared cluster
+      // the time-series view can lag the by-types snapshot by a few seconds.
+      await expect(async () => {
+        const extendedSearchRes = await request.post(
+          buildUrl('/jobs/statistics/time-series'),
+          {
+            headers: jsonHeaders(),
+            data: {
+              filter: {
+                from: fromDate,
+                to: toDate,
+                jobType,
+              },
             },
           },
-        },
-      );
-      await assertStatusCode(extendedSearchRes, 200);
-      await validateResponse(
-        {
-          path: '/jobs/statistics/time-series',
-          method: 'POST',
-          status: '200',
-        },
-        extendedSearchRes,
-      );
-      const extendedResponseBody = await extendedSearchRes.json();
-      const extendedItem = extendedResponseBody.items[0];
-      expect(extendedItem).toBeDefined();
-      expect(extendedItem.created.count).toBe(item.created.count);
-      expect(extendedItem.completed.count).toBe(item.completed.count);
-      expect(extendedItem.failed.count).toBe(item.failed.count);
+        );
+        await assertStatusCode(extendedSearchRes, 200);
+        await validateResponse(
+          {
+            path: '/jobs/statistics/time-series',
+            method: 'POST',
+            status: '200',
+          },
+          extendedSearchRes,
+        );
+        const extendedResponseBody = await extendedSearchRes.json();
+        const extendedItem = extendedResponseBody.items[0];
+        expect(extendedItem).toBeDefined();
+        expect(extendedItem.created.count).toBe(item.created.count);
+        expect(extendedItem.completed.count).toBe(item.completed.count);
+        expect(extendedItem.failed.count).toBe(item.failed.count);
+      }).toPass(defaultAssertionOptions);
     });
   });
 
