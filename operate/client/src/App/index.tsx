@@ -94,7 +94,14 @@ const routes = createRoutesFromElements(
           return {Component: Processes};
         }}
       >
-        <Route path="filters/variables" element={null} />
+        <Route
+          path="filters/variables"
+          lazy={async () => {
+            const {VariableFilterModal} =
+              await import('./Processes/ListView/Filters/VariablesFilter/VariableFilterModal');
+            return {Component: VariableFilterModal};
+          }}
+        />
       </Route>
       <Route
         path={Paths.processInstance(undefined, true)}

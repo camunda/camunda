@@ -7,7 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
-import {useMatch, useNavigate, useLocation} from 'react-router-dom';
+import {useNavigate, useLocation} from 'react-router-dom';
 import {Button} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
 import {Paths} from 'modules/Routes';
@@ -17,7 +17,6 @@ import {
   type VariableCondition,
 } from 'modules/stores/variableFilter';
 import {VARIABLE_FILTER_OPERATORS} from './constants';
-import {VariableFilterModal} from './VariableFilterModal';
 import {ConditionList, ConditionItem} from './styled';
 
 const getConditionLabel = (condition: VariableCondition): string => {
@@ -30,7 +29,6 @@ const getConditionLabel = (condition: VariableCondition): string => {
 };
 
 const VariableFilter: React.FC = observer(() => {
-  const isModalOpen = useMatch(Paths.processesVariables()) !== null;
   const navigate = useNavigate();
   const location = useLocation();
   const {conditions} = variableFilterStore;
@@ -40,18 +38,6 @@ const VariableFilter: React.FC = observer(() => {
       pathname: Paths.processesVariables(),
       search: location.search,
     });
-  };
-
-  const closeModal = () => {
-    navigate({
-      pathname: Paths.processes(),
-      search: location.search,
-    });
-  };
-
-  const handleApply = (newConditions: VariableCondition[]) => {
-    variableFilterStore.setConditions(newConditions);
-    closeModal();
   };
 
   return (
@@ -77,14 +63,6 @@ const VariableFilter: React.FC = observer(() => {
       >
         {conditions.length === 0 ? 'Add conditions' : 'Edit conditions'}
       </Button>
-
-      <VariableFilterModal
-        key={isModalOpen ? 'open' : 'closed'}
-        isOpen={isModalOpen}
-        initialConditions={conditions}
-        onApply={handleApply}
-        onClose={closeModal}
-      />
     </>
   );
 });
