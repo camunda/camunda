@@ -38,7 +38,7 @@ spec:
                   retval=$?
                   set -e
                   if [ $retval -eq 0 ]; then
-                  URL=$url
+                    URL="$url"
                     echo "Using Elasticsearch/OpenSearch URL at: $URL"
                     break
                   fi
