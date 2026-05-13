@@ -60,12 +60,12 @@ public interface AssertVariableInstruction extends TestCaseInstruction {
    *
    * @return the judge assertion or empty if no judge assertion is configured
    */
-  Optional<SatisfiesJudge> getSatisfiesJudge();
+  Optional<JudgeAssertion> getSatisfiesJudge();
 
   /** A judge-based assertion that evaluates a variable against a semantic expectation. */
   @Value.Immutable
   @JsonDeserialize(builder = ImmutableSatisfiesJudge.Builder.class)
-  interface SatisfiesJudge {
+  interface JudgeAssertion {
 
     /**
      * The semantic expectation for the variable value.

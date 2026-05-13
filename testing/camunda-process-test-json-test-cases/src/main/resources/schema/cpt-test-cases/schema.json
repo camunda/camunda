@@ -1085,8 +1085,7 @@
       "required": [
         "type",
         "processInstanceSelector",
-        "variableName",
-        "satisfiesJudge"
+        "variableName"
       ],
       "additionalProperties": false
     },
