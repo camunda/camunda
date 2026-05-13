@@ -60,7 +60,8 @@ public final class ValueTypes {
           ValueType.CONDITIONAL_SUBSCRIPTION,
           ValueType.CONDITIONAL_EVALUATION,
           ValueType.EXPRESSION,
-          ValueType.GLOBAL_LISTENER);
+          ValueType.GLOBAL_LISTENER,
+          ValueType.AGENT_INSTANCE);
 
   private ValueTypes() {}
 
