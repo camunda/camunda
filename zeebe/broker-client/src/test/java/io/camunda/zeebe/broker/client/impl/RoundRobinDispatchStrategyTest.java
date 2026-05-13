@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.client.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -40,9 +41,9 @@ final class RoundRobinDispatchStrategyTest {
     final var dispatchStrategy = new RoundRobinDispatchStrategy();
     final var topologyManager = new TestTopologyManager();
     topologyManager
-        .addPartition(1, BrokerClusterState.NODE_ID_NULL)
-        .addPartition(2, 0)
-        .addPartition(3, 0);
+        .addPartition(1, null)
+        .addPartition(2, BrokerMemberId.from(0))
+        .addPartition(3, BrokerMemberId.from(0));
 
     // when - then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(2);
@@ -55,9 +56,9 @@ final class RoundRobinDispatchStrategyTest {
     final var dispatchStrategy = new RoundRobinDispatchStrategy();
     final var topologyManager = new TestTopologyManager();
     topologyManager
-        .addPartition(1, 0)
-        .addPartition(2, 1)
-        .addPartition(3, 2)
+        .addPartition(1, BrokerMemberId.from(0))
+        .addPartition(2, BrokerMemberId.from(1))
+        .addPartition(3, BrokerMemberId.from(2))
         .withClusterConfiguration(
             ClusterConfiguration.builder()
                 .version(1)
@@ -80,9 +81,9 @@ final class RoundRobinDispatchStrategyTest {
     final var dispatchStrategy = new RoundRobinDispatchStrategy();
     final var topologyManager = new TestTopologyManager();
     topologyManager
-        .addPartition(1, 0)
-        .addPartition(2, 1)
-        .addPartition(3, 2)
+        .addPartition(1, BrokerMemberId.from(0))
+        .addPartition(2, BrokerMemberId.from(1))
+        .addPartition(3, BrokerMemberId.from(2))
         .withClusterConfiguration(
             ClusterConfiguration.builder()
                 .version(1)
@@ -105,7 +106,10 @@ final class RoundRobinDispatchStrategyTest {
   void shouldUpdateFromClusterConfiguration() {
     final var dispatchStrategy = new RoundRobinDispatchStrategy();
     final var topologyManager = new TestTopologyManager();
-    topologyManager.addPartition(1, 0).addPartition(2, 1).addPartition(3, 2);
+    topologyManager
+        .addPartition(1, BrokerMemberId.from(0))
+        .addPartition(2, BrokerMemberId.from(1))
+        .addPartition(3, BrokerMemberId.from(2));
 
     // when -- starting with routing state version 1, with active partitions 1 and 3
     topologyManager.withClusterConfiguration(

@@ -17,9 +17,7 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public interface BrokerClusterState {
 
-  int UNKNOWN_NODE_ID = -1;
-  int NODE_ID_NULL = UNKNOWN_NODE_ID - 1;
-  int PARTITION_ID_NULL = NODE_ID_NULL - 1;
+  int PARTITION_ID_NULL = -3;
 
   boolean isInitialized();
 
@@ -36,8 +34,7 @@ public interface BrokerClusterState {
   Set<BrokerMemberId> getInactiveNodesForPartition(int partition);
 
   /**
-   * @return the node id of a random broker or {@link BrokerClusterState#UNKNOWN_NODE_ID} if no
-   *     brokers are known
+   * @return the node id of a random broker or null if no brokers are known
    */
   @Nullable BrokerMemberId getRandomBroker();
 

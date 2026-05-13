@@ -170,6 +170,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     if (brokerInfo == null) {
       return;
     }
+    final var brokerId = BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
 
     switch (eventType) {
       case MEMBER_ADDED -> {
@@ -184,7 +185,7 @@ public final class BrokerTopologyManagerImpl extends Actor
       case METADATA_CHANGED -> {
         LOG.debug(
             "Received metadata change from Broker {}, partitions {}, terms {} and health {}.",
-            BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId()).id(),
+            brokerId,
             brokerInfo.getPartitionRoles(),
             brokerInfo.getPartitionLeaderTerms(),
             brokerInfo.getPartitionHealthStatuses());
@@ -194,11 +195,7 @@ public final class BrokerTopologyManagerImpl extends Actor
         LOG.debug("Received broker was removed {}.", brokerInfo);
         removeBroker(subject);
       }
-      default ->
-          LOG.debug(
-              "Received {} for broker {}, do nothing.",
-              eventType,
-              BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId()).id());
+      default -> LOG.debug("Received {} for broker {}, do nothing.", eventType, brokerId);
     }
   }
 

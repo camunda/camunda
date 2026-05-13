@@ -113,9 +113,7 @@ public final class BrokerClientTest {
     topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, broker.member()));
     Awaitility.await("Topology is updated")
         .untilAsserted(
-            () ->
-                assertThat(topologyManager.getTopology().getLeaderForPartition(1))
-                    .isNotEqualTo(BrokerClusterState.NODE_ID_NULL));
+            () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isNotNull());
 
     client =
         new BrokerClientImpl(

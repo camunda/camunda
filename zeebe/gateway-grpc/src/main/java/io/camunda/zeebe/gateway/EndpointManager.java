@@ -79,7 +79,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 public final class EndpointManager {
@@ -176,8 +175,7 @@ public final class EndpointManager {
       final Partition.Builder partitionBuilder) {
     final BrokerMemberId partitionLeader = topology.getLeaderForPartition(partitionId);
     final var partitionFollowers = topology.getFollowersForPartition(partitionId);
-    final var partitionInactives =
-        topology.getInactiveNodesForPartition(partitionId);
+    final var partitionInactives = topology.getInactiveNodesForPartition(partitionId);
 
     if (brokerId.equals(partitionLeader)) {
       partitionBuilder.setRole(PartitionBrokerRole.LEADER);
