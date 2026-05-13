@@ -5,12 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.configuration.beanoverrides;
+package io.camunda.configuration.beans;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.PropertySource;
 
-@ConfigurationProperties(OperateProperties.PREFIX)
-@PropertySource(value = "classpath:operate-version.properties", ignoreResourceNotFound = true)
-public class LegacyOperateProperties extends OperateProperties {}
+@ConfigurationProperties("camunda.webapp")
+public class WebappProperties extends WebappConfiguration {}

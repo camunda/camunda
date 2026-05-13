@@ -7,3 +7,6 @@ spring:
   http:
     converters:
       preferred-json-mapper: jackson2
+  servlet:
+    multipart:
+      max-request-size: 4MB
