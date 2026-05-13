@@ -270,6 +270,27 @@ public class AgentInstanceUpdateTest {
   }
 
   @Test
+  public void shouldRejectDuplicateAttributesInChangedAttributes() {
+    // given — a malformed UPDATE with the same attribute repeated; without this guard a duplicate
+    // "metrics" would apply the delta twice.
+    final var agentInstanceKey = createAgentInstance();
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(10L, 0L, 0, 0)
+            .withChangedAttributes(List.of("metrics", "metrics"))
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason()).contains("metrics");
+  }
+
+  @Test
   public void shouldRejectUnknownAttributeInChangedAttributes() {
     // given
     final var agentInstanceKey = createAgentInstance();
@@ -378,6 +399,53 @@ public class AgentInstanceUpdateTest {
         assertThat(updated.getValue().getStatus()).isEqualTo(to);
       }
     }
+  }
+
+  @Test
+  public void shouldRejectUpdateWhenDeployedProcessIsGone() {
+    // given — an agent instance whose deployed process is then deleted. We must reject the UPDATE
+    // explicitly rather than silently falling back to wildcard PROCESS_DEFINITION authorization.
+    // The process instance is cancelled first so the deployment can be removed cleanly.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType("agent"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var serviceTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementId(SERVICE_TASK_ID)
+            .getFirst();
+    final var createdAgentInstance =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(serviceTaskInstance.getKey())
+            .create()
+            .getValue();
+    final var agentInstanceKey = createdAgentInstance.getAgentInstanceKey();
+    final var processDefinitionKey = createdAgentInstance.getProcessDefinitionKey();
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+    ENGINE.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // when
+    final Record<?> rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withStatus(AgentInstanceStatus.THINKING)
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason()).contains(String.valueOf(processDefinitionKey));
   }
 
   @Test
