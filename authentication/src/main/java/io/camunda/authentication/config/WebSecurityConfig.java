@@ -30,13 +30,11 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.Ordered;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.observation.SecurityObservationSettings;
 import org.springframework.security.core.Authentication;
@@ -182,24 +180,6 @@ public class WebSecurityConfig {
   public OidcResourceServerCustomizer ocOidcResourceServerCustomizer(
       final ClientRegistrationRepository clientRegistrationRepository) {
     return new ProtectedResourceMetadataCustomizer(clientRegistrationRepository);
-  }
-
-  /**
-   * Registers {@link CsrfResponseHeaderFilter} after Spring Security's filter chain so the {@code
-   * X-CSRF-TOKEN} response header is echoed on every authenticated GET — the contract OC's SPAs
-   * depend on. CSL's filter chains only set the header on login-success / sso-callback paths;
-   * without this filter the admin webapp's cold-tab POST to {@code /v2/groups/search} fires before
-   * the SPA has cached a CSRF token and 401s.
-   */
-  @Bean
-  public FilterRegistrationBean<CsrfResponseHeaderFilter> csrfResponseHeaderFilterRegistration() {
-    final var registration = new FilterRegistrationBean<>(new CsrfResponseHeaderFilter());
-    // Run after Spring Security's filter chain so CsrfFilter has populated the
-    // CsrfToken request attribute by the time our post-chain logic reads it.
-    // Spring Security registers its filter chain at HIGHEST_PRECEDENCE + ~50; any value
-    // beyond that ensures we wrap it.
-    registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 100);
-    return registration;
   }
 
   /**
