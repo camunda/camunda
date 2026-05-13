@@ -1,4 +1,4 @@
-# description: This workflow builds the Camunda Docker image, pushes it to Harbor, runs Helm integration and E2E tests, and triggers SaaS E2E smoke tests in the c8-cross-component-e2e-tests repo. This is part of the AlwaysGreen project where every PR is deployed via helm to confirm no breaking changes.
+# description: This workflow builds the Camunda Docker image, pushes it to Harbor, runs Helm integration and E2E tests, and triggers SaaS E2E smoke tests in the c8-cross-component-e2e-tests repo. This is part of the AlwaysGreen project where PRs entering the merge queue are deployed via helm to confirm no breaking changes.
 # type: CI
 # owner: @camunda/distribution
 ---
