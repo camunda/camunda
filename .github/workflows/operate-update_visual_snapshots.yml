@@ -29,9 +29,9 @@ jobs:
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@fc4fa13813cbc1835129967f10a12f24aa7a393c # main
         with:
-          github-app-id-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_ID
+          github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
-          github-app-private-key-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_PRIVATE_KEY
+          github-app-private-key-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
           vault-auth-method: approle
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -63,4 +63,3 @@ jobs:
         with:
           commit_message: "test: updated operate snapshots"
           file_pattern: "operate/client/**/*.png"
-          token: ${{ steps.github-token.outputs.token }}
