@@ -859,6 +859,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
+          x-added-in-version: "8.8"
         tenantId:
           description: |
             The tenant id of the process definition.
@@ -893,8 +894,10 @@ components:
             type: string
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+          x-added-in-version: "8.8"
         businessId:
           $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+          x-added-in-version: "8.9"
 
     ProcessInstanceCreationStartInstruction:
       type: object
@@ -987,11 +990,13 @@ components:
             needs a process instance key (e.g. CancelProcessInstanceRequest).
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+          x-added-in-version: "8.8"
         businessId:
           nullable: true
           description: Business id as provided on creation.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+          x-added-in-version: "8.9"
 
     ProcessInstanceSearchQuerySortRequest:
       type: object
@@ -1044,38 +1049,47 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
           description: The start date.
+          x-added-in-version: "8.6"
         endDate:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
           description: The end date.
+          x-added-in-version: "8.6"
         state:
           allOf:
             - $ref: '#/components/schemas/ProcessInstanceStateFilterProperty'
           description: The process instance state.
+          x-added-in-version: "8.8"
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
+          x-added-in-version: "8.8"
         tenantId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The tenant id.
+          x-added-in-version: "8.6"
         variables:
           description: The process instance variables.
           type: array
           items:
             $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
+          x-added-in-version: "8.8"
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
           description: The key of this process instance.
+          x-added-in-version: "8.8"
         parentProcessInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
           description: The parent process instance key.
+          x-added-in-version: "8.6"
         parentElementInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
           description: The parent element instance key.
+          x-added-in-version: "8.8"
         batchOperationId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
@@ -1085,38 +1099,48 @@ components:
             **Deprecated**: Use `batchOperationKey` instead. This field will be removed in a future release.
             If both `batchOperationId` and `batchOperationKey` are provided, the request will be rejected with a 400 error.
           deprecated: true
+          x-added-in-version: "8.6"
         batchOperationKey:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The batch operation key.
+          x-added-in-version: "8.8"
         errorMessage:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The error message related to the process.
+          x-added-in-version: "8.6"
         hasRetriesLeft:
           description: Whether the process has failed jobs with retries left.
           type: boolean
+          x-added-in-version: "8.8"
         elementInstanceState:
           allOf:
             - $ref: 'element-instances.yaml#/components/schemas/ElementInstanceStateFilterProperty'
           description: The state of the element instances associated with the process instance.
+          x-added-in-version: "8.8"
         elementId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The element id associated with the process instance.
+          x-added-in-version: "8.8"
         hasElementInstanceIncident:
           description: Whether the element instance has an incident or not.
           type: boolean
+          x-added-in-version: "8.8"
         incidentErrorHashCode:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
           description: The incident error hash code, associated with this process.
+          x-added-in-version: "8.8"
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+          x-added-in-version: "8.8"
         businessId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The business id associated with the process instance.
+          x-added-in-version: "8.9"
 
     ProcessDefinitionStatisticsFilter:
       description: Process definition statistics search filter.
@@ -1170,22 +1194,27 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The process definition id.
+          x-added-in-version: "8.8"
         processDefinitionName:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The process definition name.
+          x-added-in-version: "8.8"
         processDefinitionVersion:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
           description: The process definition version.
+          x-added-in-version: "8.6"
         processDefinitionVersionTag:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The process definition version tag.
+          x-added-in-version: "8.8"
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
           description: The process definition key.
+          x-added-in-version: "8.8"
 
     ProcessInstanceFilter:
       description: Process instance search filter.
@@ -1228,6 +1257,7 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/ProcessInstanceFilterFields'
+              x-added-in-version: "8.8"
 
     ProcessInstanceSearchQueryResult:
       description: Process instance search response.
@@ -1266,52 +1296,65 @@ components:
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          x-added-in-version: "8.8"
         processDefinitionName:
           type: string
           nullable: true
           description: The process definition name.
+          x-added-in-version: "8.6"
         processDefinitionVersion:
           type: integer
           format: int32
           description: The process definition version.
+          x-added-in-version: "8.6"
         processDefinitionVersionTag:
           description: The process definition version tag.
           nullable: true
           type: string
+          x-added-in-version: "8.8"
         startDate:
           type: string
           format: date-time
           description: The start time of the process instance.
+          x-added-in-version: "8.6"
         endDate:
           description: The completion or termination time of the process instance.
           nullable: true
           type: string
           format: date-time
+          x-added-in-version: "8.6"
         state:
           $ref: '#/components/schemas/ProcessInstanceStateEnum'
+          x-added-in-version: "8.6"
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
+          x-added-in-version: "8.8"
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          x-added-in-version: "8.6"
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of this process instance.
+          x-added-in-version: "8.8"
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The process definition key.
+          x-added-in-version: "8.6"
         parentProcessInstanceKey:
           description: The parent process instance key.
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          x-added-in-version: "8.8"
         parentElementInstanceKey:
           description: The parent element instance key.
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          x-added-in-version: "8.8"
         rootProcessInstanceKey:
           description: |
             The key of the root process instance. The root process instance is the top-level
@@ -1320,13 +1363,16 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          x-added-in-version: "8.9"
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+          x-added-in-version: "8.8"
         businessId:
           description: The business id associated with this process instance.
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+          x-added-in-version: "8.9"
 
     CancelProcessInstanceRequest:
       type: object
@@ -1402,6 +1448,7 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          x-added-in-version: "8.9"
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
@@ -1459,10 +1506,12 @@ components:
           description: The element id to migrate from.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          x-added-in-version: "8.6"
         targetElementId:
           description: The element id to migrate into.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          x-added-in-version: "8.6"
       required:
         - sourceElementId
         - targetElementId
@@ -1483,6 +1532,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProcessInstanceModificationMoveInstruction'
+          x-added-in-version: "8.9"
         terminateInstructions:
           description: Instructions describing which elements to terminate.
           type: array
@@ -1686,6 +1736,7 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
           description: The id of the elements to terminate. The element instances are determined at runtime.
+          x-added-in-version: "8.9"
       required:
         - elementId
 

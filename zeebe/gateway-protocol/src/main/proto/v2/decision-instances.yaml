@@ -206,34 +206,43 @@ components:
           description: The key of the decision evaluation instance.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKeyFilterProperty'
+          x-added-in-version: "8.8"
         state:
           description: The state of the decision instance.
           allOf:
             - $ref: '#/components/schemas/DecisionInstanceStateFilterProperty'
+          x-added-in-version: "8.6"
         evaluationFailure:
           type: string
           description: The evaluation failure of the decision instance.
+          x-added-in-version: "8.6"
         evaluationDate:
           description: The evaluation date of the decision instance.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+          x-added-in-version: "8.8"
         decisionDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
           description: The ID of the DMN decision.
+          x-added-in-version: "8.6"
         decisionDefinitionName:
           type: string
           description: The name of the DMN decision.
+          x-added-in-version: "8.6"
         decisionDefinitionVersion:
           type: integer
           format: int32
           description: The version of the decision.
+          x-added-in-version: "8.6"
         decisionDefinitionType:
           $ref: '#/components/schemas/DecisionDefinitionTypeEnum'
+          x-added-in-version: "8.6"
         tenantId:
           description: The tenant ID of the decision instance.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          x-added-in-version: "8.6"
         decisionEvaluationKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
@@ -241,30 +250,37 @@ components:
             The key of the parent decision evaluation. Note that this is not the identifier of
             an individual decision instance; the `decisionEvaluationInstanceKey` is the identifier
             for a decision instance.
+          x-added-in-version: "8.8"
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The key of the process definition.
+          x-added-in-version: "8.6"
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance.
+          x-added-in-version: "8.6"
         decisionDefinitionKey:
           description: The key of the decision.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKeyFilterProperty'
+          x-added-in-version: "8.6"
         elementInstanceKey:
           description: The key of the element instance this decision instance is linked to.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+          x-added-in-version: "8.8"
         rootDecisionDefinitionKey:
           description: The key of the root decision definition.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKeyFilterProperty'
+          x-added-in-version: "8.9"
         decisionRequirementsKey:
           description: The key of the decision requirements definition.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKeyFilterProperty'
+          x-added-in-version: "8.9"
 
     DeleteDecisionInstanceRequest:
       type: object
@@ -312,55 +328,69 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
           description: The ID of the DMN decision.
+          x-added-in-version: "8.6"
         decisionDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
           description: The key of the decision.
+          x-added-in-version: "8.6"
         decisionDefinitionName:
           type: string
           description: The name of the DMN decision.
+          x-added-in-version: "8.6"
         decisionDefinitionType:
           $ref: '#/components/schemas/DecisionDefinitionTypeEnum'
+          x-added-in-version: "8.6"
         decisionDefinitionVersion:
           type: integer
           format: int32
           description: The version of the decision.
+          x-added-in-version: "8.6"
         decisionEvaluationInstanceKey:
           $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
+          x-added-in-version: "8.8"
         decisionEvaluationKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
           description: The key of the decision evaluation where this instance was created.
+          x-added-in-version: "8.8"
         elementInstanceKey:
           description: The key of the element instance this decision instance is linked to.
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          x-added-in-version: "8.8"
         evaluationDate:
           type: string
           format: date-time
           description: The evaluation date of the decision instance.
+          x-added-in-version: "8.6"
         evaluationFailure:
           type: string
           nullable: true
           description: The evaluation failure of the decision instance.
+          x-added-in-version: "8.6"
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           nullable: true
           description: The key of the process definition.
+          x-added-in-version: "8.6"
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           nullable: true
           description: The key of the process instance.
+          x-added-in-version: "8.6"
         result:
           type: string
           description: The result of the decision instance.
+          x-added-in-version: "8.6"
         rootDecisionDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
           description: The key of the root decision definition.
+          x-added-in-version: "8.9"
         rootProcessInstanceKey:
           description: |
             The key of the root process instance. The root process instance is the top-level
@@ -369,12 +399,15 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          x-added-in-version: "8.9"
         state:
           $ref: '#/components/schemas/DecisionInstanceStateEnum'
+          x-added-in-version: "8.6"
         tenantId:
           description: The tenant ID of the decision instance.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          x-added-in-version: "8.6"
 
     DecisionInstanceGetQueryResult:
       allOf:
@@ -408,12 +441,15 @@ components:
         inputId:
           type: string
           description: The identifier of the decision input.
+          x-added-in-version: "8.6"
         inputName:
           type: string
           description: The name of the decision input.
+          x-added-in-version: "8.6"
         inputValue:
           description: The value of the decision input.
           type: string
+          x-added-in-version: "8.6"
 
     EvaluatedDecisionOutputItem:
       required:
@@ -438,11 +474,13 @@ components:
           description: The ID of the matched rule.
           nullable: true
           type: string
+          x-added-in-version: "8.9"
         ruleIndex:
           description: The index of the matched rule.
           nullable: true
           type: integer
           format: int32
+          x-added-in-version: "8.9"
 
     MatchedDecisionRuleItem:
       required:
@@ -455,15 +493,18 @@ components:
         ruleId:
           description: The ID of the matched rule.
           type: string
+          x-added-in-version: "8.6"
         ruleIndex:
           description: The index of the matched rule.
           type: integer
           format: int32
+          x-added-in-version: "8.6"
         evaluatedOutputs:
           description: The evaluated decision outputs.
           type: array
           items:
             $ref: '#/components/schemas/EvaluatedDecisionOutputItem'
+          x-added-in-version: "8.6"
 
     ## Enums
 
@@ -504,25 +545,31 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: "#/components/schemas/DecisionInstanceStateEnum"
+          x-added-in-version: "8.9"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/DecisionInstanceStateEnum"
+          x-added-in-version: "8.9"
         $exists:
           description: Checks if the current property exists.
           type: boolean
+          x-added-in-version: "8.9"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/DecisionInstanceStateEnum"
+          x-added-in-version: "8.9"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/DecisionInstanceStateEnum"
+          x-added-in-version: "8.9"
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
+          x-added-in-version: "8.9"
 
     DecisionInstanceStateFilterProperty:
       description: DecisionInstanceStateEnum property with full advanced search capabilities.
