@@ -83,6 +83,25 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByProcessDefinitionKey() {
+    // given
+    final var filter = FilterBuilders.variable((f) -> f.processDefinitionKeys(67890L));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            (term) -> {
+              assertThat(term.field()).isEqualTo("processDefinitionKey");
+              assertThat(term.value().longValue()).isEqualTo(67890L);
+            });
+  }
+
+  @Test
   public void shouldQueryByTenantId() {
     // given
     final var filter = FilterBuilders.variable((f) -> f.tenantIds("tenantId"));
