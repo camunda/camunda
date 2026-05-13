@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 public final class AgentInstanceUpdateProcessor
@@ -117,12 +119,8 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    final var unknown = new ArrayList<String>();
-    for (final var attr : changed) {
-      if (!ALLOWED_ATTRIBUTES.contains(attr)) {
-        unknown.add(attr);
-      }
-    }
+    final var unknown =
+        changed.stream().filter(attr -> !ALLOWED_ATTRIBUTES.contains(attr)).toList();
     if (!unknown.isEmpty()) {
       writeRejection(
           command,
@@ -131,22 +129,17 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    if (changed.contains(ATTR_METRICS)) {
+    if (changed.contains(ATTR_METRICS) && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
       final var metrics = commandValue.getMetrics();
-      if (isInvalidMetricDelta(metrics.getInputTokens())
-          || isInvalidMetricDelta(metrics.getOutputTokens())
-          || isInvalidMetricDelta(metrics.getModelCalls())
-          || isInvalidMetricDelta(metrics.getToolCalls())) {
-        writeRejection(
-            command,
-            RejectionType.INVALID_ARGUMENT,
-            ERROR_MSG_INVALID_METRIC_DELTA.formatted(
-                metrics.getInputTokens(),
-                metrics.getOutputTokens(),
-                metrics.getModelCalls(),
-                metrics.getToolCalls()));
-        return;
-      }
+      writeRejection(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          ERROR_MSG_INVALID_METRIC_DELTA.formatted(
+              metrics.getInputTokens(),
+              metrics.getOutputTokens(),
+              metrics.getModelCalls(),
+              metrics.getToolCalls()));
+      return;
     }
 
     if (changed.contains(ATTR_STATUS)) {
@@ -161,67 +154,77 @@ public final class AgentInstanceUpdateProcessor
       }
     }
 
-    final var effective = new ArrayList<String>(changed.size());
-    for (final var attr : changed) {
-      switch (attr) {
-        case ATTR_STATUS -> {
-          // Drop "status" from the event's changedAttributes when it is a no-op.
-          if (!commandValue.getStatus().equals(current.getStatus())) {
-            effective.add(ATTR_STATUS);
-          }
-          current.setStatus(commandValue.getStatus());
-        }
-        case ATTR_METRICS -> {
-          // Apply each delta, skipping -1 (not provided) and 0 (provided but unchanged). Only
-          // include "metrics" in the event's changedAttributes when at least one field actually
-          // moved forward.
-          final var currentMetrics = current.getMetrics();
-          final var deltaMetrics = commandValue.getMetrics();
-          var metricsChanged = false;
-          if (deltaMetrics.getInputTokens() > 0) {
-            currentMetrics.setInputTokens(
-                currentMetrics.getInputTokens() + deltaMetrics.getInputTokens());
-            metricsChanged = true;
-          }
-          if (deltaMetrics.getOutputTokens() > 0) {
-            currentMetrics.setOutputTokens(
-                currentMetrics.getOutputTokens() + deltaMetrics.getOutputTokens());
-            metricsChanged = true;
-          }
-          if (deltaMetrics.getModelCalls() > 0) {
-            currentMetrics.setModelCalls(
-                currentMetrics.getModelCalls() + deltaMetrics.getModelCalls());
-            metricsChanged = true;
-          }
-          if (deltaMetrics.getToolCalls() > 0) {
-            currentMetrics.setToolCalls(
-                currentMetrics.getToolCalls() + deltaMetrics.getToolCalls());
-            metricsChanged = true;
-          }
-          if (metricsChanged) {
-            effective.add(ATTR_METRICS);
-          }
-        }
-        case ATTR_TOOLS -> {
-          current.setTools(commandValue.getTools());
-          effective.add(ATTR_TOOLS);
-        }
-      }
-    }
-
-    current.setChangedAttributes(effective);
+    current.setChangedAttributes(applyPatch(current, commandValue, changed));
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.UPDATED, current);
     responseWriter.writeEventOnCommand(
         agentInstanceKey, AgentInstanceIntent.UPDATED, current, command);
   }
 
-  private static boolean isInvalidMetricDelta(final long delta) {
-    return delta < METRIC_NOT_PROVIDED;
+  /**
+   * Applies the patch in {@code delta} to {@code current} for each attribute named in {@code
+   * changed}, mutating {@code current} in place. Returns the effective {@code changedAttributes}
+   * for the UPDATED event — i.e. the subset of {@code changed} whose values actually moved.
+   */
+  private static List<String> applyPatch(
+      final AgentInstanceRecord current,
+      final AgentInstanceRecord delta,
+      final Set<String> changed) {
+    final var effective = new ArrayList<String>(changed.size());
+    for (final var attr : changed) {
+      switch (attr) {
+        case ATTR_STATUS -> {
+          if (!delta.getStatus().equals(current.getStatus())) {
+            effective.add(ATTR_STATUS);
+          }
+          current.setStatus(delta.getStatus());
+        }
+        case ATTR_METRICS -> {
+          if (applyMetricDeltas(current.getMetrics(), delta.getMetrics())) {
+            effective.add(ATTR_METRICS);
+          }
+        }
+        case ATTR_TOOLS -> {
+          current.setTools(delta.getTools());
+          effective.add(ATTR_TOOLS);
+        }
+      }
+    }
+    return effective;
   }
 
-  private static boolean isInvalidMetricDelta(final int delta) {
-    return delta < METRIC_NOT_PROVIDED;
+  /**
+   * Applies each metric delta in {@code delta} to {@code current}, skipping fields whose delta is
+   * not strictly positive (covers {@code -1} not-provided and {@code 0} no-change). Returns whether
+   * at least one field's value moved forward.
+   */
+  private static boolean applyMetricDeltas(
+      final AgentInstanceMetrics current, final AgentInstanceMetrics delta) {
+    var moved = false;
+    if (delta.getInputTokens() > 0) {
+      current.setInputTokens(current.getInputTokens() + delta.getInputTokens());
+      moved = true;
+    }
+    if (delta.getOutputTokens() > 0) {
+      current.setOutputTokens(current.getOutputTokens() + delta.getOutputTokens());
+      moved = true;
+    }
+    if (delta.getModelCalls() > 0) {
+      current.setModelCalls(current.getModelCalls() + delta.getModelCalls());
+      moved = true;
+    }
+    if (delta.getToolCalls() > 0) {
+      current.setToolCalls(current.getToolCalls() + delta.getToolCalls());
+      moved = true;
+    }
+    return moved;
+  }
+
+  private static boolean hasAllowedMetricDeltas(final AgentInstanceMetrics metrics) {
+    return metrics.getInputTokens() >= METRIC_NOT_PROVIDED
+        && metrics.getOutputTokens() >= METRIC_NOT_PROVIDED
+        && metrics.getModelCalls() >= METRIC_NOT_PROVIDED
+        && metrics.getToolCalls() >= METRIC_NOT_PROVIDED;
   }
 
   private boolean isAllowedTransition(
