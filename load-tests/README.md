@@ -71,8 +71,8 @@ graph TD
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
-    PR -- "profile path:<br/>after 15min wait" --> PROFILE
-    PR -- "metrics path:<br/>after 1h wait,<br/>compare vs daily-on-main" --> METRICS
+    PR -- "profile path:<br/>after 30min wait" --> PROFILE
+    PR -- "metrics path:<br/>after 30min wait,<br/>compare vs daily-on-main" --> METRICS
     ADHOC --> CORE
     ADHOC --> RELEASE
 
