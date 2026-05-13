@@ -117,7 +117,7 @@ public final class TopologyManagerImpl extends Actor
 
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
 
-    if (brokerInfo != null && !brokerInfo.memberIdString().equals(localBroker.memberIdString())) {
+    if (brokerInfo != null && !memberIdOf(brokerInfo).equals(memberIdOf(localBroker))) {
       actor.run(
           () -> {
             switch (clusterMembershipEvent.type()) {
@@ -135,7 +135,7 @@ public final class TopologyManagerImpl extends Actor
                 LOG.debug(
                     "Received {} from member {}, was not handled.",
                     clusterMembershipEvent.type(),
-                    brokerInfo.memberIdString());
+                    memberIdOf(brokerInfo));
                 break;
             }
           });
@@ -154,8 +154,7 @@ public final class TopologyManagerImpl extends Actor
 
   private void removeIfLeader(final BrokerInfo brokerInfo, final Integer partition) {
     final BrokerInfo currentLeader = partitionLeaders.get(partition);
-    if (currentLeader != null
-        && currentLeader.memberIdString().equals(brokerInfo.memberIdString())) {
+    if (currentLeader != null && memberIdOf(currentLeader).equals(memberIdOf(brokerInfo))) {
       partitionLeaders.remove(partition);
     }
   }
@@ -164,7 +163,7 @@ public final class TopologyManagerImpl extends Actor
   private void onMetadataChanged(final BrokerInfo brokerInfo) {
     LOG.debug(
         "Received metadata change for {}, partitions {} terms {}",
-        brokerInfo.memberIdString(),
+        memberIdOf(brokerInfo),
         brokerInfo.getPartitionRoles(),
         brokerInfo.getPartitionLeaderTerms());
     brokerInfo.consumePartitions(
@@ -181,7 +180,7 @@ public final class TopologyManagerImpl extends Actor
             .filter(
                 entry -> {
                   final var broker = entry.getValue();
-                  return broker.memberIdString().equals(brokerInfo.memberIdString());
+                  return memberIdOf(broker).equals(memberIdOf(brokerInfo));
                 })
             .map(Entry::getKey)
             .toList();
@@ -200,7 +199,7 @@ public final class TopologyManagerImpl extends Actor
         LOG.debug(
             "Expected to have a non-null value for current leader term, but found null. Partition {} is likely removed from broker {}. Updating the leader anyway.",
             leaderPartitionId,
-            currentLeader.memberIdString());
+            memberIdOf(currentLeader));
       } else if (currentLeaderTerm >= term) {
         return false;
       }
@@ -266,5 +265,9 @@ public final class TopologyManagerImpl extends Actor
     for (final TopologyPartitionListener listener : topologyPartitionListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, leaderId));
     }
+  }
+
+  private static MemberId memberIdOf(final BrokerInfo brokerInfo) {
+    return MemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
   }
 }

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -121,7 +121,7 @@ public final class EndpointManager {
   }
 
   private void addBrokerInfo(
-      final Builder brokerInfo, final MemberId brokerId, final BrokerClusterState topology) {
+      final Builder brokerInfo, final BrokerMemberId brokerId, final BrokerClusterState topology) {
     final String brokerAddress = topology.getBrokerAddress(brokerId);
     final Address address = Address.from(brokerAddress);
 
@@ -134,7 +134,7 @@ public final class EndpointManager {
   }
 
   private void addPartitionInfoToBrokerInfo(
-      final Builder brokerInfo, final MemberId brokerId, final BrokerClusterState topology) {
+      final Builder brokerInfo, final BrokerMemberId brokerId, final BrokerClusterState topology) {
     topology
         .getPartitions()
         .forEach(
@@ -170,13 +170,14 @@ public final class EndpointManager {
    * @return true if it could set the role. False if no role was could be found.
    */
   private boolean setRole(
-      final MemberId brokerId,
+      final BrokerMemberId brokerId,
       final Integer partitionId,
       final BrokerClusterState topology,
       final Partition.Builder partitionBuilder) {
-    final MemberId partitionLeader = topology.getLeaderForPartition(partitionId);
-    final Set<MemberId> partitionFollowers = topology.getFollowersForPartition(partitionId);
-    final Set<MemberId> partitionInactives = topology.getInactiveNodesForPartition(partitionId);
+    final BrokerMemberId partitionLeader = topology.getLeaderForPartition(partitionId);
+    final var partitionFollowers = topology.getFollowersForPartition(partitionId);
+    final var partitionInactives =
+        topology.getInactiveNodesForPartition(partitionId);
 
     if (brokerId.equals(partitionLeader)) {
       partitionBuilder.setRole(PartitionBrokerRole.LEADER);

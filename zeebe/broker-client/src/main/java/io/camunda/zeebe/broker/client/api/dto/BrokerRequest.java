@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.api.dto;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.UnsupportedBrokerResponseException;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
@@ -39,7 +39,7 @@ public abstract class BrokerRequest<T> implements ClientRequest {
     this.templateId = templateId;
   }
 
-  public Optional<MemberId> getBrokerId() {
+  public Optional<BrokerMemberId> getBrokerId() {
     return Optional.empty();
   }
 

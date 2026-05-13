@@ -36,8 +36,10 @@ public class PartitionLeaderAwarenessHealthIndicator implements HealthIndicator 
       return Health.down().build();
     } else {
       final var clusterState = optClusterState.get();
-      if (clusterState.getPartitions().stream()
-          .anyMatch(index -> clusterState.getLeaderForPartition(index) != null)) {
+      final var hasKnownLeader =
+          clusterState.getPartitions().stream()
+              .anyMatch(index -> clusterState.getLeaderForPartition(index) != null);
+      if (hasKnownLeader) {
         return Health.up().build();
       } else {
         return Health.down().build();

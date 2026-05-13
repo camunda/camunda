@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -76,22 +76,22 @@ public record BrokerClientTopologyImpl(
   }
 
   @Override
-  public @Nullable MemberId getLeaderForPartition(final int partition) {
+  public @Nullable BrokerMemberId getLeaderForPartition(final int partition) {
     return liveClusterState.partitionLeaders.get(partition);
   }
 
   @Override
-  public Set<MemberId> getFollowersForPartition(final int partition) {
+  public Set<BrokerMemberId> getFollowersForPartition(final int partition) {
     return liveClusterState.partitionFollowers.getOrDefault(partition, Set.of());
   }
 
   @Override
-  public Set<MemberId> getInactiveNodesForPartition(final int partition) {
+  public Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
     return liveClusterState.partitionInactiveNodes.getOrDefault(partition, Set.of());
   }
 
   @Override
-  public @Nullable MemberId getRandomBroker() {
+  public @Nullable BrokerMemberId getRandomBroker() {
     if (liveClusterState.brokers.isEmpty()) {
       return null;
     } else {
@@ -106,22 +106,23 @@ public record BrokerClientTopologyImpl(
   }
 
   @Override
-  public List<MemberId> getBrokers() {
+  public List<BrokerMemberId> getBrokers() {
     return liveClusterState.brokers;
   }
 
   @Override
-  public @Nullable String getBrokerAddress(final MemberId brokerId) {
+  public @Nullable String getBrokerAddress(final BrokerMemberId brokerId) {
     return liveClusterState.brokerAddresses.get(brokerId);
   }
 
   @Override
-  public @Nullable String getBrokerVersion(final MemberId brokerId) {
+  public @Nullable String getBrokerVersion(final BrokerMemberId brokerId) {
     return liveClusterState.brokerVersions.get(brokerId);
   }
 
   @Override
-  public PartitionHealthStatus getPartitionHealth(final MemberId brokerId, final int partitionId) {
+  public PartitionHealthStatus getPartitionHealth(
+      final BrokerMemberId brokerId, final int partitionId) {
     final var brokerHealthyPartitions = liveClusterState.partitionsHealthPerBroker.get(brokerId);
 
     if (brokerHealthyPartitions == null) {
@@ -157,15 +158,15 @@ public record BrokerClientTopologyImpl(
 
   static class LiveClusterState {
     private static final Long TERM_NONE = -1L;
-    private final Int2ObjectHashMap<MemberId> partitionLeaders;
+    private final Int2ObjectHashMap<BrokerMemberId> partitionLeaders;
     private final Int2ObjectHashMap<Long> partitionLeaderTerms;
-    private final Int2ObjectHashMap<Set<MemberId>> partitionFollowers;
-    private final Int2ObjectHashMap<Set<MemberId>> partitionInactiveNodes;
-    private final HashMap<MemberId, Int2ObjectHashMap<PartitionHealthStatus>>
+    private final Int2ObjectHashMap<Set<BrokerMemberId>> partitionFollowers;
+    private final Int2ObjectHashMap<Set<BrokerMemberId>> partitionInactiveNodes;
+    private final HashMap<BrokerMemberId, Int2ObjectHashMap<PartitionHealthStatus>>
         partitionsHealthPerBroker;
-    private final HashMap<MemberId, String> brokerAddresses;
-    private final HashMap<MemberId, String> brokerVersions;
-    private final List<MemberId> brokers;
+    private final HashMap<BrokerMemberId, String> brokerAddresses;
+    private final HashMap<BrokerMemberId, String> brokerVersions;
+    private final List<BrokerMemberId> brokers;
     private final Random randomBroker;
 
     public LiveClusterState(final Collection<BrokerInfo> distributedBrokerInfos) {
@@ -181,7 +182,7 @@ public record BrokerClientTopologyImpl(
 
       distributedBrokerInfos.forEach(
           brokerInfo -> {
-            final var memberId = MemberId.from(brokerInfo.memberIdString());
+            final var memberId = BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
             brokers.add(memberId);
             final String clientAddress = brokerInfo.getCommandApiAddress();
             if (clientAddress != null) {
@@ -198,7 +199,7 @@ public record BrokerClientTopologyImpl(
           });
     }
 
-    void setPartitionLeader(final int partitionId, final MemberId leaderId, final long term) {
+    void setPartitionLeader(final int partitionId, final BrokerMemberId leaderId, final long term) {
       if (partitionLeaderTerms.getOrDefault(partitionId, TERM_NONE) <= term) {
         partitionLeaders.put(partitionId, leaderId);
         partitionLeaderTerms.put(partitionId, Long.valueOf(term));
@@ -214,13 +215,13 @@ public record BrokerClientTopologyImpl(
     }
 
     void setPartitionHealthStatus(
-        final MemberId brokerId, final int partitionId, final PartitionHealthStatus status) {
+        final BrokerMemberId brokerId, final int partitionId, final PartitionHealthStatus status) {
       final var partitionsHealth =
           partitionsHealthPerBroker.computeIfAbsent(brokerId, integer -> new Int2ObjectHashMap<>());
       partitionsHealth.put(partitionId, status);
     }
 
-    void addPartitionFollower(final int partitionId, final MemberId followerId) {
+    void addPartitionFollower(final int partitionId, final BrokerMemberId followerId) {
       partitionFollowers.computeIfAbsent(partitionId, HashSet::new).add(followerId);
       partitionLeaders.remove(partitionId, followerId);
       final var inactives = partitionInactiveNodes.get(partitionId);
@@ -229,7 +230,7 @@ public record BrokerClientTopologyImpl(
       }
     }
 
-    void addPartitionInactive(final int partitionId, final MemberId brokerId) {
+    void addPartitionInactive(final int partitionId, final BrokerMemberId brokerId) {
       partitionInactiveNodes.computeIfAbsent(partitionId, HashSet::new).add(brokerId);
       partitionLeaders.remove(partitionId, brokerId);
       final var followers = partitionFollowers.get(partitionId);

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.stream;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -47,21 +47,21 @@ public final class JobStreamClientImpl implements JobStreamClient {
   }
 
   @Override
-  public synchronized void brokerAdded(final MemberId memberId) {
+  public synchronized void brokerAdded(final BrokerMemberId memberId) {
     if (!started) {
       return;
     }
 
-    streamService.onServerJoined(memberId);
+    streamService.onServerJoined(memberId.memberId());
   }
 
   @Override
-  public synchronized void brokerRemoved(final MemberId memberId) {
+  public synchronized void brokerRemoved(final BrokerMemberId memberId) {
     if (!started) {
       return;
     }
 
-    streamService.onServerRemoved(memberId);
+    streamService.onServerRemoved(memberId.memberId());
   }
 
   @Override

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 
 /**
  * Listener which will be notified when a broker is added or removed from the topology, or when a
@@ -15,9 +15,9 @@ import io.atomix.cluster.MemberId;
  */
 public interface BrokerTopologyListener {
 
-  default void brokerAdded(final MemberId memberId) {}
+  default void brokerAdded(final BrokerMemberId memberId) {}
 
-  default void brokerRemoved(final MemberId memberId) {}
+  default void brokerRemoved(final BrokerMemberId memberId) {}
 
   default void completedClusterChange() {}
 

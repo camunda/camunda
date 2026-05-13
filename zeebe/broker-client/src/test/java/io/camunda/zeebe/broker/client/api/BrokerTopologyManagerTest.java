@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.client.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.Member;
@@ -68,7 +69,7 @@ final class BrokerTopologyManagerTest {
   void shouldUpdateTopologyOnBrokerAdd() {
     // given
     final int brokerId = 1;
-    final var memberId = MemberId.from(1);
+    final var memberId = memberId(1);
     final int partition = 1;
     final BrokerInfo broker = createBroker(brokerId);
     notifyEvent(createMemberAddedEvent(broker));
@@ -93,7 +94,7 @@ final class BrokerTopologyManagerTest {
   void shouldUpdateTopologyOnBrokerRemove() {
     // given
     final int brokerId = 0;
-    final var memberId = MemberId.from(0);
+    final var memberId = memberId(0);
     final int partition = 1;
     final BrokerInfo broker = createBroker(brokerId);
     notifyEvent(createMemberAddedEvent(broker));
@@ -557,18 +558,19 @@ final class BrokerTopologyManagerTest {
   void shouldBackfillNewListenerWithCanonicalZoneAwareMemberId() {
     // given — broker 0 joined with a zone-aware id
     final var broker = createBroker(0);
-    final var zonedMemberId = MemberId.from("eu-west/0");
-    final var member = new Member(new MemberConfig().setId(zonedMemberId).setZoneId("eu-west"));
+    final var zonedMemberId = BrokerMemberId.from("eu-west/0");
+    final var member =
+        new Member(new MemberConfig().setId(zonedMemberId.memberId()).setZoneId("eu-west"));
     broker.writeIntoProperties(member.properties());
     members.add(member);
     notifyEvent(new ClusterMembershipEvent(Type.MEMBER_ADDED, member));
 
     // when — a new listener is added after the broker is already known
-    final var capturedIds = new CopyOnWriteArrayList<MemberId>();
+    final var capturedIds = new CopyOnWriteArrayList<BrokerMemberId>();
     topologyManager.addTopologyListener(
         new BrokerTopologyListener() {
           @Override
-          public void brokerAdded(final MemberId memberId) {
+          public void brokerAdded(final BrokerMemberId memberId) {
             capturedIds.add(memberId);
           }
         });
@@ -623,8 +625,8 @@ final class BrokerTopologyManagerTest {
     actorSchedulerRule.workUntilDone();
   }
 
-  private static MemberId memberId(final int nodeId) {
-    return MemberId.from(null, nodeId);
+  private static BrokerMemberId memberId(final int nodeId) {
+    return BrokerMemberId.from(null, nodeId);
   }
 
   private static final class RecordingTopologyListener implements BrokerTopologyListener {
@@ -632,12 +634,12 @@ final class BrokerTopologyManagerTest {
     private final Set<Integer> brokers = new CopyOnWriteArraySet<>();
 
     @Override
-    public void brokerAdded(final MemberId memberId) {
+    public void brokerAdded(final BrokerMemberId memberId) {
       brokers.add(Integer.parseInt(memberId.id()));
     }
 
     @Override
-    public void brokerRemoved(final MemberId memberId) {
+    public void brokerRemoved(final BrokerMemberId memberId) {
       brokers.remove(Integer.parseInt(memberId.id()));
     }
 

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -76,8 +76,8 @@ final class TestTopologyManager implements BrokerTopologyManager {
   @NullMarked
   private static final class TestBrokerClusterState implements BrokerClusterState {
 
-    private final List<MemberId> brokers = new ArrayList<>();
-    private final Map<Integer, MemberId> partitionLeaders = new HashMap<>();
+    private final List<BrokerMemberId> brokers = new ArrayList<>();
+    private final Map<Integer, BrokerMemberId> partitionLeaders = new HashMap<>();
     private final List<Integer> partitions = new ArrayList<>();
 
     @Override
@@ -101,22 +101,22 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     @Override
-    public MemberId getLeaderForPartition(final int partition) {
+    public BrokerMemberId getLeaderForPartition(final int partition) {
       return partitionLeaders.get(partition);
     }
 
     @Override
-    public Set<MemberId> getFollowersForPartition(final int partition) {
+    public Set<BrokerMemberId> getFollowersForPartition(final int partition) {
       return Set.of();
     }
 
     @Override
-    public Set<MemberId> getInactiveNodesForPartition(final int partition) {
+    public Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
       return Set.of();
     }
 
     @Override
-    public @Nullable MemberId getRandomBroker() {
+    public @Nullable BrokerMemberId getRandomBroker() {
       return brokers.isEmpty() ? null : brokers.get(0);
     }
 
@@ -126,23 +126,23 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     @Override
-    public List<MemberId> getBrokers() {
+    public List<BrokerMemberId> getBrokers() {
       return brokers;
     }
 
     @Override
-    public String getBrokerAddress(final MemberId brokerId) {
+    public String getBrokerAddress(final BrokerMemberId brokerId) {
       return "";
     }
 
     @Override
-    public String getBrokerVersion(final MemberId brokerId) {
+    public String getBrokerVersion(final BrokerMemberId brokerId) {
       return "";
     }
 
     @Override
     public @Nullable PartitionHealthStatus getPartitionHealth(
-        final MemberId brokerId, final int partition) {
+        final BrokerMemberId brokerId, final int partition) {
       return null;
     }
 
@@ -157,11 +157,11 @@ final class TestTopologyManager implements BrokerTopologyManager {
     }
 
     public void addBrokerIfAbsent(final int leaderId) {
-      brokers.add(MemberId.from(null, leaderId));
+      brokers.add(BrokerMemberId.from(null, leaderId));
     }
 
     public void setPartitionLeader(final int id, final int leaderId) {
-      partitionLeaders.put(id, MemberId.from(null, leaderId));
+      partitionLeaders.put(id, BrokerMemberId.from(null, leaderId));
     }
 
     public void addPartitionIfAbsent(final int id) {

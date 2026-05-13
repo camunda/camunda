@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import java.util.List;
 import java.util.Optional;
@@ -50,7 +50,7 @@ public class PartitionLeaderAwarenessHealthIndicatorTest {
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getPartitions()).thenReturn(List.of(1, 2));
     when(mockClusterState.getLeaderForPartition(1)).thenReturn(null);
-    when(mockClusterState.getLeaderForPartition(2)).thenReturn(MemberId.from(42));
+    when(mockClusterState.getLeaderForPartition(2)).thenReturn(BrokerMemberId.from(42));
 
     final Supplier<Optional<BrokerClusterState>> stateSupplier =
         () -> Optional.of(mockClusterState);

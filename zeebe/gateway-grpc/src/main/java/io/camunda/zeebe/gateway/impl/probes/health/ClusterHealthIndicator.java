@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.impl.probes.health;
 
 import static java.util.Objects.requireNonNull;
 
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.HashMap;
@@ -61,7 +61,7 @@ public class ClusterHealthIndicator implements HealthIndicator {
     final Map<String, PartitionHealthStatus> partitionDetails = new HashMap<>();
     partitions.forEach(
         partition -> {
-          final MemberId broker = optClusterState.getLeaderForPartition(partition);
+          final var broker = optClusterState.getLeaderForPartition(partition);
           final PartitionHealthStatus partitionHealthStatus =
               broker != null
                   ? Optional.ofNullable(optClusterState.getPartitionHealth(broker, partition))
