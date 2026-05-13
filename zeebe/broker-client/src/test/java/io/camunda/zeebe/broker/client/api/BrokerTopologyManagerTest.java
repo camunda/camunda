@@ -557,8 +557,8 @@ final class BrokerTopologyManagerTest {
   @Test
   void shouldBackfillNewListenerWithCanonicalZoneAwareMemberId() {
     // given — broker 0 joined with a zone-aware id
-    final var broker = createBroker(0);
     final var zonedMemberId = BrokerMemberId.from("eu-west/0");
+    final var broker = createBroker(zonedMemberId);
     final var member =
         new Member(new MemberConfig().setId(zonedMemberId.memberId()).setZoneId("eu-west"));
     broker.writeIntoProperties(member.properties());
@@ -586,9 +586,13 @@ final class BrokerTopologyManagerTest {
   }
 
   private BrokerInfo createBroker(final int brokerId) {
+    return createBroker(BrokerMemberId.from(brokerId));
+  }
+
+  private BrokerInfo createBroker(final BrokerMemberId brokerId) {
     final BrokerInfo broker =
         new BrokerInfo()
-            .setNodeId(brokerId)
+            .setBrokerId(brokerId.nodeIdx(), brokerId.zone())
             .setPartitionsCount(1)
             .setClusterSize(3)
             .setReplicationFactor(3);
@@ -626,7 +630,7 @@ final class BrokerTopologyManagerTest {
   }
 
   private static BrokerMemberId memberId(final int nodeId) {
-    return BrokerMemberId.from(null, nodeId);
+    return BrokerMemberId.from(nodeId);
   }
 
   private static final class RecordingTopologyListener implements BrokerTopologyListener {

@@ -128,8 +128,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return nodeId;
   }
 
-  public BrokerInfo setNodeId(final int nodeId) {
+  public BrokerInfo setBrokerId(final int nodeId, @Nullable final String zone) {
     this.nodeId = nodeId;
+    this.zone = zone;
     return this;
   }
 
@@ -198,11 +199,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   public @Nullable String getZone() {
     return zone;
-  }
-
-  public BrokerInfo setZone(@Nullable final String zone) {
-    this.zone = zone;
-    return this;
   }
 
   public Map<DirectBuffer, DirectBuffer> getAddresses() {

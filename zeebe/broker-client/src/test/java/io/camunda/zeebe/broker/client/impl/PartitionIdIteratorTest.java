@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.client.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.BrokerMemberId;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,10 @@ final class PartitionIdIteratorTest {
     // given
     final var iterator = new PartitionIdIterator(1, 3, topologyManager);
     final List<Integer> ids = new ArrayList<>();
-    topologyManager.addPartition(1, 0).addPartition(2, 0).addPartition(3, 0);
+    topologyManager
+        .addPartition(1, BrokerMemberId.from(0))
+        .addPartition(2, BrokerMemberId.from(0))
+        .addPartition(3, BrokerMemberId.from(0));
 
     // when
     iterator.forEachRemaining(ids::add);
@@ -35,7 +39,7 @@ final class PartitionIdIteratorTest {
     // given
     final var iterator = new PartitionIdIterator(1, 3, topologyManager);
     final List<Integer> ids = new ArrayList<>();
-    topologyManager.addPartition(1, 0).addPartition(3, 0);
+    topologyManager.addPartition(1, BrokerMemberId.from(0)).addPartition(3, BrokerMemberId.from(0));
 
     // when
     iterator.forEachRemaining(ids::add);

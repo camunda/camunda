@@ -33,8 +33,8 @@ final class TestTopologyManager implements BrokerTopologyManager {
     this.topology = topology;
   }
 
-  TestTopologyManager addPartition(final int id, final int leaderId) {
-    if (leaderId != BrokerClusterState.NODE_ID_NULL) {
+  TestTopologyManager addPartition(final int id, final BrokerMemberId leaderId) {
+    if (leaderId != null) {
       topology.addBrokerIfAbsent(leaderId);
       topology.setPartitionLeader(id, leaderId);
     }
@@ -156,12 +156,12 @@ final class TestTopologyManager implements BrokerTopologyManager {
       return "";
     }
 
-    public void addBrokerIfAbsent(final int leaderId) {
-      brokers.add(BrokerMemberId.from(null, leaderId));
+    public void addBrokerIfAbsent(final BrokerMemberId leaderId) {
+      brokers.add(leaderId);
     }
 
-    public void setPartitionLeader(final int id, final int leaderId) {
-      partitionLeaders.put(id, BrokerMemberId.from(null, leaderId));
+    public void setPartitionLeader(final int id, final BrokerMemberId leaderId) {
+      partitionLeaders.put(id, leaderId);
     }
 
     public void addPartitionIfAbsent(final int id) {
