@@ -1204,7 +1204,9 @@ final class OpenSearchArchiverRepositoryIT {
                   request.getEndpoint().substring("/_plugins/_ism/add/".length());
               final String[] split = indexPattern.split(",");
               assertThat(split)
-                  .hasSize(3); // 3 patterns (wildcard + runtime exclusion + alias exclusion)
+                  .hasSize(
+                      4); // 4 patterns (wildcard + runtime exclusion + alias exclusion + ordinal
+              // exclusion)
               final var matchingTemplate =
                   resourceProvider.getIndexTemplateDescriptors().stream()
                       .filter(
@@ -1216,7 +1218,8 @@ final class OpenSearchArchiverRepositoryIT {
                   .containsExactly(
                       matchingTemplate.get().getIndexPattern(),
                       "-" + matchingTemplate.get().getFullQualifiedName(),
-                      "-" + matchingTemplate.get().getAlias());
+                      "-" + matchingTemplate.get().getAlias(),
+                      "-" + matchingTemplate.get().getFullQualifiedName() + "ord*");
             });
     for (final var template : resourceProvider.getIndexTemplateDescriptors()) {
       Awaitility.await()
