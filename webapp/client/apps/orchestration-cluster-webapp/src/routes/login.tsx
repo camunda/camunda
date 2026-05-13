@@ -15,7 +15,7 @@ export const Route = createFileRoute('/login')({
 	validateSearch: z.object({
 		redirect: z
 			.string()
-			.refine((val) => val.startsWith('/'), 'Redirect must be a relative path')
+			.refine((val) => val.startsWith('/') && !val.startsWith('//'), 'Redirect must be an in-app relative path')
 			.optional(),
 	}),
 	beforeLoad: async ({search, context: {queryClient}}) => {
