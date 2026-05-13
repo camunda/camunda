@@ -9,6 +9,7 @@ components:
           description: Pagination criteria.
           allOf:
             - $ref: '#/components/schemas/SearchQueryPageRequest'
+          x-added-in-version: "8.6"
 
     SearchQueryPageRequest:
       x-polymorphic-schema: true
@@ -40,12 +41,14 @@ components:
           type: integer
           format: int32
           minimum: 0
+          x-added-in-version: "8.6"
         limit:
           description: The maximum number of items to return in one request.
           type: integer
           format: int32
           default: 100
           minimum: 1
+          x-added-in-version: "8.8"
 
     CursorForwardPagination:
       type: object
@@ -57,6 +60,7 @@ components:
           description: Use the `endCursor` value from the previous response to fetch the next page of results.
           allOf:
             - $ref: 'cursors.yaml#/components/schemas/EndCursor'
+          x-added-in-version: "8.8"
         limit:
           description: The maximum number of items to return in one request.
           type: integer
@@ -75,6 +79,7 @@ components:
           description: Use the `startCursor` value from the previous response to fetch the previous page of results.
           allOf:
             - $ref: 'cursors.yaml#/components/schemas/StartCursor'
+          x-added-in-version: "8.8"
         limit:
           description: The maximum number of items to return in one request.
           type: integer
@@ -90,6 +95,7 @@ components:
       properties:
         page:
           $ref: '#/components/schemas/SearchQueryPageResponse'
+          x-added-in-version: "8.6"
 
     SortOrderEnum:
       description: The order in which to sort the related field.
@@ -119,13 +125,16 @@ components:
           description: |
             Indicates whether the `totalItems` value has been capped due to system limits. When true, `totalItems` is a lower bound and the actual number of matching items is greater than the reported value.
           type: boolean
+          x-added-in-version: "8.8"
         startCursor:
           description: The cursor value for getting the previous page of results. Use this in the `before` field of an ensuing request.
           nullable: true
           allOf:
             - $ref: 'cursors.yaml#/components/schemas/StartCursor'
+          x-added-in-version: "8.8"
         endCursor:
           description: The cursor value for getting the next page of results. Use this in the `after` field of an ensuing request.
           nullable: true
           allOf:
             - $ref: 'cursors.yaml#/components/schemas/EndCursor'
+          x-added-in-version: "8.8"

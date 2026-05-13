@@ -497,6 +497,7 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
           description: The priority of the user task.
+          x-added-in-version: "8.8"
         elementId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
@@ -507,6 +508,7 @@ components:
           description: >
             The task name. This only works for data created with 8.8 and onwards.
             Instances from prior versions don't contain this data and cannot be found.
+          x-added-in-version: "8.8"
         candidateGroup:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
@@ -519,6 +521,7 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: Tenant ID of this user task.
+          x-added-in-version: "8.8"
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionIdFilterProperty'
@@ -527,32 +530,39 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
           description: The user task creation date.
+          x-added-in-version: "8.8"
         completionDate:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
           description: The user task completion date.
+          x-added-in-version: "8.8"
         followUpDate:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
           description: The user task follow-up date.
+          x-added-in-version: "8.8"
         dueDate:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
           description: The user task due date.
+          x-added-in-version: "8.8"
         processInstanceVariables:
           type: array
           description: The variables of the process instance.
           items:
             $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
+          x-added-in-version: "8.8"
         localVariables:
           type: array
           description: The local variables of the user task.
           items:
             $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
+          x-added-in-version: "8.8"
         userTaskKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
           description: The key for this user task.
+          x-added-in-version: "8.8"
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
@@ -565,8 +575,10 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The key of the element instance.
+          x-added-in-version: "8.8"
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+          x-added-in-version: "8.9"
 
     UserTaskSearchQueryResult:
       description: User task search query response.
@@ -614,92 +626,113 @@ components:
           nullable: true
           type: string
           description: The name for this user task.
+          x-added-in-version: "8.8"
         state:
           $ref: '#/components/schemas/UserTaskStateEnum'
+          x-added-in-version: "8.6"
         assignee:
           nullable: true
           description: The assignee of the user task.
           type: string
+          x-added-in-version: "8.6"
         elementId:
           description: The element ID of the user task.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          x-added-in-version: "8.6"
         candidateGroups:
           type: array
           description: The candidate groups for this user task.
           items:
             type: string
+          x-added-in-version: "8.8"
         candidateUsers:
           type: array
           description: The candidate users for this user task.
           items:
             type: string
+          x-added-in-version: "8.8"
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The ID of the process definition.
+          x-added-in-version: "8.6"
         creationDate:
           type: string
           description: The creation date of a user task.
           format: date-time
+          x-added-in-version: "8.6"
         completionDate:
           description: The completion date of a user task.
           nullable: true
           type: string
           format: date-time
+          x-added-in-version: "8.6"
         followUpDate:
           description: The follow date of a user task.
           nullable: true
           type: string
           format: date-time
+          x-added-in-version: "8.6"
         dueDate:
           description: The due date of a user task.
           nullable: true
           type: string
           format: date-time
+          x-added-in-version: "8.6"
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          x-added-in-version: "8.8"
         externalFormReference:
           description: The external form reference.
           nullable: true
           type: string
+          x-added-in-version: "8.6"
         processDefinitionVersion:
           type: integer
           description: The version of the process definition.
           format: int32
+          x-added-in-version: "8.6"
         customHeaders:
           type: object
           description: Custom headers for the user task.
           additionalProperties:
             type: string
+          x-added-in-version: "8.6"
         priority:
           type: integer
           description: The priority of a user task. The higher the value the higher the priority.
           minimum: 0
           maximum: 100
           default: 50
+          x-added-in-version: "8.6"
         userTaskKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
           description: The key of the user task.
+          x-added-in-version: "8.8"
         elementInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The key of the element instance.
+          x-added-in-version: "8.6"
         processName:
           type: string
           description: |
             The name of the process definition.
             This is `null` if the process has no name defined.
           nullable: true
+          x-added-in-version: "8.8"
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The key of the process definition.
+          x-added-in-version: "8.6"
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance.
+          x-added-in-version: "8.6"
         rootProcessInstanceKey:
           description: |
             The key of the root process instance. The root process instance is the top-level
@@ -708,13 +741,16 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          x-added-in-version: "8.9"
         formKey:
           description: The key of the form.
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
+          x-added-in-version: "8.6"
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+          x-added-in-version: "8.9"
 
     UserTaskCompletionRequest:
       type: object
@@ -820,6 +856,7 @@ components:
           default: 50
           maximum: 100
           nullable: true
+          x-added-in-version: "8.6"
 
     UserTaskVariableSearchQuerySortRequest:
       type: object
@@ -939,20 +976,25 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: "#/components/schemas/UserTaskStateEnum"
+          x-added-in-version: "8.8"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/UserTaskStateEnum"
+          x-added-in-version: "8.8"
         $exists:
           description: Checks if the current property exists.
           type: boolean
+          x-added-in-version: "8.8"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/UserTaskStateEnum"
+          x-added-in-version: "8.8"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+          x-added-in-version: "8.8"
 
     UserTaskAuditLogFilter:
       description: The user task audit log search filters.
