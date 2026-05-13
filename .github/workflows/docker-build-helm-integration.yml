@@ -186,9 +186,16 @@ jobs:
             # Use explicitly provided version
             echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
-            # For merge queue: <maven-version>-mq<PR_NUMBER>-run<run_id>-a<run_attempt>
-            PR_NUM=$(echo "${{ github.ref }}" | grep -oP '(?<=pr-)\d+')
-            echo "tag=${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+            # For merge queue: prefer <maven-version>-mq<PR_NUMBER>-run<run_id>-a<run_attempt>
+            # but fall back to a SHA-based tag if the ref does not contain a single pr-<number> segment.
+            PR_NUM=$(echo "${{ github.ref }}" | grep -oP '(?<=pr-)\d+' || true)
+            if [[ -n "${PR_NUM}" ]]; then
+              echo "tag=${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+            else
+              SHA_SHORT="${GITHUB_SHA::7}"
+              echo "::warning::Could not determine PR number from merge_group ref '${{ github.ref }}'; using merge-group SHA-based tag instead."
+              echo "tag=${MAVEN_VERSION}-mq${SHA_SHORT}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+            fi
           else
             # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.7.0-SNAPSHOT-abc1234)
             SHA_SHORT="${GITHUB_SHA::7}"
