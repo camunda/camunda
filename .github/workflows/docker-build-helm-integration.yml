@@ -62,6 +62,7 @@ jobs:
     steps:
       - name: Compute concurrency group
         id: concurrency-group
+        shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "merge_group" ]]; then
             REF_SOURCE="${{ github.event.merge_group.head_ref || github.ref }}"
@@ -179,7 +180,7 @@ jobs:
   # Main build job - waits for all frontends to complete
   build-and-push-images:
     name: Build and Push Docker Images
-    # Includes should-run to consume its computed concurrency group output.
+    # Includes should-run to consume its computed concurrency-group output.
     needs: [should-run, build-operate-frontend, build-tasklist-frontend, build-identity-frontend]
     permissions: { }
     runs-on: gcp-perf-core-8-default
@@ -211,6 +212,7 @@ jobs:
 
       - name: Set semantic image tag
         id: set-image-tag
+        shell: bash
         run: |
           MAVEN_VERSION="${{ steps.maven-version.outputs.version }}"
           if [[ -n "${{ inputs.version }}" ]]; then
