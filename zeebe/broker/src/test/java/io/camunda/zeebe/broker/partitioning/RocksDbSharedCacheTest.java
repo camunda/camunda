@@ -12,8 +12,12 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
+import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import java.lang.management.ManagementFactory;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -287,6 +291,11 @@ class RocksDbSharedCacheTest {
       final MemoryAllocationStrategy strategy,
       final int partitionsCount,
       final long totalSystemMemory) {
+    final var recorder = new RecordingAppender();
+    final var logger = (Logger) LogManager.getLogger(RocksdbCfg.class);
+    recorder.start();
+    logger.addAppender(recorder);
+
     // given
     rocksdbCfg.setMemoryLimit(DataSize.ofBytes(memoryLimitBytes));
     rocksdbCfg.setMemoryAllocationStrategy(strategy);
@@ -294,6 +303,18 @@ class RocksDbSharedCacheTest {
     // when/then
     try (final var ignored = mockMemoryEnvironment(totalSystemMemory)) {
       assertThatNoException().isThrownBy(() -> rocksdbCfg.validateRocksDbMemory(partitionsCount));
+      assertThat(recorder.getAppendedEvents())
+          .anySatisfy(
+              event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                assertThat(event.getMessage().getFormattedMessage())
+                    .contains("Requested RocksDB memory")
+                    .contains("Memory allocation strategy: " + strategy)
+                    .contains("Partitions count: " + partitionsCount);
+              });
+    } finally {
+      logger.removeAppender(recorder);
+      recorder.stop();
     }
   }
 }
