@@ -8,8 +8,8 @@ talking to the orchestration-cluster backend on `http://localhost:8080`.
 - **Node.js** via [`fnm`](https://github.com/Schniz/fnm) (recommended) or
   [`nvm`](https://github.com/nvm-sh/nvm). The repo pins Node in
   `webapp/client/.nvmrc` — `fnm use` / `nvm use` reads it for you.
-- **Java 21** — the backend builds and runs with Maven. Install via
-  [SDKMAN](https://sdkman.io) or Homebrew (`brew install openjdk@21`).
+- **Java** — the backend builds and runs with Maven. Install via
+  [SDKMAN](https://sdkman.io) or Homebrew (`brew install openjdk@21`). Check the current version on the project.
 - **Docker** — used by `make env-up` to run Elasticsearch, and by Playwright's
   containerized browser for visual-regression tests.
 - **make** — wraps backend startup (`make env-up` / `make env-down`) and VS Code
