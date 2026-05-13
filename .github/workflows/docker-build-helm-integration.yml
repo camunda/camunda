@@ -190,6 +190,10 @@ jobs:
           elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
             # For merge queue: <maven-version>-mq<PR_NUMBER>-run<run_id>-a<run_attempt>
             PR_NUM=$(echo "${{ github.ref }}" | grep -oP '(?<=pr-)\d+')
+            if [[ -z "${PR_NUM}" ]]; then
+              echo "Failed to extract PR number from merge queue ref '${{ github.ref }}'." >&2
+              exit 1
+            fi
             echo "tag=${MAVEN_VERSION}-mq${PR_NUM}-run${{ github.run_id }}-a${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
           else
             # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.8.0-SNAPSHOT-abc1234)
