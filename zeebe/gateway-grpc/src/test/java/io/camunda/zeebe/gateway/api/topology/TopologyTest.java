@@ -23,7 +23,7 @@ import org.junit.Test;
 
 public final class TopologyTest extends GatewayTest {
 
-  private static final BrokerMemberId broker0 = BrokerMemberId.from(0);
+  private final BrokerMemberId broker0 = BrokerMemberId.from(0);
 
   @Test
   public void shouldResponseWithInitialUnhealthyPartitions() {
