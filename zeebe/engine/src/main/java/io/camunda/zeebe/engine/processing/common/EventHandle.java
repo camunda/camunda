@@ -252,6 +252,8 @@ public final class EventHandle {
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
 
+    // emit CREATED event to indicate instance creation by an event trigger
+    // picked up by appliers and exporters accordingly, e.g., for metrics and audit logs
     recordForPICreationEvent
         .setBpmnProcessId(process.getBpmnProcessId())
         .setProcessDefinitionKey(process.getKey())
