@@ -399,7 +399,7 @@ public class AgentInstanceCreateTest {
   }
 
   @Test
-  public void shouldRejectWhenElementTypeNotAdHocSubProcessOrServiceTask_UserTask() {
+  public void shouldRejectWhenElementTypeIsUserTask() {
     // given — a process with a USER_TASK element that stays active until a user acts on it.
     ENGINE
         .deployment()
@@ -432,7 +432,7 @@ public class AgentInstanceCreateTest {
   }
 
   @Test
-  public void shouldRejectWhenElementTypeNotAdHocSubProcessOrServiceTask_Process() {
+  public void shouldRejectWhenElementTypeIsProcessRoot() {
     // given — the PROCESS root element instance is active by definition during a running PI,
     // but it isn't a supported type for agent instances.
     ENGINE
