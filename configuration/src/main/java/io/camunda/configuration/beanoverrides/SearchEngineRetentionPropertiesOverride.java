@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.Retention;
 import io.camunda.configuration.SecondaryStorage;
@@ -48,35 +49,50 @@ public class SearchEngineRetentionPropertiesOverride {
   public SearchEngineRetentionProperties searchEngineRetentionProperties() {
     final SearchEngineRetentionProperties override = new SearchEngineRetentionProperties();
     BeanUtils.copyProperties(legacySearchEngineRetentionProperties, override);
-
-    populateFromRetention(override);
-    populateFromSecondaryStorage(override);
-
+    new Converter(unifiedConfiguration.getCamunda()).applyTo(override);
     return override;
   }
 
-  private void populateFromRetention(final SearchEngineRetentionProperties override) {
-    final Retention retention =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getRetention();
-    override.setEnabled(retention.isEnabled());
-    override.setMinimumAge(retention.getMinimumAge());
-  }
+  public static final class Converter {
 
-  private void populateFromSecondaryStorage(final SearchEngineRetentionProperties override) {
-    final SecondaryStorage secondaryStorage =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+    private final Camunda camunda;
 
-    final DocumentBasedSecondaryStorageDatabase database =
-        switch (secondaryStorage.getType()) {
-          case elasticsearch -> secondaryStorage.getElasticsearch();
-          case opensearch -> secondaryStorage.getOpensearch();
-          default -> null;
-        };
-
-    if (database == null) {
-      return;
+    public Converter(final Camunda camunda) {
+      this.camunda = camunda;
     }
 
-    override.setPolicyName(database.getHistory().getPolicyName());
+    public SearchEngineRetentionProperties convert() {
+      final SearchEngineRetentionProperties override = new SearchEngineRetentionProperties();
+      applyTo(override);
+      return override;
+    }
+
+    public void applyTo(final SearchEngineRetentionProperties override) {
+      populateFromRetention(override);
+      populateFromSecondaryStorage(override);
+    }
+
+    private void populateFromRetention(final SearchEngineRetentionProperties override) {
+      final Retention retention = camunda.getData().getSecondaryStorage().getRetention();
+      override.setEnabled(retention.isEnabled());
+      override.setMinimumAge(retention.getMinimumAge());
+    }
+
+    private void populateFromSecondaryStorage(final SearchEngineRetentionProperties override) {
+      final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
+
+      final DocumentBasedSecondaryStorageDatabase database =
+          switch (secondaryStorage.getType()) {
+            case elasticsearch -> secondaryStorage.getElasticsearch();
+            case opensearch -> secondaryStorage.getOpensearch();
+            default -> null;
+          };
+
+      if (database == null) {
+        return;
+      }
+
+      override.setPolicyName(database.getHistory().getPolicyName());
+    }
   }
 }

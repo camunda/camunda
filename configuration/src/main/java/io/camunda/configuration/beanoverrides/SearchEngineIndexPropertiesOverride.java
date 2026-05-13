@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -46,31 +47,47 @@ public class SearchEngineIndexPropertiesOverride {
   public SearchEngineIndexProperties searchEngineIndexProperties() {
     final SearchEngineIndexProperties override = new SearchEngineIndexProperties();
     BeanUtils.copyProperties(legacySearchEngineIndexProperties, override);
-
-    final SecondaryStorage secondaryStorage =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
-
-    final DocumentBasedSecondaryStorageDatabase database =
-        (secondaryStorage.getType() == SecondaryStorageType.elasticsearch)
-            ? secondaryStorage.getElasticsearch()
-            : secondaryStorage.getOpensearch();
-
-    override.setNumberOfShards(database.getNumberOfShards());
-    override.setNumberOfReplicas(database.getNumberOfReplicas());
-    override.setVariableSizeThreshold(database.getVariableSizeThreshold());
-    override.setRefreshInterval(database.getRefreshInterval());
-
-    override.setTemplatePriority(database.getTemplatePriority());
-    if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
-      override.setReplicasByIndexName(database.getNumberOfReplicasPerIndex());
-    }
-    if (!database.getNumberOfShardsPerIndex().isEmpty()) {
-      override.setShardsByIndexName(database.getNumberOfShardsPerIndex());
-    }
-    if (!database.getRefreshIntervalByIndexName().isEmpty()) {
-      override.setRefreshIntervalByIndexName(database.getRefreshIntervalByIndexName());
-    }
-
+    new Converter(unifiedConfiguration.getCamunda()).applyTo(override);
     return override;
+  }
+
+  public static final class Converter {
+
+    private final Camunda camunda;
+
+    public Converter(final Camunda camunda) {
+      this.camunda = camunda;
+    }
+
+    public SearchEngineIndexProperties convert() {
+      final SearchEngineIndexProperties override = new SearchEngineIndexProperties();
+      applyTo(override);
+      return override;
+    }
+
+    public void applyTo(final SearchEngineIndexProperties override) {
+      final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
+
+      final DocumentBasedSecondaryStorageDatabase database =
+          (secondaryStorage.getType() == SecondaryStorageType.elasticsearch)
+              ? secondaryStorage.getElasticsearch()
+              : secondaryStorage.getOpensearch();
+
+      override.setNumberOfShards(database.getNumberOfShards());
+      override.setNumberOfReplicas(database.getNumberOfReplicas());
+      override.setVariableSizeThreshold(database.getVariableSizeThreshold());
+      override.setRefreshInterval(database.getRefreshInterval());
+
+      override.setTemplatePriority(database.getTemplatePriority());
+      if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
+        override.setReplicasByIndexName(database.getNumberOfReplicasPerIndex());
+      }
+      if (!database.getNumberOfShardsPerIndex().isEmpty()) {
+        override.setShardsByIndexName(database.getNumberOfShardsPerIndex());
+      }
+      if (!database.getRefreshIntervalByIndexName().isEmpty()) {
+        override.setRefreshIntervalByIndexName(database.getRefreshIntervalByIndexName());
+      }
+    }
   }
 }

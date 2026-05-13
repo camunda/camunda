@@ -13,6 +13,7 @@ import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
@@ -32,14 +33,14 @@ public class SearchEngineDatabaseConfiguration {
 
   @Bean
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(
-      final SearchEngineConfiguration searchEngineConfiguration,
+      final PhysicalTenantResolver physicalTenantResolver,
       final MeterRegistry meterRegistry,
       @Autowired(required = false)
           final Broker broker, // if present, then it will ensure that the broker is started first
       @Autowired(required = false) final BrokerCfg brokerCfg) {
     final boolean isGatewayEnabled = brokerCfg == null || brokerCfg.getGateway().isEnable();
     return new SearchEngineSchemaInitializer(
-        searchEngineConfiguration, meterRegistry, isGatewayEnabled);
+        physicalTenantResolver, meterRegistry, isGatewayEnabled);
   }
 
   @Bean

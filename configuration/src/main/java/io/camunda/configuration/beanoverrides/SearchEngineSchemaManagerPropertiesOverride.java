@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties;
@@ -46,10 +47,28 @@ public class SearchEngineSchemaManagerPropertiesOverride {
   public SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties() {
     final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
     BeanUtils.copyProperties(legacySearchEngineSchemaManagerProperties, override);
-
-    override.setVersionCheckRestrictionEnabled(
-        unifiedConfiguration.getCamunda().getSystem().getUpgrade().getEnableVersionCheck());
-
+    new Converter(unifiedConfiguration.getCamunda()).applyTo(override);
     return override;
+  }
+
+  public static final class Converter {
+
+    private final Camunda camunda;
+
+    public Converter(final Camunda camunda) {
+      this.camunda = camunda;
+    }
+
+    public SearchEngineSchemaManagerProperties convert() {
+      final SearchEngineSchemaManagerProperties override =
+          new SearchEngineSchemaManagerProperties();
+      applyTo(override);
+      return override;
+    }
+
+    public void applyTo(final SearchEngineSchemaManagerProperties override) {
+      override.setVersionCheckRestrictionEnabled(
+          camunda.getSystem().getUpgrade().getEnableVersionCheck());
+    }
   }
 }
