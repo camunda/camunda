@@ -53,7 +53,7 @@ public class JobUpdateBehaviour {
             jobState,
             processingStateState.getBannedInstanceState(),
             "update",
-            List.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED),
+            List.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN),
             authCheckBehavior);
     this.authCheckBehavior = authCheckBehavior;
   }
