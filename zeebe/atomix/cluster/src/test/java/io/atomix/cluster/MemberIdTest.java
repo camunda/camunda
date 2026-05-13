@@ -162,6 +162,7 @@ final class MemberIdTest {
   }
 
   private void assertEncodeDecode(final MemberId memberId) {
-    assertThat(MemberId.from(memberId.id())).isEqualTo(memberId);
+    final var decoded = MemberId.from(memberId.id());
+    assertThat(decoded).isEqualTo(memberId).returns(memberId.hashCode(), MemberId::hashCode);
   }
 }
