@@ -92,6 +92,92 @@ public final class DistributionStateTest {
   }
 
   @Test
+  public void shouldNotPersistMetadataWhenAddRetriableDistributionWithoutStartTime() {
+    // given
+    final var distributionKey = 10L;
+    final var partition = 1;
+    distributionState.addCommandDistribution(distributionKey, createCommandDistributionRecord());
+
+    // when
+    distributionState.addRetriableDistribution(distributionKey, partition);
+
+    // then
+    assertThat(distributionState.getDistributionMetadata(distributionKey, partition)).isEmpty();
+  }
+
+  @Test
+  public void shouldPersistMetadataWhenAddRetriableDistributionWithStartTime() {
+    // given
+    final var distributionKey = 10L;
+    final var partition = 1;
+    final var startTime = 1234567890L;
+    distributionState.addCommandDistribution(distributionKey, createCommandDistributionRecord());
+
+    // when
+    distributionState.addRetriableDistribution(distributionKey, partition, startTime);
+
+    // then
+    assertThat(distributionState.getDistributionMetadata(distributionKey, partition))
+        .hasValueSatisfying(metadata -> assertThat(metadata.getStartTime()).isEqualTo(startTime));
+  }
+
+  @Test
+  public void shouldPersistMetadataPerPartition() {
+    // given
+    final var distributionKey = 10L;
+    final var partitionA = 1;
+    final var partitionB = 2;
+    final var startTimeA = 1111L;
+    final var startTimeB = 2222L;
+    distributionState.addCommandDistribution(distributionKey, createCommandDistributionRecord());
+
+    // when
+    distributionState.addRetriableDistribution(distributionKey, partitionA, startTimeA);
+    distributionState.addRetriableDistribution(distributionKey, partitionB, startTimeB);
+
+    // then
+    assertThat(distributionState.getDistributionMetadata(distributionKey, partitionA))
+        .hasValueSatisfying(metadata -> assertThat(metadata.getStartTime()).isEqualTo(startTimeA));
+    assertThat(distributionState.getDistributionMetadata(distributionKey, partitionB))
+        .hasValueSatisfying(metadata -> assertThat(metadata.getStartTime()).isEqualTo(startTimeB));
+  }
+
+  @Test
+  public void shouldRemoveMetadataWhenRemoveRetriableDistribution() {
+    // given
+    final var distributionKey = 10L;
+    final var partition = 1;
+    distributionState.addCommandDistribution(distributionKey, createCommandDistributionRecord());
+    distributionState.addRetriableDistribution(distributionKey, partition, 1234567890L);
+
+    // when
+    distributionState.removeRetriableDistribution(distributionKey, partition);
+
+    // then
+    assertThat(distributionState.getDistributionMetadata(distributionKey, partition)).isEmpty();
+  }
+
+  @Test
+  public void shouldRemoveRetriableDistributionWhenNoMetadataPresent() {
+    // given
+    final var distributionKey = 10L;
+    final var partition = 1;
+    distributionState.addCommandDistribution(distributionKey, createCommandDistributionRecord());
+    distributionState.addRetriableDistribution(distributionKey, partition);
+
+    // when / then — no metadata was written, removal must still succeed
+    distributionState.removeRetriableDistribution(distributionKey, partition);
+    assertThat(distributionState.hasRetriableDistribution(distributionKey, partition)).isFalse();
+    assertThat(distributionState.getDistributionMetadata(distributionKey, partition)).isEmpty();
+  }
+
+  @Test
+  public void shouldReturnEmptyMetadataWhenNothingStored() {
+    // when / then
+    assertThat(distributionState.getDistributionMetadata(10L, 1)).isEmpty();
+  }
+
+  @Test
   public void shouldReturnFalseOnEmptyStateForHasPendingCheck() {
     // when
     final var hasPending = distributionState.hasPendingDistribution(10L);
