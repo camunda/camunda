@@ -331,7 +331,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     if (bodyDecoder.versionLength() > 0) {
       bodyDecoder.wrapVersion(version);
     } else {
-      version.wrap(new byte[0]);
+      version.wrap(EMPTY_BYTE_ARRAY);
       bodyDecoder.skipVersion();
     }
 
