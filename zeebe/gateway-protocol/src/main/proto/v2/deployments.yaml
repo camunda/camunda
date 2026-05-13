@@ -166,7 +166,7 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-added-in-version: "8.11"
+      x-added-in-version: "8.10"
 
   /resources/search:
     post:
