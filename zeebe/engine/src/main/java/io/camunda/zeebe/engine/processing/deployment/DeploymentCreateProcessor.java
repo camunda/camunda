@@ -182,20 +182,10 @@ public final class DeploymentCreateProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<DeploymentRecord> command, final Throwable error) {
-    // Make sure the cache does not contain any leftovers from this run (by hard resetting)
-    if (command.getValue().hasBpmnResources()) {
-      processState.clearCache();
-    }
-    if (command.getValue().hasDmnResources()) {
-      decisionState.clearCache();
-    }
-    if (command.getValue().hasForms()) {
-      formState.clearCache();
-    }
-    if (command.getValue().hasResources()) {
-      resourceState.clearCache();
-    }
-
+    // invalidate caches based on the existence of metadata in the deployment
+    // since metadata is generated first - caches only get updated
+    // when the created events have already been written
+    invalidateCache(command.getValue());
     if (error instanceof final ResourceTransformationFailedException exception) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
@@ -209,8 +199,23 @@ public final class DeploymentCreateProcessor
           command, RejectionType.PROCESSING_ERROR, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
-
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private void invalidateCache(final DeploymentRecord record) {
+    if (record.processesMetadata().stream().findAny().isPresent()) {
+      processState.clearCache();
+    }
+    if (record.decisionsMetadata().stream().findAny().isPresent()
+        || record.decisionRequirementsMetadata().stream().findAny().isPresent()) {
+      decisionState.clearCache();
+    }
+    if (record.formMetadata().stream().findAny().isPresent()) {
+      formState.clearCache();
+    }
+    if (record.resourceMetadata().stream().findAny().isPresent()) {
+      resourceState.clearCache();
+    }
   }
 
   private void transformAndDistributeDeployment(final TypedRecord<DeploymentRecord> command) {
