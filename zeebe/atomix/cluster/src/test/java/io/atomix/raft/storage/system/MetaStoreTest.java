@@ -74,7 +74,7 @@ class MetaStoreTest {
     @Test
     void shouldStoreAndLoadVote() {
       // when
-      metaStore.storeVote(new MemberId("id"));
+      metaStore.storeVote(MemberId.from("id"));
 
       // then
       assertThat(metaStore.loadVote().id()).isEqualTo("id");
@@ -96,7 +96,7 @@ class MetaStoreTest {
     @Test
     void shouldLoadExistingVote() throws IOException {
       // given
-      metaStore.storeVote(new MemberId("id"));
+      metaStore.storeVote(MemberId.from("id"));
 
       // when
       metaStore.close();

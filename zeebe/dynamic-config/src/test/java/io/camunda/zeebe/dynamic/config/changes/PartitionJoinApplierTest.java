@@ -154,7 +154,7 @@ final class PartitionJoinApplierTest {
         ClusterConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .addMember(
-                new MemberId("2"),
+                MemberId.from("2"),
                 MemberState.initializeAsActive(
                     Map.of(1, PartitionState.active(1, partitionConfig))));
     final var updater =
@@ -178,7 +178,7 @@ final class PartitionJoinApplierTest {
         ClusterConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .addMember(
-                new MemberId("2"),
+                MemberId.from("2"),
                 MemberState.initializeAsActive(
                     Map.of(1, PartitionState.active(1, partitionConfig))));
     final var partitionJoinApplier =
@@ -233,7 +233,7 @@ final class PartitionJoinApplierTest {
         ClusterConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .addMember(
-                new MemberId("2"),
+                MemberId.from("2"),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, config))));
 
     final var partitionJoinApplier =

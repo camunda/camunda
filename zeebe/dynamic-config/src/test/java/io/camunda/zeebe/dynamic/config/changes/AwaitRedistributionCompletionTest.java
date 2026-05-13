@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 public class AwaitRedistributionCompletionTest extends AbstractApplierTest {
 
-  MemberId memberId = new MemberId("1");
+  MemberId memberId = MemberId.from("1");
 
   ClusterConfiguration empty = ClusterConfiguration.init();
   ClusterConfiguration validAllPartitionConfig =

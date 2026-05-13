@@ -56,7 +56,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class RaftServerSenderSubjectsTest {
 
   private static final String PARTITION_GROUP = "group";
-  private static final MemberId MEMBER_ID = new MemberId("0");
+  private static final MemberId MEMBER_ID = MemberId.from("0");
   private static final PartitionId PARTITION_ID = new PartitionId(PARTITION_GROUP, 1);
   private static final PartitionMetadata METADATA =
       new PartitionMetadata(PARTITION_ID, Set.of(), Map.of(), 1, MEMBER_ID);

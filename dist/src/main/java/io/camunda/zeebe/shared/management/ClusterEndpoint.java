@@ -113,7 +113,7 @@ public class ClusterEndpoint {
           ClusterApiUtils.mapOperationResponse(
               requestSender
                   .addMembers(
-                      new AddMembersRequest(Set.of(new MemberId(String.valueOf(id))), dryRun))
+                      new AddMembersRequest(Set.of(MemberId.from(String.valueOf(id))), dryRun))
                   .join());
       case partitions -> ResponseEntity.status(501).body("Adding partitions is not supported");
       case changes ->
@@ -132,7 +132,7 @@ public class ClusterEndpoint {
       case brokers ->
           ClusterApiUtils.mapOperationResponse(
               requestSender
-                  .removeMembers(new RemoveMembersRequest(Set.of(new MemberId(id)), dryRun))
+                  .removeMembers(new RemoveMembersRequest(Set.of(MemberId.from(id)), dryRun))
                   .join());
       case partitions -> ResponseEntity.status(501).body("Removing partitions is not supported");
       case changes -> {

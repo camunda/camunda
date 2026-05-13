@@ -34,7 +34,9 @@ final class MemberIdTest {
 
     // then
 
+    assertEncodeDecode(memberId);
     assertThat(memberId)
+        .isInstanceOf(BrokerId.class)
         .returns(7, MemberId::nodeIdx)
         .returns(null, MemberId::zone)
         .returns("7", MemberId::id);
@@ -53,12 +55,23 @@ final class MemberIdTest {
   }
 
   @Test
+  void shouldThrowWhenZoneContainsASlash() {
+    // given / when / then
+    assertThatThrownBy(() -> MemberId.from("us-east1/b/7"))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> MemberId.from("us-east1/b", 7))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void shouldStripSurroundingWhitespaceFromZone() {
     // given / when
     final var memberId = MemberId.from("  eu-west  ", 7);
 
     // then
+    assertEncodeDecode(memberId);
     assertThat(memberId)
+        .isInstanceOf(BrokerId.class)
         .returns(7, MemberId::nodeIdx)
         .returns("eu-west", MemberId::zone)
         .returns("eu-west/7", MemberId::id);
@@ -70,7 +83,9 @@ final class MemberIdTest {
     final var memberId = MemberId.from("us-east", 7);
 
     // then
+    assertEncodeDecode(memberId);
     assertThat(memberId)
+        .isInstanceOf(BrokerId.class)
         .returns(7, MemberId::nodeIdx)
         .returns("us-east", MemberId::zone)
         .returns("us-east/7", MemberId::id);
@@ -82,7 +97,11 @@ final class MemberIdTest {
     final var memberId = MemberId.from("3");
 
     // when / then
-    assertThat(memberId).returns(3, MemberId::nodeIdx).returns(null, MemberId::zone);
+    assertEncodeDecode(memberId);
+    assertThat(memberId)
+        .isInstanceOf(BrokerId.class)
+        .returns(3, MemberId::nodeIdx)
+        .returns(null, MemberId::zone);
   }
 
   @Test
@@ -91,7 +110,9 @@ final class MemberIdTest {
     final var memberId = MemberId.from("us-east/12");
 
     // when / then
+    assertEncodeDecode(memberId);
     assertThat(memberId)
+        .isInstanceOf(BrokerId.class)
         .returns(12, MemberId::nodeIdx)
         .returns("us-east", MemberId::zone)
         .returns("us-east/12", MemberId::id);
@@ -103,6 +124,7 @@ final class MemberIdTest {
     final var memberId = MemberId.from("anonymous");
 
     // when / then
+    assertEncodeDecode(memberId);
     assertThatThrownBy(memberId::nodeIdx).isInstanceOf(IllegalStateException.class);
   }
 
@@ -137,5 +159,9 @@ final class MemberIdTest {
     // then
     assertThatThrownBy(() -> Member.builder(memberId).withZoneId("us").build())
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  private void assertEncodeDecode(final MemberId memberId) {
+    assertThat(MemberId.from(memberId.id())).isEqualTo(memberId);
   }
 }

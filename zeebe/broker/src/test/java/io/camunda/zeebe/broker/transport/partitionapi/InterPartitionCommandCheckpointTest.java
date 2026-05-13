@@ -215,6 +215,6 @@ final class InterPartitionCommandCheckpointTest {
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
     verify(communicationService)
         .unicast(eq(LEGACY_TOPIC_PREFIX + 1), messageCaptor.capture(), any(), any(), eq(true));
-    receiver.handleMessage(new MemberId("0"), messageCaptor.getValue());
+    receiver.handleMessage(MemberId.from("0"), messageCaptor.getValue());
   }
 }

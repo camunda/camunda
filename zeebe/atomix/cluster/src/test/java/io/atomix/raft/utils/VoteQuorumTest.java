@@ -32,7 +32,7 @@ final class VoteQuorumTest {
               callback, Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.succeed(new MemberId("1"));
+      quorum.succeed(MemberId.from("1"));
 
       // then
       verifyNoInteractions(callback);
@@ -48,8 +48,8 @@ final class VoteQuorumTest {
               callback, Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.succeed(new MemberId("1"));
-      quorum.succeed(new MemberId("2"));
+      quorum.succeed(MemberId.from("1"));
+      quorum.succeed(MemberId.from("2"));
 
       // then
       verify(callback, only()).accept(true);
@@ -65,8 +65,8 @@ final class VoteQuorumTest {
               callback, Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.succeed(new MemberId("1"));
-      quorum.succeed(new MemberId("1"));
+      quorum.succeed(MemberId.from("1"));
+      quorum.succeed(MemberId.from("1"));
 
       // then
       verifyNoInteractions(callback);
@@ -82,8 +82,8 @@ final class VoteQuorumTest {
               callback, Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.succeed(new MemberId("5"));
-      quorum.succeed(new MemberId("6"));
+      quorum.succeed(MemberId.from("5"));
+      quorum.succeed(MemberId.from("6"));
 
       // then
       verifyNoInteractions(callback);
@@ -99,9 +99,9 @@ final class VoteQuorumTest {
               callback, Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.succeed(new MemberId("1"));
-      quorum.succeed(new MemberId("2"));
-      quorum.succeed(new MemberId("3"));
+      quorum.succeed(MemberId.from("1"));
+      quorum.succeed(MemberId.from("2"));
+      quorum.succeed(MemberId.from("3"));
 
       // then
       verify(callback, only()).accept(true);
@@ -117,8 +117,8 @@ final class VoteQuorumTest {
               callback, Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.fail(new MemberId("1"));
-      quorum.fail(new MemberId("2"));
+      quorum.fail(MemberId.from("1"));
+      quorum.fail(MemberId.from("2"));
 
       // then
       verify(callback, only()).accept(false);
@@ -134,10 +134,10 @@ final class VoteQuorumTest {
               callback, Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.fail(new MemberId("1"));
-      quorum.fail(new MemberId("2"));
-      quorum.succeed(new MemberId("1"));
-      quorum.succeed(new MemberId("2"));
+      quorum.fail(MemberId.from("1"));
+      quorum.fail(MemberId.from("2"));
+      quorum.succeed(MemberId.from("1"));
+      quorum.succeed(MemberId.from("2"));
 
       // then
       verify(callback, only()).accept(false);
@@ -158,8 +158,8 @@ final class VoteQuorumTest {
               Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.succeed(new MemberId("1"));
-      quorum.succeed(new MemberId("2"));
+      quorum.succeed(MemberId.from("1"));
+      quorum.succeed(MemberId.from("2"));
 
       // then
       verify(callback, only()).accept(true);
@@ -177,10 +177,10 @@ final class VoteQuorumTest {
               Set.of(MemberId.from("4"), MemberId.from("5"), MemberId.from("6")));
 
       // when
-      quorum.succeed(new MemberId("1"));
-      quorum.succeed(new MemberId("2"));
-      quorum.succeed(new MemberId("4"));
-      quorum.succeed(new MemberId("5"));
+      quorum.succeed(MemberId.from("1"));
+      quorum.succeed(MemberId.from("2"));
+      quorum.succeed(MemberId.from("4"));
+      quorum.succeed(MemberId.from("5"));
 
       // then
       verify(callback, only()).accept(true);
@@ -198,8 +198,8 @@ final class VoteQuorumTest {
               Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.succeed(new MemberId("1"));
-      quorum.succeed(new MemberId("4"));
+      quorum.succeed(MemberId.from("1"));
+      quorum.succeed(MemberId.from("4"));
 
       // then
       verifyNoInteractions(callback);
@@ -217,8 +217,8 @@ final class VoteQuorumTest {
               Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.succeed(new MemberId("1"));
-      quorum.succeed(new MemberId("3"));
+      quorum.succeed(MemberId.from("1"));
+      quorum.succeed(MemberId.from("3"));
 
       // then
       verifyNoInteractions(callback);
@@ -236,8 +236,8 @@ final class VoteQuorumTest {
               Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.fail(new MemberId("1"));
-      quorum.fail(new MemberId("4"));
+      quorum.fail(MemberId.from("1"));
+      quorum.fail(MemberId.from("4"));
 
       // then
       verify(callback, only()).accept(false);
@@ -255,11 +255,11 @@ final class VoteQuorumTest {
               Set.of(MemberId.from("1"), MemberId.from("2"), MemberId.from("3")));
 
       // when
-      quorum.fail(new MemberId("1"));
-      quorum.fail(new MemberId("4"));
-      quorum.succeed(new MemberId("1"));
-      quorum.succeed(new MemberId("2"));
-      quorum.succeed(new MemberId("3"));
+      quorum.fail(MemberId.from("1"));
+      quorum.fail(MemberId.from("4"));
+      quorum.succeed(MemberId.from("1"));
+      quorum.succeed(MemberId.from("2"));
+      quorum.succeed(MemberId.from("3"));
 
       // then
       verify(callback, only()).accept(false);

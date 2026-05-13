@@ -62,7 +62,7 @@ final class InterPartitionCommandReceiverTest {
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
-    receiver.handleMessage(new MemberId("0"), sentMessage);
+    receiver.handleMessage(MemberId.from("0"), sentMessage);
 
     // then - sent message can be written to log stream
     verify(logStreamWriter).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
@@ -95,7 +95,7 @@ final class InterPartitionCommandReceiverTest {
 
     // when
     receiver.setDiskSpaceAvailable(false);
-    receiver.handleMessage(new MemberId("0"), sentMessage);
+    receiver.handleMessage(MemberId.from("0"), sentMessage);
 
     // then
     verifyNoInteractions(logStreamWriter);
@@ -122,7 +122,7 @@ final class InterPartitionCommandReceiverTest {
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
-    receiver.handleMessage(new MemberId("0"), sentMessage);
+    receiver.handleMessage(MemberId.from("0"), sentMessage);
 
     // then
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
@@ -162,7 +162,7 @@ final class InterPartitionCommandReceiverTest {
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
-    receiver.handleMessage(new MemberId("0"), sentMessage);
+    receiver.handleMessage(MemberId.from("0"), sentMessage);
 
     // then
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
@@ -193,7 +193,7 @@ final class InterPartitionCommandReceiverTest {
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
-    receiver.handleMessage(new MemberId("0"), sentMessage);
+    receiver.handleMessage(MemberId.from("0"), sentMessage);
 
     // then
     verify(logStreamWriter).tryWrite(any(WriteContext.class), entryCaptor.capture());
@@ -219,7 +219,7 @@ final class InterPartitionCommandReceiverTest {
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
-    receiver.handleMessage(new MemberId("0"), sentMessage);
+    receiver.handleMessage(MemberId.from("0"), sentMessage);
 
     // then
     verify(logStreamWriter).tryWrite(any(WriteContext.class), entryCaptor.capture());
@@ -251,7 +251,7 @@ final class InterPartitionCommandReceiverTest {
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
-    receiver.handleMessage(new MemberId("0"), sentMessage);
+    receiver.handleMessage(MemberId.from("0"), sentMessage);
 
     // then
     verify(logStreamWriter)
@@ -286,7 +286,7 @@ final class InterPartitionCommandReceiverTest {
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
-    receiver.handleMessage(new MemberId("0"), sentMessage);
+    receiver.handleMessage(MemberId.from("0"), sentMessage);
 
     // then
     verify(logStreamWriter)

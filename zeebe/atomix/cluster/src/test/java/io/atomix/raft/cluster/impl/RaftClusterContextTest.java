@@ -35,11 +35,11 @@ final class RaftClusterContextTest {
   @Test
   void shouldConfigureFromStored() {
     // given
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var remoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
     final var members = Stream.concat(Stream.of(localMember), remoteMembers.stream()).toList();
 
     final var configuration = new Configuration(1, 1, Instant.now().toEpochMilli(), members);
@@ -68,11 +68,11 @@ final class RaftClusterContextTest {
   @Test
   void shouldReconfigureOverStored() {
     // given -- stored configuration that only contains the local member
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var remoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
     final var members = Stream.concat(Stream.of(localMember), remoteMembers.stream()).toList();
 
     final var raft =
@@ -105,11 +105,11 @@ final class RaftClusterContextTest {
   @Test
   void shouldRemoveContextsOnReconfiguration() {
     // given -- stored configuration that contains all members
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var remoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
     final var members = Stream.concat(Stream.of(localMember), remoteMembers.stream()).toList();
 
     final var raft =
@@ -136,11 +136,11 @@ final class RaftClusterContextTest {
   @Test
   void shouldUpdateMemberType() {
     // given -- stored configuration that contains all members
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var oldRemoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
     final var oldMembers =
         Stream.concat(Stream.of(localMember), oldRemoteMembers.stream()).toList();
 
@@ -151,11 +151,12 @@ final class RaftClusterContextTest {
     context.bootstrap(List.of()).join();
 
     // when -- reconfigure with a new configuration only contains the local member
-    final var newLocalMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var newLocalMember =
+        new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var newRemoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.PASSIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.PASSIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.PASSIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.PASSIVE, Instant.now()));
     final var newMembers =
         Stream.concat(Stream.of(newLocalMember), newRemoteMembers.stream()).toList();
 
@@ -176,11 +177,11 @@ final class RaftClusterContextTest {
   @Test
   void shouldCountVoteFromLocalMember() {
     // given
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var remoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
     final var members = Stream.concat(Stream.of(localMember), remoteMembers.stream()).toList();
 
     final var raft =
@@ -192,7 +193,7 @@ final class RaftClusterContextTest {
     final Consumer<Boolean> callback = mock();
     final var quorum = context.getVoteQuorum(callback);
 
-    quorum.succeed(new MemberId("2"));
+    quorum.succeed(MemberId.from("2"));
 
     // then
     verify(callback).accept(true);
@@ -201,17 +202,17 @@ final class RaftClusterContextTest {
   @Test
   void shouldRequireJointConsensusVotes() {
     // given
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var oldRemoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
     final var oldMembers =
         Stream.concat(Stream.of(localMember), oldRemoteMembers.stream()).toList();
     final var newRemoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("4"), Type.ACTIVE, Instant.now()));
     final var newMembers =
         Stream.concat(Stream.of(localMember), newRemoteMembers.stream()).toList();
 
@@ -226,23 +227,23 @@ final class RaftClusterContextTest {
     final var quorum = context.getVoteQuorum(callback);
 
     // then
-    quorum.succeed(new MemberId("4"));
+    quorum.succeed(MemberId.from("4"));
     verifyNoInteractions(callback);
 
-    quorum.succeed(new MemberId("2"));
+    quorum.succeed(MemberId.from("2"));
     verify(callback).accept(true);
   }
 
   @Test
   void shouldCalculateQuorum() {
     // given
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var remoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("5"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("4"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("5"), Type.ACTIVE, Instant.now()));
     final var members = Stream.concat(Stream.of(localMember), remoteMembers.stream()).toList();
 
     final var raft =
@@ -251,10 +252,10 @@ final class RaftClusterContextTest {
     context.bootstrap(List.of()).join();
 
     // when
-    context.getMemberContext(new MemberId("2")).setMatchIndex(2);
-    context.getMemberContext(new MemberId("3")).setMatchIndex(3);
-    context.getMemberContext(new MemberId("4")).setMatchIndex(4);
-    context.getMemberContext(new MemberId("5")).setMatchIndex(5);
+    context.getMemberContext(MemberId.from("2")).setMatchIndex(2);
+    context.getMemberContext(MemberId.from("3")).setMatchIndex(3);
+    context.getMemberContext(MemberId.from("4")).setMatchIndex(4);
+    context.getMemberContext(MemberId.from("5")).setMatchIndex(5);
 
     // then
     assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(4L);
@@ -263,11 +264,11 @@ final class RaftClusterContextTest {
   @Test
   void shouldNotIncludeLocalMemberInQuorumWhenItIsNotPartOfNewConfiguration() {
     // given
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var remoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
 
     final var raft =
         raftWithStoredConfiguration(
@@ -276,8 +277,8 @@ final class RaftClusterContextTest {
     context.bootstrap(List.of()).join();
 
     // when
-    context.getMemberContext(new MemberId("2")).setMatchIndex(2);
-    context.getMemberContext(new MemberId("3")).setMatchIndex(3);
+    context.getMemberContext(MemberId.from("2")).setMatchIndex(2);
+    context.getMemberContext(MemberId.from("3")).setMatchIndex(3);
 
     // then
     assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(2L);
@@ -286,17 +287,17 @@ final class RaftClusterContextTest {
   @Test
   void quorumWhenNewMembersAreAhead() {
     // given
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var oldRemoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
     final var oldMembers =
         Stream.concat(Stream.of(localMember), oldRemoteMembers.stream()).toList();
     final var newRemoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("4"), Type.ACTIVE, Instant.now()));
     final var newMembers =
         Stream.concat(Stream.of(localMember), newRemoteMembers.stream()).toList();
 
@@ -322,17 +323,17 @@ final class RaftClusterContextTest {
   @Test
   void quorumWhenOldMembersAreAhead() {
     // given
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var oldRemoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
     final var oldMembers =
         Stream.concat(Stream.of(localMember), oldRemoteMembers.stream()).toList();
     final var newRemoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("5"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("4"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("5"), Type.ACTIVE, Instant.now()));
     final var newMembers =
         Stream.concat(Stream.of(localMember), newRemoteMembers.stream()).toList();
 
@@ -358,11 +359,11 @@ final class RaftClusterContextTest {
   @Test
   void quorumWhenClusterBecomesSingleMember() {
     // given
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var oldRemoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
     final var oldMembers =
         Stream.concat(Stream.of(localMember), oldRemoteMembers.stream()).toList();
     final var newMembers = List.<RaftMember>of(localMember);
@@ -386,11 +387,11 @@ final class RaftClusterContextTest {
   @Test
   void quorumWhenClusterWasSingleMember() {
     // given
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     final var newRemoteMembers =
         List.<RaftMember>of(
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
     final var newMembers =
         Stream.concat(Stream.of(localMember), newRemoteMembers.stream()).toList();
     final var oldMembers = List.<RaftMember>of(localMember);
@@ -414,7 +415,7 @@ final class RaftClusterContextTest {
   @Test
   void demotedMemberIsNotVoting() {
     // given
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
 
     final var initialConfiguration =
         new Configuration(
@@ -423,8 +424,8 @@ final class RaftClusterContextTest {
             Instant.now().toEpochMilli(),
             List.of(
                 localMember,
-                new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-                new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now())));
+                new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+                new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now())));
     final var raft = raftWithStoredConfiguration(initialConfiguration);
     final var context = new RaftClusterContext(localMember.memberId(), raft);
     context.bootstrap(List.of()).join();
@@ -437,20 +438,20 @@ final class RaftClusterContextTest {
             Instant.now().toEpochMilli(),
             List.of(
                 localMember,
-                new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-                new DefaultRaftMember(new MemberId("3"), Type.PASSIVE, Instant.now())),
+                new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+                new DefaultRaftMember(MemberId.from("3"), Type.PASSIVE, Instant.now())),
             List.of());
     context.configure(newConfiguration);
 
     // then -- member 3 is no longer a voting member
     assertThat(context.getVotingMembers())
-        .containsExactly(new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()));
+        .containsExactly(new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()));
   }
 
   @Test
   void shouldKeepMembersWithHighestType() {
     // given - three active members
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var localMember = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
 
     final var initialConfiguration =
         new Configuration(
@@ -459,8 +460,8 @@ final class RaftClusterContextTest {
             Instant.now().toEpochMilli(),
             List.of(
                 localMember,
-                new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-                new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now())));
+                new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+                new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now())));
     final var raft = raftWithStoredConfiguration(initialConfiguration);
     final var context = new RaftClusterContext(localMember.memberId(), raft);
     context.bootstrap(List.of()).join();
@@ -473,8 +474,8 @@ final class RaftClusterContextTest {
             Instant.now().toEpochMilli(),
             List.of(
                 localMember,
-                new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-                new DefaultRaftMember(new MemberId("3"), Type.PASSIVE, Instant.now())),
+                new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+                new DefaultRaftMember(MemberId.from("3"), Type.PASSIVE, Instant.now())),
             List.of());
     context.configure(newConfiguration);
 
@@ -482,8 +483,8 @@ final class RaftClusterContextTest {
     assertThat(context.getConfiguration().allMembers())
         .containsExactlyInAnyOrder(
             localMember,
-            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
-            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+            new DefaultRaftMember(MemberId.from("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(MemberId.from("3"), Type.ACTIVE, Instant.now()));
   }
 
   private RaftContext raftWithStoredConfiguration(final Configuration configuration) {
