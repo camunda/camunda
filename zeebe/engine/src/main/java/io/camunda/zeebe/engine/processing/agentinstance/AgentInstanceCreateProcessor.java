@@ -144,6 +144,7 @@ public final class AgentInstanceCreateProcessor
             .setAgentInstanceKey(agentInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
             .setElementId(elementInstanceValue.getElementId())
+            .setBpmnProcessId(elementInstanceValue.getBpmnProcessId())
             .setProcessInstanceKey(elementInstanceValue.getProcessInstanceKey())
             .setProcessDefinitionKey(elementInstanceValue.getProcessDefinitionKey())
             .setProcessDefinitionVersion(elementInstanceValue.getVersion())

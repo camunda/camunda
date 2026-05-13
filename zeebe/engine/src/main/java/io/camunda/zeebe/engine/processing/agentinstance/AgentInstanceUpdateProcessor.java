@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
@@ -25,7 +24,6 @@ import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -66,7 +64,6 @@ public final class AgentInstanceUpdateProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AgentInstanceState agentInstanceState;
-  private final ProcessState processState;
   private final AuthorizationCheckBehavior authCheckBehavior;
 
   public AgentInstanceUpdateProcessor(
@@ -77,7 +74,6 @@ public final class AgentInstanceUpdateProcessor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
-    processState = processingState.getProcessState();
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -93,16 +89,13 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    final var deployedProcess =
-        processState.getProcessByKeyAndTenant(
-            current.getProcessDefinitionKey(), current.getTenantId());
     final var authRequest =
         AuthorizationRequest.builder()
             .command(command)
             .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
             .tenantId(current.getTenantId())
-            .addResourceId(BufferUtil.bufferAsString(deployedProcess.getBpmnProcessId()))
+            .addResourceId(current.getBpmnProcessId())
             .build();
     final var authResult = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (authResult.isLeft()) {

@@ -117,6 +117,7 @@ public class AgentInstanceCreateTest {
     // then
     assertThat(created.getValue().getElementInstanceKey()).isEqualTo(elementInstance.getKey());
     assertThat(created.getValue().getElementId()).isEqualTo(customElementId);
+    assertThat(created.getValue().getBpmnProcessId()).isEqualTo(PROCESS_ID);
     assertThat(created.getValue().getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(created.getValue().getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(created.getValue().getProcessDefinitionVersion())
