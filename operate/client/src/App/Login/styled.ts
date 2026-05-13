@@ -21,7 +21,6 @@ const Button: typeof BaseButton = styled(BaseButton)`
 const Container = styled.main`
   height: 100%;
   padding: var(--cds-spacing-03);
-  border: 3px solid tomato;
 `;
 
 const CopyrightNotice = styled.span`
