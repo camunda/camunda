@@ -858,7 +858,7 @@ public class TaskStoreOpenSearch implements TaskStore {
                     + "}else{"
                     + "doc['"
                     + field
-                    + "'].value.getMillis().toString()"
+                    + "'].value.toInstant().toEpochMilli().toString()"
                     + "}"));
     return s ->
         s.script(
