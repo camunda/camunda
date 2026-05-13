@@ -22,18 +22,13 @@ import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction;
-import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction.SatisfiesJudge;
+import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction.JudgeAssertion;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
 import java.util.Optional;
 
 public class AssertVariableInstructionHandler
     implements TestCaseInstructionHandler<AssertVariableInstruction> {
-
-  @Override
-  public Class<AssertVariableInstruction> getInstructionType() {
-    return AssertVariableInstruction.class;
-  }
 
   @Override
   public void execute(
@@ -56,11 +51,16 @@ public class AssertVariableInstructionHandler
         .ifPresent(judge -> applyJudgeAssertion(baseAssert, variableName, elementSelector, judge));
   }
 
+  @Override
+  public Class<AssertVariableInstruction> getInstructionType() {
+    return AssertVariableInstruction.class;
+  }
+
   private static void applyJudgeAssertion(
       final ProcessInstanceAssert baseAssert,
       final String variableName,
       final Optional<ElementSelector> elementSelector,
-      final SatisfiesJudge satisfiesJudge) {
+      final JudgeAssertion satisfiesJudge) {
 
     final ProcessInstanceAssert configured = applyJudgeConfigOverrides(baseAssert, satisfiesJudge);
     final String expectation = satisfiesJudge.getExpectation();
@@ -73,7 +73,7 @@ public class AssertVariableInstructionHandler
   }
 
   private static ProcessInstanceAssert applyJudgeConfigOverrides(
-      final ProcessInstanceAssert baseAssert, final SatisfiesJudge satisfiesJudge) {
+      final ProcessInstanceAssert baseAssert, final JudgeAssertion satisfiesJudge) {
     if (!satisfiesJudge.getThreshold().isPresent()
         && !satisfiesJudge.getCustomPrompt().isPresent()) {
       return baseAssert;
