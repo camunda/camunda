@@ -49,6 +49,14 @@ final class RocksDbResourcesStep extends AbstractBrokerStartupStep {
                         .getLocalMember()
                         .id(),
                     brokerStartupContext.getBrokerConfiguration());
+            final RuntimeInfo runtimeInfo = new RuntimeInfo(partitionsPerBroker);
+            // after having the number of partitions per broker from the topology we can validate
+            // the config.
+            brokerStartupContext
+                .getBrokerConfiguration()
+                .getExperimental()
+                .getRocksdb()
+                .validateRocksDbMemory(runtimeInfo.partitionCount());
             final var resources =
                 RocksDbResources.of(
                     brokerStartupContext
@@ -56,7 +64,7 @@ final class RocksDbResourcesStep extends AbstractBrokerStartupStep {
                         .getExperimental()
                         .getRocksdb()
                         .createRocksDbConfiguration(),
-                    new RuntimeInfo(partitionsPerBroker));
+                    runtimeInfo);
             brokerStartupContext.setRocksDbResources(resources);
             startupFuture.complete(brokerStartupContext);
           } catch (final Exception e) {
