@@ -171,6 +171,21 @@ components:
       properties:
         jobMetrics:
           $ref: '#/components/schemas/JobMetricsConfigurationResponse'
+<<<<<<< HEAD
+=======
+        components:
+          $ref: '#/components/schemas/ComponentsConfigurationResponse'
+          x-added-in-version: "8.10"
+        deployment:
+          $ref: '#/components/schemas/DeploymentConfigurationResponse'
+          x-added-in-version: "8.10"
+        authentication:
+          $ref: '#/components/schemas/AuthenticationConfigurationResponse'
+          x-added-in-version: "8.10"
+        cloud:
+          $ref: '#/components/schemas/CloudConfigurationResponse'
+          x-added-in-version: "8.10"
+>>>>>>> 402c60f6 (feat: Added x-added-in-version field to propeties of Zeebe V2 API yaml)
 
     JobMetricsConfigurationResponse:
       description: Configuration for job metrics collection and export.

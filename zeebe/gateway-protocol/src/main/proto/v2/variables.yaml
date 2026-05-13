@@ -255,6 +255,7 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          x-added-in-version: "8.9"
 
     VariableValueFilterProperty:
       type: object

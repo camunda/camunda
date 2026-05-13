@@ -293,6 +293,7 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          x-added-in-version: "8.9"
         elementId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
@@ -315,6 +316,46 @@ components:
           type: string
           nullable: true
           description: The correlation key of the message subscription.
+<<<<<<< HEAD
+=======
+        messageSubscriptionType:
+          $ref: '#/components/schemas/MessageSubscriptionTypeEnum'
+          x-added-in-version: "8.10"
+        toolProperties:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            The subset of `zeebe:properties` extension properties whose keys start with the
+            `io.camunda.tool:` prefix, extracted from the BPMN element associated with this
+            subscription. Empty object when no matching properties are defined.
+          x-added-in-version: "8.10"
+        processDefinitionName:
+          type: string
+          nullable: true
+          description: The name of the process definition associated with this message subscription.
+          x-added-in-version: "8.10"
+        processDefinitionVersion:
+          type: integer
+          format: int32
+          nullable: true
+          description: The version of the process definition associated with this message subscription.
+          x-added-in-version: "8.10"
+        toolName:
+          type: string
+          nullable: true
+          description: |
+            Tool name extracted from the `io.camunda.tool:name` zeebe:property.
+            Null when the property is absent.
+          x-added-in-version: "8.10"
+        inboundConnectorType:
+          type: string
+          nullable: true
+          description: |
+            Inbound connector type extracted from the `inbound.type` zeebe:property.
+            Null when the property is absent.
+          x-added-in-version: "8.10"
+>>>>>>> 402c60f6 (feat: Added x-added-in-version field to propeties of Zeebe V2 API yaml)
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
 
@@ -364,46 +405,88 @@ components:
           allOf:
             - $ref: '#/components/schemas/MessageSubscriptionKeyFilterProperty'
           description: The message subscription key associated with this message subscription.
+          x-added-in-version: "8.8"
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
           description: The process definition key associated with this correlated message subscription. This only works for data created with 8.9 and later.
+          x-added-in-version: "8.9"
         processDefinitionId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The process definition ID associated with this message subscription.
+          x-added-in-version: "8.8"
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
           description: The process instance key associated with this message subscription.
+          x-added-in-version: "8.8"
         elementId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The element ID associated with this message subscription.
+          x-added-in-version: "8.8"
         elementInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
           description: The element instance key associated with this message subscription.
+          x-added-in-version: "8.8"
         messageSubscriptionState:
           allOf:
             - $ref: '#/components/schemas/MessageSubscriptionStateFilterProperty'
           description: The message subscription state.
+          x-added-in-version: "8.8"
         lastUpdatedDate:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
           description: The last updated date of the message subscription.
+          x-added-in-version: "8.8"
         messageName:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The name of the message associated with the message subscription.
+          x-added-in-version: "8.8"
         correlationKey:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The correlation key of the message subscription.
+          x-added-in-version: "8.8"
         tenantId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The unique external tenant ID.
+<<<<<<< HEAD
+=======
+          x-added-in-version: "8.8"
+        messageSubscriptionType:
+          allOf:
+            - $ref: '#/components/schemas/MessageSubscriptionTypeFilterProperty'
+          description: |
+            The type of message subscription to filter by. When omitted, both
+            `START_EVENT` and `PROCESS_EVENT` are returned. Only available for data
+            created with Camunda 8.10 or later.
+          x-added-in-version: "8.10"
+        processDefinitionName:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The name of the process definition associated with this message subscription.
+          x-added-in-version: "8.10"
+        processDefinitionVersion:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+          description: The version of the process definition associated with this message subscription.
+          x-added-in-version: "8.10"
+        toolName:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Filter by tool name extracted from the `io.camunda.tool:name` zeebe:property.
+          x-added-in-version: "8.10"
+        inboundConnectorType:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Filter by inbound connector type extracted from the `inbound.type` zeebe:property.
+          x-added-in-version: "8.10"
+>>>>>>> 402c60f6 (feat: Added x-added-in-version field to propeties of Zeebe V2 API yaml)
 
     CorrelatedMessageSubscriptionSearchQueryResult:
       required:
@@ -484,6 +567,7 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          x-added-in-version: "8.9"
         subscriptionKey:
           allOf:
             - $ref: '#/components/schemas/MessageSubscriptionKey'

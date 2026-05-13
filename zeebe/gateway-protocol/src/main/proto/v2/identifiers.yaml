@@ -96,3 +96,98 @@ components:
       maxLength: 256
       example: order-12345
 
+<<<<<<< HEAD
+=======
+
+    ## Filters
+
+    ElementIdFilterProperty:
+      description: ElementId property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/ElementId'
+        - $ref: '#/components/schemas/AdvancedElementIdFilter'
+
+    AdvancedElementIdFilter:
+      title: Advanced filter
+      description: Advanced ElementId filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ElementId'
+          x-added-in-version: "8.10"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ElementId'
+          x-added-in-version: "8.10"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+          x-added-in-version: "8.10"
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementId'
+          x-added-in-version: "8.10"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementId'
+          x-added-in-version: "8.10"
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+          x-added-in-version: "8.10"
+
+    ProcessDefinitionIdFilterProperty:
+      description: ProcessDefinitionId property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionId'
+        - $ref: '#/components/schemas/AdvancedProcessDefinitionIdFilter'
+
+    AdvancedProcessDefinitionIdFilter:
+      title: Advanced filter
+      description: Advanced ProcessDefinitionId filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionId'
+          x-added-in-version: "8.10"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionId'
+          x-added-in-version: "8.10"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+          x-added-in-version: "8.10"
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionId'
+          x-added-in-version: "8.10"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionId'
+          x-added-in-version: "8.10"
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+          x-added-in-version: "8.10"
+>>>>>>> 402c60f6 (feat: Added x-added-in-version field to propeties of Zeebe V2 API yaml)

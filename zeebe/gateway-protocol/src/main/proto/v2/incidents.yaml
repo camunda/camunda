@@ -206,10 +206,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IncidentSearchQuerySortRequest'
+          x-added-in-version: "8.6"
         filter:
           description: The incident search filters.
           allOf:
             - $ref: '#/components/schemas/IncidentFilter'
+          x-added-in-version: "8.6"
 
     IncidentFilter:
       description: Incident search filter.
@@ -231,6 +233,7 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The element ID associated to this incident.
+          x-added-in-version: "8.8"
         creationTime:
           allOf:
             - $ref: "filters.yaml#/components/schemas/DateTimeFilterProperty"
@@ -247,6 +250,7 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
           description: The assigned key, which acts as a unique identifier for this incident.
+          x-added-in-version: "8.8"
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
@@ -259,6 +263,7 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
           description: The element instance key associated to this incident.
+          x-added-in-version: "8.8"
         jobKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
@@ -283,25 +288,31 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: "#/components/schemas/IncidentErrorTypeEnum"
+          x-added-in-version: "8.9"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/IncidentErrorTypeEnum"
+          x-added-in-version: "8.9"
         $exists:
           description: Checks if the current property exists.
           type: boolean
+          x-added-in-version: "8.9"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/IncidentErrorTypeEnum"
+          x-added-in-version: "8.9"
         $notIn:
           description: Checks if the property does not match any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/IncidentErrorTypeEnum"
+          x-added-in-version: "8.9"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+          x-added-in-version: "8.9"
 
     IncidentErrorTypeEnum:
       description: Incident error type with a defined set of values.
@@ -343,25 +354,31 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: "#/components/schemas/IncidentStateEnum"
+          x-added-in-version: "8.9"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/IncidentStateEnum"
+          x-added-in-version: "8.9"
         $exists:
           description: Checks if the current property exists.
           type: boolean
+          x-added-in-version: "8.9"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/IncidentStateEnum"
+          x-added-in-version: "8.9"
         $notIn:
           description: Checks if the property does not match any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/IncidentStateEnum"
+          x-added-in-version: "8.9"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+          x-added-in-version: "8.9"
 
     IncidentStateEnum:
       description: Incident states with a defined set of values.
@@ -408,6 +425,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IncidentResult'
+          x-added-in-version: "8.6"
 
     IncidentResult:
       type: object
@@ -430,41 +448,51 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The process definition ID associated to this incident.
+          x-added-in-version: "8.6"
         errorType:
           description: The type of the incident error.
           allOf:
             - $ref: "#/components/schemas/IncidentErrorTypeEnum"
+          x-added-in-version: "8.6"
         errorMessage:
           type: string
           description: Error message which describes the error in more detail.
+          x-added-in-version: "8.6"
         elementId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
           description: The element ID associated to this incident.
+          x-added-in-version: "8.8"
         creationTime:
           description: The creation time of the incident.
           type: string
           format: date-time
+          x-added-in-version: "8.6"
         state:
           description: The incident state.
           allOf:
             - $ref: "#/components/schemas/IncidentStateEnum"
+          x-added-in-version: "8.6"
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID of the incident.
+          x-added-in-version: "8.6"
         incidentKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/IncidentKey'
           description: The assigned key, which acts as a unique identifier for this incident.
+          x-added-in-version: "8.8"
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The process definition key associated to this incident.
+          x-added-in-version: "8.6"
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The process instance key associated to this incident.
+          x-added-in-version: "8.6"
         rootProcessInstanceKey:
           description: |
             The key of the root process instance. The root process instance is the top-level
@@ -473,15 +501,18 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          x-added-in-version: "8.9"
         elementInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The element instance key associated to this incident.
+          x-added-in-version: "8.8"
         jobKey:
           description: The job key, if exists, associated with this incident.
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
+          x-added-in-version: "8.6"
 
     IncidentResolutionRequest:
       type: object
@@ -489,6 +520,7 @@ components:
       properties:
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
+          x-added-in-version: "8.8"
 
     IncidentProcessInstanceStatisticsByErrorQuery:
       type: object

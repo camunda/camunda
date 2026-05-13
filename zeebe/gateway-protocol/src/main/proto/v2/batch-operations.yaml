@@ -237,8 +237,10 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
           description: Key of the batch operation.
+          x-added-in-version: "8.8"
         batchOperationType:
           $ref: '#/components/schemas/BatchOperationTypeEnum'
+          x-added-in-version: "8.8"
 
     BatchOperationSearchQuerySortRequest:
       type: object
@@ -296,10 +298,12 @@ components:
           description: The type of the actor who performed the operation.
           allOf:
             - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeEnum'
+          x-added-in-version: "8.9"
         actorId:
           description: The ID of the actor who performed the operation.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          x-added-in-version: "8.9"
 
     BatchOperationSearchQueryResult:
       description: The batch operation search query result.
@@ -360,10 +364,12 @@ components:
           nullable: true
           allOf:
             - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeEnum'
+          x-added-in-version: "8.9"
         actorId:
           type: string
           description: The ID of the actor who performed the operation. Available for batch operations created since 8.9.
           nullable: true
+          x-added-in-version: "8.9"
         operationsTotalCount:
           type: integer
           description: The total number of items contained in this batch operation.
@@ -462,6 +468,7 @@ components:
           description: The type of the batch operation.
           allOf:
             - $ref: '#/components/schemas/BatchOperationTypeFilterProperty'
+          x-added-in-version: "8.9"
 
     BatchOperationItemSearchQueryResult:
       type: object
@@ -509,6 +516,7 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          x-added-in-version: "8.9"
         state:
           description: State of the item.
           type: string
@@ -555,6 +563,7 @@ components:
           description: The process instance filter.
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
+          x-added-in-version: "8.9"
       required:
         - filter
 
@@ -569,6 +578,7 @@ components:
           description: The process instance filter.
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
+          x-added-in-version: "8.9"
       required:
         - filter
 
@@ -600,6 +610,7 @@ components:
           description: The migration plan.
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
+          x-added-in-version: "8.9"
       required:
         - filter
         - migrationPlan
@@ -640,6 +651,7 @@ components:
           description: Instructions for moving tokens between elements.
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
+          x-added-in-version: "8.9"
       required:
         - filter
         - moveInstructions
@@ -723,20 +735,25 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: '#/components/schemas/BatchOperationTypeEnum'
+          x-added-in-version: "8.8"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: '#/components/schemas/BatchOperationTypeEnum'
+          x-added-in-version: "8.8"
         $exists:
           description: Checks if the current property exists.
           type: boolean
+          x-added-in-version: "8.8"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: '#/components/schemas/BatchOperationTypeEnum'
+          x-added-in-version: "8.8"
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
+          x-added-in-version: "8.8"
 
     BatchOperationStateFilterProperty:
       description: BatchOperationStateEnum property with full advanced search capabilities.
