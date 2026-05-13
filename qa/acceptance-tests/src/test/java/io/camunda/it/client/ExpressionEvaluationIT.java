@@ -896,10 +896,10 @@ public class ExpressionEvaluationIT {
         .isEqualTo(500);
   }
 
-  // ============ PROCESS / ELEMENT INSTANCE CONTEXT TESTS ============
+  // ============ SCOPE CONTEXT TESTS ============
 
   @Test
-  void shouldEvaluateExpressionInProcessInstanceContext() {
+  void shouldEvaluateExpressionWithProcessInstanceScopeKey() {
     // given
     final ProcessAndElement instance = deployAndStart(Map.of("x", 10, "y", 20));
 
@@ -908,7 +908,7 @@ public class ExpressionEvaluationIT {
         camundaClient
             .newEvaluateExpressionCommand()
             .expression("=x + y")
-            .processInstanceKey(instance.processInstanceKey)
+            .scopeKey(instance.processInstanceKey)
             .send()
             .join();
 
@@ -918,7 +918,7 @@ public class ExpressionEvaluationIT {
   }
 
   @Test
-  void shouldEvaluateExpressionInElementInstanceContext() {
+  void shouldEvaluateExpressionWithElementInstanceScopeKey() {
     // given
     final ProcessAndElement instance = deployAndStart(Map.of("x", 10, "y", 20));
 
@@ -927,31 +927,13 @@ public class ExpressionEvaluationIT {
         camundaClient
             .newEvaluateExpressionCommand()
             .expression("=x + y")
-            .elementInstanceKey(instance.elementInstanceKey)
+            .scopeKey(instance.elementInstanceKey)
             .send()
             .join();
 
     // then - element instance inherits from the process instance scope
     assertThat(response.getResult()).isEqualTo(30);
     assertThat(response.getWarnings()).isEmpty();
-  }
-
-  @Test
-  void shouldRejectWhenBothProcessInstanceKeyAndElementInstanceKeyAreSet() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newEvaluateExpressionCommand()
-                    .expression("=1")
-                    .processInstanceKey(1L)
-                    .elementInstanceKey(2L)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("processInstanceKey")
-        .hasMessageContaining("elementInstanceKey")
-        .hasMessageContaining("mutually exclusive");
   }
 
   @Test
@@ -964,7 +946,7 @@ public class ExpressionEvaluationIT {
         camundaClient
             .newEvaluateExpressionCommand()
             .expression("=x")
-            .processInstanceKey(instance.processInstanceKey)
+            .scopeKey(instance.processInstanceKey)
             .send()
             .join();
 
@@ -978,17 +960,17 @@ public class ExpressionEvaluationIT {
   // ---- precedence: same variable name at process and element scope ----
 
   @Test
-  void shouldReadProcessLevelVariableWhenUsingProcessInstanceKey() {
+  void shouldReadProcessLevelVariableWhenUsingProcessInstanceScopeKey() {
     // given - process-level x=10, element-local x=99 (shadows only the element scope)
     final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
     setLocalVariable(instance.elementInstanceKey, "x", 99);
 
-    // when - asking with processInstanceKey resolves at the process root scope
+    // when - asking with process instance scope key resolves at the process root scope
     final EvaluateExpressionResponse response =
         camundaClient
             .newEvaluateExpressionCommand()
             .expression("=x")
-            .processInstanceKey(instance.processInstanceKey)
+            .scopeKey(instance.processInstanceKey)
             .send()
             .join();
 
@@ -998,17 +980,17 @@ public class ExpressionEvaluationIT {
   }
 
   @Test
-  void shouldReadElementLevelVariableWhenUsingElementInstanceKey() {
+  void shouldReadElementLevelVariableWhenUsingElementInstanceScopeKey() {
     // given - same setup as above: process-level x=10, element-local x=99
     final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
     setLocalVariable(instance.elementInstanceKey, "x", 99);
 
-    // when - asking with elementInstanceKey resolves starting at the element scope
+    // when - asking with element instance scope key resolves starting at the element scope
     final EvaluateExpressionResponse response =
         camundaClient
             .newEvaluateExpressionCommand()
             .expression("=x")
-            .elementInstanceKey(instance.elementInstanceKey)
+            .scopeKey(instance.elementInstanceKey)
             .send()
             .join();
 
@@ -1024,12 +1006,12 @@ public class ExpressionEvaluationIT {
     // given - process-level x=10
     final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
 
-    // when - request-body variable x=999 is supplied alongside processInstanceKey
+    // when - request-body variable x=999 is supplied alongside a process instance scope key
     final EvaluateExpressionResponse response =
         camundaClient
             .newEvaluateExpressionCommand()
             .expression("=x")
-            .processInstanceKey(instance.processInstanceKey)
+            .scopeKey(instance.processInstanceKey)
             .variable("x", 999)
             .send()
             .join();
@@ -1044,12 +1026,12 @@ public class ExpressionEvaluationIT {
     final ProcessAndElement instance = deployAndStart(Map.of("x", 10));
     setLocalVariable(instance.elementInstanceKey, "x", 99);
 
-    // when - request-body variable x=999 is supplied alongside elementInstanceKey
+    // when - request-body variable x=999 is supplied alongside an element instance scope key
     final EvaluateExpressionResponse response =
         camundaClient
             .newEvaluateExpressionCommand()
             .expression("=x")
-            .elementInstanceKey(instance.elementInstanceKey)
+            .scopeKey(instance.elementInstanceKey)
             .variable("x", 999)
             .send()
             .join();
