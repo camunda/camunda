@@ -30,20 +30,21 @@ spec:
 
                 echo "Detecting whether we run OpenSearch or Elasticsearch..."
                 # Support both Elasticsearch and OpenSearch, we clean the first one that is available.
-                for URL in "http://elastic-hl:9200" "http://opensearch-headless:9200"
+                for url in "http://elastic-hl:9200" "http://opensearch-headless:9200"
                 do
-                  echo "Checking URL: $URL"
+                  echo "Checking URL: $url"
                   set +e
-                  curl -sf "$URL" > /dev/null
+                  curl -sf "$url" > /dev/null
                   retval=$?
                   set -e
                   if [ $retval -eq 0 ]; then
+                  URL=$url
                     echo "Using Elasticsearch/OpenSearch URL at: $URL"
                     break
                   fi
                 done
 
-                if [ -z $URL ]; then
+                if [ -z "$URL" ]; then
                   echo "No Elasticsearch or OpenSearch instance found. Exiting."
                   exit 1
                 fi
