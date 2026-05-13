@@ -45,10 +45,14 @@ public final class AgentInstanceUpdateProcessor
       "Expected to update agent instance, but changedAttributes is empty.";
   private static final String ERROR_MSG_UNKNOWN_ATTRIBUTES =
       "Expected to update agent instance, but changedAttributes contained unknown attribute(s) %s. Allowed attributes are: %s.";
-  private static final String ERROR_MSG_NEGATIVE_METRIC =
-      "Expected to update agent instance metrics, but received negative delta(s): inputTokens=%d, outputTokens=%d, modelCalls=%d, toolCalls=%d. Metric deltas must be non-negative.";
+  private static final String ERROR_MSG_INVALID_METRIC_DELTA =
+      "Expected to update agent instance metrics, but received invalid delta(s): inputTokens=%d, outputTokens=%d, modelCalls=%d, toolCalls=%d. Each metric delta must be either -1 (field not provided) or a non-negative value.";
   private static final String ERROR_MSG_INVALID_TRANSITION =
       "Expected to update agent instance with key '%d' from status '%s' to '%s', but this transition is not allowed.";
+
+  // -1 signals that the gateway did not receive a value for the field — treat as not-provided.
+  // 0 means the field was provided but did not move; both are no-ops in the engine.
+  private static final long METRIC_NOT_PROVIDED = -1L;
 
   private static final Set<AgentInstanceStatus> ACTIVE_STATUSES =
       EnumSet.of(
@@ -81,7 +85,6 @@ public final class AgentInstanceUpdateProcessor
   public void processRecord(final TypedRecord<AgentInstanceRecord> command) {
     final var commandValue = command.getValue();
     final var agentInstanceKey = command.getKey();
-    final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
 
     final var current = agentInstanceState.getRecord(agentInstanceKey);
     if (current == null) {
@@ -108,6 +111,7 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
+    final Set<String> changed = Set.copyOf(commandValue.getChangedAttributes());
     if (changed.isEmpty()) {
       writeRejection(command, RejectionType.INVALID_ARGUMENT, ERROR_MSG_EMPTY_CHANGED);
       return;
@@ -129,14 +133,14 @@ public final class AgentInstanceUpdateProcessor
 
     if (changed.contains(ATTR_METRICS)) {
       final var metrics = commandValue.getMetrics();
-      if (metrics.getInputTokens() < 0
-          || metrics.getOutputTokens() < 0
-          || metrics.getModelCalls() < 0
-          || metrics.getToolCalls() < 0) {
+      if (isInvalidMetricDelta(metrics.getInputTokens())
+          || isInvalidMetricDelta(metrics.getOutputTokens())
+          || isInvalidMetricDelta(metrics.getModelCalls())
+          || isInvalidMetricDelta(metrics.getToolCalls())) {
         writeRejection(
             command,
             RejectionType.INVALID_ARGUMENT,
-            ERROR_MSG_NEGATIVE_METRIC.formatted(
+            ERROR_MSG_INVALID_METRIC_DELTA.formatted(
                 metrics.getInputTokens(),
                 metrics.getOutputTokens(),
                 metrics.getModelCalls(),
@@ -168,14 +172,35 @@ public final class AgentInstanceUpdateProcessor
           current.setStatus(commandValue.getStatus());
         }
         case ATTR_METRICS -> {
+          // Apply each delta, skipping -1 (not provided) and 0 (provided but unchanged). Only
+          // include "metrics" in the event's changedAttributes when at least one field actually
+          // moved forward.
           final var currentMetrics = current.getMetrics();
           final var deltaMetrics = commandValue.getMetrics();
-          currentMetrics
-              .setInputTokens(currentMetrics.getInputTokens() + deltaMetrics.getInputTokens())
-              .setOutputTokens(currentMetrics.getOutputTokens() + deltaMetrics.getOutputTokens())
-              .setModelCalls(currentMetrics.getModelCalls() + deltaMetrics.getModelCalls())
-              .setToolCalls(currentMetrics.getToolCalls() + deltaMetrics.getToolCalls());
-          effective.add(ATTR_METRICS);
+          var metricsChanged = false;
+          if (deltaMetrics.getInputTokens() > 0) {
+            currentMetrics.setInputTokens(
+                currentMetrics.getInputTokens() + deltaMetrics.getInputTokens());
+            metricsChanged = true;
+          }
+          if (deltaMetrics.getOutputTokens() > 0) {
+            currentMetrics.setOutputTokens(
+                currentMetrics.getOutputTokens() + deltaMetrics.getOutputTokens());
+            metricsChanged = true;
+          }
+          if (deltaMetrics.getModelCalls() > 0) {
+            currentMetrics.setModelCalls(
+                currentMetrics.getModelCalls() + deltaMetrics.getModelCalls());
+            metricsChanged = true;
+          }
+          if (deltaMetrics.getToolCalls() > 0) {
+            currentMetrics.setToolCalls(
+                currentMetrics.getToolCalls() + deltaMetrics.getToolCalls());
+            metricsChanged = true;
+          }
+          if (metricsChanged) {
+            effective.add(ATTR_METRICS);
+          }
         }
         case ATTR_TOOLS -> {
           current.setTools(commandValue.getTools());
@@ -189,6 +214,14 @@ public final class AgentInstanceUpdateProcessor
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.UPDATED, current);
     responseWriter.writeEventOnCommand(
         agentInstanceKey, AgentInstanceIntent.UPDATED, current, command);
+  }
+
+  private static boolean isInvalidMetricDelta(final long delta) {
+    return delta < METRIC_NOT_PROVIDED;
+  }
+
+  private static boolean isInvalidMetricDelta(final int delta) {
+    return delta < METRIC_NOT_PROVIDED;
   }
 
   private boolean isAllowedTransition(

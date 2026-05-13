@@ -312,8 +312,8 @@ public class AgentInstanceUpdateTest {
   }
 
   @Test
-  public void shouldRejectNegativeMetricDelta() {
-    // given
+  public void shouldRejectMetricDeltaBelowNotProvidedSentinel() {
+    // given — anything below -1 (the not-provided sentinel) is invalid
     final var agentInstanceKey = createAgentInstance();
 
     // when
@@ -321,13 +321,62 @@ public class AgentInstanceUpdateTest {
         ENGINE
             .agentInstances()
             .withAgentInstanceKey(agentInstanceKey)
-            .withMetricsDelta(-1L, 0L, 0, 0)
+            .withMetricsDelta(-2L, 0L, 0, 0)
             .expectRejection()
             .update();
 
     // then
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).containsIgnoringCase("negative");
+    assertThat(rejection.getRejectionReason()).containsIgnoringCase("metric delta");
+  }
+
+  @Test
+  public void shouldTreatMetricDeltaOfMinusOneAsNotProvided() {
+    // given — bring metrics to a known baseline
+    final var agentInstanceKey = createAgentInstance();
+    ENGINE
+        .agentInstances()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withMetricsDelta(10L, 20L, 1, 2)
+        .update();
+
+    // when — only inputTokens is provided; the other fields are -1 (not provided)
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(5L, -1L, -1, -1)
+            .update();
+
+    // then — only inputTokens moves; not-provided fields are left untouched, and "metrics" still
+    // appears in changedAttributes because at least one field changed
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isEqualTo(15L);
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isEqualTo(20L);
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isEqualTo(1);
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isEqualTo(2);
+    assertThat(updated.getValue().getChangedAttributes()).contains("metrics");
+  }
+
+  @Test
+  public void shouldDropMetricsFromChangedAttributesWhenAllDeltasAreNoOp() {
+    // given
+    final var agentInstanceKey = createAgentInstance();
+
+    // when — all deltas are either 0 (provided but no change) or -1 (not provided)
+    final var updated =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withMetricsDelta(0L, -1L, 0, -1)
+            .update();
+
+    // then — UPDATED is still emitted, but the event signals that no field changed by omitting
+    // "metrics" from changedAttributes
+    assertThat(updated.getValue().getMetrics().getInputTokens()).isZero();
+    assertThat(updated.getValue().getMetrics().getOutputTokens()).isZero();
+    assertThat(updated.getValue().getMetrics().getModelCalls()).isZero();
+    assertThat(updated.getValue().getMetrics().getToolCalls()).isZero();
+    assertThat(updated.getValue().getChangedAttributes()).doesNotContain("metrics");
   }
 
   @Test
