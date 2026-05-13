@@ -272,55 +272,28 @@ class RocksDbSharedCacheTest {
   static Stream<Arguments> provideExceedsTotalSystemMemoryScenarios() {
     return Stream.of(
         // 512MB limit with PARTITION strategy, 1 partition, 256MB total system memory
-        Arguments.of(
-            512L * 1024 * 1024,
-            MemoryAllocationStrategy.PARTITION,
-            1,
-            256L * 1024 * 1024,
-            new String[] {"512 MB", "256 MB", "PARTITION"}),
+        Arguments.of(512L * 1024 * 1024, MemoryAllocationStrategy.PARTITION, 1, 256L * 1024 * 1024),
         // 512MB limit with BROKER strategy, 1 partition, 256MB total system memory
-        Arguments.of(
-            512L * 1024 * 1024,
-            MemoryAllocationStrategy.BROKER,
-            1,
-            256L * 1024 * 1024,
-            new String[] {"BROKER"}),
+        Arguments.of(512L * 1024 * 1024, MemoryAllocationStrategy.BROKER, 1, 256L * 1024 * 1024),
         // 128MB per partition with 4 partitions = 512MB, 256MB total system memory
         Arguments.of(
-            128L * 1024 * 1024,
-            MemoryAllocationStrategy.PARTITION,
-            4,
-            256L * 1024 * 1024,
-            new String[] {"512 MB", "256 MB", "Partitions count: 4"}));
+            128L * 1024 * 1024, MemoryAllocationStrategy.PARTITION, 4, 256L * 1024 * 1024));
   }
 
   @ParameterizedTest
   @MethodSource("provideExceedsTotalSystemMemoryScenarios")
-  void shouldThrowIfRequestedMemoryExceedsTotalSystemMemory(
+  void shouldNotThrowButWarnIfRequestedMemoryExceedsTotalSystemMemory(
       final long memoryLimitBytes,
       final MemoryAllocationStrategy strategy,
       final int partitionsCount,
-      final long totalSystemMemory,
-      final String[] expectedMessageParts) {
+      final long totalSystemMemory) {
     // given
     rocksdbCfg.setMemoryLimit(DataSize.ofBytes(memoryLimitBytes));
     rocksdbCfg.setMemoryAllocationStrategy(strategy);
 
     // when/then
     try (final var ignored = mockMemoryEnvironment(totalSystemMemory)) {
-      final var throwable = catchThrowable(() -> rocksdbCfg.validateRocksDbMemory(partitionsCount));
-
-      var assertion =
-          assertThat(throwable)
-              .isInstanceOf(IllegalArgumentException.class)
-              .hasMessageContaining("Requested RocksDB memory")
-              .hasMessageContaining("exceeds total system memory")
-              .hasMessageContaining(
-                  "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT");
-
-      for (final String part : expectedMessageParts) {
-        assertion = assertion.hasMessageContaining(part);
-      }
+      assertThatNoException().isThrownBy(() -> rocksdbCfg.validateRocksDbMemory(partitionsCount));
     }
   }
 }
