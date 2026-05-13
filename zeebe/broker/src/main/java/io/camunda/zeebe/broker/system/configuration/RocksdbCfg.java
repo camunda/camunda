@@ -84,7 +84,7 @@ public final class RocksdbCfg implements ConfigurationEntry {
       // correctly set, and if so, we validate the allocated memory does not go above the threshold.
       validateMaxMemoryFraction(totalMemorySize, blockCacheBytes);
       // validate that the allocated memory does not exceed total system memory.
-      validateMemoryDoesNotExceedSystemMemory(
+      validateExpectedRocksDBMemoryUsageDoesNotExceedSystemMemory(
           totalMemorySize, blockCacheBytes, partitionsPerBrokerCount);
     }
 
@@ -123,28 +123,26 @@ public final class RocksdbCfg implements ConfigurationEntry {
     }
   }
 
-  void validateMemoryDoesNotExceedSystemMemory(
+  void validateExpectedRocksDBMemoryUsageDoesNotExceedSystemMemory(
       final long totalMemorySize, final long blockCacheBytes, final int partitionsCount) {
-    if (blockCacheBytes > totalMemorySize) {
-      final String configHint =
-          switch (memoryAllocationStrategy) {
-            case BROKER, PARTITION ->
-                "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT.";
-            case FRACTION ->
-                throw new IllegalStateException(
-                    "Unexpected value: FRACTION should be within [0,1]");
-          };
-      throw new IllegalArgumentException(
-          String.format(
-              "Requested RocksDB memory (%d bytes / %d MB) exceeds total system memory (%d bytes / %d MB). "
-                  + "Memory allocation strategy: %s. Partitions count: %d. %s",
+    if (blockCacheBytes <= totalMemorySize) {
+      return;
+    }
+    switch (memoryAllocationStrategy) {
+      case BROKER, PARTITION ->
+          LOGGER.warn(
+              "Requested RocksDB memory ({} bytes / {} MB) exceeds total system memory ({} bytes / {} MB). "
+                  + "Memory allocation strategy: {}. Partitions count: {}. "
+                  + "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT.",
               blockCacheBytes,
               blockCacheBytes / (1024 * 1024),
               totalMemorySize,
               totalMemorySize / (1024 * 1024),
               getMemoryAllocationStrategy(),
-              partitionsCount,
-              configHint));
+              partitionsCount);
+      // if FRACTION:
+      default ->
+          throw new IllegalStateException("Unexpected value: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYFRACTION should be within [0,1]");
     }
   }
 
