@@ -34,7 +34,7 @@ public class NodeId extends AbstractIdentifier<String> implements Comparable<Nod
    * @param id string identifier
    */
   public NodeId(final String id) {
-    super(id);
+    super(Objects.requireNonNull(id));
   }
 
   /**

@@ -28,35 +28,17 @@ public class MemberId extends NodeId {
    * Null when the member is anonymous When a zone is present, this is the node index in the local
    * cluster (e.g. 0, 1, 2, 3...) If a zone is not present, it's equal to the id
    */
-  private final @Nullable Integer nodeIdx;
+  protected final @Nullable Integer nodeIdx;
 
   /** Null when the member is not zone aware */
-  private final @Nullable String zone;
+  protected final @Nullable String zone;
 
   // id must be created in the factory method as it's a required argument of the super constructor
-  private MemberId(final @Nullable String zone, final @Nullable Integer nodeIdx, final String id) {
+  protected MemberId(
+      final @Nullable String zone, final @Nullable Integer nodeIdx, final String id) {
     super(id);
     this.nodeIdx = validateNodeIdx(nodeIdx);
     this.zone = validateZone(zone);
-  }
-
-  public MemberId(final String id) {
-    super(id);
-    final var parts = id.split("/");
-    if (parts.length > 2) {
-      throw new IllegalArgumentException("Expected id to be of the form $zone/$id, but got " + id);
-    } else if (parts.length == 2) {
-      zone = parts[0];
-      nodeIdx = tryParseInt(parts[1]);
-    } else if (parts.length == 1) {
-      zone = null;
-      nodeIdx = tryParseInt(parts[0]);
-    } else {
-      throw new IllegalArgumentException(
-          "Expected id to be of the form $zone/$id or $id, but got " + id);
-    }
-    validateZone(zone);
-    validateNodeIdx(nodeIdx);
   }
 
   /**
@@ -75,7 +57,26 @@ public class MemberId extends NodeId {
    * @return node id
    */
   public static MemberId from(final String id) {
-    return new MemberId(id);
+    final Integer nodeIdx;
+    final String zone;
+    final var parts = id.split("/");
+    if (parts.length > 2) {
+      throw new IllegalArgumentException("Expected id to be of the form $zone/$id, but got " + id);
+    } else if (parts.length == 2) {
+      zone = parts[0];
+      nodeIdx = tryParseInt(parts[1]);
+    } else if (parts.length == 1) {
+      zone = null;
+      nodeIdx = tryParseInt(parts[0]);
+    } else {
+      throw new IllegalArgumentException(
+          "Expected id to be of the form $zone/$id or $id, but got " + id);
+    }
+    if (nodeIdx != null) {
+      return new BrokerId(zone, nodeIdx, id);
+    } else {
+      return new MemberId(zone, null, id);
+    }
   }
 
   /**
@@ -85,7 +86,7 @@ public class MemberId extends NodeId {
    * it is {@code "$zone/$nodeId"}. Leading/trailing whitespace is stripped from {@code zone}.
    */
   public static MemberId from(final @Nullable String zone, final int nodeId) {
-    return new MemberId(zone, nodeId, buildMemberIdString(zone, nodeId));
+    return new BrokerId(zone, nodeId, buildMemberIdString(zone, nodeId));
   }
 
   public int nodeIdx() {
@@ -106,21 +107,24 @@ public class MemberId extends NodeId {
     return Objects.equals(this.zone, zone);
   }
 
-  private static @Nullable Integer validateNodeIdx(final @Nullable Integer nodeIdx) {
+  protected static @Nullable Integer validateNodeIdx(final @Nullable Integer nodeIdx) {
     if (nodeIdx != null && nodeIdx < 0) {
       throw new IllegalArgumentException("Expected nodeIdx to be >= 0, but got " + nodeIdx);
     }
     return nodeIdx;
   }
 
-  private static @Nullable String validateZone(final @Nullable String zone) {
+  protected static @Nullable String validateZone(final @Nullable String zone) {
     if (zone != null && zone.isBlank()) {
       throw new IllegalArgumentException("Expected zone to be non-empty, but was empty");
+    }
+    if (zone != null && zone.contains("/")) {
+      throw new IllegalArgumentException("Expected zone to not contain a '/', but was " + zone);
     }
     return zone != null ? zone.strip() : null;
   }
 
-  private static String buildMemberIdString(final @Nullable String zone, final int nodeIdx) {
+  protected static String buildMemberIdString(final @Nullable String zone, final int nodeIdx) {
     if (zone == null) {
       return Integer.toString(nodeIdx);
     } else {
