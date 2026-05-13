@@ -428,9 +428,7 @@ public class CamundaMultiDBExtension
       }
     }
 
-    // we need to close the test application before cleaning up
-    closeables.add(() -> setupHelper.cleanup(testPrefix));
-    closeables.add(setupHelper);
+    // cleaning up secondary storage is explicitly handled in afterAll() method
 
     Awaitility.await("Await secondary storage connection")
         .timeout(TIMEOUT_DATABASE_READINESS)
@@ -732,8 +730,21 @@ public class CamundaMultiDBExtension
       return;
     }
 
+    // 1. Stop application and other resources first (forward iteration)
     CloseHelper.quietCloseAll(closeables);
     CloseHelper.quietClose(authenticatedClientFactory);
+
+    // 2. Delete test indices now that the application has stopped writing
+    if (testPrefix != null) {
+      try {
+        setupHelper.cleanup(testPrefix);
+      } catch (final Exception e) {
+        LOGGER.warn("Failed to cleanup indices with prefix {}", testPrefix, e);
+      }
+    }
+    CloseHelper.quietClose(setupHelper);
+
+    // 3. Reset exporter to make sure it doesn't interfere with other tests
     RecordingExporter.reset();
 
     coordinationStore(context).remove(EXTENSION_COORDINATION_KEY);
