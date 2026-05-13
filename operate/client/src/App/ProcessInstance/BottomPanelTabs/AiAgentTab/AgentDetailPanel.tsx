@@ -12,6 +12,7 @@ import {
   Accordion,
   AccordionItem,
   Button,
+  CodeSnippet,
   IconButton,
   Modal,
 } from '@carbon/react';
@@ -428,48 +429,21 @@ function ToolCallDetail({
                   gap: 'var(--cds-spacing-03)',
                 }}
               >
-                <pre
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    margin: 0,
-                    padding: 'var(--cds-spacing-05)',
-                    fontFamily:
-                      "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-                    fontSize: 13,
-                    lineHeight: '1.5',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    maxHeight: 260,
-                    overflowY: 'auto',
-                    background: 'var(--cds-layer-02)',
-                    borderRadius: 4,
-                  }}
-                >
-                  {inputText}
-                </pre>
-                <div style={{display: 'flex', flexShrink: 0}}>
-                  <Button
-                    kind="ghost"
-                    size="sm"
-                    hasIconOnly
-                    renderIcon={Maximize}
-                    iconDescription="Expand"
-                    tooltipPosition="top"
-                    onClick={() => setIsInputModalOpen(true)}
-                    aria-label="Expand"
-                  />
-                  <Button
-                    kind="ghost"
-                    size="sm"
-                    hasIconOnly
-                    renderIcon={Copy}
-                    iconDescription="Copy"
-                    tooltipPosition="top"
-                    onClick={() => navigator.clipboard.writeText(inputText)}
-                    aria-label="Copy"
-                  />
+                <div style={{flex: 1, minWidth: 0}}>
+                  <CodeSnippet type="multi" wrapText feedback="Copied!">
+                    {inputText}
+                  </CodeSnippet>
                 </div>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  hasIconOnly
+                  renderIcon={Maximize}
+                  iconDescription="Expand"
+                  tooltipPosition="top"
+                  onClick={() => setIsInputModalOpen(true)}
+                  aria-label="Expand"
+                />
               </div>
             ) : (
               <div
@@ -493,48 +467,21 @@ function ToolCallDetail({
                   gap: 'var(--cds-spacing-03)',
                 }}
               >
-                <pre
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    margin: 0,
-                    padding: 'var(--cds-spacing-05)',
-                    fontFamily:
-                      "var(--cds-code-01-font-family, 'IBM Plex Mono', monospace)",
-                    fontSize: 13,
-                    lineHeight: '1.5',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    maxHeight: 260,
-                    overflowY: 'auto',
-                    background: 'var(--cds-layer-02)',
-                    borderRadius: 4,
-                  }}
-                >
-                  {outputText}
-                </pre>
-                <div style={{display: 'flex', flexShrink: 0}}>
-                  <Button
-                    kind="ghost"
-                    size="sm"
-                    hasIconOnly
-                    renderIcon={Maximize}
-                    iconDescription="Expand"
-                    tooltipPosition="top"
-                    onClick={() => setIsOutputModalOpen(true)}
-                    aria-label="Expand"
-                  />
-                  <Button
-                    kind="ghost"
-                    size="sm"
-                    hasIconOnly
-                    renderIcon={Copy}
-                    iconDescription="Copy"
-                    tooltipPosition="top"
-                    onClick={() => navigator.clipboard.writeText(outputText)}
-                    aria-label="Copy"
-                  />
+                <div style={{flex: 1, minWidth: 0}}>
+                  <CodeSnippet type="multi" wrapText feedback="Copied!">
+                    {outputText}
+                  </CodeSnippet>
                 </div>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  hasIconOnly
+                  renderIcon={Maximize}
+                  iconDescription="Expand"
+                  tooltipPosition="top"
+                  onClick={() => setIsOutputModalOpen(true)}
+                  aria-label="Expand"
+                />
               </div>
             ) : (
               <div
