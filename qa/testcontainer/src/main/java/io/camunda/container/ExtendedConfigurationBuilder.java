@@ -8,11 +8,13 @@
 package io.camunda.container;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -22,14 +24,25 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator.Feature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.configuration.Api;
+import io.camunda.configuration.BatchOperation;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.Data;
+import io.camunda.configuration.DocumentBasedHistory;
 import io.camunda.configuration.Exporter;
+import io.camunda.configuration.Grpc;
+import io.camunda.configuration.InternalApi;
+import io.camunda.configuration.KeyStore;
+import io.camunda.configuration.LongPolling;
+import io.camunda.configuration.Membership;
 import io.camunda.configuration.Monitoring;
+import io.camunda.configuration.Network;
+import io.camunda.configuration.PostExport;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Security;
+import io.camunda.configuration.Ssl;
+import io.camunda.configuration.TlsCluster;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.Webapps;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -40,6 +53,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -48,7 +62,7 @@ import org.springframework.util.unit.DataSize;
 public class ExtendedConfigurationBuilder {
 
   public static final String CONFIG_FILE_NAME = "config.yaml";
-  private static final ObjectMapper YAML_MAPPER = createYamlMapper();
+  private static final ObjectMapper MAPPER = createMapper();
   private static final String CAMUNDA_HEADER = "camunda";
 
   private static final TypeReference<LinkedHashMap<String, Object>> MAP_TYPE =
@@ -62,20 +76,45 @@ public class ExtendedConfigurationBuilder {
     initializeUnifiedConfigDefaults();
   }
 
-  private static ObjectMapper createYamlMapper() {
+  /**
+   * Single mapper that drives both the YAML export (consumed by the Camunda Docker container) and
+   * the flat-property export (consumed by in-process test applications).
+   *
+   * <p>Reads actual stored field values, bypassing the unified-config getters whose accessor logic
+   * (validation against legacy property names, fallbacks) is irrelevant when reflecting in-memory
+   * builder state. Internal helper fields that are not part of the binding contract — e.g. {@code
+   * legacyPropertiesMap}, constructor-injected {@code prefix}/{@code databaseName} — are ignored
+   * via MixIns kept here to avoid touching production classes.
+   */
+  private static ObjectMapper createMapper() {
     final var springTypesModule = new SimpleModule("extendedTypes");
     springTypesModule.addSerializer(new DurationSerializer());
     springTypesModule.addSerializer(new DataSizeSerializer());
 
-    return new ObjectMapper(new YAMLFactory().disable(Feature.WRITE_DOC_START_MARKER))
-        .registerModule(new JavaTimeModule())
-        .registerModule(new Jdk8Module())
-        .registerModule(springTypesModule)
-        .disable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
-        .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
-        .setVisibility(PropertyAccessor.ALL, Visibility.NONE)
-        .setVisibility(PropertyAccessor.GETTER, Visibility.ANY)
-        .setVisibility(PropertyAccessor.IS_GETTER, Visibility.ANY);
+    final var mapper =
+        new ObjectMapper(new YAMLFactory().disable(Feature.WRITE_DOC_START_MARKER))
+            .registerModule(new JavaTimeModule())
+            .registerModule(new Jdk8Module())
+            .registerModule(springTypesModule)
+            .disable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
+            .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
+            .setVisibility(PropertyAccessor.ALL, Visibility.NONE)
+            .setVisibility(PropertyAccessor.FIELD, Visibility.ANY)
+            .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+
+    mapper.addMixIn(Cluster.class, LegacyPropertiesMapMixIn.class);
+    mapper.addMixIn(Grpc.class, LegacyPropertiesMapMixIn.class);
+    mapper.addMixIn(InternalApi.class, LegacyPropertiesMapMixIn.class);
+    mapper.addMixIn(LongPolling.class, LegacyPropertiesMapMixIn.class);
+    mapper.addMixIn(Membership.class, LegacyPropertiesMapMixIn.class);
+    mapper.addMixIn(Network.class, LegacyPropertiesMapMixIn.class);
+    mapper.addMixIn(Ssl.class, LegacyPropertiesMapMixIn.class);
+    mapper.addMixIn(TlsCluster.class, LegacyPropertiesMapMixIn.class);
+    mapper.addMixIn(KeyStore.class, KeyStoreMixIn.class);
+    mapper.addMixIn(BatchOperation.class, BatchOperationMixIn.class);
+    mapper.addMixIn(DocumentBasedHistory.class, PrefixMixIn.class);
+    mapper.addMixIn(PostExport.class, PrefixMixIn.class);
+    return mapper;
   }
 
   public Camunda getUnifiedConfig() {
@@ -262,11 +301,63 @@ public class ExtendedConfigurationBuilder {
             }
             mergeConfigs(fullConfig, flatten(additionalConfigs));
 
-            return YAML_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(fullConfig);
+            return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(fullConfig);
           } catch (final IOException e) {
             throw new RuntimeException(e);
           }
         });
+  }
+
+  /**
+   * Exports this builder's unified configuration as flat, Spring-binding-ready property keys (e.g.
+   * {@code camunda.cluster.size=1}). Only fields whose stored value differs from a pristine {@code
+   * new Camunda()} are emitted, keeping the property set lean and predictable.
+   *
+   * <p>Values are read directly from instance fields via reflection (no getters), so accessor-side
+   * validation and legacy fallbacks in the unified-config classes do not interfere.
+   */
+  public Map<String, Object> exportConfigAsFlatProperties() {
+    return flatPropertiesFor(unifiedConfig);
+  }
+
+  /**
+   * Reflects {@code config} field-by-field, diffs it against a pristine {@code new Camunda()}, and
+   * returns a flat map of {@code camunda.*} property keys suitable for Spring's relaxed binding.
+   * List elements are emitted as {@code key[i]}; map entries as {@code key.entryKey}.
+   */
+  public static Map<String, Object> flatPropertiesFor(final Camunda config) {
+    return UnifiedConfigurationHelper.withoutValidation(
+        () -> {
+          final Map<String, Object> defaultMap = flatten(new Camunda());
+          final Map<String, Object> configuredMap = flatten(config);
+          final Map<String, Object> diff = diffMaps(defaultMap, configuredMap);
+          final Map<String, Object> flat = new LinkedHashMap<>();
+          flattenInto(diff, CAMUNDA_HEADER, flat);
+          return flat;
+        });
+  }
+
+  private static void flattenInto(
+      final Object node, final String key, final Map<String, Object> flat) {
+    if (node instanceof final Map<?, ?> map) {
+      if (map.isEmpty()) {
+        return;
+      }
+      for (final Map.Entry<?, ?> entry : map.entrySet()) {
+        final String childKey =
+            key.isEmpty() ? entry.getKey().toString() : key + "." + entry.getKey();
+        flattenInto(entry.getValue(), childKey, flat);
+      }
+    } else if (node instanceof final List<?> list) {
+      if (list.isEmpty()) {
+        return;
+      }
+      for (int i = 0; i < list.size(); i++) {
+        flattenInto(list.get(i), key + "[" + i + "]", flat);
+      }
+    } else if (node != null) {
+      flat.put(key, node);
+    }
   }
 
   /**
@@ -330,7 +421,7 @@ public class ExtendedConfigurationBuilder {
   }
 
   private static Map<String, Object> flatten(final Object value) {
-    return YAML_MAPPER.convertValue(value, MAP_TYPE);
+    return MAPPER.convertValue(value, MAP_TYPE);
   }
 
   /** Serializes {@link Duration} as an ISO-8601 string (e.g. {@code PT5M}, {@code PT0.1S}). */
@@ -345,6 +436,30 @@ public class ExtendedConfigurationBuilder {
         throws IOException {
       gen.writeString(value.toString());
     }
+  }
+
+  /** Hides the legacy-property-name lookup map shared by many unified-config classes. */
+  private abstract static class LegacyPropertiesMapMixIn {
+    @JsonIgnore private Map<String, String> legacyPropertiesMap;
+  }
+
+  /** {@link KeyStore} additionally has a constructor-injected {@code prefix}. */
+  private abstract static class KeyStoreMixIn {
+    @JsonIgnore private Map<String, String> legacyPropertiesMap;
+    @JsonIgnore private String prefix;
+  }
+
+  /** Hides the {@code databaseName} injected via {@link BatchOperation}'s constructor. */
+  private abstract static class BatchOperationMixIn {
+    @JsonIgnore private String databaseName;
+  }
+
+  /**
+   * Hides the {@code prefix} injected via constructor on {@link DocumentBasedHistory} / {@link
+   * PostExport}.
+   */
+  private abstract static class PrefixMixIn {
+    @JsonIgnore private String prefix;
   }
 
   /**

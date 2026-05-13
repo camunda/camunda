@@ -21,6 +21,7 @@ import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.EngineJob;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -142,8 +143,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
                 List.of(DEFAULT_MAPPING_RULE_ID)));
 
     //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class)
-        .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
+    withBean("security-config", securityConfig, CamundaSecurityProperties.class)
         .withProperty(
             AuthenticationProperties.API_UNPROTECTED,
             securityConfig.getAuthentication().isUnprotectedApi())
@@ -192,6 +192,9 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     withProperty(
         "zeebe.broker.gateway.enable",
         property("zeebe.broker.gateway.enable", Boolean.class, isGatewayEnabled));
+    // Flatten the in-memory unified config into camunda.* properties at the latest possible point.
+    // Refreshable so that fields cleared between stop/start don't remain.
+    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
     return super.createSpringBuilder();
   }
 
@@ -310,7 +313,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   @Override
   public TestCamundaApplication withSecondaryStorageType(final SecondaryStorageType type) {
     unifiedConfig.getData().getSecondaryStorage().setType(type);
-    withProperty("camunda.data.secondary-storage.type", type.name());
     return this;
   }
 

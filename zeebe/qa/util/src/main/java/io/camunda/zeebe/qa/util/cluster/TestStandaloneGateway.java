@@ -12,9 +12,11 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.configuration.Camunda;
+import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Encapsulates an instance of the {@link GatewayModuleConfiguration} Spring application. */
 public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway>
@@ -36,8 +38,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
         .getNetwork()
         .getInternalApi()
         .setPort(SocketUtil.getNextAddress().getPort());
-    //noinspection resource
-    withBean("camunda", unifiedConfig, Camunda.class).withAdditionalProfile(Profile.GATEWAY);
+    withAdditionalProfile(Profile.GATEWAY);
 
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthentication().setUnprotectedApi(true);
@@ -90,6 +91,15 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
       case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
       default -> super.mappedPort(port);
     };
+  }
+
+  @Override
+  protected SpringApplicationBuilder createSpringBuilder() {
+    // Flatten the in-memory unified config into camunda.* properties at the latest possible point,
+    // so every withClusterConfig/withUnifiedConfig/... call made up to now is captured. Refreshable
+    // so that fields cleared between stop/start don't remain.
+    withRefreshableProperties(ExtendedConfigurationBuilder.flatPropertiesFor(unifiedConfig));
+    return super.createSpringBuilder();
   }
 
   /**
