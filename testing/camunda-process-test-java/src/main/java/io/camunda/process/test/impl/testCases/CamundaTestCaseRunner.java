@@ -33,6 +33,7 @@ import io.camunda.process.test.impl.testCases.instructions.AssertElementInstance
 import io.camunda.process.test.impl.testCases.instructions.AssertProcessInstanceInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.AssertProcessInstanceMessageSubscriptionInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.AssertUserTaskInstructionHandler;
+import io.camunda.process.test.impl.testCases.instructions.AssertVariableInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.AssertVariablesInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.BroadcastSignalInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.CompleteJobAdHocSubProcessInstructionHandler;
@@ -77,6 +78,7 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
     registerHandler(new AssertProcessInstanceInstructionHandler());
     registerHandler(new AssertProcessInstanceMessageSubscriptionInstructionHandler());
     registerHandler(new AssertUserTaskInstructionHandler());
+    registerHandler(new AssertVariableInstructionHandler());
     registerHandler(new AssertVariablesInstructionHandler());
     registerHandler(new BroadcastSignalInstructionHandler());
     registerHandler(new CompleteJobInstructionHandler());
