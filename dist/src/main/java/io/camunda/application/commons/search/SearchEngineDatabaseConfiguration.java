@@ -8,18 +8,25 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,15 +38,35 @@ import org.springframework.context.annotation.Configuration;
 public class SearchEngineDatabaseConfiguration {
 
   @Bean
+  public Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant(
+      final PhysicalTenantResolver physicalTenantResolver,
+      final SearchEngineConnectPropertiesOverride connectOverride,
+      final SearchEngineIndexPropertiesOverride indexOverride,
+      final SearchEngineRetentionPropertiesOverride retentionOverride,
+      final SearchEngineSchemaManagerPropertiesOverride schemaManagerOverride) {
+    return physicalTenantResolver.mapValues(
+        tenantCamunda ->
+            SearchEngineConfiguration.of(
+                b ->
+                    b.connect(connectOverride.searchEngineConnectProperties(tenantCamunda))
+                        .index(indexOverride.searchEngineIndexProperties(tenantCamunda))
+                        .retention(retentionOverride.searchEngineRetentionProperties(tenantCamunda))
+                        .schemaManager(
+                            schemaManagerOverride.searchEngineSchemaManagerProperties(
+                                tenantCamunda))));
+  }
+
+  @Bean
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(
-      final SearchEngineConfiguration searchEngineConfiguration,
+      @Qualifier("searchEngineConfigurationsByTenant")
+          final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant,
       final MeterRegistry meterRegistry,
       @Autowired(required = false)
           final Broker broker, // if present, then it will ensure that the broker is started first
       @Autowired(required = false) final BrokerCfg brokerCfg) {
     final boolean isGatewayEnabled = brokerCfg == null || brokerCfg.getGateway().isEnable();
     return new SearchEngineSchemaInitializer(
-        searchEngineConfiguration, meterRegistry, isGatewayEnabled);
+        searchEngineConfigurationsByTenant, meterRegistry, isGatewayEnabled);
   }
 
   @Bean
