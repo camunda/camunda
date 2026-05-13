@@ -59,11 +59,7 @@ jobs:
 
   deploy-8-10:
     name: Deploy 8.10 Preview Environment
-    # TODO(2026-05-11): Re-enable for scheduled/all runs once 8.10 helm chart (>=14.0.1) is released.
-    # if: contains(fromJSON('["all", "8.10", ""]'), inputs.version)
-    # Currently disabled because there is no 8.10 helm chart yet; deploy always fails.
-    # To test manually, use workflow_dispatch with version='8.10'.
-    if: inputs.version == '8.10'
+    if: contains(fromJSON('["all", "8.10", ""]'), inputs.version)
     uses: ./.github/workflows/preview-env-build-and-deploy.yml
     secrets: inherit
     with:
