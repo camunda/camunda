@@ -68,9 +68,9 @@ jobs:
             REF_SOURCE="${{ github.event.merge_group.head_ref || github.ref }}"
             # Expected merge queue ref shape includes pr-<number> segments, e.g.
             # refs/heads/gh-readonly-queue/stable/8.7/pr-123-<suffix>
-            PR_MATCHES=$(grep -oE 'pr-[0-9]+' <<< "${REF_SOURCE}" | paste -sd '-' -)
+            PR_MATCHES=$(grep -oE 'pr-[0-9]+' <<< "${REF_SOURCE}" | paste -sd '-' - || true)
             if [[ -n "${PR_MATCHES}" ]]; then
-              echo "pr-numbers=${PR_MATCHES//pr-/}" >> "$GITHUB_OUTPUT"
+              echo "pr-numbers=${PR_MATCHES//pr-/pr}" >> "$GITHUB_OUTPUT"
               echo "group=${{ github.workflow }}-${PR_MATCHES}" >> "$GITHUB_OUTPUT"
             else
               echo "pr-numbers=" >> "$GITHUB_OUTPUT"
