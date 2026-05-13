@@ -8,13 +8,13 @@
 
 import {createFileRoute, Outlet, redirect} from '@tanstack/react-router';
 import {SessionWatcher} from '#/modules/auth/components/SessionWatcher';
-import {currentUserQueryOptions} from '#/modules/queries/currentUser.query';
+import {queries} from '#/modules/http/queries';
 
 export const Route = createFileRoute('/_auth')({
 	beforeLoad: async ({location, context: {queryClient}}) => {
 		// Verify the session server-side. Redirect to login on 401 response.
 		try {
-			await queryClient.ensureQueryData(currentUserQueryOptions);
+			await queryClient.ensureQueryData(queries.getCurrentUser);
 		} catch {
 			throw redirect({
 				to: '/login',
