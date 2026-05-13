@@ -37,28 +37,15 @@ public class BrokerExpressionEvaluationRequest extends BrokerExecuteCommand<Expr
   }
 
   /**
-   * Routes this request to the partition that owns the given process instance and propagates the
-   * key to the engine so the expression evaluates in that instance's variable scope.
+   * Routes this request to the partition that owns the given scope and propagates the key to the
+   * engine so the expression evaluates in that scope's visible variables.
    */
-  public BrokerExpressionEvaluationRequest setProcessInstanceKey(final Long processInstanceKey) {
-    if (processInstanceKey == null) {
+  public BrokerExpressionEvaluationRequest setScopeKey(final Long scopeKey) {
+    if (scopeKey == null) {
       return this;
     }
-    requestDto.setProcessInstanceKey(processInstanceKey);
-    setPartitionId(Protocol.decodePartitionId(processInstanceKey));
-    return this;
-  }
-
-  /**
-   * Routes this request to the partition that owns the given element instance and propagates the
-   * key to the engine so the expression evaluates in that instance's variable scope.
-   */
-  public BrokerExpressionEvaluationRequest setElementInstanceKey(final Long elementInstanceKey) {
-    if (elementInstanceKey == null) {
-      return this;
-    }
-    requestDto.setElementInstanceKey(elementInstanceKey);
-    setPartitionId(Protocol.decodePartitionId(elementInstanceKey));
+    requestDto.setScopeKey(scopeKey);
+    setPartitionId(Protocol.decodePartitionId(scopeKey));
     return this;
   }
 

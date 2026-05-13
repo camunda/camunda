@@ -471,13 +471,12 @@ public class RequestMapper {
   public static Either<ProblemDetail, ExpressionEvaluationRequest> toExpressionEvaluationRequest(
       final String expression,
       final String tenantId,
-      final String processInstanceKey,
-      final String elementInstanceKey,
+      final String scopeKey,
       final Map<String, Object> variables,
       final boolean isMultiTenancyEnabled) {
     final var validator =
         validateTenantId(tenantId, isMultiTenancyEnabled, "Expression Evaluation");
-    if (expression == null || expression.isBlank()) {
+    if (expression.isBlank()) {
       return Either.left(
           GatewayErrorMapper.createProblemDetail(
               HttpStatus.BAD_REQUEST,
@@ -487,11 +486,7 @@ public class RequestMapper {
     return validator.map(
         validTenantId ->
             new ExpressionEvaluationRequest(
-                expression,
-                validTenantId,
-                KeyUtil.keyToLong(processInstanceKey),
-                KeyUtil.keyToLong(elementInstanceKey),
-                variables));
+                expression, validTenantId, keyToLongOrNull(scopeKey), variables));
   }
 
   public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
@@ -1221,16 +1216,6 @@ public class RequestMapper {
     return value == null ? defaultValue : value;
   }
 
-  /**
-   * Functional interface variant that permits a {@code @Nullable} return value. Used for method
-   * references into generated models whose getters are {@code @Nullable}, which would otherwise be
-   * rejected when passed as {@link Function}.
-   */
-  @FunctionalInterface
-  private interface NullableExtractor<R, T> {
-    @Nullable T apply(R request);
-  }
-
   public record CompleteUserTaskRequest(
       long userTaskKey, Map<String, Object> variables, String action) {}
 
@@ -1259,4 +1244,14 @@ public class RequestMapper {
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
+
+  /**
+   * Functional interface variant that permits a {@code @Nullable} return value. Used for method
+   * references into generated models whose getters are {@code @Nullable}, which would otherwise be
+   * rejected when passed as {@link Function}.
+   */
+  @FunctionalInterface
+  private interface NullableExtractor<R, T> {
+    @Nullable T apply(R request);
+  }
 }
