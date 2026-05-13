@@ -7,7 +7,7 @@
  */
 
 import {createFileRoute, Outlet, redirect} from '@tanstack/react-router';
-import {SessionWatcher} from '#/modules/auth/SessionWatcher';
+import {SessionWatcher} from '#/modules/auth/components/SessionWatcher';
 import {currentUserQueryOptions} from '#/modules/queries/currentUser.query';
 
 export const Route = createFileRoute('/_auth')({

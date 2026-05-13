@@ -14,7 +14,7 @@ import {CamundaLogo} from '#/modules/login/components/CamundaLogo';
 import {getCurrentCopyrightNoticeText} from '#/modules/login/getCurrentCopyrightNoticeText';
 import {Disclaimer} from '#/modules/login/components/Disclaimer';
 import {LoadingSpinner} from '#/modules/login/components/LoadingSpinner';
-import {authenticationStore} from '#/modules/auth/stores/authentication';
+import {authenticationStore} from '#/modules/auth/authentication.store';
 import styles from './login.module.scss';
 
 type FormValues = {

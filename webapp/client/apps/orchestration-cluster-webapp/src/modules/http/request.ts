@@ -7,7 +7,7 @@
  */
 
 import {reactQueryClient} from '#/modules/http/reactQueryClient';
-import {authenticationStore} from '#/modules/auth/stores/authentication';
+import {authenticationStore} from '#/modules/auth/authentication.store';
 import {z} from 'zod';
 
 type RequestError =
