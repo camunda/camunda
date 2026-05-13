@@ -26,6 +26,8 @@ import {getExecutionDuration} from './getExecutionDuration';
 import {EmptyMessageContainer, Container, Callout} from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useAgentInstanceForElement} from 'modules/queries/agentInstances/useAgentInstanceForElement';
+import {AgentDetails} from './AgentDetails';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const formatTaskLink = (
@@ -113,6 +115,12 @@ const DetailsTab: React.FC = () => {
   );
 
   const userTask = userTaskSearchResult?.items?.[0] ?? null;
+
+  const {
+    agentInstance,
+    isLoading: isAgentLoading,
+    isError: isAgentError,
+  } = useAgentInstanceForElement(selectedElementId, elementInstanceKey);
 
   const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
     (instance) =>
@@ -357,6 +365,14 @@ const DetailsTab: React.FC = () => {
         ]}
         rows={rows}
       />
+      {clientConfig.isAiAgentEnabled &&
+        (agentInstance !== undefined || isAgentLoading || isAgentError) && (
+          <AgentDetails
+            agentInstance={agentInstance}
+            isLoading={isAgentLoading}
+            isError={isAgentError}
+          />
+        )}
     </Container>
   );
 };

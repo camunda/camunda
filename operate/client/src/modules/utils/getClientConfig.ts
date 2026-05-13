@@ -22,6 +22,7 @@ const ClientConfigSchema = z.object({
   resourcePermissionsEnabled: z.boolean().optional().default(false),
   multiTenancyEnabled: z.boolean().optional().default(false),
   databaseType: z.string().optional().default('document-store'),
+  isAiAgentEnabled: z.boolean().optional().default(false),
 });
 
 const DEFAULT_CLIENT_CONFIG = ClientConfigSchema.safeParse({}).data!;
