@@ -9,7 +9,7 @@
 import {test, expect} from '#/pw-modules/test-extend';
 import {http, HttpResponse, delay} from 'msw';
 import {createEndpointMock} from '#/shared-test-modules/mock-endpoint';
-import {LoginPage} from '#/pages/Login.page';
+import {mockCurrentUserEndpoint} from '#/shared-test-modules/mockCurrentUser';
 
 const mockLoginEndpoint = createEndpointMock({
 	endpoint: '/login',
@@ -21,23 +21,15 @@ const mockAboutEndpoint = createEndpointMock({
 	method: 'GET',
 });
 
-const mockCurrentUserEndpoint = createEndpointMock({
-	endpoint: '/v2/authentication/me',
-	method: 'GET',
-});
-
-test('should redirect to the initial page on success', async ({network, page}) => {
+test('should redirect to the initial page on success', async ({network, page, loginPage}) => {
 	network.use(
 		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
 		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 200})}),
 	);
 
-	const loginPage = new LoginPage(page);
 	await loginPage.goto();
-	// Wait for the login form to appear — confirms /login beforeLoad has completed with 401
-	await loginPage.usernameInput.waitFor();
+	await expect(loginPage.usernameInput).toBeVisible();
 
-	// Prepend 200 so post-login navigation to / succeeds
 	network.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json({})}));
 
 	await loginPage.fillCredentials('demo', 'demo');
@@ -46,16 +38,15 @@ test('should redirect to the initial page on success', async ({network, page}) =
 	await expect(page).toHaveURL('/');
 });
 
-test('should redirect to the referrer page', async ({network, page}) => {
+test('should redirect to the referrer page', async ({network, page, loginPage}) => {
 	network.use(
 		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
 		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 200})}),
 		mockAboutEndpoint({successResponse: HttpResponse.json({message: 'About'})}),
 	);
 
-	const loginPage = new LoginPage(page);
 	await page.goto('/about');
-	await loginPage.usernameInput.waitFor();
+	await expect(loginPage.usernameInput).toBeVisible();
 
 	network.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json({})}));
 
@@ -65,35 +56,33 @@ test('should redirect to the referrer page', async ({network, page}) => {
 	await expect(page).toHaveURL('/about');
 });
 
-test('should show an error for wrong credentials', async ({network, page}) => {
+test('should show an error for wrong credentials', async ({network, loginPage}) => {
 	network.use(
 		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
 		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
 	);
 
-	const loginPage = new LoginPage(page);
 	await loginPage.goto();
 	await loginPage.fillCredentials('demo', 'wrong-password');
 	await loginPage.submitButton.click();
 
-	await expect(page.getByText(/username and password do not match/i)).toBeVisible();
+	await expect(loginPage.errorMessage).toContainText(/username and password do not match/i);
 });
 
-test('should show a generic error message', async ({network, page}) => {
+test('should show a generic error message', async ({network, loginPage}) => {
 	network.use(
 		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
 		mockLoginEndpoint({successResponse: new HttpResponse(null, {status: 500})}),
 	);
 
-	const loginPage = new LoginPage(page);
 	await loginPage.goto();
 	await loginPage.fillCredentials('demo', 'demo');
 	await loginPage.submitButton.click();
 
-	await expect(page.getByText(/credentials could not be verified/i)).toBeVisible();
+	await expect(loginPage.errorMessage).toContainText(/credentials could not be verified/i);
 });
 
-test('should show a loading state while the login form is submitting', async ({network, page}) => {
+test('should show a loading state while the login form is submitting', async ({network, loginPage}) => {
 	network.use(
 		mockCurrentUserEndpoint({successResponse: new HttpResponse(null, {status: 401})}),
 		http.post('/login', async () => {
@@ -102,11 +91,10 @@ test('should show a loading state while the login form is submitting', async ({n
 		}),
 	);
 
-	const loginPage = new LoginPage(page);
 	await loginPage.goto();
 	await loginPage.fillCredentials('demo', 'demo');
 	await loginPage.submitButton.click();
 
-	await expect(page.getByRole('button', {name: /logging in/i})).toBeVisible();
-	await expect(page.getByRole('button', {name: /logging in/i})).toBeDisabled();
+	await expect(loginPage.loadingButton).toBeVisible();
+	await expect(loginPage.loadingButton).toBeDisabled();
 });

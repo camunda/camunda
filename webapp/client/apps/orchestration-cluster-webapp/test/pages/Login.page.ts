@@ -15,8 +15,8 @@ class LoginPage {
 		this.page = page;
 	}
 
-	async goto(search?: string) {
-		await this.page.goto('/login' + (search ? `?${search}` : ''));
+	async goto() {
+		await this.page.goto('/login');
 	}
 
 	get submitButton() {
@@ -29,6 +29,14 @@ class LoginPage {
 
 	get passwordInput() {
 		return this.page.getByLabel(/^password$/i);
+	}
+
+	get errorMessage() {
+		return this.page.getByRole('alert').filter({hasText: /.+/});
+	}
+
+	get loadingButton() {
+		return this.page.getByRole('button', {name: /logging in/i});
 	}
 
 	async fillCredentials(username: string, password: string) {
