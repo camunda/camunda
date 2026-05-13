@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +23,7 @@ public class OrdinalIndexManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(OrdinalIndexManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Set<String> ordinalBasedIndexes;
-  private final Map<Integer, String> ordinalSuffixes = new ConcurrentHashMap<>();
+  private final Map<Integer, Ordinal> ordinals = new ConcurrentHashMap<>();
 
   public OrdinalIndexManager(
       final SearchEngineClient searchEngineClient, final Set<String> ordinalBasedIndexes) {
@@ -35,18 +36,25 @@ public class OrdinalIndexManager {
   }
 
   public String getOrCreateOrdinalSuffix(final int ordinal) {
-    var suffix = ordinalSuffixes.get(ordinal);
-    if (suffix == null) {
-      final var newSuffix = createOrdinalSuffix(ordinal);
-      suffix = ordinalSuffixes.putIfAbsent(ordinal, newSuffix);
-      if (suffix == null) {
-        LOGGER.info("New ordinal started: {} ({} ordinals total)", ordinal, ordinalSuffixes.size());
-        suffix = newSuffix;
-        // TODO async plus more atomic
-        initialiseOrdinalIndices(ordinalBasedIndexes, suffix);
+    final var ord = ensureOrdinalIndexesExist(ordinal);
+    ord.markActive();
+    return ord.suffix;
+  }
+
+  private Ordinal ensureOrdinalIndexesExist(final int ordinal) {
+    var ord = ordinals.get(ordinal);
+    if (ord == null) {
+      final var suffix = createOrdinalSuffix(ordinal);
+      initialiseOrdinalIndices(ordinalBasedIndexes, suffix);
+      final var newOrd = new Ordinal(suffix);
+      ord = ordinals.putIfAbsent(ordinal, newOrd);
+      if (ord == null) {
+        LOGGER.info(
+            "New ordinal indexes created: {} ({} ordinals total)", ordinal, ordinals.size());
+        ord = newOrd;
       }
     }
-    return suffix;
+    return ord;
   }
 
   private String createOrdinalSuffix(final int ordinal) {
@@ -71,6 +79,41 @@ public class OrdinalIndexManager {
               .toArray(CompletableFuture[]::new);
 
       CompletableFuture.allOf(futures).join();
+    }
+  }
+
+  public void ensureNextReady() {
+    int maxOrdinal = -1;
+    for (final var entry : ordinals.entrySet()) {
+      maxOrdinal = Math.max(entry.getKey(), maxOrdinal);
+      if (entry.getValue().getState() == Ordinal.State.PENDING) {
+        return;
+      }
+    }
+    final int nextOrdinal = maxOrdinal + 1;
+    ensureOrdinalIndexesExist(nextOrdinal);
+  }
+
+  static class Ordinal {
+    private final String suffix;
+    private final AtomicReference<State> state;
+
+    public Ordinal(final String suffix) {
+      this.suffix = suffix;
+      state = new AtomicReference<>(State.PENDING);
+    }
+
+    public State getState() {
+      return state.get();
+    }
+
+    public void markActive() {
+      state.set(State.ACTIVE);
+    }
+
+    enum State {
+      PENDING,
+      ACTIVE;
     }
   }
 }

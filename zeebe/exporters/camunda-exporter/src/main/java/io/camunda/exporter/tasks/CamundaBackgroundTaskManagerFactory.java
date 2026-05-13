@@ -47,6 +47,7 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.incident.OpenSearchIncidentUpdateRepository;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.OrdinalIndexManager;
 import io.camunda.webapps.schema.descriptors.BatchOperationDependant;
 import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
@@ -281,8 +282,18 @@ public final class CamundaBackgroundTaskManagerFactory {
     tasks.add(buildHistoryDeletionJob());
     tasks.add(buildAuditLogArchiverJob());
 
+    if (resourceProvider.getOrdinalIndexManager() != null) {
+      final var ordinalIndexManager = resourceProvider.getOrdinalIndexManager();
+      tasks.add(buildOrdinalIndexTask(ordinalIndexManager));
+    }
+
     executor.setCorePoolSize(tasks.size());
     return tasks;
+  }
+
+  private ReschedulingTask buildOrdinalIndexTask(final OrdinalIndexManager ordinalIndexManager) {
+    return new ReschedulingTask(
+        new OrdinalIndexTask(ordinalIndexManager), 1, 30_000, 30_000, executor, logger);
   }
 
   private OpenSearchHistoryDeletionRepository createHistoryDeletionRepository(
