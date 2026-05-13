@@ -1,7 +1,7 @@
 # description: Creates a load test when a PR is labeled with 'benchmark'. Deploys with
 #              scenario 'max', then runs two independent post-deploy paths:
-#                - profile path: wait 15 min, run async-profiler, post flamegraph comment
-#                - metrics path: wait 1 h, scrape PR + daily metrics over a 1 h window,
+#                - profile path: wait 30 min, run async-profiler, post flamegraph comment
+#                - metrics path: wait 30 min, scrape PR + daily metrics over a 30 min window,
 #                                post the comparison comment, then tear the namespace down
 #              On unlabel or PR close, fires an explicit cleanup. New commits on the PR
 #              cancel the in-flight run (via dispatch-level concurrency) and redeploy fresh.
@@ -108,26 +108,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Wait for load test to stabilize
-        run: sleep 900  # 15 minutes
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  await-metrics-window:
-    name: Await 1h metrics window
-    needs: create-benchmark
-    runs-on: ubuntu-latest
-    permissions: {}
-    timeout-minutes: 70
-    steps:
-      - name: Wait for 1h of benchmark traffic
-        run: sleep 3600  # 1 hour
+        run: sleep 1800  # 30 minutes
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -150,7 +131,7 @@ jobs:
 
   resolve-daily-namespace:
     name: Resolve latest daily-on-main namespace
-    needs: await-metrics-window
+    needs: await-benchmark
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -202,12 +183,12 @@ jobs:
 
   get-pr-metrics:
     name: Collect PR namespace metrics
-    needs: [sanitize-branch-name, await-metrics-window]
+    needs: [sanitize-branch-name, await-benchmark]
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
       namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
-      duration-seconds: '3600'
+      duration-seconds: '1800'
 
   get-daily-metrics:
     name: Collect daily-on-main metrics
@@ -217,7 +198,7 @@ jobs:
     secrets: inherit
     with:
       namespace: ${{ needs.resolve-daily-namespace.outputs.daily-namespace }}
-      duration-seconds: '3600'
+      duration-seconds: '1800'
 
   render-comparison:
     name: Render PR vs Daily comparison
@@ -236,7 +217,7 @@ jobs:
     env:
       NAMESPACE: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       DAILY_NAMESPACE: ${{ needs.resolve-daily-namespace.outputs.daily-namespace }}
-      DURATION_SECONDS: '3600'
+      DURATION_SECONDS: '1800'
       STORAGE_TYPE: ${{ needs.sanitize-branch-name.outputs.storage-type }}
       PR_RESULTS_JSON: ${{ needs.get-pr-metrics.outputs.results-json }}
       DAILY_RESULTS_JSON: ${{ needs.get-daily-metrics.outputs.results-json }}
@@ -252,26 +233,11 @@ jobs:
           script: |
             const fs = require('fs');
 
-            const namespace = process.env.NAMESPACE;
-            const dailyNamespace = process.env.DAILY_NAMESPACE || '';
-            const durationSeconds = parseInt(process.env.DURATION_SECONDS, 10);
-            const storageType = process.env.STORAGE_TYPE || '';
-
-            // Three sources of truth, all data-driven:
-            //   queries.yaml      → which metrics to display + how to format them
-            //   optimal.json      → aspirational target + tolerance per metric
-            //   *_RESULTS_JSON    → scraped values from the two metrics jobs (env vars)
-            const queriesDoc = JSON.parse(
-              fs.readFileSync('/tmp/queries.json', 'utf8'),
-            );
-            const optimal = JSON.parse(
-              fs.readFileSync('load-tests/docs/scripts/optimal.json', 'utf8'),
-            );
-            const optimalMetrics = optimal.metrics || {};
+            const numericOrNull = (v) =>
+              typeof v === 'number' && Number.isFinite(v) ? v : null;
 
             // Upstream job outputs are empty strings when the job failed or was
-            // skipped (e.g. no daily namespace found). Parse defensively so we
-            // still post a comment.
+            // skipped (e.g. no daily namespace found). Parse defensively.
             const safeJsonParse = (raw, label) => {
               if (!raw || !raw.trim()) {
                 core.warning(`${label} JSON is empty — column will render as n/a / '-'`);
@@ -283,41 +249,29 @@ jobs:
                 return {};
               }
             };
-            const results = safeJsonParse(process.env.PR_RESULTS_JSON, 'Current');
-            const dailyResults = safeJsonParse(process.env.DAILY_RESULTS_JSON, 'Daily');
-
-            // `expected` and `per-second` are both duration-invariant comparison values;
-            // `per-second` is kept as a semantic marker for metrics expressed as a rate.
-            const optimalFor = (spec) => {
-              if (spec.expected != null) return spec.expected;
-              if (spec['per-second'] != null) return spec['per-second'];
-              return null;
-            };
-
-            const numericOrNull = (v) =>
-              (typeof v === 'number' && Number.isFinite(v)) ? v : null;
 
             const formatValue = (n, q) => {
               if (n == null || !Number.isFinite(n)) return 'n/a';
               const decimals = q.decimals ?? 2;
               const unit = q.unit ?? '';
               switch (q.format) {
-                case 'integer':
-                  return Math.round(n).toLocaleString();
-                case 'percent':
-                  return n.toFixed(decimals) + (unit || '%');
-                case 'float':
-                  return n.toFixed(decimals) + (unit ? ' ' + unit : '');
-                default:
-                  return String(n);
+                case 'integer': return Math.round(n).toLocaleString();
+                case 'percent': return n.toFixed(decimals) + (unit || '%');
+                case 'float':   return n.toFixed(decimals) + (unit ? ' ' + unit : '');
+                default:        return String(n);
               }
             };
 
-            // Daily column is allowed to be empty (no active daily run, or no
-            // metric in this Prometheus window). Render a literal '-' rather than
-            // 'n/a' to make it visually distinct from "the query ran and got null."
+            // Daily column uses '-' (not 'n/a') so a missing baseline reads
+            // visually distinct from "the query ran and got null".
             const formatOrDash = (n, q) =>
-              (n == null || !Number.isFinite(n)) ? '-' : formatValue(n, q);
+              n == null || !Number.isFinite(n) ? '-' : formatValue(n, q);
+
+            const optimalFor = (spec) => {
+              if (spec.expected != null) return spec.expected;
+              if (spec['per-second'] != null) return spec['per-second'];
+              return null;
+            };
 
             const verdict = (current, baseline, tolerance, higherIsBetter) => {
               if (current == null || !Number.isFinite(current) || baseline == null) return '❔';
@@ -339,42 +293,59 @@ jobs:
               return `${sign}${diff.toFixed(1)}%`;
             };
 
-            const tableLines = [
-              '| Metric | Current | Daily | Optimal | Δ vs Daily | |',
-              '|---|---:|---:|---:|---:|:---:|',
-            ];
-            for (const q of queriesDoc.queries) {
-              const current = numericOrNull(results[q.name]);
-              const daily = numericOrNull(dailyResults[q.name]);
-              const spec = optimalMetrics[q.name] || {};
+            const loadInputs = () => {
+              const queriesDoc = JSON.parse(fs.readFileSync('/tmp/queries.json', 'utf8'));
+              const optimal    = JSON.parse(fs.readFileSync('load-tests/docs/scripts/optimal.json', 'utf8'));
+              return {
+                namespace:       process.env.NAMESPACE,
+                dailyNamespace:  process.env.DAILY_NAMESPACE || '',
+                durationSeconds: parseInt(process.env.DURATION_SECONDS, 10),
+                storageType:     process.env.STORAGE_TYPE || '',
+                queries:         queriesDoc.queries,
+                optimalMetrics:  optimal.metrics || {},
+                results:         safeJsonParse(process.env.PR_RESULTS_JSON, 'Current'),
+                dailyResults:    safeJsonParse(process.env.DAILY_RESULTS_JSON, 'Daily'),
+              };
+            };
+
+            const renderRow = (q, ctx) => {
+              const current    = numericOrNull(ctx.results[q.name]);
+              const daily      = numericOrNull(ctx.dailyResults[q.name]);
+              const spec       = ctx.optimalMetrics[q.name] || {};
               const optimalVal = optimalFor(spec);
-              const tolerance = spec['tolerance-percent'];
-              tableLines.push(
-                `| ${q.description} | ${formatValue(current, q)} | ${formatOrDash(daily, q)} | ${formatValue(optimalVal, q)} | ${delta(current, daily)} | ${verdict(current, daily, tolerance, q.higher_is_better)} |`,
-              );
-            }
+              return `| ${q.description} | ${formatValue(current, q)} | ${formatOrDash(daily, q)} | ${formatValue(optimalVal, q)} | ${delta(current, daily)} | ${verdict(current, daily, spec['tolerance-percent'], q.higher_is_better)} |`;
+            };
 
-            const dailyLine = dailyNamespace
-              ? `Daily reference: \`${dailyNamespace}\``
-              : '_No active daily-on-main namespace found; Daily column shows \`-\`._';
+            const renderBody = (ctx) => {
+              const heading = ctx.storageType
+                ? `## 📈 Load Test Metrics - ${ctx.storageType}`
+                : `## 📈 Load Test Metrics`;
+              const dailyLine = ctx.dailyNamespace
+                ? `Daily reference: \`${ctx.dailyNamespace}\``
+                : '_No active daily-on-main namespace found; Daily column shows \`-\`._';
+              const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${ctx.namespace}`;
+              const runLink   = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+              const table = [
+                '| Metric | Current | Daily | Optimal | Δ vs Daily | |',
+                '|---|---:|---:|---:|---:|:---:|',
+                ...ctx.queries.map((q) => renderRow(q, ctx)),
+              ];
+              return [
+                heading,
+                '',
+                `Window: ${ctx.durationSeconds}s · Namespace: \`${ctx.namespace}\``,
+                dailyLine,
+                '',
+                ...table,
+                '',
+                `📊 [Grafana dashboard](${dashboard}) · 🔁 [Workflow run](${runLink})`,
+                '',
+                `_Metrics defined in \`load-tests/docs/scripts/queries.yaml\`. Daily reference is the most recent active \`c8-medic-daily-*-test\` namespace on main. Optimal target at \`load-tests/docs/scripts/optimal.json\`. Verdict compares Current to Daily; tolerance from Optimal. ⚠️ only fires on the regression side — improvements outside tolerance still show ✅._`,
+              ].join('\n');
+            };
 
-            const dashboard = `https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${namespace}`;
-            const heading = storageType
-              ? `## 📈 Load Test Metrics - ${storageType}`
-              : `## 📈 Load Test Metrics`;
-            const body = [
-              heading,
-              '',
-              `Window: ${durationSeconds}s · Namespace: \`${namespace}\``,
-              dailyLine,
-              '',
-              ...tableLines,
-              '',
-              `📊 [Grafana dashboard](${dashboard}) · 🔁 [Workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
-              '',
-              `_Metrics defined in \`load-tests/docs/scripts/queries.yaml\`. Daily reference is the most recent active \`c8-medic-daily-*-test\` namespace on main. Optimal target at \`load-tests/docs/scripts/optimal.json\`. Verdict compares Current to Daily; tolerance from Optimal. ⚠️ only fires on the regression side — improvements outside tolerance still show ✅._`,
-            ].join('\n');
-
+            const ctx = loadInputs();
+            const body = renderBody(ctx);
             await core.summary.addRaw(body).write();
             core.setOutput('comparison-md', body);
       - name: Observe build status
