@@ -448,15 +448,28 @@ function ToolCallDetail({
                 >
                   {inputText}
                 </pre>
-                <IconButton
-                  kind="ghost"
-                  size="sm"
-                  label="Expand input"
-                  onClick={() => setIsInputModalOpen(true)}
-                  style={{flexShrink: 0}}
-                >
-                  <Maximize size={16} />
-                </IconButton>
+                <div style={{display: 'flex', flexShrink: 0}}>
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    hasIconOnly
+                    renderIcon={Maximize}
+                    iconDescription="Expand"
+                    tooltipPosition="top"
+                    onClick={() => setIsInputModalOpen(true)}
+                    aria-label="Expand"
+                  />
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    hasIconOnly
+                    renderIcon={Copy}
+                    iconDescription="Copy"
+                    tooltipPosition="top"
+                    onClick={() => navigator.clipboard.writeText(inputText)}
+                    aria-label="Copy"
+                  />
+                </div>
               </div>
             ) : (
               <div
@@ -500,15 +513,28 @@ function ToolCallDetail({
                 >
                   {outputText}
                 </pre>
-                <IconButton
-                  kind="ghost"
-                  size="sm"
-                  label="Expand output"
-                  onClick={() => setIsOutputModalOpen(true)}
-                  style={{flexShrink: 0}}
-                >
-                  <Maximize size={16} />
-                </IconButton>
+                <div style={{display: 'flex', flexShrink: 0}}>
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    hasIconOnly
+                    renderIcon={Maximize}
+                    iconDescription="Expand"
+                    tooltipPosition="top"
+                    onClick={() => setIsOutputModalOpen(true)}
+                    aria-label="Expand"
+                  />
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    hasIconOnly
+                    renderIcon={Copy}
+                    iconDescription="Copy"
+                    tooltipPosition="top"
+                    onClick={() => navigator.clipboard.writeText(outputText)}
+                    aria-label="Copy"
+                  />
+                </div>
               </div>
             ) : (
               <div
@@ -533,6 +559,22 @@ function ToolCallDetail({
         size="lg"
         passiveModal
       >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            padding: '0 var(--cds-spacing-05) var(--cds-spacing-03)',
+          }}
+        >
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Copy}
+            onClick={() => navigator.clipboard.writeText(inputText ?? '')}
+          >
+            Copy
+          </Button>
+        </div>
         <Suspense
           fallback={
             <div
@@ -571,6 +613,22 @@ function ToolCallDetail({
         size="lg"
         passiveModal
       >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            padding: '0 var(--cds-spacing-05) var(--cds-spacing-03)',
+          }}
+        >
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Copy}
+            onClick={() => navigator.clipboard.writeText(outputText ?? '')}
+          >
+            Copy
+          </Button>
+        </div>
         <Suspense
           fallback={
             <div
