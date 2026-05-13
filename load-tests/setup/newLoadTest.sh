@@ -3,7 +3,7 @@
 # Contains OS specific sed function
 . utils.sh
 
-set -exo pipefail
+set -eo pipefail
 
 usage() {
   cat <<'EOF'
@@ -47,13 +47,28 @@ fi
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 
-helm_chart="camunda-platform-8.9"
+helm_chart="camunda-platform-8.10"
 namespace="$1"
 
 # Add c8- prefix if not present
 if [[ ! "$namespace" =~ ^c8- ]]; then
   namespace="c8-$namespace"
   echo "Namespace prefix added: $namespace"
+fi
+
+# Validate against Kubernetes DNS-1123 label rules. Previously this was
+# implicit (`kubectl create namespace` rejected bad names at cluster time);
+# now that namespace creation is deferred to `make install`, validate here so
+# we don't render a folder with random secrets just to discover the name is
+# invalid.
+if [[ ! "$namespace" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
+  echo "Error: namespace '$namespace' is not a valid Kubernetes DNS-1123 label."
+  echo "       Allowed: lowercase letters, digits, '-'. Must start and end with an alphanumeric."
+  exit 1
+fi
+if [ ${#namespace} -gt 63 ]; then
+  echo "Error: namespace '$namespace' is ${#namespace} characters; Kubernetes labels are capped at 63."
+  exit 1
 fi
 
 # Validate secondaryStorage value
@@ -147,25 +162,61 @@ ORCHESTRATION_SECRET=$(gen_password)
 IDENTITY_ADMIN_CLIENT_TOKEN=$(gen_token)
 IDENTITY_OPTIMIZE_CLIENT_TOKEN=$(gen_token)
 
-# Copy default folder (incl. resources/) and the parent platform values files.
-cp -rv default/ "$namespace"
-cp -v default/values/*.yaml "$namespace/"
+# Scaffold the namespace folder with only the files this $secondaryStorage uses.
+# A namespace is bound to its storage at create time; to switch storage, create
+# a new namespace via ./newLoadTest.sh <new-name> <newStorage>.
+mkdir -p "$namespace"
+
+# Always-copied: Makefile + the resources/ manifests (PR #52882) + four
+# storage-agnostic values files. Flatten values/ into the namespace folder root
+# so the per-namespace Makefile's -f <file>.yaml references resolve as before.
+cp -v  default/Makefile                              "$namespace/"
+cp -rv default/resources/                            "$namespace/"
+cp -v  default/values/camunda-platform-values.yaml          "$namespace/"
+cp -v  default/values/camunda-platform-override-values.yaml "$namespace/"
+cp -v  default/values/load-test-values.yaml                 "$namespace/"
+cp -v  default/values/values-stable.yaml                    "$namespace/"
+
+# Storage-specific copies. databases/ is created only for mssql/oracle.
+case "$secondaryStorage" in
+  elasticsearch)
+    cp -v default/values/prometheus-elasticsearch-exporter-values.yaml "$namespace/"
+    ;;
+  opensearch)
+    cp -v default/values/camunda-platform-values-opensearch.yaml "$namespace/"
+    ;;
+  postgresql|mysql|mariadb)
+    cp -v default/values/camunda-platform-values-rdbms.yaml          "$namespace/"
+    cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
+    ;;
+  mssql|oracle)
+    cp -v default/values/camunda-platform-values-rdbms.yaml          "$namespace/"
+    cp -v "default/values/camunda-platform-values-${secondaryStorage}.yaml" "$namespace/"
+    mkdir -p "$namespace/databases"
+    cp -v "default/databases/${secondaryStorage}.yaml" "$namespace/databases/"
+    ;;
+  none)
+    cp -v default/values/camunda-platform-no-secondary-storage.yaml "$namespace/"
+    ;;
+esac
 
 cd "$namespace"
 
-# Bake values into the rendered Makefile.
+# Bake values into the rendered Makefile. The deadline lives only in
+# resources/namespace.yaml (single source of truth) — check-deadline parses
+# it out of there so the user only edits one place to extend the TTL.
 sed_inplace "s/__NAMESPACE__/$namespace/"           Makefile
 sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/" Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
-sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"    Makefile
 
 # Bake values into the resource manifests and the platform/load-test values.
 # Values shared with the chart (NAMESPACE, AVAILABILITY_ZONE, AUTHOR) flow into
 # the upstream yaml files via the same sed pass.
 sed_inplace "s/__NAMESPACE__/$namespace/"                       load-test-values.yaml resources/*.yaml
-sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/"        *.yaml resources/namespace.yaml
-sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" databases/*.yaml
-sed_inplace "s/__AUTHOR__/$git_author/"                          *.yaml resources/namespace.yaml
+sed_targets=(*.yaml resources/namespace.yaml)
+[[ -d databases ]] && sed_targets+=(databases/*.yaml)
+sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" "${sed_targets[@]}"
+sed_inplace "s/__AUTHOR__/$git_author/"                   "${sed_targets[@]}"
 sed_inplace "s/__DEADLINE_DATE__/$deadline_date/"                resources/namespace.yaml
 
 # When single-zone is disabled the topology annotation has no useful value;
@@ -204,20 +255,15 @@ helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-he
 helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
 helm repo update
 
-# Clone Camunda Platform Helm so we can run the latest chart
-# TODO: 347642d30179479f8ab8a2f00b2d979be05f5a8c is the latest commit before the removal of the
-# embedded Bitnami Helm Chart.
-# We should remove the checkout of this specific revision once we have a solution to replace these
-# removed dependencies.
-git clone --depth 1 --revision 347642d30179479f8ab8a2f00b2d979be05f5a8c --single-branch https://github.com/camunda/camunda-platform-helm.git
+# Clone Platform Helm so we can run the latest chart
+git clone --depth 1 --branch main --single-branch https://github.com/camunda/camunda-platform-helm.git
 
 # Make deps
 helm dependency build "camunda-platform-helm/charts/$helm_chart"
 
-set +x
 echo
 echo "Scaffolding complete. Next steps:"
 echo "  cd $namespace"
 echo "  make install   # applies resources/namespace.yaml + resources/camunda-credentials.yaml and deploys"
 echo
-echo "Deadline: $deadline_date (TTL = $ttl_days day(s)). Bump it via resources/namespace.yaml + kubectl label, or rerun this script."
+echo "Deadline: $deadline_date (TTL = $ttl_days day(s)). To extend, edit deadline-date in resources/namespace.yaml and run \`make create-namespace\`."
