@@ -282,7 +282,14 @@ public final class SystemContext {
 
     Optional.of(experimental)
         .map(ExperimentalCfg::getRocksdb)
-        .ifPresent(c -> validateRocksDbConfig(c, cluster.getPartitionsCount()));
+        .ifPresent(
+            c ->
+                validateRocksDbConfig(
+                    c,
+                    (int)
+                        Math.ceil(
+                            (double) (cluster.getPartitionsCount() * cluster.getReplicationFactor())
+                                / cluster.getClusterSize())));
   }
 
   private void validateDataConfig(final DataCfg dataCfg) {
@@ -659,8 +666,9 @@ public final class SystemContext {
     listeners.setUserTask(validListeners);
   }
 
-  private void validateRocksDbConfig(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
-    rocksdbCfg.validateRocksDbMemory(partitionsCount);
+  private void validateRocksDbConfig(
+      final RocksdbCfg rocksdbCfg, final int partitionsPerBrokerCount) {
+    rocksdbCfg.validateRocksDbMemory(partitionsPerBrokerCount);
   }
 
   private void validateBackupSchedulerConfig(final BackupCfg backupSchedulerCfg) {
