@@ -24,6 +24,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
+// The library's SPI interface has the same simple name as this host implementation, so the
+// implements clause stays fully qualified.
 public class OidcTokenEndpointCustomizer
     implements io.camunda.security.spring.oidc.OidcTokenEndpointCustomizer {
 

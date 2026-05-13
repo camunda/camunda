@@ -10,12 +10,13 @@ package io.camunda.authentication.config.spi;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
-import io.camunda.security.api.model.Authorization;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.api.model.PermissionType;
-import io.camunda.security.api.model.ResourceType;
+import io.camunda.security.api.model.authz.Authorization;
+import io.camunda.security.api.model.authz.PermissionType;
+import io.camunda.security.api.model.authz.ResourceType;
 import io.camunda.security.core.port.out.AuthorizationRepositoryPort;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,8 +58,15 @@ public class AuthorizationRepositoryAdapter implements AuthorizationRepositoryPo
       final CamundaAuthentication authentication, final ResourceType resourceType) {
     final var ownerTypeToOwnerIds = collectOwnerTypeToOwnerIds(authentication);
     if (ownerTypeToOwnerIds.isEmpty()) {
+      LOG.trace(
+          "findAuthorizations: no owner ids resolved for principal, resourceType={}", resourceType);
       return Set.of();
     }
+
+    LOG.trace(
+        "findAuthorizations: resourceType={} ownerTypeToOwnerIds={}",
+        resourceType,
+        ownerTypeToOwnerIds);
 
     final var query =
         AuthorizationQuery.of(
@@ -70,6 +78,10 @@ public class AuthorizationRepositoryAdapter implements AuthorizationRepositoryPo
                     .unlimited());
 
     final var entities = authorizationReader.search(query, ResourceAccessChecks.disabled()).items();
+    LOG.trace(
+        "findAuthorizations: resourceType={} matched {} authorization record(s)",
+        resourceType,
+        entities.size());
 
     // Aggregate by resourceId so multiple grant rows on the same resource fold into a single
     // Authorization with the union of permissions.
@@ -124,11 +136,12 @@ public class AuthorizationRepositoryAdapter implements AuthorizationRepositoryPo
   // (https://github.com/camunda/camunda-security-library/blob/main/docs/adr/0007-resource-permission-port-and-authorization-repository.md)
   // — name() values match one-to-one. valueOf will throw at runtime if a value drifts;
   // AuthorizationRepositoryAdapterTest asserts the full mapping to fail-fast on drift.
-  static ResourceType toLibrary(
-      final io.camunda.zeebe.protocol.record.value.AuthorizationResourceType ocType) {
+  static ResourceType toLibrary(final AuthorizationResourceType ocType) {
     return ResourceType.valueOf(ocType.name());
   }
 
+  // The zeebe-protocol PermissionType simple-name collides with the library's PermissionType
+  // imported above, so the parameter type stays fully qualified here.
   static PermissionType toLibrary(
       final io.camunda.zeebe.protocol.record.value.PermissionType ocPermission) {
     return PermissionType.valueOf(ocPermission.name());
