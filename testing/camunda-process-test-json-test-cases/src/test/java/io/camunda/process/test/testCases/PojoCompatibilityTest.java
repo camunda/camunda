@@ -58,13 +58,13 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcess
 import io.camunda.process.test.api.testCases.instructions.ImmutableEvaluateConditionalStartEventInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableEvaluateDecisionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableIncreaseTimeInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableJudgeAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockChildProcessInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockDmnDecisionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableResolveIncidentInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableSatisfiesJudge;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSetTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableUpdateVariablesInstruction;
@@ -532,7 +532,7 @@ public class PojoCompatibilityTest {
                             .build())
                     .variableName("agentResponse")
                     .satisfiesJudge(
-                        ImmutableSatisfiesJudge.builder()
+                        ImmutableJudgeAssertion.builder()
                             .expectation("should contain a valid summary of the data report")
                             .build())
                     .build())),
@@ -548,7 +548,7 @@ public class PojoCompatibilityTest {
                         ImmutableElementSelector.builder().elementId("ai-subprocess").build())
                     .variableName("localResult")
                     .satisfiesJudge(
-                        ImmutableSatisfiesJudge.builder()
+                        ImmutableJudgeAssertion.builder()
                             .expectation("should be a properly formatted JSON response")
                             .threshold(0.8)
                             .customPrompt("You are evaluating data accuracy")

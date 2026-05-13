@@ -64,7 +64,7 @@ public interface AssertVariableInstruction extends TestCaseInstruction {
 
   /** A judge-based assertion that evaluates a variable against a semantic expectation. */
   @Value.Immutable
-  @JsonDeserialize(builder = ImmutableSatisfiesJudge.Builder.class)
+  @JsonDeserialize(builder = ImmutableJudgeAssertion.Builder.class)
   interface JudgeAssertion {
 
     /**

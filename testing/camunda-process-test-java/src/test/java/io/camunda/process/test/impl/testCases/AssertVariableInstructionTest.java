@@ -31,7 +31,7 @@ import io.camunda.process.test.api.testCases.ImmutableElementSelector;
 import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertVariableInstruction;
-import io.camunda.process.test.api.testCases.instructions.ImmutableSatisfiesJudge;
+import io.camunda.process.test.api.testCases.instructions.ImmutableJudgeAssertion;
 import io.camunda.process.test.impl.judge.JudgeConfigImpl;
 import io.camunda.process.test.impl.testCases.instructions.AssertVariableInstructionHandler;
 import java.util.function.UnaryOperator;
@@ -71,7 +71,7 @@ public class AssertVariableInstructionTest {
                     .processDefinitionId(PROCESS_DEFINITION_ID)
                     .build())
             .variableName(VARIABLE_NAME)
-            .satisfiesJudge(ImmutableSatisfiesJudge.builder().expectation(EXPECTATION).build())
+            .satisfiesJudge(ImmutableJudgeAssertion.builder().expectation(EXPECTATION).build())
             .build();
 
     // when
@@ -95,7 +95,7 @@ public class AssertVariableInstructionTest {
                     .build())
             .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
             .variableName(VARIABLE_NAME)
-            .satisfiesJudge(ImmutableSatisfiesJudge.builder().expectation(EXPECTATION).build())
+            .satisfiesJudge(ImmutableJudgeAssertion.builder().expectation(EXPECTATION).build())
             .build();
 
     // when
@@ -123,7 +123,7 @@ public class AssertVariableInstructionTest {
                     .build())
             .variableName(VARIABLE_NAME)
             .satisfiesJudge(
-                ImmutableSatisfiesJudge.builder().expectation(EXPECTATION).threshold(0.8).build())
+                ImmutableJudgeAssertion.builder().expectation(EXPECTATION).threshold(0.8).build())
             .build();
 
     // when
@@ -157,7 +157,7 @@ public class AssertVariableInstructionTest {
                     .build())
             .variableName(VARIABLE_NAME)
             .satisfiesJudge(
-                ImmutableSatisfiesJudge.builder()
+                ImmutableJudgeAssertion.builder()
                     .expectation(EXPECTATION)
                     .customPrompt("You are a financial data judge")
                     .build())
@@ -194,7 +194,7 @@ public class AssertVariableInstructionTest {
                     .build())
             .variableName(VARIABLE_NAME)
             .satisfiesJudge(
-                ImmutableSatisfiesJudge.builder()
+                ImmutableJudgeAssertion.builder()
                     .expectation(EXPECTATION)
                     .threshold(0.9)
                     .customPrompt("Custom evaluation criteria")
@@ -234,7 +234,7 @@ public class AssertVariableInstructionTest {
             .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
             .variableName(VARIABLE_NAME)
             .satisfiesJudge(
-                ImmutableSatisfiesJudge.builder()
+                ImmutableJudgeAssertion.builder()
                     .expectation(EXPECTATION)
                     .threshold(0.7)
                     .customPrompt("Local variable evaluation criteria")
