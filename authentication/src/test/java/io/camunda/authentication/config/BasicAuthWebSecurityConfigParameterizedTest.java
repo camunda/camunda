@@ -109,6 +109,8 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
         @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*OidcFlowTestContext")
       })
   public static class TestApplication {
+    // CSL's default JsonProblemDetailAuthFailureHandler requires an ObjectMapper; slice tests don't
+    // pull JacksonAutoConfiguration so we provide one explicitly.
     @Bean
     public ObjectMapper objectMapper() {
       return new ObjectMapper();

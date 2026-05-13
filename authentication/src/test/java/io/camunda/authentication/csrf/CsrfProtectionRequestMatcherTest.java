@@ -11,8 +11,9 @@ import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.REFERER;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -175,16 +176,16 @@ class CsrfProtectionRequestMatcherTest {
 
   private static Stream<Arguments> unprotectedPaths() {
     final Set<String> allowedPaths = new HashSet<>();
-    allowedPaths.addAll(WebSecurityConfig.UNPROTECTED_PATHS);
-    allowedPaths.addAll(WebSecurityConfig.UNPROTECTED_API_PATHS);
-    allowedPaths.add(WebSecurityConfig.LOGIN_URL);
-    allowedPaths.add(WebSecurityConfig.LOGOUT_URL);
+    allowedPaths.addAll(SecurityPathAdapter.INSTANCE.unprotectedPaths());
+    allowedPaths.addAll(SecurityPathAdapter.INSTANCE.unprotectedApiPaths());
+    allowedPaths.add(CamundaSecurityFilterChainConstants.LOGIN_URL);
+    allowedPaths.add(CamundaSecurityFilterChainConstants.LOGOUT_URL);
     return Stream.of(allowedPaths.stream().map(Arguments::of).toArray(Arguments[]::new));
   }
 
   private static Stream<Arguments> protectedPaths() {
-    final Set<String> protectedPaths = new HashSet<>(WebSecurityConfig.API_PATHS);
-    protectedPaths.removeAll(WebSecurityConfig.UNPROTECTED_API_PATHS);
+    final Set<String> protectedPaths = new HashSet<>(SecurityPathAdapter.INSTANCE.apiPaths());
+    protectedPaths.removeAll(SecurityPathAdapter.INSTANCE.unprotectedApiPaths());
     return Stream.of(protectedPaths.stream().map(Arguments::of).toArray(Arguments[]::new));
   }
 

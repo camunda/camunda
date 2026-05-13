@@ -7,7 +7,8 @@
  */
 package io.camunda.authentication.csrf;
 
-import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.authentication.config.spi.SecurityPathAdapter;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -69,10 +70,10 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
 
   private Pattern getAllowedPathsPattern() {
     final Set<String> paths = new HashSet<>();
-    paths.addAll(WebSecurityConfig.UNPROTECTED_PATHS);
-    paths.addAll(WebSecurityConfig.UNPROTECTED_API_PATHS);
-    paths.add(WebSecurityConfig.LOGIN_URL);
-    paths.add(WebSecurityConfig.LOGOUT_URL);
+    paths.addAll(SecurityPathAdapter.INSTANCE.unprotectedPaths());
+    paths.addAll(SecurityPathAdapter.INSTANCE.unprotectedApiPaths());
+    paths.add(CamundaSecurityFilterChainConstants.LOGIN_URL);
+    paths.add(CamundaSecurityFilterChainConstants.LOGOUT_URL);
     final String patternAsString =
         paths.stream()
             .map(path -> path.replace("**", ".*")) // Replace wildcard with regex equivalent

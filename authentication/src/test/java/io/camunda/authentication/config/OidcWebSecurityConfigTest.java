@@ -150,7 +150,7 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
   }
 
   @Test
-  public void shouldRejectRequestsToProtectedWebResourcesWithoutAuthentication() {
+  public void shouldRedirectToOidcProviderForProtectedWebResourcesWithoutAuthentication() {
     // when
     final MvcTestResult testResult =
         mockMvcTester
@@ -159,7 +159,12 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
             .exchange();
 
     // then
-    assertThat(testResult).hasStatus(HttpStatus.UNAUTHORIZED);
+    // Browser navigations to a protected webapp path (no Authorization header) are redirected to
+    // the OIDC authorization endpoint by the CSL OIDC webapp chain. The test context registers a
+    // single client registration so the redirect target is /oauth2/authorization/<id>.
+    assertThat(testResult)
+        .hasStatus(HttpStatus.FOUND)
+        .hasHeader("Location", "/oauth2/authorization/oidc");
   }
 
   @Test
