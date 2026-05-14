@@ -1779,6 +1779,7 @@ jobs:
       - client-components
       - commitlint
       - detect-changes
+      - detect-new-flaky-tests
       - docker-checks
       - elasticsearch-integration-tests
       - general-unit-tests
