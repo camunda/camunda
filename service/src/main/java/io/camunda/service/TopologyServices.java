@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,17 +145,17 @@ public final class TopologyServices extends ApiServices<TopologyServices> {
               }
 
               final var status = topology.getPartitionHealth(brokerId, partitionId);
-              if (status == null) {
-                LOGGER.debug("Unsupported null partition broker health status");
-                return;
-              }
 
               switch (status) {
                 case HEALTHY -> partition.health(Health.HEALTHY);
                 case UNHEALTHY -> partition.health(Health.UNHEALTHY);
                 case DEAD -> partition.health(Health.DEAD);
-                default ->
-                    LOGGER.debug("Unsupported partition broker health status '{}'", status.name());
+                case null, default ->
+                    LOGGER.debug(
+                        "Unsupported partition broker health status '{}'",
+                        Optional.ofNullable(status)
+                            .map(PartitionHealthStatus::name)
+                            .orElse("null"));
               }
               broker.addPartition(partition.build());
             });
