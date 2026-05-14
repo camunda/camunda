@@ -85,7 +85,7 @@ WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
       AND (build_ref = "refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
     OR
     (build_trigger = "pull_request"
-      AND bs.build_ref != @pr_ref)
+      AND (bs.build_ref IS NULL OR bs.build_ref != @pr_ref))
   )
 ```
 
@@ -280,7 +280,7 @@ bq query --project_id=ci-30-162810 --use_legacy_sql=false --format=json \
        (build_trigger="merge_group" AND (build_base_ref="refs/heads/main" OR build_base_ref LIKE "refs/heads/stable/%"))
        OR (build_trigger="push" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
        OR (build_trigger="schedule" AND (build_ref="refs/heads/main" OR build_ref LIKE "refs/heads/stable/%"))
-       OR (build_trigger="pull_request" AND bs.build_ref != @pr_ref)
+       OR (build_trigger="pull_request" AND (bs.build_ref IS NULL OR bs.build_ref != @pr_ref))
      )' 2>/dev/null > /tmp/known-flaky-tests.json
 
 # 2. Simulate PR flaky test data
