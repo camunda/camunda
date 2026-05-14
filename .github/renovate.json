@@ -599,6 +599,42 @@
         "dmn-js-shared"
       ],
       "minimumReleaseAge": "0 days"
+    },
+    {
+      "description": "Group bpmn-js related packages.",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "bpmn-js**",
+        "bpmn-moddle",
+        "@bpmn-io/element-template-icon-renderer",
+        "@bpmn-io/element-templates-icons-renderer"
+      ],
+      "groupName": "bpmn-js",
+      "groupSlug": "bpmn-js"
+    },
+    {
+      "description": "Group dmn-js related packages.",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "dmn-js**"
+      ],
+      "groupName": "dmn-js",
+      "groupSlug": "dmn-js"
+    },
+    {
+      "description": "Group form-js related packages.",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "@bpmn-io/form-js**"
+      ],
+      "groupName": "form-js",
+      "groupSlug": "form-js"
     }
   ],
   "dockerfile": {
