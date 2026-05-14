@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@fixtures';
+import {authedTest as test} from '@fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {
-  navigateToApp,
+  navigateToAppHome,
   hideHelperModals,
   gotoProcessesPage,
 } from '@pages/UtilitiesPage';
@@ -30,9 +30,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instance Batch Modification', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
+  test.beforeEach(async ({page, operateHomePage}) => {
+    await navigateToAppHome(page, 'operate');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await hideHelperModals(page);
   });
