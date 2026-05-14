@@ -209,8 +209,13 @@ jobs:
   optimize-e2e-smoke:
     name: "E2E / Self-Managed (Smoke)"
     if: inputs.runFeTests
+<<<<<<< HEAD
     runs-on: ubuntu-latest
     timeout-minutes: 45
+=======
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+>>>>>>> 3c8aca01 (ci: use gcp-perf-core-8-default runner for optimize e2e smoke job)
     permissions: { }
     env:
       TEST_TYPE: E2E
