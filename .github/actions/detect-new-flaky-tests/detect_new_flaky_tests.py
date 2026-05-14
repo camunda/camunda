@@ -30,7 +30,12 @@ PREFIX = "[new-flaky]"
 
 def parse_test_name(test_name: str) -> dict:
     """Parse a fully-qualified test name into package, class, and method."""
-    last_dot = test_name.rfind(".")
+    # Strip trailing (params)[index] suffixes before locating the class/method
+    # split. JUnit @ParameterizedTest display names can embed dots inside [...]
+    # (e.g. "[1: RaftRule with 4 nodes.]"), which would mislead rfind(".") into
+    # treating the bracketed dot as the package separator.
+    bare = re.sub(r"(\([^)]*\))?(\[[^\]]*\])?\s*$", "", test_name)
+    last_dot = bare.rfind(".")
     if last_dot == -1:
         return {"fullName": test_name.strip()}
 
