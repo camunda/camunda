@@ -11,6 +11,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.UUID;
+import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
@@ -79,7 +80,13 @@ public class AWSSearchDBExtension extends SearchDBExtension {
 
   @Override
   public void afterEach(final ExtensionContext context) throws Exception {
-    // No-Op
+    // this will swallow any errors when running each deletion if there are any
+    CloseHelper.quietCloseAll(
+        testClient::deleteIndices,
+        testClient::deleteIndexTemplates,
+        testClient::deleteComponentTemplates);
+
+    CloseHelper.quietCloseAll(testClient, client);
   }
 
   /** {@inheritDoc} */

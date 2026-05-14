@@ -146,6 +146,17 @@ public abstract class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper
             return sendHttpDeleteRequest(httpClient, deleteIndexTemplatesEndpoint);
           },
           5);
+
+      // Component templates are also separate from index templates and indices. They must be
+      // deleted to allow proper recreation during subsequent test runs.
+      // https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html
+      withRetry(
+          () -> {
+            final URI deleteComponentTemplatesEndpoint =
+                URI.create(String.format("%s/_component_template/%s*", endpoint, prefix));
+            return sendHttpDeleteRequest(httpClient, deleteComponentTemplatesEndpoint);
+          },
+          5);
     }
   }
 
