@@ -471,18 +471,15 @@ jobs:
             token: ${{ env.TELEPORT_JOIN_TOKEN }}
             kubernetes-cluster: ${{ env.CLUSTER }}
 
-      - name: Create namespace if not exists
+      - name: Scaffold load-test folder
         run: |
           cd load-tests/setup
           # The namespace label created-by will not be able resolve the actual user which triggered
           # the GitHub action by default. We need to correctly configure the git user here to make it work
           git config user.name ${{ github.actor }}
-          # Create the namespace for the load test
+          # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
+          # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
           ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
-          # Annotate namespace with the workflow run URL for traceability
-          kubectl annotate namespace ${{ env.NAMESPACE }} \
-            "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            --overwrite
       - name: Install latest Camunda Platform
         run: |
           cd load-tests/setup/${{ env.NAMESPACE }}
@@ -547,6 +544,12 @@ jobs:
             enable_optimize=${{ inputs.enable-optimize }} \
             additional_platform_configuration="$additional_platform_config" \
             additional_load_test_configuration="$load_test_config"
+      - name: Annotate namespace with workflow run URL
+        run: |
+          # Traceability annotation, applied after `make install` has created the namespace.
+          kubectl annotate namespace ${{ env.NAMESPACE }} \
+            "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --overwrite
       - name: Summarize platform deployment
         if: success()
         run: |
