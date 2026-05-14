@@ -28,22 +28,23 @@ module.
 
 ### Key Modules
 
-|     Module      |                        Description                        |
-|-----------------|-----------------------------------------------------------|
-| `zeebe/`        | Core process engine (broker, engine, protocol, exporters) |
-| `zeebe/gateway` | gRPC gateway                                              |
-| `operate/`      | Process monitoring webapp                                 |
-| `tasklist/`     | User task management webapp                               |
-| `identity/`     | Authentication and authorization                          |
-| `optimize/`     | Process analytics (skipped with `-Dquickly`)              |
-| `db/`           | Database layer (rdbms, rdbms-schema)                      |
-| `search/`       | Search client abstraction (Elasticsearch, OpenSearch)     |
-| `service/`      | Internal services                                         |
-| `clients/`      | Client libraries (Java, Spring Boot starters)             |
-| `gateways/`     | Gateway implementations (HTTP mapping, MCP)               |
-| `security/`     | Security core, protocol, validation                       |
-| `qa/`           | Cross-component acceptance tests                          |
-| `testing/`      | Process testing libraries                                 |
+| Module           | Description                                               |
+| ---------------- | --------------------------------------------------------- |
+| `zeebe/`         | Core process engine (broker, engine, protocol, exporters) |
+| `zeebe/gateway`  | gRPC gateway                                              |
+| `operate/`       | Process monitoring webapp                                 |
+| `tasklist/`      | User task management webapp                               |
+| `identity/`      | Authentication and authorization                          |
+| `optimize/`      | Process analytics (skipped with `-Dquickly`)              |
+| `db/`            | Database layer (rdbms, rdbms-schema)                      |
+| `search/`        | Search client abstraction (Elasticsearch, OpenSearch)     |
+| `service/`       | Internal services                                         |
+| `clients/`       | Client libraries (Java, Spring Boot starters)             |
+| `gateways/`      | Gateway implementations (HTTP mapping, MCP)               |
+| `security/`      | Security core, protocol, validation                       |
+| `qa/`            | Cross-component acceptance tests                          |
+| `webapp/client/` | Orchestration cluster unified frontend                    |
+| `testing/`       | Process testing libraries                                 |
 
 ## Build Commands
 
@@ -102,7 +103,7 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 `test`
 
 - Separate behavioral changes from structural/refactoring changes into distinct commits
-- Commit messages should explain *why*, not just *what* changed
+- Commit messages should explain _why_, not just _what_ changed
 - Do not use commit scopes — commitlint enforces `scope-empty`. Use `fix: ...` not `fix(ci): ...`
 
 ## Pull Request Conventions
@@ -150,8 +151,7 @@ changes. Skipping formatting reliably breaks the `Java checks` CI job.
 
 Additional instruction files are auto-loaded when you edit matching paths:
 
-- Frontend code (`client/` directories) → `.github/instructions/frontend.instructions.md`
+- Frontend code (`client/` directories, `webapp/client/`) → `.github/instructions/frontend.instructions.md`
 - MCP gateway (`gateways/gateway-mcp/`) → `.github/instructions/gateway-mcp-tools.instructions.md`
 - Load tests (`load-tests/`, load test workflows) →
   `.github/instructions/load-tests.instructions.md`
-
