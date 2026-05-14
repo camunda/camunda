@@ -50,3 +50,10 @@
 /load-tests/ @camunda/reliability-testing
 /load-tests/ @camunda/reliability-testing
 /.github/workflows/*load-test*.yml @camunda/reliability-testing
+
+####################
+## Claude skills  ##
+####################
+
+# Engine-expert skill
+/.claude/skills/engine-expert/  @korthout @camunda/core-features
