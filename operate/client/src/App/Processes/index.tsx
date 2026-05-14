@@ -7,6 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
+import {Outlet} from 'react-router-dom';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {MigrationView} from './MigrationView';
 import {ListView} from './ListView';
@@ -31,6 +32,7 @@ const Processes: React.FC = observer(() => {
       ) : (
         <ListView />
       )}
+      <Outlet />
 
       {processInstanceMigrationStore.isEnabled && isNavigationInterrupted && (
         <Modal

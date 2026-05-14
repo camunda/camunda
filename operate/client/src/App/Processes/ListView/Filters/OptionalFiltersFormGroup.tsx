@@ -8,7 +8,8 @@
 
 import {observer} from 'mobx-react';
 import {useEffect, useState} from 'react';
-import {useLocation, type Location} from 'react-router-dom';
+import {useLocation, useMatch, type Location} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
 import {type FieldValidator} from 'final-form';
 import {Close} from '@carbon/react/icons';
 import intersection from 'lodash/intersection';
@@ -147,6 +148,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
   ({visibleFilters, onVisibleFilterChange}) => {
     const location = useLocation() as LocationType;
     const form = useForm();
+    const isOnVariablesRoute = useMatch(Paths.processesVariables()) !== null;
     const hasActiveVariableFilters =
       MULTI_VARIABLE_FILTER && variableFilterStore.hasActiveFilters;
 
@@ -167,7 +169,9 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               ...('endDateFrom' in filters && 'endDateTo' in filters
                 ? ['endDateRange']
                 : []),
-              ...(hasActiveVariableFilters ? ['variable'] : []),
+              ...(hasActiveVariableFilters || isOnVariablesRoute
+                ? ['variable']
+                : []),
             ] as OptionalFilter[]),
           ]),
         );
@@ -177,6 +181,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
       location.search,
       onVisibleFilterChange,
       hasActiveVariableFilters,
+      isOnVariablesRoute,
     ]);
 
     const [isStartDateRangeModalOpen, setIsStartDateRangeModalOpen] =

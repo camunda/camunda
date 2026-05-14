@@ -6,17 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useRef} from 'react';
 import {Button, Modal, Stack} from '@carbon/react';
 import {Add} from '@carbon/react/icons';
 import {Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import arrayMutators from 'final-form-arrays';
+import {useNavigate, useLocation} from 'react-router-dom';
 import {isValidJSON} from 'modules/utils';
+import {Paths} from 'modules/Routes';
 import {VariableFilterRow} from './VariableFilterRow';
-import type {VariableCondition} from 'modules/stores/variableFilter';
+import {
+  variableFilterStore,
+  type VariableCondition,
+} from 'modules/stores/variableFilter';
 import type {DraftCondition} from './constants';
 import {Description, ModalContent} from './styled';
+import {observer} from 'mobx-react-lite';
 
 const MAX_CONDITIONS = 5;
 
@@ -28,7 +34,7 @@ type RowErrors = {
 const validateCondition = (condition: DraftCondition): RowErrors => {
   const errors: RowErrors = {};
 
-  if (!condition.name.trim()) {
+  if (!condition.name?.trim()) {
     errors.name = 'Variable name is required';
   }
 
@@ -36,7 +42,7 @@ const validateCondition = (condition: DraftCondition): RowErrors => {
     condition.operator !== 'exists' &&
     condition.operator !== 'doesNotExist'
   ) {
-    if (!condition.value.trim()) {
+    if (!condition.value?.trim()) {
       errors.value = 'Value is required';
     } else if (condition.operator === 'oneOf') {
       let parsed: unknown;
@@ -61,13 +67,6 @@ const validateCondition = (condition: DraftCondition): RowErrors => {
 
 const hasErrors = (errors: RowErrors) => Object.keys(errors).length > 0;
 
-type Props = {
-  isOpen: boolean;
-  initialConditions: VariableCondition[];
-  onApply: (conditions: VariableCondition[]) => void;
-  onClose: () => void;
-};
-
 type FormValues = {
   conditions: DraftCondition[];
 };
@@ -78,17 +77,21 @@ const createDraft = (): DraftCondition => ({
   value: '',
 });
 
-const VariableFilterModal: React.FC<Props> = ({
-  isOpen,
-  initialConditions,
-  onApply,
-  onClose,
-}) => {
-  const [initialDraftConditions] = useState<DraftCondition[]>(() =>
-    initialConditions.length > 0
-      ? initialConditions.map((c) => ({...c}))
-      : [createDraft()],
+const VariableFilterModal: React.FC = observer(() => {
+  const {conditions} = variableFilterStore;
+  const initialDraftConditions = useRef(() =>
+    conditions.length > 0 ? conditions : [createDraft()],
   );
+  const navigate = useNavigate();
+  const location = useLocation();
+  const handleCloseModal = () => {
+    navigate({pathname: Paths.processes(), search: location.search});
+  };
+
+  const handleApplyConditions = (newConditions: VariableCondition[]) => {
+    variableFilterStore.setConditions(newConditions);
+    navigate({pathname: Paths.processes(), search: location.search});
+  };
 
   const handleSubmit = (
     values: FormValues,
@@ -97,7 +100,7 @@ const VariableFilterModal: React.FC<Props> = ({
     if (conditionErrors.some(hasErrors)) {
       return {conditions: conditionErrors};
     }
-    onApply(
+    handleApplyConditions(
       values.conditions.map(({operator, name, value}): VariableCondition => {
         if (operator === 'exists' || operator === 'doesNotExist') {
           return {name, operator, value: ''};
@@ -111,18 +114,18 @@ const VariableFilterModal: React.FC<Props> = ({
   return (
     <Form<FormValues>
       onSubmit={handleSubmit}
-      initialValues={{conditions: initialDraftConditions}}
+      initialValues={{conditions: initialDraftConditions.current()}}
       mutators={{...arrayMutators}}
     >
       {({handleSubmit: submitForm}) => (
         <Modal
-          open={isOpen}
+          open
           modalHeading="Filter by Variable"
           primaryButtonText="Apply"
           secondaryButtonText="Cancel"
           onRequestSubmit={submitForm}
-          onRequestClose={onClose}
-          onSecondarySubmit={onClose}
+          onRequestClose={handleCloseModal}
+          onSecondarySubmit={handleCloseModal}
           preventCloseOnClickOutside
           size="md"
         >
@@ -162,6 +165,6 @@ const VariableFilterModal: React.FC<Props> = ({
       )}
     </Form>
   );
-};
+});
 
 export {VariableFilterModal};

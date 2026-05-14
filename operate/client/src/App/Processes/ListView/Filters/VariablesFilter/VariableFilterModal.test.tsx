@@ -7,35 +7,52 @@
  */
 
 import {render, screen} from 'modules/testing-library';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
+import {LocationLog} from 'modules/utils/LocationLog';
 import {VariableFilterModal} from './VariableFilterModal';
-import type {VariableCondition} from 'modules/stores/variableFilter';
+import {
+  variableFilterStore,
+  type VariableCondition,
+} from 'modules/stores/variableFilter';
 
-const baseMockProps = {
-  isOpen: true,
-  initialConditions: [] as VariableCondition[],
-  onApply: vi.fn(),
-  onClose: vi.fn(),
+const getWrapper = (initialPath = Paths.processesVariables()) => {
+  const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Routes>
+        <Route
+          path={Paths.processesVariables()}
+          element={
+            <>
+              {children}
+              <LocationLog />
+            </>
+          }
+        />
+        <Route path={Paths.processes()} element={<LocationLog />} />
+      </Routes>
+    </MemoryRouter>
+  );
+  return Wrapper;
 };
 
 describe('<VariableFilterModal />', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    variableFilterStore.reset();
   });
 
   it('should render one empty row when no initial conditions', () => {
-    render(<VariableFilterModal {...baseMockProps} />);
+    render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(1);
   });
 
   it('should render rows for each initial condition', () => {
-    const conditions: VariableCondition[] = [
+    variableFilterStore.setConditions([
       {name: 'status', operator: 'equals', value: '"active"'},
       {name: 'count', operator: 'notEqual', value: '0'},
-    ];
-    render(
-      <VariableFilterModal {...baseMockProps} initialConditions={conditions} />,
-    );
+    ]);
+    render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     const nameInputs = screen.getAllByPlaceholderText('Variable name');
     expect(nameInputs).toHaveLength(2);
@@ -44,37 +61,33 @@ describe('<VariableFilterModal />', () => {
   });
 
   it('should always enable Apply button', () => {
-    render(<VariableFilterModal {...baseMockProps} />);
+    render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled();
   });
 
   it('should add a new row when Add condition is clicked', async () => {
-    const {user} = render(<VariableFilterModal {...baseMockProps} />);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('button', {name: 'Add condition'}));
 
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(2);
   });
 
-  it('should disable Add condition button when condition limit is reached', async () => {
+  it('should disable Add condition button when condition limit is reached', () => {
     const conditions: VariableCondition[] = Array.from({length: 5}, (_, i) => ({
       name: `var${i}`,
       operator: 'equals' as const,
       value: `"val${i}"`,
     }));
-    render(
-      <VariableFilterModal {...baseMockProps} initialConditions={conditions} />,
-    );
+    variableFilterStore.setConditions(conditions);
+    render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     expect(screen.getByRole('button', {name: 'Add condition'})).toBeDisabled();
   });
 
-  it('should call onApply with valid conditions stripped of id', async () => {
-    const onApply = vi.fn();
-    const {user} = render(
-      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
-    );
+  it('should update store and navigate on apply with valid conditions', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -86,27 +99,22 @@ describe('<VariableFilterModal />', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-    expect(onApply).toHaveBeenCalledWith([
+    expect(variableFilterStore.conditions).toEqual([
       {name: 'status', operator: 'equals', value: '"active"'},
     ]);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(Paths.processes());
   });
 
-  it('should call onClose when Cancel is clicked', async () => {
-    const onClose = vi.fn();
-    const {user} = render(
-      <VariableFilterModal {...baseMockProps} onClose={onClose} />,
-    );
+  it('should navigate back on cancel', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(Paths.processes());
   });
 
   it('should accept exists operator without value as valid', async () => {
-    const onApply = vi.fn();
-    const {user} = render(
-      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
-    );
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -118,16 +126,13 @@ describe('<VariableFilterModal />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-    expect(onApply).toHaveBeenCalledWith([
+    expect(variableFilterStore.conditions).toEqual([
       {name: 'myVar', operator: 'exists', value: ''},
     ]);
   });
 
   it('should accept "does not exist" operator without value as valid', async () => {
-    const onApply = vi.fn();
-    const {user} = render(
-      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
-    );
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -139,13 +144,13 @@ describe('<VariableFilterModal />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-    expect(onApply).toHaveBeenCalledWith([
+    expect(variableFilterStore.conditions).toEqual([
       {name: 'myVar', operator: 'doesNotExist', value: ''},
     ]);
   });
 
   it('should hide value field when operator is changed to exists', async () => {
-    const {user} = render(<VariableFilterModal {...baseMockProps} />);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('combobox', {name: 'Operator'}));
     await user.click(screen.getByText('exists'));
@@ -156,13 +161,11 @@ describe('<VariableFilterModal />', () => {
   });
 
   it('should remove a row when its delete button is clicked', async () => {
-    const conditions: VariableCondition[] = [
+    variableFilterStore.setConditions([
       {name: 'status', operator: 'equals', value: '"active"'},
       {name: 'count', operator: 'notEqual', value: '0'},
-    ];
-    const {user} = render(
-      <VariableFilterModal {...baseMockProps} initialConditions={conditions} />,
-    );
+    ]);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(2);
 
@@ -177,38 +180,26 @@ describe('<VariableFilterModal />', () => {
   });
 
   it('should initialize with one empty row when opened with no initial conditions', () => {
-    render(
-      <VariableFilterModal
-        {...baseMockProps}
-        isOpen={true}
-        initialConditions={[]}
-      />,
-    );
+    render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(1);
     expect(screen.getAllByPlaceholderText('Variable name')[0]!).toHaveValue('');
   });
 
   it('should show name error and keep modal open when name is empty on Apply', async () => {
-    const onApply = vi.fn();
-    const {user} = render(
-      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
-    );
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
     expect(screen.getByText('Variable name is required')).toBeInTheDocument();
-    expect(onApply).not.toHaveBeenCalled();
+    expect(variableFilterStore.conditions).toHaveLength(0);
     expect(
       screen.getByRole('dialog', {name: 'Filter by Variable'}),
     ).toBeInTheDocument();
   });
 
   it('should show JSON error when value is not valid JSON on Apply', async () => {
-    const onApply = vi.fn();
-    const {user} = render(
-      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
-    );
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -221,14 +212,11 @@ describe('<VariableFilterModal />', () => {
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
     expect(screen.getByText('Value must be valid JSON')).toBeInTheDocument();
-    expect(onApply).not.toHaveBeenCalled();
+    expect(variableFilterStore.conditions).toHaveLength(0);
   });
 
   it('should not show JSON error for contains operator', async () => {
-    const onApply = vi.fn();
-    const {user} = render(
-      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
-    );
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -246,11 +234,11 @@ describe('<VariableFilterModal />', () => {
     expect(
       screen.queryByText('Value must be valid JSON'),
     ).not.toBeInTheDocument();
-    expect(onApply).toHaveBeenCalledOnce();
+    expect(variableFilterStore.conditions).toHaveLength(1);
   });
 
   it('should clear error when user starts typing after a failed submit', async () => {
-    const {user} = render(<VariableFilterModal {...baseMockProps} />);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
     expect(screen.getByText('Variable name is required')).toBeInTheDocument();
@@ -266,7 +254,7 @@ describe('<VariableFilterModal />', () => {
   });
 
   it('should not show errors before a submit attempt', async () => {
-    const {user} = render(<VariableFilterModal {...baseMockProps} />);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.click(screen.getAllByPlaceholderText('Variable name')[0]!);
     await user.tab();
@@ -277,7 +265,7 @@ describe('<VariableFilterModal />', () => {
   });
 
   it('should clear errors when a row is deleted', async () => {
-    const {user} = render(<VariableFilterModal {...baseMockProps} />);
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('button', {name: 'Add condition'}));
     await user.click(screen.getByRole('button', {name: 'Apply'}));
@@ -293,10 +281,7 @@ describe('<VariableFilterModal />', () => {
   });
 
   it('should re-validate immediately when operator changes on a previously-failed row', async () => {
-    const onApply = vi.fn();
-    const {user} = render(
-      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
-    );
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -311,11 +296,23 @@ describe('<VariableFilterModal />', () => {
     expect(screen.queryByText('Value is required')).not.toBeInTheDocument();
   });
 
-  it('should apply successfully when all conditions are valid', async () => {
-    const onApply = vi.fn();
-    const {user} = render(
-      <VariableFilterModal {...baseMockProps} onApply={onApply} />,
+  it('should show value error for contains operator with empty value', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
+
+    await user.type(
+      screen.getAllByPlaceholderText('Variable name')[0]!,
+      'myVar',
     );
+    await user.click(screen.getByRole('combobox', {name: 'Operator'}));
+    await user.click(screen.getByText('contains'));
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    expect(screen.getByText('Value is required')).toBeInTheDocument();
+    expect(variableFilterStore.conditions).toHaveLength(0);
+  });
+
+  it('should apply successfully when all conditions are valid', async () => {
+    const {user} = render(<VariableFilterModal />, {wrapper: getWrapper()});
 
     await user.type(
       screen.getAllByPlaceholderText('Variable name')[0]!,
@@ -327,7 +324,7 @@ describe('<VariableFilterModal />', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-    expect(onApply).toHaveBeenCalledOnce();
+    expect(variableFilterStore.conditions).toHaveLength(1);
     expect(
       screen.queryByText('Variable name is required'),
     ).not.toBeInTheDocument();

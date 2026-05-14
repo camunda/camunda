@@ -6,16 +6,50 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
+import {LocationLog} from 'modules/utils/LocationLog';
 import {VariableFilter} from '.';
+import {VariableFilterModal} from './VariableFilterModal';
 import {variableFilterStore} from 'modules/stores/variableFilter';
+
+const getWrapper = (initialPath = Paths.processes()) => {
+  const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Routes>
+        <Route
+          path={Paths.processes()}
+          element={
+            <>
+              {children}
+              <LocationLog />
+            </>
+          }
+        />
+        <Route
+          path={Paths.processesVariables()}
+          element={
+            <>
+              {children}
+              <VariableFilterModal />
+              <LocationLog />
+            </>
+          }
+        />
+      </Routes>
+    </MemoryRouter>
+  );
+  return Wrapper;
+};
 
 describe('<VariableFilter />', () => {
   beforeEach(() => {
     variableFilterStore.reset();
   });
+
   it('should show "Add conditions" label when no conditions are set', () => {
-    render(<VariableFilter />);
+    render(<VariableFilter />, {wrapper: getWrapper()});
 
     expect(
       screen.getByRole('button', {name: 'Add conditions'}),
@@ -27,7 +61,7 @@ describe('<VariableFilter />', () => {
       {name: 'status', operator: 'equals', value: '"active"'},
     ]);
 
-    render(<VariableFilter />);
+    render(<VariableFilter />, {wrapper: getWrapper()});
 
     expect(
       screen.getByRole('button', {name: 'Edit conditions'}),
@@ -40,22 +74,32 @@ describe('<VariableFilter />', () => {
       {name: 'retries', operator: 'exists', value: ''},
     ]);
 
-    render(<VariableFilter />);
+    render(<VariableFilter />, {wrapper: getWrapper()});
 
     expect(screen.getByText('status equals "active"')).toBeInTheDocument();
     expect(screen.getByText('retries exists')).toBeInTheDocument();
   });
 
   it('should not render condition list when no conditions are set', () => {
-    render(<VariableFilter />);
+    render(<VariableFilter />, {wrapper: getWrapper()});
 
     expect(
       screen.queryByRole('list', {name: 'Active variable filters'}),
     ).not.toBeInTheDocument();
   });
 
+  it('should navigate to modal route when the button is clicked', async () => {
+    const {user} = render(<VariableFilter />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('button', {name: 'Add conditions'}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processesVariables(),
+    );
+  });
+
   it('should open the modal when the button is clicked', async () => {
-    const {user} = render(<VariableFilter />);
+    const {user} = render(<VariableFilter />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('button', {name: 'Add conditions'}));
 
@@ -65,7 +109,7 @@ describe('<VariableFilter />', () => {
   });
 
   it('should update conditions on apply', async () => {
-    const {user} = render(<VariableFilter />);
+    const {user} = render(<VariableFilter />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('button', {name: 'Add conditions'}));
 
@@ -89,7 +133,7 @@ describe('<VariableFilter />', () => {
   });
 
   it('should not update conditions on cancel', async () => {
-    const {user} = render(<VariableFilter />);
+    const {user} = render(<VariableFilter />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('button', {name: 'Add conditions'}));
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
@@ -101,7 +145,7 @@ describe('<VariableFilter />', () => {
   });
 
   it('should reset draft rows when modal is reopened after adding unsaved rows', async () => {
-    const {user} = render(<VariableFilter />);
+    const {user} = render(<VariableFilter />, {wrapper: getWrapper()});
 
     await user.click(screen.getByRole('button', {name: 'Add conditions'}));
     await user.click(screen.getByRole('button', {name: 'Add condition'}));
@@ -111,5 +155,56 @@ describe('<VariableFilter />', () => {
     await user.click(screen.getByRole('button', {name: 'Add conditions'}));
 
     expect(screen.getAllByPlaceholderText('Variable name')).toHaveLength(1);
+  });
+
+  it('should open modal when rendered at correct URL', () => {
+    render(<VariableFilter />, {
+      wrapper: getWrapper(Paths.processesVariables()),
+    });
+
+    expect(
+      screen.getByRole('dialog', {name: 'Filter by Variable'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should preserve search params when opening modal', async () => {
+    const {user} = render(<VariableFilter />, {
+      wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Add conditions'}));
+
+    expect(
+      screen.getByRole('dialog', {name: 'Filter by Variable'}),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processesVariables(),
+    );
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?active=true&incidents=true',
+    );
+  });
+
+  it('should preserve search params when closing modal', async () => {
+    const {user} = render(<VariableFilter />, {
+      wrapper: getWrapper(
+        `${Paths.processesVariables()}?active=true&incidents=true`,
+      ),
+    });
+
+    expect(
+      screen.getByRole('dialog', {name: 'Filter by Variable'}),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        Paths.processes(),
+      );
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        '?active=true&incidents=true',
+      );
+    });
   });
 });
