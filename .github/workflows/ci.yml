@@ -1475,7 +1475,7 @@ jobs:
 
       - name: Delete matrix job generated artifacts
         if: always()
-        uses: geekyeggo/delete-artifact@v6
+        uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
         with:
           name: |
             zeebe-unit-tests-*
