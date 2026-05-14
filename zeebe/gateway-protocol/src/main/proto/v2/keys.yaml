@@ -196,28 +196,34 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: "#/components/schemas/ProcessDefinitionKey"
-          x-added-in-version: "8.8"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/ProcessDefinitionKey"
-          x-added-in-version: "8.8"
         $exists:
           description: Checks if the current property exists.
           type: boolean
-          x-added-in-version: "8.8"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/ProcessDefinitionKey"
-          x-added-in-version: "8.8"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/ProcessDefinitionKey"
-          x-added-in-version: "8.8"
+      x-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     ProcessInstanceKeyFilterProperty:
       description: ProcessInstanceKey property with full advanced search capabilities.
@@ -238,28 +244,34 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceKey"
-          x-added-in-version: "8.8"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceKey"
-          x-added-in-version: "8.8"
         $exists:
           description: Checks if the current property exists.
           type: boolean
-          x-added-in-version: "8.8"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceKey"
-          x-added-in-version: "8.8"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceKey"
-          x-added-in-version: "8.8"
+      x-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     ElementInstanceKeyFilterProperty:
       description: ElementInstanceKey property with full advanced search capabilities.
@@ -280,28 +292,34 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: "#/components/schemas/ElementInstanceKey"
-          x-added-in-version: "8.8"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/ElementInstanceKey"
-          x-added-in-version: "8.8"
         $exists:
           description: Checks if the current property exists.
           type: boolean
-          x-added-in-version: "8.8"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/ElementInstanceKey"
-          x-added-in-version: "8.8"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/ElementInstanceKey"
-          x-added-in-version: "8.8"
+      x-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     JobKeyFilterProperty:
       description: JobKey property with full advanced search capabilities.
@@ -322,28 +340,34 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: '#/components/schemas/JobKey'
-          x-added-in-version: "8.8"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: '#/components/schemas/JobKey'
-          x-added-in-version: "8.8"
         $exists:
           description: Checks if the current property exists.
           type: boolean
-          x-added-in-version: "8.8"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: '#/components/schemas/JobKey'
-          x-added-in-version: "8.8"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
             $ref: '#/components/schemas/JobKey'
-          x-added-in-version: "8.8"
+      x-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     DecisionDefinitionKeyFilterProperty:
       description: DecisionDefinitionKey property with full advanced search capabilities.
@@ -364,28 +388,34 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: "#/components/schemas/DecisionDefinitionKey"
-          x-added-in-version: "8.8"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/DecisionDefinitionKey"
-          x-added-in-version: "8.8"
         $exists:
           description: Checks if the current property exists.
           type: boolean
-          x-added-in-version: "8.8"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/DecisionDefinitionKey"
-          x-added-in-version: "8.8"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/DecisionDefinitionKey"
-          x-added-in-version: "8.8"
+      x-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     ScopeKeyFilterProperty:
       description: |
@@ -482,28 +512,34 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: "#/components/schemas/DecisionEvaluationInstanceKey"
-          x-added-in-version: "8.9"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/DecisionEvaluationInstanceKey"
-          x-added-in-version: "8.9"
         $exists:
           description: Checks if the current property exists.
           type: boolean
-          x-added-in-version: "8.9"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/DecisionEvaluationInstanceKey"
-          x-added-in-version: "8.9"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/DecisionEvaluationInstanceKey"
-          x-added-in-version: "8.9"
+      x-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
 
     AgentInstanceKeyFilterProperty:
       description: AgentInstanceKey property with full advanced search capabilities.

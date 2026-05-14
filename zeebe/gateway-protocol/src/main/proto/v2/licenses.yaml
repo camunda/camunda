@@ -44,10 +44,13 @@ components:
         isCommercial:
           description: Will be false when a license contains a non-commerical=true property
           type: boolean
-          x-added-in-version: "8.8"
         expiresAt:
           nullable: true
           description: The date when the Camunda license expires
           type: string
           format: date-time
-          x-added-in-version: "8.8"
+      x-added-in-version:
+        - propertyName: isCommercial
+          addedInVersion: "8.8"
+        - propertyName: expiresAt
+          addedInVersion: "8.8"

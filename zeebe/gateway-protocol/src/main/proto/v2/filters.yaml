@@ -21,27 +21,33 @@ components:
         $eq:
           description: Checks for equality with the provided value.
           type: string
-          x-added-in-version: "8.8"
         $neq:
           description: Checks for inequality with the provided value.
           type: string
-          x-added-in-version: "8.8"
         $exists:
           description: Checks if the current property exists.
           type: boolean
-          x-added-in-version: "8.8"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             type: string
-          x-added-in-version: "8.8"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
             type: string
-          x-added-in-version: "8.8"
+      x-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
+        - propertyName: "$notIn"
+          addedInVersion: "8.8"
 
     AdvancedStringFilter:
       title: Advanced filter
@@ -52,7 +58,9 @@ components:
           properties:
             $like:
               $ref: '#/components/schemas/LikeFilter'
-              x-added-in-version: "8.8"
+          x-added-in-version:
+            - propertyName: "$like"
+              addedInVersion: "8.8"
 
     BasicStringFilterProperty:
       description: String property with basic advanced search capabilities.
@@ -79,43 +87,52 @@ components:
           description: Checks for equality with the provided value.
           type: integer
           format: int32
-          x-added-in-version: "8.8"
         $neq:
           description: Checks for inequality with the provided value.
           type: integer
           format: int32
-          x-added-in-version: "8.8"
         $exists:
           description: Checks if the current property exists.
           type: boolean
-          x-added-in-version: "8.8"
         $gt:
           description: Greater than comparison with the provided value.
           type: integer
           format: int32
-          x-added-in-version: "8.8"
         $gte:
           description: Greater than or equal comparison with the provided value.
           type: integer
           format: int32
-          x-added-in-version: "8.8"
         $lt:
           description: Lower than comparison with the provided value.
           type: integer
           format: int32
-          x-added-in-version: "8.8"
         $lte:
           description: Lower than or equal comparison with the provided value.
           type: integer
           format: int32
-          x-added-in-version: "8.8"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             type: integer
             format: int32
-          x-added-in-version: "8.8"
+      x-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$gt"
+          addedInVersion: "8.8"
+        - propertyName: "$gte"
+          addedInVersion: "8.8"
+        - propertyName: "$lt"
+          addedInVersion: "8.8"
+        - propertyName: "$lte"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
 
     IntegerFilterProperty:
       description: Integer property with advanced search capabilities.
@@ -135,43 +152,52 @@ components:
           description: Checks for equality with the provided value.
           type: string
           format: date-time
-          x-added-in-version: "8.8"
         $neq:
           description: Checks for inequality with the provided value.
           type: string
           format: date-time
-          x-added-in-version: "8.8"
         $exists:
           description: Checks if the current property exists.
           type: boolean
-          x-added-in-version: "8.8"
         $gt:
           description: Greater than comparison with the provided value.
           type: string
           format: date-time
-          x-added-in-version: "8.8"
         $gte:
           description: Greater than or equal comparison with the provided value.
           type: string
           format: date-time
-          x-added-in-version: "8.8"
         $lt:
           description: Lower than comparison with the provided value.
           type: string
           format: date-time
-          x-added-in-version: "8.8"
         $lte:
           description: Lower than or equal comparison with the provided value.
           type: string
           format: date-time
-          x-added-in-version: "8.8"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             type: string
             format: date-time
-          x-added-in-version: "8.8"
+      x-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.8"
+        - propertyName: "$neq"
+          addedInVersion: "8.8"
+        - propertyName: "$exists"
+          addedInVersion: "8.8"
+        - propertyName: "$gt"
+          addedInVersion: "8.8"
+        - propertyName: "$gte"
+          addedInVersion: "8.8"
+        - propertyName: "$lt"
+          addedInVersion: "8.8"
+        - propertyName: "$lte"
+          addedInVersion: "8.8"
+        - propertyName: "$in"
+          addedInVersion: "8.8"
 
     DateTimeFilterProperty:
       description: Date-time property with full advanced search capabilities.

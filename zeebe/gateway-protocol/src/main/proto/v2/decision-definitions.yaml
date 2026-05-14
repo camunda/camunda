@@ -214,14 +214,12 @@ components:
         name:
           type: string
           description: The DMN name of the decision definition.
-          x-added-in-version: "8.8"
         isLatestVersion:
           description: |
             Whether to only return the latest version of each decision definition.
             When using this filter, pagination functionality is limited, you can only paginate forward using `after` and `limit`.
             The response contains no `startCursor` in the `page`, and requests ignore the `from` and `before` in the `page`.
           type: boolean
-          x-added-in-version: "8.9"
         version:
           type: integer
           description: The assigned version of the decision definition.
@@ -243,11 +241,18 @@ components:
         decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements that the decision definition is part of.
-          x-added-in-version: "8.9"
         decisionRequirementsVersion:
           type: integer
           description: The assigned version of the decision requirements that the decision definition is part of.
-          x-added-in-version: "8.9"
+      x-added-in-version:
+        - propertyName: name
+          addedInVersion: "8.8"
+        - propertyName: isLatestVersion
+          addedInVersion: "8.9"
+        - propertyName: decisionRequirementsName
+          addedInVersion: "8.9"
+        - propertyName: decisionRequirementsVersion
+          addedInVersion: "8.9"
 
     DecisionDefinitionSearchQueryResult:
       type: object
@@ -280,42 +285,52 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
           description: The DMN ID of the decision definition.
-          x-added-in-version: "8.6"
         decisionDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
           description: The assigned key, which acts as a unique identifier for this decision definition.
-          x-added-in-version: "8.6"
         decisionRequirementsId:
           description: the DMN ID of the decision requirements graph that the decision definition is part of.
           type: string
-          x-added-in-version: "8.6"
         decisionRequirementsKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
           description: The assigned key of the decision requirements graph that the decision definition is part of.
-          x-added-in-version: "8.6"
         decisionRequirementsName:
           description: The DMN name of the decision requirements that the decision definition is part of.
           type: string
-          x-added-in-version: "8.9"
         decisionRequirementsVersion:
           description: The assigned version of the decision requirements that the decision definition is part of.
           type: integer
-          x-added-in-version: "8.9"
         name:
           description: The DMN name of the decision definition.
           type: string
-          x-added-in-version: "8.8"
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID of the decision definition.
-          x-added-in-version: "8.6"
         version:
           description: The assigned version of the decision definition.
           type: integer
-          x-added-in-version: "8.6"
+      x-added-in-version:
+        - propertyName: decisionDefinitionId
+          addedInVersion: "8.6"
+        - propertyName: decisionDefinitionKey
+          addedInVersion: "8.6"
+        - propertyName: decisionRequirementsId
+          addedInVersion: "8.6"
+        - propertyName: decisionRequirementsKey
+          addedInVersion: "8.6"
+        - propertyName: decisionRequirementsName
+          addedInVersion: "8.9"
+        - propertyName: decisionRequirementsVersion
+          addedInVersion: "8.9"
+        - propertyName: name
+          addedInVersion: "8.8"
+        - propertyName: tenantId
+          addedInVersion: "8.6"
+        - propertyName: version
+          addedInVersion: "8.6"
 
     DecisionEvaluationInstruction:
       x-polymorphic-schema: true
@@ -403,7 +418,6 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
           description: The unique key identifying this decision evaluation.
-          x-added-in-version: "8.8"
         decisionInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionInstanceKey'
@@ -438,6 +452,9 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID of the evaluated decision.
+      x-added-in-version:
+        - propertyName: decisionEvaluationKey
+          addedInVersion: "8.8"
 
     EvaluatedDecisionResult:
       required:
@@ -496,4 +513,6 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
           description: The unique key identifying this decision evaluation instance.
-          x-added-in-version: "8.8"
+      x-added-in-version:
+        - propertyName: decisionEvaluationInstanceKey
+          addedInVersion: "8.8"
