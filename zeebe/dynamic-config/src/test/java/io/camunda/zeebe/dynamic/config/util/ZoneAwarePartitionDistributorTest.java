@@ -172,7 +172,7 @@ final class ZoneAwarePartitionDistributorTest {
     assertThat(westPriorities).containsExactlyInAnyOrder(rf - 2, rf - 3);
 
     // euro-east1 broker has the lowest priority (1)
-    final var euroPriority = p1.getPriority(specs.get(2).brokers().getFirst());
+    final var euroPriority = p1.getPriority(specs.get(2).brokers().stream().findFirst().get());
     assertThat(euroPriority).isEqualTo(1);
   }
 
@@ -257,6 +257,54 @@ final class ZoneAwarePartitionDistributorTest {
           assertThat(p.members()).hasSize(3);
           p.members().forEach(m -> assertThat(m.zone()).isEqualTo("us-east1"));
         });
+  }
+
+  // -------------------------------------------------------------------------
+  // ZoneSpec construction validation
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldThrowWhenZoneNameIsEmpty() {
+    // given / when / then
+    assertThatThrownBy(
+            () -> new ZoneSpec("", 1, 1000, List.of(MemberId.from("us-east1", 0))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("name");
+  }
+
+  @Test
+  void shouldThrowWhenNumberOfReplicasIsZero() {
+    // given / when / then
+    assertThatThrownBy(
+            () -> new ZoneSpec("us-east1", 0, 1000, List.of(MemberId.from("us-east1", 0))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("numberOfReplicas");
+  }
+
+  @Test
+  void shouldThrowWhenPriorityIsZero() {
+    // given / when / then
+    assertThatThrownBy(
+            () -> new ZoneSpec("us-east1", 1, 0, List.of(MemberId.from("us-east1", 0))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("priority");
+  }
+
+  @Test
+  void shouldThrowWhenPriorityIsNegative() {
+    // given / when / then
+    assertThatThrownBy(
+            () -> new ZoneSpec("us-east1", 1, -1, List.of(MemberId.from("us-east1", 0))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("priority");
+  }
+
+  @Test
+  void shouldThrowWhenBrokersListIsEmpty() {
+    // given / when / then
+    assertThatThrownBy(() -> new ZoneSpec("us-east1", 1, 1000, List.of()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("us-east1");
   }
 
   // -------------------------------------------------------------------------
@@ -375,6 +423,19 @@ final class ZoneAwarePartitionDistributorTest {
     final int left = padding / 2;
     final int right = padding - left;
     return " ".repeat(left) + s + " ".repeat(right);
+  }
+
+  @Test
+  void shouldThrowWhenNumberOfReplicasExceedsBrokerCount() {
+    // given — zone declares 3 replicas but only has 2 brokers
+    final var specs = List.of(new ZoneSpec("us-east1", 3, 1000, brokers("us-east1", 2)));
+    final var distributor = new ZoneAwarePartitionDistributor(specs);
+
+    // when / then
+    assertThatThrownBy(() -> distributor.distributePartitions(allBrokers(specs), partitions(1), 3))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("us-east1")
+        .hasMessageContaining("numberOfReplicas");
   }
 
   @Test

@@ -83,9 +83,9 @@ public final class StaticConfigurationGenerator {
         regions.entrySet().stream()
             .map(
                 e -> {
-                  final String regionName = e.getKey();
+                  final var regionName = e.getKey();
                   final var regionCfg = e.getValue();
-                  final List<MemberId> brokers =
+                  final var brokers =
                       IntStream.range(0, regionCfg.getNumberOfBrokers())
                           .mapToObj(localId -> MemberId.from(regionName, localId))
                           .toList();

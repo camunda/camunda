@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * A {@link PartitionDistributor} that distributes partitions across brokers in a zone-aware manner.
@@ -58,6 +59,7 @@ import java.util.Set;
  *
  * (Numbers are Raft priorities; the member with priority == RF is the preferred leader.)
  */
+@NullMarked
 public final class ZoneAwarePartitionDistributor implements PartitionDistributor {
 
   /** Regions sorted by {@link ZoneSpec#priority()} descending (highest priority first). */
@@ -80,6 +82,7 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
       final int replicationFactor) {
 
     validateReplicaSum(replicationFactor);
+    validateZoneSpecs();
     validateBrokerIds(clusterMembers);
 
     final Set<PartitionMetadata> result = new HashSet<>();
@@ -98,7 +101,7 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
         final int zoneBrokerCount = spec.brokers().size();
         for (int r = 0; r < spec.numberOfReplicas(); r++) {
           final int brokerIndex = (i + r) % zoneBrokerCount;
-          final MemberId broker = spec.brokers().get(brokerIndex);
+          final var broker = spec.brokers().get(brokerIndex);
           orderedMembers.add(broker);
           priorityMap.put(broker, priorityCounter--);
         }
@@ -106,7 +109,7 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
 
       // The first member always belongs to the highest-priority zone and holds Raft
       // priority == replicationFactor, making it the preferred partition leader.
-      final MemberId primary = orderedMembers.getFirst();
+      final var primary = orderedMembers.getFirst();
 
       result.add(
           new PartitionMetadata(
@@ -121,7 +124,7 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
   }
 
   private void validateReplicaSum(final int replicationFactor) {
-    final int totalReplicas = zoneSpecs.stream().mapToInt(ZoneSpec::numberOfReplicas).sum();
+    final var totalReplicas = zoneSpecs.stream().mapToInt(ZoneSpec::numberOfReplicas).sum();
     if (totalReplicas != replicationFactor) {
       throw new IllegalStateException(
           "ZoneAwarePartitionDistributor: sum of numberOfReplicas across all zones (%d) does not match replicationFactor (%d)"
@@ -129,9 +132,20 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
     }
   }
 
+  private void validateZoneSpecs() {
+    for (final var spec : zoneSpecs) {
+      if (spec.numberOfReplicas() > spec.brokers().size()) {
+        throw new IllegalStateException(
+            ("ZoneAwarePartitionDistributor: zone '%s' has numberOfReplicas (%d) > brokers.size() (%d)"
+                    + " — each broker can hold at most one replica per partition")
+                .formatted(spec.name(), spec.numberOfReplicas(), spec.brokers().size()));
+      }
+    }
+  }
+
   private void validateBrokerIds(final Set<MemberId> clusterMembers) {
-    for (final ZoneSpec spec : zoneSpecs) {
-      for (final MemberId broker : spec.brokers()) {
+    for (final var spec : zoneSpecs) {
+      for (final var broker : spec.brokers()) {
         if (!clusterMembers.contains(broker)) {
           throw new IllegalStateException(
               ("ZoneAwarePartitionDistributor: broker '%s' (zone '%s') is not present in "
@@ -153,5 +167,31 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
    * @param brokers the ordered list of {@link MemberId}s belonging to this zone, in the same
    *     insertion order as the configuration (i.e. local node IDs 0, 1, … within the zone)
    */
-  public record ZoneSpec(String name, int numberOfReplicas, int priority, List<MemberId> brokers) {}
+  public record ZoneSpec(String name, int numberOfReplicas, int priority, List<MemberId> brokers) {
+
+    public ZoneSpec {
+      if (name.isEmpty()) {
+        throw new IllegalArgumentException(
+            "ZoneAwarePartitionDistributor: expected non-empty name, but got empty string");
+      }
+      if (numberOfReplicas == 0) {
+        throw new IllegalArgumentException(
+            "ZoneAwarePartitionDistributor: expected numberOfReplicas >= 1, but got 0");
+      }
+      if (priority <= 0) {
+        throw new IllegalArgumentException(
+            "ZoneAwarePartitionDistributor: expected priority > 0, but got %d".formatted(priority));
+      }
+      if (brokers.isEmpty()) {
+        throw new IllegalArgumentException(
+            "ZoneAwarePartitionDistributor: expected at least one broker in zone '%s', but got empty list"
+                .formatted(name));
+      }
+      if (new HashSet<>(brokers).size() != brokers.size()) {
+        throw new IllegalArgumentException(
+            "ZoneAwarePartitionDistributor: expected brokers to not contain any duplicates, but was "
+                + brokers);
+      }
+    }
+  }
 }
