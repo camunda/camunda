@@ -1213,7 +1213,7 @@ const getWrapper = () => {
         modificationsStore.reset();
         instanceHistoryModificationStore.reset();
       };
-    });
+    }, []);
 
     return (
       <ProcessDefinitionKeyContext.Provider value="123">

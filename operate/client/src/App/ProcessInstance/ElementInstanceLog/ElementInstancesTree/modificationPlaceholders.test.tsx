@@ -55,6 +55,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
 
   it('should create new parent scopes for a new placeholder if there are no running scopes', async () => {
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
     mockFetchElementInstancesStatistics().withSuccess({items: []});
     mockSearchElementInstances().withSuccess(

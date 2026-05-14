@@ -8,7 +8,6 @@
 
 import type {IncidentErrorType} from '@camunda/camunda-api-zod-schemas/8.10';
 import {makeAutoObservable} from 'mobx';
-import {tracking} from 'modules/tracking';
 
 type State = {
   selectedElementInstance: {
@@ -17,17 +16,15 @@ type State = {
   } | null;
   selectedElementId: string | null;
   selectedErrorTypes: IncidentErrorType[];
-  isPanelVisible: boolean;
 };
 
 const DEFAULT_STATE: State = {
   selectedElementInstance: null,
   selectedElementId: null,
   selectedErrorTypes: [],
-  isPanelVisible: false,
 };
 
-class IncidentsPanel {
+class IncidentsPanelFilters {
   state: State = {...DEFAULT_STATE};
 
   constructor() {
@@ -48,7 +45,6 @@ class IncidentsPanel {
   ) {
     this.clearSelection();
     this.state.selectedElementInstance = {elementInstanceKey, elementName};
-    this.setPanelOpen(true);
   }
 
   /**
@@ -59,17 +55,6 @@ class IncidentsPanel {
   showIncidentsForElementId(elementId: string) {
     this.clearSelection();
     this.state.selectedElementId = elementId;
-    this.setPanelOpen(true);
-  }
-
-  setPanelOpen(isOpen: boolean) {
-    this.state.isPanelVisible = isOpen;
-
-    if (isOpen) {
-      tracking.track({
-        eventName: 'flow-node-incident-details-opened',
-      });
-    }
   }
 
   setErrorTypeSelection(errorTypes: IncidentErrorType[]) {
@@ -81,6 +66,10 @@ class IncidentsPanel {
     this.state.selectedElementId = null;
     this.state.selectedErrorTypes = [];
   }
+
+  reset() {
+    this.state = {...DEFAULT_STATE};
+  }
 }
 
-export const incidentsPanelStore = new IncidentsPanel();
+export const incidentsPanelFiltersStore = new IncidentsPanelFilters();
