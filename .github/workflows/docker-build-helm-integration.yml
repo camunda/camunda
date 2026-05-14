@@ -296,7 +296,6 @@ jobs:
   helm-deploy:
     name: Helm chart Integration Tests
     needs: [build-and-push, format-identifier]
-    continue-on-error: ${{ github.event_name == 'merge_group' }}
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
