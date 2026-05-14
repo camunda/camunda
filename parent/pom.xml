@@ -38,7 +38,7 @@
     <failsafe.excluded.nightly>dl-nightly</failsafe.excluded.nightly>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>2.4.0</version.agrona>
+    <version.agrona>2.4.1</version.agrona>
     <version.animal-sniffer>1.27</version.animal-sniffer>
     <version.assertj>3.27.7</version.assertj>
     <version.awaitility>4.3.0</version.awaitility>
