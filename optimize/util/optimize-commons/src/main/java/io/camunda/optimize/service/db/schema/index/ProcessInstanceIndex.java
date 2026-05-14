@@ -17,13 +17,14 @@ import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import io.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
+import io.camunda.optimize.dto.optimize.query.process.AgentInstanceDto;
 import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import java.util.Locale;
 
 public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceIndex<TBuilder> {
 
-  public static final int VERSION = 8;
+  public static final int VERSION = 9;
 
   public static final String START_DATE = ProcessInstanceDto.Fields.startDate;
   public static final String END_DATE = ProcessInstanceDto.Fields.endDate;
@@ -84,6 +85,33 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
       CandidateGroupOperationDto.Fields.operationType;
   public static final String CANDIDATE_GROUP_OPERATION_TIMESTAMP =
       CandidateGroupOperationDto.Fields.timestamp;
+
+  // Agent Instance Fields
+  public static final String AGENT_INSTANCES = ProcessInstanceDto.Fields.agentInstances;
+  public static final String AGENT_TOTAL_INPUT_TOKENS =
+      ProcessInstanceDto.Fields.agentTotalInputTokens;
+  public static final String AGENT_TOTAL_OUTPUT_TOKENS =
+      ProcessInstanceDto.Fields.agentTotalOutputTokens;
+  public static final String AGENT_TOTAL_MODEL_CALLS =
+      ProcessInstanceDto.Fields.agentTotalModelCalls;
+  public static final String AGENT_TOTAL_TOOL_CALLS = ProcessInstanceDto.Fields.agentTotalToolCalls;
+
+  public static final String AGENT_INSTANCE_ID = AgentInstanceDto.Fields.agentInstanceId;
+  public static final String AGENT_INSTANCE_FLOW_NODE_ID = AgentInstanceDto.Fields.flowNodeId;
+  public static final String AGENT_INSTANCE_PROCESS_DEF_VERSION =
+      AgentInstanceDto.Fields.processDefinitionVersion;
+  public static final String AGENT_INSTANCE_START_DATE = AgentInstanceDto.Fields.startDate;
+  public static final String AGENT_INSTANCE_END_DATE = AgentInstanceDto.Fields.endDate;
+  public static final String AGENT_INSTANCE_TOTAL_DURATION =
+      AgentInstanceDto.Fields.totalDurationInMs;
+  public static final String AGENT_INSTANCE_START_DATE_EPOCH_MS =
+      AgentInstanceDto.Fields.startDateEpochMs;
+  public static final String AGENT_INSTANCE_METRICS = AgentInstanceDto.Fields.metrics;
+  public static final String AGENT_INSTANCE_METRICS_TOOL_CALLS =
+      AgentInstanceDto.Fields.metrics + "." + AgentInstanceDto.AgentMetricsDto.Fields.toolCalls;
+  public static final String AGENT_INSTANCE_TOOLS = AgentInstanceDto.Fields.tools;
+  public static final String AGENT_INSTANCE_TOOL_NAME =
+      AgentInstanceDto.Fields.tools + "." + AgentInstanceDto.AgentToolDto.Fields.name;
 
   // Variable Fields
   public static final String VARIABLES = ProcessInstanceDto.Fields.variables;
@@ -267,7 +295,45 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
                             .properties(INCIDENT_STATUS, np -> np.keyword(k -> k))
                             .properties(INCIDENT_DEFINITION_KEY, np -> np.keyword(k -> k))
                             .properties(INCIDENT_DEFINITION_VERSION, np -> np.keyword(k -> k))
-                            .properties(INCIDENT_TENANT_ID, np -> np.keyword(k -> k))));
+                            .properties(INCIDENT_TENANT_ID, np -> np.keyword(k -> k))))
+        .properties(AGENT_TOTAL_INPUT_TOKENS, p -> p.long_(k -> k.nullValue(0L)))
+        .properties(AGENT_TOTAL_OUTPUT_TOKENS, p -> p.long_(k -> k.nullValue(0L)))
+        .properties(AGENT_TOTAL_MODEL_CALLS, p -> p.long_(k -> k.nullValue(0L)))
+        .properties(AGENT_TOTAL_TOOL_CALLS, p -> p.long_(k -> k.nullValue(0L)))
+        .properties(
+            AGENT_INSTANCES,
+            p ->
+                p.nested(
+                    k ->
+                        k.properties(AGENT_INSTANCE_ID, pp -> pp.keyword(kk -> kk))
+                            .properties(AGENT_INSTANCE_FLOW_NODE_ID, pp -> pp.keyword(kk -> kk))
+                            .properties(
+                                AGENT_INSTANCE_PROCESS_DEF_VERSION, pp -> pp.keyword(kk -> kk))
+                            .properties(
+                                AGENT_INSTANCE_START_DATE,
+                                pp -> pp.date(kk -> kk.format(OPTIMIZE_DATE_FORMAT)))
+                            .properties(
+                                AGENT_INSTANCE_END_DATE,
+                                pp -> pp.date(kk -> kk.format(OPTIMIZE_DATE_FORMAT)))
+                            .properties(AGENT_INSTANCE_TOTAL_DURATION, pp -> pp.long_(kk -> kk))
+                            .properties(
+                                AGENT_INSTANCE_START_DATE_EPOCH_MS, pp -> pp.long_(kk -> kk))
+                            .properties(
+                                AGENT_INSTANCE_METRICS,
+                                pp ->
+                                    pp.object(
+                                        kk ->
+                                            kk.properties(
+                                                AgentInstanceDto.AgentMetricsDto.Fields.toolCalls,
+                                                p2 -> p2.long_(k2 -> k2))))
+                            .properties(
+                                AGENT_INSTANCE_TOOLS,
+                                pp ->
+                                    pp.object(
+                                        kk ->
+                                            kk.properties(
+                                                AgentInstanceDto.AgentToolDto.Fields.name,
+                                                p2 -> p2.keyword(k2 -> k2))))));
   }
 
   protected String getIndexPrefix() {
