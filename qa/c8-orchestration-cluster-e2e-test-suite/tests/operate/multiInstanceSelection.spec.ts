@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from 'fixtures';
+import {authedTest as test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createSingleInstance, createWorker} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForIncidents} from 'utils/incidentsHelper';
 
 type ProcessInstance = {
@@ -51,9 +51,8 @@ test.beforeAll(async ({request}) => {
 
 test.describe('Multi Instance Flow Node Selection', () => {
   test.beforeEach(
-    async ({page, loginPage, operateHomePage, operateProcessInstancePage}) => {
-      await navigateToApp(page, 'operate');
-      await loginPage.login('demo', 'demo');
+    async ({page, operateHomePage, operateProcessInstancePage}) => {
+      await navigateToAppHome(page, 'operate');
       await expect(operateHomePage.operateBanner).toBeVisible();
 
       await operateProcessInstancePage.gotoProcessInstancePage({

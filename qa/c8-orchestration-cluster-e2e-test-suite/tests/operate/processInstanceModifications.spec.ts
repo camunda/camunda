@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from 'fixtures';
+import {authedTest as test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp, hideHelperModals} from '@pages/UtilitiesPage';
+import {navigateToAppHome, hideHelperModals} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {assertJsonEqual} from '../../utils/assertJsonEqual';
 
@@ -77,7 +77,6 @@ test.describe('Process Instance Modifications', () => {
     test.beforeEach(
       async ({
         page,
-        loginPage,
         operateHomePage,
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
@@ -86,8 +85,7 @@ test.describe('Process Instance Modifications', () => {
           test: 123,
           foo: 'bar',
         });
-        await navigateToApp(page, 'operate');
-        await loginPage.login('demo', 'demo');
+        await navigateToAppHome(page, 'operate');
         await expect(operateHomePage.operateBanner).toBeVisible();
         await hideHelperModals(page);
         await operateProcessInstancePage.gotoProcessInstancePage({
@@ -198,7 +196,6 @@ test.describe('Process Instance Modifications', () => {
     test.beforeEach(
       async ({
         page,
-        loginPage,
         operateHomePage,
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
@@ -207,8 +204,7 @@ test.describe('Process Instance Modifications', () => {
           test: 123,
           foo: 'bar',
         });
-        await navigateToApp(page, 'operate');
-        await loginPage.login('demo', 'demo');
+        await navigateToAppHome(page, 'operate');
         await expect(operateHomePage.operateBanner).toBeVisible();
         await hideHelperModals(page);
         await operateProcessInstancePage.gotoProcessInstancePage({
@@ -380,19 +376,13 @@ test.describe('Process Instance Modifications', () => {
     let instance: ProcessInstance;
 
     test.beforeEach(
-      async ({
-        page,
-        loginPage,
-        operateHomePage,
-        operateProcessInstancePage,
-      }) => {
+      async ({page, operateHomePage, operateProcessInstancePage}) => {
         instance = await createSingleInstance('Process_EmbeddedSubprocess', 1, {
           meow: 0,
           testVariableNumber: 123,
           testVariableString: 'bar',
         });
-        await navigateToApp(page, 'operate');
-        await loginPage.login('demo', 'demo');
+        await navigateToAppHome(page, 'operate');
         await expect(operateHomePage.operateBanner).toBeVisible();
         await hideHelperModals(page);
         await operateProcessInstancePage.gotoProcessInstancePage({
