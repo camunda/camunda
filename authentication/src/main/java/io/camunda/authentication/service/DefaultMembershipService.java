@@ -66,40 +66,25 @@ public class DefaultMembershipService implements MembershipService {
   }
 
   @Override
-  public CamundaAuthentication resolveMemberships(
+  public MembershipResolver newResolver(
       final Map<String, Object> tokenClaims,
       final String principalId,
       final PrincipalType principalType)
       throws OAuth2AuthenticationException {
-    // OIDC groups-claim parsing is an in-memory token validation, not a DB call: evaluate it
+    // OIDC groups-claim parsing is in-memory token validation, not a DB call: evaluate it
     // eagerly so malformed claims fail fast at authentication time.
     final List<String> eagerGroupsFromClaims =
         isGroupsClaimConfigured ? List.copyOf(oidcGroupsExtractor.extract(tokenClaims)) : null;
-    final var resolver =
-        new Resolver(tokenClaims, principalId, principalType, eagerGroupsFromClaims);
-
-    return CamundaAuthentication.of(
-        a -> {
-          if (principalType.equals(PrincipalType.CLIENT)) {
-            a.clientId(principalId);
-          } else {
-            a.user(principalId);
-          }
-          return a.mappingRulesSupplier(resolver::mappingRules)
-              .groupIdsSupplier(resolver::groups)
-              .roleIdsSupplier(resolver::roles)
-              .tenantsSupplier(resolver::tenants)
-              .claims(tokenClaims);
-        });
+    return new Resolver(tokenClaims, principalId, principalType, eagerGroupsFromClaims);
   }
 
   /**
    * Per-authentication resolver that memoizes prerequisite lookups so that when multiple membership
-   * fields are read on the same {@link CamundaAuthentication}, shared upstream queries
+   * fields are read on the same authentication, shared upstream queries
    * (mappingRules→groups→roles→tenants) only run once. Synchronized so concurrent reads on
    * different lazy fields don't double-fetch.
    */
-  private final class Resolver {
+  private final class Resolver implements MembershipResolver {
     private final Map<String, Object> tokenClaims;
     private final List<String> eagerGroupsFromClaims;
     private final EnumMap<EntityType, Set<String>> ownerTypeToIds = new EnumMap<>(EntityType.class);
@@ -121,15 +106,9 @@ public class DefaultMembershipService implements MembershipService {
           Set.of(principalId));
     }
 
-    synchronized List<String> mappingRules() {
+    @Override
+    public synchronized List<String> mappingRules() {
       if (mappingRules == null) {
-        // Mapping rules match JWT/OIDC claims to internal identities. With no claims (e.g. the
-        // BASIC-auth path that calls this service with an empty map) nothing can match, so skip
-        // the DB query.
-        if (tokenClaims.isEmpty()) {
-          mappingRules = List.of();
-          return mappingRules;
-        }
         final var ids =
             mappingRuleServices
                 .getMatchingMappingRules(tokenClaims, CamundaAuthentication.anonymous())
@@ -145,7 +124,8 @@ public class DefaultMembershipService implements MembershipService {
       return mappingRules;
     }
 
-    synchronized List<String> groups() {
+    @Override
+    public synchronized List<String> groups() {
       if (groups == null) {
         // mappingRules must run first so ownerTypeToIds includes MAPPING_RULE before the group
         // lookup uses it.
@@ -172,7 +152,8 @@ public class DefaultMembershipService implements MembershipService {
       return groups;
     }
 
-    synchronized List<String> roles() {
+    @Override
+    public synchronized List<String> roles() {
       if (roles == null) {
         groups();
 
@@ -191,7 +172,8 @@ public class DefaultMembershipService implements MembershipService {
       return roles;
     }
 
-    synchronized List<String> tenants() {
+    @Override
+    public synchronized List<String> tenants() {
       if (tenants == null) {
         roles();
 

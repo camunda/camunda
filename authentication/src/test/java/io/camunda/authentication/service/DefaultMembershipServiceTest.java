@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.service.MembershipService.PrincipalType;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -50,6 +51,7 @@ public class DefaultMembershipServiceTest {
     when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any())).thenReturn(List.of());
     when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any())).thenReturn(List.of());
     when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any())).thenReturn(List.of());
+    when(mappingRuleServices.getMatchingMappingRules(any(), any())).thenReturn(Stream.empty());
 
     membershipService =
         new DefaultMembershipService(
@@ -61,30 +63,61 @@ public class DefaultMembershipServiceTest {
   }
 
   @Test
-  void shouldSkipMappingRuleLookupWhenClaimsAreEmpty() {
-    // given — BASIC-auth shape: empty claims map, USER principal
-    final var authentication =
-        membershipService.resolveMemberships(Map.of(), "demo", PrincipalType.USER);
+  void shouldNotInvokeAnyServiceUntilResolverIsRead() {
+    // given
+    membershipService.newResolver(Map.of("sub", "demo"), "demo", PrincipalType.USER);
 
-    // when — materialise the lazy field to force the resolver to run
-    final var mappingRuleIds = authentication.authenticatedMappingRuleIds();
-
-    // then — the DB lookup was skipped and the field is empty
-    assertThat(mappingRuleIds).isEmpty();
+    // then — constructing the resolver alone does not trigger DB calls
     verify(mappingRuleServices, never()).getMatchingMappingRules(any(), any());
+    verify(groupServices, never()).getGroupsByMemberTypeAndMemberIds(any(), any());
+    verify(roleServices, never()).getRolesByMemberTypeAndMemberIds(any(), any());
+    verify(tenantServices, never()).getTenantsByMemberTypeAndMemberIds(any(), any());
   }
 
   @Test
-  void shouldQueryMappingRulesWhenClaimsArePresent() {
-    // given — non-empty claims should still flow into the lookup
-    when(mappingRuleServices.getMatchingMappingRules(any(), any())).thenReturn(Stream.empty());
-    final var authentication =
-        membershipService.resolveMemberships(Map.of("sub", "demo"), "demo", PrincipalType.USER);
+  void shouldQueryMappingRulesWhenAskedAndPassThroughClaims() {
+    // given
+    final var resolver =
+        membershipService.newResolver(Map.of("sub", "demo"), "demo", PrincipalType.USER);
 
-    // when — isEmpty() materialises the LazyList, which invokes the supplier
-    assertThat(authentication.authenticatedMappingRuleIds()).isEmpty();
+    // when
+    assertThat(resolver.mappingRules()).isEmpty();
 
     // then
     verify(mappingRuleServices).getMatchingMappingRules(eq(Map.of("sub", "demo")), any());
+  }
+
+  @Test
+  void shouldMemoizeMembershipLookups() {
+    // given
+    when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new RoleEntity(1L, "role1", "role", "desc")));
+    final var resolver =
+        membershipService.newResolver(Map.of("sub", "demo"), "demo", PrincipalType.USER);
+
+    // when — read roles twice and groups three times (groups is a prerequisite of roles)
+    resolver.roles();
+    resolver.roles();
+    resolver.groups();
+    resolver.groups();
+    resolver.groups();
+
+    // then — each underlying service is called exactly once
+    verify(mappingRuleServices).getMatchingMappingRules(any(), any());
+    verify(groupServices).getGroupsByMemberTypeAndMemberIds(any(), any());
+    verify(roleServices).getRolesByMemberTypeAndMemberIds(any(), any());
+  }
+
+  @Test
+  void basicAuthOverloadShouldUseEmptyClaimsAndUserPrincipal() {
+    // given — convenience overload for the BASIC-auth callers
+    final var resolver = membershipService.newResolver("demo");
+
+    // when
+    resolver.groups();
+
+    // then — the resolver is constructed against empty claims as a USER principal, so the
+    // group lookup runs against an ownerType map seeded only with the USER entry
+    verify(groupServices).getGroupsByMemberTypeAndMemberIds(any(), any());
   }
 }
