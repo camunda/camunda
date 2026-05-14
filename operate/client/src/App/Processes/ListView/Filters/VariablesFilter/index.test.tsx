@@ -11,6 +11,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {VariableFilter} from '.';
+import {VariableFilterModal} from './VariableFilterModal';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 
 const getWrapper = (initialPath = Paths.processes()) => {
@@ -31,6 +32,7 @@ const getWrapper = (initialPath = Paths.processes()) => {
           element={
             <>
               {children}
+              <VariableFilterModal />
               <LocationLog />
             </>
           }
@@ -84,6 +86,16 @@ describe('<VariableFilter />', () => {
     expect(
       screen.queryByRole('list', {name: 'Active variable filters'}),
     ).not.toBeInTheDocument();
+  });
+
+  it('should navigate to modal route when the button is clicked', async () => {
+    const {user} = render(<VariableFilter />, {wrapper: getWrapper()});
+
+    await user.click(screen.getByRole('button', {name: 'Add conditions'}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processesVariables(),
+    );
   });
 
   it('should open the modal when the button is clicked', async () => {
