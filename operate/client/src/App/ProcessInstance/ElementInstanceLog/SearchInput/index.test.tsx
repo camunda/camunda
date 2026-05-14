@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen, waitFor, fireEvent} from 'modules/testing-library';
 import {SearchInput} from './index';
 import {elementInstanceHistorySearchStore} from 'modules/stores/elementInstanceHistorySearch';
 
@@ -52,5 +52,28 @@ describe('<SearchInput />', () => {
       'Search element instances by name or ID',
     );
     expect(input).toHaveValue('Validate');
+  });
+
+  it('focuses the input on CMD+F / CTRL+F', () => {
+    render(<SearchInput />);
+    const input = screen.getByLabelText(
+      'Search element instances by name or ID',
+    );
+
+    fireEvent.keyDown(document, {key: 'f', metaKey: true});
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('selects existing text on CMD+F when the input already has a value', () => {
+    elementInstanceHistorySearchStore.setSearchText('Order');
+    render(<SearchInput />);
+    const input = screen.getByLabelText<HTMLInputElement>(
+      'Search element instances by name or ID',
+    );
+
+    fireEvent.keyDown(document, {key: 'f', ctrlKey: true});
+    expect(document.activeElement).toBe(input);
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe(input.value.length);
   });
 });
