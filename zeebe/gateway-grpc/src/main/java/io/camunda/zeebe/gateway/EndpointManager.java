@@ -533,14 +533,17 @@ public final class EndpointManager {
     final String username = Context.current().call(AuthenticationHandler.USERNAME::get);
     final String clientId = Context.current().call(AuthenticationHandler.CLIENT_ID::get);
 
-    List<String> groups = null;
-    Map<String, Object> tokenClaims = null;
+    final List<String> groups;
+    final Map<String, Object> tokenClaims;
     if (authorizationConverter.shouldIncludeAuthorizationClaims()) {
       groups = Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
       tokenClaims = Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
+    } else {
+      groups = null;
+      tokenClaims = null;
     }
 
-    return authorizationConverter.convert(false, username, clientId, groups, tokenClaims);
+    return authorizationConverter.convert(username, clientId, groups, tokenClaims);
   }
 
   private <BrokerResponseT, GrpcResponseT> void consumeResponse(

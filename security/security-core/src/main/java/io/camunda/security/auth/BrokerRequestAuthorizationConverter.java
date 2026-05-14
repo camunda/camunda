@@ -47,6 +47,34 @@ public class BrokerRequestAuthorizationConverter {
     return shouldIncludeAuthorizationClaims;
   }
 
+  /**
+   * Convenience overload for callers that hold the identity fields eagerly (e.g. gRPC interceptors
+   * reading off the call context) instead of a {@link CamundaAuthentication}. Wraps the fields and
+   * delegates to {@link #convert(CamundaAuthentication)}; all arguments are optional.
+   */
+  public Map<String, Object> convert(
+      final String username,
+      final String clientId,
+      final List<String> groups,
+      final Map<String, Object> tokenClaims) {
+    return convert(
+        CamundaAuthentication.of(
+            b -> {
+              if (username != null) {
+                b.user(username);
+              } else if (clientId != null) {
+                b.clientId(clientId);
+              }
+              if (groups != null) {
+                b.groupIds(groups);
+              }
+              if (tokenClaims != null) {
+                b.claims(tokenClaims);
+              }
+              return b;
+            }));
+  }
+
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
     if (authentication.isAnonymous()) {
       return Map.of(AUTHORIZED_ANONYMOUS_USER, true);
@@ -78,45 +106,6 @@ public class BrokerRequestAuthorizationConverter {
 
       final var tokenClaims = authentication.claims();
       if (!tokenClaims.isEmpty()) {
-        claims.put(USER_TOKEN_CLAIMS, tokenClaims);
-      }
-    }
-
-    return claims;
-  }
-
-  /**
-   * Legacy overload used by callers that don't have a {@link CamundaAuthentication} on hand (e.g.
-   * the gRPC {@code EndpointManager}, which assembles fields out of the call context). Prefer
-   * {@link #convert(CamundaAuthentication)} when possible, since it defers lazy field resolution.
-   */
-  public Map<String, Object> convert(
-      final boolean isAnonymous,
-      final String username,
-      final String clientId,
-      final List<String> groups,
-      final Map<String, Object> tokenClaims) {
-
-    if (isAnonymous) {
-      return Map.of(AUTHORIZED_ANONYMOUS_USER, true);
-    }
-
-    final var claims = new HashMap<String, Object>();
-
-    if (username != null) {
-      claims.put(AUTHORIZED_USERNAME, username);
-    }
-
-    if (clientId != null) {
-      claims.put(AUTHORIZED_CLIENT_ID, clientId);
-    }
-
-    if (shouldIncludeAuthorizationClaims) {
-      if (!camundaGroupsEnabled && groups != null) {
-        claims.put(USER_GROUPS_CLAIMS, groups);
-      }
-
-      if (tokenClaims != null && !tokenClaims.isEmpty()) {
         claims.put(USER_TOKEN_CLAIMS, tokenClaims);
       }
     }
