@@ -202,6 +202,13 @@ const routes = createRoutesFromElements(
           return {Component: OperationsLog};
         }}
       />
+      <Route
+        path={Paths.notebook()}
+        lazy={async () => {
+          const {NotebookPage} = await import('./Notebooks/index');
+          return {Component: NotebookPage};
+        }}
+      />
     </Route>
   </Route>,
 );

@@ -194,7 +194,9 @@ const localStorageMock = (function () {
     clear() {
       store = {};
     },
-    removeItem: vi.fn(),
+    removeItem(key: string) {
+      delete store[key];
+    },
   };
 })();
 

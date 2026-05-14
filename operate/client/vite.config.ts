@@ -47,20 +47,24 @@ export default defineConfig(({mode}) => ({
   server: {
     port: 3000,
     open: true,
-    proxy: {
-      '/api': 'http://localhost:8080',
-      '/v1': 'http://localhost:8080',
-      '/v2': 'http://localhost:8080',
-      '/login': {
-        target: 'http://localhost:8080',
-        bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
-      },
-      '/logout': {
-        target: 'http://localhost:8080',
-        bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
-      },
-      '/client-config.js': 'http://localhost:8080/operate',
-    },
+    proxy: (() => {
+      const backend =
+        process.env['VITE_BACKEND_TARGET'] ?? 'http://localhost:8080';
+      return {
+        '/api': backend,
+        '/v1': backend,
+        '/v2': backend,
+        '/login': {
+          target: backend,
+          bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+        },
+        '/logout': {
+          target: backend,
+          bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+        },
+        '/client-config.js': `${backend}/operate`,
+      };
+    })(),
   },
   build: {
     outDir,

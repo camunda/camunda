@@ -216,6 +216,21 @@ const AppHeader: React.FC = observer(() => {
                   },
                 },
               },
+              {
+                key: 'notebooks',
+                label: 'Notebooks',
+                isCurrentPage: currentPage === 'notebooks',
+                routeProps: {
+                  to: Paths.notebook('default'),
+                  onClick: () => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'header-notebooks',
+                      currentPage,
+                    });
+                  },
+                },
+              },
               ...(isLargeScreen
                 ? [
                     {
