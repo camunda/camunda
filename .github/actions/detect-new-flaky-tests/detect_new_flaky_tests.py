@@ -309,7 +309,7 @@ def main() -> None:
     except json.JSONDecodeError as exc:
         print(f"{PREFIX} Failed to parse baseline flaky tests - treating all PR flaky tests as new: {exc}")
 
-    print(f"{PREFIX} Baseline flaky tests from main/stable (last 14 days): {len(baseline_flaky_tests)} entries")
+    print(f"{PREFIX} Baseline flaky tests from main/stable and other PRs (last 20 days): {len(baseline_flaky_tests)} entries")
 
     # BigQuery test_name may include parameters and suffixes, e.g.
     #   "shouldDoSomething(CamundaRdbmsTestApplication) camundaWithOracleDB"
@@ -330,7 +330,7 @@ def main() -> None:
     for test in pr_flaky_tests:
         normalized_key = get_test_key(test)
         matched = [k for k in baseline_keys if _is_same_test(k, normalized_key)]
-        status = f"KNOWN (matched: {matched})" if matched else "NEW (not seen on main/stable)"
+        status = f"KNOWN (matched: {matched})" if matched else "NEW (not seen on main/stable or other PRs)"
         print(f"{PREFIX}   {normalized_key} → {status}")
         if not matched:
             new_flaky_tests.append(test)
@@ -371,7 +371,7 @@ def main() -> None:
         COMMENT_MARKER,
         "# ⚠️ New Flaky Tests Detected",
         "",
-        f"This PR introduces **{len(new_flaky_tests)} new flaky test(s)** that are not currently flaky on `main` or `stable/*` branches.",
+        f"This PR introduces **{len(new_flaky_tests)} new flaky test(s)** that have not flaked recently on `main`, `stable/*`, or in any other pull request.",
         "",
     ]
 
@@ -384,6 +384,61 @@ def main() -> None:
         if test.get("className"):
             lines.append(f"  - Class: `{test['className']}`")
         lines.append(f"  - Retries in this run: {test['currentRunFailures']}")
+        if test.get("packageName") and test.get("className") and test.get("methodName"):
+            fqn_class = f"{test['packageName']}.{test['className']}"
+            method = test["methodName"]
+            query = (
+                "WITH r AS (\n"
+                "  SELECT\n"
+                "    DATE(ts.report_time) AS day,\n"
+                "    build_trigger,\n"
+                "    CASE\n"
+                '      WHEN build_ref LIKE "refs/pull/%/merge" THEN CONCAT("PR #", REGEXP_EXTRACT(build_ref, r"^refs/pull/(\\d+)/"))\n'
+                '      WHEN build_ref LIKE "%gh-readonly-queue/%" THEN CONCAT("queue PR #", REGEXP_EXTRACT(build_ref, r"/pr-(\\d+)-"))\n'
+                '      WHEN build_ref LIKE "refs/heads/%" THEN REPLACE(build_ref, "refs/heads/", "")\n'
+                '      ELSE IFNULL(build_ref, "")\n'
+                "    END AS source,\n"
+                '    IF(build_trigger = "pull_request", REPLACE(IFNULL(build_head_ref, ""), "refs/heads/", ""), "") AS head_branch,\n'
+                '    REPLACE(IFNULL(build_base_ref, ""), "refs/heads/", "") AS target,\n'
+                "    test_status,\n"
+                "    COUNT(*) AS occurrences\n"
+                "  FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts\n"
+                "  LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs\n"
+                "    ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name\n"
+                "  WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 DAY)\n"
+                '    AND ts.ci_url = "https://github.com/camunda/camunda"\n'
+                f'    AND test_class_name = "{fqn_class}"\n'
+                f'    AND (test_name = "{method}" OR STARTS_WITH(test_name, "{method}(") OR STARTS_WITH(test_name, "{method}["))\n'
+                '    AND test_status IN ("flaky","failure","error")\n'
+                "  GROUP BY day, build_trigger, source, head_branch, target, test_status\n"
+                ")\n"
+                "SELECT * FROM r\n"
+                "UNION ALL\n"
+                "SELECT CAST(NULL AS DATE), \"\", \"(no past flake/failure/error — genuine new flake)\", \"\", \"\", \"\", 0\n"
+                "FROM (SELECT 1) WHERE NOT EXISTS (SELECT 1 FROM r)\n"
+                "ORDER BY day DESC, occurrences DESC"
+            )
+            lines.append("")
+            lines.append("  <details><summary>Verify in BigQuery — is this a real new flake or a false alarm?</summary>")
+            lines.append("")
+            lines.append("  Run this from your terminal (`bq` CLI must be authenticated against `ci-30-162810`):")
+            lines.append("")
+            lines.append("  ```bash")
+            lines.append("  bq --project_id=ci-30-162810 query --use_legacy_sql=false --max_rows=200 \\")
+            sql_lines = query.split("\n")
+            for idx, q_line in enumerate(sql_lines):
+                if idx == 0:
+                    lines.append(f"    '{q_line}")
+                elif idx == len(sql_lines) - 1:
+                    lines.append(f"     {q_line}'")
+                else:
+                    lines.append(f"     {q_line}")
+            lines.append("  ```")
+            lines.append("")
+            lines.append("  By default this filters to `flaky`/`failure`/`error` rows. If there are no such rows in the last 60 days, the query returns a single sentinel row labelled `(no past flake/failure/error — genuine new flake)` so you can tell the query ran successfully (vs. an empty terminal output). Drop the `AND test_status IN (...)` clause to also see how often the test ran successfully (typically thousands of rows).")
+            lines.append("")
+            lines.append("  Each row aggregates runs by day, trigger, source, head branch, and target. `source` is the PR (`PR #N`), merge-queue ref (`queue PR #N`), or branch name; `head_branch` is the PR's source branch (only meaningful for `pull_request`); `target` is the branch the change is heading into. **Sentinel row → genuine new flake** — your PR introduced it. **Real `flaky`/`failure`/`error` rows → false alarm** — the test has flaked before; the gate just hadn't seen those exact runs in its 20-day baseline.")
+            lines.append("  </details>")
         lines.append("")
 
     lines.extend(
@@ -398,7 +453,7 @@ def main() -> None:
             "   - Add the `ci:flaky-test-bypass` label to this PR to skip the gate and unblock merging",
             "   - Re-run CI after adding the label",
             "",
-            "_This check compares flaky tests in this PR against tests known to be flaky on `main`/`stable/*` in the last 60 days._",
+            "_This check compares flaky tests in this PR against tests known to be flaky on `main`/`stable/*` or in other PRs (excluding this one) in the last 20 days._",
         ]
     )
 
