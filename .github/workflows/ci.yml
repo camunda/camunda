@@ -2019,3 +2019,37 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "General"
+
+  # Dynamically generate the concurrency group for the Optimize Docker snapshot push
+  utils-get-concurrency-group-for-optimize-docker-snapshot:
+    needs: [ check-results ]
+    uses: ./.github/workflows/generate-concurrency-group.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    if: always() && needs.check-results.result == 'success'
+    with:
+      base_group_name: deploy-optimize-docker-snapshot
+
+  deploy-optimize-docker-snapshot:
+    name: Deploy snapshot Optimize Docker image
+    needs: [ check-results, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-optimize-docker-snapshot ]
+    uses: ./.github/workflows/optimize-ci-build-reusable.yml
+    secrets: inherit
+    permissions: { }
+    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    concurrency:
+      group: ${{ needs.utils-get-concurrency-group-for-optimize-docker-snapshot.outputs.concurrency_group_name }}
+      cancel-in-progress: false
+    with:
+      branch: ${{ github.ref_name }}
+      pushDocker: true
+      version: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
+
+  deploy-optimize-artifacts:
+    name: Optimize / Deploy Artifacts
+    needs: [ check-results, deploy-optimize-docker-snapshot ]
+    uses: ./.github/workflows/optimize-deploy-artifacts.yml
+    secrets: inherit
+    permissions: { }
+    if: always() && needs.check-results.result == 'success' && needs.deploy-optimize-docker-snapshot.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
