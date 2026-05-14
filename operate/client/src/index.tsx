@@ -14,6 +14,7 @@ import 'dmn-js/dist/assets/dmn-js-drd.css';
 import 'dmn-js/dist/assets/dmn-js-literal-expression.css';
 import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
 import 'bpmn-js/dist/assets/bpmn-js.css';
+import '@camunda/copilot-chat/style.css';
 import {tracking} from 'modules/tracking';
 import {createRoot} from 'react-dom/client';
 

@@ -12,6 +12,22 @@
 
   <name>Operate Webapp</name>
 
+  <properties>
+    <version.langchain4j>1.12.2</version.langchain4j>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>dev.langchain4j</groupId>
+        <artifactId>langchain4j-bom</artifactId>
+        <version>${version.langchain4j}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -48,6 +64,10 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-services</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service</artifactId>
     </dependency>
 
     <dependency>
@@ -149,6 +169,28 @@
       <artifactId>jackson-databind</artifactId>
     </dependency>
 
+    <!-- Copilot LLM bridge (LangChain4j) -->
+    <dependency>
+      <groupId>dev.langchain4j</groupId>
+      <artifactId>langchain4j-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>dev.langchain4j</groupId>
+      <artifactId>langchain4j-anthropic</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>dev.langchain4j</groupId>
+      <artifactId>langchain4j-open-ai</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>dev.langchain4j</groupId>
+      <artifactId>langchain4j-google-ai-gemini</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>dev.langchain4j</groupId>
+      <artifactId>langchain4j-bedrock</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
@@ -223,6 +265,11 @@
             <dependency>org.thymeleaf:thymeleaf</dependency>
             <dependency>jakarta.json:jakarta.json-api</dependency>
             <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
+            <dependency>dev.langchain4j:langchain4j-core</dependency>
+            <dependency>dev.langchain4j:langchain4j-anthropic</dependency>
+            <dependency>dev.langchain4j:langchain4j-open-ai</dependency>
+            <dependency>dev.langchain4j:langchain4j-google-ai-gemini</dependency>
+            <dependency>dev.langchain4j:langchain4j-bedrock</dependency>
             <!-- This dependency is indirectly used by the awssk auth plugin. It requires these
      classes on the classpath in order to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>

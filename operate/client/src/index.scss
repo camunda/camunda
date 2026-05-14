@@ -12,6 +12,36 @@
 @use '@carbon/react/scss/themes';
 @use '@carbon/react/scss/theme';
 
+:root {
+  --copilot-brand-color: #fc5d0d;
+  --copilot-chat-sidecar-width: 416px;
+}
+
+/*
+ * Tame the markdown heading scale inside the Copilot sidebar.
+ * @carbon/ai-chat-components markdown component renders headings with
+ * Carbon's display-scale tokens (h1 = 2.625rem, h2 = 2rem, ...) which
+ * is way too loud for a 416px-wide sidecar. Override the CSS custom
+ * properties — they cascade through the shadow DOM into the markdown
+ * web component. Paragraph margins and list-style restoration are
+ * hardcoded inside the package's shadow DOM and need a package-level
+ * fix; tracked separately.
+ */
+.operate-copilot {
+  --cds-heading-06-font-size: 1.25rem;
+  --cds-heading-06-font-weight: 600;
+  --cds-heading-06-line-height: 1.4;
+  --cds-heading-05-font-size: 1.125rem;
+  --cds-heading-05-font-weight: 600;
+  --cds-heading-05-line-height: 1.4;
+  --cds-heading-04-font-size: 1rem;
+  --cds-heading-04-font-weight: 600;
+  --cds-heading-04-line-height: 1.4;
+  --cds-heading-03-font-size: 0.9375rem;
+  --cds-heading-03-font-weight: 600;
+  --cds-heading-03-line-height: 1.4;
+}
+
 * {
   box-sizing: border-box;
 }

@@ -1,0 +1,61 @@
+{
+  "name": "@camunda/copilot-chat",
+  "version": "0.5.12-alpha.10",
+  "description": "Camunda Copilot Client Library - React components and utilities for Camunda Platform 8",
+  "license": "Camunda License 1.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "style": "./dist/index.css",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./style.css": {
+      "import": "./dist/index.css",
+      "default": "./dist/index.css"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/camunda/camunda-copilot-client.git",
+    "directory": "packages/copilot-chat"
+  },
+  "keywords": [
+    "camunda",
+    "copilot",
+    "react",
+    "typescript",
+    "camunda-platform-8",
+    "workflow",
+    "automation"
+  ],
+  "author": "Camunda Services GmbH",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "zustand": "^5.0.2"
+  },
+  "peerDependencies": {
+    "@carbon/ai-chat-components": ">=0.9.0",
+    "@carbon/icons-react": ">=11.0.0",
+    "@carbon/react": "^1.92.0",
+    "react": ">=18.0.0 <20.0.0",
+    "react-dom": ">=18.0.0 <20.0.0"
+  },
+  "yalcSig": "529100333777499d87076ae343d184a5"
+}

@@ -33,6 +33,7 @@ type Events =
         | 'header-decisions'
         | 'header-batch-operations'
         | 'header-operations-log'
+        | 'header-copilot'
         | 'dashboard-running-processes'
         | 'dashboard-processes-with-incidents'
         | 'dashboard-active-processes'
@@ -114,6 +115,10 @@ type Events =
     }
   | {
       eventName: 'incident-filters-cleared';
+    }
+  | {
+      eventName: 'incident-explain-clicked';
+      errorType: string;
     }
   | {
       eventName: 'metadata-popover-opened';

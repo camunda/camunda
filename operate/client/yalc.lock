@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "packages": {
+    "@camunda/copilot-chat": {
+      "signature": "529100333777499d87076ae343d184a5",
+      "file": true
+    }
+  }
+}

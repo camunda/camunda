@@ -10,7 +10,9 @@ import {useEffect, useState} from 'react';
 import {observer} from 'mobx-react-lite';
 import {Link} from 'react-router-dom';
 import {ArrowRight} from '@carbon/react/icons';
+import CopilotSparkle from 'modules/copilot/icons/CopilotSparkle.svg?react';
 import {C3Navigation} from '@camunda/camunda-composite-components';
+import {toggleSidecar} from '@camunda/copilot-chat';
 import {Locations, Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -161,6 +163,19 @@ const AppHeader: React.FC = observer(() => {
         },
       }}
       forwardRef={Link}
+      actionButtons={[
+        {
+          label: 'Copilot',
+          icon: <CopilotSparkle />,
+          action: () => {
+            tracking.track({
+              eventName: 'navigation',
+              link: 'header-copilot',
+            });
+            toggleSidecar();
+          },
+        },
+      ]}
       navbar={{
         elements: isForbidden(currentUser)
           ? []
