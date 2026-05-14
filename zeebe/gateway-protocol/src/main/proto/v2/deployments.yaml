@@ -322,7 +322,9 @@ components:
           description: Deployed resource.
           allOf:
             - $ref: '#/components/schemas/DeploymentResourceResult'
-          x-added-in-version: "8.7"
+      x-added-in-version:
+        - propertyName: resource
+          addedInVersion: "8.7"
 
     DeploymentProcessResult:
       description: A deployed process.
@@ -525,7 +527,9 @@ components:
             will not be populated.
           type: boolean
           default: false
-          x-added-in-version: "8.9"
+      x-added-in-version:
+        - propertyName: deleteHistory
+          addedInVersion: "8.9"
 
     DeleteResourceResponse:
       type: object
@@ -537,7 +541,6 @@ components:
           allOf:
             - $ref: '#/components/schemas/ResourceKey'
           description: The system-assigned key for this resource, requested to be deleted.
-          x-added-in-version: "8.9"
         batchOperation:
           nullable: true
           allOf:
@@ -548,7 +551,11 @@ components:
             This field is only populated when the request `deleteHistory` is set to `true` and the resource
             is a process definition. For other resource types (decisions, forms, generic resources),
             this field will be `null`.
-          x-added-in-version: "8.9"
+      x-added-in-version:
+        - propertyName: resourceKey
+          addedInVersion: "8.9"
+        - propertyName: batchOperation
+          addedInVersion: "8.9"
 
     ResourceResult:
       type: object
@@ -563,31 +570,38 @@ components:
         resourceName:
           description: The resource name from which this resource was parsed.
           type: string
-          x-added-in-version: "8.7"
         version:
           description: The assigned resource version.
           type: integer
           format: int32
-          x-added-in-version: "8.7"
         versionTag:
           nullable: true
           description: The version tag of this resource.
           type: string
-          x-added-in-version: "8.7"
         resourceId:
           description: The resource ID of this resource.
           type: string
-          x-added-in-version: "8.7"
         tenantId:
           description: The tenant ID of this resource.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
-          x-added-in-version: "8.7"
         resourceKey:
           allOf:
             - $ref: '#/components/schemas/ResourceKey'
           description: The unique key of this resource.
-          x-added-in-version: "8.7"
+      x-added-in-version:
+        - propertyName: resourceName
+          addedInVersion: "8.7"
+        - propertyName: version
+          addedInVersion: "8.7"
+        - propertyName: versionTag
+          addedInVersion: "8.7"
+        - propertyName: resourceId
+          addedInVersion: "8.7"
+        - propertyName: tenantId
+          addedInVersion: "8.7"
+        - propertyName: resourceKey
+          addedInVersion: "8.7"
 
     ## Keys
 
@@ -630,28 +644,34 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: '#/components/schemas/DeploymentKey'
-          x-added-in-version: "8.9"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: '#/components/schemas/DeploymentKey'
-          x-added-in-version: "8.9"
         $exists:
           description: Checks if the current property exists.
           type: boolean
-          x-added-in-version: "8.9"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: '#/components/schemas/DeploymentKey'
-          x-added-in-version: "8.9"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
             $ref: '#/components/schemas/DeploymentKey'
-          x-added-in-version: "8.9"
+      x-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
 
     ResourceKeyFilterProperty:
       description: ResourceKey property with full advanced search capabilities.
@@ -672,28 +692,34 @@ components:
           description: Checks for equality with the provided value.
           allOf:
             - $ref: "#/components/schemas/ResourceKey"
-          x-added-in-version: "8.9"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/ResourceKey"
-          x-added-in-version: "8.9"
         $exists:
           description: Checks if the current property exists.
           type: boolean
-          x-added-in-version: "8.9"
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/ResourceKey"
-          x-added-in-version: "8.9"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/ResourceKey"
-          x-added-in-version: "8.9"
+      x-added-in-version:
+        - propertyName: "$eq"
+          addedInVersion: "8.9"
+        - propertyName: "$neq"
+          addedInVersion: "8.9"
+        - propertyName: "$exists"
+          addedInVersion: "8.9"
+        - propertyName: "$in"
+          addedInVersion: "8.9"
+        - propertyName: "$notIn"
+          addedInVersion: "8.9"
 
     ## Resource Search
 

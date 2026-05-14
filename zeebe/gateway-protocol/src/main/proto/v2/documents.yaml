@@ -110,9 +110,11 @@ paths:
                   type: array
                   items:
                     $ref: '#/components/schemas/DocumentMetadata'
-                  x-added-in-version: "8.8"
               required:
                 - files
+              x-added-in-version:
+                - propertyName: metadataList
+                  addedInVersion: "8.8"
             encoding:
               files:
                 headers:
@@ -296,24 +298,30 @@ components:
           description: Document discriminator. Always set to "camunda".
           enum:
             - camunda
-          x-added-in-version: "8.7"
         storeId:
           type: string
           description: The ID of the document store.
-          x-added-in-version: "8.6"
         documentId:
           allOf:
             - $ref: '#/components/schemas/DocumentId'
           description: The ID of the document.
-          x-added-in-version: "8.6"
         contentHash:
           type: string
           description: The hash of the document.
           nullable: true
-          x-added-in-version: "8.7"
         metadata:
           $ref: '#/components/schemas/DocumentMetadataResponse'
-          x-added-in-version: "8.6"
+      x-added-in-version:
+        - propertyName: "camunda.document.type"
+          addedInVersion: "8.7"
+        - propertyName: storeId
+          addedInVersion: "8.6"
+        - propertyName: documentId
+          addedInVersion: "8.6"
+        - propertyName: contentHash
+          addedInVersion: "8.7"
+        - propertyName: metadata
+          addedInVersion: "8.6"
 
     DocumentCreationFailureDetail:
       type: object
@@ -330,14 +338,17 @@ components:
           type: integer
           format: int32
           description: The HTTP status code of the failure.
-          x-added-in-version: "8.9"
         title:
           type: string
           description: A short, human-readable summary of the problem type.
-          x-added-in-version: "8.9"
         detail:
           type: string
           description: A human-readable explanation specific to this occurrence of the problem.
+      x-added-in-version:
+        - propertyName: status
+          addedInVersion: "8.9"
+        - propertyName: title
+          addedInVersion: "8.9"
 
     DocumentCreationBatchResponse:
       allOf:
@@ -364,36 +375,44 @@ components:
         contentType:
           type: string
           description: The content type of the document.
-          x-added-in-version: "8.6"
         fileName:
           type: string
           description: The name of the file.
-          x-added-in-version: "8.6"
         expiresAt:
           type: string
           format: date-time
           description: The date and time when the document expires.
-          x-added-in-version: "8.6"
         size:
           type: integer
           format: int64
           description: The size of the document in bytes.
-          x-added-in-version: "8.6"
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The ID of the process definition that created the document.
-          x-added-in-version: "8.7"
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance that created the document.
-          x-added-in-version: "8.7"
         customProperties:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
-          x-added-in-version: "8.7"
+      x-added-in-version:
+        - propertyName: contentType
+          addedInVersion: "8.6"
+        - propertyName: fileName
+          addedInVersion: "8.6"
+        - propertyName: expiresAt
+          addedInVersion: "8.6"
+        - propertyName: size
+          addedInVersion: "8.6"
+        - propertyName: processDefinitionId
+          addedInVersion: "8.7"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.7"
+        - propertyName: customProperties
+          addedInVersion: "8.7"
 
     DocumentMetadataResponse:
       description: Information about the document that is returned in responses.
@@ -427,18 +446,22 @@ components:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The ID of the process definition that created the document.
           nullable: true
-          x-added-in-version: "8.7"
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance that created the document.
           nullable: true
-          x-added-in-version: "8.7"
         customProperties:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
-          x-added-in-version: "8.7"
+      x-added-in-version:
+        - propertyName: processDefinitionId
+          addedInVersion: "8.7"
+        - propertyName: processInstanceKey
+          addedInVersion: "8.7"
+        - propertyName: customProperties
+          addedInVersion: "8.7"
 
     DocumentLinkRequest:
       type: object

@@ -218,7 +218,6 @@ components:
         resourcePropertyName:
           description: The name of the resource property on which this authorization is based.
           type: string
-          x-added-in-version: "8.9"
         resourceType:
           description: The type of resource to add permissions to.
           allOf:
@@ -235,6 +234,9 @@ components:
         - resourcePropertyName
         - resourceType
         - permissionTypes
+      x-added-in-version:
+        - propertyName: resourcePropertyName
+          addedInVersion: "8.9"
 
     AuthorizationRequest:
       x-polymorphic-schema: true
@@ -298,11 +300,13 @@ components:
           type: array
           items:
             type: string
-          x-added-in-version: "8.9"
         resourceType:
           description: The type of resource to search permissions for.
           allOf:
             - $ref: '#/components/schemas/ResourceTypeEnum'
+      x-added-in-version:
+        - propertyName: resourcePropertyNames
+          addedInVersion: "8.9"
 
     AuthorizationResult:
       required:
@@ -332,7 +336,6 @@ components:
           description: The name of the resource property the permission relates to (mutually exclusive with `resourceId`).
           nullable: true
           type: string
-          x-added-in-version: "8.9"
         permissionTypes:
           description: Specifies the types of the permissions.
           type: array
@@ -342,6 +345,9 @@ components:
           allOf:
             - $ref: '#/components/schemas/AuthorizationKey'
           description: The key of the authorization.
+      x-added-in-version:
+        - propertyName: resourcePropertyName
+          addedInVersion: "8.9"
 
     AuthorizationSearchResult:
       type: object

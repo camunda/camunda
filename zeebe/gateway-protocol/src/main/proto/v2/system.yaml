@@ -193,16 +193,21 @@ components:
           $ref: '#/components/schemas/JobMetricsConfigurationResponse'
         components:
           $ref: '#/components/schemas/ComponentsConfigurationResponse'
-          x-added-in-version: "8.10"
         deployment:
           $ref: '#/components/schemas/DeploymentConfigurationResponse'
-          x-added-in-version: "8.10"
         authentication:
           $ref: '#/components/schemas/AuthenticationConfigurationResponse'
-          x-added-in-version: "8.10"
         cloud:
           $ref: '#/components/schemas/CloudConfigurationResponse'
-          x-added-in-version: "8.10"
+      x-added-in-version:
+        - propertyName: components
+          addedInVersion: "8.10"
+        - propertyName: deployment
+          addedInVersion: "8.10"
+        - propertyName: authentication
+          addedInVersion: "8.10"
+        - propertyName: cloud
+          addedInVersion: "8.10"
 
     JobMetricsConfigurationResponse:
       description: Configuration for job metrics collection and export.

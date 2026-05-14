@@ -172,7 +172,9 @@ components:
         resourceName:
           type: string
           description: The name of the resource from which the decision requirements were parsed
-          x-added-in-version: "8.8"
+      x-added-in-version:
+        - propertyName: resourceName
+          addedInVersion: "8.8"
 
     DecisionRequirementsSearchQueryResult:
       required:
@@ -201,27 +203,34 @@ components:
         decisionRequirementsId:
           type: string
           description: The DMN ID of the decision requirements.
-          x-added-in-version: "8.6"
         decisionRequirementsKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-          x-added-in-version: "8.6"
         decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements.
-          x-added-in-version: "8.6"
         resourceName:
           type: string
           description: The name of the resource from which this decision requirements was parsed.
-          x-added-in-version: "8.6"
         tenantId:
           description: The tenant ID of the decision requirements.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
-          x-added-in-version: "8.6"
         version:
           type: integer
           format: int32
           description: The assigned version of the decision requirements.
-          x-added-in-version: "8.6"
+      x-added-in-version:
+        - propertyName: decisionRequirementsId
+          addedInVersion: "8.6"
+        - propertyName: decisionRequirementsKey
+          addedInVersion: "8.6"
+        - propertyName: decisionRequirementsName
+          addedInVersion: "8.6"
+        - propertyName: resourceName
+          addedInVersion: "8.6"
+        - propertyName: tenantId
+          addedInVersion: "8.6"
+        - propertyName: version
+          addedInVersion: "8.6"
