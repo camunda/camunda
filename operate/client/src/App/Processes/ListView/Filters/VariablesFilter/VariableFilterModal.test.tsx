@@ -102,9 +102,7 @@ describe('<VariableFilterModal />', () => {
     expect(variableFilterStore.conditions).toEqual([
       {name: 'status', operator: 'equals', value: '"active"'},
     ]);
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      Paths.processes(),
-    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(Paths.processes());
   });
 
   it('should navigate back on cancel', async () => {
@@ -112,9 +110,7 @@ describe('<VariableFilterModal />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      Paths.processes(),
-    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(Paths.processes());
   });
 
   it('should accept exists operator without value as valid', async () => {
